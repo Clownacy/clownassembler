@@ -1,8 +1,11 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #define YY_NO_UNISTD_H
 #include "lexer.h"
 #include "parser.h"
+
+#define ERROR(message) do { fputs("Error: " message "\n", stderr); exit_code = EXIT_FAILURE; } while (0)
 
 int yywrap(void)
 {
@@ -11,27 +14,36 @@ int yywrap(void)
 
 int main(int argc, char **argv)
 {
-	yyin = fopen(argv[1], "r");
+	int exit_code = EXIT_SUCCESS;
 
-	if (yyin == NULL)
+	if (argc < 2)
 	{
-		fputs("Could not open file\n", stderr);
+		ERROR("Input file must be passed as a parameter");
 	}
 	else
 	{
-		/*yylex(); */
+		yyin = fopen(argv[1], "r");
 
-	#if YYDEBUG
-		yydebug = 1;
-	#endif
+		if (yyin == NULL)
+		{
+			ERROR("Could not open file");
+		}
+		else
+		{
+			/*yylex(); */
 
-		(void)yyparse();
+		#if YYDEBUG
+			yydebug = 1;
+		#endif
+
+			(void)yyparse();
 
 
-		fclose(yyin);
+			fclose(yyin);
+		}
 	}
 
-	return 0;
+	return exit_code;
 }
 
 void yyerror(char *s)

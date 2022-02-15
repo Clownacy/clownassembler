@@ -61,12 +61,12 @@ typedef  struct treeNode TREE_NODE;
 typedef  TREE_NODE        *QUATERNARY_TREE;
 
 /* ------------- forward declarations --------------------------- */
-
+/*
 static QUATERNARY_TREE create_node(int,QUATERNARY_TREE,QUATERNARY_TREE,QUATERNARY_TREE,QUATERNARY_TREE);
 static void OptimiseTree(QUATERNARY_TREE t);
 static void FreeTree(QUATERNARY_TREE t);
 static void PrintTree(QUATERNARY_TREE t);
-
+*/
 /* ------------- symbol table definition --------------------------- */
 
 struct symTabNode {
