@@ -1,6 +1,16 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+typedef struct Value
+{
+	int type;
+	union
+	{
+		unsigned long integer;
+		char *identifier;
+	} data;
+} Value;
+
 typedef struct Opcode
 {
 	int type;
@@ -9,12 +19,25 @@ typedef struct Opcode
 
 typedef struct Operand
 {
-	int type;
+	enum
+	{
+		OPERAND_TYPE_DATA_REGISTER,
+		OPERAND_TYPE_ADDRESS_REGISTER,
+		OPERAND_TYPE_STATUS_REGISTER,
+		OPERAND_TYPE_CONDITION_CODE_REGISTER,
+		OPERAND_TYPE_ADDRESS,
+		OPERAND_TYPE_LITERAL
+	} type;
+
 	union
 	{
 		unsigned int data_register;
 		unsigned int address_register;
-		unsigned long address;
+		struct
+		{
+			Value value;
+			int size;
+		} address;
 	} data;
 } Operand;
 

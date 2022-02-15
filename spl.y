@@ -108,7 +108,7 @@ StatementListNode *statement_list_head;
     QUATERNARY_TREE  tVal;*/
     struct
     {
-        long integer;
+        unsigned long integer;
         char *string;
     } generic;
     Opcode opcode;
@@ -116,6 +116,7 @@ StatementListNode *statement_list_head;
     Instruction instruction;
     Statement statement;
     StatementListNode statement_list;
+    Value value;
 }
 
 /* We can declare types of tree nodes */
@@ -130,7 +131,7 @@ StatementListNode *statement_list_head;
 %token TOKEN_SIZE_LONG
 %token<generic.integer> TOKEN_DATA_REGISTER
 %token<generic.integer> TOKEN_ADDRESS_REGISTER
-%token TOKEN_NUMBER
+%token<generic.integer> TOKEN_NUMBER
 %token<generic.string> TOKEN_IDENTIFIER
 %token TOKEN_STATUS_REGISTER
 %token TOKEN_CONDITION_CODE_REGISTER
@@ -141,7 +142,9 @@ StatementListNode *statement_list_head;
 %type<opcode> full_opcode
 %type<operand> operand
 %type<operand> register
+%type<operand> address
 %type<statement> statement
+%type<value> value
 
 /*
 %token<iVal> CHARACTER_CONSTANT IDENTIFIER NUMBER
@@ -194,7 +197,7 @@ statement            : TOKEN_IDENTIFIER end_of_line
                        $$.label = $1;
                        $$.type = STATEMENT_TYPE_EMPTY;
                      }
-					 | TOKEN_IDENTIFIER ':' end_of_line
+                     | TOKEN_IDENTIFIER ':' end_of_line
                      {
                        $$.label = $1;
                        $$.type = STATEMENT_TYPE_EMPTY;
@@ -305,39 +308,75 @@ operand              : register
                      {
                        $$ = $1;
                      }
-                /*     | address*/
+                     | address
+                     {
+                       $$ = $1;
+                     }
                      ;
 
 register             : TOKEN_DATA_REGISTER
                      {
-                       $$.type = TOKEN_DATA_REGISTER;
+                       $$.type = OPERAND_TYPE_DATA_REGISTER;
                        $$.data.data_register = $1;
                      }
                      | TOKEN_ADDRESS_REGISTER
                      {
-                       $$.type = TOKEN_ADDRESS_REGISTER;
+                       $$.type = OPERAND_TYPE_ADDRESS_REGISTER;
                        $$.data.address_register = $1;
                      }
                      | TOKEN_STATUS_REGISTER
                      {
-                       $$.type = TOKEN_STATUS_REGISTER;
+                       $$.type = OPERAND_TYPE_STATUS_REGISTER;
                      }
                      | TOKEN_CONDITION_CODE_REGISTER
                      {
-                       $$.type = TOKEN_CONDITION_CODE_REGISTER;
+                       $$.type = OPERAND_TYPE_CONDITION_CODE_REGISTER;
+                     }
+                     ;
+
+address              : value
+                     {
+                         $$.type = OPERAND_TYPE_ADDRESS;
+                         $$.data.address.value = $1;
+                         $$.data.address.size = -1;
+                     }
+                     | value '.' size
+                     {
+                         $$.type = OPERAND_TYPE_ADDRESS;
+                         $$.data.address.value = $1;
+                         $$.data.address.size = $3;
+                     }
+                     | '(' value ')'
+                     {
+                         $$.type = OPERAND_TYPE_ADDRESS;
+                         $$.data.address.value = $2;
+                         $$.data.address.size = -1;
+                     }
+                     | '(' value ')' '.' size
+                     {
+                         $$.type = OPERAND_TYPE_ADDRESS;
+                         $$.data.address.value = $2;
+                         $$.data.address.size = $5;
                      }
                      ;
 /*
-address              : number
-                     | number '.' size
-                     | '(' number ')'
-                     | '(' number ')' '.' size
-                     ;
-
 number               : TOKEN_NUMBER
                      | '$' TOKEN_NUMBER
                      ;
 */
+
+value                : TOKEN_NUMBER
+                     {
+                       $$.type = TOKEN_NUMBER;
+                       $$.data.integer = $1;
+                     }
+                     | TOKEN_IDENTIFIER
+                     {
+                       $$.type = TOKEN_IDENTIFIER;
+                       $$.data.identifier = $1;
+                     }
+                     ;
+
 /*
 program              : IDENTIFIER COLON block ENDP IDENTIFIER DOT
                      {

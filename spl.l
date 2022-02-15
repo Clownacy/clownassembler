@@ -58,18 +58,40 @@ ccr             TOKEN(CONDITION_CODE_REGISTER)
 [Dd]{number}    yylval.generic.integer = yytext[1] - '0'; return TOKEN_DATA_REGISTER;
 [Aa]{number}    yylval.generic.integer = yytext[1] - '0'; return TOKEN_ADDRESS_REGISTER;
 {number}        {
-                  const size_t length = strlen(yytext) + 1;
-                  yylval.generic.string = malloc(length);
-                  if (yylval.generic.string == NULL)
+                  char *string_end;
+                  yylval.generic.integer = strtoul(yytext, &string_end, 10);
+
+                  if (string_end[0] != '\0')
                   {
-                    yyerror("Could not allocate memory for generic string");
+                    yyerror("Could not parse number");
                     return YYerror;
                   }
-                  else
+
+                  return TOKEN_NUMBER;
+                }
+\${number}       {
+                  char *string_end;
+                  yylval.generic.integer = strtoul(yytext + 1, &string_end, 16);
+
+                  if (string_end[0] != '\0')
                   {
-                    memcpy(yylval.generic.string, yytext, length);
-                    return TOKEN_NUMBER;
+                    yyerror("Could not parse number");
+                    return YYerror;
                   }
+
+                  return TOKEN_NUMBER;
+                }
+\%{number}       {
+                  char *string_end;
+                  yylval.generic.integer = strtoul(yytext + 1, &string_end, 2);
+
+                  if (string_end[0] != '\0')
+                  {
+                    yyerror("Could not parse number");
+                    return YYerror;
+                  }
+
+                  return TOKEN_NUMBER;
                 }
 {identifier}    {
                   const size_t length = strlen(yytext) + 1;
