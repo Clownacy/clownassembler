@@ -3,6 +3,10 @@
 
 %{
 
+#include <stdlib.h>
+#include <string.h>
+
+#include "types.h"
 #include "parser.h"
 
 #ifdef PRINT
@@ -20,9 +24,11 @@
 #define IDENTIFIER_TOKEN(x) yylval.iVal = installId(yytext); return TOKEN_ ## x;
 #endif
 
+void yyerror (char *);
+
 %}
 
-whitespace      [ \t]
+whitespace      [ \t]+
 letter          [A-Za-z]
 digit           [0-9]
 identifier      {letter}({letter}|{digit})*
@@ -32,7 +38,7 @@ comment         \;.*$
 
 %%
 
-{whitespace}    ; /* Ignore whitespace */
+{whitespace}    TOKEN(WHITESPACE); /* Ignore whitespace */
 {comment}       ; /* Ignore comments */
 "."             TOKEN(DOT)
 ","             TOKEN(COMMA)
@@ -46,9 +52,22 @@ add             TOKEN(OPCODE_ADD)
 "w"             TOKEN(SIZE_WORD)
 "l"             TOKEN(SIZE_LONG)
 "$"             TOKEN(DOLLAR)
-[Dd]{number}    TOKEN(DATA_REGISTER)
-[Aa]{number}    TOKEN(ADDRESS_REGISTER)
-{number}        TOKEN(NUMBER)
+[Dd]{number}    yylval.generic.integer = yytext[1] - '0'; return TOKEN_DATA_REGISTER;
+[Aa]{number}    yylval.generic.integer = yytext[1] - '0'; return TOKEN_ADDRESS_REGISTER;
+{number}        {
+                  const size_t length = strlen(yytext) + 1;
+                  yylval.generic.string = malloc(length);
+                  if (yylval.generic.string == NULL)
+                  {
+                    yyerror("Could not allocate memory for generic string");
+                    return YYerror;
+                  }
+                  else
+                  {
+                    memcpy(yylval.generic.string, yytext, length);
+                    return TOKEN_NUMBER;
+                  }
+                }
 
 .               return yytext[0]; /* Make Bison signal a syntax error for unrecognised symbols */
 

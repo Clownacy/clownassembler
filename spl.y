@@ -13,7 +13,7 @@
 int yylex (void);
 void yyerror (char *);
 
-/* 
+/*
    Some constants.
 */
 
@@ -26,8 +26,8 @@ void yyerror (char *);
 
 enum ParseTreeNodeType
 {
-	dunno
-	/* Add more types here, as more nodes added to tree */
+    dunno
+    /* Add more types here, as more nodes added to tree */
 };
 
 #ifndef TRUE
@@ -77,9 +77,18 @@ struct symTabNode {
 typedef  struct symTabNode SYMTABNODE;
 typedef  SYMTABNODE        *SYMTABNODEPTR;
 
-SYMTABNODEPTR  symTab[SYMTABSIZE]; 
+SYMTABNODEPTR  symTab[SYMTABSIZE];
 
 long currentSymTabSize = 0;
+
+
+
+
+/* clownassembler stuff */
+
+#include "types.h"
+
+StatementListNode *statement_list_head;
 
 %}
 
@@ -92,15 +101,26 @@ long currentSymTabSize = 0;
 /**********************/
 /* Action value types */
 /**********************/
-/*
+
 %union {
-    long iVal;
+/*    long iVal;
     char fVal[REALLENGTH];
-    QUATERNARY_TREE  tVal;
+    QUATERNARY_TREE  tVal;*/
+    struct
+    {
+        long integer;
+        char *string;
+    } generic;
+    Opcode opcode;
+    Operand operand;
+    Instruction instruction;
+    Statement statement;
+    StatementListNode statement_list;
 }
-*/
+
 /* We can declare types of tree nodes */
 
+%token TOKEN_WHITESPACE
 %token TOKEN_DOT
 %token TOKEN_COMMA
 %token TOKEN_NEWLINE
@@ -113,9 +133,17 @@ long currentSymTabSize = 0;
 %token TOKEN_SIZE_WORD
 %token TOKEN_SIZE_LONG
 %token TOKEN_DOLLAR
-%token TOKEN_DATA_REGISTER
-%token TOKEN_ADDRESS_REGISTER
+%token<generic.integer> TOKEN_DATA_REGISTER
+%token<generic.integer> TOKEN_ADDRESS_REGISTER
 %token TOKEN_NUMBER
+
+%type<instruction> instruction
+%type<generic.integer> opcode
+%type<generic.integer> size
+%type<opcode> full_opcode
+%type<operand> operand
+%type<operand> register
+%type<statement> statement
 
 /*
 %token<iVal> CHARACTER_CONSTANT IDENTIFIER NUMBER
@@ -125,50 +153,156 @@ long currentSymTabSize = 0;
 */
 %%
 
-statement_list       : statement
-                     | statement statement_list
-					 ;
+end_of_line          : TOKEN_NEWLINE
+                     | TOKEN_WHITESPACE TOKEN_NEWLINE
+                     ;
 
-statement            : TOKEN_NEWLINE
-                     | full_opcode operand_list TOKEN_NEWLINE
-					 ;
+statement_list       : statement
+                     {
+                       StatementListNode *node = malloc(sizeof(StatementListNode));
+
+                       if (node == NULL)
+                       {
+                           yyerror("Could not allocate memory for statement list node");
+                       }
+                       else
+                       {
+                           node->statement = $1;
+                           node->next = statement_list_head;
+                           statement_list_head = node;
+                       }
+                     }
+                     | statement statement_list
+                     {
+                       StatementListNode *node = malloc(sizeof(StatementListNode));
+
+                       if (node == NULL)
+                       {
+                           yyerror("Could not allocate memory for statement list node");
+                       }
+                       else
+                       {
+                           node->statement = $1;
+                           node->next = statement_list_head;
+                           statement_list_head = node;
+                       }
+                     }
+                     | end_of_line statement_list
+                     | end_of_line
+                     ;
+
+statement            : instruction
+                     {
+                       $$.type = STATEMENT_TYPE_INSTRUCTION;
+                       $$.data.instruction = $1;
+                     }
+                     ;
+
+instruction          : TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand end_of_line
+                     {
+                       $$.opcode = $2;
+                       $$.operands[1] = $4;
+                       $$.operands[2].type = -1;
+                     }
+                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand TOKEN_COMMA operand end_of_line
+                     {
+                       $$.opcode = $2;
+                       $$.operands[1] = $4;
+                       $$.operands[2] = $6;
+                     }
+                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand TOKEN_WHITESPACE TOKEN_COMMA operand end_of_line
+                     {
+                       $$.opcode = $2;
+                       $$.operands[1] = $4;
+                       $$.operands[2] = $7;
+                     }
+                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand TOKEN_COMMA TOKEN_WHITESPACE operand end_of_line
+                     {
+                       $$.opcode = $2;
+                       $$.operands[1] = $4;
+                       $$.operands[2] = $7;
+                     }
+                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand TOKEN_WHITESPACE TOKEN_COMMA TOKEN_WHITESPACE operand end_of_line
+                     {
+                       $$.opcode = $2;
+                       $$.operands[1] = $4;
+                       $$.operands[2] = $8;
+                     }
+                     ;
 
 full_opcode          : opcode
+                     {
+                       $$.type = $1;
+                       $$.size = -1;
+                     }
                      | opcode TOKEN_DOT size
-					 ;
+                     {
+                       $$.type = $1;
+                       $$.size = $3;
+                     }
+                     ;
 
 opcode               : TOKEN_OPCODE_MOVE
+                     {
+                       $$ = TOKEN_OPCODE_MOVE;
+                     }
                      | TOKEN_OPCODE_ADD
+                     {
+                       $$ = TOKEN_OPCODE_ADD;
+                     }
                      ;
 
 size                 : TOKEN_SIZE_BYTE
+                     {
+                       $$ = TOKEN_SIZE_BYTE;
+                     }
                      | TOKEN_SIZE_SHORT
+                     {
+                       $$ = TOKEN_SIZE_SHORT;
+                     }
                      | TOKEN_SIZE_WORD
+                     {
+                       $$ = TOKEN_SIZE_WORD;
+                     }
                      | TOKEN_SIZE_LONG
+                     {
+                       $$ = TOKEN_SIZE_LONG;
+                     }
                      ;
-
+/*
 operand_list         : operand
                      | operand TOKEN_COMMA operand_list
-					 ;
-
+                     ;
+*/
 operand              : register
-                     | address
+                     {
+                       $$ = $1;
+                     }
+                /*     | address*/
                      ;
 
 register             : TOKEN_DATA_REGISTER
+                     {
+                         $$.type = TOKEN_DATA_REGISTER;
+                         $$.data.data_register = $1;
+                     }
                      | TOKEN_ADDRESS_REGISTER
-					 ;
-
+                     {
+                         $$.type = TOKEN_ADDRESS_REGISTER;
+                         $$.data.address_register = $1;
+                     }
+                     ;
+/*
 address              : number
                      | number TOKEN_DOT size
                      | TOKEN_LEFT_PARENTHESIS number TOKEN_RIGHT_PARENTHESIS
                      | TOKEN_LEFT_PARENTHESIS number TOKEN_RIGHT_PARENTHESIS TOKEN_DOT size
-					 ;
+                     ;
 
 number               : TOKEN_NUMBER
                      | TOKEN_DOLLAR TOKEN_NUMBER
-					 ;
-
+                     ;
+*/
 /*
 program              : IDENTIFIER COLON block ENDP IDENTIFIER DOT
                      {
