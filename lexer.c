@@ -480,61 +480,9 @@ char *yytext;
 #define REAL_NUMBER_TOKEN(x) strncpy(yylval.fVal, yytext, REALLENGTH - 1); yylval.fVal[REALLENGTH - 1] = '\0'; return TOKEN_ ## x;
 #define IDENTIFIER_TOKEN(x) yylval.iVal = installId(yytext); return TOKEN_ ## x;
 #endif
-/*
-enum
-{
-      AND,
-      BY,
-      CHARACTER,
-      CODE,
-      DECLARATIONS,
-      DO,
-      ELSE,
-      ENDDO,
-      ENDFOR,
-      ENDIF,
-      ENDP,
-      ENDWHILE,
-      FOR,
-      IF,
-      IS,
-      INTEGER,
-      NEWLINE,
-      NOT,
-      OF,
-      OR,
-      READ,
-      REAL,
-      THEN,
-      TO,
-      TYPE,
-      WRITE,
-      WHILE,
-      DOT,
-      COMMA,
-      COLON,
-      SEMICOLON,
-      ARROW,
-      LEFT_PARENTHESIS,
-      RIGHT_PARENTHESIS,
-      EQUAL,
-      INEQUAL,
-      LESS,
-      MORE,
-      LESS_OR_EQUAL,
-      MORE_OR_EQUAL,
-      PLUS,
-      MINUS,
-      MULTIPLY,
-      DIVIDE,
-      CHARACTER_CONSTANT,
-      IDENTIFIER,
-      NUMBER
-};
-*/
 
-#line 536 "lexer.c"
-#line 537 "lexer.c"
+#line 484 "lexer.c"
+#line 485 "lexer.c"
 
 #define INITIAL 0
 
@@ -751,10 +699,10 @@ YY_DECL
 		}
 
 	{
-#line 85 "spl.l"
+#line 33 "spl.l"
 
 
-#line 757 "lexer.c"
+#line 705 "lexer.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -809,7 +757,7 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 87 "spl.l"
+#line 35 "spl.l"
 ; /* Ignore whitespace */
 	YY_BREAK
 case 2:
@@ -817,96 +765,96 @@ case 2:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 88 "spl.l"
+#line 36 "spl.l"
 ; /* Ignore comments */
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 89 "spl.l"
+#line 37 "spl.l"
 TOKEN(DOT)
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 90 "spl.l"
+#line 38 "spl.l"
 TOKEN(COMMA)
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 91 "spl.l"
+#line 39 "spl.l"
 TOKEN(NEWLINE)
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 92 "spl.l"
+#line 40 "spl.l"
 TOKEN(OPCODE_MOVE)
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 93 "spl.l"
+#line 41 "spl.l"
 TOKEN(OPCODE_ADD)
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 94 "spl.l"
+#line 42 "spl.l"
 TOKEN(LEFT_PARENTHESIS)
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 95 "spl.l"
+#line 43 "spl.l"
 TOKEN(RIGHT_PARENTHESIS)
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 96 "spl.l"
+#line 44 "spl.l"
 TOKEN(SIZE_BYTE)
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 97 "spl.l"
+#line 45 "spl.l"
 TOKEN(SIZE_SHORT)
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 98 "spl.l"
+#line 46 "spl.l"
 TOKEN(SIZE_WORD)
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 99 "spl.l"
+#line 47 "spl.l"
 TOKEN(SIZE_LONG)
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 100 "spl.l"
+#line 48 "spl.l"
 TOKEN(DOLLAR)
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 101 "spl.l"
+#line 49 "spl.l"
 TOKEN(DATA_REGISTER)
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 102 "spl.l"
+#line 50 "spl.l"
 TOKEN(ADDRESS_REGISTER)
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 103 "spl.l"
+#line 51 "spl.l"
 TOKEN(NUMBER)
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 105 "spl.l"
+#line 53 "spl.l"
 return yytext[0]; /* Make Bison signal a syntax error for unrecognised symbols */
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 107 "spl.l"
+#line 55 "spl.l"
 ECHO;
 	YY_BREAK
-#line 909 "lexer.c"
+#line 857 "lexer.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1912,6 +1860,6 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 107 "spl.l"
+#line 55 "spl.l"
 
 
