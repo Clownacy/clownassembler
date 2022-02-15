@@ -121,21 +121,19 @@ StatementListNode *statement_list_head;
 /* We can declare types of tree nodes */
 
 %token TOKEN_WHITESPACE
-%token TOKEN_DOT
-%token TOKEN_COMMA
 %token TOKEN_NEWLINE
 %token TOKEN_OPCODE_MOVE
 %token TOKEN_OPCODE_ADD
-%token TOKEN_LEFT_PARENTHESIS
-%token TOKEN_RIGHT_PARENTHESIS
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
 %token TOKEN_SIZE_LONG
-%token TOKEN_DOLLAR
 %token<generic.integer> TOKEN_DATA_REGISTER
 %token<generic.integer> TOKEN_ADDRESS_REGISTER
 %token TOKEN_NUMBER
+%token<generic.string> TOKEN_IDENTIFIER
+%token TOKEN_STATUS_REGISTER
+%token TOKEN_CONDITION_CODE_REGISTER
 
 %type<instruction> instruction
 %type<generic.integer> opcode
@@ -191,38 +189,67 @@ statement_list       : statement
                      | end_of_line
                      ;
 
-statement            : instruction
+statement            : TOKEN_IDENTIFIER end_of_line
                      {
+                       $$.label = $1;
+                       $$.type = STATEMENT_TYPE_EMPTY;
+                     }
+					 | TOKEN_IDENTIFIER ':' end_of_line
+                     {
+                       $$.label = $1;
+                       $$.type = STATEMENT_TYPE_EMPTY;
+                     }
+                     | instruction
+                     {
+                       $$.label = NULL;
                        $$.type = STATEMENT_TYPE_INSTRUCTION;
                        $$.data.instruction = $1;
                      }
+                     | TOKEN_IDENTIFIER instruction
+                     {
+                       $$.label = $1;
+                       $$.type = STATEMENT_TYPE_INSTRUCTION;
+                       $$.data.instruction = $2;
+                     }
+                     | TOKEN_IDENTIFIER ':' instruction
+                     {
+                       $$.label = $1;
+                       $$.type = STATEMENT_TYPE_INSTRUCTION;
+                       $$.data.instruction = $3;
+                     }
                      ;
 
-instruction          : TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand end_of_line
+instruction          : TOKEN_WHITESPACE full_opcode end_of_line
+                     {
+                       $$.opcode = $2;
+                       $$.operands[1].type = -1;
+                       $$.operands[2].type = -1;
+                     }
+                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand end_of_line
                      {
                        $$.opcode = $2;
                        $$.operands[1] = $4;
                        $$.operands[2].type = -1;
                      }
-                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand TOKEN_COMMA operand end_of_line
+                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand ',' operand end_of_line
                      {
                        $$.opcode = $2;
                        $$.operands[1] = $4;
                        $$.operands[2] = $6;
                      }
-                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand TOKEN_WHITESPACE TOKEN_COMMA operand end_of_line
+                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand TOKEN_WHITESPACE ',' operand end_of_line
                      {
                        $$.opcode = $2;
                        $$.operands[1] = $4;
                        $$.operands[2] = $7;
                      }
-                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand TOKEN_COMMA TOKEN_WHITESPACE operand end_of_line
+                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand ',' TOKEN_WHITESPACE operand end_of_line
                      {
                        $$.opcode = $2;
                        $$.operands[1] = $4;
                        $$.operands[2] = $7;
                      }
-                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand TOKEN_WHITESPACE TOKEN_COMMA TOKEN_WHITESPACE operand end_of_line
+                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand TOKEN_WHITESPACE ',' TOKEN_WHITESPACE operand end_of_line
                      {
                        $$.opcode = $2;
                        $$.operands[1] = $4;
@@ -235,7 +262,7 @@ full_opcode          : opcode
                        $$.type = $1;
                        $$.size = -1;
                      }
-                     | opcode TOKEN_DOT size
+                     | opcode '.' size
                      {
                        $$.type = $1;
                        $$.size = $3;
@@ -283,24 +310,32 @@ operand              : register
 
 register             : TOKEN_DATA_REGISTER
                      {
-                         $$.type = TOKEN_DATA_REGISTER;
-                         $$.data.data_register = $1;
+                       $$.type = TOKEN_DATA_REGISTER;
+                       $$.data.data_register = $1;
                      }
                      | TOKEN_ADDRESS_REGISTER
                      {
-                         $$.type = TOKEN_ADDRESS_REGISTER;
-                         $$.data.address_register = $1;
+                       $$.type = TOKEN_ADDRESS_REGISTER;
+                       $$.data.address_register = $1;
+                     }
+                     | TOKEN_STATUS_REGISTER
+                     {
+                       $$.type = TOKEN_STATUS_REGISTER;
+                     }
+                     | TOKEN_CONDITION_CODE_REGISTER
+                     {
+                       $$.type = TOKEN_CONDITION_CODE_REGISTER;
                      }
                      ;
 /*
 address              : number
-                     | number TOKEN_DOT size
-                     | TOKEN_LEFT_PARENTHESIS number TOKEN_RIGHT_PARENTHESIS
-                     | TOKEN_LEFT_PARENTHESIS number TOKEN_RIGHT_PARENTHESIS TOKEN_DOT size
+                     | number '.' size
+                     | '(' number ')'
+                     | '(' number ')' '.' size
                      ;
 
 number               : TOKEN_NUMBER
-                     | TOKEN_DOLLAR TOKEN_NUMBER
+                     | '$' TOKEN_NUMBER
                      ;
 */
 /*

@@ -40,18 +40,21 @@ comment         \;.*$
 
 {whitespace}    TOKEN(WHITESPACE); /* Ignore whitespace */
 {comment}       ; /* Ignore comments */
-"."             TOKEN(DOT)
-","             TOKEN(COMMA)
+"."             return yytext[0];
+","             return yytext[0];
 {newline}       TOKEN(NEWLINE)
 move            TOKEN(OPCODE_MOVE)
 add             TOKEN(OPCODE_ADD)
-"("             TOKEN(LEFT_PARENTHESIS)
-")"             TOKEN(RIGHT_PARENTHESIS)
+"("             return yytext[0];
+")"             return yytext[0];
 "b"             TOKEN(SIZE_BYTE)
 "s"             TOKEN(SIZE_SHORT)
 "w"             TOKEN(SIZE_WORD)
 "l"             TOKEN(SIZE_LONG)
-"$"             TOKEN(DOLLAR)
+"$"             return yytext[0];
+":"             return yytext[0];
+sr              TOKEN(STATUS_REGISTER)
+ccr             TOKEN(CONDITION_CODE_REGISTER)
 [Dd]{number}    yylval.generic.integer = yytext[1] - '0'; return TOKEN_DATA_REGISTER;
 [Aa]{number}    yylval.generic.integer = yytext[1] - '0'; return TOKEN_ADDRESS_REGISTER;
 {number}        {
@@ -66,6 +69,20 @@ add             TOKEN(OPCODE_ADD)
                   {
                     memcpy(yylval.generic.string, yytext, length);
                     return TOKEN_NUMBER;
+                  }
+                }
+{identifier}    {
+                  const size_t length = strlen(yytext) + 1;
+                  yylval.generic.string = malloc(length);
+                  if (yylval.generic.string == NULL)
+                  {
+                    yyerror("Could not allocate memory for generic string");
+                    return YYerror;
+                  }
+                  else
+                  {
+                    memcpy(yylval.generic.string, yytext, length);
+                    return TOKEN_IDENTIFIER;
                   }
                 }
 

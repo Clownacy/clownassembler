@@ -26,9 +26,13 @@ typedef struct Instruction
 
 typedef struct Statement
 {
+	char *label;
+
 	enum
 	{
-		STATEMENT_TYPE_INSTRUCTION
+		STATEMENT_TYPE_EMPTY,
+		STATEMENT_TYPE_INSTRUCTION,
+		STATEMENT_TYPE_MACRO
 	} type;
 	union
 	{
