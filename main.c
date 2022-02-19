@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "clowncommon.h"
+
 #include "types.h"
 
 #define YY_NO_UNISTD_H
@@ -122,12 +124,14 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 	}
 }
 
-static void AssembleInstruction(FILE *file, const Instruction *instruction)
+static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 {
 	unsigned int total_operands;
 	const Operand *operand;
 	unsigned int machine_code;
 	unsigned int i;
+
+	cc_bool success = cc_true;
 
 	/* Count operands. */
 	total_operands = 0;
@@ -143,6 +147,7 @@ static void AssembleInstruction(FILE *file, const Instruction *instruction)
 			if (total_operands != 2)
 			{
 				fprintf(stderr, "Error: MOVE instruction must have two operands\n");
+				success = cc_false;
 			}
 			else
 			{
@@ -153,6 +158,7 @@ static void AssembleInstruction(FILE *file, const Instruction *instruction)
 						if (instruction->operands->type == OPERAND_TYPE_ADDRESS_REGISTER)
 						{
 							fprintf(stderr, "Error: MOVE TO SR instruction's source operand cannot be an address register\n");
+							success = cc_false;
 						}
 						else if (instruction->opcode.size != TOKEN_SIZE_WORD && instruction->opcode.size != -1)
 						{
@@ -183,6 +189,7 @@ static void AssembleInstruction(FILE *file, const Instruction *instruction)
 
 					case OPERAND_TYPE_LITERAL:
 						fprintf(stderr, "Error: MOVE instruction's destination operand cannot be a literal\n");
+						success = cc_false;
 						break;
 				}
 			}
@@ -190,8 +197,13 @@ static void AssembleInstruction(FILE *file, const Instruction *instruction)
 			break;
 		}
 
+		case TOKEN_OPCODE_ADD:
+			/* TODO */
+			break;
+
 		default:
 			fprintf(stderr, "Internal error: Unrecognised instruction\n");
+			success = cc_false;
 			break;
 	}
 
@@ -201,6 +213,8 @@ static void AssembleInstruction(FILE *file, const Instruction *instruction)
 
 	/* Output the data for the operands. */
 	OutputOperands(file, instruction);
+
+	return success;
 }
 
 int main(int argc, char **argv)
@@ -255,7 +269,12 @@ int main(int argc, char **argv)
 
 							case STATEMENT_TYPE_INSTRUCTION:
 								fprintf(stderr, "  What do we have here? An instruction of type %d!\n", statement_list_node->statement.data.instruction.opcode.type);
-								AssembleInstruction(output_file, &statement_list_node->statement.data.instruction);
+
+								if (!AssembleInstruction(output_file, &statement_list_node->statement.data.instruction))
+								{
+									exit_code = EXIT_FAILURE;
+								}
+
 								break;
 
 							case STATEMENT_TYPE_MACRO:
