@@ -29,6 +29,8 @@ typedef struct Operand
 		OPERAND_TYPE_LITERAL
 	} type;
 
+	struct Operand *next;
+
 	union
 	{
 		unsigned int data_register;
@@ -38,13 +40,14 @@ typedef struct Operand
 			Value value;
 			int size;
 		} address;
+    Value literal;
 	} data;
 } Operand;
 
 typedef struct Instruction
 {
 	Opcode opcode;
-	Operand operands[2];
+	Operand *operands;
 } Instruction;
 
 typedef struct Statement

@@ -96,7 +96,7 @@ StatementListNode *statement_list_head;
 /* Start symbol */
 /****************/
 
-%start  statement_list
+%start program
 
 /**********************/
 /* Action value types */
@@ -113,9 +113,10 @@ StatementListNode *statement_list_head;
     } generic;
     Opcode opcode;
     Operand operand;
+    Operand *operand_pointer;
     Instruction instruction;
     Statement statement;
-    StatementListNode statement_list;
+    StatementListNode *statement_list;
     Value value;
 }
 
@@ -140,10 +141,13 @@ StatementListNode *statement_list_head;
 %type<generic.integer> opcode
 %type<generic.integer> size
 %type<opcode> full_opcode
+%type<operand_pointer> operand_list
 %type<operand> operand
+%type<operand> literal
 %type<operand> register
 %type<operand> address
 %type<statement> statement
+%type<statement_list> statement_list
 %type<value> value
 
 /*
@@ -158,41 +162,64 @@ end_of_line          : TOKEN_NEWLINE
                      | TOKEN_WHITESPACE TOKEN_NEWLINE
                      ;
 
+program              : statement_list
+                     {
+                       statement_list_head = $1;
+                     }
+                     ;
+
 statement_list       : statement
                      {
-                       StatementListNode *node = malloc(sizeof(StatementListNode));
-
-                       if (node == NULL)
+                       /* Don't bother adding empty statements to the statement list */
+                       if ($1.label == NULL && $1.type == STATEMENT_TYPE_EMPTY)
                        {
-                           yyerror("Could not allocate memory for statement list node");
+                         $$ = NULL;
                        }
                        else
                        {
-                           node->statement = $1;
-                           node->next = statement_list_head;
-                           statement_list_head = node;
+                         $$ = malloc(sizeof(StatementListNode));
+
+                         if ($$ == NULL)
+                         {
+                           yyerror("Could not allocate memory for statement list node");
+                         }
+                         else
+                         {
+                           $$->statement = $1;
+                           $$->next = NULL;
+                         }
                        }
                      }
                      | statement statement_list
                      {
-                       StatementListNode *node = malloc(sizeof(StatementListNode));
-
-                       if (node == NULL)
+                       /* Don't bother adding empty statements to the statement list */
+                       if ($1.label == NULL && $1.type == STATEMENT_TYPE_EMPTY)
                        {
-                           yyerror("Could not allocate memory for statement list node");
+                         $$ = $2;
                        }
                        else
                        {
-                           node->statement = $1;
-                           node->next = statement_list_head;
-                           statement_list_head = node;
+                         $$ = malloc(sizeof(StatementListNode));
+
+                         if ($$ == NULL)
+                         {
+                           yyerror("Could not allocate memory for statement list node");
+                         }
+                         else
+                         {
+                           $$->statement = $1;
+                           $$->next = $2;
+                         }
                        }
                      }
-                     | end_of_line statement_list
-                     | end_of_line
                      ;
 
-statement            : TOKEN_IDENTIFIER end_of_line
+statement            : end_of_line
+                     {
+                       $$.label = NULL;
+                       $$.type = STATEMENT_TYPE_EMPTY;
+                     }
+                     | TOKEN_IDENTIFIER end_of_line
                      {
                        $$.label = $1;
                        $$.type = STATEMENT_TYPE_EMPTY;
@@ -225,38 +252,12 @@ statement            : TOKEN_IDENTIFIER end_of_line
 instruction          : TOKEN_WHITESPACE full_opcode end_of_line
                      {
                        $$.opcode = $2;
-                       $$.operands[1].type = -1;
-                       $$.operands[2].type = -1;
+                       $$.operands = NULL;
                      }
-                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand end_of_line
+                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand_list end_of_line
                      {
                        $$.opcode = $2;
-                       $$.operands[1] = $4;
-                       $$.operands[2].type = -1;
-                     }
-                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand ',' operand end_of_line
-                     {
-                       $$.opcode = $2;
-                       $$.operands[1] = $4;
-                       $$.operands[2] = $6;
-                     }
-                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand TOKEN_WHITESPACE ',' operand end_of_line
-                     {
-                       $$.opcode = $2;
-                       $$.operands[1] = $4;
-                       $$.operands[2] = $7;
-                     }
-                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand ',' TOKEN_WHITESPACE operand end_of_line
-                     {
-                       $$.opcode = $2;
-                       $$.operands[1] = $4;
-                       $$.operands[2] = $7;
-                     }
-                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand TOKEN_WHITESPACE ',' TOKEN_WHITESPACE operand end_of_line
-                     {
-                       $$.opcode = $2;
-                       $$.operands[1] = $4;
-                       $$.operands[2] = $8;
+                       $$.operands = $4;
                      }
                      ;
 
@@ -299,11 +300,33 @@ size                 : TOKEN_SIZE_BYTE
                        $$ = TOKEN_SIZE_LONG;
                      }
                      ;
-/*
+
 operand_list         : operand
-                     | operand TOKEN_COMMA operand_list
+                     {
+                       $$ = malloc(sizeof(Operand));
+
+                       if ($$ == NULL)
+                       {
+                         yyerror("Could not allocate memory for operand list node");
+                       }
+
+                       *$$ = $1;
+                       $$->next = NULL;
+                     }
+                     | operand ',' operand_list
+                     {
+                       $$ = malloc(sizeof(Operand));
+
+                       if ($$ == NULL)
+                       {
+                         yyerror("Could not allocate memory for operand list node");
+                       }
+
+                       *$$ = $1;
+                       $$->next = $3;
+                     }
                      ;
-*/
+
 operand              : register
                      {
                        $$ = $1;
@@ -311,6 +334,17 @@ operand              : register
                      | address
                      {
                        $$ = $1;
+                     }
+                     | literal
+                     {
+                       $$ = $1;
+                     }
+                     ;
+
+literal              : '#' value
+                     {
+                       $$.type = OPERAND_TYPE_LITERAL;
+                       $$.data.literal = $2;
                      }
                      ;
 
