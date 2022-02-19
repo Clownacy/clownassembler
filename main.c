@@ -86,15 +86,56 @@ static unsigned long ResolveValue(const Value *value)
 	}
 }
 
+static void OutputOperands(FILE *file, const Instruction *instruction)
+{
+	const Operand *operand;
+
+	for (operand = instruction->operands; operand != NULL; operand = operand->next)
+	{
+		unsigned int i;
+
+		switch (operand->type)
+		{
+			case OPERAND_TYPE_ADDRESS:
+			{
+				const unsigned long value = ResolveValue(&operand->data.address.value);
+
+				for (i = operand->data.address.size == TOKEN_SIZE_LONG ? 4 : 2; i-- > 0; )
+					fputc((value >> (8 * i)) & 0xFF, file);
+
+				break;
+			}
+
+			case OPERAND_TYPE_LITERAL:
+			{
+				const unsigned long value = ResolveValue(&operand->data.literal);
+
+				for (i = instruction->opcode.size == TOKEN_SIZE_LONG ? 4 : 2; i-- > 0; )
+					fputc((value >> (8 * i)) & 0xFF, file);
+
+				break;
+			}
+
+			default:
+				break;
+		}
+	}
+}
+
 static void AssembleInstruction(FILE *file, const Instruction *instruction)
 {
-	/* Count operands. */
-	unsigned int total_operands = 0;
+	unsigned int total_operands;
 	const Operand *operand;
+	unsigned int machine_code;
+	unsigned int i;
+
+	/* Count operands. */
+	total_operands = 0;
 
 	for (operand = instruction->operands; operand != NULL; operand = operand->next)
 		++total_operands;
 
+	/* Determine the machine code for the opcode and perform sanity-checking. */
 	switch (instruction->opcode.type)
 	{
 		case TOKEN_OPCODE_MOVE:
@@ -119,24 +160,7 @@ static void AssembleInstruction(FILE *file, const Instruction *instruction)
 						}
 						else
 						{
-							const unsigned int machine_code = 0x46C0 | ConstructEffectiveAddressBits(instruction->operands);
-
-							fputc((machine_code >> (8 * 1)) & 0xFF, file);
-							fputc((machine_code >> (8 * 0)) & 0xFF, file);
-
-							if (instruction->operands->type == OPERAND_TYPE_LITERAL)
-							{
-								const unsigned long value = ResolveValue(&instruction->operands->data.literal);
-
-								if (instruction->opcode.size == TOKEN_SIZE_LONG)
-								{
-									fputc((value >> (8 * 3)) & 0xFF, file);
-									fputc((value >> (8 * 2)) & 0xFF, file);
-								}
-
-								fputc((value >> (8 * 1)) & 0xFF, file);
-								fputc((value >> (8 * 0)) & 0xFF, file);
-							}
+							machine_code = 0x46C0 | ConstructEffectiveAddressBits(instruction->operands);
 						}
 
 						break;
@@ -170,6 +194,13 @@ static void AssembleInstruction(FILE *file, const Instruction *instruction)
 			fprintf(stderr, "Internal error: Unrecognised instruction\n");
 			break;
 	}
+
+	/* Output the machine code for the opcode. */
+	for (i = 2; i-- > 0; )
+		fputc((machine_code >> (8 * i)) & 0xFF, file);
+
+	/* Output the data for the operands. */
+	OutputOperands(file, instruction);
 }
 
 int main(int argc, char **argv)
