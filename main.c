@@ -189,6 +189,10 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 						break;
 
+					case OPERAND_TYPE_USER_STACK_POINTER_REGISTER:
+						/* MOVE to USP */
+						break;
+
 					case OPERAND_TYPE_DATA_REGISTER:
 						/* MOVE to data register */
 						break;

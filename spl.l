@@ -59,6 +59,8 @@ add             TOKEN(OPCODE_ADD)
 ":"             return yytext[0];
 sr              TOKEN(STATUS_REGISTER)
 ccr             TOKEN(CONDITION_CODE_REGISTER)
+sp              yylval.generic.integer = 7; return TOKEN_ADDRESS_REGISTER;
+usp             TOKEN(USER_STACK_POINTER_REGISTER)
 [Dd]{decimal}   yylval.generic.integer = yytext[1] - '0'; return TOKEN_DATA_REGISTER;
 [Aa]{decimal}   yylval.generic.integer = yytext[1] - '0'; return TOKEN_ADDRESS_REGISTER;
 {decimal}       {

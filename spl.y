@@ -136,6 +136,7 @@ StatementListNode *statement_list_head;
 %token<generic.string> TOKEN_IDENTIFIER
 %token TOKEN_STATUS_REGISTER
 %token TOKEN_CONDITION_CODE_REGISTER
+%token TOKEN_USER_STACK_POINTER_REGISTER
 
 %type<instruction> instruction
 %type<generic.integer> opcode
@@ -365,6 +366,10 @@ register             : TOKEN_DATA_REGISTER
                      | TOKEN_CONDITION_CODE_REGISTER
                      {
                        $$.type = OPERAND_TYPE_CONDITION_CODE_REGISTER;
+                     }
+                     | TOKEN_USER_STACK_POINTER_REGISTER
+                     {
+                       $$.type = OPERAND_TYPE_USER_STACK_POINTER_REGISTER;
                      }
                      ;
 
