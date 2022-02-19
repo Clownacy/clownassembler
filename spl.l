@@ -28,13 +28,17 @@ void yyerror (char *);
 
 %}
 
-whitespace      [ \t]+
-letter          [A-Za-z]
-digit           [0-9]
-identifier      {letter}({letter}|{digit})*
-number          {digit}+
-newline         \r\n|\r|\n
-comment         \;.*$
+whitespace        [ \t]+
+letter            [A-Za-z]
+binary_digit      [0-1]
+decimal_digit     [0-9]
+hexadecimal_digit [0-9a-fA-F]
+identifier        {letter}({letter}|{decimal_digit})*
+binary            {binary_digit}+
+decimal           {decimal_digit}+
+hexadecimal       {hexadecimal_digit}+
+newline           \r\n|\r|\n
+comment           \;.*$
 
 %%
 
@@ -55,9 +59,9 @@ add             TOKEN(OPCODE_ADD)
 ":"             return yytext[0];
 sr              TOKEN(STATUS_REGISTER)
 ccr             TOKEN(CONDITION_CODE_REGISTER)
-[Dd]{number}    yylval.generic.integer = yytext[1] - '0'; return TOKEN_DATA_REGISTER;
-[Aa]{number}    yylval.generic.integer = yytext[1] - '0'; return TOKEN_ADDRESS_REGISTER;
-{number}        {
+[Dd]{decimal}   yylval.generic.integer = yytext[1] - '0'; return TOKEN_DATA_REGISTER;
+[Aa]{decimal}   yylval.generic.integer = yytext[1] - '0'; return TOKEN_ADDRESS_REGISTER;
+{decimal}       {
                   char *string_end;
                   yylval.generic.integer = strtoul(yytext, &string_end, 10);
 
@@ -69,7 +73,7 @@ ccr             TOKEN(CONDITION_CODE_REGISTER)
 
                   return TOKEN_NUMBER;
                 }
-\${number}       {
+\${hexadecimal} {
                   char *string_end;
                   yylval.generic.integer = strtoul(yytext + 1, &string_end, 16);
 
@@ -81,7 +85,7 @@ ccr             TOKEN(CONDITION_CODE_REGISTER)
 
                   return TOKEN_NUMBER;
                 }
-\%{number}       {
+\%{binary}      {
                   char *string_end;
                   yylval.generic.integer = strtoul(yytext + 1, &string_end, 2);
 
