@@ -146,7 +146,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 		{
 			if (total_operands != 2)
 			{
-				fprintf(stderr, "Error: MOVE instruction must have two operands\n");
+				fprintf(stderr, "Error: 'MOVE' instruction must have two operands\n");
 				success = cc_false;
 			}
 			else
@@ -157,12 +157,12 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						/* MOVE to SR */
 						if (instruction->operands->type == OPERAND_TYPE_ADDRESS_REGISTER)
 						{
-							fprintf(stderr, "Error: MOVE TO SR instruction's source operand cannot be an address register\n");
+							fprintf(stderr, "Error: 'MOVE TO SR' instruction's source operand cannot be an address register\n");
 							success = cc_false;
 						}
 						else if (instruction->opcode.size != TOKEN_SIZE_WORD && instruction->opcode.size != -1)
 						{
-							fprintf(stderr, "Warning: MOVE TO SR instruction can only be word-sized - the specified size will be ignored\n");
+							fprintf(stderr, "Warning: 'MOVE TO SR' instruction can only be word-sized - the specified size will be ignored\n");
 						}
 						else
 						{
@@ -173,6 +173,20 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 					case OPERAND_TYPE_CONDITION_CODE_REGISTER:
 						/* MOVE to CCR */
+						if (instruction->operands->type == OPERAND_TYPE_ADDRESS_REGISTER)
+						{
+							fprintf(stderr, "Error: 'MOVE TO CCR' instruction's source operand cannot be an address register\n");
+							success = cc_false;
+						}
+						else if (instruction->opcode.size != TOKEN_SIZE_BYTE && instruction->opcode.size != -1)
+						{
+							fprintf(stderr, "Warning: 'MOVE TO CCR' instruction can only be byte-sized - the specified size will be ignored\n");
+						}
+						else
+						{
+							machine_code = 0x44C0 | ConstructEffectiveAddressBits(instruction->operands);
+						}
+
 						break;
 
 					case OPERAND_TYPE_DATA_REGISTER:
@@ -188,7 +202,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						break;
 
 					case OPERAND_TYPE_LITERAL:
-						fprintf(stderr, "Error: MOVE instruction's destination operand cannot be a literal\n");
+						fprintf(stderr, "Error: 'MOVE' instruction's destination operand cannot be a literal\n");
 						success = cc_false;
 						break;
 				}
