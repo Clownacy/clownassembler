@@ -14,66 +14,11 @@
 /* TODO - Stupid hack */
 extern StatementListNode *statement_list_head;
 
+static cc_bool success;
+
 int yywrap(void)
 {
 	return 1;
-}
-
-static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
-{
-	unsigned int m, xn;
-
-	switch (operand->type)
-	{
-		case OPERAND_TYPE_DATA_REGISTER:
-			m = 0; /* 000 */
-			xn = operand->data.data_register;
-			break;
-
-		case OPERAND_TYPE_ADDRESS_REGISTER:
-			m = 1; /* 001 */
-			xn = operand->data.address_register;
-			break;
-
-		case OPERAND_TYPE_ADDRESS:
-			m = 0x7; /* 111 */
-
-			switch (operand->data.address.size)
-			{
-				case TOKEN_SIZE_WORD:
-					xn = 0;  /* 000 */
-					break;
-
-				default:
-					fprintf(stderr, "Error: Absolute address can only be word- or longword-sized - assuming longword\n");
-					/* Fallthrough */
-				case TOKEN_SIZE_LONG:
-					xn = 1;  /* 001 */
-					break;
-#if 0
-				case -1:
-					/* Automatically determine size */
-					if (operand->data.address.value
-					break;
-#endif
-			}
-
-			break;
-
-		case OPERAND_TYPE_LITERAL:
-			m = 0x7; /* 111 */
-			xn = 4;  /* 100 */
-			break;
-
-		default:
-			fprintf(stderr, "Error: Invalid operand type - USP, SR, and CCR cannot be used here\n");
-			/* Just pretend it's data register 0 to keep things moving along. */
-			m = 0;
-			xn = 0;
-			break;
-	}
-
-	return (m << 3) | (xn << 0);
 }
 
 static unsigned long ResolveValue(const Value *value)
@@ -89,31 +34,134 @@ static unsigned long ResolveValue(const Value *value)
 	}
 }
 
+static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
+{
+	unsigned int m, xn;
+
+	switch (operand->type)
+	{
+		case OPERAND_TYPE_DATA_REGISTER:
+			m = 0; /* 000 */
+			xn = operand->data_register;
+			break;
+
+		case OPERAND_TYPE_ADDRESS_REGISTER:
+			m = 1; /* 001 */
+			xn = operand->address_register;
+			break;
+
+		case OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT:
+			m = 2; /* 010 */
+			xn = operand->address_register;
+			break;
+
+		case OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
+			m = 3; /* 011 */
+			xn = operand->address_register;
+			break;
+
+		case OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
+			m = 4; /* 100 */
+			xn = operand->address_register;
+			break;
+
+		case OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
+			m = 5; /* 101 */
+			xn = operand->address_register;
+			break;
+
+		case OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+			m = 6; /* 110 */
+			xn = operand->address_register;
+			break;
+
+		case OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT:
+			m = 7;  /* 111 */
+			xn = 2; /* 010 */
+			break;
+
+		case OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+			m = 7;  /* 111 */
+			xn = 3; /* 011 */
+			break;
+
+		case OPERAND_TYPE_ADDRESS:
+			m = 7; /* 111 */
+
+			switch (operand->size)
+			{
+				case TOKEN_SIZE_WORD:
+					xn = 0; /* 000 */
+					break;
+
+				default:
+					fprintf(stderr, "Error: Absolute address can only be word- or longword-sized - assuming longword\n");
+					success = cc_false;
+					/* Fallthrough */
+				case TOKEN_SIZE_LONG:
+					xn = 1; /* 001 */
+					break;
+
+				case -1:
+				{
+					/* Automatically determine size */
+					const unsigned long value = ResolveValue(&operand->literal);
+
+					if (value >= 0xFFFF8000 || value < 0x8000)
+						xn = 0; /* 000 */
+					else
+						xn = 1; /* 001 */
+
+					break;
+				}
+			}
+
+			break;
+
+		case OPERAND_TYPE_LITERAL:
+			m = 7;  /* 111 */
+			xn = 4; /* 100 */
+			break;
+
+		default:
+			fprintf(stderr, "Error: Invalid operand type - USP, SR, and CCR cannot be used here\n");
+			success = cc_false;
+			/* Just pretend it's data register 0 to keep things moving along. */
+			m = 0;
+			xn = 0;
+			break;
+	}
+
+	return (m << 3) | (xn << 0);
+}
+
 static void OutputOperands(FILE *file, const Instruction *instruction)
 {
 	const Operand *operand;
 
 	for (operand = instruction->operands; operand != NULL; operand = operand->next)
 	{
-		unsigned int i;
-
 		switch (operand->type)
 		{
 			case OPERAND_TYPE_ADDRESS:
-			{
-				const unsigned long value = ResolveValue(&operand->data.address.value);
-
-				for (i = operand->data.address.size == TOKEN_SIZE_LONG ? 4 : 2; i-- > 0; )
-					fputc((value >> (8 * i)) & 0xFF, file);
-
-				break;
-			}
-
 			case OPERAND_TYPE_LITERAL:
+			case OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
+			case OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+			case OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT:
+			case OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 			{
-				const unsigned long value = ResolveValue(&operand->data.literal);
+				unsigned int i;
 
-				for (i = instruction->opcode.size == TOKEN_SIZE_LONG ? 4 : 2; i-- > 0; )
+				const unsigned long value = ResolveValue(&operand->literal);
+
+				if (operand->type == OPERAND_TYPE_ADDRESS)
+					i = operand->size == TOKEN_SIZE_LONG ? 4 : 2;
+				else if (operand->type == OPERAND_TYPE_LITERAL)
+					i = instruction->opcode.size == TOKEN_SIZE_LONG ? 4 : 2;
+				else
+					i = 2;
+
+				while (i-- > 0)
 					fputc((value >> (8 * i)) & 0xFF, file);
 
 				break;
@@ -158,7 +206,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 	unsigned int machine_code;
 	unsigned int i;
 
-	cc_bool success = cc_true;
+	success = cc_true;
 
 	/* Count operands. */
 	total_operands = 0;
@@ -204,7 +252,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						}
 						else
 						{
-							address_register = destination_operand->data.address_register;
+							address_register = destination_operand->address_register;
 						}
 					}
 					else
@@ -216,7 +264,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						}
 						else
 						{
-							address_register = source_operand->data.address_register;
+							address_register = source_operand->address_register;
 						}
 					}
 

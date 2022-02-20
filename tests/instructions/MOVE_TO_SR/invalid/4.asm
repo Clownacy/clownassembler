@@ -1,0 +1,1 @@
+	move.w	sr,sr

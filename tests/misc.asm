@@ -31,4 +31,18 @@ Label:
 	move.l	a0,usp
 	move.l	usp,a0
 
+
+	move.l d0,d0
+	move.l a0,d0
+	move.l (a0),d0
+	move.l (a0)+,d0
+	move.l -(a0),d0
+	move.l 20(a0),d0
+	move.l (a0,d0.w),d0
+	move.l 20(a0,d0.w),d0
+	move.l 20(pc),d0
+	move.l (pc,d0.w),d0
+	move.l 20(pc,d0.w),d0
+
+
   ; More blank lines to test support for trailing blank statements

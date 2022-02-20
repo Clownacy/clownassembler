@@ -136,6 +136,7 @@ StatementListNode *statement_list_head;
 %token TOKEN_STATUS_REGISTER
 %token TOKEN_CONDITION_CODE_REGISTER
 %token TOKEN_USER_STACK_POINTER_REGISTER
+%token TOKEN_PROGRAM_COUNTER
 
 %type<instruction> instruction
 %type<generic.integer> opcode
@@ -335,24 +336,81 @@ operand              : register
                      {
                        $$ = $1;
                      }
-                     ;
+                     | '(' TOKEN_ADDRESS_REGISTER ')'
+                     {
+                       $$.type = OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT;
+                       $$.address_register = $2;
+                     }
+					 | '(' TOKEN_ADDRESS_REGISTER ')' '+'
+                     {
+                       $$.type = OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT;
+                       $$.address_register = $2;
+                     }
+					 | '-' '(' TOKEN_ADDRESS_REGISTER ')'
+                     {
+                       $$.type = OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_PREDECREMENT;
+                       $$.address_register = $3;
+                     }
+					 | value '(' TOKEN_ADDRESS_REGISTER ')'
+                     {
+                       $$.type = OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
+                       $$.literal = $1;
+                       $$.address_register = $3;
+                     }
+					 | '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_DATA_REGISTER '.' size ')'
+                     {
+                       $$.type = OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+                       $$.literal.type = TOKEN_NUMBER;
+                       $$.literal.data.integer = 0;
+                       $$.address_register = $2;
+                       $$.data_register = $4;
+                       $$.size = $6;
+                     }
+					 | value '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_DATA_REGISTER '.' size ')'
+                     {
+                       $$.type = OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+                       $$.literal = $1;
+                       $$.address_register = $3;
+                       $$.data_register = $5;
+                       $$.size = $7;
+                     }
+					 | value '(' TOKEN_PROGRAM_COUNTER ')'
+                     {
+                       $$.type = OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT;
+                       $$.literal = $1;
+                     }
+					 | '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_DATA_REGISTER '.' size ')'
+                     {
+                       $$.type = OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+                       $$.literal.type = TOKEN_NUMBER;
+                       $$.literal.data.integer = 0;
+                       $$.data_register = $4;
+                       $$.size = $6;
+                     }
+					 | value '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_DATA_REGISTER '.' size ')'
+                     {
+                       $$.type = OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+                       $$.literal = $1;
+                       $$.data_register = $5;
+                       $$.size = $7;
+                     }
 
 literal              : '#' value
                      {
                        $$.type = OPERAND_TYPE_LITERAL;
-                       $$.data.literal = $2;
+                       $$.literal = $2;
                      }
                      ;
 
 register             : TOKEN_DATA_REGISTER
                      {
                        $$.type = OPERAND_TYPE_DATA_REGISTER;
-                       $$.data.data_register = $1;
+                       $$.data_register = $1;
                      }
                      | TOKEN_ADDRESS_REGISTER
                      {
                        $$.type = OPERAND_TYPE_ADDRESS_REGISTER;
-                       $$.data.address_register = $1;
+                       $$.address_register = $1;
                      }
                      | TOKEN_STATUS_REGISTER
                      {
@@ -371,26 +429,26 @@ register             : TOKEN_DATA_REGISTER
 address              : value
                      {
                          $$.type = OPERAND_TYPE_ADDRESS;
-                         $$.data.address.value = $1;
-                         $$.data.address.size = -1;
+                         $$.literal = $1;
+                         $$.size = -1;
                      }
                      | value '.' size
                      {
                          $$.type = OPERAND_TYPE_ADDRESS;
-                         $$.data.address.value = $1;
-                         $$.data.address.size = $3;
+                         $$.literal = $1;
+                         $$.size = $3;
                      }
                      | '(' value ')'
                      {
                          $$.type = OPERAND_TYPE_ADDRESS;
-                         $$.data.address.value = $2;
-                         $$.data.address.size = -1;
+                         $$.literal = $2;
+                         $$.size = -1;
                      }
                      | '(' value ')' '.' size
                      {
                          $$.type = OPERAND_TYPE_ADDRESS;
-                         $$.data.address.value = $2;
-                         $$.data.address.size = $5;
+                         $$.literal = $2;
+                         $$.size = $5;
                      }
                      ;
 /*

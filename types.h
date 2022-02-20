@@ -39,17 +39,10 @@ typedef struct Operand
 
 	struct Operand *next;
 
-	union
-	{
-		unsigned int data_register;
-		unsigned int address_register;
-		struct
-		{
-			Value value;
-			int size;
-		} address;
-    Value literal;
-	} data;
+	unsigned int data_register;
+	unsigned int address_register;
+	int size;
+	Value literal;
 } Operand;
 
 typedef struct Instruction
