@@ -150,16 +150,108 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 			case OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT:
 			case OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 			{
-				unsigned int i;
+				unsigned int i = 2;
+				unsigned long value = ResolveValue(&operand->literal);
 
-				const unsigned long value = ResolveValue(&operand->literal);
+				switch (operand->type)
+				{
+					default:
+						break;
 
-				if (operand->type == OPERAND_TYPE_ADDRESS)
-					i = operand->size == TOKEN_SIZE_LONG ? 4 : 2;
-				else if (operand->type == OPERAND_TYPE_LITERAL)
-					i = instruction->opcode.size == TOKEN_SIZE_LONG ? 4 : 2;
-				else
-					i = 2;
+					case OPERAND_TYPE_ADDRESS:
+						switch (operand->size)
+						{
+							case TOKEN_SIZE_BYTE:
+								fprintf(stderr, "Error: Address cannot be byte-sized\n");
+								success = cc_false;
+								i = 2;
+								break;
+
+							case TOKEN_SIZE_WORD:
+								i = 2;
+
+								if (value >= 0x8000 && value < 0xFFFF8000)
+								{
+									fprintf(stderr, "Error: Word-sized address cannot be higher than $7FFF or lower than $FFFF8000\n");
+									success = cc_false;
+								}
+
+								break;
+
+							case TOKEN_SIZE_LONG:
+								i = 4;
+								break;
+						}
+
+						break;
+
+					case OPERAND_TYPE_LITERAL:
+						switch (instruction->opcode.size)
+						{
+							case TOKEN_SIZE_BYTE:
+								i = 2;
+
+								if (value >= 0x100 && value < 0xFFFFFF00)
+								{
+									fprintf(stderr, "Error: Byte-sized literal cannot be larger than $FF or smaller than -$100\n");
+									success = cc_false;
+								}
+
+								break;
+
+							case TOKEN_SIZE_WORD:
+								i = 2;
+
+								if (value >= 0x10000 && value < 0xFFFF0000)
+								{
+									fprintf(stderr, "Error: Word-sized literal cannot be larger than $FFFF or smaller than -$10000\n");
+									success = cc_false;
+								}
+
+								break;
+
+							case TOKEN_SIZE_LONG:
+								i = 4;
+								break;
+						}
+
+						break;
+
+					case OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+					case OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+						i = 2;
+
+						if (value >= 0x80 && value < 0xFFFFFF80)
+						{
+							fprintf(stderr, "Error: Displacement value cannot be larger than $7F or smaller than -$80\n");
+							success = cc_false;
+						}
+
+						if (operand->size == TOKEN_SIZE_BYTE)
+						{
+							fprintf(stderr, "Error: Index register cannot be byte-sized\n");
+							success = cc_false;
+						}
+
+						value |= operand->data_register << 12;
+
+						if (operand->size == TOKEN_SIZE_LONG)
+							value |= 0x800;
+
+						break;
+
+					case OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
+					case OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT:
+						i = 2;
+
+						if (value >= 0x8000 && value < 0xFFFF8000)
+						{
+							fprintf(stderr, "Error: Displacement value cannot be larger than $7FFF or smaller than -$8000\n");
+							success = cc_false;
+						}
+
+						break;
+				}
 
 				while (i-- > 0)
 					fputc((value >> (8 * i)) & 0xFF, file);
