@@ -127,7 +127,6 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_MOVE
 %token TOKEN_OPCODE_ADD
 %token TOKEN_SIZE_BYTE
-%token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
 %token TOKEN_SIZE_LONG
 %token<generic.integer> TOKEN_DATA_REGISTER
@@ -287,10 +286,6 @@ opcode               : TOKEN_OPCODE_MOVE
 size                 : TOKEN_SIZE_BYTE
                      {
                        $$ = TOKEN_SIZE_BYTE;
-                     }
-                     | TOKEN_SIZE_SHORT
-                     {
-                       $$ = TOKEN_SIZE_SHORT;
                      }
                      | TOKEN_SIZE_WORD
                      {

@@ -66,7 +66,8 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
 			break;
 
 		default:
-			fprintf(stderr, "Internal error: Invalid operand type in ConstructEffectiveAddressBits\n");
+			fprintf(stderr, "Error: Invalid operand type - USP, SR, and CCR cannot be used here\n");
+			/* Just pretend it's data register 0 to keep things moving along. */
 			m = 0;
 			xn = 0;
 			break;
@@ -123,6 +124,32 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 		}
 	}
 }
+/*
+static cc_bool OperandIsUnusual(const Operand *operand)
+{
+	switch (operand->type)
+	{
+		case OPERAND_TYPE_DATA_REGISTER:
+		case OPERAND_TYPE_ADDRESS_REGISTER:
+		case OPERAND_TYPE_ADDRESS:
+		case OPERAND_TYPE_LITERAL:
+			return cc_false;
+
+		case OPERAND_TYPE_STATUS_REGISTER:
+		case OPERAND_TYPE_CONDITION_CODE_REGISTER:
+		case OPERAND_TYPE_USER_STACK_REGISTER:
+			return cc_true;
+	}
+}
+*/
+
+static unsigned int ToAlternateEffectiveAddressBits(unsigned int bits)
+{
+	const unsigned int m = (bits >> 3) & 7;
+	const unsigned int dn = (bits >> 0) & 7;
+
+	return (m << 6) | (dn << 9);
+}
 
 static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 {
@@ -143,7 +170,6 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 	switch (instruction->opcode.type)
 	{
 		case TOKEN_OPCODE_MOVE:
-		{
 			if (total_operands != 2)
 			{
 				fprintf(stderr, "Error: 'MOVE' instruction must have two operands\n");
@@ -151,80 +177,157 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 			}
 			else
 			{
-				switch (instruction->operands->next->type)
+				const Operand* const source_operand = instruction->operands;
+				const Operand* const destination_operand = instruction->operands->next;
+
+				if (source_operand->type == OPERAND_TYPE_USER_STACK_POINTER_REGISTER || destination_operand->type == OPERAND_TYPE_USER_STACK_POINTER_REGISTER)
 				{
-					case OPERAND_TYPE_STATUS_REGISTER:
-						/* MOVE to SR */
-						if (instruction->operands->type == OPERAND_TYPE_ADDRESS_REGISTER)
+					/* MOVE USP */
+
+					/* Default to address register 0, in case the other operand isn't an address register. */
+					unsigned int address_register = 0;
+
+					const cc_bool from_usp_to_address_register = source_operand->type == OPERAND_TYPE_USER_STACK_POINTER_REGISTER;
+
+					/* Check that the opcode is the right size. */
+					if (instruction->opcode.size != TOKEN_SIZE_LONG && instruction->opcode.size != -1)
+						fprintf(stderr, "Warning: 'MOVE USP' instruction can only be longword-sized - the specified size will be ignored\n");
+
+					/* Handle operands and perform validation. */
+					if (from_usp_to_address_register)
+					{
+						if (destination_operand->type != OPERAND_TYPE_ADDRESS_REGISTER)
+						{
+
+							fprintf(stderr, "Error: 'MOVE FROM USP' instruction's destination operand must be an address register\n");
+							success = cc_false;
+						}
+						else
+						{
+							address_register = destination_operand->data.address_register;
+						}
+					}
+					else
+					{
+						if (source_operand->type != OPERAND_TYPE_ADDRESS_REGISTER)
+						{
+							fprintf(stderr, "Error: 'MOVE TO USP' instruction's source operand must be an address register\n");
+							success = cc_false;
+						}
+						else
+						{
+							address_register = source_operand->data.address_register;
+						}
+					}
+
+					/* Produce the machine code for this instruction. */
+					machine_code = 0x4E60 | (from_usp_to_address_register << 3) | address_register;
+				}
+				else if (source_operand->type == OPERAND_TYPE_STATUS_REGISTER || destination_operand->type == OPERAND_TYPE_STATUS_REGISTER)
+				{
+					/* MOVE TO SR */
+					/* MOVE FROM SR */
+					const cc_bool from_sr = source_operand->type == OPERAND_TYPE_STATUS_REGISTER;
+
+					if (instruction->opcode.size != TOKEN_SIZE_WORD && instruction->opcode.size != -1)
+						fprintf(stderr, "Warning: 'MOVE SR' instruction can only be word-sized - the specified size will be ignored\n");
+
+					if (from_sr)
+					{
+						/* MOVE FROM SR */
+						if (destination_operand->type == OPERAND_TYPE_ADDRESS_REGISTER)
+						{
+							fprintf(stderr, "Error: 'MOVE FROM SR' instruction's destination operand cannot be an address register\n");
+							success = cc_false;
+						}
+
+						machine_code = 0x40C0 | ConstructEffectiveAddressBits(destination_operand);
+					}
+					else
+					{
+						/* MOVE TO SR */
+						if (source_operand->type == OPERAND_TYPE_ADDRESS_REGISTER)
 						{
 							fprintf(stderr, "Error: 'MOVE TO SR' instruction's source operand cannot be an address register\n");
 							success = cc_false;
 						}
-						else if (instruction->opcode.size != TOKEN_SIZE_WORD && instruction->opcode.size != -1)
-						{
-							fprintf(stderr, "Warning: 'MOVE TO SR' instruction can only be word-sized - the specified size will be ignored\n");
-						}
-						else
-						{
-							machine_code = 0x46C0 | ConstructEffectiveAddressBits(instruction->operands);
-						}
 
-						break;
+						machine_code = 0x46C0 | ConstructEffectiveAddressBits(source_operand);
+					}
+				}
+				else if (destination_operand->type == OPERAND_TYPE_CONDITION_CODE_REGISTER)
+				{
+					/* MOVE TO CCR */
+					if (instruction->opcode.size != TOKEN_SIZE_WORD && instruction->opcode.size != -1)
+						fprintf(stderr, "Warning: 'MOVE TO CCR' instruction can only be word-sized - the specified size will be ignored\n");
 
-					case OPERAND_TYPE_CONDITION_CODE_REGISTER:
-						/* MOVE to CCR */
-						if (instruction->operands->type == OPERAND_TYPE_ADDRESS_REGISTER)
-						{
-							fprintf(stderr, "Error: 'MOVE TO CCR' instruction's source operand cannot be an address register\n");
-							success = cc_false;
-						}
-						else if (instruction->opcode.size != TOKEN_SIZE_BYTE && instruction->opcode.size != -1)
-						{
-							fprintf(stderr, "Warning: 'MOVE TO CCR' instruction can only be byte-sized - the specified size will be ignored\n");
-						}
-						else
-						{
-							machine_code = 0x44C0 | ConstructEffectiveAddressBits(instruction->operands);
-						}
-
-						break;
-
-					case OPERAND_TYPE_USER_STACK_POINTER_REGISTER:
-						/* MOVE to USP */
-						break;
-
-					case OPERAND_TYPE_DATA_REGISTER:
-						/* MOVE to data register */
-						break;
-
-					case OPERAND_TYPE_ADDRESS_REGISTER:
-						/* MOVEA */
-						break;
-
-					case OPERAND_TYPE_ADDRESS:
-						/* MOVE to memory */
-						break;
-
-					case OPERAND_TYPE_LITERAL:
-						fprintf(stderr, "Error: 'MOVE' instruction's destination operand cannot be a literal\n");
+					if (source_operand->type == OPERAND_TYPE_ADDRESS_REGISTER)
+					{
+						fprintf(stderr, "Error: 'MOVE TO CCR' instruction's source operand cannot be an address register\n");
 						success = cc_false;
-						break;
+					}
+
+					machine_code = 0x44C0 | ConstructEffectiveAddressBits(source_operand);
+				}
+				else
+				{
+					/* MOVE */
+					if (destination_operand->type == OPERAND_TYPE_ADDRESS_REGISTER)
+					{
+						/* MOVEA mistyped as MOVE */
+						fprintf(stderr, "Error: a 'MOVE' instruction cannot move to an address register - you probably meant to use the MOVEA instruction\n");
+						success = cc_false;
+					}
+					else if (destination_operand->type == OPERAND_TYPE_LITERAL)
+					{
+						fprintf(stderr, "Error: a 'MOVE' instruction's destination operand cannot be a literal\n");
+						success = cc_false;
+					}
+					else if (destination_operand->type == OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT || destination_operand->type == OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER)
+					{
+						fprintf(stderr, "Error: a 'MOVE' instruction's destination operand cannot be PC-relative\n");
+						success = cc_false;
+					}
+
+					switch (instruction->opcode.size)
+					{
+						case TOKEN_SIZE_BYTE:
+							machine_code = 0x1000;
+							break;
+
+						case -1:
+							fprintf(stderr, "Error: 'MOVE' instruction needs an explicit size\n");
+							success = cc_false;
+							/* Fallthrough */
+						case TOKEN_SIZE_WORD:
+							machine_code = 0x3000;
+							break;
+
+						case TOKEN_SIZE_LONG:
+							machine_code = 0x2000;
+							break;
+					}
+
+					machine_code |= ConstructEffectiveAddressBits(source_operand);
+					machine_code |= ToAlternateEffectiveAddressBits(ConstructEffectiveAddressBits(destination_operand));
 				}
 			}
 
 			break;
-		}
 
 		case TOKEN_OPCODE_ADD:
 			/* TODO */
+			machine_code = 0x4E71;
 			break;
 
 		default:
 			fprintf(stderr, "Internal error: Unrecognised instruction\n");
 			success = cc_false;
+			/* Just insert a NOP. */
+			machine_code = 0x4E71;
 			break;
 	}
-
+	fprintf(stderr, "machine code: 0x%X\n", machine_code);
 	/* Output the machine code for the opcode. */
 	for (i = 2; i-- > 0; )
 		fputc((machine_code >> (8 * i)) & 0xFF, file);

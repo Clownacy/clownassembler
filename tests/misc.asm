@@ -14,7 +14,7 @@ FunkyLabel:	move.w #$2700,sr ; A literal and the status register
 
 ; A line with just a coloned label
 Label:
-	move.b #0,ccr ; A literal and the condition code register
+	move.w #0,ccr ; A literal and the condition code register
   
   
   ; A lot of blank lines to test that empty statements are properly supported
@@ -28,5 +28,7 @@ Label:
 	move.w	d0,sr
 	move.w	($FFFF8000).w,sr
 
+	move.l	a0,usp
+	move.l	usp,a0
 
   ; More blank lines to test support for trailing blank statements
