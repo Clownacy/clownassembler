@@ -34,7 +34,7 @@ static unsigned long ResolveValue(const Value *value)
 	}
 }
 
-static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
+static unsigned int ConstructEffectiveAddressBits(const Operand *operand, cc_bool is_destination)
 {
 	unsigned int m, xn;
 
@@ -76,11 +76,23 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
 			break;
 
 		case OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT:
+			if (is_destination)
+			{
+				fprintf(stderr, "Error: Destination operand type cannot be PC-relative\n");
+				success = cc_false;
+			}
+
 			m = 7;  /* 111 */
 			xn = 2; /* 010 */
 			break;
 
 		case OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+			if (is_destination)
+			{
+				fprintf(stderr, "Error: Destination operand type cannot be PC-relative\n");
+				success = cc_false;
+			}
+
 			m = 7;  /* 111 */
 			xn = 3; /* 011 */
 			break;
@@ -119,6 +131,12 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
 			break;
 
 		case OPERAND_TYPE_LITERAL:
+			if (is_destination)
+			{
+				fprintf(stderr, "Error: Destination operand type cannot be a literal\n");
+				success = cc_false;
+			}
+
 			m = 7;  /* 111 */
 			xn = 4; /* 100 */
 			break;
@@ -133,6 +151,16 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
 	}
 
 	return (m << 3) | (xn << 0);
+}
+
+static unsigned int ConstructEffectiveAddressBitsSource(const Operand *operand)
+{
+	return ConstructEffectiveAddressBits(operand, cc_false);
+}
+
+static unsigned int ConstructEffectiveAddressBitsDestination(const Operand *operand)
+{
+	return ConstructEffectiveAddressBits(operand, cc_true);
 }
 
 static void OutputOperands(FILE *file, const Instruction *instruction)
@@ -282,7 +310,6 @@ static cc_bool OperandIsUnusual(const Operand *operand)
 	}
 }
 */
-
 static unsigned int ToAlternateEffectiveAddressBits(unsigned int bits)
 {
 	const unsigned int m = (bits >> 3) & 7;
@@ -314,6 +341,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 			{
 				fprintf(stderr, "Error: 'MOVE' instruction must have two operands\n");
 				success = cc_false;
+				machine_code = 0x4E71; /* NOP */
 			}
 			else
 			{
@@ -381,7 +409,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 							success = cc_false;
 						}
 
-						machine_code = 0x40C0 | ConstructEffectiveAddressBits(destination_operand);
+						machine_code = 0x40C0 | ConstructEffectiveAddressBitsDestination(destination_operand);
 					}
 					else
 					{
@@ -392,7 +420,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 							success = cc_false;
 						}
 
-						machine_code = 0x46C0 | ConstructEffectiveAddressBits(source_operand);
+						machine_code = 0x46C0 | ConstructEffectiveAddressBitsSource(source_operand);
 					}
 				}
 				else if (destination_operand->type == OPERAND_TYPE_CONDITION_CODE_REGISTER)
@@ -407,7 +435,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						success = cc_false;
 					}
 
-					machine_code = 0x44C0 | ConstructEffectiveAddressBits(source_operand);
+					machine_code = 0x44C0 | ConstructEffectiveAddressBitsSource(source_operand);
 				}
 				else
 				{
@@ -418,16 +446,6 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						fprintf(stderr, "Error: a 'MOVE' instruction cannot move to an address register - you probably meant to use the MOVEA instruction\n");
 						success = cc_false;
 					}
-					else if (destination_operand->type == OPERAND_TYPE_LITERAL)
-					{
-						fprintf(stderr, "Error: a 'MOVE' instruction's destination operand cannot be a literal\n");
-						success = cc_false;
-					}
-					else if (destination_operand->type == OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT || destination_operand->type == OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER)
-					{
-						fprintf(stderr, "Error: a 'MOVE' instruction's destination operand cannot be PC-relative\n");
-						success = cc_false;
-					}
 
 					switch (instruction->opcode.size)
 					{
@@ -435,6 +453,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 							machine_code = 0x1000;
 							break;
 
+						default:
 						case -1:
 							fprintf(stderr, "Error: 'MOVE' instruction needs an explicit size\n");
 							success = cc_false;
@@ -448,8 +467,8 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 							break;
 					}
 
-					machine_code |= ConstructEffectiveAddressBits(source_operand);
-					machine_code |= ToAlternateEffectiveAddressBits(ConstructEffectiveAddressBits(destination_operand));
+					machine_code |= ConstructEffectiveAddressBitsSource(source_operand);
+					machine_code |= ToAlternateEffectiveAddressBits(ConstructEffectiveAddressBitsDestination(destination_operand));
 				}
 			}
 
@@ -457,17 +476,18 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 		case TOKEN_OPCODE_ADD:
 			/* TODO */
-			machine_code = 0x4E71;
+			machine_code = 0x4E71; /* NOP */
 			break;
 
 		default:
 			fprintf(stderr, "Internal error: Unrecognised instruction\n");
 			success = cc_false;
-			/* Just insert a NOP. */
-			machine_code = 0x4E71;
+			machine_code = 0x4E71; /* NOP */
 			break;
 	}
-	fprintf(stderr, "machine code: 0x%X\n", machine_code);
+
+	fprintf(stderr, "Machine code: 0x%X\n", machine_code);
+
 	/* Output the machine code for the opcode. */
 	for (i = 2; i-- > 0; )
 		fputc((machine_code >> (8 * i)) & 0xFF, file);
