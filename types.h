@@ -1,6 +1,14 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+typedef enum Size
+{
+	SIZE_BYTE,
+	SIZE_WORD,
+	SIZE_LONGWORD,
+	SIZE_UNDEFINED
+} Size;
+
 typedef struct Value
 {
 	int type;
@@ -14,7 +22,7 @@ typedef struct Value
 typedef struct Opcode
 {
 	int type;
-	int size;
+	Size size;
 } Opcode;
 
 typedef struct Operand
@@ -41,7 +49,7 @@ typedef struct Operand
 
 	unsigned int data_register;
 	unsigned int address_register;
-	int size;
+	Size size;
 	Value literal;
 } Operand;
 

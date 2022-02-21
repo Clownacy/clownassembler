@@ -266,7 +266,7 @@ instruction          : TOKEN_WHITESPACE full_opcode end_of_line
 full_opcode          : opcode
                      {
                        $$.type = $1;
-                       $$.size = -1;
+                       $$.size = SIZE_UNDEFINED;
                      }
                      | opcode '.' size
                      {
@@ -291,15 +291,15 @@ opcode               : TOKEN_OPCODE_MOVE
 
 size                 : TOKEN_SIZE_BYTE
                      {
-                       $$ = TOKEN_SIZE_BYTE;
+                       $$ = SIZE_BYTE;
                      }
                      | TOKEN_SIZE_WORD
                      {
-                       $$ = TOKEN_SIZE_WORD;
+                       $$ = SIZE_WORD;
                      }
                      | TOKEN_SIZE_LONG
                      {
-                       $$ = TOKEN_SIZE_LONG;
+                       $$ = SIZE_LONGWORD;
                      }
                      ;
 
@@ -435,7 +435,7 @@ address              : value
                      {
                          $$.type = OPERAND_TYPE_ADDRESS;
                          $$.literal = $1;
-                         $$.size = -1;
+                         $$.size = SIZE_UNDEFINED;
                      }
                      | value '.' size
                      {
@@ -447,7 +447,7 @@ address              : value
                      {
                          $$.type = OPERAND_TYPE_ADDRESS;
                          $$.literal = $2;
-                         $$.size = -1;
+                         $$.size = SIZE_UNDEFINED;
                      }
                      | '(' value ')' '.' size
                      {

@@ -102,7 +102,7 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand, cc_boo
 
 			switch (operand->size)
 			{
-				case TOKEN_SIZE_WORD:
+				case SIZE_WORD:
 					xn = 0; /* 000 */
 					break;
 
@@ -110,13 +110,13 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand, cc_boo
 					fprintf(stderr, "Error: Absolute address can only be word- or longword-sized - assuming longword\n");
 					success = cc_false;
 					/* Fallthrough */
-				case TOKEN_SIZE_LONG:
+				case SIZE_LONGWORD:
 					xn = 1; /* 001 */
 					break;
 
-				case -1:
+				case SIZE_UNDEFINED:
 				{
-					/* Automatically determine size */
+					/* Automatically determine size. */
 					const unsigned long value = ResolveValue(&operand->literal);
 
 					if (value >= 0xFFFF8000 || value < 0x8000)
@@ -189,13 +189,13 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 					case OPERAND_TYPE_ADDRESS:
 						switch (operand->size)
 						{
-							case TOKEN_SIZE_BYTE:
+							case SIZE_BYTE:
 								fprintf(stderr, "Error: Address cannot be byte-sized\n");
 								success = cc_false;
 								i = 2;
 								break;
 
-							case TOKEN_SIZE_WORD:
+							case SIZE_WORD:
 								i = 2;
 
 								if (value >= 0x8000 && value < 0xFFFF8000)
@@ -206,9 +206,22 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 
 								break;
 
-							case TOKEN_SIZE_LONG:
+							case SIZE_LONGWORD:
 								i = 4;
 								break;
+
+							case SIZE_UNDEFINED:
+							{
+								/* Automatically determine size. */
+								const unsigned long value = ResolveValue(&operand->literal);
+
+								if (value >= 0xFFFF8000 || value < 0x8000)
+									i = 2;
+								else
+									i = 4;
+
+								break;
+							}
 						}
 
 						break;
@@ -216,7 +229,7 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 					case OPERAND_TYPE_LITERAL:
 						switch (instruction->opcode.size)
 						{
-							case TOKEN_SIZE_BYTE:
+							case SIZE_BYTE:
 								i = 2;
 
 								if (value >= 0x100 && value < 0xFFFFFF00)
@@ -227,7 +240,7 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 
 								break;
 
-							case TOKEN_SIZE_WORD:
+							case SIZE_WORD:
 								i = 2;
 
 								if (value >= 0x10000 && value < 0xFFFF0000)
@@ -238,9 +251,22 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 
 								break;
 
-							case TOKEN_SIZE_LONG:
+							case SIZE_LONGWORD:
 								i = 4;
 								break;
+
+							case SIZE_UNDEFINED:
+							{
+								/* Automatically determine size. */
+								const unsigned long value = ResolveValue(&operand->literal);
+
+								if (value >= 0xFFFF0000 || value < 0x10000)
+									i = 2;
+								else
+									i = 4;
+
+								break;
+							}
 						}
 
 						break;
@@ -255,7 +281,7 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 							success = cc_false;
 						}
 
-						if (operand->size == TOKEN_SIZE_BYTE)
+						if (operand->size == SIZE_BYTE)
 						{
 							fprintf(stderr, "Error: Index register cannot be byte-sized\n");
 							success = cc_false;
@@ -263,7 +289,7 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 
 						value |= operand->data_register << 12;
 
-						if (operand->size == TOKEN_SIZE_LONG)
+						if (operand->size == SIZE_LONGWORD)
 							value |= 0x800;
 
 						break;
@@ -358,7 +384,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					const cc_bool from_usp_to_address_register = source_operand->type == OPERAND_TYPE_USER_STACK_POINTER_REGISTER;
 
 					/* Check that the opcode is the right size. */
-					if (instruction->opcode.size != TOKEN_SIZE_LONG && instruction->opcode.size != -1)
+					if (instruction->opcode.size != SIZE_LONGWORD && instruction->opcode.size != SIZE_UNDEFINED)
 						fprintf(stderr, "Warning: 'MOVE USP' instruction can only be longword-sized - the specified size will be ignored\n");
 
 					/* Handle operands and perform validation. */
@@ -397,7 +423,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					/* MOVE FROM SR */
 					const cc_bool from_sr = source_operand->type == OPERAND_TYPE_STATUS_REGISTER;
 
-					if (instruction->opcode.size != TOKEN_SIZE_WORD && instruction->opcode.size != -1)
+					if (instruction->opcode.size != SIZE_WORD && instruction->opcode.size != SIZE_UNDEFINED)
 						fprintf(stderr, "Warning: 'MOVE SR' instruction can only be word-sized - the specified size will be ignored\n");
 
 					if (from_sr)
@@ -426,7 +452,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				else if (destination_operand->type == OPERAND_TYPE_CONDITION_CODE_REGISTER)
 				{
 					/* MOVE TO CCR */
-					if (instruction->opcode.size != TOKEN_SIZE_WORD && instruction->opcode.size != -1)
+					if (instruction->opcode.size != SIZE_WORD && instruction->opcode.size != SIZE_UNDEFINED)
 						fprintf(stderr, "Warning: 'MOVE TO CCR' instruction can only be word-sized - the specified size will be ignored\n");
 
 					if (source_operand->type == OPERAND_TYPE_ADDRESS_REGISTER)
@@ -449,19 +475,19 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 					switch (instruction->opcode.size)
 					{
-						case TOKEN_SIZE_BYTE:
+						case SIZE_BYTE:
 							machine_code = 0x1000;
 							break;
 
-						case -1:
+						case SIZE_UNDEFINED:
 							fprintf(stderr, "Error: 'MOVE' instruction needs an explicit size\n");
 							success = cc_false;
 							/* Fallthrough */
-						case TOKEN_SIZE_WORD:
+						case SIZE_WORD:
 							machine_code = 0x3000;
 							break;
 
-						case TOKEN_SIZE_LONG:
+						case SIZE_LONGWORD:
 							machine_code = 0x2000;
 							break;
 					}
@@ -499,7 +525,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				{
 					case OPERAND_TYPE_STATUS_REGISTER:
 						/* ORI TO SR */
-						if (instruction->opcode.size != TOKEN_SIZE_WORD && instruction->opcode.size != -1)
+						if (instruction->opcode.size != SIZE_WORD && instruction->opcode.size != SIZE_UNDEFINED)
 						{
 							fprintf(stderr, "Error: 'ORI TO SR' instruction must be word-sized\n");
 							success = cc_false;
@@ -511,7 +537,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 					case OPERAND_TYPE_CONDITION_CODE_REGISTER:
 						/* ORI TO CCR */
-						if (instruction->opcode.size != TOKEN_SIZE_BYTE && instruction->opcode.size != -1)
+						if (instruction->opcode.size != SIZE_BYTE && instruction->opcode.size != SIZE_UNDEFINED)
 						{
 							fprintf(stderr, "Error: 'ORI TO CCR' instruction must be byte-sized\n");
 							success = cc_false;
@@ -530,19 +556,19 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 						switch (instruction->opcode.size)
 						{
-							case TOKEN_SIZE_BYTE:
+							case SIZE_BYTE:
 								machine_code = 0x0000;
 								break;
 
-							case -1:
+							case SIZE_UNDEFINED:
 								fprintf(stderr, "Error: 'ORI' instruction needs an explicit size\n");
 								success = cc_false;
 								/* Fallthrough */
-							case TOKEN_SIZE_WORD:
+							case SIZE_WORD:
 								machine_code = 0x0040;
 								break;
 
-							case TOKEN_SIZE_LONG:
+							case SIZE_LONGWORD:
 								machine_code = 0x0080;
 								break;
 						}
