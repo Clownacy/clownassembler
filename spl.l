@@ -49,6 +49,7 @@ comment           \;.*$
 {newline}       TOKEN(NEWLINE)
 move            TOKEN(OPCODE_MOVE)
 add             TOKEN(OPCODE_ADD)
+ori             TOKEN(OPCODE_ORI)
 "("             return yytext[0];
 ")"             return yytext[0];
 "b"             TOKEN(SIZE_BYTE)

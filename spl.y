@@ -126,6 +126,7 @@ StatementListNode *statement_list_head;
 %token TOKEN_NEWLINE
 %token TOKEN_OPCODE_MOVE
 %token TOKEN_OPCODE_ADD
+%token TOKEN_OPCODE_ORI
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_WORD
 %token TOKEN_SIZE_LONG
@@ -281,6 +282,10 @@ opcode               : TOKEN_OPCODE_MOVE
                      | TOKEN_OPCODE_ADD
                      {
                        $$ = TOKEN_OPCODE_ADD;
+                     }
+                     | TOKEN_OPCODE_ORI
+                     {
+                       $$ = TOKEN_OPCODE_ORI;
                      }
                      ;
 

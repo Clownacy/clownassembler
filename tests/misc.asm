@@ -44,5 +44,9 @@ Label:
 	move.l (pc,d0.w),d0
 	move.l 20(pc,d0.w),d0
 
+	ori.w	#$FFFF,sr
+	ori.b	#$FF,ccr
+	ori.l	#$FFFFFFFF,d0
+
 
   ; More blank lines to test support for trailing blank statements

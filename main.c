@@ -322,7 +322,8 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 {
 	unsigned int total_operands;
 	const Operand *operand;
-	unsigned int machine_code;
+	/* Default to NOP in case errors occur later on and we can't get the correct machine code. */
+	unsigned int machine_code = 0x4E71;
 	unsigned int i;
 
 	success = cc_true;
@@ -341,7 +342,6 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 			{
 				fprintf(stderr, "Error: 'MOVE' instruction must have two operands\n");
 				success = cc_false;
-				machine_code = 0x4E71; /* NOP */
 			}
 			else
 			{
@@ -453,7 +453,6 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 							machine_code = 0x1000;
 							break;
 
-						default:
 						case -1:
 							fprintf(stderr, "Error: 'MOVE' instruction needs an explicit size\n");
 							success = cc_false;
@@ -476,13 +475,89 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 		case TOKEN_OPCODE_ADD:
 			/* TODO */
-			machine_code = 0x4E71; /* NOP */
+			break;
+
+		case TOKEN_OPCODE_ORI:
+			/* ORI */
+			if (total_operands != 2)
+			{
+				fprintf(stderr, "Error: 'ORI' instruction must have two operands\n");
+				success = cc_false;
+			}
+			else
+			{
+				const Operand* const source_operand = instruction->operands;
+				const Operand* const destination_operand = instruction->operands->next;
+
+				if (source_operand->type != OPERAND_TYPE_LITERAL)
+				{
+					fprintf(stderr, "Error: 'ORI' instruction's source operand must be literal\n");
+					success = cc_false;
+				}
+
+				switch (destination_operand->type)
+				{
+					case OPERAND_TYPE_STATUS_REGISTER:
+						/* ORI TO SR */
+						if (instruction->opcode.size != TOKEN_SIZE_WORD && instruction->opcode.size != -1)
+						{
+							fprintf(stderr, "Error: 'ORI TO SR' instruction must be word-sized\n");
+							success = cc_false;
+						}
+
+						machine_code = 0x007C;
+
+						break;
+
+					case OPERAND_TYPE_CONDITION_CODE_REGISTER:
+						/* ORI TO CCR */
+						if (instruction->opcode.size != TOKEN_SIZE_BYTE && instruction->opcode.size != -1)
+						{
+							fprintf(stderr, "Error: 'ORI TO CCR' instruction must be byte-sized\n");
+							success = cc_false;
+						}
+
+						machine_code = 0x003C;
+
+						break;
+
+					default:
+						if (destination_operand->type == OPERAND_TYPE_ADDRESS_REGISTER)
+						{
+							fprintf(stderr, "Error: 'ORI' instruction's destination operand cannot be an address register\n");
+							success = cc_false;
+						}
+
+						switch (instruction->opcode.size)
+						{
+							case TOKEN_SIZE_BYTE:
+								machine_code = 0x0000;
+								break;
+
+							case -1:
+								fprintf(stderr, "Error: 'ORI' instruction needs an explicit size\n");
+								success = cc_false;
+								/* Fallthrough */
+							case TOKEN_SIZE_WORD:
+								machine_code = 0x0040;
+								break;
+
+							case TOKEN_SIZE_LONG:
+								machine_code = 0x0080;
+								break;
+						}
+
+						machine_code |= ConstructEffectiveAddressBitsDestination(destination_operand);
+
+						break;
+				}
+			}
+
 			break;
 
 		default:
 			fprintf(stderr, "Internal error: Unrecognised instruction\n");
 			success = cc_false;
-			machine_code = 0x4E71; /* NOP */
 			break;
 	}
 
