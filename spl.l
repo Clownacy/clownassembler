@@ -48,7 +48,6 @@ comment           \;.*$
 ","             return yytext[0];
 {newline}       TOKEN(NEWLINE)
 move            TOKEN(OPCODE_MOVE)
-add             TOKEN(OPCODE_ADD)
 ori             TOKEN(OPCODE_ORI)
 andi            TOKEN(OPCODE_ANDI)
 subi            TOKEN(OPCODE_SUBI)
@@ -59,6 +58,7 @@ btst            TOKEN(OPCODE_BTST)
 bchg            TOKEN(OPCODE_BCHG)
 bclr            TOKEN(OPCODE_BCLR)
 bset            TOKEN(OPCODE_BSET)
+add             TOKEN(OPCODE_ADD)
 "("             return yytext[0];
 ")"             return yytext[0];
 "b"             TOKEN(SIZE_BYTE)
