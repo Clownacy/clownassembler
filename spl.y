@@ -277,15 +277,15 @@ full_opcode          : opcode
 
 opcode               : TOKEN_OPCODE_MOVE
                      {
-                       $$ = TOKEN_OPCODE_MOVE;
+                       $$ = OPCODE_MOVE;
                      }
                      | TOKEN_OPCODE_ADD
                      {
-                       $$ = TOKEN_OPCODE_ADD;
+                       $$ = OPCODE_ADD;
                      }
                      | TOKEN_OPCODE_ORI
                      {
-                       $$ = TOKEN_OPCODE_ORI;
+                       $$ = OPCODE_ORI;
                      }
                      ;
 

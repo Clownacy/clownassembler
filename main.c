@@ -344,32 +344,168 @@ static unsigned int ToAlternateEffectiveAddressBits(unsigned int bits)
 	return (m << 6) | (dn << 9);
 }
 
+typedef struct InstructionMetadata
+{
+	const char *name;
+
+	Size allowed_sizes;
+
+	OperandType *allowed_operands;
+} InstructionMetadata;
+
+/*
+	OPCODE_MOVE,
+	OPCODE_MOVE_TO_USP,
+	OPCODE_MOVE_FROM_USP,
+	OPCODE_MOVE_TO_CCR,
+	OPCODE_MOVE_TO_SR,
+	OPCODE_MOVE_FROM_SR,
+	OPCODE_ADD,
+	OPCODE_ORI_TO_CCR,
+	OPCODE_ORI_TO_SR,
+	OPCODE_ORI
+			OPERAND_TYPE_DATA_REGISTER | OPERAND_TYPE_ADDRESS_REGISTER | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_TYPE_ADDRESS | OPERAND_TYPE_LITERAL | OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+*/
+
+static const InstructionMetadata instruction_metadata_all[] = {
+	{	/* OPCODE_MOVE */
+		"MOVE",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_TYPE_DATA_REGISTER | OPERAND_TYPE_ADDRESS_REGISTER | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_TYPE_ADDRESS | OPERAND_TYPE_LITERAL | OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			OPERAND_TYPE_DATA_REGISTER | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_TYPE_ADDRESS,
+			0
+		}
+	},
+	{	/* OPCODE_MOVE_TO_USP */
+		"MOVE USP",
+		SIZE_LONGWORD | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_TYPE_ADDRESS_REGISTER,
+			OPERAND_TYPE_USER_STACK_POINTER_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_MOVE_FROM_USP */
+		"MOVE USP",
+		SIZE_LONGWORD | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_TYPE_USER_STACK_POINTER_REGISTER,
+			OPERAND_TYPE_ADDRESS_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_MOVE_TO_CCR */
+		"MOVE to CCR",
+		SIZE_WORD | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_TYPE_DATA_REGISTER | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_TYPE_ADDRESS | OPERAND_TYPE_LITERAL | OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			OPERAND_TYPE_CONDITION_CODE_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_MOVE_TO_SR */
+		"MOVE to SR",
+		SIZE_WORD | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_TYPE_DATA_REGISTER | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_TYPE_ADDRESS | OPERAND_TYPE_LITERAL | OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			OPERAND_TYPE_STATUS_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_MOVE_FROM_SR */
+		"MOVE from SR",
+		SIZE_WORD | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_TYPE_STATUS_REGISTER,
+			OPERAND_TYPE_DATA_REGISTER | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_TYPE_ADDRESS,
+			0
+		}
+	},
+	{	/* OPCODE_ADD */
+		"ADD",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			/* TODO */
+			OPERAND_TYPE_DATA_REGISTER,
+			OPERAND_TYPE_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ORI_TO_CCR */
+		"ORI to CCR",
+		SIZE_BYTE | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_TYPE_LITERAL,
+			OPERAND_TYPE_CONDITION_CODE_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ORI_TO_SR */
+		"ORI to SR",
+		SIZE_WORD | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_TYPE_LITERAL,
+			OPERAND_TYPE_STATUS_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ORI */
+		"ORI",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_TYPE_LITERAL,
+			OPERAND_TYPE_DATA_REGISTER | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_TYPE_ADDRESS,
+			0
+		}
+	},
+};
+
 static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 {
-	unsigned int total_operands;
+	unsigned int total_operands_wanted;
+	unsigned int total_operands_have;
 	const Operand *operand;
 	/* Default to NOP in case errors occur later on and we can't get the correct machine code. */
 	unsigned int machine_code = 0x4E71;
 	unsigned int i;
+	const InstructionMetadata *instruction_metadata = &instruction_metadata_all[instruction->opcode.type];
 
 	success = cc_true;
 
-	/* Count operands. */
-	total_operands = 0;
+	/* Count operands that we want. */
+	total_operands_wanted = 0;
+
+	while (instruction_metadata->allowed_operands[total_operands_wanted] != 0)
+		++total_operands_wanted;
+
+	/* Count operands that we have. */
+	total_operands_have = 0;
 
 	for (operand = instruction->operands; operand != NULL; operand = operand->next)
-		++total_operands;
+		++total_operands_have;
 
-	/* Determine the machine code for the opcode and perform sanity-checking. */
-	switch (instruction->opcode.type)
+	if (total_operands_wanted != total_operands_have)
 	{
-		case TOKEN_OPCODE_MOVE:
-			if (total_operands != 2)
-			{
-				fprintf(stderr, "Error: 'MOVE' instruction must have two operands\n");
-				success = cc_false;
-			}
-			else
+		fprintf(stderr, "Error: '%s' instruction has %u operands, but it should have %u\n", instruction_metadata->name, total_operands_have, total_operands_wanted);
+		success = cc_false;
+	}
+	else
+	{
+		/* Determine the machine code for the opcode and perform sanity-checking. */
+		switch (instruction->opcode.type)
+		{
+			case OPCODE_MOVE:
 			{
 				const Operand* const source_operand = instruction->operands;
 				const Operand* const destination_operand = instruction->operands->next;
@@ -383,35 +519,20 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 					const cc_bool from_usp_to_address_register = source_operand->type == OPERAND_TYPE_USER_STACK_POINTER_REGISTER;
 
-					/* Check that the opcode is the right size. */
-					if (instruction->opcode.size != SIZE_LONGWORD && instruction->opcode.size != SIZE_UNDEFINED)
-						fprintf(stderr, "Warning: 'MOVE USP' instruction can only be longword-sized - the specified size will be ignored\n");
-
 					/* Handle operands and perform validation. */
 					if (from_usp_to_address_register)
 					{
-						if (destination_operand->type != OPERAND_TYPE_ADDRESS_REGISTER)
-						{
+						instruction_metadata = &instruction_metadata_all[OPCODE_MOVE_FROM_USP];
 
-							fprintf(stderr, "Error: 'MOVE FROM USP' instruction's destination operand must be an address register\n");
-							success = cc_false;
-						}
-						else
-						{
+						if (destination_operand->type == OPERAND_TYPE_ADDRESS_REGISTER)
 							address_register = destination_operand->address_register;
-						}
 					}
 					else
 					{
-						if (source_operand->type != OPERAND_TYPE_ADDRESS_REGISTER)
-						{
-							fprintf(stderr, "Error: 'MOVE TO USP' instruction's source operand must be an address register\n");
-							success = cc_false;
-						}
-						else
-						{
+						instruction_metadata = &instruction_metadata_all[OPCODE_MOVE_TO_USP];
+
+						if (source_operand->type == OPERAND_TYPE_ADDRESS_REGISTER)
 							address_register = source_operand->address_register;
-						}
 					}
 
 					/* Produce the machine code for this instruction. */
@@ -423,28 +544,17 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					/* MOVE FROM SR */
 					const cc_bool from_sr = source_operand->type == OPERAND_TYPE_STATUS_REGISTER;
 
-					if (instruction->opcode.size != SIZE_WORD && instruction->opcode.size != SIZE_UNDEFINED)
-						fprintf(stderr, "Warning: 'MOVE SR' instruction can only be word-sized - the specified size will be ignored\n");
-
 					if (from_sr)
 					{
 						/* MOVE FROM SR */
-						if (destination_operand->type == OPERAND_TYPE_ADDRESS_REGISTER)
-						{
-							fprintf(stderr, "Error: 'MOVE FROM SR' instruction's destination operand cannot be an address register\n");
-							success = cc_false;
-						}
+						instruction_metadata = &instruction_metadata_all[OPCODE_MOVE_FROM_SR];
 
 						machine_code = 0x40C0 | ConstructEffectiveAddressBitsDestination(destination_operand);
 					}
 					else
 					{
 						/* MOVE TO SR */
-						if (source_operand->type == OPERAND_TYPE_ADDRESS_REGISTER)
-						{
-							fprintf(stderr, "Error: 'MOVE TO SR' instruction's source operand cannot be an address register\n");
-							success = cc_false;
-						}
+						instruction_metadata = &instruction_metadata_all[OPCODE_MOVE_TO_SR];
 
 						machine_code = 0x46C0 | ConstructEffectiveAddressBitsSource(source_operand);
 					}
@@ -452,14 +562,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				else if (destination_operand->type == OPERAND_TYPE_CONDITION_CODE_REGISTER)
 				{
 					/* MOVE TO CCR */
-					if (instruction->opcode.size != SIZE_WORD && instruction->opcode.size != SIZE_UNDEFINED)
-						fprintf(stderr, "Warning: 'MOVE TO CCR' instruction can only be word-sized - the specified size will be ignored\n");
-
-					if (source_operand->type == OPERAND_TYPE_ADDRESS_REGISTER)
-					{
-						fprintf(stderr, "Error: 'MOVE TO CCR' instruction's source operand cannot be an address register\n");
-						success = cc_false;
-					}
+					instruction_metadata = &instruction_metadata_all[OPCODE_MOVE_TO_CCR];
 
 					machine_code = 0x44C0 | ConstructEffectiveAddressBitsSource(source_operand);
 				}
@@ -495,65 +598,35 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					machine_code |= ConstructEffectiveAddressBitsSource(source_operand);
 					machine_code |= ToAlternateEffectiveAddressBits(ConstructEffectiveAddressBitsDestination(destination_operand));
 				}
+
+				break;
 			}
 
-			break;
+			case OPCODE_ADD:
+				/* TODO */
+				break;
 
-		case TOKEN_OPCODE_ADD:
-			/* TODO */
-			break;
-
-		case TOKEN_OPCODE_ORI:
-			/* ORI */
-			if (total_operands != 2)
+			case OPCODE_ORI:
 			{
-				fprintf(stderr, "Error: 'ORI' instruction must have two operands\n");
-				success = cc_false;
-			}
-			else
-			{
-				const Operand* const source_operand = instruction->operands;
+				/* ORI */
 				const Operand* const destination_operand = instruction->operands->next;
-
-				if (source_operand->type != OPERAND_TYPE_LITERAL)
-				{
-					fprintf(stderr, "Error: 'ORI' instruction's source operand must be literal\n");
-					success = cc_false;
-				}
 
 				switch (destination_operand->type)
 				{
 					case OPERAND_TYPE_STATUS_REGISTER:
 						/* ORI TO SR */
-						if (instruction->opcode.size != SIZE_WORD && instruction->opcode.size != SIZE_UNDEFINED)
-						{
-							fprintf(stderr, "Error: 'ORI TO SR' instruction must be word-sized\n");
-							success = cc_false;
-						}
-
+						instruction_metadata = &instruction_metadata_all[OPCODE_ORI_TO_SR];
 						machine_code = 0x007C;
-
 						break;
 
 					case OPERAND_TYPE_CONDITION_CODE_REGISTER:
 						/* ORI TO CCR */
-						if (instruction->opcode.size != SIZE_BYTE && instruction->opcode.size != SIZE_UNDEFINED)
-						{
-							fprintf(stderr, "Error: 'ORI TO CCR' instruction must be byte-sized\n");
-							success = cc_false;
-						}
-
+						instruction_metadata = &instruction_metadata_all[OPCODE_ORI_TO_CCR];
 						machine_code = 0x003C;
 
 						break;
 
 					default:
-						if (destination_operand->type == OPERAND_TYPE_ADDRESS_REGISTER)
-						{
-							fprintf(stderr, "Error: 'ORI' instruction's destination operand cannot be an address register\n");
-							success = cc_false;
-						}
-
 						switch (instruction->opcode.size)
 						{
 							case SIZE_BYTE:
@@ -577,14 +650,113 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 						break;
 				}
+
+				break;
 			}
 
-			break;
+			default:
+				fprintf(stderr, "Internal error: Unrecognised instruction\n");
+				success = cc_false;
+				break;
+		}
 
-		default:
-			fprintf(stderr, "Internal error: Unrecognised instruction\n");
-			success = cc_false;
-			break;
+		/* Check whether the operands are of the correct types. */
+		operand = instruction->operands;
+
+		for (i = 0; instruction_metadata->allowed_operands[i] != 0; ++i)
+		{
+			if (operand->type & ~instruction_metadata->allowed_operands[i])
+			{
+				const char *operand_string;
+
+				switch (operand->type)
+				{
+					case OPERAND_TYPE_DATA_REGISTER:
+						operand_string = "a data register";
+						break;
+
+					case OPERAND_TYPE_ADDRESS_REGISTER:
+						operand_string = "an address register";
+						break;
+
+					case OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT:
+						operand_string = "an indirect address register";
+						break;
+
+					case OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
+						operand_string = "a post-increment indirect address register";
+						break;
+
+					case OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
+						operand_string = "a pre-decrement indirect address register";
+						break;
+
+					case OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
+						operand_string = "an indirect address register with displacement";
+						break;
+
+					case OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+						operand_string = "an indirect address register with displacement and index register";
+						break;
+
+					case OPERAND_TYPE_ADDRESS:
+						operand_string = "an address";
+						break;
+
+					case OPERAND_TYPE_LITERAL:
+						operand_string = "a literal";
+						break;
+
+					case OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT:
+						operand_string = "the program counter with displacement";
+						break;
+
+					case OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+						operand_string = "the program counter with displacement and index register";
+						break;
+
+					case OPERAND_TYPE_STATUS_REGISTER:
+						operand_string = "the status register";
+						break;
+
+					case OPERAND_TYPE_CONDITION_CODE_REGISTER:
+						operand_string = "the condition code register";
+						break;
+
+					case OPERAND_TYPE_USER_STACK_POINTER_REGISTER:
+						operand_string = "the user stack pointer register";
+						break;
+
+					default:
+						operand_string = "[REDACTED]";
+						break;
+				}
+
+				fprintf(stderr, "Error: '%s' instruction parameter %u cannot be %s\n", instruction_metadata->name, i, operand_string);
+				success = cc_false;
+			}
+
+			operand = operand->next;
+		}
+	}
+
+	if ((instruction->opcode.size & ~instruction_metadata->allowed_sizes) != 0)
+	{
+		fprintf(stderr, "Error: '%s' instruction cannot be this size - allowed sizes are...\n", instruction_metadata->name);
+
+		if (instruction_metadata->allowed_sizes & SIZE_BYTE)
+			fprintf(stderr, "  %s.B\n", instruction_metadata->name);
+
+		if (instruction_metadata->allowed_sizes & SIZE_WORD)
+			fprintf(stderr, "  %s.W\n", instruction_metadata->name);
+
+		if (instruction_metadata->allowed_sizes & SIZE_LONGWORD)
+			fprintf(stderr, "  %s.L\n", instruction_metadata->name);
+
+		if (instruction_metadata->allowed_sizes & SIZE_UNDEFINED)
+			fprintf(stderr, "  %s\n", instruction_metadata->name);
+
+		success = cc_false;
 	}
 
 	fprintf(stderr, "Machine code: 0x%X\n", machine_code);
