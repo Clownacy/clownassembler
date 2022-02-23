@@ -146,9 +146,6 @@ StatementListNode *statement_list_head;
 %type<opcode> full_opcode
 %type<operand_pointer> operand_list
 %type<operand> operand
-%type<operand> literal
-%type<operand> register
-%type<operand> address
 %type<statement> statement
 %type<statement_list> statement_list
 %type<value> value
@@ -334,40 +331,29 @@ operand_list         : operand
                      }
                      ;
 
-operand              : register
-                     {
-                       $$ = $1;
-                     }
-                     | address
-                     {
-                       $$ = $1;
-                     }
-                     | literal
-                     {
-                       $$ = $1;
-                     }
-                     | '(' TOKEN_ADDRESS_REGISTER ')'
+                     /* Indirect address register */
+operand              : '(' TOKEN_ADDRESS_REGISTER ')'
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT;
                        $$.main_register = $2;
                      }
-					 | '(' TOKEN_ADDRESS_REGISTER ')' '+'
+                     | '(' TOKEN_ADDRESS_REGISTER ')' '+'
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT;
                        $$.main_register = $2;
                      }
-					 | '-' '(' TOKEN_ADDRESS_REGISTER ')'
+                     | '-' '(' TOKEN_ADDRESS_REGISTER ')'
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT;
                        $$.main_register = $3;
                      }
-					 | value '(' TOKEN_ADDRESS_REGISTER ')'
+                     | value '(' TOKEN_ADDRESS_REGISTER ')'
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
                        $$.literal = $1;
                        $$.main_register = $3;
                      }
-					 | '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_DATA_REGISTER '.' size ')'
+                     | '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_DATA_REGISTER '.' size ')'
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal.type = TOKEN_NUMBER;
@@ -375,18 +361,18 @@ operand              : register
                        $$.main_register = $2;
                        $$.index_register = $4;
                        $$.size = $6;
-					   $$.index_register_is_address_register = cc_false;
+                       $$.index_register_is_address_register = cc_false;
                      }
-					 | value '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_DATA_REGISTER '.' size ')'
+                     | value '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_DATA_REGISTER '.' size ')'
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal = $1;
                        $$.main_register = $3;
                        $$.index_register = $5;
                        $$.size = $7;
-					   $$.index_register_is_address_register = cc_false;
+                       $$.index_register_is_address_register = cc_false;
                      }
-					 | '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
+                     | '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal.type = TOKEN_NUMBER;
@@ -394,65 +380,64 @@ operand              : register
                        $$.main_register = $2;
                        $$.index_register = $4;
                        $$.size = $6;
-					   $$.index_register_is_address_register = cc_true;
+                       $$.index_register_is_address_register = cc_true;
                      }
-					 | value '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
+                     | value '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal = $1;
                        $$.main_register = $3;
                        $$.index_register = $5;
                        $$.size = $7;
-					   $$.index_register_is_address_register = cc_true;
+                       $$.index_register_is_address_register = cc_true;
                      }
-					 | value '(' TOKEN_PROGRAM_COUNTER ')'
+                     | value '(' TOKEN_PROGRAM_COUNTER ')'
                      {
                        $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
                        $$.literal = $1;
                      }
-					 | '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_DATA_REGISTER '.' size ')'
+                     | '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_DATA_REGISTER '.' size ')'
                      {
                        $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal.type = TOKEN_NUMBER;
                        $$.literal.data.integer = 0;
                        $$.index_register = $4;
                        $$.size = $6;
-					   $$.index_register_is_address_register = cc_false;
+                       $$.index_register_is_address_register = cc_false;
                      }
-					 | value '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_DATA_REGISTER '.' size ')'
+                     | value '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_DATA_REGISTER '.' size ')'
                      {
                        $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal = $1;
                        $$.index_register = $5;
                        $$.size = $7;
-					   $$.index_register_is_address_register = cc_false;
+                       $$.index_register_is_address_register = cc_false;
                      }
-					 | '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
+                     | '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
                      {
                        $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal.type = TOKEN_NUMBER;
                        $$.literal.data.integer = 0;
                        $$.index_register = $4;
                        $$.size = $6;
-					   $$.index_register_is_address_register = cc_true;
+                       $$.index_register_is_address_register = cc_true;
                      }
-					 | value '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
+                     | value '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
                      {
                        $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal = $1;
                        $$.index_register = $5;
                        $$.size = $7;
-					   $$.index_register_is_address_register = cc_true;
+                       $$.index_register_is_address_register = cc_true;
                      }
-
-literal              : '#' value
+                     /* Literal */
+                     | '#' value
                      {
                        $$.type = OPERAND_LITERAL;
                        $$.literal = $2;
                      }
-                     ;
-
-register             : TOKEN_DATA_REGISTER
+                     /* Registers */
+                     | TOKEN_DATA_REGISTER
                      {
                        $$.type = OPERAND_DATA_REGISTER;
                        $$.main_register = $1;
@@ -474,9 +459,8 @@ register             : TOKEN_DATA_REGISTER
                      {
                        $$.type = OPERAND_USER_STACK_POINTER_REGISTER;
                      }
-                     ;
-
-address              : value
+                     /* Addresses */
+                     | value
                      {
                          $$.type = OPERAND_ADDRESS;
                          $$.literal = $1;
