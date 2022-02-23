@@ -875,6 +875,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				{
 					machine_code = 0x0100 | (source_operand->main_register << 9);
 
+					/* Switch from the static versions of these instructions to the dynamic ones. */
 					switch (instruction->opcode.type)
 					{
 						case OPCODE_BTST_STATIC:
@@ -896,6 +897,20 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				}
 				else
 				{
+					const unsigned long value = ResolveValue(source_operand);
+
+					/* Check whether the literal value will wrap or not, and warn the user if so. */
+					if (destination_operand->type == OPERAND_DATA_REGISTER)
+					{
+						if (value >= 32)
+							fprintf(stderr, "Warning: 'BTST/BCHG/BCLR/BSET' instruction's literal value will be modulo 32\n");
+					}
+					else
+					{
+						if (value >= 8)
+							fprintf(stderr, "Warning: 'BTST/BCHG/BCLR/BSET' instruction's literal value will be modulo 8\n");
+					}
+
 					machine_code = 0x0800;
 				}
 
