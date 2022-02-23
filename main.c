@@ -34,7 +34,7 @@ static unsigned long ResolveValue(const Value *value)
 	}
 }
 
-static unsigned int ConstructEffectiveAddressBits(const Operand *operand, cc_bool is_destination)
+static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
 {
 	unsigned int m, xn;
 
@@ -76,23 +76,11 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand, cc_boo
 			break;
 
 		case OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT:
-			if (is_destination)
-			{
-				fprintf(stderr, "Error: Destination operand type cannot be PC-relative\n");
-				success = cc_false;
-			}
-
 			m = 7;  /* 111 */
 			xn = 2; /* 010 */
 			break;
 
 		case OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-			if (is_destination)
-			{
-				fprintf(stderr, "Error: Destination operand type cannot be PC-relative\n");
-				success = cc_false;
-			}
-
 			m = 7;  /* 111 */
 			xn = 3; /* 011 */
 			break;
@@ -131,12 +119,6 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand, cc_boo
 			break;
 
 		case OPERAND_TYPE_LITERAL:
-			if (is_destination)
-			{
-				fprintf(stderr, "Error: Destination operand type cannot be a literal\n");
-				success = cc_false;
-			}
-
 			m = 7;  /* 111 */
 			xn = 4; /* 100 */
 			break;
@@ -151,16 +133,6 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand, cc_boo
 	}
 
 	return (m << 3) | (xn << 0);
-}
-
-static unsigned int ConstructEffectiveAddressBitsSource(const Operand *operand)
-{
-	return ConstructEffectiveAddressBits(operand, cc_false);
-}
-
-static unsigned int ConstructEffectiveAddressBitsDestination(const Operand *operand)
-{
-	return ConstructEffectiveAddressBits(operand, cc_true);
 }
 
 static void OutputOperands(FILE *file, const Instruction *instruction)
@@ -549,14 +521,14 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						/* MOVE FROM SR */
 						instruction_metadata = &instruction_metadata_all[OPCODE_MOVE_FROM_SR];
 
-						machine_code = 0x40C0 | ConstructEffectiveAddressBitsDestination(destination_operand);
+						machine_code = 0x40C0 | ConstructEffectiveAddressBits(destination_operand);
 					}
 					else
 					{
 						/* MOVE TO SR */
 						instruction_metadata = &instruction_metadata_all[OPCODE_MOVE_TO_SR];
 
-						machine_code = 0x46C0 | ConstructEffectiveAddressBitsSource(source_operand);
+						machine_code = 0x46C0 | ConstructEffectiveAddressBits(source_operand);
 					}
 				}
 				else if (destination_operand->type == OPERAND_TYPE_CONDITION_CODE_REGISTER)
@@ -564,7 +536,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					/* MOVE TO CCR */
 					instruction_metadata = &instruction_metadata_all[OPCODE_MOVE_TO_CCR];
 
-					machine_code = 0x44C0 | ConstructEffectiveAddressBitsSource(source_operand);
+					machine_code = 0x44C0 | ConstructEffectiveAddressBits(source_operand);
 				}
 				else
 				{
@@ -595,8 +567,8 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 							break;
 					}
 
-					machine_code |= ConstructEffectiveAddressBitsSource(source_operand);
-					machine_code |= ToAlternateEffectiveAddressBits(ConstructEffectiveAddressBitsDestination(destination_operand));
+					machine_code |= ConstructEffectiveAddressBits(source_operand);
+					machine_code |= ToAlternateEffectiveAddressBits(ConstructEffectiveAddressBits(destination_operand));
 				}
 
 				break;
@@ -646,7 +618,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 								break;
 						}
 
-						machine_code |= ConstructEffectiveAddressBitsDestination(destination_operand);
+						machine_code |= ConstructEffectiveAddressBits(destination_operand);
 
 						break;
 				}
