@@ -128,6 +128,10 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_ADD
 %token TOKEN_OPCODE_ORI
 %token TOKEN_OPCODE_ANDI
+%token TOKEN_OPCODE_SUBI
+%token TOKEN_OPCODE_ADDI
+%token TOKEN_OPCODE_EORI
+%token TOKEN_OPCODE_CMPI
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_WORD
 %token TOKEN_SIZE_LONG
@@ -288,6 +292,22 @@ opcode               : TOKEN_OPCODE_MOVE
                      | TOKEN_OPCODE_ANDI
                      {
                        $$ = OPCODE_ANDI;
+                     }
+                     | TOKEN_OPCODE_SUBI
+                     {
+                       $$ = OPCODE_SUBI;
+                     }
+                     | TOKEN_OPCODE_ADDI
+                     {
+                       $$ = OPCODE_ADDI;
+                     }
+                     | TOKEN_OPCODE_EORI
+                     {
+                       $$ = OPCODE_EORI;
+                     }
+                     | TOKEN_OPCODE_CMPI
+                     {
+                       $$ = OPCODE_CMPI;
                      }
                      ;
 

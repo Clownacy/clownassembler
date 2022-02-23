@@ -475,6 +475,66 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0
 		}
 	},
+	{	/* OPCODE_SUBI */
+		"SUBI",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_LITERAL,
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS,
+			0
+		}
+	},
+	{	/* OPCODE_ADDI */
+		"ADDI",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_LITERAL,
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS,
+			0
+		}
+	},
+	{	/* OPCODE_EORI_TO_CCR */
+		"EORI",
+		SIZE_BYTE | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_LITERAL,
+			OPERAND_CONDITION_CODE_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_EORI_TO_SR */
+		"EORI",
+		SIZE_WORD | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_LITERAL,
+			OPERAND_STATUS_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_EORI */
+		"EORI",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_LITERAL,
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS,
+			0
+		}
+	},
+	{	/* OPCODE_CMPI */
+		"CMPI",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_LITERAL,
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			0
+		}
+	},
 };
 
 static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
@@ -611,25 +671,66 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 			case OPCODE_ORI:
 			case OPCODE_ANDI:
+			case OPCODE_SUBI:
+			case OPCODE_ADDI:
+			case OPCODE_EORI:
+			case OPCODE_CMPI:
 			{
 				/* ORI */
 				/* ANDI */
+				/* SUBI */
+				/* ADDI */
+				/* EORI */
+				/* CMPI */
 				const Operand* const destination_operand = instruction->operands->next;
 
-				if (instruction->opcode.type == OPCODE_ORI)
-					machine_code = 0x000;
-				else /*if (opcode == OPCODE_ANDI)*/
-					machine_code = 0x200;
+				switch (instruction->opcode.type)
+				{
+					case OPCODE_ORI:
+						machine_code = 0x000;
+						break;
+
+					case OPCODE_ANDI:
+						machine_code = 0x200;
+						break;
+
+					case OPCODE_SUBI:
+						machine_code = 0x400;
+						break;
+
+					case OPCODE_ADDI:
+						machine_code = 0x600;
+						break;
+
+					case OPCODE_EORI:
+						machine_code = 0xA00;
+						break;
+
+					case OPCODE_CMPI:
+						machine_code = 0xC00;
+						break;
+				}
 
 				switch (destination_operand->type)
 				{
 					case OPERAND_STATUS_REGISTER:
 						/* ORI TO SR */
 						/* ANDI TO SR */
-						if (instruction->opcode.type == OPCODE_ORI)
-							instruction_metadata = &instruction_metadata_all[OPCODE_ORI_TO_SR];
-						else /*if (opcode == OPCODE_ANDI)*/
-							instruction_metadata = &instruction_metadata_all[OPCODE_ANDI_TO_SR];
+						/* EORI TO SR */
+						switch (instruction->opcode.type)
+						{
+							case OPCODE_ORI:
+								instruction_metadata = &instruction_metadata_all[OPCODE_ORI_TO_SR];
+								break;
+
+							case OPCODE_ANDI:
+								instruction_metadata = &instruction_metadata_all[OPCODE_ANDI_TO_SR];
+								break;
+
+							case OPCODE_EORI:
+								instruction_metadata = &instruction_metadata_all[OPCODE_EORI_TO_SR];
+								break;
+						}
 
 						machine_code |= 0x007C;
 
@@ -638,34 +739,43 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					case OPERAND_CONDITION_CODE_REGISTER:
 						/* ORI TO CCR */
 						/* ANDI TO CCR */
-						if (instruction->opcode.type == OPCODE_ORI)
-							instruction_metadata = &instruction_metadata_all[OPCODE_ORI_TO_CCR];
-						else /*if (opcode == OPCODE_ANDI)*/
-							instruction_metadata = &instruction_metadata_all[OPCODE_ANDI_TO_CCR];
+						switch (instruction->opcode.type)
+						{
+							case OPCODE_ORI:
+								instruction_metadata = &instruction_metadata_all[OPCODE_ORI_TO_CCR];
+								break;
+
+							case OPCODE_ANDI:
+								instruction_metadata = &instruction_metadata_all[OPCODE_ANDI_TO_CCR];
+								break;
+
+							case OPCODE_EORI:
+								instruction_metadata = &instruction_metadata_all[OPCODE_EORI_TO_CCR];
+								break;
+						}
 
 						machine_code |= 0x003C;
 
 						break;
 
 					default:
-						switch (instruction->opcode.size)
-						{
-							case SIZE_BYTE:
-								machine_code |= 0x0000;
-								break;
-
-							default:
-							case SIZE_WORD:
-								machine_code |= 0x0040;
-								break;
-
-							case SIZE_LONGWORD:
-								machine_code |= 0x0080;
-								break;
-						}
-
 						machine_code |= ConstructEffectiveAddressBits(destination_operand);
+						break;
+				}
 
+				switch (instruction->opcode.size)
+				{
+					case SIZE_BYTE:
+						machine_code |= 0x0000;
+						break;
+
+					default:
+					case SIZE_WORD:
+						machine_code |= 0x0040;
+						break;
+
+					case SIZE_LONGWORD:
+						machine_code |= 0x0080;
 						break;
 				}
 

@@ -60,5 +60,22 @@ Label:
 	andi.b	#$FF,ccr
 	andi.l	#$FFFFFFFF,d0
 
+	subi.w	#1,d0
+	addi.w	#1,d0
+
+	; Testing eori
+	eori.w	#$FFFF,sr
+	eori.b	#$FF,ccr
+	eori.l	#$FFFFFFFF,d0
+
+	; Testing cmpi
+	cmpi.w	#1,d0
+	cmpi.w	#1,(a0)
+	cmpi.w	#1,(a0)+
+	cmpi.w	#1,-(a0)
+	cmpi.w	#1,$10(a0)
+	cmpi.w	#1,(a0,d0.w)
+	cmpi.w	#1,$10(pc)
+	cmpi.w	#1,$10(pc,d0.w)
 
   ; More blank lines to test support for trailing blank statements
