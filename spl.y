@@ -281,11 +281,7 @@ full_opcode          : opcode
                      }
                      ;
 
-opcode               : TOKEN_OPCODE_MOVE
-                     {
-                       $$ = OPCODE_MOVE;
-                     }
-                     | TOKEN_OPCODE_ORI
+opcode               : TOKEN_OPCODE_ORI
                      {
                        $$ = OPCODE_ORI;
                      }
@@ -324,6 +320,10 @@ opcode               : TOKEN_OPCODE_MOVE
                      | TOKEN_OPCODE_BSET
                      {
                        $$ = OPCODE_BSET_STATIC;
+                     }
+                     | TOKEN_OPCODE_MOVE
+                     {
+                       $$ = OPCODE_MOVE;
                      }
                      | TOKEN_OPCODE_ADD
                      {
