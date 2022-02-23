@@ -50,6 +50,7 @@ comment           \;.*$
 move            TOKEN(OPCODE_MOVE)
 add             TOKEN(OPCODE_ADD)
 ori             TOKEN(OPCODE_ORI)
+andi            TOKEN(OPCODE_ANDI)
 "("             return yytext[0];
 ")"             return yytext[0];
 "b"             TOKEN(SIZE_BYTE)

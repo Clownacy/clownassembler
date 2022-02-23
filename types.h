@@ -22,7 +22,10 @@ typedef enum OpCodeType
 	OPCODE_ADD,
 	OPCODE_ORI_TO_CCR,
 	OPCODE_ORI_TO_SR,
-	OPCODE_ORI
+	OPCODE_ORI,
+	OPCODE_ANDI_TO_CCR,
+	OPCODE_ANDI_TO_SR,
+	OPCODE_ANDI
 } OpcodeType;
 
 typedef struct Value

@@ -55,5 +55,10 @@ Label:
 	ori.b	#$FF,ccr
 	ori.l	#$FFFFFFFF,d0
 
+	; Testing andi
+	andi.w	#$FFFF,sr
+	andi.b	#$FF,ccr
+	andi.l	#$FFFFFFFF,d0
+
 
   ; More blank lines to test support for trailing blank statements
