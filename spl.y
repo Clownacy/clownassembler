@@ -132,6 +132,10 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_ADDI
 %token TOKEN_OPCODE_EORI
 %token TOKEN_OPCODE_CMPI
+%token TOKEN_OPCODE_BTST
+%token TOKEN_OPCODE_BCHG
+%token TOKEN_OPCODE_BCLR
+%token TOKEN_OPCODE_BSET
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_WORD
 %token TOKEN_SIZE_LONG
@@ -308,6 +312,22 @@ opcode               : TOKEN_OPCODE_MOVE
                      | TOKEN_OPCODE_CMPI
                      {
                        $$ = OPCODE_CMPI;
+                     }
+                     | TOKEN_OPCODE_BTST
+                     {
+                       $$ = OPCODE_BTST_STATIC;
+                     }
+                     | TOKEN_OPCODE_BCHG
+                     {
+                       $$ = OPCODE_BCHG_STATIC;
+                     }
+                     | TOKEN_OPCODE_BCLR
+                     {
+                       $$ = OPCODE_BCLR_STATIC;
+                     }
+                     | TOKEN_OPCODE_BSET
+                     {
+                       $$ = OPCODE_BSET_STATIC;
                      }
                      ;
 

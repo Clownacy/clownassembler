@@ -535,6 +535,86 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0
 		}
 	},
+	{	/* OPCODE_BTST_STATIC */
+		"BTST",
+		SIZE_BYTE | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_LITERAL,
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_BCHG_STATIC */
+		"BCHG",
+		SIZE_BYTE | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_LITERAL,
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_BCLR_STATIC */
+		"BCLR",
+		SIZE_BYTE | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_LITERAL,
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_BSET_STATIC */
+		"BSET",
+		SIZE_BYTE | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_LITERAL,
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_BTST_DYNAMIC */
+		"BTST",
+		SIZE_BYTE | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_LITERAL | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_BCHG_DYNAMIC */
+		"BCHG",
+		SIZE_BYTE | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_LITERAL | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_BCLR_DYNAMIC */
+		"BCLR",
+		SIZE_BYTE | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_LITERAL | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_BSET_DYNAMIC */
+		"BSET",
+		SIZE_BYTE | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_LITERAL | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			0
+		}
+	},
 };
 
 static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
@@ -739,6 +819,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					case OPERAND_CONDITION_CODE_REGISTER:
 						/* ORI TO CCR */
 						/* ANDI TO CCR */
+						/* EORI TO CCR */
 						switch (instruction->opcode.type)
 						{
 							case OPCODE_ORI:
@@ -782,6 +863,84 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				break;
 			}
 
+			case OPCODE_BTST_STATIC:
+			case OPCODE_BCHG_STATIC:
+			case OPCODE_BCLR_STATIC:
+			case OPCODE_BSET_STATIC:
+			{
+				const Operand* const source_operand = instruction->operands;
+				const Operand* const destination_operand = instruction->operands->next;
+
+				if (source_operand->type == OPERAND_DATA_REGISTER)
+				{
+					machine_code = 0x0100 | (source_operand->main_register << 9);
+
+					switch (instruction->opcode.type)
+					{
+						case OPCODE_BTST_STATIC:
+							instruction_metadata = &instruction_metadata_all[OPCODE_BTST_DYNAMIC];
+							break;
+
+						case OPCODE_BCHG_STATIC:
+							instruction_metadata = &instruction_metadata_all[OPCODE_BCHG_DYNAMIC];
+							break;
+
+						case OPCODE_BCLR_STATIC:
+							instruction_metadata = &instruction_metadata_all[OPCODE_BCLR_DYNAMIC];
+							break;
+
+						case OPCODE_BSET_STATIC:
+							instruction_metadata = &instruction_metadata_all[OPCODE_BSET_DYNAMIC];
+							break;
+					}
+				}
+				else
+				{
+					machine_code = 0x0800;
+				}
+
+				switch (instruction->opcode.type)
+				{
+					case OPCODE_BTST_STATIC:
+						machine_code |= 0x0000;
+						break;
+
+					case OPCODE_BCHG_STATIC:
+						machine_code |= 0x0040;
+						break;
+
+					case OPCODE_BCLR_STATIC:
+						machine_code |= 0x0080;
+						break;
+
+					case OPCODE_BSET_STATIC:
+						machine_code |= 0x00C0;
+						break;
+				}
+
+				/* Check that the opcode size is suitable for the destination operand. */
+				if (destination_operand->type == OPERAND_DATA_REGISTER)
+				{
+					if (instruction->opcode.size != SIZE_LONGWORD && instruction->opcode.size != SIZE_UNDEFINED)
+					{
+						fprintf(stderr, "Error: 'BTST/BCHG/BCLR/BSET' instruction must be longword-sized when its destination operand is a data register\n");
+						success = cc_false;
+					}
+				}
+				else
+				{
+					if (instruction->opcode.size != SIZE_BYTE && instruction->opcode.size != SIZE_UNDEFINED)
+					{
+						fprintf(stderr, "Error: 'BTST/BCHG/BCLR/BSET' instruction must be byte-sized when its destination operand is memory\n");
+						success = cc_false;
+					}
+				}
+
+				machine_code |= ConstructEffectiveAddressBits(destination_operand);
+
+				break;
+			}
+
 			default:
 				fprintf(stderr, "Internal error: Unrecognised instruction\n");
 				success = cc_false;
@@ -793,7 +952,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 		for (i = 0; instruction_metadata->allowed_operands[i] != 0; ++i)
 		{
-			if (operand->type & ~instruction_metadata->allowed_operands[i])
+			if ((operand->type & ~instruction_metadata->allowed_operands[i]) != 0)
 			{
 				const char *operand_string;
 
@@ -856,7 +1015,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						break;
 
 					default:
-						operand_string = "[REDACTED]";
+						operand_string = "[REDACTED]"; /* Dumb joke - this code should never be ran. */
 						break;
 				}
 

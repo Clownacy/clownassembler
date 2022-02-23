@@ -55,6 +55,10 @@ subi            TOKEN(OPCODE_SUBI)
 addi            TOKEN(OPCODE_ADDI)
 eori            TOKEN(OPCODE_EORI)
 cmpi            TOKEN(OPCODE_CMPI)
+btst            TOKEN(OPCODE_BTST)
+bchg            TOKEN(OPCODE_BCHG)
+bclr            TOKEN(OPCODE_BCLR)
+bset            TOKEN(OPCODE_BSET)
 "("             return yytext[0];
 ")"             return yytext[0];
 "b"             TOKEN(SIZE_BYTE)

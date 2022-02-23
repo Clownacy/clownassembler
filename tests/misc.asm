@@ -78,4 +78,23 @@ Label:
 	cmpi.w	#1,$10(pc)
 	cmpi.w	#1,$10(pc,d0.w)
 
+	; Testing both modes of BTST/BCHG/BCLR/BSET
+	btst.l	#0,d0
+	btst.b	#0,(a0)
+	bchg.l	#0,d0
+	bchg.b	#0,(a0)
+	bclr.l	#0,d0
+	bclr.b	#0,(a0)
+	bset.l	#0,d0
+	bset.b	#0,(a0)
+	btst.l	d0,d0
+	btst.b	d0,(a0)
+	bchg.l	d0,d0
+	bchg.b	d0,(a0)
+	bclr.l	d0,d0
+	bclr.b	d0,(a0)
+	bset.l	d0,d0
+	bset.b	d0,(a0)
+	bset.b	d0,#$AA ; What a wacky instruction...
+
   ; More blank lines to test support for trailing blank statements
