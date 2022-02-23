@@ -41,20 +41,20 @@ typedef struct Opcode
 
 typedef enum OperandType
 {
-	OPERAND_TYPE_DATA_REGISTER                                                  = 1 << 0,
-	OPERAND_TYPE_ADDRESS_REGISTER                                               = 1 << 1,
-	OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT                                      = 1 << 2,
-	OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT                        = 1 << 3,
-	OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_PREDECREMENT                         = 1 << 4,
-	OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT                    = 1 << 5,
-	OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER = 1 << 6,
-	OPERAND_TYPE_ADDRESS                                                        = 1 << 7,
-	OPERAND_TYPE_LITERAL                                                        = 1 << 8,
-	OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT                              = 1 << 9,
-	OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER           = 1 << 10,
-	OPERAND_TYPE_STATUS_REGISTER                                                = 1 << 11,
-	OPERAND_TYPE_CONDITION_CODE_REGISTER                                        = 1 << 12,
-	OPERAND_TYPE_USER_STACK_POINTER_REGISTER                                    = 1 << 13
+	OPERAND_DATA_REGISTER                                                  = 1 << 0,
+	OPERAND_ADDRESS_REGISTER                                               = 1 << 1,
+	OPERAND_ADDRESS_REGISTER_INDIRECT                                      = 1 << 2,
+	OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT                        = 1 << 3,
+	OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT                         = 1 << 4,
+	OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT                    = 1 << 5,
+	OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER = 1 << 6,
+	OPERAND_ADDRESS                                                        = 1 << 7,
+	OPERAND_LITERAL                                                        = 1 << 8,
+	OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT                              = 1 << 9,
+	OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER           = 1 << 10,
+	OPERAND_STATUS_REGISTER                                                = 1 << 11,
+	OPERAND_CONDITION_CODE_REGISTER                                        = 1 << 12,
+	OPERAND_USER_STACK_POINTER_REGISTER                                    = 1 << 13
 } OperandType;
 
 typedef struct Operand

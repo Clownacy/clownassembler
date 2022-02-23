@@ -343,28 +343,28 @@ operand              : register
                      }
                      | '(' TOKEN_ADDRESS_REGISTER ')'
                      {
-                       $$.type = OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT;
+                       $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT;
                        $$.address_register = $2;
                      }
 					 | '(' TOKEN_ADDRESS_REGISTER ')' '+'
                      {
-                       $$.type = OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT;
+                       $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT;
                        $$.address_register = $2;
                      }
 					 | '-' '(' TOKEN_ADDRESS_REGISTER ')'
                      {
-                       $$.type = OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_PREDECREMENT;
+                       $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT;
                        $$.address_register = $3;
                      }
 					 | value '(' TOKEN_ADDRESS_REGISTER ')'
                      {
-                       $$.type = OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
+                       $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
                        $$.literal = $1;
                        $$.address_register = $3;
                      }
 					 | '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_DATA_REGISTER '.' size ')'
                      {
-                       $$.type = OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+                       $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal.type = TOKEN_NUMBER;
                        $$.literal.data.integer = 0;
                        $$.address_register = $2;
@@ -373,7 +373,7 @@ operand              : register
                      }
 					 | value '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_DATA_REGISTER '.' size ')'
                      {
-                       $$.type = OPERAND_TYPE_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+                       $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal = $1;
                        $$.address_register = $3;
                        $$.data_register = $5;
@@ -381,12 +381,12 @@ operand              : register
                      }
 					 | value '(' TOKEN_PROGRAM_COUNTER ')'
                      {
-                       $$.type = OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT;
+                       $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
                        $$.literal = $1;
                      }
 					 | '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_DATA_REGISTER '.' size ')'
                      {
-                       $$.type = OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+                       $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal.type = TOKEN_NUMBER;
                        $$.literal.data.integer = 0;
                        $$.data_register = $4;
@@ -394,7 +394,7 @@ operand              : register
                      }
 					 | value '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_DATA_REGISTER '.' size ')'
                      {
-                       $$.type = OPERAND_TYPE_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+                       $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal = $1;
                        $$.data_register = $5;
                        $$.size = $7;
@@ -402,56 +402,56 @@ operand              : register
 
 literal              : '#' value
                      {
-                       $$.type = OPERAND_TYPE_LITERAL;
+                       $$.type = OPERAND_LITERAL;
                        $$.literal = $2;
                      }
                      ;
 
 register             : TOKEN_DATA_REGISTER
                      {
-                       $$.type = OPERAND_TYPE_DATA_REGISTER;
+                       $$.type = OPERAND_DATA_REGISTER;
                        $$.data_register = $1;
                      }
                      | TOKEN_ADDRESS_REGISTER
                      {
-                       $$.type = OPERAND_TYPE_ADDRESS_REGISTER;
+                       $$.type = OPERAND_ADDRESS_REGISTER;
                        $$.address_register = $1;
                      }
                      | TOKEN_STATUS_REGISTER
                      {
-                       $$.type = OPERAND_TYPE_STATUS_REGISTER;
+                       $$.type = OPERAND_STATUS_REGISTER;
                      }
                      | TOKEN_CONDITION_CODE_REGISTER
                      {
-                       $$.type = OPERAND_TYPE_CONDITION_CODE_REGISTER;
+                       $$.type = OPERAND_CONDITION_CODE_REGISTER;
                      }
                      | TOKEN_USER_STACK_POINTER_REGISTER
                      {
-                       $$.type = OPERAND_TYPE_USER_STACK_POINTER_REGISTER;
+                       $$.type = OPERAND_USER_STACK_POINTER_REGISTER;
                      }
                      ;
 
 address              : value
                      {
-                         $$.type = OPERAND_TYPE_ADDRESS;
+                         $$.type = OPERAND_ADDRESS;
                          $$.literal = $1;
                          $$.size = SIZE_UNDEFINED;
                      }
                      | value '.' size
                      {
-                         $$.type = OPERAND_TYPE_ADDRESS;
+                         $$.type = OPERAND_ADDRESS;
                          $$.literal = $1;
                          $$.size = $3;
                      }
                      | '(' value ')'
                      {
-                         $$.type = OPERAND_TYPE_ADDRESS;
+                         $$.type = OPERAND_ADDRESS;
                          $$.literal = $2;
                          $$.size = SIZE_UNDEFINED;
                      }
                      | '(' value ')' '.' size
                      {
-                         $$.type = OPERAND_TYPE_ADDRESS;
+                         $$.type = OPERAND_ADDRESS;
                          $$.literal = $2;
                          $$.size = $5;
                      }
