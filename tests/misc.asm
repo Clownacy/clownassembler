@@ -25,13 +25,15 @@ Label:
 	;adda.w d0,a1 ; Not implemented yet
 
 
+	; sr instructions
 	move.w	d0,sr
 	move.w	($FFFF8000).w,sr
 
+	; usp instructions
 	move.l	a0,usp
 	move.l	usp,a0
 
-
+	; Testing the various effective address modes
 	move.l d0,d0
 	move.l a0,d0
 	move.l (a0),d0
@@ -44,6 +46,7 @@ Label:
 	move.l (pc,d0.w),d0
 	move.l 20(pc,d0.w),d0
 
+	; Testing ori
 	ori.w	#$FFFF,sr
 	ori.b	#$FF,ccr
 	ori.l	#$FFFFFFFF,d0
