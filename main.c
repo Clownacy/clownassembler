@@ -616,37 +616,34 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				/* ANDI */
 				const Operand* const destination_operand = instruction->operands->next;
 
+				if (instruction->opcode.type == OPCODE_ORI)
+					machine_code = 0x000;
+				else /*if (opcode == OPCODE_ANDI)*/
+					machine_code = 0x200;
+
 				switch (destination_operand->type)
 				{
 					case OPERAND_STATUS_REGISTER:
+						/* ORI TO SR */
+						/* ANDI TO SR */
 						if (instruction->opcode.type == OPCODE_ORI)
-						{
-							/* ORI TO SR */
 							instruction_metadata = &instruction_metadata_all[OPCODE_ORI_TO_SR];
-							machine_code = 0x007C;
-						}
 						else /*if (opcode == OPCODE_ANDI)*/
-						{
-							/* ANDI TO SR */
 							instruction_metadata = &instruction_metadata_all[OPCODE_ANDI_TO_SR];
-							machine_code = 0x027C;
-						}
+
+						machine_code |= 0x007C;
 
 						break;
 
 					case OPERAND_CONDITION_CODE_REGISTER:
+						/* ORI TO CCR */
+						/* ANDI TO CCR */
 						if (instruction->opcode.type == OPCODE_ORI)
-						{
-							/* ORI TO CCR */
 							instruction_metadata = &instruction_metadata_all[OPCODE_ORI_TO_CCR];
-							machine_code = 0x003C;
-						}
 						else /*if (opcode == OPCODE_ANDI)*/
-						{
-							/* ANDI TO CCR */
 							instruction_metadata = &instruction_metadata_all[OPCODE_ANDI_TO_CCR];
-							machine_code = 0x023C;
-						}
+
+						machine_code |= 0x003C;
 
 						break;
 
@@ -654,23 +651,20 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						switch (instruction->opcode.size)
 						{
 							case SIZE_BYTE:
-								machine_code = 0x0000;
+								machine_code |= 0x0000;
 								break;
 
 							default:
 							case SIZE_WORD:
-								machine_code = 0x0040;
+								machine_code |= 0x0040;
 								break;
 
 							case SIZE_LONGWORD:
-								machine_code = 0x0080;
+								machine_code |= 0x0080;
 								break;
 						}
 
 						machine_code |= ConstructEffectiveAddressBits(destination_operand);
-
-						if (instruction->opcode.type == OPCODE_ANDI)
-							machine_code |= 0x200;
 
 						break;
 				}
