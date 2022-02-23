@@ -354,7 +354,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 		}
 	},
 	{	/* OPCODE_MOVE_TO_USP */
-		"MOVE USP",
+		"MOVE",
 		SIZE_LONGWORD | SIZE_UNDEFINED,
 		(OperandType[])
 		{
@@ -364,7 +364,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 		}
 	},
 	{	/* OPCODE_MOVE_FROM_USP */
-		"MOVE USP",
+		"MOVE",
 		SIZE_LONGWORD | SIZE_UNDEFINED,
 		(OperandType[])
 		{
@@ -374,7 +374,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 		}
 	},
 	{	/* OPCODE_MOVE_TO_CCR */
-		"MOVE to CCR",
+		"MOVE",
 		SIZE_WORD | SIZE_UNDEFINED,
 		(OperandType[])
 		{
@@ -384,7 +384,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 		}
 	},
 	{	/* OPCODE_MOVE_TO_SR */
-		"MOVE to SR",
+		"MOVE",
 		SIZE_WORD | SIZE_UNDEFINED,
 		(OperandType[])
 		{
@@ -394,7 +394,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 		}
 	},
 	{	/* OPCODE_MOVE_FROM_SR */
-		"MOVE from SR",
+		"MOVE",
 		SIZE_WORD | SIZE_UNDEFINED,
 		(OperandType[])
 		{
@@ -415,7 +415,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 		}
 	},
 	{	/* OPCODE_ORI_TO_CCR */
-		"ORI to CCR",
+		"ORI",
 		SIZE_BYTE | SIZE_UNDEFINED,
 		(OperandType[])
 		{
@@ -425,7 +425,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 		}
 	},
 	{	/* OPCODE_ORI_TO_SR */
-		"ORI to SR",
+		"ORI",
 		SIZE_WORD | SIZE_UNDEFINED,
 		(OperandType[])
 		{
