@@ -557,6 +557,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 							machine_code = 0x1000;
 							break;
 
+						default:
 						case SIZE_WORD:
 							machine_code = 0x3000;
 							break;
@@ -604,6 +605,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 								machine_code = 0x0000;
 								break;
 
+							default:
 							case SIZE_WORD:
 								machine_code = 0x0040;
 								break;
