@@ -42,9 +42,13 @@ Label:
 	move.l 20(a0),d0
 	move.l (a0,d0.w),d0
 	move.l 20(a0,d0.w),d0
+	move.l (a0,a1.w),d0
+	move.l 20(a0,a1.w),d0
 	move.l 20(pc),d0
 	move.l (pc,d0.w),d0
 	move.l 20(pc,d0.w),d0
+	move.l (pc,a0.w),d0
+	move.l 20(pc,a0.w),d0
 
 	; Testing ori
 	ori.w	#$FFFF,sr

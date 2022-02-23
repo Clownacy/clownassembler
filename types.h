@@ -1,6 +1,8 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include "clowncommon.h"
+
 typedef enum Size
 {
 	SIZE_BYTE      = 1 << 0,
@@ -67,6 +69,7 @@ typedef struct Operand
 	unsigned int address_register;
 	Size size;
 	Value literal;
+	cc_bool index_register_is_address_register;
 } Operand;
 
 typedef struct Instruction

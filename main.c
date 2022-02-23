@@ -264,6 +264,9 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 						if (operand->size == SIZE_LONGWORD)
 							value |= 0x800;
 
+						if (operand->index_register_is_address_register)
+							value |= 0x8000;
+
 						break;
 
 					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
