@@ -65,8 +65,8 @@ typedef struct Operand
 
 	struct Operand *next;
 
-	unsigned int data_register;
-	unsigned int address_register;
+	unsigned int main_register;
+	unsigned int index_register;
 	Size size;
 	Value literal;
 	cc_bool index_register_is_address_register;

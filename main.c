@@ -42,37 +42,37 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
 	{
 		case OPERAND_DATA_REGISTER:
 			m = 0; /* 000 */
-			xn = operand->data_register;
+			xn = operand->main_register;
 			break;
 
 		case OPERAND_ADDRESS_REGISTER:
 			m = 1; /* 001 */
-			xn = operand->address_register;
+			xn = operand->main_register;
 			break;
 
 		case OPERAND_ADDRESS_REGISTER_INDIRECT:
 			m = 2; /* 010 */
-			xn = operand->address_register;
+			xn = operand->main_register;
 			break;
 
 		case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
 			m = 3; /* 011 */
-			xn = operand->address_register;
+			xn = operand->main_register;
 			break;
 
 		case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
 			m = 4; /* 100 */
-			xn = operand->address_register;
+			xn = operand->main_register;
 			break;
 
 		case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
 			m = 5; /* 101 */
-			xn = operand->address_register;
+			xn = operand->main_register;
 			break;
 
 		case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 			m = 6; /* 110 */
-			xn = operand->address_register;
+			xn = operand->main_register;
 			break;
 
 		case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
@@ -259,7 +259,7 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 							success = cc_false;
 						}
 
-						value |= operand->data_register << 12;
+						value |= operand->index_register << 12;
 
 						if (operand->size == SIZE_LONGWORD)
 							value |= 0x800;
@@ -500,14 +500,14 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						instruction_metadata = &instruction_metadata_all[OPCODE_MOVE_FROM_USP];
 
 						if (destination_operand->type == OPERAND_ADDRESS_REGISTER)
-							address_register = destination_operand->address_register;
+							address_register = destination_operand->main_register;
 					}
 					else
 					{
 						instruction_metadata = &instruction_metadata_all[OPCODE_MOVE_TO_USP];
 
 						if (source_operand->type == OPERAND_ADDRESS_REGISTER)
-							address_register = source_operand->address_register;
+							address_register = source_operand->main_register;
 					}
 
 					/* Produce the machine code for this instruction. */

@@ -344,31 +344,31 @@ operand              : register
                      | '(' TOKEN_ADDRESS_REGISTER ')'
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT;
-                       $$.address_register = $2;
+                       $$.main_register = $2;
                      }
 					 | '(' TOKEN_ADDRESS_REGISTER ')' '+'
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT;
-                       $$.address_register = $2;
+                       $$.main_register = $2;
                      }
 					 | '-' '(' TOKEN_ADDRESS_REGISTER ')'
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT;
-                       $$.address_register = $3;
+                       $$.main_register = $3;
                      }
 					 | value '(' TOKEN_ADDRESS_REGISTER ')'
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
                        $$.literal = $1;
-                       $$.address_register = $3;
+                       $$.main_register = $3;
                      }
 					 | '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_DATA_REGISTER '.' size ')'
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal.type = TOKEN_NUMBER;
                        $$.literal.data.integer = 0;
-                       $$.address_register = $2;
-                       $$.data_register = $4;
+                       $$.main_register = $2;
+                       $$.index_register = $4;
                        $$.size = $6;
 					   $$.index_register_is_address_register = cc_false;
                      }
@@ -376,8 +376,8 @@ operand              : register
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal = $1;
-                       $$.address_register = $3;
-                       $$.data_register = $5;
+                       $$.main_register = $3;
+                       $$.index_register = $5;
                        $$.size = $7;
 					   $$.index_register_is_address_register = cc_false;
                      }
@@ -386,8 +386,8 @@ operand              : register
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal.type = TOKEN_NUMBER;
                        $$.literal.data.integer = 0;
-                       $$.address_register = $2;
-                       $$.data_register = $4;
+                       $$.main_register = $2;
+                       $$.index_register = $4;
                        $$.size = $6;
 					   $$.index_register_is_address_register = cc_true;
                      }
@@ -395,8 +395,8 @@ operand              : register
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal = $1;
-                       $$.address_register = $3;
-                       $$.data_register = $5;
+                       $$.main_register = $3;
+                       $$.index_register = $5;
                        $$.size = $7;
 					   $$.index_register_is_address_register = cc_true;
                      }
@@ -410,7 +410,7 @@ operand              : register
                        $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal.type = TOKEN_NUMBER;
                        $$.literal.data.integer = 0;
-                       $$.data_register = $4;
+                       $$.index_register = $4;
                        $$.size = $6;
 					   $$.index_register_is_address_register = cc_false;
                      }
@@ -418,7 +418,7 @@ operand              : register
                      {
                        $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal = $1;
-                       $$.data_register = $5;
+                       $$.index_register = $5;
                        $$.size = $7;
 					   $$.index_register_is_address_register = cc_false;
                      }
@@ -427,7 +427,7 @@ operand              : register
                        $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal.type = TOKEN_NUMBER;
                        $$.literal.data.integer = 0;
-                       $$.data_register = $4;
+                       $$.index_register = $4;
                        $$.size = $6;
 					   $$.index_register_is_address_register = cc_true;
                      }
@@ -435,7 +435,7 @@ operand              : register
                      {
                        $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
                        $$.literal = $1;
-                       $$.data_register = $5;
+                       $$.index_register = $5;
                        $$.size = $7;
 					   $$.index_register_is_address_register = cc_true;
                      }
@@ -450,12 +450,12 @@ literal              : '#' value
 register             : TOKEN_DATA_REGISTER
                      {
                        $$.type = OPERAND_DATA_REGISTER;
-                       $$.data_register = $1;
+                       $$.main_register = $1;
                      }
                      | TOKEN_ADDRESS_REGISTER
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER;
-                       $$.address_register = $1;
+                       $$.main_register = $1;
                      }
                      | TOKEN_STATUS_REGISTER
                      {
