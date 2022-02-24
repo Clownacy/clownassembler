@@ -83,6 +83,7 @@ trapv           TOKEN(OPCODE_TRAPV)
 rtr             TOKEN(OPCODE_RTR)
 jsr             TOKEN(OPCODE_JSR)
 jmp             TOKEN(OPCODE_JMP)
+movem           TOKEN(OPCODE_MOVEM)
 add             TOKEN(OPCODE_ADD)
 "("             return yytext[0];
 ")"             return yytext[0];

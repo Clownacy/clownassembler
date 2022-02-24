@@ -65,6 +65,8 @@ typedef enum OpCodeType
 	OPCODE_RTR,
 	OPCODE_JSR,
 	OPCODE_JMP,
+	OPCODE_MOVEM_TO_REGS,
+	OPCODE_MOVEM_FROM_REGS,
 
 	OPCODE_ADD
 } OpcodeType;
@@ -100,7 +102,8 @@ typedef enum OperandType
 	OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER           = 1 << 10,
 	OPERAND_STATUS_REGISTER                                                = 1 << 11,
 	OPERAND_CONDITION_CODE_REGISTER                                        = 1 << 12,
-	OPERAND_USER_STACK_POINTER_REGISTER                                    = 1 << 13
+	OPERAND_USER_STACK_POINTER_REGISTER                                    = 1 << 13,
+	OPERAND_REGISTER_LIST                                                  = 1 << 14
 } OperandType;
 
 typedef struct Operand

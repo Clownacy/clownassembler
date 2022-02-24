@@ -149,6 +149,7 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 			case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
 			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+			case OPERAND_REGISTER_LIST:
 			{
 				unsigned int i = 2;
 				unsigned long value = ResolveValue(&operand->literal);
@@ -280,6 +281,10 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 						}
 
 						break;
+
+					case OPERAND_REGISTER_LIST:
+						/* TODO */
+						break;
 				}
 
 				while (i-- > 0)
@@ -288,7 +293,14 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 				break;
 			}
 
-			default:
+			case OPERAND_DATA_REGISTER:
+			case OPERAND_ADDRESS_REGISTER:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
+			case OPERAND_STATUS_REGISTER:
+			case OPERAND_CONDITION_CODE_REGISTER:
+			case OPERAND_USER_STACK_POINTER_REGISTER:
 				break;
 		}
 	}
@@ -909,6 +921,33 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0
 		}
 	},
+	{	/* OPCODE_MOVEM_TO_REGS */
+		"MOVEM",
+		SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER
+				| OPERAND_ADDRESS,
+			OPERAND_REGISTER_LIST,
+			0
+		}
+	},
+	{	/* OPCODE_MOVEM_FROM_REGS */
+		"MOVEM",
+		SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_REGISTER_LIST,
+			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER
+				| OPERAND_ADDRESS | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT
+				| OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			0
+		}
+	},
 	{	/* OPCODE_ADD */
 		"ADD",
 		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
@@ -1447,6 +1486,22 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
 				break;
 
+			case OPCODE_MOVEM_TO_REGS:
+				machine_code = 0x4880;
+				machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
+
+				if (instruction->operands->next->type == OPERAND_REGISTER_LIST)
+				{
+					machine_code |= 1 << 10;
+					machine_code |= ConstructEffectiveAddressBits(instruction->operands);
+				}
+				else
+				{
+					machine_code |= ConstructEffectiveAddressBits(instruction->operands->next);
+				}
+
+				break;
+
 			case OPCODE_ADD:
 				/* TODO */
 				break;
@@ -1464,7 +1519,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 		{
 			if ((operand->type & ~instruction_metadata->allowed_operands[i]) != 0)
 			{
-				const char *operand_string;
+				const char *operand_string = "[REDACTED]"; /* Dumb joke - this should never be seen. */
 
 				switch (operand->type)
 				{
@@ -1524,8 +1579,8 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						operand_string = "the user stack pointer register";
 						break;
 
-					default:
-						operand_string = "[REDACTED]"; /* Dumb joke - this code should never be ran. */
+					case OPERAND_REGISTER_LIST:
+						operand_string = "a register list";
 						break;
 				}
 
