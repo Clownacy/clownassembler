@@ -110,4 +110,28 @@ Label:
 
 	tst.w	d0
 
+	ext.w	d0
+	ext.l	d1
+
+	nbcd	($FFFF8000).w
+
+	pea.l	($FFFFFFFF).w
+
+	illegal
+
+	tas.b	d0
+
+	trap	#4
+
+	link	a0,#12
+	unlk	a0
+
+	reset
+	nop
+	stop
+	rte
+	rts
+	trapv
+	rtr
+
   ; More blank lines to test support for trailing blank statements

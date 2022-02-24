@@ -141,7 +141,23 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_CLR
 %token TOKEN_OPCODE_NEG
 %token TOKEN_OPCODE_NOT
+%token TOKEN_OPCODE_EXT
+%token TOKEN_OPCODE_NBCD
+%token TOKEN_OPCODE_SWAP
+%token TOKEN_OPCODE_PEA
+%token TOKEN_OPCODE_ILLEGAL
+%token TOKEN_OPCODE_TAS
 %token TOKEN_OPCODE_TST
+%token TOKEN_OPCODE_TRAP
+%token TOKEN_OPCODE_LINK
+%token TOKEN_OPCODE_UNLK
+%token TOKEN_OPCODE_RESET
+%token TOKEN_OPCODE_NOP
+%token TOKEN_OPCODE_STOP
+%token TOKEN_OPCODE_RTE
+%token TOKEN_OPCODE_RTS
+%token TOKEN_OPCODE_TRAPV
+%token TOKEN_OPCODE_RTR
 %token TOKEN_OPCODE_ADD
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_WORD
@@ -356,9 +372,73 @@ opcode               : TOKEN_OPCODE_ORI
                      {
                        $$ = OPCODE_NOT;
                      }
+                     | TOKEN_OPCODE_EXT
+                     {
+                       $$ = OPCODE_EXT;
+                     }
+                     | TOKEN_OPCODE_NBCD
+                     {
+                       $$ = OPCODE_NBCD;
+                     }
+                     | TOKEN_OPCODE_SWAP
+                     {
+                       $$ = OPCODE_SWAP;
+                     }
+                     | TOKEN_OPCODE_PEA
+                     {
+                       $$ = OPCODE_PEA;
+                     }
+                     | TOKEN_OPCODE_ILLEGAL
+                     {
+                       $$ = OPCODE_ILLEGAL;
+                     }
+                     | TOKEN_OPCODE_TAS
+                     {
+                       $$ = OPCODE_TAS;
+                     }
                      | TOKEN_OPCODE_TST
                      {
                        $$ = OPCODE_TST;
+                     }
+                     | TOKEN_OPCODE_TRAP
+                     {
+                       $$ = OPCODE_TRAP;
+                     }
+                     | TOKEN_OPCODE_LINK
+                     {
+                       $$ = OPCODE_LINK;
+                     }
+                     | TOKEN_OPCODE_UNLK
+                     {
+                       $$ = OPCODE_UNLK;
+                     }
+                     | TOKEN_OPCODE_RESET
+                     {
+                       $$ = OPCODE_RESET;
+                     }
+                     | TOKEN_OPCODE_NOP
+                     {
+                       $$ = OPCODE_NOP;
+                     }
+                     | TOKEN_OPCODE_STOP
+                     {
+                       $$ = OPCODE_STOP;
+                     }
+                     | TOKEN_OPCODE_RTE
+                     {
+                       $$ = OPCODE_RTE;
+                     }
+                     | TOKEN_OPCODE_RTS
+                     {
+                       $$ = OPCODE_RTS;
+                     }
+                     | TOKEN_OPCODE_TRAPV
+                     {
+                       $$ = OPCODE_TRAPV;
+                     }
+                     | TOKEN_OPCODE_RTR
+                     {
+                       $$ = OPCODE_RTR;
                      }
                      | TOKEN_OPCODE_ADD
                      {

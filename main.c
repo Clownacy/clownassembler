@@ -711,6 +711,65 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0
 		}
 	},
+	{	/* OPCODE_EXT */
+		"EXT",
+		SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_NBCD */
+		"NBCD",
+		SIZE_BYTE | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS,
+			0
+		}
+	},
+	{	/* OPCODE_SWAP */
+		"SWAP",
+		SIZE_WORD | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_PEA */
+		"PEA",
+		SIZE_LONGWORD | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS
+				| OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ILLEGAL */
+		"ILLEGAL",
+		SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			0
+		}
+	},
+	{	/* OPCODE_TAS */
+		"TAS",
+		SIZE_BYTE | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS,
+			0
+		}
+	},
 	{	/* OPCODE_TST */
 		"TST",
 		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
@@ -719,6 +778,34 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
 				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
 				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS,
+			0
+		}
+	},
+	{	/* OPCODE_TRAP */
+		"TRAP",
+		SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_LITERAL,
+			0
+		}
+	},
+	{	/* OPCODE_LINK */
+		"LINK",
+		SIZE_WORD | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER,
+			OPERAND_LITERAL,
+			0
+		}
+	},
+	{	/* OPCODE_UNLK */
+		"UNLK",
+		SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER,
 			0
 		}
 	},
@@ -739,6 +826,62 @@ static const InstructionMetadata instruction_metadata_all[] = {
 		{
 			OPERAND_USER_STACK_POINTER_REGISTER,
 			OPERAND_ADDRESS_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_RESET */
+		"RESET",
+		SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			0
+		}
+	},
+	{	/* OPCODE_NOP */
+		"NOP",
+		SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			0
+		}
+	},
+	{	/* OPCODE_STOP */
+		"STOP",
+		SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			0
+		}
+	},
+	{	/* OPCODE_RTE */
+		"RTE",
+		SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			0
+		}
+	},
+	{	/* OPCODE_RTS */
+		"RTS",
+		SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			0
+		}
+	},
+	{	/* OPCODE_TRAPV */
+		"TRAPV",
+		SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			0
+		}
+	},
+	{	/* OPCODE_RTR */
+		"RTR",
+		SIZE_UNDEFINED,
+		(OperandType[])
+		{
 			0
 		}
 	},
@@ -1167,6 +1310,107 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
 
+				break;
+
+			case OPCODE_EXT:
+				machine_code = 0x4880;
+				machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
+				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
+				break;
+
+			case OPCODE_NBCD:
+				machine_code = 0x4800;
+				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
+				break;
+
+			case OPCODE_SWAP:
+				machine_code = 0x4840;
+
+				/* Just a check to prevent reading uninitialised memory. */
+				if (instruction->operands->type == OPERAND_DATA_REGISTER)
+					machine_code |= instruction->operands->main_register;
+
+				break;
+
+			case OPCODE_PEA:
+				machine_code = 0x4840;
+				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
+				break;
+
+			case OPCODE_ILLEGAL:
+				machine_code = 0x4AFC;
+				break;
+
+			case OPCODE_TAS:
+				machine_code = 0x4AC0;
+				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
+				break;
+
+			case OPCODE_TRAP:
+				machine_code = 0x4E40;
+
+				/* Just a check to prevent reading uninitialised memory. */
+				if (instruction->operands->type == OPERAND_LITERAL)
+				{
+					const unsigned long value = ResolveValue(&instruction->operands->literal);
+
+					if (value > 15)
+					{
+						fprintf(stderr, "Error: 'TRAP' instruction's vector cannot be higher than 15\n");
+						success = cc_false;
+					}
+					else
+					{
+						machine_code |= value;
+					}
+				}
+
+				break;
+
+			case OPCODE_LINK:
+				machine_code = 0x4E50;
+
+				/* Just a check to prevent reading uninitialised memory. */
+				if (instruction->operands->type == OPERAND_ADDRESS_REGISTER)
+					machine_code |= instruction->operands->main_register;
+
+				break;
+
+			case OPCODE_UNLK:
+				machine_code = 0x4E58;
+
+				/* Just a check to prevent reading uninitialised memory. */
+				if (instruction->operands->type == OPERAND_ADDRESS_REGISTER)
+					machine_code |= instruction->operands->main_register;
+
+				break;
+
+			case OPCODE_RESET:
+				machine_code = 0x4E70;
+				break;
+
+			case OPCODE_NOP:
+				machine_code = 0x4E71;
+				break;
+
+			case OPCODE_STOP:
+				machine_code = 0x4E72;
+				break;
+
+			case OPCODE_RTE:
+				machine_code = 0x4E73;
+				break;
+
+			case OPCODE_RTS:
+				machine_code = 0x4E75;
+				break;
+
+			case OPCODE_TRAPV:
+				machine_code = 0x4E76;
+				break;
+
+			case OPCODE_RTR:
+				machine_code = 0x4E77;
 				break;
 
 			case OPCODE_ADD:
