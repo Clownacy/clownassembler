@@ -81,6 +81,8 @@ rte             TOKEN(OPCODE_RTE)
 rts             TOKEN(OPCODE_RTS)
 trapv           TOKEN(OPCODE_TRAPV)
 rtr             TOKEN(OPCODE_RTR)
+jsr             TOKEN(OPCODE_JSR)
+jmp             TOKEN(OPCODE_JMP)
 add             TOKEN(OPCODE_ADD)
 "("             return yytext[0];
 ")"             return yytext[0];

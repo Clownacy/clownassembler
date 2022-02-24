@@ -63,6 +63,8 @@ typedef enum OpCodeType
 	OPCODE_RTS,
 	OPCODE_TRAPV,
 	OPCODE_RTR,
+	OPCODE_JSR,
+	OPCODE_JMP,
 
 	OPCODE_ADD
 } OpcodeType;

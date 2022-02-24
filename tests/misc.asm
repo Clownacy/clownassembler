@@ -134,4 +134,7 @@ Label:
 	trapv
 	rtr
 
+	jsr (a0)
+	jmp (0).w
+
   ; More blank lines to test support for trailing blank statements

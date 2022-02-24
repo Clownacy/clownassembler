@@ -158,6 +158,8 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_RTS
 %token TOKEN_OPCODE_TRAPV
 %token TOKEN_OPCODE_RTR
+%token TOKEN_OPCODE_JSR
+%token TOKEN_OPCODE_JMP
 %token TOKEN_OPCODE_ADD
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_WORD
@@ -439,6 +441,14 @@ opcode               : TOKEN_OPCODE_ORI
                      | TOKEN_OPCODE_RTR
                      {
                        $$ = OPCODE_RTR;
+                     }
+                     | TOKEN_OPCODE_JSR
+                     {
+                       $$ = OPCODE_JSR;
+                     }
+                     | TOKEN_OPCODE_JMP
+                     {
+                       $$ = OPCODE_JMP;
                      }
                      | TOKEN_OPCODE_ADD
                      {

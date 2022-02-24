@@ -885,6 +885,30 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0
 		}
 	},
+	{	/* OPCODE_JSR */
+		"JSR",
+		SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER
+				| OPERAND_ADDRESS | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT
+				| OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_JMP */
+		"JMP",
+		SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER
+				| OPERAND_ADDRESS | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT
+				| OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			0
+		}
+	},
 	{	/* OPCODE_ADD */
 		"ADD",
 		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
@@ -1411,6 +1435,16 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 			case OPCODE_RTR:
 				machine_code = 0x4E77;
+				break;
+
+			case OPCODE_JSR:
+				machine_code = 0x4E80;
+				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
+				break;
+
+			case OPCODE_JMP:
+				machine_code = 0x4EC0;
+				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
 				break;
 
 			case OPCODE_ADD:
