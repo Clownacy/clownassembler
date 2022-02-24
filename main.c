@@ -124,7 +124,7 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
 			break;
 
 		default:
-			fprintf(stderr, "Error: Invalid operand type - USP, SR, and CCR cannot be used here\n");
+			fprintf(stderr, "Error: Invalid operand type - register lists, USP, SR, and CCR cannot be used here\n");
 			success = cc_false;
 			/* Just pretend it's data register 0 to keep things moving along. */
 			m = 0;
