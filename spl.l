@@ -57,6 +57,8 @@ btst            TOKEN(OPCODE_BTST)
 bchg            TOKEN(OPCODE_BCHG)
 bclr            TOKEN(OPCODE_BCLR)
 bset            TOKEN(OPCODE_BSET)
+movep           TOKEN(OPCODE_MOVEP)
+movea           TOKEN(OPCODE_MOVEA)
 move            TOKEN(OPCODE_MOVE)
 add             TOKEN(OPCODE_ADD)
 "("             return yytext[0];

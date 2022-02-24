@@ -124,8 +124,6 @@ StatementListNode *statement_list_head;
 
 %token TOKEN_WHITESPACE
 %token TOKEN_NEWLINE
-%token TOKEN_OPCODE_MOVE
-%token TOKEN_OPCODE_ADD
 %token TOKEN_OPCODE_ORI
 %token TOKEN_OPCODE_ANDI
 %token TOKEN_OPCODE_SUBI
@@ -136,6 +134,10 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_BCHG
 %token TOKEN_OPCODE_BCLR
 %token TOKEN_OPCODE_BSET
+%token TOKEN_OPCODE_MOVEP
+%token TOKEN_OPCODE_MOVEA
+%token TOKEN_OPCODE_MOVE
+%token TOKEN_OPCODE_ADD
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_WORD
 %token TOKEN_SIZE_LONG
@@ -320,6 +322,14 @@ opcode               : TOKEN_OPCODE_ORI
                      | TOKEN_OPCODE_BSET
                      {
                        $$ = OPCODE_BSET_STATIC;
+                     }
+                     | TOKEN_OPCODE_MOVEP
+                     {
+                       $$ = OPCODE_MOVEP_TO_REG;
+                     }
+                     | TOKEN_OPCODE_MOVEA
+                     {
+                       $$ = OPCODE_MOVEA;
                      }
                      | TOKEN_OPCODE_MOVE
                      {

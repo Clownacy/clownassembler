@@ -97,4 +97,10 @@ Label:
 	bset.b	d0,(a0)
 	bset.b	d0,#$AA ; What a wacky instruction...
 
+	movep.l	d0,0(a0)
+	movep.w	10(a0),d0
+
+	movea.l	#$FFFF,a0
+	movea.w	d0,a0
+
   ; More blank lines to test support for trailing blank statements

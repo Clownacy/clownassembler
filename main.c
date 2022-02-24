@@ -654,6 +654,39 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0
 		}
 	},
+	{	/* OPCODE_MOVEP_TO_REG */
+		"MOVEP",
+		SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_MOVEP_FROM_REG */
+		"MOVEP",
+		SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT,
+			0
+		}
+	},
+	{	/* OPCODE_MOVEA */
+		"MOVEA",
+		SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_LITERAL
+				| OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			OPERAND_ADDRESS_REGISTER,
+			0
+		}
+	},
 	{	/* OPCODE_ADD */
 		"ADD",
 		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
@@ -908,12 +941,43 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				break;
 			}
 
+			case OPCODE_MOVEP_TO_REG:
+			{
+				unsigned int data_register = 0;
+				unsigned int address_register = 0;
+
+				const Operand* const source_operand = instruction->operands;
+				const Operand* const destination_operand = instruction->operands->next;
+
+				if (source_operand->type == OPERAND_DATA_REGISTER)
+				{
+					instruction_metadata = &instruction_metadata_all[OPCODE_MOVEP_FROM_REG];
+
+					data_register = source_operand->main_register;
+					address_register = destination_operand->main_register;
+				}
+				else if (destination_operand->type == OPERAND_DATA_REGISTER)
+				{
+					address_register = source_operand->main_register;
+					data_register = destination_operand->main_register;
+				}
+
+				machine_code = 0x0108;
+				machine_code |= data_register << 9;
+				machine_code |= (source_operand->type == OPERAND_DATA_REGISTER) << 7;
+				machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
+				machine_code |= address_register;
+
+				break;
+			}
+
+			case OPCODE_MOVEA:
 			case OPCODE_MOVE:
 			{
 				const Operand* const source_operand = instruction->operands;
 				const Operand* const destination_operand = instruction->operands->next;
 
-				if (source_operand->type == OPERAND_USER_STACK_POINTER_REGISTER || destination_operand->type == OPERAND_USER_STACK_POINTER_REGISTER)
+				if (instruction->opcode.type == OPCODE_MOVE && (source_operand->type == OPERAND_USER_STACK_POINTER_REGISTER || destination_operand->type == OPERAND_USER_STACK_POINTER_REGISTER))
 				{
 					/* MOVE USP */
 
@@ -941,7 +1005,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					/* Produce the machine code for this instruction. */
 					machine_code = 0x4E60 | (from_usp_to_address_register << 3) | address_register;
 				}
-				else if (source_operand->type == OPERAND_STATUS_REGISTER || destination_operand->type == OPERAND_STATUS_REGISTER)
+				else if (instruction->opcode.type == OPCODE_MOVE && (source_operand->type == OPERAND_STATUS_REGISTER || destination_operand->type == OPERAND_STATUS_REGISTER))
 				{
 					/* MOVE TO SR */
 					/* MOVE FROM SR */
@@ -962,7 +1026,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						machine_code = 0x46C0 | ConstructEffectiveAddressBits(source_operand);
 					}
 				}
-				else if (destination_operand->type == OPERAND_CONDITION_CODE_REGISTER)
+				else if (instruction->opcode.type == OPCODE_MOVE && (destination_operand->type == OPERAND_CONDITION_CODE_REGISTER))
 				{
 					/* MOVE TO CCR */
 					instruction_metadata = &instruction_metadata_all[OPCODE_MOVE_TO_CCR];
@@ -972,11 +1036,11 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				else
 				{
 					/* MOVE */
-					if (destination_operand->type == OPERAND_ADDRESS_REGISTER)
+					/* MOVEA */
+					if (instruction->opcode.type == OPCODE_MOVEA && destination_operand->type == OPERAND_ADDRESS_REGISTER)
 					{
 						/* MOVEA mistyped as MOVE */
-						fprintf(stderr, "Error: a 'MOVE' instruction cannot move to an address register - you probably meant to use the MOVEA instruction\n");
-						success = cc_false;
+						instruction_metadata = &instruction_metadata_all[OPCODE_MOVEA];
 					}
 
 					switch (instruction->opcode.size)
