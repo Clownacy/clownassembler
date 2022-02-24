@@ -1576,17 +1576,12 @@ int main(int argc, char **argv)
 
 					for (statement_list_node = statement_list_head; statement_list_node != NULL; statement_list_node = statement_list_node->next)
 					{
-						fprintf(stderr, "What do we have here? A statement of type %d!\n", statement_list_node->statement.type);
-
 						switch (statement_list_node->statement.type)
 						{
 							case STATEMENT_TYPE_EMPTY:
-								fprintf(stderr, "  What do we have here? An empty statement!\n");
 								break;
 
 							case STATEMENT_TYPE_INSTRUCTION:
-								fprintf(stderr, "  What do we have here? An instruction of type %d!\n", statement_list_node->statement.data.instruction.opcode.type);
-
 								if (!AssembleInstruction(output_file, &statement_list_node->statement.data.instruction))
 								{
 									exit_code = EXIT_FAILURE;
@@ -1595,7 +1590,6 @@ int main(int argc, char **argv)
 								break;
 
 							case STATEMENT_TYPE_MACRO:
-								fprintf(stderr, "  What do we have here? A macro!\n");
 								break;
 						}
 					}
