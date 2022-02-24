@@ -180,6 +180,9 @@ StatementListNode *statement_list_head;
 %type<opcode> full_opcode
 %type<operand_pointer> operand_list
 %type<operand> operand
+%type<generic.integer> register_list
+%type<generic.integer> register_span
+%type<generic.integer> data_or_address_register
 %type<statement> statement
 %type<statement_list> statement_list
 %type<value> value
@@ -607,7 +610,7 @@ operand              : '(' TOKEN_ADDRESS_REGISTER ')'
                        $$.literal = $2;
                      }
                      /* Registers */
-                     | TOKEN_DATA_REGISTER
+/*                     | TOKEN_DATA_REGISTER
                      {
                        $$.type = OPERAND_DATA_REGISTER;
                        $$.main_register = $1;
@@ -617,7 +620,7 @@ operand              : '(' TOKEN_ADDRESS_REGISTER ')'
                        $$.type = OPERAND_ADDRESS_REGISTER;
                        $$.main_register = $1;
                      }
-                     | TOKEN_STATUS_REGISTER
+*/                     | TOKEN_STATUS_REGISTER
                      {
                        $$.type = OPERAND_STATUS_REGISTER;
                      }
@@ -632,29 +635,108 @@ operand              : '(' TOKEN_ADDRESS_REGISTER ')'
                      /* Addresses */
                      | value
                      {
-                         $$.type = OPERAND_ADDRESS;
-                         $$.literal = $1;
-                         $$.size = SIZE_UNDEFINED;
+                       $$.type = OPERAND_ADDRESS;
+                       $$.literal = $1;
+                       $$.size = SIZE_UNDEFINED;
                      }
                      | value '.' size
                      {
-                         $$.type = OPERAND_ADDRESS;
-                         $$.literal = $1;
-                         $$.size = $3;
+                       $$.type = OPERAND_ADDRESS;
+                       $$.literal = $1;
+                       $$.size = $3;
                      }
                      | '(' value ')'
                      {
-                         $$.type = OPERAND_ADDRESS;
-                         $$.literal = $2;
-                         $$.size = SIZE_UNDEFINED;
+                       $$.type = OPERAND_ADDRESS;
+                       $$.literal = $2;
+                       $$.size = SIZE_UNDEFINED;
                      }
                      | '(' value ')' '.' size
                      {
-                         $$.type = OPERAND_ADDRESS;
-                         $$.literal = $2;
-                         $$.size = $5;
+                       $$.type = OPERAND_ADDRESS;
+                       $$.literal = $2;
+                       $$.size = $5;
+                     }
+                     /* Register list */
+                     | register_list
+                     {
+                       /* Neat trick to check if only one bit is set (yes, I know that it evaluates to true for 0, but that doesn't matter here). */
+                       if (($1 & ($1 - 1)) == 0)
+                       {
+                         /* This is a single register. */
+                         $$.main_register = 0;
+
+                         while (($1 & (1 << $$.main_register)) == 0)
+                             ++$$.main_register;
+
+                         if ($1 >= 8)
+                         {
+                           $$.type = OPERAND_ADDRESS_REGISTER;
+                           $$.main_register -= 8;
+                         }
+                         else
+                         {
+                           $$.type = OPERAND_DATA_REGISTER;
+                         }
+                       }
+                       else
+                       {
+                           /* This is multiple registers. */
+                           $$.type = OPERAND_REGISTER_LIST;
+                           $$.main_register = $1; /* Such a hack... */
+                       }
                      }
                      ;
+
+register_list        : register_span
+                     {
+                       $$ = $1;
+                     }
+                     | register_span '/' register_list
+                     {
+                       $$ = $1 | $3;
+                     }
+
+register_span        : data_or_address_register
+                     {
+                       $$ = 1 << $1;
+                     }
+                     | data_or_address_register '-' data_or_address_register
+                     {
+                       unsigned long start;
+                       unsigned long end;
+                       unsigned long i;
+
+                       if ($1 < $3)
+                       {
+                         start = $1;
+                         end = $3;
+                       }
+                       else
+                       {
+                         start = $3;
+                         end = $1;
+                       }
+
+                       $$ = 0;
+
+                       for (i = start; i <= end; ++i)
+                       {
+                         $$ |= 1 << i;
+                       }
+                     }
+                     ;
+
+data_or_address_register : TOKEN_DATA_REGISTER
+                     {
+                       $$ = 0 + $1;
+                     }
+                     | TOKEN_ADDRESS_REGISTER
+                     {
+                       $$ = 8 + $1;
+                     }
+                     ;
+
 /*
 number               : TOKEN_NUMBER
                      | '$' TOKEN_NUMBER

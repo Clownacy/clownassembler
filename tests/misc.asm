@@ -137,4 +137,8 @@ Label:
 	jsr (a0)
 	jmp (0).w
 
+	movem.w	a1/d0-d2/d4-a1/d3,-(sp)
+	movem.w	(sp)+,a1/d0-d2/d4-a1/d3
+	movem.w	d0-a7,-(sp)
+
   ; More blank lines to test support for trailing blank statements

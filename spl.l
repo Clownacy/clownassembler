@@ -95,6 +95,7 @@ add             TOKEN(OPCODE_ADD)
 ":"             return yytext[0];
 "+"             return yytext[0];
 "-"             return yytext[0];
+"/"             return yytext[0];
 sr              TOKEN(STATUS_REGISTER)
 ccr             TOKEN(CONDITION_CODE_REGISTER)
 sp              yylval.generic.integer = 7; return TOKEN_ADDRESS_REGISTER;

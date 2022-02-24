@@ -149,7 +149,6 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 			case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
 			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-			case OPERAND_REGISTER_LIST:
 			{
 				unsigned int i = 2;
 				unsigned long value = ResolveValue(&operand->literal);
@@ -281,14 +280,32 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 						}
 
 						break;
-
-					case OPERAND_REGISTER_LIST:
-						/* TODO */
-						break;
 				}
 
 				while (i-- > 0)
 					fputc((value >> (8 * i)) & 0xFF, file);
+
+				break;
+			}
+
+			case OPERAND_REGISTER_LIST:
+			{
+				unsigned int i;
+				unsigned int register_list = operand->main_register;
+
+				/* Ugly hack to reverse the register list when doing `movem.w/.l d0-a7,-(aN)` */
+				if (instruction->operands != NULL && instruction->operands->next != NULL && instruction->operands->next->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+				{
+					static unsigned int reverse_nibble[0x10] = {0x0, 0x8, 0x4, 0xC, 0x2, 0xA, 0x6, 0xE, 0x1, 0x9, 0x5, 0xD, 0x3, 0xB, 0x7, 0xF};
+
+					register_list = reverse_nibble[(register_list >> (4 * 0)) & 0xF] << (4 * 3)
+					              | reverse_nibble[(register_list >> (4 * 1)) & 0xF] << (4 * 2)
+					              | reverse_nibble[(register_list >> (4 * 2)) & 0xF] << (4 * 1)
+					              | reverse_nibble[(register_list >> (4 * 3)) & 0xF] << (4 * 0);
+				}
+
+				for (i = 2; i-- > 0; )
+					fputc((register_list >> (8 * i)) & 0xFF, file);
 
 				break;
 			}
@@ -926,10 +943,11 @@ static const InstructionMetadata instruction_metadata_all[] = {
 		SIZE_WORD | SIZE_LONGWORD,
 		(OperandType[])
 		{
-			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT
+			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
 				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
 				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER
-				| OPERAND_ADDRESS,
+				| OPERAND_ADDRESS | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT
+				| OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
 			OPERAND_REGISTER_LIST,
 			0
 		}
@@ -940,11 +958,10 @@ static const InstructionMetadata instruction_metadata_all[] = {
 		(OperandType[])
 		{
 			OPERAND_REGISTER_LIST,
-			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
+			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT
 				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
 				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER
-				| OPERAND_ADDRESS | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT
-				| OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+				| OPERAND_ADDRESS,
 			0
 		}
 	},
@@ -1497,6 +1514,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				}
 				else
 				{
+					instruction_metadata = &instruction_metadata_all[OPCODE_MOVEM_FROM_REGS];
 					machine_code |= ConstructEffectiveAddressBits(instruction->operands->next);
 				}
 
