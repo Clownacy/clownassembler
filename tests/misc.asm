@@ -103,4 +103,11 @@ Label:
 	movea.l	#$FFFF,a0
 	movea.w	d0,a0
 
+	negx.w	d0
+	clr.w	d0
+	neg.w	d0
+	not.w	d0
+
+	tst.w	d0
+
   ; More blank lines to test support for trailing blank statements

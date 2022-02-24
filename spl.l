@@ -60,6 +60,11 @@ bset            TOKEN(OPCODE_BSET)
 movep           TOKEN(OPCODE_MOVEP)
 movea           TOKEN(OPCODE_MOVEA)
 move            TOKEN(OPCODE_MOVE)
+negx            TOKEN(OPCODE_NEGX)
+clr             TOKEN(OPCODE_CLR)
+neg             TOKEN(OPCODE_NEG)
+not             TOKEN(OPCODE_NOT)
+tst             TOKEN(OPCODE_TST)
 add             TOKEN(OPCODE_ADD)
 "("             return yytext[0];
 ")"             return yytext[0];

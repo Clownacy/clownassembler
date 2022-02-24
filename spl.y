@@ -137,6 +137,11 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_MOVEP
 %token TOKEN_OPCODE_MOVEA
 %token TOKEN_OPCODE_MOVE
+%token TOKEN_OPCODE_NEGX
+%token TOKEN_OPCODE_CLR
+%token TOKEN_OPCODE_NEG
+%token TOKEN_OPCODE_NOT
+%token TOKEN_OPCODE_TST
 %token TOKEN_OPCODE_ADD
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_WORD
@@ -334,6 +339,26 @@ opcode               : TOKEN_OPCODE_ORI
                      | TOKEN_OPCODE_MOVE
                      {
                        $$ = OPCODE_MOVE;
+                     }
+                     | TOKEN_OPCODE_NEGX
+                     {
+                       $$ = OPCODE_NEGX;
+                     }
+                     | TOKEN_OPCODE_CLR
+                     {
+                       $$ = OPCODE_CLR;
+                     }
+                     | TOKEN_OPCODE_NEG
+                     {
+                       $$ = OPCODE_NEG;
+                     }
+                     | TOKEN_OPCODE_NOT
+                     {
+                       $$ = OPCODE_NOT;
+                     }
+                     | TOKEN_OPCODE_TST
+                     {
+                       $$ = OPCODE_TST;
                      }
                      | TOKEN_OPCODE_ADD
                      {
