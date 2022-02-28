@@ -84,6 +84,17 @@ rtr             TOKEN(OPCODE_RTR)
 jsr             TOKEN(OPCODE_JSR)
 jmp             TOKEN(OPCODE_JMP)
 movem           TOKEN(OPCODE_MOVEM)
+lea             TOKEN(OPCODE_LEA)
+chk             TOKEN(OPCODE_CHK)
+addq            TOKEN(OPCODE_ADDQ)
+subq            TOKEN(OPCODE_SUBQ)
+
+divu            TOKEN(OPCODE_DIVU)
+divs            TOKEN(OPCODE_DIVS)
+
+mulu            TOKEN(OPCODE_MULU)
+muls            TOKEN(OPCODE_MULS)
+
 add             TOKEN(OPCODE_ADD)
 "("             return yytext[0];
 ")"             return yytext[0];

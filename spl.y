@@ -161,6 +161,17 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_JSR
 %token TOKEN_OPCODE_JMP
 %token TOKEN_OPCODE_MOVEM
+%token TOKEN_OPCODE_LEA
+%token TOKEN_OPCODE_CHK
+%token TOKEN_OPCODE_ADDQ
+%token TOKEN_OPCODE_SUBQ
+
+%token TOKEN_OPCODE_DIVU
+%token TOKEN_OPCODE_DIVS
+
+%token TOKEN_OPCODE_MULU
+%token TOKEN_OPCODE_MULS
+
 %token TOKEN_OPCODE_ADD
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_WORD
@@ -458,6 +469,41 @@ opcode               : TOKEN_OPCODE_ORI
                      {
                        $$ = OPCODE_MOVEM_TO_REGS;
                      }
+                     | TOKEN_OPCODE_LEA
+                     {
+                       $$ = OPCODE_LEA;
+                     }
+                     | TOKEN_OPCODE_CHK
+                     {
+                       $$ = OPCODE_CHK;
+                     }
+                     | TOKEN_OPCODE_ADDQ
+                     {
+                       $$ = OPCODE_ADDQ;
+                     }
+                     | TOKEN_OPCODE_SUBQ
+                     {
+                       $$ = OPCODE_SUBQ;
+                     }
+
+                     | TOKEN_OPCODE_DIVU
+                     {
+                       $$ = OPCODE_DIVU;
+                     }
+                     | TOKEN_OPCODE_DIVS
+                     {
+                       $$ = OPCODE_DIVS;
+                     }
+
+                     | TOKEN_OPCODE_MULU
+                     {
+                       $$ = OPCODE_MULU;
+                     }
+                     | TOKEN_OPCODE_MULS
+                     {
+                       $$ = OPCODE_MULS;
+                     }
+
                      | TOKEN_OPCODE_ADD
                      {
                        $$ = OPCODE_ADD;

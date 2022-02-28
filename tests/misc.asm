@@ -141,4 +141,13 @@ Label:
 	movem.w	(sp)+,a1/d0-d2/d4-a1/d3
 	movem.w	d0-a7,-(sp)
 
+	lea	10(a0),a0
+
+	chk.w	#12,d0
+
+	divu.w	#2,d0
+	divs.w	#2,d0
+	mulu.w	#2,d0
+	muls.w	#2,d0
+
   ; More blank lines to test support for trailing blank statements
