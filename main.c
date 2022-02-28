@@ -34,6 +34,22 @@ static unsigned long ResolveValue(const Value *value)
 	}
 }
 
+static unsigned int ConstructSizeBits(Size size)
+{
+	switch (size)
+	{
+		case SIZE_BYTE:
+			return 0x0000;
+
+		default:
+		case SIZE_WORD:
+			return 0x0040;
+
+		case SIZE_LONGWORD:
+			return 0x0080;
+	}
+}
+
 static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
 {
 	unsigned int m, xn;
@@ -135,11 +151,11 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
 	return (m << 3) | (xn << 0);
 }
 
-static void OutputOperands(FILE *file, const Instruction *instruction)
+static void OutputOperands(FILE *file, const Operand *operands, Size opcode_size)
 {
 	const Operand *operand;
 
-	for (operand = instruction->operands; operand != NULL; operand = operand->next)
+	for (operand = operands; operand != NULL; operand = operand->next)
 	{
 		switch (operand->type)
 		{
@@ -199,7 +215,7 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 						break;
 
 					case OPERAND_LITERAL:
-						switch (instruction->opcode.size)
+						switch (opcode_size)
 						{
 							case SIZE_BYTE:
 								i = 2;
@@ -294,7 +310,7 @@ static void OutputOperands(FILE *file, const Instruction *instruction)
 				unsigned int register_list = operand->main_register;
 
 				/* Ugly hack to reverse the register list when doing `movem.w/.l d0-a7,-(aN)` */
-				if (instruction->operands != NULL && instruction->operands->next != NULL && instruction->operands->next->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+				if (operands != NULL && operands->next != NULL && operands->next->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
 				{
 					static unsigned int reverse_nibble[0x10] = {0x0, 0x8, 0x4, 0xC, 0x2, 0xA, 0x6, 0xE, 0x1, 0x9, 0x5, 0xD, 0x3, 0xB, 0x7, 0xF};
 
@@ -1092,6 +1108,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 	unsigned int machine_code = 0x4E71;
 	unsigned int i;
 	const InstructionMetadata *instruction_metadata = &instruction_metadata_all[instruction->opcode.type];
+	const Operand *operands_to_output = instruction->operands;
 
 	success = cc_true;
 
@@ -1477,22 +1494,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						break;
 				}
 
-				switch (instruction->opcode.size)
-				{
-					case SIZE_BYTE:
-						machine_code |= 0x0000;
-						break;
-
-					default:
-					case SIZE_WORD:
-						machine_code |= 0x0040;
-						break;
-
-					case SIZE_LONGWORD:
-						machine_code |= 0x0080;
-						break;
-				}
-
+				machine_code |= ConstructSizeBits(instruction->opcode.size);
 				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
 
 				break;
@@ -1673,8 +1675,44 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 			case OPCODE_ADDQ:
 			case OPCODE_SUBQ:
-				
+			{
+				const Operand* const source_operand = instruction->operands;
+				const Operand* const destination_operand = instruction->operands->next;
+
+				/* Skip the immediate operand since that goes in the machine code instead. */
+				operands_to_output = destination_operand;
+
+				switch (instruction->opcode.type)
+				{
+					case OPCODE_ADDQ:
+						machine_code = 0x5000;
+						break;
+
+					case OPCODE_SUBQ:
+						machine_code = 0x5100;
+						break;
+				}
+
+				machine_code |= ConstructSizeBits(instruction->opcode.size);
+				machine_code |= ConstructEffectiveAddressBits(destination_operand);
+
+				if (source_operand->type == OPERAND_LITERAL)
+				{
+					const unsigned long value = ResolveValue(&source_operand->literal);
+
+					if (value < 1 || value > 8)
+					{
+						fprintf(stderr, "Error: 'ADDQ'/'SUBQ' instruction's immediate value cannot be lower than 1 or higher than 8\n");
+						success = cc_false;
+					}
+					else
+					{
+						machine_code |= (value - 1) << 9;
+					}
+				}
+
 				break;
+			}
 
 			case OPCODE_ADD:
 				/* TODO */
@@ -1792,7 +1830,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 		fputc((machine_code >> (8 * i)) & 0xFF, file);
 
 	/* Output the data for the operands. */
-	OutputOperands(file, instruction);
+	OutputOperands(file, operands_to_output, instruction->opcode.size);
 
 	return success;
 }

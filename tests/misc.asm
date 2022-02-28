@@ -150,4 +150,9 @@ Label:
 	mulu.w	#2,d0
 	muls.w	#2,d0
 
+	addq.w	#1,d0
+	addq.l	#8,d0
+	subq.w	#1,d0
+	subq.l	#8,d0
+
   ; More blank lines to test support for trailing blank statements
