@@ -1031,6 +1031,17 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0
 		}
 	},
+	{	/* OPCODE_Scc */
+		"Scc",
+		SIZE_BYTE | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS,
+			0
+		}
+	},
 
 	{	/* OPCODE_DIVU */
 		"DIVU",
@@ -1713,6 +1724,12 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 				break;
 			}
+
+			case OPCODE_Scc:
+				machine_code = 0x50C0;
+				machine_code |= instruction->opcode.condition << 8;
+				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
+				break;
 
 			case OPCODE_ADD:
 				/* TODO */

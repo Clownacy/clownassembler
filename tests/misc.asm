@@ -155,4 +155,21 @@ Label:
 	subq.w	#1,d0
 	subq.l	#8,d0
 
+	st.b	($FFFF81D0).w
+	sf.b	($FFFF81D0).w
+	shi.b	($FFFF81D0).w
+	sls.b	($FFFF81D0).w
+	scc.b	($FFFF81D0).w
+	scs.b	($FFFF81D0).w
+	sne.b	($FFFF81D0).w
+	seq.b	($FFFF81D0).w
+	svc.b	($FFFF81D0).w
+	svs.b	($FFFF81D0).w
+	spl.b	($FFFF81D0).w
+	smi.b	($FFFF81D0).w
+	sge.b	($FFFF81D0).w
+	slt.b	($FFFF81D0).w
+	sgt.b	($FFFF81D0).w
+	sle.b	($FFFF81D0).w
+
   ; More blank lines to test support for trailing blank statements

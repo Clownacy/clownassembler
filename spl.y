@@ -165,6 +165,22 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_CHK
 %token TOKEN_OPCODE_ADDQ
 %token TOKEN_OPCODE_SUBQ
+%token TOKEN_OPCODE_ST
+%token TOKEN_OPCODE_SF
+%token TOKEN_OPCODE_SHI
+%token TOKEN_OPCODE_SLS
+%token TOKEN_OPCODE_SCC
+%token TOKEN_OPCODE_SCS
+%token TOKEN_OPCODE_SNE
+%token TOKEN_OPCODE_SEQ
+%token TOKEN_OPCODE_SVC
+%token TOKEN_OPCODE_SVS
+%token TOKEN_OPCODE_SPL
+%token TOKEN_OPCODE_SMI
+%token TOKEN_OPCODE_SGE
+%token TOKEN_OPCODE_SLT
+%token TOKEN_OPCODE_SGT
+%token TOKEN_OPCODE_SLE
 
 %token TOKEN_OPCODE_DIVU
 %token TOKEN_OPCODE_DIVS
@@ -186,7 +202,7 @@ StatementListNode *statement_list_head;
 %token TOKEN_PROGRAM_COUNTER
 
 %type<instruction> instruction
-%type<generic.integer> opcode
+%type<opcode> opcode
 %type<generic.integer> size
 %type<opcode> full_opcode
 %type<operand_pointer> operand_list
@@ -311,202 +327,282 @@ instruction          : TOKEN_WHITESPACE full_opcode end_of_line
 
 full_opcode          : opcode
                      {
-                       $$.type = $1;
+                       $$ = $1;
                        $$.size = SIZE_UNDEFINED;
                      }
                      | opcode '.' size
                      {
-                       $$.type = $1;
+                       $$ = $1;
                        $$.size = $3;
                      }
                      ;
 
 opcode               : TOKEN_OPCODE_ORI
                      {
-                       $$ = OPCODE_ORI;
+                       $$.type = OPCODE_ORI;
                      }
                      | TOKEN_OPCODE_ANDI
                      {
-                       $$ = OPCODE_ANDI;
+                       $$.type = OPCODE_ANDI;
                      }
                      | TOKEN_OPCODE_SUBI
                      {
-                       $$ = OPCODE_SUBI;
+                       $$.type = OPCODE_SUBI;
                      }
                      | TOKEN_OPCODE_ADDI
                      {
-                       $$ = OPCODE_ADDI;
+                       $$.type = OPCODE_ADDI;
                      }
                      | TOKEN_OPCODE_EORI
                      {
-                       $$ = OPCODE_EORI;
+                       $$.type = OPCODE_EORI;
                      }
                      | TOKEN_OPCODE_CMPI
                      {
-                       $$ = OPCODE_CMPI;
+                       $$.type = OPCODE_CMPI;
                      }
                      | TOKEN_OPCODE_BTST
                      {
-                       $$ = OPCODE_BTST_STATIC;
+                       $$.type = OPCODE_BTST_STATIC;
                      }
                      | TOKEN_OPCODE_BCHG
                      {
-                       $$ = OPCODE_BCHG_STATIC;
+                       $$.type = OPCODE_BCHG_STATIC;
                      }
                      | TOKEN_OPCODE_BCLR
                      {
-                       $$ = OPCODE_BCLR_STATIC;
+                       $$.type = OPCODE_BCLR_STATIC;
                      }
                      | TOKEN_OPCODE_BSET
                      {
-                       $$ = OPCODE_BSET_STATIC;
+                       $$.type = OPCODE_BSET_STATIC;
                      }
                      | TOKEN_OPCODE_MOVEP
                      {
-                       $$ = OPCODE_MOVEP_TO_REG;
+                       $$.type = OPCODE_MOVEP_TO_REG;
                      }
                      | TOKEN_OPCODE_MOVEA
                      {
-                       $$ = OPCODE_MOVEA;
+                       $$.type = OPCODE_MOVEA;
                      }
                      | TOKEN_OPCODE_MOVE
                      {
-                       $$ = OPCODE_MOVE;
+                       $$.type = OPCODE_MOVE;
                      }
                      | TOKEN_OPCODE_NEGX
                      {
-                       $$ = OPCODE_NEGX;
+                       $$.type = OPCODE_NEGX;
                      }
                      | TOKEN_OPCODE_CLR
                      {
-                       $$ = OPCODE_CLR;
+                       $$.type = OPCODE_CLR;
                      }
                      | TOKEN_OPCODE_NEG
                      {
-                       $$ = OPCODE_NEG;
+                       $$.type = OPCODE_NEG;
                      }
                      | TOKEN_OPCODE_NOT
                      {
-                       $$ = OPCODE_NOT;
+                       $$.type = OPCODE_NOT;
                      }
                      | TOKEN_OPCODE_EXT
                      {
-                       $$ = OPCODE_EXT;
+                       $$.type = OPCODE_EXT;
                      }
                      | TOKEN_OPCODE_NBCD
                      {
-                       $$ = OPCODE_NBCD;
+                       $$.type = OPCODE_NBCD;
                      }
                      | TOKEN_OPCODE_SWAP
                      {
-                       $$ = OPCODE_SWAP;
+                       $$.type = OPCODE_SWAP;
                      }
                      | TOKEN_OPCODE_PEA
                      {
-                       $$ = OPCODE_PEA;
+                       $$.type = OPCODE_PEA;
                      }
                      | TOKEN_OPCODE_ILLEGAL
                      {
-                       $$ = OPCODE_ILLEGAL;
+                       $$.type = OPCODE_ILLEGAL;
                      }
                      | TOKEN_OPCODE_TAS
                      {
-                       $$ = OPCODE_TAS;
+                       $$.type = OPCODE_TAS;
                      }
                      | TOKEN_OPCODE_TST
                      {
-                       $$ = OPCODE_TST;
+                       $$.type = OPCODE_TST;
                      }
                      | TOKEN_OPCODE_TRAP
                      {
-                       $$ = OPCODE_TRAP;
+                       $$.type = OPCODE_TRAP;
                      }
                      | TOKEN_OPCODE_LINK
                      {
-                       $$ = OPCODE_LINK;
+                       $$.type = OPCODE_LINK;
                      }
                      | TOKEN_OPCODE_UNLK
                      {
-                       $$ = OPCODE_UNLK;
+                       $$.type = OPCODE_UNLK;
                      }
                      | TOKEN_OPCODE_RESET
                      {
-                       $$ = OPCODE_RESET;
+                       $$.type = OPCODE_RESET;
                      }
                      | TOKEN_OPCODE_NOP
                      {
-                       $$ = OPCODE_NOP;
+                       $$.type = OPCODE_NOP;
                      }
                      | TOKEN_OPCODE_STOP
                      {
-                       $$ = OPCODE_STOP;
+                       $$.type = OPCODE_STOP;
                      }
                      | TOKEN_OPCODE_RTE
                      {
-                       $$ = OPCODE_RTE;
+                       $$.type = OPCODE_RTE;
                      }
                      | TOKEN_OPCODE_RTS
                      {
-                       $$ = OPCODE_RTS;
+                       $$.type = OPCODE_RTS;
                      }
                      | TOKEN_OPCODE_TRAPV
                      {
-                       $$ = OPCODE_TRAPV;
+                       $$.type = OPCODE_TRAPV;
                      }
                      | TOKEN_OPCODE_RTR
                      {
-                       $$ = OPCODE_RTR;
+                       $$.type = OPCODE_RTR;
                      }
                      | TOKEN_OPCODE_JSR
                      {
-                       $$ = OPCODE_JSR;
+                       $$.type = OPCODE_JSR;
                      }
                      | TOKEN_OPCODE_JMP
                      {
-                       $$ = OPCODE_JMP;
+                       $$.type = OPCODE_JMP;
                      }
                      | TOKEN_OPCODE_MOVEM
                      {
-                       $$ = OPCODE_MOVEM_TO_REGS;
+                       $$.type = OPCODE_MOVEM_TO_REGS;
                      }
                      | TOKEN_OPCODE_LEA
                      {
-                       $$ = OPCODE_LEA;
+                       $$.type = OPCODE_LEA;
                      }
                      | TOKEN_OPCODE_CHK
                      {
-                       $$ = OPCODE_CHK;
+                       $$.type = OPCODE_CHK;
                      }
                      | TOKEN_OPCODE_ADDQ
                      {
-                       $$ = OPCODE_ADDQ;
+                       $$.type = OPCODE_ADDQ;
                      }
                      | TOKEN_OPCODE_SUBQ
                      {
-                       $$ = OPCODE_SUBQ;
+                       $$.type = OPCODE_SUBQ;
+                     }
+                     | TOKEN_OPCODE_ST
+                     {
+                       $$.type = OPCODE_Scc;
+					   $$.condition = CONDITION_TRUE;
+                     }
+                     | TOKEN_OPCODE_SF
+                     {
+                       $$.type = OPCODE_Scc;
+					   $$.condition = CONDITION_FALSE;
+                     }
+                     | TOKEN_OPCODE_SHI
+                     {
+                       $$.type = OPCODE_Scc;
+					   $$.condition = CONDITION_HIGHER;
+                     }
+                     | TOKEN_OPCODE_SLS
+                     {
+                       $$.type = OPCODE_Scc;
+					   $$.condition = CONDITION_LOWER_OR_SAME;
+                     }
+                     | TOKEN_OPCODE_SCC
+                     {
+                       $$.type = OPCODE_Scc;
+					   $$.condition = CONDITION_CARRY_CLEAR;
+                     }
+                     | TOKEN_OPCODE_SCS
+                     {
+                       $$.type = OPCODE_Scc;
+					   $$.condition = CONDITION_CARRY_SET;
+                     }
+                     | TOKEN_OPCODE_SNE
+                     {
+                       $$.type = OPCODE_Scc;
+					   $$.condition = CONDITION_NOT_EQUAL;
+                     }
+                     | TOKEN_OPCODE_SEQ
+                     {
+                       $$.type = OPCODE_Scc;
+					   $$.condition = CONDITION_EQUAL;
+                     }
+                     | TOKEN_OPCODE_SVC
+                     {
+                       $$.type = OPCODE_Scc;
+					   $$.condition = CONDITION_OVERFLOW_CLEAR;
+                     }
+                     | TOKEN_OPCODE_SVS
+                     {
+                       $$.type = OPCODE_Scc;
+					   $$.condition = CONDITION_OVERFLOW_SET;
+                     }
+                     | TOKEN_OPCODE_SPL
+                     {
+                       $$.type = OPCODE_Scc;
+					   $$.condition = CONDITION_PLUS;
+                     }
+                     | TOKEN_OPCODE_SMI
+                     {
+                       $$.type = OPCODE_Scc;
+					   $$.condition = CONDITION_MINUS;
+                     }
+                     | TOKEN_OPCODE_SGE
+                     {
+                       $$.type = OPCODE_Scc;
+					   $$.condition = CONDITION_GREATER_OR_EQUAL;
+                     }
+                     | TOKEN_OPCODE_SLT
+                     {
+                       $$.type = OPCODE_Scc;
+					   $$.condition = CONDITION_LESS_THAN;
+                     }
+                     | TOKEN_OPCODE_SGT
+                     {
+                       $$.type = OPCODE_Scc;
+					   $$.condition = CONDITION_GREATER_THAN;
+                     }
+                     | TOKEN_OPCODE_SLE
+                     {
+                       $$.type = OPCODE_Scc;
+					   $$.condition = CONDITION_LESS_OR_EQUAL;
                      }
 
                      | TOKEN_OPCODE_DIVU
                      {
-                       $$ = OPCODE_DIVU;
+                       $$.type = OPCODE_DIVU;
                      }
                      | TOKEN_OPCODE_DIVS
                      {
-                       $$ = OPCODE_DIVS;
+                       $$.type = OPCODE_DIVS;
                      }
 
                      | TOKEN_OPCODE_MULU
                      {
-                       $$ = OPCODE_MULU;
+                       $$.type = OPCODE_MULU;
                      }
                      | TOKEN_OPCODE_MULS
                      {
-                       $$ = OPCODE_MULS;
+                       $$.type = OPCODE_MULS;
                      }
 
                      | TOKEN_OPCODE_ADD
                      {
-                       $$ = OPCODE_ADD;
+                       $$.type = OPCODE_ADD;
                      }
                      ;
 
