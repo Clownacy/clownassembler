@@ -877,21 +877,9 @@ operand              : '(' TOKEN_ADDRESS_REGISTER ')'
                        $$.literal = $1;
                        $$.size = SIZE_UNDEFINED;
                      }
-                     | value '.' size
-                     {
-                       $$.type = OPERAND_ADDRESS;
-                       $$.literal = $1;
-                       $$.size = $3;
-                     }
-                     | '(' value ')'
-                     {
-                       $$.type = OPERAND_ADDRESS;
-                       $$.literal = $2;
-                       $$.size = SIZE_UNDEFINED;
-                     }
                      | '(' value ')' '.' size
                      {
-                       $$.type = OPERAND_ADDRESS;
+                       $$.type = OPERAND_ADDRESS_ABSOLUTE;
                        $$.literal = $2;
                        $$.size = $5;
                      }

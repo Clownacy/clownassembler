@@ -130,13 +130,14 @@ typedef enum OperandType
 	OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT                    = 1 << 5,
 	OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER = 1 << 6,
 	OPERAND_ADDRESS                                                        = 1 << 7,
-	OPERAND_LITERAL                                                        = 1 << 8,
-	OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT                              = 1 << 9,
-	OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER           = 1 << 10,
-	OPERAND_STATUS_REGISTER                                                = 1 << 11,
-	OPERAND_CONDITION_CODE_REGISTER                                        = 1 << 12,
-	OPERAND_USER_STACK_POINTER_REGISTER                                    = 1 << 13,
-	OPERAND_REGISTER_LIST                                                  = 1 << 14
+	OPERAND_ADDRESS_ABSOLUTE                                               = 1 << 8,
+	OPERAND_LITERAL                                                        = 1 << 9,
+	OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT                              = 1 << 10,
+	OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER           = 1 << 11,
+	OPERAND_STATUS_REGISTER                                                = 1 << 12,
+	OPERAND_CONDITION_CODE_REGISTER                                        = 1 << 13,
+	OPERAND_USER_STACK_POINTER_REGISTER                                    = 1 << 14,
+	OPERAND_REGISTER_LIST                                                  = 1 << 15
 } OperandType;
 
 typedef struct Operand
