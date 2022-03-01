@@ -226,4 +226,8 @@ Label:
 	and.w	d0,d0
 	add.w	d0,d0
 
+	suba.w	d0,a0
+	cmpa.w	d0,a0
+	adda.w	d0,a0
+
   ; More blank lines to test support for trailing blank statements

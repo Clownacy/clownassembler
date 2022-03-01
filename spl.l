@@ -143,9 +143,11 @@ sbcd            TOKEN(OPCODE_SBCD)
 or              TOKEN(OPCODE_OR)
 sub             TOKEN(OPCODE_SUB)
 subx            TOKEN(OPCODE_SUBX)
+suba            TOKEN(OPCODE_SUBA)
 
 eor             TOKEN(OPCODE_EOR)
 
+cmpa            TOKEN(OPCODE_CMPA)
 mulu            TOKEN(OPCODE_MULU)
 muls            TOKEN(OPCODE_MULS)
 abcd            TOKEN(OPCODE_ABCD)
@@ -153,6 +155,7 @@ abcd            TOKEN(OPCODE_ABCD)
 and             TOKEN(OPCODE_AND)
 add             TOKEN(OPCODE_ADD)
 addx            TOKEN(OPCODE_ADDX)
+adda            TOKEN(OPCODE_ADDA)
 "("             return yytext[0];
 ")"             return yytext[0];
 "b"             TOKEN(SIZE_BYTE)

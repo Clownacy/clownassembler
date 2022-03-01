@@ -220,9 +220,11 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_OR
 %token TOKEN_OPCODE_SUB
 %token TOKEN_OPCODE_SUBX
+%token TOKEN_OPCODE_SUBA
 
 %token TOKEN_OPCODE_EOR
 
+%token TOKEN_OPCODE_CMPA
 %token TOKEN_OPCODE_MULU
 %token TOKEN_OPCODE_MULS
 %token TOKEN_OPCODE_ABCD
@@ -230,6 +232,7 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_AND
 %token TOKEN_OPCODE_ADD
 %token TOKEN_OPCODE_ADDX
+%token TOKEN_OPCODE_ADDA
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -809,6 +812,10 @@ opcode               : TOKEN_OPCODE_ORI
                      {
                        $$.type = OPCODE_SUBX_DATA_REGS;
                      }
+                     | TOKEN_OPCODE_SUBA
+                     {
+                       $$.type = OPCODE_SUBA;
+                     }
 
                      | TOKEN_OPCODE_EOR
                      {
@@ -818,6 +825,10 @@ opcode               : TOKEN_OPCODE_ORI
                      | TOKEN_OPCODE_MULU
                      {
                        $$.type = OPCODE_MULU;
+                     }
+                     | TOKEN_OPCODE_CMPA
+                     {
+                       $$.type = OPCODE_CMPA;
                      }
                      | TOKEN_OPCODE_MULS
                      {
@@ -839,6 +850,10 @@ opcode               : TOKEN_OPCODE_ORI
                      | TOKEN_OPCODE_ADDX
                      {
                        $$.type = OPCODE_ADDX_DATA_REGS;
+                     }
+                     | TOKEN_OPCODE_ADDA
+                     {
+                       $$.type = OPCODE_ADDA;
                      }
                      ;
 
