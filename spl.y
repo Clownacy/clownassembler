@@ -221,9 +221,9 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_SUB
 %token TOKEN_OPCODE_SUBX
 %token TOKEN_OPCODE_SUBA
-
 %token TOKEN_OPCODE_EOR
-
+%token TOKEN_OPCODE_CMPM
+%token TOKEN_OPCODE_CMP
 %token TOKEN_OPCODE_CMPA
 %token TOKEN_OPCODE_MULU
 %token TOKEN_OPCODE_MULS
@@ -816,19 +816,25 @@ opcode               : TOKEN_OPCODE_ORI
                      {
                        $$.type = OPCODE_SUBA;
                      }
-
                      | TOKEN_OPCODE_EOR
                      {
                        $$.type = OPCODE_EOR;
                      }
-
-                     | TOKEN_OPCODE_MULU
+                     | TOKEN_OPCODE_CMPM
                      {
-                       $$.type = OPCODE_MULU;
+                       $$.type = OPCODE_CMPM;
+                     }
+                     | TOKEN_OPCODE_CMP
+                     {
+                       $$.type = OPCODE_CMP;
                      }
                      | TOKEN_OPCODE_CMPA
                      {
                        $$.type = OPCODE_CMPA;
+                     }
+                     | TOKEN_OPCODE_MULU
+                     {
+                       $$.type = OPCODE_MULU;
                      }
                      | TOKEN_OPCODE_MULS
                      {

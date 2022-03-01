@@ -1207,7 +1207,6 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0
 		}
 	},
-
 	{	/* OPCODE_EOR */
 		"EOR",
 		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
@@ -1220,7 +1219,29 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0
 		}
 	},
-
+	{	/* OPCODE_CMPM */
+		"CMPM",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT,
+			OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT,
+			0
+		}
+	},
+	{	/* OPCODE_CMP */
+		"CMP",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
+				| OPERAND_LITERAL | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
 	{	/* OPCODE_CMPA */
 		"CMPA",
 		SIZE_WORD | SIZE_LONGWORD,
@@ -2247,6 +2268,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 			case OPCODE_OR_TO_REG:
 			case OPCODE_SUB_TO_REG:
 			case OPCODE_EOR:
+			case OPCODE_CMP:
 			case OPCODE_AND_TO_REG:
 			case OPCODE_ADD_TO_REG:
 			{
@@ -2265,7 +2287,10 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						machine_code = 0x8000;
 
 						if (destination_operand->type != OPERAND_DATA_REGISTER)
+						{
+							machine_code |= 0x0100;
 							instruction_metadata = &instruction_metadata_all[OPCODE_OR_FROM_REG];
+						}
 
 						break;
 
@@ -2273,11 +2298,18 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						machine_code = 0x9000;
 
 						if (destination_operand->type != OPERAND_DATA_REGISTER)
+						{
+							machine_code |= 0x0100;
 							instruction_metadata = &instruction_metadata_all[OPCODE_SUB_FROM_REG];
+						}
 
 						break;
 
 					case OPCODE_EOR:
+						machine_code = 0xB100;
+						break;
+
+					case OPCODE_CMP:
 						machine_code = 0xB000;
 						break;
 
@@ -2285,7 +2317,10 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						machine_code = 0xC000;
 
 						if (destination_operand->type != OPERAND_DATA_REGISTER)
+						{
+							machine_code |= 0x0100;
 							instruction_metadata = &instruction_metadata_all[OPCODE_AND_FROM_REG];
+						}
 
 						break;
 
@@ -2293,7 +2328,10 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						machine_code = 0xD000;
 
 						if (destination_operand->type != OPERAND_DATA_REGISTER)
+						{
+							machine_code |= 0x0100;
 							instruction_metadata = &instruction_metadata_all[OPCODE_ADD_FROM_REG];
+						}
 
 						break;
 				}
@@ -2302,16 +2340,14 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 				if (destination_operand->type == OPERAND_DATA_REGISTER)
 				{
-					machine_code |= destination_operand->main_register;
+					machine_code |= destination_operand->main_register << 9;
 
 					machine_code |= ConstructEffectiveAddressBits(source_operand);
 				}
 				else
 				{
-					machine_code |= 0x0100;
-
 					if (source_operand->type == OPERAND_DATA_REGISTER)
-						machine_code |= source_operand->main_register;
+						machine_code |= source_operand->main_register << 9;
 
 					machine_code |= ConstructEffectiveAddressBits(destination_operand);
 				}
@@ -2347,6 +2383,23 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					machine_code |= destination_operand->main_register << 9;
 
 				machine_code |= ConstructEffectiveAddressBits(source_operand);
+
+				break;
+			}
+
+			case OPCODE_CMPM:
+			{
+				const Operand* const first_operand = instruction->operands;
+				const Operand* const second_operand = instruction->operands->next;
+
+				machine_code = 0xB108;
+				machine_code |= ConstructSizeBits(instruction->opcode.size);
+
+				if (first_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT)
+					machine_code |= first_operand->main_register << 0;
+
+				if (second_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT)
+					machine_code |= second_operand->main_register << 9;
 
 				break;
 			}

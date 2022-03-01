@@ -230,4 +230,8 @@ Label:
 	cmpa.w	d0,a0
 	adda.w	d0,a0
 
+	cmpm.w	(a0)+,(a1)+
+
+	cmp.w	(0).w,d0
+
   ; More blank lines to test support for trailing blank statements

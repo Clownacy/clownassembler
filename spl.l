@@ -144,9 +144,9 @@ or              TOKEN(OPCODE_OR)
 sub             TOKEN(OPCODE_SUB)
 subx            TOKEN(OPCODE_SUBX)
 suba            TOKEN(OPCODE_SUBA)
-
 eor             TOKEN(OPCODE_EOR)
-
+cmpm            TOKEN(OPCODE_CMPM)
+cmp             TOKEN(OPCODE_CMP)
 cmpa            TOKEN(OPCODE_CMPA)
 mulu            TOKEN(OPCODE_MULU)
 muls            TOKEN(OPCODE_MULS)
