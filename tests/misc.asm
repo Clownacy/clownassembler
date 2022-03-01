@@ -215,6 +215,10 @@ Label:
 	sbcd	-(a0),-(a1)
 	abcd	d0,d1
 	abcd	-(a0),-(a1)
+	subx.w	d0,d1
+	subx.w	-(a0),-(a1)
+	addx.w	d0,d1
+	addx.w	-(a0),-(a1)
 
 	or.w	d0,d0
 	sub.w	d0,d0

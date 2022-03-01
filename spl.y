@@ -219,6 +219,7 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_SBCD
 %token TOKEN_OPCODE_OR
 %token TOKEN_OPCODE_SUB
+%token TOKEN_OPCODE_SUBX
 
 %token TOKEN_OPCODE_EOR
 
@@ -228,6 +229,7 @@ StatementListNode *statement_list_head;
 
 %token TOKEN_OPCODE_AND
 %token TOKEN_OPCODE_ADD
+%token TOKEN_OPCODE_ADDX
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -803,6 +805,10 @@ opcode               : TOKEN_OPCODE_ORI
                      {
                        $$.type = OPCODE_SUB_TO_REG;
                      }
+                     | TOKEN_OPCODE_SUBX
+                     {
+                       $$.type = OPCODE_SUBX_DATA_REGS;
+                     }
 
                      | TOKEN_OPCODE_EOR
                      {
@@ -829,6 +835,10 @@ opcode               : TOKEN_OPCODE_ORI
                      | TOKEN_OPCODE_ADD
                      {
                        $$.type = OPCODE_ADD_TO_REG;
+                     }
+                     | TOKEN_OPCODE_ADDX
+                     {
+                       $$.type = OPCODE_ADDX_DATA_REGS;
                      }
                      ;
 

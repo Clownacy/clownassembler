@@ -1174,6 +1174,26 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0
 		}
 	},
+	{	/* OPCODE_SUBX_DATA_REGS */
+		"SUBX",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_SUBX_ADDRESS_REGS */
+		"SUBX",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT,
+			OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT,
+			0
+		}
+	},
 
 	{	/* OPCODE_EOR */
 		"EOR",
@@ -1282,6 +1302,26 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
 				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
 				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE,
+			0
+		}
+	},
+	{	/* OPCODE_ADDX_DATA_REGS */
+		"ADDX",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ADDX_ADDRESS_REGS */
+		"ADDX",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT,
+			OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT,
 			0
 		}
 	},
@@ -2088,7 +2128,9 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 			}
 
 			case OPCODE_SBCD_DATA_REGS:
+			case OPCODE_SUBX_DATA_REGS:
 			case OPCODE_ABCD_DATA_REGS:
+			case OPCODE_ADDX_DATA_REGS:
 			{
 				const Operand* const source_operand = instruction->operands;
 				const Operand* const destination_operand = instruction->operands->next;
@@ -2109,6 +2151,20 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 						break;
 
+					case OPCODE_SUBX_DATA_REGS:
+						if (source_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+						{
+							machine_code = 0x9108;
+
+							instruction_metadata = &instruction_metadata_all[OPCODE_SUBX_ADDRESS_REGS];
+						}
+						else
+						{
+							machine_code = 0x9100;
+						}
+
+						break;
+
 					case OPCODE_ABCD_DATA_REGS:
 						if (source_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
 						{
@@ -2122,7 +2178,23 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						}
 
 						break;
+
+					case OPCODE_ADDX_DATA_REGS:
+						if (source_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+						{
+							machine_code = 0xD108;
+
+							instruction_metadata = &instruction_metadata_all[OPCODE_ADDX_ADDRESS_REGS];
+						}
+						else
+						{
+							machine_code = 0xD100;
+						}
+
+						break;
 				}
+
+				machine_code |= ConstructSizeBits(instruction->opcode.size);
 
 				if (source_operand->type == OPERAND_DATA_REGISTER || source_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
 					machine_code |= source_operand->main_register << 0;
