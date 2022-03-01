@@ -143,6 +143,8 @@ sbcd            TOKEN(OPCODE_SBCD)
 or              TOKEN(OPCODE_OR)
 sub             TOKEN(OPCODE_SUB)
 
+eor             TOKEN(OPCODE_EOR)
+
 mulu            TOKEN(OPCODE_MULU)
 muls            TOKEN(OPCODE_MULS)
 abcd            TOKEN(OPCODE_ABCD)

@@ -220,6 +220,8 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_OR
 %token TOKEN_OPCODE_SUB
 
+%token TOKEN_OPCODE_EOR
+
 %token TOKEN_OPCODE_MULU
 %token TOKEN_OPCODE_MULS
 %token TOKEN_OPCODE_ABCD
@@ -800,6 +802,11 @@ opcode               : TOKEN_OPCODE_ORI
                      | TOKEN_OPCODE_SUB
                      {
                        $$.type = OPCODE_SUB_TO_REG;
+                     }
+
+                     | TOKEN_OPCODE_EOR
+                     {
+                       $$.type = OPCODE_EOR;
                      }
 
                      | TOKEN_OPCODE_MULU

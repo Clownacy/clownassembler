@@ -218,6 +218,7 @@ Label:
 
 	or.w	d0,d0
 	sub.w	d0,d0
+	eor.w	d0,d0
 	and.w	d0,d0
 	add.w	d0,d0
 

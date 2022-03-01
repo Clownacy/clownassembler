@@ -1175,6 +1175,19 @@ static const InstructionMetadata instruction_metadata_all[] = {
 		}
 	},
 
+	{	/* OPCODE_EOR */
+		"EOR",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE,
+			0
+		}
+	},
+
 	{	/* OPCODE_MULU */
 		"MULU",
 		SIZE_WORD | SIZE_UNDEFINED,
@@ -2122,6 +2135,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 			case OPCODE_OR_TO_REG:
 			case OPCODE_SUB_TO_REG:
+			case OPCODE_EOR:
 			case OPCODE_AND_TO_REG:
 			case OPCODE_ADD_TO_REG:
 			{
@@ -2150,6 +2164,10 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						if (destination_operand->type != OPERAND_DATA_REGISTER)
 							instruction_metadata = &instruction_metadata_all[OPCODE_SUB_FROM_REG];
 
+						break;
+
+					case OPCODE_EOR:
+						machine_code = 0xB000;
 						break;
 
 					case OPCODE_AND_TO_REG:
