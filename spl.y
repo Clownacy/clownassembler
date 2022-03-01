@@ -213,7 +213,7 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_BLT
 %token TOKEN_OPCODE_BGT
 %token TOKEN_OPCODE_BLE
-
+%token TOKEN_OPCODE_MOVEQ
 %token TOKEN_OPCODE_DIVU
 %token TOKEN_OPCODE_DIVS
 
@@ -772,7 +772,10 @@ opcode               : TOKEN_OPCODE_ORI
                        $$.type = OPCODE_Bcc;
 					   $$.condition = CONDITION_LESS_OR_EQUAL;
                      }
-
+                     | TOKEN_OPCODE_MOVEQ
+                     {
+                       $$.type = OPCODE_MOVEQ;
+                     }
                      | TOKEN_OPCODE_DIVU
                      {
                        $$.type = OPCODE_DIVU;

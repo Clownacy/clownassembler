@@ -1068,7 +1068,16 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0
 		}
 	},
-
+	{	/* OPCODE_MOVEQ */
+		"MOVEQ",
+		SIZE_LONGWORD | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_LITERAL,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
 	{	/* OPCODE_DIVU */
 		"DIVU",
 		SIZE_WORD | SIZE_UNDEFINED,
@@ -1901,6 +1910,37 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						operands_to_output = &custom_operand;
 					}
 				}
+
+				break;
+			}
+
+			case OPCODE_MOVEQ:
+			{
+				const Operand* const literal_operand = instruction->operands;
+				const Operand* const data_register_operand = instruction->operands->next;
+
+				machine_code = 0x7000;
+
+				if (literal_operand->type == OPERAND_LITERAL)
+				{
+					const unsigned long value = ResolveValue(&literal_operand->literal);
+
+					if (value > 0x7F && value < 0xFFFFFF80)
+					{
+						fprintf(stderr, "Error: Literal is too large: it must be between -$80 and $7F\n");
+						success = cc_false;
+					}
+					else
+					{
+						machine_code |= value & 0xFF;
+					}
+				}
+
+				if (data_register_operand->type == OPERAND_DATA_REGISTER)
+					machine_code |= data_register_operand->main_register << 9;
+
+				/* MOVEQ's operands are embedded directly into the machine code, so we don't need to output them separately. */
+				operands_to_output = NULL;
 
 				break;
 			}

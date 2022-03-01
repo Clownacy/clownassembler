@@ -206,4 +206,10 @@ Label:
 	blt.w	0
 	bgt.w	0
 	ble.w	0
+
+	moveq	#0,d0
+	moveq	#$FFFFFFFF,d1
+	moveq	#$FFFFFF80,d2
+
+
   ; More blank lines to test support for trailing blank statements

@@ -136,7 +136,7 @@ bge             TOKEN(OPCODE_BGE)
 blt             TOKEN(OPCODE_BLT)
 bgt             TOKEN(OPCODE_BGT)
 ble             TOKEN(OPCODE_BLE)
-
+moveq           TOKEN(OPCODE_MOVEQ)
 divu            TOKEN(OPCODE_DIVU)
 divs            TOKEN(OPCODE_DIVS)
 
