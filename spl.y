@@ -181,6 +181,22 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_SLT
 %token TOKEN_OPCODE_SGT
 %token TOKEN_OPCODE_SLE
+%token TOKEN_OPCODE_DBT
+%token TOKEN_OPCODE_DBF
+%token TOKEN_OPCODE_DBHI
+%token TOKEN_OPCODE_DBLS
+%token TOKEN_OPCODE_DBCC
+%token TOKEN_OPCODE_DBCS
+%token TOKEN_OPCODE_DBNE
+%token TOKEN_OPCODE_DBEQ
+%token TOKEN_OPCODE_DBVC
+%token TOKEN_OPCODE_DBVS
+%token TOKEN_OPCODE_DBPL
+%token TOKEN_OPCODE_DBMI
+%token TOKEN_OPCODE_DBGE
+%token TOKEN_OPCODE_DBLT
+%token TOKEN_OPCODE_DBGT
+%token TOKEN_OPCODE_DBLE
 
 %token TOKEN_OPCODE_DIVU
 %token TOKEN_OPCODE_DIVS
@@ -579,6 +595,86 @@ opcode               : TOKEN_OPCODE_ORI
                      | TOKEN_OPCODE_SLE
                      {
                        $$.type = OPCODE_Scc;
+					   $$.condition = CONDITION_LESS_OR_EQUAL;
+                     }
+                     | TOKEN_OPCODE_DBT
+                     {
+                       $$.type = OPCODE_DBcc;
+					   $$.condition = CONDITION_TRUE;
+                     }
+                     | TOKEN_OPCODE_DBF
+                     {
+                       $$.type = OPCODE_DBcc;
+					   $$.condition = CONDITION_FALSE;
+                     }
+                     | TOKEN_OPCODE_DBHI
+                     {
+                       $$.type = OPCODE_DBcc;
+					   $$.condition = CONDITION_HIGHER;
+                     }
+                     | TOKEN_OPCODE_DBLS
+                     {
+                       $$.type = OPCODE_DBcc;
+					   $$.condition = CONDITION_LOWER_OR_SAME;
+                     }
+                     | TOKEN_OPCODE_DBCC
+                     {
+                       $$.type = OPCODE_DBcc;
+					   $$.condition = CONDITION_CARRY_CLEAR;
+                     }
+                     | TOKEN_OPCODE_DBCS
+                     {
+                       $$.type = OPCODE_DBcc;
+					   $$.condition = CONDITION_CARRY_SET;
+                     }
+                     | TOKEN_OPCODE_DBNE
+                     {
+                       $$.type = OPCODE_DBcc;
+					   $$.condition = CONDITION_NOT_EQUAL;
+                     }
+                     | TOKEN_OPCODE_DBEQ
+                     {
+                       $$.type = OPCODE_DBcc;
+					   $$.condition = CONDITION_EQUAL;
+                     }
+                     | TOKEN_OPCODE_DBVC
+                     {
+                       $$.type = OPCODE_DBcc;
+					   $$.condition = CONDITION_OVERFLOW_CLEAR;
+                     }
+                     | TOKEN_OPCODE_DBVS
+                     {
+                       $$.type = OPCODE_DBcc;
+					   $$.condition = CONDITION_OVERFLOW_SET;
+                     }
+                     | TOKEN_OPCODE_DBPL
+                     {
+                       $$.type = OPCODE_DBcc;
+					   $$.condition = CONDITION_PLUS;
+                     }
+                     | TOKEN_OPCODE_DBMI
+                     {
+                       $$.type = OPCODE_DBcc;
+					   $$.condition = CONDITION_MINUS;
+                     }
+                     | TOKEN_OPCODE_DBGE
+                     {
+                       $$.type = OPCODE_DBcc;
+					   $$.condition = CONDITION_GREATER_OR_EQUAL;
+                     }
+                     | TOKEN_OPCODE_DBLT
+                     {
+                       $$.type = OPCODE_DBcc;
+					   $$.condition = CONDITION_LESS_THAN;
+                     }
+                     | TOKEN_OPCODE_DBGT
+                     {
+                       $$.type = OPCODE_DBcc;
+					   $$.condition = CONDITION_GREATER_THAN;
+                     }
+                     | TOKEN_OPCODE_DBLE
+                     {
+                       $$.type = OPCODE_DBcc;
 					   $$.condition = CONDITION_LESS_OR_EQUAL;
                      }
 

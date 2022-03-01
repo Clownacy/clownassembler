@@ -15,6 +15,7 @@
 extern StatementListNode *statement_list_head;
 
 static cc_bool success;
+static unsigned long program_counter;
 
 int yywrap(void)
 {
@@ -301,6 +302,8 @@ static void OutputOperands(FILE *file, const Operand *operands, Size opcode_size
 				while (i-- > 0)
 					fputc((value >> (8 * i)) & 0xFF, file);
 
+				program_counter += 2;
+
 				break;
 			}
 
@@ -322,6 +325,8 @@ static void OutputOperands(FILE *file, const Operand *operands, Size opcode_size
 
 				for (i = 2; i-- > 0; )
 					fputc((register_list >> (8 * i)) & 0xFF, file);
+
+				program_counter += 2;
 
 				break;
 			}
@@ -1042,6 +1047,16 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0
 		}
 	},
+	{	/* OPCODE_DBcc */
+		"DBcc",
+		SIZE_WORD | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_ADDRESS,
+			0
+		}
+	},
 
 	{	/* OPCODE_DIVU */
 		"DIVU",
@@ -1120,6 +1135,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 	unsigned int i;
 	const InstructionMetadata *instruction_metadata = &instruction_metadata_all[instruction->opcode.type];
 	const Operand *operands_to_output = instruction->operands;
+	Operand custom_operand;
 
 	success = cc_true;
 
@@ -1731,6 +1747,56 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
 				break;
 
+			case OPCODE_DBcc:
+			{
+				const Operand* const data_register_operand = instruction->operands;
+				const Operand* const address_operand = instruction->operands->next;
+
+				machine_code = 0x50C8;
+				machine_code |= instruction->opcode.condition << 8;
+
+				if (data_register_operand->type == OPERAND_DATA_REGISTER)
+					machine_code |= data_register_operand->main_register;
+
+				if (address_operand->type == OPERAND_ADDRESS)
+				{
+					const unsigned long value = ResolveValue(&address_operand->literal);
+
+					custom_operand.next = NULL;
+					custom_operand.type = OPERAND_LITERAL;
+					custom_operand.literal.type = TOKEN_NUMBER;
+
+					if (value > program_counter)
+					{
+						const unsigned long offset = value - program_counter;
+
+						if (offset > 0x7FFF)
+						{
+							fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction)\n");
+							success = cc_false;
+						}
+
+						custom_operand.literal.data.integer = offset;
+					}
+					else
+					{
+						const unsigned long offset = program_counter - value;
+
+						if (offset > 0x8000)
+						{
+							fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction)\n");
+							success = cc_false;
+						}
+
+						custom_operand.literal.data.integer = 0 - offset;
+					}
+
+					operands_to_output = &custom_operand;
+				}
+
+				break;
+			}
+
 			case OPCODE_ADD:
 				/* TODO */
 				break;
@@ -1845,6 +1911,8 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 	/* Output the machine code for the opcode. */
 	for (i = 2; i-- > 0; )
 		fputc((machine_code >> (8 * i)) & 0xFF, file);
+
+	program_counter += 2;
 
 	/* Output the data for the operands. */
 	OutputOperands(file, operands_to_output, instruction->opcode.size);

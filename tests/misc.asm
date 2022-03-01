@@ -172,4 +172,6 @@ Label:
 	sgt.b	($FFFF81D0).w
 	sle.b	($FFFF81D0).w
 
+	dbf	d0,0
+
   ; More blank lines to test support for trailing blank statements
