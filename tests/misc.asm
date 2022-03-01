@@ -234,4 +234,9 @@ Label:
 
 	cmp.w	(0).w,d0
 
+	exg	d0,d1
+	exg	a0,a1
+	exg	d0,a0
+	exg	a0,d0
+
   ; More blank lines to test support for trailing blank statements

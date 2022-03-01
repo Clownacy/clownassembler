@@ -228,7 +228,7 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_MULU
 %token TOKEN_OPCODE_MULS
 %token TOKEN_OPCODE_ABCD
-
+%token TOKEN_OPCODE_EXG
 %token TOKEN_OPCODE_AND
 %token TOKEN_OPCODE_ADD
 %token TOKEN_OPCODE_ADDX
@@ -844,7 +844,10 @@ opcode               : TOKEN_OPCODE_ORI
                      {
                        $$.type = OPCODE_ABCD_DATA_REGS;
                      }
-
+                     | TOKEN_OPCODE_EXG
+                     {
+                       $$.type = OPCODE_EXG;
+                     }
                      | TOKEN_OPCODE_AND
                      {
                        $$.type = OPCODE_AND_TO_REG;

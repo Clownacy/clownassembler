@@ -1301,7 +1301,16 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0
 		}
 	},
-
+	{	/* OPCODE_EXG */
+		"EXG",
+		SIZE_LONGWORD | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER,
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER,
+			0
+		}
+	},
 	{	/* OPCODE_AND_TO_REG */
 		"AND",
 		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
@@ -2400,6 +2409,41 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 				if (second_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT)
 					machine_code |= second_operand->main_register << 9;
+
+				break;
+			}
+
+			case OPCODE_EXG:
+			{
+				const Operand* const first_operand = instruction->operands;
+				const Operand* const second_operand = instruction->operands->next;
+
+				machine_code = 0xC100;
+
+				if (first_operand->type == OPERAND_DATA_REGISTER && second_operand->type == OPERAND_DATA_REGISTER)
+				{
+					machine_code |= 0x0040;
+					machine_code |= first_operand->main_register << 9;
+					machine_code |= second_operand->main_register << 0;
+				}
+				else if (first_operand->type == OPERAND_ADDRESS_REGISTER && second_operand->type == OPERAND_ADDRESS_REGISTER)
+				{
+					machine_code |= 0x0048;
+					machine_code |= first_operand->main_register << 9;
+					machine_code |= second_operand->main_register << 0;
+				}
+				else if (first_operand->type == OPERAND_DATA_REGISTER && second_operand->type == OPERAND_ADDRESS_REGISTER)
+				{
+					machine_code |= 0x0088;
+					machine_code |= first_operand->main_register << 9;
+					machine_code |= second_operand->main_register << 0;
+				}
+				else if (first_operand->type == OPERAND_ADDRESS_REGISTER && second_operand->type == OPERAND_DATA_REGISTER)
+				{
+					machine_code |= 0x0088;
+					machine_code |= second_operand->main_register << 9;
+					machine_code |= first_operand->main_register << 0;
+				}
 
 				break;
 			}

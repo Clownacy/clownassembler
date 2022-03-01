@@ -151,7 +151,7 @@ cmpa            TOKEN(OPCODE_CMPA)
 mulu            TOKEN(OPCODE_MULU)
 muls            TOKEN(OPCODE_MULS)
 abcd            TOKEN(OPCODE_ABCD)
-
+exg             TOKEN(OPCODE_EXG)
 and             TOKEN(OPCODE_AND)
 add             TOKEN(OPCODE_ADD)
 addx            TOKEN(OPCODE_ADDX)
