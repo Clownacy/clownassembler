@@ -174,4 +174,36 @@ Label:
 
 	dbf	d0,0
 
+	bra.s	$180
+	bra.w	0
+	bsr.s	$180
+	bsr.w	0
+	bhi.s	$180
+	bls.s	$180
+	bcc.s	$180
+	bcs.s	$180
+	bne.s	$180
+	beq.s	$180
+	bvc.s	$180
+	bvs.s	$180
+	bpl.s	$180
+	bmi.s	$180
+	bge.s	$180
+	blt.s	$180
+	bgt.s	$180
+	ble.s	$180
+	bhi.w	0
+	bls.w	0
+	bcc.w	0
+	bcs.w	0
+	bne.w	0
+	beq.w	0
+	bvc.w	0
+	bvs.w	0
+	bpl.w	0
+	bmi.w	0
+	bge.w	0
+	blt.w	0
+	bgt.w	0
+	ble.w	0
   ; More blank lines to test support for trailing blank statements

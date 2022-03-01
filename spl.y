@@ -197,6 +197,22 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_DBLT
 %token TOKEN_OPCODE_DBGT
 %token TOKEN_OPCODE_DBLE
+%token TOKEN_OPCODE_BRA
+%token TOKEN_OPCODE_BSR
+%token TOKEN_OPCODE_BHI
+%token TOKEN_OPCODE_BLS
+%token TOKEN_OPCODE_BCC
+%token TOKEN_OPCODE_BCS
+%token TOKEN_OPCODE_BNE
+%token TOKEN_OPCODE_BEQ
+%token TOKEN_OPCODE_BVC
+%token TOKEN_OPCODE_BVS
+%token TOKEN_OPCODE_BPL
+%token TOKEN_OPCODE_BMI
+%token TOKEN_OPCODE_BGE
+%token TOKEN_OPCODE_BLT
+%token TOKEN_OPCODE_BGT
+%token TOKEN_OPCODE_BLE
 
 %token TOKEN_OPCODE_DIVU
 %token TOKEN_OPCODE_DIVS
@@ -675,6 +691,84 @@ opcode               : TOKEN_OPCODE_ORI
                      | TOKEN_OPCODE_DBLE
                      {
                        $$.type = OPCODE_DBcc;
+					   $$.condition = CONDITION_LESS_OR_EQUAL;
+                     }
+                     | TOKEN_OPCODE_BRA
+                     {
+                       $$.type = OPCODE_BRA;
+                     }
+                     | TOKEN_OPCODE_BSR
+                     {
+                       $$.type = OPCODE_BSR;
+                     }
+                     | TOKEN_OPCODE_BHI
+                     {
+                       $$.type = OPCODE_Bcc;
+					   $$.condition = CONDITION_HIGHER;
+                     }
+                     | TOKEN_OPCODE_BLS
+                     {
+                       $$.type = OPCODE_Bcc;
+					   $$.condition = CONDITION_LOWER_OR_SAME;
+                     }
+                     | TOKEN_OPCODE_BCC
+                     {
+                       $$.type = OPCODE_Bcc;
+					   $$.condition = CONDITION_CARRY_CLEAR;
+                     }
+                     | TOKEN_OPCODE_BCS
+                     {
+                       $$.type = OPCODE_Bcc;
+					   $$.condition = CONDITION_CARRY_SET;
+                     }
+                     | TOKEN_OPCODE_BNE
+                     {
+                       $$.type = OPCODE_Bcc;
+					   $$.condition = CONDITION_NOT_EQUAL;
+                     }
+                     | TOKEN_OPCODE_BEQ
+                     {
+                       $$.type = OPCODE_Bcc;
+					   $$.condition = CONDITION_EQUAL;
+                     }
+                     | TOKEN_OPCODE_BVC
+                     {
+                       $$.type = OPCODE_Bcc;
+					   $$.condition = CONDITION_OVERFLOW_CLEAR;
+                     }
+                     | TOKEN_OPCODE_BVS
+                     {
+                       $$.type = OPCODE_Bcc;
+					   $$.condition = CONDITION_OVERFLOW_SET;
+                     }
+                     | TOKEN_OPCODE_BPL
+                     {
+                       $$.type = OPCODE_Bcc;
+					   $$.condition = CONDITION_PLUS;
+                     }
+                     | TOKEN_OPCODE_BMI
+                     {
+                       $$.type = OPCODE_Bcc;
+					   $$.condition = CONDITION_MINUS;
+                     }
+                     | TOKEN_OPCODE_BGE
+                     {
+                       $$.type = OPCODE_Bcc;
+					   $$.condition = CONDITION_GREATER_OR_EQUAL;
+                     }
+                     | TOKEN_OPCODE_BLT
+                     {
+                       $$.type = OPCODE_Bcc;
+					   $$.condition = CONDITION_LESS_THAN;
+                     }
+                     | TOKEN_OPCODE_BGT
+                     {
+                       $$.type = OPCODE_Bcc;
+					   $$.condition = CONDITION_GREATER_THAN;
+                     }
+                     | TOKEN_OPCODE_BLE
+                     {
+                       $$.type = OPCODE_Bcc;
 					   $$.condition = CONDITION_LESS_OR_EQUAL;
                      }
 

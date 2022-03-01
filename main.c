@@ -1036,6 +1036,33 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0
 		}
 	},
+	{	/* OPCODE_BRA */
+		"BRA",
+		SIZE_BYTE | SIZE_WORD | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS,
+			0
+		}
+	},
+	{	/* OPCODE_BSR */
+		"BSR",
+		SIZE_BYTE | SIZE_WORD | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS,
+			0
+		}
+	},
+	{	/* OPCODE_Bcc */
+		"Bcc",
+		SIZE_BYTE | SIZE_WORD | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS,
+			0
+		}
+	},
 
 	{	/* OPCODE_DIVU */
 		"DIVU",
@@ -1745,13 +1772,13 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					custom_operand.type = OPERAND_LITERAL;
 					custom_operand.literal.type = TOKEN_NUMBER;
 
-					if (value > program_counter)
+					if (value >= program_counter)
 					{
 						const unsigned long offset = value - program_counter;
 
 						if (offset > 0x7FFF)
 						{
-							fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction)\n");
+							fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was 0x%lX bytes away)\n", offset);
 							success = cc_false;
 						}
 
@@ -1763,7 +1790,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 						if (offset > 0x8000)
 						{
-							fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction)\n");
+							fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was 0x%lX bytes away)\n", offset);
 							success = cc_false;
 						}
 
@@ -1771,6 +1798,101 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					}
 
 					operands_to_output = &custom_operand;
+				}
+
+				break;
+			}
+
+			case OPCODE_BRA:
+			case OPCODE_BSR:
+			case OPCODE_Bcc:
+			{
+				machine_code = 0x6000;
+
+				switch (instruction->opcode.type)
+				{
+					case OPCODE_BRA:
+						machine_code |= 0x0000;
+						break;
+
+					case OPCODE_BSR:
+						machine_code |= 0x0100;
+						break;
+
+					case OPCODE_Bcc:
+						machine_code |= instruction->opcode.condition << 8;
+						break;
+				}
+
+				if (instruction->operands->type == OPERAND_ADDRESS)
+				{
+					const unsigned long value = ResolveValue(&instruction->operands->literal);
+					unsigned long offset;
+
+					if (value >= program_counter)
+					{
+						offset = value - program_counter;
+
+						if (instruction->opcode.size == SIZE_BYTE)
+						{
+							if (offset == 0)
+							{
+								fprintf(stderr, "Error: Destination cannot be 0 bytes away when using a short-sized branch\n");
+								success = cc_false;
+							}
+							else if (offset > 0x7F)
+							{
+								fprintf(stderr, "Error: Destination is too far away (must be less than 0x80 bytes after start of instruction, but was 0x%lX bytes away)\n", offset);
+								success = cc_false;
+							}
+						}
+						else
+						{
+							if (offset > 0x7FFF)
+							{
+								fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was 0x%lX bytes away)\n", offset);
+								success = cc_false;
+							}
+						}
+
+						custom_operand.literal.data.integer = offset;
+					}
+					else
+					{
+						offset = program_counter - value;
+
+						if (instruction->opcode.size == SIZE_BYTE)
+						{
+							if (offset > 0x80)
+							{
+								fprintf(stderr, "Error: Destination is too far away (must be less than 0x81 bytes before start of instruction, but was 0x%lX bytes away)\n", offset);
+								success = cc_false;
+							}
+						}
+						else
+						{
+							if (offset > 0x8000)
+							{
+								fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was 0x%lX bytes away)\n", offset);
+								success = cc_false;
+							}
+						}
+
+						offset = 0 - offset;
+					}
+
+					if (instruction->opcode.size == SIZE_BYTE)
+					{
+						machine_code |= offset & 0xFF;
+					}
+					else
+					{
+						custom_operand.next = NULL;
+						custom_operand.type = OPERAND_LITERAL;
+						custom_operand.literal.type = TOKEN_NUMBER;
+						custom_operand.literal.data.integer = 0 - offset;
+						operands_to_output = &custom_operand;
+					}
 				}
 
 				break;

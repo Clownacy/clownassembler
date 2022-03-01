@@ -93,6 +93,9 @@ typedef enum OpCodeType
 	OPCODE_SUBQ,
 	OPCODE_Scc,
 	OPCODE_DBcc,
+	OPCODE_BRA,
+	OPCODE_BSR,
+	OPCODE_Bcc,
 
 	OPCODE_DIVU,
 	OPCODE_DIVS,
