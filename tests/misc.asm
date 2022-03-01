@@ -239,4 +239,30 @@ Label:
 	exg	d0,a0
 	exg	a0,d0
 
+	asl.w	#1,d0
+	asl.w	d0,d0
+	asr.w	#1,d0
+	asr.w	d0,d0
+	lsl.w	#1,d0
+	lsl.w	d0,d0
+	lsr.w	#1,d0
+	lsr.w	d0,d0
+	roxl.w	#1,d0
+	roxl.w	d0,d0
+	roxr.w	#1,d0
+	roxr.w	d0,d0
+	rol.w	#1,d0
+	rol.w	d0,d0
+	ror.w	#1,d0
+	ror.w	d0,d0
+
+	asl.w	(a0)
+	asr.w	(a0)
+	lsl.w	(a0)
+	lsr.w	(a0)
+	roxl.w	(a0)
+	roxr.w	(a0)
+	rol.w	(a0)
+	ror.w	(a0)
+
   ; More blank lines to test support for trailing blank statements

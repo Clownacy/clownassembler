@@ -1394,6 +1394,110 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0
 		}
 	},
+	{	/* OPCODE_ASL */
+		"ASL",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
+				| OPERAND_LITERAL,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ASR */
+		"ASR",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
+				| OPERAND_LITERAL,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_LSL */
+		"LSL",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
+				| OPERAND_LITERAL,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_LSR */
+		"LSR",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
+				| OPERAND_LITERAL,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ROXL */
+		"ROXL",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
+				| OPERAND_LITERAL,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ROXR */
+		"ROXR",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
+				| OPERAND_LITERAL,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ROL */
+		"ROL",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
+				| OPERAND_LITERAL,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ROR */
+		"ROR",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
+				| OPERAND_LITERAL,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
 };
 
 static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
@@ -1422,12 +1526,25 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 	for (operand = instruction->operands; operand != NULL; operand = operand->next)
 		++total_operands_have;
 
-	if (total_operands_wanted != total_operands_have)
+	if (instruction->opcode.type == OPCODE_ASL || instruction->opcode.type == OPCODE_ASR || instruction->opcode.type == OPCODE_LSL || instruction->opcode.type == OPCODE_LSR
+	 || instruction->opcode.type == OPCODE_ROXL || instruction->opcode.type == OPCODE_ROXR || instruction->opcode.type == OPCODE_ROL || instruction->opcode.type == OPCODE_ROR)
 	{
-		fprintf(stderr, "Error: '%s' instruction has %u operands, but it should have %u\n", instruction_metadata->name, total_operands_have, total_operands_wanted);
-		success = cc_false;
+		if (total_operands_have != 1 && total_operands_have != 2)
+		{
+			fprintf(stderr, "Error: '%s' instruction has %u operands, but it should have either 1 or 2\n", instruction_metadata->name, total_operands_have);
+			success = cc_false;
+		}
 	}
 	else
+	{
+		if (total_operands_wanted != total_operands_have)
+		{
+			fprintf(stderr, "Error: '%s' instruction has %u operands, but it should have %u\n", instruction_metadata->name, total_operands_have, total_operands_wanted);
+			success = cc_false;
+		}
+	}
+
+	if (success)
 	{
 		/* Determine the machine code for the opcode and perform sanity-checking. */
 		switch (instruction->opcode.type)
@@ -2448,16 +2565,123 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				break;
 			}
 
+			case OPCODE_ASL:
+			case OPCODE_ASR:
+			case OPCODE_LSL:
+			case OPCODE_LSR:
+			case OPCODE_ROXL:
+			case OPCODE_ROXR:
+			case OPCODE_ROL:
+			case OPCODE_ROR:
+			{
+				const Operand* const first_operand = instruction->operands;
+				const Operand* const second_operand = instruction->operands->next;
+
+				unsigned int identifier;
+
+				switch (instruction->opcode.type)
+				{
+					default:
+					case OPCODE_ASL:
+					case OPCODE_ASR:
+						identifier = 0;
+						break;
+
+					case OPCODE_LSL:
+					case OPCODE_LSR:
+						identifier = 1;
+						break;
+
+					case OPCODE_ROXL:
+					case OPCODE_ROXR:
+						identifier = 2;
+						break;
+
+					case OPCODE_ROL:
+					case OPCODE_ROR:
+						identifier = 3;
+						break;
+				}
+
+				machine_code = 0xE000;
+
+				switch (instruction->opcode.type)
+				{
+					case OPCODE_ASR:
+					case OPCODE_LSR:
+					case OPCODE_ROXR:
+					case OPCODE_ROR:
+						machine_code |= 0x0000;
+						break;
+
+					case OPCODE_ASL:
+					case OPCODE_LSL:
+					case OPCODE_ROXL:
+					case OPCODE_ROL:
+						machine_code |= 0x0100;
+						break;
+				}
+
+				if (total_operands_have == 2)
+				{
+					machine_code |= identifier << 3;
+
+					if (first_operand->type == OPERAND_DATA_REGISTER)
+					{
+						machine_code |= first_operand->main_register << 9;
+						machine_code |= 0x0020;
+					}
+					else if (first_operand->type == OPERAND_LITERAL)
+					{
+						const unsigned long value = ResolveValue(&first_operand->literal);
+
+						if (value > 8 || value < 1)
+						{
+							fprintf(stderr, "Error: Shift value must not be greater than 8 or lower than 1\n");
+							success = cc_false;
+						}
+						else
+						{
+							machine_code |= (value - 1) << 9;
+						}
+					}
+					else
+					{
+						fprintf(stderr, "Error: First operand must be a data register or a literal\n");
+						success = cc_false;
+					}
+
+					if (second_operand->type == OPERAND_DATA_REGISTER)
+						machine_code |= second_operand->main_register << 0;
+				}
+				else
+				{
+					machine_code |= identifier << 9;
+
+					machine_code |= 0x00C0;
+
+					if (first_operand->type == OPERAND_DATA_REGISTER || first_operand->type == OPERAND_LITERAL)
+					{
+						fprintf(stderr, "Error: A second operand is needed\n");
+						success = cc_false;
+					}
+
+					machine_code |= ConstructEffectiveAddressBits(first_operand);
+				}
+
+				break;
+
 			default:
 				fprintf(stderr, "Internal error: Unrecognised instruction\n");
 				success = cc_false;
 				break;
+			}
 		}
 
 		/* Check whether the operands are of the correct types. */
 		operand = instruction->operands;
 
-		for (i = 0; instruction_metadata->allowed_operands[i] != 0; ++i)
+		for (i = 0; i < total_operands_have && instruction_metadata->allowed_operands[i] != 0; ++i)
 		{
 			if ((operand->type & ~instruction_metadata->allowed_operands[i]) != 0)
 			{

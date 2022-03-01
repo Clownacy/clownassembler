@@ -233,6 +233,14 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_ADD
 %token TOKEN_OPCODE_ADDX
 %token TOKEN_OPCODE_ADDA
+%token TOKEN_OPCODE_ASL
+%token TOKEN_OPCODE_ASR
+%token TOKEN_OPCODE_LSL
+%token TOKEN_OPCODE_LSR
+%token TOKEN_OPCODE_ROXL
+%token TOKEN_OPCODE_ROXR
+%token TOKEN_OPCODE_ROL
+%token TOKEN_OPCODE_ROR
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -863,6 +871,38 @@ opcode               : TOKEN_OPCODE_ORI
                      | TOKEN_OPCODE_ADDA
                      {
                        $$.type = OPCODE_ADDA;
+                     }
+                     | TOKEN_OPCODE_ASL
+                     {
+                       $$.type = OPCODE_ASL;
+                     }
+                     | TOKEN_OPCODE_ASR
+                     {
+                       $$.type = OPCODE_ASR;
+                     }
+                     | TOKEN_OPCODE_LSL
+                     {
+                       $$.type = OPCODE_LSL;
+                     }
+                     | TOKEN_OPCODE_LSR
+                     {
+                       $$.type = OPCODE_LSR;
+                     }
+                     | TOKEN_OPCODE_ROXL
+                     {
+                       $$.type = OPCODE_ROXL;
+                     }
+                     | TOKEN_OPCODE_ROXR
+                     {
+                       $$.type = OPCODE_ROXR;
+                     }
+                     | TOKEN_OPCODE_ROL
+                     {
+                       $$.type = OPCODE_ROL;
+                     }
+                     | TOKEN_OPCODE_ROR
+                     {
+                       $$.type = OPCODE_ROR;
                      }
                      ;
 
