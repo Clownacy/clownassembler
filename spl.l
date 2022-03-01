@@ -147,7 +147,7 @@ add             TOKEN(OPCODE_ADD)
 "("             return yytext[0];
 ")"             return yytext[0];
 "b"             TOKEN(SIZE_BYTE)
-"s"             TOKEN(SIZE_BYTE)
+"s"             TOKEN(SIZE_SHORT)
 "w"             TOKEN(SIZE_WORD)
 "l"             TOKEN(SIZE_LONG)
 "$"             return yytext[0];

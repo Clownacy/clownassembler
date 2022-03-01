@@ -40,15 +40,18 @@ static unsigned int ConstructSizeBits(Size size)
 	switch (size)
 	{
 		case SIZE_BYTE:
+		case SIZE_SHORT:
 			return 0x0000;
 
-		default:
+		case SIZE_UNDEFINED:
 		case SIZE_WORD:
 			return 0x0040;
 
 		case SIZE_LONGWORD:
 			return 0x0080;
 	}
+
+	return 0x0000;
 }
 
 static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
@@ -169,6 +172,7 @@ static void OutputOperands(FILE *file, const Operand *operands, Size opcode_size
 						switch (operand->size)
 						{
 							case SIZE_BYTE:
+							case SIZE_SHORT:
 								fprintf(stderr, "Error: Address cannot be byte-sized\n");
 								success = cc_false;
 								i = 2;
@@ -197,6 +201,7 @@ static void OutputOperands(FILE *file, const Operand *operands, Size opcode_size
 						switch (opcode_size)
 						{
 							case SIZE_BYTE:
+							case SIZE_SHORT:
 								i = 2;
 
 								if (value >= 0x100 && value < 0xFFFFFF00)
@@ -248,7 +253,7 @@ static void OutputOperands(FILE *file, const Operand *operands, Size opcode_size
 							success = cc_false;
 						}
 
-						if (operand->size == SIZE_BYTE)
+						if (operand->size == SIZE_BYTE || operand->size == SIZE_SHORT)
 						{
 							fprintf(stderr, "Error: Index register cannot be byte-sized\n");
 							success = cc_false;
@@ -1038,7 +1043,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 	{	/* OPCODE_BRA */
 		"BRA",
-		SIZE_BYTE | SIZE_WORD | SIZE_UNDEFINED,
+		SIZE_BYTE | SIZE_SHORT | SIZE_WORD | SIZE_UNDEFINED,
 		(OperandType[])
 		{
 			OPERAND_ADDRESS,
@@ -1047,7 +1052,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 	{	/* OPCODE_BSR */
 		"BSR",
-		SIZE_BYTE | SIZE_WORD | SIZE_UNDEFINED,
+		SIZE_BYTE | SIZE_SHORT | SIZE_WORD | SIZE_UNDEFINED,
 		(OperandType[])
 		{
 			OPERAND_ADDRESS,
@@ -1056,7 +1061,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 	{	/* OPCODE_Bcc */
 		"Bcc",
-		SIZE_BYTE | SIZE_WORD | SIZE_UNDEFINED,
+		SIZE_BYTE | SIZE_SHORT | SIZE_WORD | SIZE_UNDEFINED,
 		(OperandType[])
 		{
 			OPERAND_ADDRESS,
@@ -1265,10 +1270,11 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				switch (instruction->opcode.size)
 				{
 					case SIZE_BYTE:
+					case SIZE_SHORT:
 						machine_code |= 0x0000;
 						break;
 
-					default:
+					case SIZE_UNDEFINED:
 					case SIZE_WORD:
 						machine_code |= 0x0040;
 						break;
@@ -1362,7 +1368,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				}
 				else
 				{
-					if (instruction->opcode.size != SIZE_BYTE && instruction->opcode.size != SIZE_UNDEFINED)
+					if (instruction->opcode.size != SIZE_BYTE && instruction->opcode.size != SIZE_SHORT && instruction->opcode.size != SIZE_UNDEFINED)
 					{
 						fprintf(stderr, "Error: 'BTST/BCHG/BCLR/BSET' instruction must be byte-sized when its destination operand is memory\n");
 						success = cc_false;
@@ -1479,10 +1485,11 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					switch (instruction->opcode.size)
 					{
 						case SIZE_BYTE:
+						case SIZE_SHORT:
 							machine_code = 0x1000;
 							break;
 
-						default:
+						case SIZE_UNDEFINED:
 						case SIZE_WORD:
 							machine_code = 0x3000;
 							break;
@@ -1833,7 +1840,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					{
 						offset = value - program_counter;
 
-						if (instruction->opcode.size == SIZE_BYTE)
+						if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
 						{
 							if (offset == 0)
 							{
@@ -1861,7 +1868,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					{
 						offset = program_counter - value;
 
-						if (instruction->opcode.size == SIZE_BYTE)
+						if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
 						{
 							if (offset > 0x80)
 							{
@@ -1881,7 +1888,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						offset = 0 - offset;
 					}
 
-					if (instruction->opcode.size == SIZE_BYTE)
+					if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
 					{
 						machine_code |= offset & 0xFF;
 					}
@@ -1998,6 +2005,9 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 		if (instruction_metadata->allowed_sizes & SIZE_BYTE)
 			fprintf(stderr, "  %s.B\n", instruction_metadata->name);
+
+		if (instruction_metadata->allowed_sizes & SIZE_SHORT)
+			fprintf(stderr, "  %s.S\n", instruction_metadata->name);
 
 		if (instruction_metadata->allowed_sizes & SIZE_WORD)
 			fprintf(stderr, "  %s.W\n", instruction_metadata->name);

@@ -6,9 +6,10 @@
 typedef enum Size
 {
 	SIZE_BYTE      = 1 << 0,
-	SIZE_WORD      = 1 << 1,
-	SIZE_LONGWORD  = 1 << 2,
-	SIZE_UNDEFINED = 1 << 3
+	SIZE_SHORT     = 1 << 1,
+	SIZE_WORD      = 1 << 2,
+	SIZE_LONGWORD  = 1 << 3,
+	SIZE_UNDEFINED = 1 << 4
 } Size;
 
 typedef enum Condition
