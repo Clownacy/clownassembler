@@ -211,5 +211,10 @@ Label:
 	moveq	#$FFFFFFFF,d1
 	moveq	#$FFFFFF80,d2
 
+	sbcd	d0,d1
+	sbcd	-(a0),-(a1)
+	abcd	d0,d1
+	abcd	-(a0),-(a1)
+
 
   ; More blank lines to test support for trailing blank statements

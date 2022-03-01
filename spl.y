@@ -216,9 +216,11 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_MOVEQ
 %token TOKEN_OPCODE_DIVU
 %token TOKEN_OPCODE_DIVS
+%token TOKEN_OPCODE_SBCD
 
 %token TOKEN_OPCODE_MULU
 %token TOKEN_OPCODE_MULS
+%token TOKEN_OPCODE_ABCD
 
 %token TOKEN_OPCODE_ADD
 %token TOKEN_SIZE_BYTE
@@ -784,6 +786,10 @@ opcode               : TOKEN_OPCODE_ORI
                      {
                        $$.type = OPCODE_DIVS;
                      }
+                     | TOKEN_OPCODE_SBCD
+                     {
+                       $$.type = OPCODE_SBCD_DATA_REGS;
+                     }
 
                      | TOKEN_OPCODE_MULU
                      {
@@ -792,6 +798,10 @@ opcode               : TOKEN_OPCODE_ORI
                      | TOKEN_OPCODE_MULS
                      {
                        $$.type = OPCODE_MULS;
+                     }
+                     | TOKEN_OPCODE_ABCD
+                     {
+                       $$.type = OPCODE_ABCD_DATA_REGS;
                      }
 
                      | TOKEN_OPCODE_ADD

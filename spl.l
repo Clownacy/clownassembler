@@ -139,9 +139,11 @@ ble             TOKEN(OPCODE_BLE)
 moveq           TOKEN(OPCODE_MOVEQ)
 divu            TOKEN(OPCODE_DIVU)
 divs            TOKEN(OPCODE_DIVS)
+sbcd            TOKEN(OPCODE_SBCD)
 
 mulu            TOKEN(OPCODE_MULU)
 muls            TOKEN(OPCODE_MULS)
+abcd            TOKEN(OPCODE_ABCD)
 
 add             TOKEN(OPCODE_ADD)
 "("             return yytext[0];

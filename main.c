@@ -1104,6 +1104,26 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0
 		}
 	},
+	{	/* OPCODE_SBCD_DATA_REGS */
+		"SBCD",
+		SIZE_BYTE | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_SBCD_ADDRESS_REGS */
+		"SBCD",
+		SIZE_BYTE | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT,
+			OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT,
+			0
+		}
+	},
 
 	{	/* OPCODE_MULU */
 		"MULU",
@@ -1128,6 +1148,26 @@ static const InstructionMetadata instruction_metadata_all[] = {
 				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
 				| OPERAND_LITERAL | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
 			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ABCD_DATA_REGS */
+		"ABCD",
+		SIZE_BYTE | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ABCD_ADDRESS_REGS */
+		"ABCD",
+		SIZE_BYTE | SIZE_UNDEFINED,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT,
+			OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT,
 			0
 		}
 	},
@@ -1941,6 +1981,52 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 				/* MOVEQ's operands are embedded directly into the machine code, so we don't need to output them separately. */
 				operands_to_output = NULL;
+
+				break;
+			}
+
+			case OPCODE_SBCD_DATA_REGS:
+			case OPCODE_ABCD_DATA_REGS:
+			{
+				const Operand* const source_operand = instruction->operands;
+				const Operand* const destination_operand = instruction->operands->next;
+
+				switch (instruction->opcode.type)
+				{
+					case OPCODE_SBCD_DATA_REGS:
+						if (source_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+						{
+							machine_code = 0x8108;
+
+							instruction_metadata = &instruction_metadata_all[OPCODE_SBCD_ADDRESS_REGS];
+						}
+						else
+						{
+							machine_code = 0x8100;
+						}
+
+						break;
+
+					case OPCODE_ABCD_DATA_REGS:
+						if (source_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+						{
+							machine_code = 0xC108;
+
+							instruction_metadata = &instruction_metadata_all[OPCODE_ABCD_ADDRESS_REGS];
+						}
+						else
+						{
+							machine_code = 0xC100;
+						}
+
+						break;
+				}
+
+				if (source_operand->type == OPERAND_DATA_REGISTER || source_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+					machine_code |= source_operand->main_register << 0;
+
+				if (destination_operand->type == OPERAND_DATA_REGISTER || destination_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+					machine_code |= destination_operand->main_register << 9;
 
 				break;
 			}
