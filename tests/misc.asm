@@ -216,5 +216,9 @@ Label:
 	abcd	d0,d1
 	abcd	-(a0),-(a1)
 
+	or.w	d0,d0
+	sub.w	d0,d0
+	and.w	d0,d0
+	add.w	d0,d0
 
   ; More blank lines to test support for trailing blank statements

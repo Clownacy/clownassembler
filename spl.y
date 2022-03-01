@@ -217,11 +217,14 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_DIVU
 %token TOKEN_OPCODE_DIVS
 %token TOKEN_OPCODE_SBCD
+%token TOKEN_OPCODE_OR
+%token TOKEN_OPCODE_SUB
 
 %token TOKEN_OPCODE_MULU
 %token TOKEN_OPCODE_MULS
 %token TOKEN_OPCODE_ABCD
 
+%token TOKEN_OPCODE_AND
 %token TOKEN_OPCODE_ADD
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
@@ -790,6 +793,14 @@ opcode               : TOKEN_OPCODE_ORI
                      {
                        $$.type = OPCODE_SBCD_DATA_REGS;
                      }
+                     | TOKEN_OPCODE_OR
+                     {
+                       $$.type = OPCODE_OR_TO_REG;
+                     }
+                     | TOKEN_OPCODE_SUB
+                     {
+                       $$.type = OPCODE_SUB_TO_REG;
+                     }
 
                      | TOKEN_OPCODE_MULU
                      {
@@ -804,9 +815,13 @@ opcode               : TOKEN_OPCODE_ORI
                        $$.type = OPCODE_ABCD_DATA_REGS;
                      }
 
+                     | TOKEN_OPCODE_AND
+                     {
+                       $$.type = OPCODE_AND_TO_REG;
+                     }
                      | TOKEN_OPCODE_ADD
                      {
-                       $$.type = OPCODE_ADD;
+                       $$.type = OPCODE_ADD_TO_REG;
                      }
                      ;
 

@@ -140,11 +140,14 @@ moveq           TOKEN(OPCODE_MOVEQ)
 divu            TOKEN(OPCODE_DIVU)
 divs            TOKEN(OPCODE_DIVS)
 sbcd            TOKEN(OPCODE_SBCD)
+or              TOKEN(OPCODE_OR)
+sub             TOKEN(OPCODE_SUB)
 
 mulu            TOKEN(OPCODE_MULU)
 muls            TOKEN(OPCODE_MULS)
 abcd            TOKEN(OPCODE_ABCD)
 
+and             TOKEN(OPCODE_AND)
 add             TOKEN(OPCODE_ADD)
 "("             return yytext[0];
 ")"             return yytext[0];
