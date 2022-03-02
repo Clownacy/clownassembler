@@ -513,7 +513,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 	{	/* OPCODE_BTST_STATIC */
 		"BTST",
-		SIZE_BYTE | SIZE_LONGWORD,
+		SIZE_BYTE | SIZE_LONGWORD | SIZE_UNDEFINED,
 		(OperandType[])
 		{
 			OPERAND_LITERAL,
@@ -526,7 +526,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 	{	/* OPCODE_BCHG_STATIC */
 		"BCHG",
-		SIZE_BYTE | SIZE_LONGWORD,
+		SIZE_BYTE | SIZE_LONGWORD | SIZE_UNDEFINED,
 		(OperandType[])
 		{
 			OPERAND_LITERAL,
@@ -539,7 +539,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 	{	/* OPCODE_BCLR_STATIC */
 		"BCLR",
-		SIZE_BYTE | SIZE_LONGWORD,
+		SIZE_BYTE | SIZE_LONGWORD | SIZE_UNDEFINED,
 		(OperandType[])
 		{
 			OPERAND_LITERAL,
@@ -552,7 +552,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 	{	/* OPCODE_BSET_STATIC */
 		"BSET",
-		SIZE_BYTE | SIZE_LONGWORD,
+		SIZE_BYTE | SIZE_LONGWORD | SIZE_UNDEFINED,
 		(OperandType[])
 		{
 			OPERAND_LITERAL,
@@ -565,7 +565,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 	{	/* OPCODE_BTST_DYNAMIC */
 		"BTST",
-		SIZE_BYTE | SIZE_LONGWORD,
+		SIZE_BYTE | SIZE_LONGWORD | SIZE_UNDEFINED,
 		(OperandType[])
 		{
 			OPERAND_DATA_REGISTER,
@@ -578,7 +578,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 	{	/* OPCODE_BCHG_DYNAMIC */
 		"BCHG",
-		SIZE_BYTE | SIZE_LONGWORD,
+		SIZE_BYTE | SIZE_LONGWORD | SIZE_UNDEFINED,
 		(OperandType[])
 		{
 			OPERAND_DATA_REGISTER,
@@ -591,7 +591,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 	{	/* OPCODE_BCLR_DYNAMIC */
 		"BCLR",
-		SIZE_BYTE | SIZE_LONGWORD,
+		SIZE_BYTE | SIZE_LONGWORD | SIZE_UNDEFINED,
 		(OperandType[])
 		{
 			OPERAND_DATA_REGISTER,
@@ -604,7 +604,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 	{	/* OPCODE_BSET_DYNAMIC */
 		"BSET",
-		SIZE_BYTE | SIZE_LONGWORD,
+		SIZE_BYTE | SIZE_LONGWORD | SIZE_UNDEFINED,
 		(OperandType[])
 		{
 			OPERAND_DATA_REGISTER,
