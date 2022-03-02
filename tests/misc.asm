@@ -128,7 +128,7 @@ Label:
 
 	reset
 	nop
-	stop
+	stop	#$2700
 	rte
 	rts
 	trapv

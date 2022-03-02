@@ -884,6 +884,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 		SIZE_UNDEFINED,
 		(OperandType[])
 		{
+			OPERAND_LITERAL,
 			0
 		}
 	},
