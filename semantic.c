@@ -1508,8 +1508,6 @@ static const InstructionMetadata instruction_metadata_all[] = {
 
 static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, unsigned long *program_counter, cc_bool doing_fix_up)
 {
-	unsigned int total_operands_wanted;
-	unsigned int total_operands_have;
 	const Operand *operand;
 	/* Default to NOP in case errors occur later on and we can't get the correct machine code. */
 	unsigned int machine_code = 0x4E71;
@@ -1844,1260 +1842,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 
 	instruction_metadata = &instruction_metadata_all[specific_opcode_type];
 
-	/* Count operands that we want. */
-	total_operands_wanted = 0;
-
-	while (instruction_metadata->allowed_operands[total_operands_wanted] != 0)
-		++total_operands_wanted;
-
-	/* Count operands that we have. */
-	total_operands_have = 0;
-
-	for (operand = instruction->operands; operand != NULL; operand = operand->next)
-		++total_operands_have;
-
-	if (total_operands_wanted != total_operands_have)
-	{
-		fprintf(stderr, "Error: '%s' instruction has %u operands, but it should have %u\n", instruction_metadata->name, total_operands_have, total_operands_wanted);
-		assemble_instruction_success = cc_false;
-	}
-
-	if (assemble_instruction_success)
-	{
-		/* Determine the machine code for the opcode and perform sanity-checking. */
-		switch (specific_opcode_type)
-		{
-			case OPCODE_ORI_TO_CCR:
-				machine_code = 0x003C;
-				break;
-
-			case OPCODE_ORI_TO_SR:
-				machine_code = 0x007C;
-				break;
-
-			case OPCODE_ORI:
-			{
-				const Operand* const destination_operand = instruction->operands->next;
-
-				machine_code = 0x0000;
-				machine_code |= ConstructSizeBits(instruction->opcode.size);
-				machine_code |= ConstructEffectiveAddressBits(destination_operand);
-				break;
-			}
-
-			case OPCODE_ANDI_TO_CCR:
-				machine_code = 0x023C;
-				break;
-
-			case OPCODE_ANDI_TO_SR:
-				machine_code = 0x027C;
-				break;
-
-			case OPCODE_ANDI:
-			{
-				const Operand* const destination_operand = instruction->operands->next;
-
-				machine_code = 0x0200;
-				machine_code |= ConstructSizeBits(instruction->opcode.size);
-				machine_code |= ConstructEffectiveAddressBits(destination_operand);
-				break;
-			}
-
-			case OPCODE_SUBI:
-			{
-				const Operand* const destination_operand = instruction->operands->next;
-
-				machine_code = 0x0400;
-				machine_code |= ConstructSizeBits(instruction->opcode.size);
-				machine_code |= ConstructEffectiveAddressBits(destination_operand);
-				break;
-			}
-
-			case OPCODE_ADDI:
-			{
-				const Operand* const destination_operand = instruction->operands->next;
-
-				machine_code = 0x0600;
-				machine_code |= ConstructSizeBits(instruction->opcode.size);
-				machine_code |= ConstructEffectiveAddressBits(destination_operand);
-				break;
-			}
-
-			case OPCODE_EORI_TO_CCR:
-				machine_code = 0x0A3C;
-				break;
-
-			case OPCODE_EORI_TO_SR:
-				machine_code = 0x0A7C;
-				break;
-
-			case OPCODE_EORI:
-			{
-				const Operand* const destination_operand = instruction->operands->next;
-
-				machine_code = 0x0A00;
-				machine_code |= ConstructSizeBits(instruction->opcode.size);
-				machine_code |= ConstructEffectiveAddressBits(destination_operand);
-				break;
-			}
-
-			case OPCODE_CMPI:
-			{
-				const Operand* const destination_operand = instruction->operands->next;
-
-				machine_code = 0x0C00;
-				machine_code |= ConstructSizeBits(instruction->opcode.size);
-				machine_code |= ConstructEffectiveAddressBits(destination_operand);
-				break;
-			}
-
-			case OPCODE_BTST_STATIC:
-			case OPCODE_BCHG_STATIC:
-			case OPCODE_BCLR_STATIC:
-			case OPCODE_BSET_STATIC:
-			case OPCODE_BTST_DYNAMIC:
-			case OPCODE_BCHG_DYNAMIC:
-			case OPCODE_BCLR_DYNAMIC:
-			case OPCODE_BSET_DYNAMIC:
-			{
-				const Operand* const source_operand = instruction->operands;
-				const Operand* const destination_operand = instruction->operands->next;
-
-				switch (specific_opcode_type)
-				{
-					case OPCODE_BTST_STATIC:
-					case OPCODE_BCHG_STATIC:
-					case OPCODE_BCLR_STATIC:
-					case OPCODE_BSET_STATIC:
-					{
-						unsigned long value;
-
-						if (!ResolveValue(&source_operand->literal, &value, &fix_up, doing_fix_up))
-							value = 0;
-
-						/* Check whether the literal value will wrap or not, and warn the user if so. */
-						if (destination_operand->type == OPERAND_DATA_REGISTER)
-						{
-							if (value >= 32)
-								fprintf(stderr, "Warning: 'BTST/BCHG/BCLR/BSET' instruction's literal value will be modulo 32\n");
-						}
-						else
-						{
-							if (value >= 8)
-								fprintf(stderr, "Warning: 'BTST/BCHG/BCLR/BSET' instruction's literal value will be modulo 8\n");
-						}
-
-						machine_code = 0x0800;
-
-						break;
-					}
-
-					case OPCODE_BTST_DYNAMIC:
-					case OPCODE_BCHG_DYNAMIC:
-					case OPCODE_BCLR_DYNAMIC:
-					case OPCODE_BSET_DYNAMIC:
-						machine_code = 0x0100 | (source_operand->main_register << 9);
-						break;
-
-					default:
-						break;
-				}
-
-				switch (specific_opcode_type)
-				{
-					case OPCODE_BTST_STATIC:
-					case OPCODE_BTST_DYNAMIC:
-						machine_code |= 0x0000;
-						break;
-
-					case OPCODE_BCHG_STATIC:
-					case OPCODE_BCHG_DYNAMIC:
-						machine_code |= 0x0040;
-						break;
-
-					case OPCODE_BCLR_STATIC:
-					case OPCODE_BCLR_DYNAMIC:
-						machine_code |= 0x0080;
-						break;
-
-					case OPCODE_BSET_STATIC:
-					case OPCODE_BSET_DYNAMIC:
-						machine_code |= 0x00C0;
-						break;
-
-					default:
-						break;
-				}
-
-				/* Check that the opcode size is suitable for the destination operand. */
-				if (destination_operand->type == OPERAND_DATA_REGISTER)
-				{
-					if (instruction->opcode.size != SIZE_LONGWORD && instruction->opcode.size != SIZE_UNDEFINED)
-					{
-						fprintf(stderr, "Error: 'BTST/BCHG/BCLR/BSET' instruction must be longword-sized when its destination operand is a data register\n");
-						assemble_instruction_success = cc_false;
-					}
-				}
-				else
-				{
-					if (instruction->opcode.size != SIZE_BYTE && instruction->opcode.size != SIZE_SHORT && instruction->opcode.size != SIZE_UNDEFINED)
-					{
-						fprintf(stderr, "Error: 'BTST/BCHG/BCLR/BSET' instruction must be byte-sized when its destination operand is memory\n");
-						assemble_instruction_success = cc_false;
-					}
-				}
-
-				machine_code |= ConstructEffectiveAddressBits(destination_operand);
-
-				break;
-			}
-
-			case OPCODE_MOVEP_TO_REG:
-			case OPCODE_MOVEP_FROM_REG:
-			{
-				unsigned int data_register = 0;
-				unsigned int address_register = 0;
-
-				const Operand* const source_operand = instruction->operands;
-				const Operand* const destination_operand = instruction->operands->next;
-
-				if (source_operand->type == OPERAND_DATA_REGISTER)
-				{
-					data_register = source_operand->main_register;
-					address_register = destination_operand->main_register;
-				}
-				else if (destination_operand->type == OPERAND_DATA_REGISTER)
-				{
-					address_register = source_operand->main_register;
-					data_register = destination_operand->main_register;
-				}
-
-				machine_code = 0x0108;
-				machine_code |= data_register << 9;
-				machine_code |= (source_operand->type == OPERAND_DATA_REGISTER) << 7;
-				machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
-				machine_code |= address_register;
-
-				break;
-			}
-
-			case OPCODE_MOVEA:
-			case OPCODE_MOVE:
-			{
-				/* MOVE */
-				/* MOVEA */
-				const Operand* const source_operand = instruction->operands;
-				const Operand* const destination_operand = instruction->operands->next;
-
-				switch (instruction->opcode.size)
-				{
-					case SIZE_BYTE:
-					case SIZE_SHORT:
-						machine_code = 0x1000;
-						break;
-
-					case SIZE_UNDEFINED:
-					case SIZE_WORD:
-						machine_code = 0x3000;
-						break;
-
-					case SIZE_LONGWORD:
-						machine_code = 0x2000;
-						break;
-				}
-
-				machine_code |= ConstructEffectiveAddressBits(source_operand);
-				machine_code |= ToAlternateEffectiveAddressBits(ConstructEffectiveAddressBits(destination_operand));
-
-				break;
-			}
-
-			case OPCODE_MOVE_FROM_SR:
-			{
-				const Operand* const destination_operand = instruction->operands->next;
-
-				machine_code = 0x40C0;
-				machine_code |= ConstructEffectiveAddressBits(destination_operand);
-				break;
-			}
-
-			case OPCODE_MOVE_TO_CCR:
-			{
-				const Operand* const source_operand = instruction->operands;
-
-				machine_code = 0x44C0;
-				machine_code |= ConstructEffectiveAddressBits(source_operand);
-				break;
-			}
-
-			case OPCODE_MOVE_TO_SR:
-			{
-				const Operand* const source_operand = instruction->operands;
-
-				machine_code = 0x46C0;
-				machine_code |= ConstructEffectiveAddressBits(source_operand);
-				break;
-			}
-
-			case OPCODE_NEGX:
-			case OPCODE_CLR:
-			case OPCODE_NEG:
-			case OPCODE_NOT:
-			case OPCODE_TST:
-				switch (specific_opcode_type)
-				{
-					case OPCODE_NEGX:
-						machine_code = 0x4000;
-						break;
-
-					case OPCODE_CLR:
-						machine_code = 0x4200;
-						break;
-
-					case OPCODE_NEG:
-						machine_code = 0x4400;
-						break;
-
-					case OPCODE_NOT:
-						machine_code = 0x4600;
-						break;
-
-					case OPCODE_TST:
-						machine_code = 0x4A00;
-						break;
-
-					default:
-						break;
-				}
-
-				machine_code |= ConstructSizeBits(instruction->opcode.size);
-				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
-
-				break;
-
-			case OPCODE_EXT:
-				machine_code = 0x4880;
-				machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
-				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
-				break;
-
-			case OPCODE_NBCD:
-				machine_code = 0x4800;
-				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
-				break;
-
-			case OPCODE_SWAP:
-				machine_code = 0x4840;
-
-				/* Just a check to prevent reading uninitialised memory. */
-				if (instruction->operands->type == OPERAND_DATA_REGISTER)
-					machine_code |= instruction->operands->main_register;
-
-				break;
-
-			case OPCODE_PEA:
-				machine_code = 0x4840;
-				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
-				break;
-
-			case OPCODE_ILLEGAL:
-				machine_code = 0x4AFC;
-				break;
-
-			case OPCODE_TAS:
-				machine_code = 0x4AC0;
-				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
-				break;
-
-			case OPCODE_TRAP:
-				machine_code = 0x4E40;
-
-				/* Just a check to prevent reading uninitialised memory. */
-				if (instruction->operands->type == OPERAND_LITERAL)
-				{
-					unsigned long value;
-
-					if (!ResolveValue(&instruction->operands->literal, &value, &fix_up, doing_fix_up))
-						value = 0;
-
-					if (value > 15)
-					{
-						fprintf(stderr, "Error: 'TRAP' instruction's vector cannot be higher than 15\n");
-						assemble_instruction_success = cc_false;
-					}
-					else
-					{
-						machine_code |= value;
-					}
-				}
-
-				break;
-
-			case OPCODE_LINK:
-				machine_code = 0x4E50;
-
-				/* Just a check to prevent reading uninitialised memory. */
-				if (instruction->operands->type == OPERAND_ADDRESS_REGISTER)
-					machine_code |= instruction->operands->main_register;
-
-				break;
-
-			case OPCODE_UNLK:
-				machine_code = 0x4E58;
-
-				/* Just a check to prevent reading uninitialised memory. */
-				if (instruction->operands->type == OPERAND_ADDRESS_REGISTER)
-					machine_code |= instruction->operands->main_register;
-
-				break;
-
-			case OPCODE_MOVE_TO_USP:
-			{
-				const Operand* const source_operand = instruction->operands;
-
-				machine_code = 0x4E68;
-				machine_code |= source_operand->main_register;
-				break;
-			}
-
-			case OPCODE_MOVE_FROM_USP:
-			{
-				const Operand* const destination_operand = instruction->operands->next;
-
-				machine_code = 0x4E60;
-				machine_code |= destination_operand->main_register;
-				break;
-			}
-
-			case OPCODE_RESET:
-				machine_code = 0x4E70;
-				break;
-
-			case OPCODE_NOP:
-				machine_code = 0x4E71;
-				break;
-
-			case OPCODE_STOP:
-				machine_code = 0x4E72;
-				break;
-
-			case OPCODE_RTE:
-				machine_code = 0x4E73;
-				break;
-
-			case OPCODE_RTS:
-				machine_code = 0x4E75;
-				break;
-
-			case OPCODE_TRAPV:
-				machine_code = 0x4E76;
-				break;
-
-			case OPCODE_RTR:
-				machine_code = 0x4E77;
-				break;
-
-			case OPCODE_JSR:
-				machine_code = 0x4E80;
-				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
-				break;
-
-			case OPCODE_JMP:
-				machine_code = 0x4EC0;
-				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
-				break;
-
-			case OPCODE_MOVEM_TO_REGS:
-			case OPCODE_MOVEM_FROM_REGS:
-				machine_code = 0x4880;
-				machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
-
-				if (specific_opcode_type == OPCODE_MOVEM_TO_REGS)
-				{
-					machine_code |= 1 << 10;
-					machine_code |= ConstructEffectiveAddressBits(instruction->operands);
-				}
-				else
-				{
-					machine_code |= ConstructEffectiveAddressBits(instruction->operands->next);
-				}
-
-				break;
-
-			case OPCODE_LEA:
-			case OPCODE_CHK:
-			case OPCODE_DIVU:
-			case OPCODE_DIVS:
-			case OPCODE_MULU:
-			case OPCODE_MULS:
-			{
-				const Operand* const source_operand = instruction->operands;
-				const Operand* const destination_operand = instruction->operands->next;
-
-				switch (specific_opcode_type)
-				{
-					case OPCODE_LEA:
-						machine_code = 0x41C0;
-						break;
-
-					case OPCODE_CHK:
-						machine_code = 0x4180;
-						break;
-
-					case OPCODE_DIVU:
-						machine_code = 0x80C0;
-						break;
-
-					case OPCODE_DIVS:
-						machine_code = 0x81C0;
-						break;
-
-					case OPCODE_MULU:
-						machine_code = 0xC0C0;
-						break;
-
-					case OPCODE_MULS:
-						machine_code = 0xC1C0;
-						break;
-
-					default:
-						break;
-				}
-
-				/* Just a check to prevent reading uninitialised memory. */
-				if (destination_operand->type == OPERAND_DATA_REGISTER || destination_operand->type == OPERAND_ADDRESS_REGISTER)
-					machine_code |= destination_operand->main_register << 9;
-
-				machine_code |= ConstructEffectiveAddressBits(source_operand);
-
-				break;
-			}
-
-			case OPCODE_ADDQ:
-			case OPCODE_SUBQ:
-			{
-				const Operand* const source_operand = instruction->operands;
-				const Operand* const destination_operand = instruction->operands->next;
-
-				/* Skip the immediate operand since that goes in the machine code instead. */
-				operands_to_output = destination_operand;
-
-				switch (specific_opcode_type)
-				{
-					case OPCODE_ADDQ:
-						machine_code = 0x5000;
-						break;
-
-					case OPCODE_SUBQ:
-						machine_code = 0x5100;
-						break;
-
-					default:
-						break;
-				}
-
-				machine_code |= ConstructSizeBits(instruction->opcode.size);
-				machine_code |= ConstructEffectiveAddressBits(destination_operand);
-
-				if (source_operand->type == OPERAND_LITERAL)
-				{
-					unsigned long value;
-
-					if (!ResolveValue(&source_operand->literal, &value, &fix_up, doing_fix_up))
-						value = 1;
-
-					if (value < 1 || value > 8)
-					{
-						fprintf(stderr, "Error: 'ADDQ'/'SUBQ' instruction's immediate value cannot be lower than 1 or higher than 8\n");
-						assemble_instruction_success = cc_false;
-					}
-					else
-					{
-						machine_code |= (value - 1) << 9;
-					}
-				}
-
-				break;
-			}
-
-			case OPCODE_Scc:
-				machine_code = 0x50C0;
-				machine_code |= instruction->opcode.condition << 8;
-				machine_code |= ConstructEffectiveAddressBits(instruction->operands);
-				break;
-
-			case OPCODE_DBcc:
-			{
-				const Operand* const data_register_operand = instruction->operands;
-				const Operand* const address_operand = instruction->operands->next;
-
-				machine_code = 0x50C8;
-				machine_code |= instruction->opcode.condition << 8;
-
-				if (data_register_operand->type == OPERAND_DATA_REGISTER)
-					machine_code |= data_register_operand->main_register;
-
-				if (address_operand->type == OPERAND_ADDRESS)
-				{
-					unsigned long value;
-
-					if (!ResolveValue(&address_operand->literal, &value, &fix_up, doing_fix_up))
-						value = *program_counter - 2;
-
-					custom_operand.next = NULL;
-					custom_operand.type = OPERAND_LITERAL;
-					custom_operand.literal.type = TOKEN_NUMBER;
-
-					if (value >= *program_counter)
-					{
-						const unsigned long offset = value - *program_counter;
-
-						if (offset > 0x7FFF)
-						{
-							fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was $%lX bytes away)\n", offset);
-							assemble_instruction_success = cc_false;
-						}
-
-						custom_operand.literal.data.integer = offset;
-					}
-					else
-					{
-						const unsigned long offset = *program_counter - value;
-
-						if (offset > 0x8000)
-						{
-							fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was $%lX bytes away)\n", offset);
-							assemble_instruction_success = cc_false;
-						}
-
-						custom_operand.literal.data.integer = 0 - offset;
-					}
-
-					operands_to_output = &custom_operand;
-				}
-
-				break;
-			}
-
-			case OPCODE_BRA:
-			case OPCODE_BSR:
-			case OPCODE_Bcc:
-			{
-				machine_code = 0x6000;
-
-				switch (specific_opcode_type)
-				{
-					case OPCODE_BRA:
-						machine_code |= 0x0000;
-						break;
-
-					case OPCODE_BSR:
-						machine_code |= 0x0100;
-						break;
-
-					case OPCODE_Bcc:
-						machine_code |= instruction->opcode.condition << 8;
-						break;
-
-					default:
-						break;
-				}
-
-				if (instruction->operands->type == OPERAND_ADDRESS)
-				{
-					unsigned long offset;
-					unsigned long value;
-
-					if (!ResolveValue(&instruction->operands->literal, &value, &fix_up, doing_fix_up))
-						value = *program_counter - 2;
-
-					if (value >= *program_counter)
-					{
-						offset = value - *program_counter;
-
-						if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
-						{
-							if (offset == 0)
-							{
-								fprintf(stderr, "Error: Destination cannot be 0 bytes away when using a short-sized branch\n");
-								assemble_instruction_success = cc_false;
-							}
-							else if (offset > 0x7F)
-							{
-								fprintf(stderr, "Error: Destination is too far away (must be less than 0x80 bytes after start of instruction, but was $%lX bytes away)\n", offset);
-								assemble_instruction_success = cc_false;
-							}
-						}
-						else
-						{
-							if (offset > 0x7FFF)
-							{
-								fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was $%lX bytes away)\n", offset);
-								assemble_instruction_success = cc_false;
-							}
-						}
-					}
-					else
-					{
-						offset = *program_counter - value;
-
-						if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
-						{
-							if (offset > 0x80)
-							{
-								fprintf(stderr, "Error: Destination is too far away (must be less than 0x81 bytes before start of instruction, but was $%lX bytes away)\n", offset);
-								assemble_instruction_success = cc_false;
-							}
-						}
-						else
-						{
-							if (offset > 0x8000)
-							{
-								fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was $%lX bytes away)\n", offset);
-								assemble_instruction_success = cc_false;
-							}
-						}
-
-						offset = 0 - offset;
-					}
-
-					if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
-					{
-						machine_code |= offset & 0xFF;
-						operands_to_output = NULL;
-					}
-					else
-					{
-						custom_operand.next = NULL;
-						custom_operand.type = OPERAND_LITERAL;
-						custom_operand.literal.type = TOKEN_NUMBER;
-						custom_operand.literal.data.integer = offset;
-						operands_to_output = &custom_operand;
-					}
-				}
-
-				break;
-			}
-
-			case OPCODE_MOVEQ:
-			{
-				const Operand* const literal_operand = instruction->operands;
-				const Operand* const data_register_operand = instruction->operands->next;
-
-				machine_code = 0x7000;
-
-				if (literal_operand->type == OPERAND_LITERAL)
-				{
-					unsigned long value;
-
-					if (!ResolveValue(&literal_operand->literal, &value, &fix_up, doing_fix_up))
-						value = 0;
-
-					if (value > 0x7F && value < 0xFFFFFF80)
-					{
-						fprintf(stderr, "Error: Literal is too large: it must be between -$80 and $7F\n");
-						assemble_instruction_success = cc_false;
-					}
-					else
-					{
-						machine_code |= value & 0xFF;
-					}
-				}
-
-				if (data_register_operand->type == OPERAND_DATA_REGISTER)
-					machine_code |= data_register_operand->main_register << 9;
-
-				/* MOVEQ's operands are embedded directly into the machine code, so we don't need to output them separately. */
-				operands_to_output = NULL;
-
-				break;
-			}
-
-			case OPCODE_SBCD_DATA_REGS:
-			case OPCODE_SBCD_ADDRESS_REGS:
-			case OPCODE_SUBX_DATA_REGS:
-			case OPCODE_SUBX_ADDRESS_REGS:
-			case OPCODE_ABCD_DATA_REGS:
-			case OPCODE_ABCD_ADDRESS_REGS:
-			case OPCODE_ADDX_DATA_REGS:
-			case OPCODE_ADDX_ADDRESS_REGS:
-			{
-				const Operand* const source_operand = instruction->operands;
-				const Operand* const destination_operand = instruction->operands->next;
-
-				switch (specific_opcode_type)
-				{
-					case OPCODE_SBCD_DATA_REGS:
-						machine_code = 0x8100;
-						break;
-
-					case OPCODE_SBCD_ADDRESS_REGS:
-						machine_code = 0x8108;
-						break;
-
-					case OPCODE_SUBX_DATA_REGS:
-						machine_code = 0x9100;
-						break;
-
-					case OPCODE_SUBX_ADDRESS_REGS:
-						machine_code = 0x9108;
-						break;
-
-					case OPCODE_ABCD_DATA_REGS:
-						machine_code = 0xC100;
-						break;
-
-					case OPCODE_ABCD_ADDRESS_REGS:
-						machine_code = 0xC108;
-						break;
-
-					case OPCODE_ADDX_DATA_REGS:
-						machine_code = 0xD100;
-						break;
-
-					case OPCODE_ADDX_ADDRESS_REGS:
-						machine_code = 0xD108;
-						break;
-
-					default:
-						break;
-				}
-
-				machine_code |= ConstructSizeBits(instruction->opcode.size);
-				machine_code |= source_operand->main_register << 0;
-				machine_code |= destination_operand->main_register << 9;
-
-				break;
-			}
-
-			case OPCODE_OR_TO_REG:
-			case OPCODE_OR_FROM_REG:
-			case OPCODE_SUB_TO_REG:
-			case OPCODE_SUB_FROM_REG:
-			case OPCODE_EOR:
-			case OPCODE_CMP:
-			case OPCODE_AND_TO_REG:
-			case OPCODE_AND_FROM_REG:
-			case OPCODE_ADD_TO_REG:
-			case OPCODE_ADD_FROM_REG:
-			{
-				const Operand* const source_operand = instruction->operands;
-				const Operand* const destination_operand = instruction->operands->next;
-
-				if (destination_operand->type == OPERAND_ADDRESS_REGISTER && instruction->opcode.size == SIZE_BYTE)
-				{
-					fprintf(stderr, "Error: Instruction cannot be byte-sized when destination is an address register\n");
-					assemble_instruction_success = cc_false;
-				}
-
-				switch (specific_opcode_type)
-				{
-					case OPCODE_OR_TO_REG:
-						machine_code = 0x8000;
-						break;
-
-					case OPCODE_OR_FROM_REG:
-						machine_code = 0x8100;
-						break;
-
-					case OPCODE_SUB_TO_REG:
-						machine_code = 0x9000;
-						break;
-
-					case OPCODE_SUB_FROM_REG:
-						machine_code = 0x9100;
-						break;
-
-					case OPCODE_EOR:
-						machine_code = 0xB100;
-						break;
-
-					case OPCODE_CMP:
-						machine_code = 0xB000;
-						break;
-
-					case OPCODE_AND_TO_REG:
-						machine_code = 0xC000;
-						break;
-
-					case OPCODE_AND_FROM_REG:
-						machine_code = 0xC100;
-						break;
-
-					case OPCODE_ADD_TO_REG:
-						machine_code = 0xD000;
-						break;
-
-					case OPCODE_ADD_FROM_REG:
-						machine_code = 0xD100;
-						break;
-
-					default:
-						break;
-				}
-
-				machine_code |= ConstructSizeBits(instruction->opcode.size);
-
-				if (destination_operand->type == OPERAND_DATA_REGISTER)
-				{
-					machine_code |= destination_operand->main_register << 9;
-					machine_code |= ConstructEffectiveAddressBits(source_operand);
-				}
-				else
-				{
-					machine_code |= source_operand->main_register << 9;
-					machine_code |= ConstructEffectiveAddressBits(destination_operand);
-				}
-
-				break;
-			}
-
-			case OPCODE_SUBA:
-			case OPCODE_CMPA:
-			case OPCODE_ADDA:
-			{
-				const Operand* const source_operand = instruction->operands;
-				const Operand* const destination_operand = instruction->operands->next;
-
-				switch (specific_opcode_type)
-				{
-					case OPCODE_SUBA:
-						machine_code = 0x90C0;
-						break;
-
-					case OPCODE_CMPA:
-						machine_code = 0xB0C0;
-						break;
-
-					case OPCODE_ADDA:
-						machine_code = 0xD0C0;
-						break;
-
-					default:
-						break;
-				}
-
-				machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 8;
-
-				if (destination_operand->type == OPERAND_ADDRESS_REGISTER)
-					machine_code |= destination_operand->main_register << 9;
-
-				machine_code |= ConstructEffectiveAddressBits(source_operand);
-
-				break;
-			}
-
-			case OPCODE_CMPM:
-			{
-				const Operand* const first_operand = instruction->operands;
-				const Operand* const second_operand = instruction->operands->next;
-
-				machine_code = 0xB108;
-				machine_code |= ConstructSizeBits(instruction->opcode.size);
-
-				if (first_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT)
-					machine_code |= first_operand->main_register << 0;
-
-				if (second_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT)
-					machine_code |= second_operand->main_register << 9;
-
-				break;
-			}
-
-			case OPCODE_EXG:
-			{
-				const Operand* const first_operand = instruction->operands;
-				const Operand* const second_operand = instruction->operands->next;
-
-				machine_code = 0xC100;
-
-				if (first_operand->type == OPERAND_DATA_REGISTER && second_operand->type == OPERAND_DATA_REGISTER)
-				{
-					machine_code |= 0x0040;
-					machine_code |= first_operand->main_register << 9;
-					machine_code |= second_operand->main_register << 0;
-				}
-				else if (first_operand->type == OPERAND_ADDRESS_REGISTER && second_operand->type == OPERAND_ADDRESS_REGISTER)
-				{
-					machine_code |= 0x0048;
-					machine_code |= first_operand->main_register << 9;
-					machine_code |= second_operand->main_register << 0;
-				}
-				else if (first_operand->type == OPERAND_DATA_REGISTER && second_operand->type == OPERAND_ADDRESS_REGISTER)
-				{
-					machine_code |= 0x0088;
-					machine_code |= first_operand->main_register << 9;
-					machine_code |= second_operand->main_register << 0;
-				}
-				else if (first_operand->type == OPERAND_ADDRESS_REGISTER && second_operand->type == OPERAND_DATA_REGISTER)
-				{
-					machine_code |= 0x0088;
-					machine_code |= second_operand->main_register << 9;
-					machine_code |= first_operand->main_register << 0;
-				}
-
-				break;
-			}
-
-			case OPCODE_ASL_STATIC:
-			case OPCODE_ASR_STATIC:
-			case OPCODE_LSL_STATIC:
-			case OPCODE_LSR_STATIC:
-			case OPCODE_ROXL_STATIC:
-			case OPCODE_ROXR_STATIC:
-			case OPCODE_ROL_STATIC:
-			case OPCODE_ROR_STATIC:
-			case OPCODE_ASL_DYNAMIC:
-			case OPCODE_ASR_DYNAMIC:
-			case OPCODE_LSL_DYNAMIC:
-			case OPCODE_LSR_DYNAMIC:
-			case OPCODE_ROXL_DYNAMIC:
-			case OPCODE_ROXR_DYNAMIC:
-			case OPCODE_ROL_DYNAMIC:
-			case OPCODE_ROR_DYNAMIC:
-			case OPCODE_ASL_SINGLE:
-			case OPCODE_ASR_SINGLE:
-			case OPCODE_LSL_SINGLE:
-			case OPCODE_LSR_SINGLE:
-			case OPCODE_ROXL_SINGLE:
-			case OPCODE_ROXR_SINGLE:
-			case OPCODE_ROL_SINGLE:
-			case OPCODE_ROR_SINGLE:
-			{
-				const Operand* const first_operand = instruction->operands;
-				const Operand* const second_operand = instruction->operands->next;
-
-				unsigned int identifier;
-
-				switch (specific_opcode_type)
-				{
-					default:
-					case OPCODE_ASL_STATIC:
-					case OPCODE_ASR_STATIC:
-					case OPCODE_ASL_DYNAMIC:
-					case OPCODE_ASR_DYNAMIC:
-					case OPCODE_ASL_SINGLE:
-					case OPCODE_ASR_SINGLE:
-						identifier = 0;
-						break;
-
-					case OPCODE_LSL_STATIC:
-					case OPCODE_LSR_STATIC:
-					case OPCODE_LSL_DYNAMIC:
-					case OPCODE_LSR_DYNAMIC:
-					case OPCODE_LSL_SINGLE:
-					case OPCODE_LSR_SINGLE:
-						identifier = 1;
-						break;
-
-					case OPCODE_ROXL_STATIC:
-					case OPCODE_ROXR_STATIC:
-					case OPCODE_ROXL_DYNAMIC:
-					case OPCODE_ROXR_DYNAMIC:
-					case OPCODE_ROXL_SINGLE:
-					case OPCODE_ROXR_SINGLE:
-						identifier = 2;
-						break;
-
-					case OPCODE_ROL_STATIC:
-					case OPCODE_ROR_STATIC:
-					case OPCODE_ROL_DYNAMIC:
-					case OPCODE_ROR_DYNAMIC:
-					case OPCODE_ROL_SINGLE:
-					case OPCODE_ROR_SINGLE:
-						identifier = 3;
-						break;
-				}
-
-				machine_code = 0xE000;
-
-				switch (specific_opcode_type)
-				{
-					case OPCODE_ASR_STATIC:
-					case OPCODE_ASR_DYNAMIC:
-					case OPCODE_ASR_SINGLE:
-					case OPCODE_LSR_STATIC:
-					case OPCODE_LSR_DYNAMIC:
-					case OPCODE_LSR_SINGLE:
-					case OPCODE_ROXR_STATIC:
-					case OPCODE_ROXR_DYNAMIC:
-					case OPCODE_ROXR_SINGLE:
-					case OPCODE_ROR_STATIC:
-					case OPCODE_ROR_DYNAMIC:
-					case OPCODE_ROR_SINGLE:
-						machine_code |= 0x0000;
-						break;
-
-					case OPCODE_ASL_STATIC:
-					case OPCODE_ASL_DYNAMIC:
-					case OPCODE_ASL_SINGLE:
-					case OPCODE_LSL_STATIC:
-					case OPCODE_LSL_DYNAMIC:
-					case OPCODE_LSL_SINGLE:
-					case OPCODE_ROXL_STATIC:
-					case OPCODE_ROXL_DYNAMIC:
-					case OPCODE_ROXL_SINGLE:
-					case OPCODE_ROL_STATIC:
-					case OPCODE_ROL_DYNAMIC:
-					case OPCODE_ROL_SINGLE:
-						machine_code |= 0x0100;
-						break;
-
-					default:
-						break;
-				}
-
-				switch (specific_opcode_type)
-				{
-					case OPCODE_ASL_STATIC:
-					case OPCODE_ASR_STATIC:
-					case OPCODE_LSL_STATIC:
-					case OPCODE_LSR_STATIC:
-					case OPCODE_ROXL_STATIC:
-					case OPCODE_ROXR_STATIC:
-					case OPCODE_ROL_STATIC:
-					case OPCODE_ROR_STATIC:
-					{
-						unsigned long value;
-
-						if (!ResolveValue(&first_operand->literal, &value, &fix_up, doing_fix_up))
-							value = 0;
-
-						if (value > 8 || value < 1)
-						{
-							fprintf(stderr, "Error: Shift value must not be greater than 8 or lower than 1\n");
-							assemble_instruction_success = cc_false;
-						}
-						else
-						{
-							machine_code |= (value - 1) << 9;
-						}
-
-						machine_code |= identifier << 3;
-						machine_code |= second_operand->main_register << 0;
-
-						break;
-					}
-
-					case OPCODE_ASL_DYNAMIC:
-					case OPCODE_ASR_DYNAMIC:
-					case OPCODE_LSL_DYNAMIC:
-					case OPCODE_LSR_DYNAMIC:
-					case OPCODE_ROXL_DYNAMIC:
-					case OPCODE_ROXR_DYNAMIC:
-					case OPCODE_ROL_DYNAMIC:
-					case OPCODE_ROR_DYNAMIC:
-						machine_code |= identifier << 3;
-						machine_code |= first_operand->main_register << 9;
-						machine_code |= 0x0020;
-						machine_code |= second_operand->main_register << 0;
-						break;
-
-					case OPCODE_ASL_SINGLE:
-					case OPCODE_ASR_SINGLE:
-					case OPCODE_LSL_SINGLE:
-					case OPCODE_LSR_SINGLE:
-					case OPCODE_ROXL_SINGLE:
-					case OPCODE_ROXR_SINGLE:
-					case OPCODE_ROL_SINGLE:
-					case OPCODE_ROR_SINGLE:
-						machine_code |= identifier << 9;
-						machine_code |= 0x00C0;
-						machine_code |= ConstructEffectiveAddressBits(first_operand);
-						break;
-
-					default:
-						break;
-				}
-
-				break;
-			}
-		}
-
-		/* Check whether the operands are of the correct types. */
-		operand = instruction->operands;
-
-		for (i = 0; i < total_operands_have && instruction_metadata->allowed_operands[i] != 0; ++i)
-		{
-			if ((operand->type & ~instruction_metadata->allowed_operands[i]) != 0)
-			{
-				const char *operand_string = "[REDACTED]"; /* Dumb joke - this should never be seen. */
-
-				switch (operand->type)
-				{
-					case OPERAND_DATA_REGISTER:
-						operand_string = "a data register";
-						break;
-
-					case OPERAND_ADDRESS_REGISTER:
-						operand_string = "an address register";
-						break;
-
-					case OPERAND_ADDRESS_REGISTER_INDIRECT:
-						operand_string = "an indirect address register";
-						break;
-
-					case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
-						operand_string = "a post-increment indirect address register";
-						break;
-
-					case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
-						operand_string = "a pre-decrement indirect address register";
-						break;
-
-					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
-						operand_string = "an indirect address register with displacement";
-						break;
-
-					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-						operand_string = "an indirect address register with displacement and index register";
-						break;
-
-					case OPERAND_ADDRESS:
-						operand_string = "an address";
-						break;
-
-					case OPERAND_ADDRESS_ABSOLUTE:
-						operand_string = "an absolute address";
-						break;
-
-					case OPERAND_LITERAL:
-						operand_string = "a literal";
-						break;
-
-					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
-						operand_string = "the program counter with displacement";
-						break;
-
-					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-						operand_string = "the program counter with displacement and index register";
-						break;
-
-					case OPERAND_STATUS_REGISTER:
-						operand_string = "the status register";
-						break;
-
-					case OPERAND_CONDITION_CODE_REGISTER:
-						operand_string = "the condition code register";
-						break;
-
-					case OPERAND_USER_STACK_POINTER_REGISTER:
-						operand_string = "the user stack pointer register";
-						break;
-
-					case OPERAND_REGISTER_LIST:
-						operand_string = "a register list";
-						break;
-				}
-
-				fprintf(stderr, "Error: '%s' instruction operand %u cannot be %s\n", instruction_metadata->name, i, operand_string);
-				assemble_instruction_success = cc_false;
-			}
-
-			operand = operand->next;
-		}
-	}
-
+	/* Check if the instruction is a valid size. */
 	if ((instruction->opcode.size & ~instruction_metadata->allowed_sizes) != 0)
 	{
 		fprintf(stderr, "Error: '%s' instruction cannot be this size - allowed sizes are...\n", instruction_metadata->name);
@@ -3118,6 +1863,1267 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 			fprintf(stderr, "  %s\n", instruction_metadata->name);
 
 		assemble_instruction_success = cc_false;
+	}
+	else
+	{
+		unsigned int total_operands_wanted;
+		unsigned int total_operands_have;
+
+		/* Count operands that we want. */
+		total_operands_wanted = 0;
+
+		while (instruction_metadata->allowed_operands[total_operands_wanted] != 0)
+			++total_operands_wanted;
+
+		/* Count operands that we have. */
+		total_operands_have = 0;
+
+		for (operand = instruction->operands; operand != NULL; operand = operand->next)
+			++total_operands_have;
+
+		if (total_operands_wanted != total_operands_have)
+		{
+			fprintf(stderr, "Error: '%s' instruction has %u operands, but it should have %u\n", instruction_metadata->name, total_operands_have, total_operands_wanted);
+			assemble_instruction_success = cc_false;
+		}
+		else
+		{
+			/* Check whether the operands are of the correct types. */
+			operand = instruction->operands;
+
+			for (i = 0; i < total_operands_have && instruction_metadata->allowed_operands[i] != 0; ++i)
+			{
+				if ((operand->type & ~instruction_metadata->allowed_operands[i]) != 0)
+				{
+					const char *operand_string = "[REDACTED]"; /* Dumb joke - this should never be seen. */
+
+					switch (operand->type)
+					{
+						case OPERAND_DATA_REGISTER:
+							operand_string = "a data register";
+							break;
+
+						case OPERAND_ADDRESS_REGISTER:
+							operand_string = "an address register";
+							break;
+
+						case OPERAND_ADDRESS_REGISTER_INDIRECT:
+							operand_string = "an indirect address register";
+							break;
+
+						case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
+							operand_string = "a post-increment indirect address register";
+							break;
+
+						case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
+							operand_string = "a pre-decrement indirect address register";
+							break;
+
+						case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
+							operand_string = "an indirect address register with displacement";
+							break;
+
+						case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+							operand_string = "an indirect address register with displacement and index register";
+							break;
+
+						case OPERAND_ADDRESS:
+							operand_string = "an address";
+							break;
+
+						case OPERAND_ADDRESS_ABSOLUTE:
+							operand_string = "an absolute address";
+							break;
+
+						case OPERAND_LITERAL:
+							operand_string = "a literal";
+							break;
+
+						case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
+							operand_string = "the program counter with displacement";
+							break;
+
+						case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+							operand_string = "the program counter with displacement and index register";
+							break;
+
+						case OPERAND_STATUS_REGISTER:
+							operand_string = "the status register";
+							break;
+
+						case OPERAND_CONDITION_CODE_REGISTER:
+							operand_string = "the condition code register";
+							break;
+
+						case OPERAND_USER_STACK_POINTER_REGISTER:
+							operand_string = "the user stack pointer register";
+							break;
+
+						case OPERAND_REGISTER_LIST:
+							operand_string = "a register list";
+							break;
+					}
+
+					fprintf(stderr, "Error: '%s' instruction operand %u cannot be %s\n", instruction_metadata->name, i, operand_string);
+					assemble_instruction_success = cc_false;
+				}
+
+				operand = operand->next;
+			}
+
+			if (assemble_instruction_success)
+			{
+				/* Determine the machine code for the opcode and perform sanity-checking. */
+				switch (specific_opcode_type)
+				{
+					case OPCODE_ORI_TO_CCR:
+						machine_code = 0x003C;
+						break;
+
+					case OPCODE_ORI_TO_SR:
+						machine_code = 0x007C;
+						break;
+
+					case OPCODE_ORI:
+					{
+						const Operand* const destination_operand = instruction->operands->next;
+
+						machine_code = 0x0000;
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(destination_operand);
+						break;
+					}
+
+					case OPCODE_ANDI_TO_CCR:
+						machine_code = 0x023C;
+						break;
+
+					case OPCODE_ANDI_TO_SR:
+						machine_code = 0x027C;
+						break;
+
+					case OPCODE_ANDI:
+					{
+						const Operand* const destination_operand = instruction->operands->next;
+
+						machine_code = 0x0200;
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(destination_operand);
+						break;
+					}
+
+					case OPCODE_SUBI:
+					{
+						const Operand* const destination_operand = instruction->operands->next;
+
+						machine_code = 0x0400;
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(destination_operand);
+						break;
+					}
+
+					case OPCODE_ADDI:
+					{
+						const Operand* const destination_operand = instruction->operands->next;
+
+						machine_code = 0x0600;
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(destination_operand);
+						break;
+					}
+
+					case OPCODE_EORI_TO_CCR:
+						machine_code = 0x0A3C;
+						break;
+
+					case OPCODE_EORI_TO_SR:
+						machine_code = 0x0A7C;
+						break;
+
+					case OPCODE_EORI:
+					{
+						const Operand* const destination_operand = instruction->operands->next;
+
+						machine_code = 0x0A00;
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(destination_operand);
+						break;
+					}
+
+					case OPCODE_CMPI:
+					{
+						const Operand* const destination_operand = instruction->operands->next;
+
+						machine_code = 0x0C00;
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(destination_operand);
+						break;
+					}
+
+					case OPCODE_BTST_STATIC:
+					case OPCODE_BCHG_STATIC:
+					case OPCODE_BCLR_STATIC:
+					case OPCODE_BSET_STATIC:
+					case OPCODE_BTST_DYNAMIC:
+					case OPCODE_BCHG_DYNAMIC:
+					case OPCODE_BCLR_DYNAMIC:
+					case OPCODE_BSET_DYNAMIC:
+					{
+						const Operand* const source_operand = instruction->operands;
+						const Operand* const destination_operand = instruction->operands->next;
+
+						switch (specific_opcode_type)
+						{
+							case OPCODE_BTST_STATIC:
+							case OPCODE_BCHG_STATIC:
+							case OPCODE_BCLR_STATIC:
+							case OPCODE_BSET_STATIC:
+							{
+								unsigned long value;
+
+								if (!ResolveValue(&source_operand->literal, &value, &fix_up, doing_fix_up))
+									value = 0;
+
+								/* Check whether the literal value will wrap or not, and warn the user if so. */
+								if (destination_operand->type == OPERAND_DATA_REGISTER)
+								{
+									if (value >= 32)
+										fprintf(stderr, "Warning: 'BTST/BCHG/BCLR/BSET' instruction's literal value will be modulo 32\n");
+								}
+								else
+								{
+									if (value >= 8)
+										fprintf(stderr, "Warning: 'BTST/BCHG/BCLR/BSET' instruction's literal value will be modulo 8\n");
+								}
+
+								machine_code = 0x0800;
+
+								break;
+							}
+
+							case OPCODE_BTST_DYNAMIC:
+							case OPCODE_BCHG_DYNAMIC:
+							case OPCODE_BCLR_DYNAMIC:
+							case OPCODE_BSET_DYNAMIC:
+								machine_code = 0x0100 | (source_operand->main_register << 9);
+								break;
+
+							default:
+								break;
+						}
+
+						switch (specific_opcode_type)
+						{
+							case OPCODE_BTST_STATIC:
+							case OPCODE_BTST_DYNAMIC:
+								machine_code |= 0x0000;
+								break;
+
+							case OPCODE_BCHG_STATIC:
+							case OPCODE_BCHG_DYNAMIC:
+								machine_code |= 0x0040;
+								break;
+
+							case OPCODE_BCLR_STATIC:
+							case OPCODE_BCLR_DYNAMIC:
+								machine_code |= 0x0080;
+								break;
+
+							case OPCODE_BSET_STATIC:
+							case OPCODE_BSET_DYNAMIC:
+								machine_code |= 0x00C0;
+								break;
+
+							default:
+								break;
+						}
+
+						/* Check that the opcode size is suitable for the destination operand. */
+						if (destination_operand->type == OPERAND_DATA_REGISTER)
+						{
+							if (instruction->opcode.size != SIZE_LONGWORD && instruction->opcode.size != SIZE_UNDEFINED)
+							{
+								fprintf(stderr, "Error: 'BTST/BCHG/BCLR/BSET' instruction must be longword-sized when its destination operand is a data register\n");
+								assemble_instruction_success = cc_false;
+							}
+						}
+						else
+						{
+							if (instruction->opcode.size != SIZE_BYTE && instruction->opcode.size != SIZE_SHORT && instruction->opcode.size != SIZE_UNDEFINED)
+							{
+								fprintf(stderr, "Error: 'BTST/BCHG/BCLR/BSET' instruction must be byte-sized when its destination operand is memory\n");
+								assemble_instruction_success = cc_false;
+							}
+						}
+
+						machine_code |= ConstructEffectiveAddressBits(destination_operand);
+
+						break;
+					}
+
+					case OPCODE_MOVEP_TO_REG:
+					case OPCODE_MOVEP_FROM_REG:
+					{
+						unsigned int data_register = 0;
+						unsigned int address_register = 0;
+
+						const Operand* const source_operand = instruction->operands;
+						const Operand* const destination_operand = instruction->operands->next;
+
+						if (source_operand->type == OPERAND_DATA_REGISTER)
+						{
+							data_register = source_operand->main_register;
+							address_register = destination_operand->main_register;
+						}
+						else if (destination_operand->type == OPERAND_DATA_REGISTER)
+						{
+							address_register = source_operand->main_register;
+							data_register = destination_operand->main_register;
+						}
+
+						machine_code = 0x0108;
+						machine_code |= data_register << 9;
+						machine_code |= (source_operand->type == OPERAND_DATA_REGISTER) << 7;
+						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
+						machine_code |= address_register;
+
+						break;
+					}
+
+					case OPCODE_MOVEA:
+					case OPCODE_MOVE:
+					{
+						/* MOVE */
+						/* MOVEA */
+						const Operand* const source_operand = instruction->operands;
+						const Operand* const destination_operand = instruction->operands->next;
+
+						switch (instruction->opcode.size)
+						{
+							case SIZE_BYTE:
+							case SIZE_SHORT:
+								machine_code = 0x1000;
+								break;
+
+							case SIZE_UNDEFINED:
+							case SIZE_WORD:
+								machine_code = 0x3000;
+								break;
+
+							case SIZE_LONGWORD:
+								machine_code = 0x2000;
+								break;
+						}
+
+						machine_code |= ConstructEffectiveAddressBits(source_operand);
+						machine_code |= ToAlternateEffectiveAddressBits(ConstructEffectiveAddressBits(destination_operand));
+
+						break;
+					}
+
+					case OPCODE_MOVE_FROM_SR:
+					{
+						const Operand* const destination_operand = instruction->operands->next;
+
+						machine_code = 0x40C0;
+						machine_code |= ConstructEffectiveAddressBits(destination_operand);
+						break;
+					}
+
+					case OPCODE_MOVE_TO_CCR:
+					{
+						const Operand* const source_operand = instruction->operands;
+
+						machine_code = 0x44C0;
+						machine_code |= ConstructEffectiveAddressBits(source_operand);
+						break;
+					}
+
+					case OPCODE_MOVE_TO_SR:
+					{
+						const Operand* const source_operand = instruction->operands;
+
+						machine_code = 0x46C0;
+						machine_code |= ConstructEffectiveAddressBits(source_operand);
+						break;
+					}
+
+					case OPCODE_NEGX:
+					case OPCODE_CLR:
+					case OPCODE_NEG:
+					case OPCODE_NOT:
+					case OPCODE_TST:
+						switch (specific_opcode_type)
+						{
+							case OPCODE_NEGX:
+								machine_code = 0x4000;
+								break;
+
+							case OPCODE_CLR:
+								machine_code = 0x4200;
+								break;
+
+							case OPCODE_NEG:
+								machine_code = 0x4400;
+								break;
+
+							case OPCODE_NOT:
+								machine_code = 0x4600;
+								break;
+
+							case OPCODE_TST:
+								machine_code = 0x4A00;
+								break;
+
+							default:
+								break;
+						}
+
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(instruction->operands);
+
+						break;
+
+					case OPCODE_EXT:
+						machine_code = 0x4880;
+						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
+						machine_code |= ConstructEffectiveAddressBits(instruction->operands);
+						break;
+
+					case OPCODE_NBCD:
+						machine_code = 0x4800;
+						machine_code |= ConstructEffectiveAddressBits(instruction->operands);
+						break;
+
+					case OPCODE_SWAP:
+						machine_code = 0x4840;
+
+						/* Just a check to prevent reading uninitialised memory. */
+						if (instruction->operands->type == OPERAND_DATA_REGISTER)
+							machine_code |= instruction->operands->main_register;
+
+						break;
+
+					case OPCODE_PEA:
+						machine_code = 0x4840;
+						machine_code |= ConstructEffectiveAddressBits(instruction->operands);
+						break;
+
+					case OPCODE_ILLEGAL:
+						machine_code = 0x4AFC;
+						break;
+
+					case OPCODE_TAS:
+						machine_code = 0x4AC0;
+						machine_code |= ConstructEffectiveAddressBits(instruction->operands);
+						break;
+
+					case OPCODE_TRAP:
+						machine_code = 0x4E40;
+
+						/* Just a check to prevent reading uninitialised memory. */
+						if (instruction->operands->type == OPERAND_LITERAL)
+						{
+							unsigned long value;
+
+							if (!ResolveValue(&instruction->operands->literal, &value, &fix_up, doing_fix_up))
+								value = 0;
+
+							if (value > 15)
+							{
+								fprintf(stderr, "Error: 'TRAP' instruction's vector cannot be higher than 15\n");
+								assemble_instruction_success = cc_false;
+							}
+							else
+							{
+								machine_code |= value;
+							}
+						}
+
+						break;
+
+					case OPCODE_LINK:
+						machine_code = 0x4E50;
+
+						/* Just a check to prevent reading uninitialised memory. */
+						if (instruction->operands->type == OPERAND_ADDRESS_REGISTER)
+							machine_code |= instruction->operands->main_register;
+
+						break;
+
+					case OPCODE_UNLK:
+						machine_code = 0x4E58;
+
+						/* Just a check to prevent reading uninitialised memory. */
+						if (instruction->operands->type == OPERAND_ADDRESS_REGISTER)
+							machine_code |= instruction->operands->main_register;
+
+						break;
+
+					case OPCODE_MOVE_TO_USP:
+					{
+						const Operand* const source_operand = instruction->operands;
+
+						machine_code = 0x4E68;
+						machine_code |= source_operand->main_register;
+						break;
+					}
+
+					case OPCODE_MOVE_FROM_USP:
+					{
+						const Operand* const destination_operand = instruction->operands->next;
+
+						machine_code = 0x4E60;
+						machine_code |= destination_operand->main_register;
+						break;
+					}
+
+					case OPCODE_RESET:
+						machine_code = 0x4E70;
+						break;
+
+					case OPCODE_NOP:
+						machine_code = 0x4E71;
+						break;
+
+					case OPCODE_STOP:
+						machine_code = 0x4E72;
+						break;
+
+					case OPCODE_RTE:
+						machine_code = 0x4E73;
+						break;
+
+					case OPCODE_RTS:
+						machine_code = 0x4E75;
+						break;
+
+					case OPCODE_TRAPV:
+						machine_code = 0x4E76;
+						break;
+
+					case OPCODE_RTR:
+						machine_code = 0x4E77;
+						break;
+
+					case OPCODE_JSR:
+						machine_code = 0x4E80;
+						machine_code |= ConstructEffectiveAddressBits(instruction->operands);
+						break;
+
+					case OPCODE_JMP:
+						machine_code = 0x4EC0;
+						machine_code |= ConstructEffectiveAddressBits(instruction->operands);
+						break;
+
+					case OPCODE_MOVEM_TO_REGS:
+					case OPCODE_MOVEM_FROM_REGS:
+						machine_code = 0x4880;
+						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
+
+						if (specific_opcode_type == OPCODE_MOVEM_TO_REGS)
+						{
+							machine_code |= 1 << 10;
+							machine_code |= ConstructEffectiveAddressBits(instruction->operands);
+						}
+						else
+						{
+							machine_code |= ConstructEffectiveAddressBits(instruction->operands->next);
+						}
+
+						break;
+
+					case OPCODE_LEA:
+					case OPCODE_CHK:
+					case OPCODE_DIVU:
+					case OPCODE_DIVS:
+					case OPCODE_MULU:
+					case OPCODE_MULS:
+					{
+						const Operand* const source_operand = instruction->operands;
+						const Operand* const destination_operand = instruction->operands->next;
+
+						switch (specific_opcode_type)
+						{
+							case OPCODE_LEA:
+								machine_code = 0x41C0;
+								break;
+
+							case OPCODE_CHK:
+								machine_code = 0x4180;
+								break;
+
+							case OPCODE_DIVU:
+								machine_code = 0x80C0;
+								break;
+
+							case OPCODE_DIVS:
+								machine_code = 0x81C0;
+								break;
+
+							case OPCODE_MULU:
+								machine_code = 0xC0C0;
+								break;
+
+							case OPCODE_MULS:
+								machine_code = 0xC1C0;
+								break;
+
+							default:
+								break;
+						}
+
+						/* Just a check to prevent reading uninitialised memory. */
+						if (destination_operand->type == OPERAND_DATA_REGISTER || destination_operand->type == OPERAND_ADDRESS_REGISTER)
+							machine_code |= destination_operand->main_register << 9;
+
+						machine_code |= ConstructEffectiveAddressBits(source_operand);
+
+						break;
+					}
+
+					case OPCODE_ADDQ:
+					case OPCODE_SUBQ:
+					{
+						const Operand* const source_operand = instruction->operands;
+						const Operand* const destination_operand = instruction->operands->next;
+
+						/* Skip the immediate operand since that goes in the machine code instead. */
+						operands_to_output = destination_operand;
+
+						switch (specific_opcode_type)
+						{
+							case OPCODE_ADDQ:
+								machine_code = 0x5000;
+								break;
+
+							case OPCODE_SUBQ:
+								machine_code = 0x5100;
+								break;
+
+							default:
+								break;
+						}
+
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(destination_operand);
+
+						if (source_operand->type == OPERAND_LITERAL)
+						{
+							unsigned long value;
+
+							if (!ResolveValue(&source_operand->literal, &value, &fix_up, doing_fix_up))
+								value = 1;
+
+							if (value < 1 || value > 8)
+							{
+								fprintf(stderr, "Error: 'ADDQ'/'SUBQ' instruction's immediate value cannot be lower than 1 or higher than 8\n");
+								assemble_instruction_success = cc_false;
+							}
+							else
+							{
+								machine_code |= (value - 1) << 9;
+							}
+						}
+
+						break;
+					}
+
+					case OPCODE_Scc:
+						machine_code = 0x50C0;
+						machine_code |= instruction->opcode.condition << 8;
+						machine_code |= ConstructEffectiveAddressBits(instruction->operands);
+						break;
+
+					case OPCODE_DBcc:
+					{
+						const Operand* const data_register_operand = instruction->operands;
+						const Operand* const address_operand = instruction->operands->next;
+
+						machine_code = 0x50C8;
+						machine_code |= instruction->opcode.condition << 8;
+
+						if (data_register_operand->type == OPERAND_DATA_REGISTER)
+							machine_code |= data_register_operand->main_register;
+
+						if (address_operand->type == OPERAND_ADDRESS)
+						{
+							unsigned long value;
+
+							if (!ResolveValue(&address_operand->literal, &value, &fix_up, doing_fix_up))
+								value = *program_counter - 2;
+
+							custom_operand.next = NULL;
+							custom_operand.type = OPERAND_LITERAL;
+							custom_operand.literal.type = TOKEN_NUMBER;
+
+							if (value >= *program_counter)
+							{
+								const unsigned long offset = value - *program_counter;
+
+								if (offset > 0x7FFF)
+								{
+									fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was $%lX bytes away)\n", offset);
+									assemble_instruction_success = cc_false;
+								}
+
+								custom_operand.literal.data.integer = offset;
+							}
+							else
+							{
+								const unsigned long offset = *program_counter - value;
+
+								if (offset > 0x8000)
+								{
+									fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was $%lX bytes away)\n", offset);
+									assemble_instruction_success = cc_false;
+								}
+
+								custom_operand.literal.data.integer = 0 - offset;
+							}
+
+							operands_to_output = &custom_operand;
+						}
+
+						break;
+					}
+
+					case OPCODE_BRA:
+					case OPCODE_BSR:
+					case OPCODE_Bcc:
+					{
+						machine_code = 0x6000;
+
+						switch (specific_opcode_type)
+						{
+							case OPCODE_BRA:
+								machine_code |= 0x0000;
+								break;
+
+							case OPCODE_BSR:
+								machine_code |= 0x0100;
+								break;
+
+							case OPCODE_Bcc:
+								machine_code |= instruction->opcode.condition << 8;
+								break;
+
+							default:
+								break;
+						}
+
+						if (instruction->operands->type == OPERAND_ADDRESS)
+						{
+							unsigned long offset;
+							unsigned long value;
+
+							if (!ResolveValue(&instruction->operands->literal, &value, &fix_up, doing_fix_up))
+								value = *program_counter - 2;
+
+							if (value >= *program_counter)
+							{
+								offset = value - *program_counter;
+
+								if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
+								{
+									if (offset == 0)
+									{
+										fprintf(stderr, "Error: Destination cannot be 0 bytes away when using a short-sized branch\n");
+										assemble_instruction_success = cc_false;
+									}
+									else if (offset > 0x7F)
+									{
+										fprintf(stderr, "Error: Destination is too far away (must be less than 0x80 bytes after start of instruction, but was $%lX bytes away)\n", offset);
+										assemble_instruction_success = cc_false;
+									}
+								}
+								else
+								{
+									if (offset > 0x7FFF)
+									{
+										fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was $%lX bytes away)\n", offset);
+										assemble_instruction_success = cc_false;
+									}
+								}
+							}
+							else
+							{
+								offset = *program_counter - value;
+
+								if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
+								{
+									if (offset > 0x80)
+									{
+										fprintf(stderr, "Error: Destination is too far away (must be less than 0x81 bytes before start of instruction, but was $%lX bytes away)\n", offset);
+										assemble_instruction_success = cc_false;
+									}
+								}
+								else
+								{
+									if (offset > 0x8000)
+									{
+										fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was $%lX bytes away)\n", offset);
+										assemble_instruction_success = cc_false;
+									}
+								}
+
+								offset = 0 - offset;
+							}
+
+							if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
+							{
+								machine_code |= offset & 0xFF;
+								operands_to_output = NULL;
+							}
+							else
+							{
+								custom_operand.next = NULL;
+								custom_operand.type = OPERAND_LITERAL;
+								custom_operand.literal.type = TOKEN_NUMBER;
+								custom_operand.literal.data.integer = offset;
+								operands_to_output = &custom_operand;
+							}
+						}
+
+						break;
+					}
+
+					case OPCODE_MOVEQ:
+					{
+						const Operand* const literal_operand = instruction->operands;
+						const Operand* const data_register_operand = instruction->operands->next;
+
+						machine_code = 0x7000;
+
+						if (literal_operand->type == OPERAND_LITERAL)
+						{
+							unsigned long value;
+
+							if (!ResolveValue(&literal_operand->literal, &value, &fix_up, doing_fix_up))
+								value = 0;
+
+							if (value > 0x7F && value < 0xFFFFFF80)
+							{
+								fprintf(stderr, "Error: Literal is too large: it must be between -$80 and $7F\n");
+								assemble_instruction_success = cc_false;
+							}
+							else
+							{
+								machine_code |= value & 0xFF;
+							}
+						}
+
+						if (data_register_operand->type == OPERAND_DATA_REGISTER)
+							machine_code |= data_register_operand->main_register << 9;
+
+						/* MOVEQ's operands are embedded directly into the machine code, so we don't need to output them separately. */
+						operands_to_output = NULL;
+
+						break;
+					}
+
+					case OPCODE_SBCD_DATA_REGS:
+					case OPCODE_SBCD_ADDRESS_REGS:
+					case OPCODE_SUBX_DATA_REGS:
+					case OPCODE_SUBX_ADDRESS_REGS:
+					case OPCODE_ABCD_DATA_REGS:
+					case OPCODE_ABCD_ADDRESS_REGS:
+					case OPCODE_ADDX_DATA_REGS:
+					case OPCODE_ADDX_ADDRESS_REGS:
+					{
+						const Operand* const source_operand = instruction->operands;
+						const Operand* const destination_operand = instruction->operands->next;
+
+						switch (specific_opcode_type)
+						{
+							case OPCODE_SBCD_DATA_REGS:
+								machine_code = 0x8100;
+								break;
+
+							case OPCODE_SBCD_ADDRESS_REGS:
+								machine_code = 0x8108;
+								break;
+
+							case OPCODE_SUBX_DATA_REGS:
+								machine_code = 0x9100;
+								break;
+
+							case OPCODE_SUBX_ADDRESS_REGS:
+								machine_code = 0x9108;
+								break;
+
+							case OPCODE_ABCD_DATA_REGS:
+								machine_code = 0xC100;
+								break;
+
+							case OPCODE_ABCD_ADDRESS_REGS:
+								machine_code = 0xC108;
+								break;
+
+							case OPCODE_ADDX_DATA_REGS:
+								machine_code = 0xD100;
+								break;
+
+							case OPCODE_ADDX_ADDRESS_REGS:
+								machine_code = 0xD108;
+								break;
+
+							default:
+								break;
+						}
+
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= source_operand->main_register << 0;
+						machine_code |= destination_operand->main_register << 9;
+
+						break;
+					}
+
+					case OPCODE_OR_TO_REG:
+					case OPCODE_OR_FROM_REG:
+					case OPCODE_SUB_TO_REG:
+					case OPCODE_SUB_FROM_REG:
+					case OPCODE_EOR:
+					case OPCODE_CMP:
+					case OPCODE_AND_TO_REG:
+					case OPCODE_AND_FROM_REG:
+					case OPCODE_ADD_TO_REG:
+					case OPCODE_ADD_FROM_REG:
+					{
+						const Operand* const source_operand = instruction->operands;
+						const Operand* const destination_operand = instruction->operands->next;
+
+						if (destination_operand->type == OPERAND_ADDRESS_REGISTER && instruction->opcode.size == SIZE_BYTE)
+						{
+							fprintf(stderr, "Error: Instruction cannot be byte-sized when destination is an address register\n");
+							assemble_instruction_success = cc_false;
+						}
+
+						switch (specific_opcode_type)
+						{
+							case OPCODE_OR_TO_REG:
+								machine_code = 0x8000;
+								break;
+
+							case OPCODE_OR_FROM_REG:
+								machine_code = 0x8100;
+								break;
+
+							case OPCODE_SUB_TO_REG:
+								machine_code = 0x9000;
+								break;
+
+							case OPCODE_SUB_FROM_REG:
+								machine_code = 0x9100;
+								break;
+
+							case OPCODE_EOR:
+								machine_code = 0xB100;
+								break;
+
+							case OPCODE_CMP:
+								machine_code = 0xB000;
+								break;
+
+							case OPCODE_AND_TO_REG:
+								machine_code = 0xC000;
+								break;
+
+							case OPCODE_AND_FROM_REG:
+								machine_code = 0xC100;
+								break;
+
+							case OPCODE_ADD_TO_REG:
+								machine_code = 0xD000;
+								break;
+
+							case OPCODE_ADD_FROM_REG:
+								machine_code = 0xD100;
+								break;
+
+							default:
+								break;
+						}
+
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+
+						if (destination_operand->type == OPERAND_DATA_REGISTER)
+						{
+							machine_code |= destination_operand->main_register << 9;
+							machine_code |= ConstructEffectiveAddressBits(source_operand);
+						}
+						else
+						{
+							machine_code |= source_operand->main_register << 9;
+							machine_code |= ConstructEffectiveAddressBits(destination_operand);
+						}
+
+						break;
+					}
+
+					case OPCODE_SUBA:
+					case OPCODE_CMPA:
+					case OPCODE_ADDA:
+					{
+						const Operand* const source_operand = instruction->operands;
+						const Operand* const destination_operand = instruction->operands->next;
+
+						switch (specific_opcode_type)
+						{
+							case OPCODE_SUBA:
+								machine_code = 0x90C0;
+								break;
+
+							case OPCODE_CMPA:
+								machine_code = 0xB0C0;
+								break;
+
+							case OPCODE_ADDA:
+								machine_code = 0xD0C0;
+								break;
+
+							default:
+								break;
+						}
+
+						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 8;
+
+						if (destination_operand->type == OPERAND_ADDRESS_REGISTER)
+							machine_code |= destination_operand->main_register << 9;
+
+						machine_code |= ConstructEffectiveAddressBits(source_operand);
+
+						break;
+					}
+
+					case OPCODE_CMPM:
+					{
+						const Operand* const first_operand = instruction->operands;
+						const Operand* const second_operand = instruction->operands->next;
+
+						machine_code = 0xB108;
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+
+						if (first_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT)
+							machine_code |= first_operand->main_register << 0;
+
+						if (second_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT)
+							machine_code |= second_operand->main_register << 9;
+
+						break;
+					}
+
+					case OPCODE_EXG:
+					{
+						const Operand* const first_operand = instruction->operands;
+						const Operand* const second_operand = instruction->operands->next;
+
+						machine_code = 0xC100;
+
+						if (first_operand->type == OPERAND_DATA_REGISTER && second_operand->type == OPERAND_DATA_REGISTER)
+						{
+							machine_code |= 0x0040;
+							machine_code |= first_operand->main_register << 9;
+							machine_code |= second_operand->main_register << 0;
+						}
+						else if (first_operand->type == OPERAND_ADDRESS_REGISTER && second_operand->type == OPERAND_ADDRESS_REGISTER)
+						{
+							machine_code |= 0x0048;
+							machine_code |= first_operand->main_register << 9;
+							machine_code |= second_operand->main_register << 0;
+						}
+						else if (first_operand->type == OPERAND_DATA_REGISTER && second_operand->type == OPERAND_ADDRESS_REGISTER)
+						{
+							machine_code |= 0x0088;
+							machine_code |= first_operand->main_register << 9;
+							machine_code |= second_operand->main_register << 0;
+						}
+						else if (first_operand->type == OPERAND_ADDRESS_REGISTER && second_operand->type == OPERAND_DATA_REGISTER)
+						{
+							machine_code |= 0x0088;
+							machine_code |= second_operand->main_register << 9;
+							machine_code |= first_operand->main_register << 0;
+						}
+
+						break;
+					}
+
+					case OPCODE_ASL_STATIC:
+					case OPCODE_ASR_STATIC:
+					case OPCODE_LSL_STATIC:
+					case OPCODE_LSR_STATIC:
+					case OPCODE_ROXL_STATIC:
+					case OPCODE_ROXR_STATIC:
+					case OPCODE_ROL_STATIC:
+					case OPCODE_ROR_STATIC:
+					case OPCODE_ASL_DYNAMIC:
+					case OPCODE_ASR_DYNAMIC:
+					case OPCODE_LSL_DYNAMIC:
+					case OPCODE_LSR_DYNAMIC:
+					case OPCODE_ROXL_DYNAMIC:
+					case OPCODE_ROXR_DYNAMIC:
+					case OPCODE_ROL_DYNAMIC:
+					case OPCODE_ROR_DYNAMIC:
+					case OPCODE_ASL_SINGLE:
+					case OPCODE_ASR_SINGLE:
+					case OPCODE_LSL_SINGLE:
+					case OPCODE_LSR_SINGLE:
+					case OPCODE_ROXL_SINGLE:
+					case OPCODE_ROXR_SINGLE:
+					case OPCODE_ROL_SINGLE:
+					case OPCODE_ROR_SINGLE:
+					{
+						const Operand* const first_operand = instruction->operands;
+						const Operand* const second_operand = instruction->operands->next;
+
+						unsigned int identifier;
+
+						switch (specific_opcode_type)
+						{
+							default:
+							case OPCODE_ASL_STATIC:
+							case OPCODE_ASR_STATIC:
+							case OPCODE_ASL_DYNAMIC:
+							case OPCODE_ASR_DYNAMIC:
+							case OPCODE_ASL_SINGLE:
+							case OPCODE_ASR_SINGLE:
+								identifier = 0;
+								break;
+
+							case OPCODE_LSL_STATIC:
+							case OPCODE_LSR_STATIC:
+							case OPCODE_LSL_DYNAMIC:
+							case OPCODE_LSR_DYNAMIC:
+							case OPCODE_LSL_SINGLE:
+							case OPCODE_LSR_SINGLE:
+								identifier = 1;
+								break;
+
+							case OPCODE_ROXL_STATIC:
+							case OPCODE_ROXR_STATIC:
+							case OPCODE_ROXL_DYNAMIC:
+							case OPCODE_ROXR_DYNAMIC:
+							case OPCODE_ROXL_SINGLE:
+							case OPCODE_ROXR_SINGLE:
+								identifier = 2;
+								break;
+
+							case OPCODE_ROL_STATIC:
+							case OPCODE_ROR_STATIC:
+							case OPCODE_ROL_DYNAMIC:
+							case OPCODE_ROR_DYNAMIC:
+							case OPCODE_ROL_SINGLE:
+							case OPCODE_ROR_SINGLE:
+								identifier = 3;
+								break;
+						}
+
+						machine_code = 0xE000;
+
+						switch (specific_opcode_type)
+						{
+							case OPCODE_ASR_STATIC:
+							case OPCODE_ASR_DYNAMIC:
+							case OPCODE_ASR_SINGLE:
+							case OPCODE_LSR_STATIC:
+							case OPCODE_LSR_DYNAMIC:
+							case OPCODE_LSR_SINGLE:
+							case OPCODE_ROXR_STATIC:
+							case OPCODE_ROXR_DYNAMIC:
+							case OPCODE_ROXR_SINGLE:
+							case OPCODE_ROR_STATIC:
+							case OPCODE_ROR_DYNAMIC:
+							case OPCODE_ROR_SINGLE:
+								machine_code |= 0x0000;
+								break;
+
+							case OPCODE_ASL_STATIC:
+							case OPCODE_ASL_DYNAMIC:
+							case OPCODE_ASL_SINGLE:
+							case OPCODE_LSL_STATIC:
+							case OPCODE_LSL_DYNAMIC:
+							case OPCODE_LSL_SINGLE:
+							case OPCODE_ROXL_STATIC:
+							case OPCODE_ROXL_DYNAMIC:
+							case OPCODE_ROXL_SINGLE:
+							case OPCODE_ROL_STATIC:
+							case OPCODE_ROL_DYNAMIC:
+							case OPCODE_ROL_SINGLE:
+								machine_code |= 0x0100;
+								break;
+
+							default:
+								break;
+						}
+
+						switch (specific_opcode_type)
+						{
+							case OPCODE_ASL_STATIC:
+							case OPCODE_ASR_STATIC:
+							case OPCODE_LSL_STATIC:
+							case OPCODE_LSR_STATIC:
+							case OPCODE_ROXL_STATIC:
+							case OPCODE_ROXR_STATIC:
+							case OPCODE_ROL_STATIC:
+							case OPCODE_ROR_STATIC:
+							{
+								unsigned long value;
+
+								if (!ResolveValue(&first_operand->literal, &value, &fix_up, doing_fix_up))
+									value = 0;
+
+								if (value > 8 || value < 1)
+								{
+									fprintf(stderr, "Error: Shift value must not be greater than 8 or lower than 1\n");
+									assemble_instruction_success = cc_false;
+								}
+								else
+								{
+									machine_code |= (value - 1) << 9;
+								}
+
+								machine_code |= identifier << 3;
+								machine_code |= second_operand->main_register << 0;
+
+								break;
+							}
+
+							case OPCODE_ASL_DYNAMIC:
+							case OPCODE_ASR_DYNAMIC:
+							case OPCODE_LSL_DYNAMIC:
+							case OPCODE_LSR_DYNAMIC:
+							case OPCODE_ROXL_DYNAMIC:
+							case OPCODE_ROXR_DYNAMIC:
+							case OPCODE_ROL_DYNAMIC:
+							case OPCODE_ROR_DYNAMIC:
+								machine_code |= identifier << 3;
+								machine_code |= first_operand->main_register << 9;
+								machine_code |= 0x0020;
+								machine_code |= second_operand->main_register << 0;
+								break;
+
+							case OPCODE_ASL_SINGLE:
+							case OPCODE_ASR_SINGLE:
+							case OPCODE_LSL_SINGLE:
+							case OPCODE_LSR_SINGLE:
+							case OPCODE_ROXL_SINGLE:
+							case OPCODE_ROXR_SINGLE:
+							case OPCODE_ROL_SINGLE:
+							case OPCODE_ROR_SINGLE:
+								machine_code |= identifier << 9;
+								machine_code |= 0x00C0;
+								machine_code |= ConstructEffectiveAddressBits(first_operand);
+								break;
+
+							default:
+								break;
+						}
+
+						break;
+					}
+				}
+			}
+		}
 	}
 
 	fprintf(stderr, "Machine code: 0x%X\n", machine_code);
