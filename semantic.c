@@ -1516,7 +1516,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 	const Operand *operands_to_output = instruction->operands;
 	Operand custom_operand;
 	FixUp fix_up;
-	OpcodeType specific_opcode_type;
+	Opcode opcode;
 
 	assemble_instruction_success = cc_true;
 
@@ -1561,164 +1561,164 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 					{
 						case OPCODE_ORI:
 							if (destination_operand->type == OPERAND_CONDITION_CODE_REGISTER)
-								specific_opcode_type = OPCODE_ORI_TO_CCR;
+								opcode.type = OPCODE_ORI_TO_CCR;
 							else if (destination_operand->type == OPERAND_STATUS_REGISTER)
-								specific_opcode_type = OPCODE_ORI_TO_SR;
+								opcode.type = OPCODE_ORI_TO_SR;
 							else
-								specific_opcode_type = OPCODE_ORI;
+								opcode.type = OPCODE_ORI;
 
 							break;
 
 						case OPCODE_ANDI:
 							if (destination_operand->type == OPERAND_CONDITION_CODE_REGISTER)
-								specific_opcode_type = OPCODE_ANDI_TO_CCR;
+								opcode.type = OPCODE_ANDI_TO_CCR;
 							else if (destination_operand->type == OPERAND_STATUS_REGISTER)
-								specific_opcode_type = OPCODE_ANDI_TO_SR;
+								opcode.type = OPCODE_ANDI_TO_SR;
 							else
-								specific_opcode_type = OPCODE_ANDI;
+								opcode.type = OPCODE_ANDI;
 
 							break;
 
 						case OPCODE_EORI:
 							if (destination_operand->type == OPERAND_CONDITION_CODE_REGISTER)
-								specific_opcode_type = OPCODE_EORI_TO_CCR;
+								opcode.type = OPCODE_EORI_TO_CCR;
 							else if (destination_operand->type == OPERAND_STATUS_REGISTER)
-								specific_opcode_type = OPCODE_EORI_TO_SR;
+								opcode.type = OPCODE_EORI_TO_SR;
 							else
-								specific_opcode_type = OPCODE_EORI;
+								opcode.type = OPCODE_EORI;
 
 							break;
 
 						case OPCODE_BTST_STATIC:
 							if (source_operand->type == OPERAND_DATA_REGISTER)
-								specific_opcode_type = OPCODE_BTST_DYNAMIC;
+								opcode.type = OPCODE_BTST_DYNAMIC;
 							else
-								specific_opcode_type = OPCODE_BTST_STATIC;
+								opcode.type = OPCODE_BTST_STATIC;
 
 							break;
 
 						case OPCODE_BCHG_STATIC:
 							if (source_operand->type == OPERAND_DATA_REGISTER)
-								specific_opcode_type = OPCODE_BCHG_DYNAMIC;
+								opcode.type = OPCODE_BCHG_DYNAMIC;
 							else
-								specific_opcode_type = OPCODE_BCHG_STATIC;
+								opcode.type = OPCODE_BCHG_STATIC;
 
 							break;
 
 						case OPCODE_BCLR_STATIC:
 							if (source_operand->type == OPERAND_DATA_REGISTER)
-								specific_opcode_type = OPCODE_BCLR_DYNAMIC;
+								opcode.type = OPCODE_BCLR_DYNAMIC;
 							else
-								specific_opcode_type = OPCODE_BCLR_STATIC;
+								opcode.type = OPCODE_BCLR_STATIC;
 
 							break;
 
 						case OPCODE_BSET_STATIC:
 							if (source_operand->type == OPERAND_DATA_REGISTER)
-								specific_opcode_type = OPCODE_BSET_DYNAMIC;
+								opcode.type = OPCODE_BSET_DYNAMIC;
 							else
-								specific_opcode_type = OPCODE_BSET_STATIC;
+								opcode.type = OPCODE_BSET_STATIC;
 
 							break;
 
 						case OPCODE_MOVEP_TO_REG:
 							if (source_operand->type == OPERAND_DATA_REGISTER)
-								specific_opcode_type = OPCODE_MOVEP_FROM_REG;
+								opcode.type = OPCODE_MOVEP_FROM_REG;
 							else
-								specific_opcode_type = OPCODE_MOVEP_TO_REG;
+								opcode.type = OPCODE_MOVEP_TO_REG;
 
 							break;
 
 						case OPCODE_MOVE:
 							if (source_operand->type == OPERAND_STATUS_REGISTER)
-								specific_opcode_type = OPCODE_MOVE_FROM_SR;
+								opcode.type = OPCODE_MOVE_FROM_SR;
 							else if (destination_operand->type == OPERAND_STATUS_REGISTER)
-								specific_opcode_type = OPCODE_MOVE_TO_SR;
+								opcode.type = OPCODE_MOVE_TO_SR;
 							else if (destination_operand->type == OPERAND_CONDITION_CODE_REGISTER)
-								specific_opcode_type = OPCODE_MOVE_TO_CCR;
+								opcode.type = OPCODE_MOVE_TO_CCR;
 							else if (source_operand->type == OPERAND_USER_STACK_POINTER_REGISTER)
-								specific_opcode_type = OPCODE_MOVE_FROM_USP;
+								opcode.type = OPCODE_MOVE_FROM_USP;
 							else if (destination_operand->type == OPERAND_USER_STACK_POINTER_REGISTER)
-								specific_opcode_type = OPCODE_MOVE_TO_USP;
+								opcode.type = OPCODE_MOVE_TO_USP;
 							else if (destination_operand->type == OPERAND_ADDRESS_REGISTER)
 							{
-								specific_opcode_type = OPCODE_MOVEA; /* MOVEA mistyped as MOVE */
+								opcode.type = OPCODE_MOVEA; /* MOVEA mistyped as MOVE */
 								fprintf(stderr, "Warning: MOVE should be MOVEA\n");
 							}
 							else
-								specific_opcode_type = OPCODE_MOVE;
+								opcode.type = OPCODE_MOVE;
 
 							break;
 
 						case OPCODE_MOVEM_TO_REGS:
 							if (source_operand->type == OPERAND_REGISTER_LIST)
-								specific_opcode_type = OPCODE_MOVEM_FROM_REGS;
+								opcode.type = OPCODE_MOVEM_FROM_REGS;
 							else
-								specific_opcode_type = OPCODE_MOVEM_TO_REGS;
+								opcode.type = OPCODE_MOVEM_TO_REGS;
 
 							break;
 
 						case OPCODE_SBCD_DATA_REGS:
 							if (source_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-								specific_opcode_type = OPCODE_SBCD_ADDRESS_REGS;
+								opcode.type = OPCODE_SBCD_ADDRESS_REGS;
 							else
-								specific_opcode_type = OPCODE_SBCD_DATA_REGS;
+								opcode.type = OPCODE_SBCD_DATA_REGS;
 
 							break;
 
 						case OPCODE_OR_TO_REG:
 							if (destination_operand->type != OPERAND_DATA_REGISTER)
-								specific_opcode_type = OPCODE_OR_FROM_REG;
+								opcode.type = OPCODE_OR_FROM_REG;
 							else
-								specific_opcode_type = OPCODE_OR_TO_REG;
+								opcode.type = OPCODE_OR_TO_REG;
 
 							break;
 
 						case OPCODE_SUB_TO_REG:
 							if (destination_operand->type != OPERAND_DATA_REGISTER)
-								specific_opcode_type = OPCODE_SUB_FROM_REG;
+								opcode.type = OPCODE_SUB_FROM_REG;
 							else
-								specific_opcode_type = OPCODE_SUB_TO_REG;
+								opcode.type = OPCODE_SUB_TO_REG;
 
 							break;
 
 						case OPCODE_SUBX_DATA_REGS:
 							if (source_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-								specific_opcode_type = OPCODE_SUBX_ADDRESS_REGS;
+								opcode.type = OPCODE_SUBX_ADDRESS_REGS;
 							else
-								specific_opcode_type = OPCODE_SUBX_DATA_REGS;
+								opcode.type = OPCODE_SUBX_DATA_REGS;
 
 							break;
 
 						case OPCODE_ABCD_DATA_REGS:
 							if (source_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-								specific_opcode_type = OPCODE_ABCD_ADDRESS_REGS;
+								opcode.type = OPCODE_ABCD_ADDRESS_REGS;
 							else
-								specific_opcode_type = OPCODE_ABCD_DATA_REGS;
+								opcode.type = OPCODE_ABCD_DATA_REGS;
 
 							break;
 
 						case OPCODE_AND_TO_REG:
 							if (destination_operand->type != OPERAND_DATA_REGISTER)
-								specific_opcode_type = OPCODE_AND_FROM_REG;
+								opcode.type = OPCODE_AND_FROM_REG;
 							else
-								specific_opcode_type = OPCODE_AND_TO_REG;
+								opcode.type = OPCODE_AND_TO_REG;
 
 							break;
 
 						case OPCODE_ADD_TO_REG:
 							if (destination_operand->type != OPERAND_DATA_REGISTER)
-								specific_opcode_type = OPCODE_ADD_FROM_REG;
+								opcode.type = OPCODE_ADD_FROM_REG;
 							else
-								specific_opcode_type = OPCODE_ADD_TO_REG;
+								opcode.type = OPCODE_ADD_TO_REG;
 
 							break;
 
 						case OPCODE_ADDX_DATA_REGS:
 							if (source_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-								specific_opcode_type = OPCODE_ADDX_ADDRESS_REGS;
+								opcode.type = OPCODE_ADDX_ADDRESS_REGS;
 							else
-								specific_opcode_type = OPCODE_ADDX_DATA_REGS;
+								opcode.type = OPCODE_ADDX_DATA_REGS;
 
 							break;
 
@@ -1750,42 +1750,42 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 				{
 					if (first_operand->type == OPERAND_LITERAL)
 					{
-						specific_opcode_type = instruction->opcode.type;
+						opcode.type = instruction->opcode.type;
 					}
 					else
 					{
 						switch (instruction->opcode.type)
 						{
 							case OPCODE_ASL_STATIC:
-								specific_opcode_type = OPCODE_ASL_DYNAMIC;
+								opcode.type = OPCODE_ASL_DYNAMIC;
 								break;
 
 							case OPCODE_ASR_STATIC:
-								specific_opcode_type = OPCODE_ASR_DYNAMIC;
+								opcode.type = OPCODE_ASR_DYNAMIC;
 								break;
 
 							case OPCODE_LSL_STATIC:
-								specific_opcode_type = OPCODE_LSL_DYNAMIC;
+								opcode.type = OPCODE_LSL_DYNAMIC;
 								break;
 
 							case OPCODE_LSR_STATIC:
-								specific_opcode_type = OPCODE_LSR_DYNAMIC;
+								opcode.type = OPCODE_LSR_DYNAMIC;
 								break;
 
 							case OPCODE_ROXL_STATIC:
-								specific_opcode_type = OPCODE_ROXL_DYNAMIC;
+								opcode.type = OPCODE_ROXL_DYNAMIC;
 								break;
 
 							case OPCODE_ROXR_STATIC:
-								specific_opcode_type = OPCODE_ROXR_DYNAMIC;
+								opcode.type = OPCODE_ROXR_DYNAMIC;
 								break;
 
 							case OPCODE_ROL_STATIC:
-								specific_opcode_type = OPCODE_ROL_DYNAMIC;
+								opcode.type = OPCODE_ROL_DYNAMIC;
 								break;
 
 							case OPCODE_ROR_STATIC:
-								specific_opcode_type = OPCODE_ROR_DYNAMIC;
+								opcode.type = OPCODE_ROR_DYNAMIC;
 								break;
 
 							default:
@@ -1798,35 +1798,35 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 					switch (instruction->opcode.type)
 					{
 						case OPCODE_ASL_STATIC:
-							specific_opcode_type = OPCODE_ASL_SINGLE;
+							opcode.type = OPCODE_ASL_SINGLE;
 							break;
 
 						case OPCODE_ASR_STATIC:
-							specific_opcode_type = OPCODE_ASR_SINGLE;
+							opcode.type = OPCODE_ASR_SINGLE;
 							break;
 
 						case OPCODE_LSL_STATIC:
-							specific_opcode_type = OPCODE_LSL_SINGLE;
+							opcode.type = OPCODE_LSL_SINGLE;
 							break;
 
 						case OPCODE_LSR_STATIC:
-							specific_opcode_type = OPCODE_LSR_SINGLE;
+							opcode.type = OPCODE_LSR_SINGLE;
 							break;
 
 						case OPCODE_ROXL_STATIC:
-							specific_opcode_type = OPCODE_ROXL_SINGLE;
+							opcode.type = OPCODE_ROXL_SINGLE;
 							break;
 
 						case OPCODE_ROXR_STATIC:
-							specific_opcode_type = OPCODE_ROXR_SINGLE;
+							opcode.type = OPCODE_ROXR_SINGLE;
 							break;
 
 						case OPCODE_ROL_STATIC:
-							specific_opcode_type = OPCODE_ROL_SINGLE;
+							opcode.type = OPCODE_ROL_SINGLE;
 							break;
 
 						case OPCODE_ROR_STATIC:
-							specific_opcode_type = OPCODE_ROR_SINGLE;
+							opcode.type = OPCODE_ROR_SINGLE;
 							break;
 
 						default:
@@ -1839,11 +1839,11 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 		}
 
 		default:
-			specific_opcode_type = instruction->opcode.type;
+			opcode.type = instruction->opcode.type;
 			break;
 	}
 
-	instruction_metadata = &instruction_metadata_all[specific_opcode_type];
+	instruction_metadata = &instruction_metadata_all[opcode.type];
 
 	/* Check if the instruction is a valid size. */
 	if ((instruction->opcode.size & ~instruction_metadata->allowed_sizes) != 0)
@@ -1871,6 +1871,22 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 	{
 		unsigned int total_operands_wanted;
 		unsigned int total_operands_have;
+
+		opcode.size = instruction->opcode.size;
+
+		/* If the size is undefined, and the instruction has only one valid size, then set the size to that. */
+		if (opcode.size == SIZE_UNDEFINED)
+		{
+			switch (instruction_metadata->allowed_sizes & ~SIZE_UNDEFINED)
+			{
+				case SIZE_BYTE:
+				case SIZE_SHORT:
+				case SIZE_WORD:
+				case SIZE_LONGWORD:
+					opcode.size = instruction_metadata->allowed_sizes & ~SIZE_UNDEFINED;
+					break;
+			}
+		}
 
 		/* Count operands that we want. */
 		total_operands_wanted = 0;
@@ -1977,7 +1993,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 			if (assemble_instruction_success)
 			{
 				/* Determine the machine code for the opcode and perform sanity-checking. */
-				switch (specific_opcode_type)
+				switch (opcode.type)
 				{
 					case OPCODE_ORI_TO_CCR:
 						machine_code = 0x003C;
@@ -1992,7 +2008,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						const Operand* const destination_operand = instruction->operands->next;
 
 						machine_code = 0x0000;
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructSizeBits(opcode.size);
 						machine_code |= ConstructEffectiveAddressBits(destination_operand);
 						break;
 					}
@@ -2010,7 +2026,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						const Operand* const destination_operand = instruction->operands->next;
 
 						machine_code = 0x0200;
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructSizeBits(opcode.size);
 						machine_code |= ConstructEffectiveAddressBits(destination_operand);
 						break;
 					}
@@ -2020,7 +2036,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						const Operand* const destination_operand = instruction->operands->next;
 
 						machine_code = 0x0400;
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructSizeBits(opcode.size);
 						machine_code |= ConstructEffectiveAddressBits(destination_operand);
 						break;
 					}
@@ -2030,7 +2046,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						const Operand* const destination_operand = instruction->operands->next;
 
 						machine_code = 0x0600;
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructSizeBits(opcode.size);
 						machine_code |= ConstructEffectiveAddressBits(destination_operand);
 						break;
 					}
@@ -2048,7 +2064,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						const Operand* const destination_operand = instruction->operands->next;
 
 						machine_code = 0x0A00;
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructSizeBits(opcode.size);
 						machine_code |= ConstructEffectiveAddressBits(destination_operand);
 						break;
 					}
@@ -2058,7 +2074,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						const Operand* const destination_operand = instruction->operands->next;
 
 						machine_code = 0x0C00;
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructSizeBits(opcode.size);
 						machine_code |= ConstructEffectiveAddressBits(destination_operand);
 						break;
 					}
@@ -2075,7 +2091,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						const Operand* const source_operand = instruction->operands;
 						const Operand* const destination_operand = instruction->operands->next;
 
-						switch (specific_opcode_type)
+						switch (opcode.type)
 						{
 							case OPCODE_BTST_STATIC:
 							case OPCODE_BCHG_STATIC:
@@ -2115,7 +2131,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 								break;
 						}
 
-						switch (specific_opcode_type)
+						switch (opcode.type)
 						{
 							case OPCODE_BTST_STATIC:
 							case OPCODE_BTST_DYNAMIC:
@@ -2144,7 +2160,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						/* Check that the opcode size is suitable for the destination operand. */
 						if (destination_operand->type == OPERAND_DATA_REGISTER)
 						{
-							if (instruction->opcode.size != SIZE_LONGWORD && instruction->opcode.size != SIZE_UNDEFINED)
+							if (opcode.size != SIZE_LONGWORD && opcode.size != SIZE_UNDEFINED)
 							{
 								fprintf(stderr, "Error: 'BTST/BCHG/BCLR/BSET' instruction must be longword-sized when its destination operand is a data register\n");
 								assemble_instruction_success = cc_false;
@@ -2152,7 +2168,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						}
 						else
 						{
-							if (instruction->opcode.size != SIZE_BYTE && instruction->opcode.size != SIZE_SHORT && instruction->opcode.size != SIZE_UNDEFINED)
+							if (opcode.size != SIZE_BYTE && opcode.size != SIZE_SHORT && opcode.size != SIZE_UNDEFINED)
 							{
 								fprintf(stderr, "Error: 'BTST/BCHG/BCLR/BSET' instruction must be byte-sized when its destination operand is memory\n");
 								assemble_instruction_success = cc_false;
@@ -2187,7 +2203,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						machine_code = 0x0108;
 						machine_code |= data_register << 9;
 						machine_code |= (source_operand->type == OPERAND_DATA_REGISTER) << 7;
-						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
+						machine_code |= (opcode.size == SIZE_LONGWORD) << 6;
 						machine_code |= address_register;
 
 						break;
@@ -2201,7 +2217,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						const Operand* const source_operand = instruction->operands;
 						const Operand* const destination_operand = instruction->operands->next;
 
-						switch (instruction->opcode.size)
+						switch (opcode.size)
 						{
 							case SIZE_BYTE:
 							case SIZE_SHORT:
@@ -2256,7 +2272,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 					case OPCODE_NEG:
 					case OPCODE_NOT:
 					case OPCODE_TST:
-						switch (specific_opcode_type)
+						switch (opcode.type)
 						{
 							case OPCODE_NEGX:
 								machine_code = 0x4000;
@@ -2282,14 +2298,14 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 								break;
 						}
 
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructSizeBits(opcode.size);
 						machine_code |= ConstructEffectiveAddressBits(instruction->operands);
 
 						break;
 
 					case OPCODE_EXT:
 						machine_code = 0x4880;
-						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
+						machine_code |= (opcode.size == SIZE_LONGWORD) << 6;
 						machine_code |= ConstructEffectiveAddressBits(instruction->operands);
 						break;
 
@@ -2408,9 +2424,9 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 					case OPCODE_MOVEM_TO_REGS:
 					case OPCODE_MOVEM_FROM_REGS:
 						machine_code = 0x4880;
-						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
+						machine_code |= (opcode.size == SIZE_LONGWORD) << 6;
 
-						if (specific_opcode_type == OPCODE_MOVEM_TO_REGS)
+						if (opcode.type == OPCODE_MOVEM_TO_REGS)
 						{
 							machine_code |= 1 << 10;
 							machine_code |= ConstructEffectiveAddressBits(instruction->operands);
@@ -2432,7 +2448,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						const Operand* const source_operand = instruction->operands;
 						const Operand* const destination_operand = instruction->operands->next;
 
-						switch (specific_opcode_type)
+						switch (opcode.type)
 						{
 							case OPCODE_LEA:
 								machine_code = 0x41C0;
@@ -2479,7 +2495,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						/* Skip the immediate operand since that goes in the machine code instead. */
 						operands_to_output = destination_operand;
 
-						switch (specific_opcode_type)
+						switch (opcode.type)
 						{
 							case OPCODE_ADDQ:
 								machine_code = 0x5000;
@@ -2493,7 +2509,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 								break;
 						}
 
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructSizeBits(opcode.size);
 						machine_code |= ConstructEffectiveAddressBits(destination_operand);
 
 						if (!ResolveValue(&source_operand->literal, &value, &fix_up, doing_fix_up))
@@ -2575,7 +2591,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 
 						machine_code = 0x6000;
 
-						switch (specific_opcode_type)
+						switch (opcode.type)
 						{
 							case OPCODE_BRA:
 								machine_code |= 0x0000;
@@ -2600,7 +2616,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						{
 							offset = value - *program_counter;
 
-							if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
+							if (opcode.size == SIZE_BYTE || opcode.size == SIZE_SHORT)
 							{
 								if (offset == 0)
 								{
@@ -2626,7 +2642,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						{
 							offset = *program_counter - value;
 
-							if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
+							if (opcode.size == SIZE_BYTE || opcode.size == SIZE_SHORT)
 							{
 								if (offset > 0x80)
 								{
@@ -2646,7 +2662,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 							offset = 0 - offset;
 						}
 
-						if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
+						if (opcode.size == SIZE_BYTE || opcode.size == SIZE_SHORT)
 						{
 							machine_code |= offset & 0xFF;
 							operands_to_output = NULL;
@@ -2705,7 +2721,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						const Operand* const source_operand = instruction->operands;
 						const Operand* const destination_operand = instruction->operands->next;
 
-						switch (specific_opcode_type)
+						switch (opcode.type)
 						{
 							case OPCODE_SBCD_DATA_REGS:
 								machine_code = 0x8100;
@@ -2743,7 +2759,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 								break;
 						}
 
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructSizeBits(opcode.size);
 						machine_code |= source_operand->main_register << 0;
 						machine_code |= destination_operand->main_register << 9;
 
@@ -2764,13 +2780,13 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						const Operand* const source_operand = instruction->operands;
 						const Operand* const destination_operand = instruction->operands->next;
 
-						if (destination_operand->type == OPERAND_ADDRESS_REGISTER && instruction->opcode.size == SIZE_BYTE)
+						if (destination_operand->type == OPERAND_ADDRESS_REGISTER && opcode.size == SIZE_BYTE)
 						{
 							fprintf(stderr, "Error: Instruction cannot be byte-sized when destination is an address register\n");
 							assemble_instruction_success = cc_false;
 						}
 
-						switch (specific_opcode_type)
+						switch (opcode.type)
 						{
 							case OPCODE_OR_TO_REG:
 								machine_code = 0x8000;
@@ -2816,7 +2832,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 								break;
 						}
 
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructSizeBits(opcode.size);
 
 						if (destination_operand->type == OPERAND_DATA_REGISTER)
 						{
@@ -2839,7 +2855,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						const Operand* const source_operand = instruction->operands;
 						const Operand* const destination_operand = instruction->operands->next;
 
-						switch (specific_opcode_type)
+						switch (opcode.type)
 						{
 							case OPCODE_SUBA:
 								machine_code = 0x90C0;
@@ -2857,7 +2873,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 								break;
 						}
 
-						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 8;
+						machine_code |= (opcode.size == SIZE_LONGWORD) << 8;
 						machine_code |= destination_operand->main_register << 9;
 						machine_code |= ConstructEffectiveAddressBits(source_operand);
 
@@ -2870,7 +2886,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						const Operand* const second_operand = instruction->operands->next;
 
 						machine_code = 0xB108;
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructSizeBits(opcode.size);
 						machine_code |= first_operand->main_register << 0;
 						machine_code |= second_operand->main_register << 9;
 
@@ -2942,7 +2958,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 
 						unsigned int identifier;
 
-						switch (specific_opcode_type)
+						switch (opcode.type)
 						{
 							default:
 							case OPCODE_ASL_STATIC:
@@ -2984,7 +3000,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 
 						machine_code = 0xE000;
 
-						switch (specific_opcode_type)
+						switch (opcode.type)
 						{
 							case OPCODE_ASR_STATIC:
 							case OPCODE_ASR_DYNAMIC:
@@ -3020,7 +3036,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 								break;
 						}
 
-						switch (specific_opcode_type)
+						switch (opcode.type)
 						{
 							case OPCODE_ASL_STATIC:
 							case OPCODE_ASR_STATIC:
@@ -3152,7 +3168,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						break;
 
 					case OPERAND_LITERAL:
-						switch (instruction->opcode.size)
+						switch (opcode.size)
 						{
 							case SIZE_BYTE:
 							case SIZE_SHORT:
