@@ -265,4 +265,8 @@ Label:
 	rol.w	(a0)
 	ror.w	(a0)
 
+	; Testing the symbol table
+TestLabel:
+	bra.s	TestLabel
+
   ; More blank lines to test support for trailing blank statements

@@ -3,6 +3,7 @@
 
 #include "clowncommon.h"
 
+#include "symbols.h"
 #include "types.h"
 
 #define YY_NO_UNISTD_H
@@ -24,15 +25,25 @@ int yywrap(void)
 
 static unsigned long ResolveValue(const Value *value)
 {
-	if (value->type != TOKEN_NUMBER)
+	unsigned long value_integer = 0;
+
+	switch (value->type)
 	{
-		fprintf(stderr, "Error: Unable to resolve this type of Value right now\n");
-		return 0;
+		case TOKEN_NUMBER:
+			value_integer = value->data.integer;
+			break;
+
+		case TOKEN_IDENTIFIER:
+			if (!ObtainSymbol(value->data.identifier, &value_integer))
+			{
+				fprintf(stderr, "Error: Symbol '%s' undefined\n", value->data.identifier);
+				success = cc_false;
+			}
+
+			break;
 	}
-	else
-	{
-		return value->data.integer;
-	}
+
+	return value_integer;
 }
 
 static unsigned int ConstructSizeBits(Size size)
@@ -2841,6 +2852,9 @@ int main(int argc, char **argv)
 
 					for (statement_list_node = statement_list_head; statement_list_node != NULL; statement_list_node = statement_list_node->next)
 					{
+						if (statement_list_node->statement.label != NULL)
+							AddSymbol(statement_list_node->statement.label, program_counter);
+
 						switch (statement_list_node->statement.type)
 						{
 							case STATEMENT_TYPE_EMPTY:

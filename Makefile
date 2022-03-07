@@ -10,5 +10,5 @@ lexer.c lexer.h: spl.l parser.h
 parser.c parser.h: spl.y
 	bison --output=parser.c --header=parser.h --debug $<
 
-clownassembler: main.c lexer.c parser.c
+clownassembler: main.c lexer.c parser.c symbols.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
