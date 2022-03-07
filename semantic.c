@@ -1256,107 +1256,251 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0
 		}
 	},
-	{	/* OPCODE_ASL */
+	{	/* OPCODE_ASL_STATIC */
 		"ASL",
 		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
 		(OperandType[])
 		{
-			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
-				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
-				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
-				| OPERAND_LITERAL,
+			OPERAND_LITERAL,
 			OPERAND_DATA_REGISTER,
 			0
 		}
 	},
-	{	/* OPCODE_ASR */
+	{	/* OPCODE_ASR_STATIC */
 		"ASR",
 		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
 		(OperandType[])
 		{
-			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
-				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
-				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
-				| OPERAND_LITERAL,
+			OPERAND_LITERAL,
 			OPERAND_DATA_REGISTER,
 			0
 		}
 	},
-	{	/* OPCODE_LSL */
+	{	/* OPCODE_LSL_STATIC */
 		"LSL",
 		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
 		(OperandType[])
 		{
-			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
-				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
-				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
-				| OPERAND_LITERAL,
+			OPERAND_LITERAL,
 			OPERAND_DATA_REGISTER,
 			0
 		}
 	},
-	{	/* OPCODE_LSR */
+	{	/* OPCODE_LSR_STATIC */
 		"LSR",
 		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
 		(OperandType[])
 		{
-			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
-				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
-				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
-				| OPERAND_LITERAL,
+			OPERAND_LITERAL,
 			OPERAND_DATA_REGISTER,
 			0
 		}
 	},
-	{	/* OPCODE_ROXL */
+	{	/* OPCODE_ROXL_STATIC */
 		"ROXL",
 		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
 		(OperandType[])
 		{
-			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
-				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
-				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
-				| OPERAND_LITERAL,
+			OPERAND_LITERAL,
 			OPERAND_DATA_REGISTER,
 			0
 		}
 	},
-	{	/* OPCODE_ROXR */
+	{	/* OPCODE_ROXR_STATIC */
 		"ROXR",
 		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
 		(OperandType[])
 		{
-			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
-				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
-				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
-				| OPERAND_LITERAL,
+			OPERAND_LITERAL,
 			OPERAND_DATA_REGISTER,
 			0
 		}
 	},
-	{	/* OPCODE_ROL */
+	{	/* OPCODE_ROL_STATIC */
 		"ROL",
 		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
 		(OperandType[])
 		{
-			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
-				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
-				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
-				| OPERAND_LITERAL,
+			OPERAND_LITERAL,
 			OPERAND_DATA_REGISTER,
 			0
 		}
 	},
-	{	/* OPCODE_ROR */
+	{	/* OPCODE_ROR_STATIC */
 		"ROR",
 		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
 		(OperandType[])
 		{
-			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT
-				| OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
-				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE
-				| OPERAND_LITERAL,
+			OPERAND_LITERAL,
 			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ASL_DYNAMIC */
+		"ASL",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ASR_DYNAMIC */
+		"ASR",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_LSL_DYNAMIC */
+		"LSL",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_LSR_DYNAMIC */
+		"LSR",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ROXL_DYNAMIC */
+		"ROXL",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ROXR_DYNAMIC */
+		"ROXR",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ROL_DYNAMIC */
+		"ROL",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ROR_DYNAMIC */
+		"ROR",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_DATA_REGISTER,
+			OPERAND_DATA_REGISTER,
+			0
+		}
+	},
+	{	/* OPCODE_ASL_SINGLE */
+		"ASL",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER
+				| OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE,
+			0
+		}
+	},
+	{	/* OPCODE_ASR_SINGLE */
+		"ASR",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER
+				| OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE,
+			0
+		}
+	},
+	{	/* OPCODE_LSL_SINGLE */
+		"LSL",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER
+				| OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE,
+			0
+		}
+	},
+	{	/* OPCODE_LSR_SINGLE */
+		"LSR",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER
+				| OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE,
+			0
+		}
+	},
+	{	/* OPCODE_ROXL_SINGLE */
+		"ROXL",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER
+				| OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE,
+			0
+		}
+	},
+	{	/* OPCODE_ROXR_SINGLE */
+		"ROXR",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER
+				| OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE,
+			0
+		}
+	},
+	{	/* OPCODE_ROL_SINGLE */
+		"ROL",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER
+				| OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE,
+			0
+		}
+	},
+	{	/* OPCODE_ROR_SINGLE */
+		"ROR",
+		SIZE_BYTE | SIZE_WORD | SIZE_LONGWORD,
+		(OperandType[])
+		{
+			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT
+				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER
+				| OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE,
 			0
 		}
 	},
@@ -1586,6 +1730,113 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 			break;
 		}
 
+		case OPCODE_ASL_STATIC:
+		case OPCODE_ASR_STATIC:
+		case OPCODE_LSL_STATIC:
+		case OPCODE_LSR_STATIC:
+		case OPCODE_ROXL_STATIC:
+		case OPCODE_ROXR_STATIC:
+		case OPCODE_ROL_STATIC:
+		case OPCODE_ROR_STATIC:
+		{
+			const Operand* const first_operand = instruction->operands;
+
+			if (first_operand != NULL)
+			{
+				const Operand* const second_operand = instruction->operands->next;
+
+				if (second_operand != NULL)
+				{
+					if (first_operand->type == OPERAND_LITERAL)
+					{
+						specific_opcode_type = instruction->opcode.type;
+					}
+					else
+					{
+						switch (instruction->opcode.type)
+						{
+							case OPCODE_ASL_STATIC:
+								specific_opcode_type = OPCODE_ASL_DYNAMIC;
+								break;
+
+							case OPCODE_ASR_STATIC:
+								specific_opcode_type = OPCODE_ASR_DYNAMIC;
+								break;
+
+							case OPCODE_LSL_STATIC:
+								specific_opcode_type = OPCODE_LSL_DYNAMIC;
+								break;
+
+							case OPCODE_LSR_STATIC:
+								specific_opcode_type = OPCODE_LSR_DYNAMIC;
+								break;
+
+							case OPCODE_ROXL_STATIC:
+								specific_opcode_type = OPCODE_ROXL_DYNAMIC;
+								break;
+
+							case OPCODE_ROXR_STATIC:
+								specific_opcode_type = OPCODE_ROXR_DYNAMIC;
+								break;
+
+							case OPCODE_ROL_STATIC:
+								specific_opcode_type = OPCODE_ROL_DYNAMIC;
+								break;
+
+							case OPCODE_ROR_STATIC:
+								specific_opcode_type = OPCODE_ROR_DYNAMIC;
+								break;
+
+							default:
+								break;
+						}
+					}
+				}
+				else
+				{
+					switch (instruction->opcode.type)
+					{
+						case OPCODE_ASL_STATIC:
+							specific_opcode_type = OPCODE_ASL_SINGLE;
+							break;
+
+						case OPCODE_ASR_STATIC:
+							specific_opcode_type = OPCODE_ASR_SINGLE;
+							break;
+
+						case OPCODE_LSL_STATIC:
+							specific_opcode_type = OPCODE_LSL_SINGLE;
+							break;
+
+						case OPCODE_LSR_STATIC:
+							specific_opcode_type = OPCODE_LSR_SINGLE;
+							break;
+
+						case OPCODE_ROXL_STATIC:
+							specific_opcode_type = OPCODE_ROXL_SINGLE;
+							break;
+
+						case OPCODE_ROXR_STATIC:
+							specific_opcode_type = OPCODE_ROXR_SINGLE;
+							break;
+
+						case OPCODE_ROL_STATIC:
+							specific_opcode_type = OPCODE_ROL_SINGLE;
+							break;
+
+						case OPCODE_ROR_STATIC:
+							specific_opcode_type = OPCODE_ROR_SINGLE;
+							break;
+
+						default:
+							break;
+					}
+				}
+			}
+
+			break;
+		}
+
 		default:
 			specific_opcode_type = instruction->opcode.type;
 			break;
@@ -1605,22 +1856,10 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 	for (operand = instruction->operands; operand != NULL; operand = operand->next)
 		++total_operands_have;
 
-	if (instruction->opcode.type == OPCODE_ASL || instruction->opcode.type == OPCODE_ASR || instruction->opcode.type == OPCODE_LSL || instruction->opcode.type == OPCODE_LSR
-	 || instruction->opcode.type == OPCODE_ROXL || instruction->opcode.type == OPCODE_ROXR || instruction->opcode.type == OPCODE_ROL || instruction->opcode.type == OPCODE_ROR)
+	if (total_operands_wanted != total_operands_have)
 	{
-		if (total_operands_have != 1 && total_operands_have != 2)
-		{
-			fprintf(stderr, "Error: '%s' instruction has %u operands, but it should have either 1 or 2\n", instruction_metadata->name, total_operands_have);
-			assemble_instruction_success = cc_false;
-		}
-	}
-	else
-	{
-		if (total_operands_wanted != total_operands_have)
-		{
-			fprintf(stderr, "Error: '%s' instruction has %u operands, but it should have %u\n", instruction_metadata->name, total_operands_have, total_operands_wanted);
-			assemble_instruction_success = cc_false;
-		}
+		fprintf(stderr, "Error: '%s' instruction has %u operands, but it should have %u\n", instruction_metadata->name, total_operands_have, total_operands_wanted);
+		assemble_instruction_success = cc_false;
 	}
 
 	if (assemble_instruction_success)
@@ -2600,14 +2839,30 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 				break;
 			}
 
-			case OPCODE_ASL:
-			case OPCODE_ASR:
-			case OPCODE_LSL:
-			case OPCODE_LSR:
-			case OPCODE_ROXL:
-			case OPCODE_ROXR:
-			case OPCODE_ROL:
-			case OPCODE_ROR:
+			case OPCODE_ASL_STATIC:
+			case OPCODE_ASR_STATIC:
+			case OPCODE_LSL_STATIC:
+			case OPCODE_LSR_STATIC:
+			case OPCODE_ROXL_STATIC:
+			case OPCODE_ROXR_STATIC:
+			case OPCODE_ROL_STATIC:
+			case OPCODE_ROR_STATIC:
+			case OPCODE_ASL_DYNAMIC:
+			case OPCODE_ASR_DYNAMIC:
+			case OPCODE_LSL_DYNAMIC:
+			case OPCODE_LSR_DYNAMIC:
+			case OPCODE_ROXL_DYNAMIC:
+			case OPCODE_ROXR_DYNAMIC:
+			case OPCODE_ROL_DYNAMIC:
+			case OPCODE_ROR_DYNAMIC:
+			case OPCODE_ASL_SINGLE:
+			case OPCODE_ASR_SINGLE:
+			case OPCODE_LSL_SINGLE:
+			case OPCODE_LSR_SINGLE:
+			case OPCODE_ROXL_SINGLE:
+			case OPCODE_ROXR_SINGLE:
+			case OPCODE_ROL_SINGLE:
+			case OPCODE_ROR_SINGLE:
 			{
 				const Operand* const first_operand = instruction->operands;
 				const Operand* const second_operand = instruction->operands->next;
@@ -2617,23 +2872,39 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 				switch (specific_opcode_type)
 				{
 					default:
-					case OPCODE_ASL:
-					case OPCODE_ASR:
+					case OPCODE_ASL_STATIC:
+					case OPCODE_ASR_STATIC:
+					case OPCODE_ASL_DYNAMIC:
+					case OPCODE_ASR_DYNAMIC:
+					case OPCODE_ASL_SINGLE:
+					case OPCODE_ASR_SINGLE:
 						identifier = 0;
 						break;
 
-					case OPCODE_LSL:
-					case OPCODE_LSR:
+					case OPCODE_LSL_STATIC:
+					case OPCODE_LSR_STATIC:
+					case OPCODE_LSL_DYNAMIC:
+					case OPCODE_LSR_DYNAMIC:
+					case OPCODE_LSL_SINGLE:
+					case OPCODE_LSR_SINGLE:
 						identifier = 1;
 						break;
 
-					case OPCODE_ROXL:
-					case OPCODE_ROXR:
+					case OPCODE_ROXL_STATIC:
+					case OPCODE_ROXR_STATIC:
+					case OPCODE_ROXL_DYNAMIC:
+					case OPCODE_ROXR_DYNAMIC:
+					case OPCODE_ROXL_SINGLE:
+					case OPCODE_ROXR_SINGLE:
 						identifier = 2;
 						break;
 
-					case OPCODE_ROL:
-					case OPCODE_ROR:
+					case OPCODE_ROL_STATIC:
+					case OPCODE_ROR_STATIC:
+					case OPCODE_ROL_DYNAMIC:
+					case OPCODE_ROR_DYNAMIC:
+					case OPCODE_ROL_SINGLE:
+					case OPCODE_ROR_SINGLE:
 						identifier = 3;
 						break;
 				}
@@ -2642,17 +2913,33 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 
 				switch (specific_opcode_type)
 				{
-					case OPCODE_ASR:
-					case OPCODE_LSR:
-					case OPCODE_ROXR:
-					case OPCODE_ROR:
+					case OPCODE_ASR_STATIC:
+					case OPCODE_ASR_DYNAMIC:
+					case OPCODE_ASR_SINGLE:
+					case OPCODE_LSR_STATIC:
+					case OPCODE_LSR_DYNAMIC:
+					case OPCODE_LSR_SINGLE:
+					case OPCODE_ROXR_STATIC:
+					case OPCODE_ROXR_DYNAMIC:
+					case OPCODE_ROXR_SINGLE:
+					case OPCODE_ROR_STATIC:
+					case OPCODE_ROR_DYNAMIC:
+					case OPCODE_ROR_SINGLE:
 						machine_code |= 0x0000;
 						break;
 
-					case OPCODE_ASL:
-					case OPCODE_LSL:
-					case OPCODE_ROXL:
-					case OPCODE_ROL:
+					case OPCODE_ASL_STATIC:
+					case OPCODE_ASL_DYNAMIC:
+					case OPCODE_ASL_SINGLE:
+					case OPCODE_LSL_STATIC:
+					case OPCODE_LSL_DYNAMIC:
+					case OPCODE_LSL_SINGLE:
+					case OPCODE_ROXL_STATIC:
+					case OPCODE_ROXL_DYNAMIC:
+					case OPCODE_ROXL_SINGLE:
+					case OPCODE_ROL_STATIC:
+					case OPCODE_ROL_DYNAMIC:
+					case OPCODE_ROL_SINGLE:
 						machine_code |= 0x0100;
 						break;
 
@@ -2660,16 +2947,16 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						break;
 				}
 
-				if (total_operands_have == 2)
+				switch (specific_opcode_type)
 				{
-					machine_code |= identifier << 3;
-
-					if (first_operand->type == OPERAND_DATA_REGISTER)
-					{
-						machine_code |= first_operand->main_register << 9;
-						machine_code |= 0x0020;
-					}
-					else if (first_operand->type == OPERAND_LITERAL)
+					case OPCODE_ASL_STATIC:
+					case OPCODE_ASR_STATIC:
+					case OPCODE_LSL_STATIC:
+					case OPCODE_LSR_STATIC:
+					case OPCODE_ROXL_STATIC:
+					case OPCODE_ROXR_STATIC:
+					case OPCODE_ROL_STATIC:
+					case OPCODE_ROR_STATIC:
 					{
 						unsigned long value;
 
@@ -2685,29 +2972,42 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						{
 							machine_code |= (value - 1) << 9;
 						}
-					}
-					else
-					{
-						fprintf(stderr, "Error: First operand must be a data register or a literal\n");
-						assemble_instruction_success = cc_false;
-					}
 
-					if (second_operand->type == OPERAND_DATA_REGISTER)
+						machine_code |= identifier << 3;
 						machine_code |= second_operand->main_register << 0;
-				}
-				else
-				{
-					machine_code |= identifier << 9;
 
-					machine_code |= 0x00C0;
-
-					if (first_operand->type == OPERAND_DATA_REGISTER || first_operand->type == OPERAND_LITERAL)
-					{
-						fprintf(stderr, "Error: A second operand is needed\n");
-						assemble_instruction_success = cc_false;
+						break;
 					}
 
-					machine_code |= ConstructEffectiveAddressBits(first_operand);
+					case OPCODE_ASL_DYNAMIC:
+					case OPCODE_ASR_DYNAMIC:
+					case OPCODE_LSL_DYNAMIC:
+					case OPCODE_LSR_DYNAMIC:
+					case OPCODE_ROXL_DYNAMIC:
+					case OPCODE_ROXR_DYNAMIC:
+					case OPCODE_ROL_DYNAMIC:
+					case OPCODE_ROR_DYNAMIC:
+						machine_code |= identifier << 3;
+						machine_code |= first_operand->main_register << 9;
+						machine_code |= 0x0020;
+						machine_code |= second_operand->main_register << 0;
+						break;
+
+					case OPCODE_ASL_SINGLE:
+					case OPCODE_ASR_SINGLE:
+					case OPCODE_LSL_SINGLE:
+					case OPCODE_LSR_SINGLE:
+					case OPCODE_ROXL_SINGLE:
+					case OPCODE_ROXR_SINGLE:
+					case OPCODE_ROL_SINGLE:
+					case OPCODE_ROR_SINGLE:
+						machine_code |= identifier << 9;
+						machine_code |= 0x00C0;
+						machine_code |= ConstructEffectiveAddressBits(first_operand);
+						break;
+
+					default:
+						break;
 				}
 
 				break;

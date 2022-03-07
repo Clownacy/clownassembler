@@ -874,35 +874,35 @@ opcode               : TOKEN_OPCODE_ORI
                      }
                      | TOKEN_OPCODE_ASL
                      {
-                       $$.type = OPCODE_ASL;
+                       $$.type = OPCODE_ASL_STATIC;
                      }
                      | TOKEN_OPCODE_ASR
                      {
-                       $$.type = OPCODE_ASR;
+                       $$.type = OPCODE_ASR_STATIC;
                      }
                      | TOKEN_OPCODE_LSL
                      {
-                       $$.type = OPCODE_LSL;
+                       $$.type = OPCODE_LSL_STATIC;
                      }
                      | TOKEN_OPCODE_LSR
                      {
-                       $$.type = OPCODE_LSR;
+                       $$.type = OPCODE_LSR_STATIC;
                      }
                      | TOKEN_OPCODE_ROXL
                      {
-                       $$.type = OPCODE_ROXL;
+                       $$.type = OPCODE_ROXL_STATIC;
                      }
                      | TOKEN_OPCODE_ROXR
                      {
-                       $$.type = OPCODE_ROXR;
+                       $$.type = OPCODE_ROXR_STATIC;
                      }
                      | TOKEN_OPCODE_ROL
                      {
-                       $$.type = OPCODE_ROL;
+                       $$.type = OPCODE_ROL_STATIC;
                      }
                      | TOKEN_OPCODE_ROR
                      {
-                       $$.type = OPCODE_ROR;
+                       $$.type = OPCODE_ROR_STATIC;
                      }
                      ;
 
