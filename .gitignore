@@ -1,7 +1,7 @@
 /build
 /clownassembler
 /clownassembler.exe
-/syntactical.c
-/syntactical.h
+/syntactic.c
+/syntactic.h
 /lexical.c
 /lexical.h

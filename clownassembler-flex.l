@@ -7,7 +7,7 @@
 #include <string.h>
 
 #include "types.h"
-#include "syntactical.h"
+#include "syntactic.h"
 
 #ifdef PRINT
 #include <stdio.h>
