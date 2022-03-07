@@ -26,7 +26,6 @@ extern StatementListNode *statement_list_head;
 
 static cc_bool assemble_instruction_success;
 
-static cc_bool doing_fix_ups;
 static FixUp *fix_up_list_head;
 
 int yywrap(void)
@@ -52,7 +51,7 @@ static void AddFixUp(const FixUp *fix_up)
 	}
 }
 
-static cc_bool ResolveValue(const Value *value, unsigned long *value_integer, const FixUp *fix_up)
+static cc_bool ResolveValue(const Value *value, unsigned long *value_integer, const FixUp *fix_up, cc_bool doing_fix_up)
 {
 	cc_bool success = cc_true;
 
@@ -67,7 +66,7 @@ static cc_bool ResolveValue(const Value *value, unsigned long *value_integer, co
 			{
 				success = cc_false;
 
-				if (doing_fix_ups)
+				if (doing_fix_up)
 				{
 					fprintf(stderr, "Error: Symbol '%s' undefined\n", value->data.identifier);
 					assemble_instruction_success = cc_false;
@@ -1368,7 +1367,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 };
 
-static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, unsigned long *program_counter)
+static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, unsigned long *program_counter, cc_bool doing_fix_up)
 {
 	unsigned int total_operands_wanted;
 	unsigned int total_operands_have;
@@ -1575,7 +1574,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 				{
 					unsigned long value;
 
-					if (!ResolveValue(&source_operand->literal, &value, &fix_up))
+					if (!ResolveValue(&source_operand->literal, &value, &fix_up, doing_fix_up))
 						value = 0;
 
 					/* Check whether the literal value will wrap or not, and warn the user if so. */
@@ -1836,7 +1835,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 				{
 					unsigned long value;
 
-					if (!ResolveValue(&instruction->operands->literal, &value, &fix_up))
+					if (!ResolveValue(&instruction->operands->literal, &value, &fix_up, doing_fix_up))
 						value = 0;
 
 					if (value > 15)
@@ -1998,7 +1997,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 				{
 					unsigned long value;
 
-					if (!ResolveValue(&source_operand->literal, &value, &fix_up))
+					if (!ResolveValue(&source_operand->literal, &value, &fix_up, doing_fix_up))
 						value = 1;
 
 					if (value < 1 || value > 8)
@@ -2036,7 +2035,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 				{
 					unsigned long value;
 
-					if (!ResolveValue(&address_operand->literal, &value, &fix_up))
+					if (!ResolveValue(&address_operand->literal, &value, &fix_up, doing_fix_up))
 						value = *program_counter - 2;
 
 					custom_operand.next = NULL;
@@ -2100,7 +2099,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 					unsigned long offset;
 					unsigned long value;
 
-					if (!ResolveValue(&instruction->operands->literal, &value, &fix_up))
+					if (!ResolveValue(&instruction->operands->literal, &value, &fix_up, doing_fix_up))
 						value = *program_counter - 2;
 
 					if (value >= *program_counter)
@@ -2182,7 +2181,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 				{
 					unsigned long value;
 
-					if (!ResolveValue(&literal_operand->literal, &value, &fix_up))
+					if (!ResolveValue(&literal_operand->literal, &value, &fix_up, doing_fix_up))
 						value = 0;
 
 					if (value > 0x7F && value < 0xFFFFFF80)
@@ -2527,7 +2526,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 					{
 						unsigned long value;
 
-						if (!ResolveValue(&first_operand->literal, &value, &fix_up))
+						if (!ResolveValue(&first_operand->literal, &value, &fix_up, doing_fix_up))
 							value = 0;
 
 						if (value > 8 || value < 1)
@@ -2703,7 +2702,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 				unsigned int i = 2;
 				unsigned long value;
 
-				if (!ResolveValue(&operand->literal, &value, &fix_up))
+				if (!ResolveValue(&operand->literal, &value, &fix_up, doing_fix_up))
 					value = 0;
 
 				switch (operand->type)
@@ -2902,7 +2901,6 @@ int main(int argc, char **argv)
 					const FixUp *fix_up;
 					unsigned long program_counter;
 
-					doing_fix_ups = cc_false;
 					program_counter = 0;
 
 					for (statement_list_node = statement_list_head; statement_list_node != NULL; statement_list_node = statement_list_node->next)
@@ -2916,7 +2914,7 @@ int main(int argc, char **argv)
 								break;
 
 							case STATEMENT_TYPE_INSTRUCTION:
-								if (!AssembleInstruction(output_file, &statement_list_node->statement.data.instruction, &program_counter))
+								if (!AssembleInstruction(output_file, &statement_list_node->statement.data.instruction, &program_counter, cc_false))
 									exit_code = EXIT_FAILURE;
 
 								break;
@@ -2926,14 +2924,12 @@ int main(int argc, char **argv)
 						}
 					}
 
-					doing_fix_ups = cc_true;
-
 					for (fix_up = fix_up_list_head; fix_up != NULL; fix_up = fix_up->next)
 					{
 						program_counter = fix_up->program_counter;
 						fseek(output_file, fix_up->output_position , SEEK_SET);
 
-						if (!AssembleInstruction(output_file, fix_up->instruction, &program_counter))
+						if (!AssembleInstruction(output_file, fix_up->instruction, &program_counter, cc_true))
 							exit_code = EXIT_FAILURE;
 					}
 
