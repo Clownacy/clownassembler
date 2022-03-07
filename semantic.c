@@ -2711,11 +2711,6 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 				}
 
 				break;
-
-			default:
-				fprintf(stderr, "Internal error: Unrecognised instruction\n");
-				assemble_instruction_success = cc_false;
-				break;
 			}
 		}
 
