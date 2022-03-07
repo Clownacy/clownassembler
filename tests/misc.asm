@@ -271,6 +271,6 @@ TestLabel:
 
 
 	; Testing fix-ups
-	bra.s	DeclareAfterUseLabel
+	bra.w	DeclareAfterUseLabel
 DeclareAfterUseLabel:
   ; More blank lines to test support for trailing blank statements
