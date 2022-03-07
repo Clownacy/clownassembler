@@ -1641,7 +1641,10 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 							else if (destination_operand->type == OPERAND_USER_STACK_POINTER_REGISTER)
 								specific_opcode_type = OPCODE_MOVE_TO_USP;
 							else if (destination_operand->type == OPERAND_ADDRESS_REGISTER)
+							{
 								specific_opcode_type = OPCODE_MOVEA; /* MOVEA mistyped as MOVE */
+								fprintf(stderr, "Warning: MOVE should be MOVEA\n");
+							}
 							else
 								specific_opcode_type = OPCODE_MOVE;
 
