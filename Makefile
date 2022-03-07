@@ -2,13 +2,13 @@ CFLAGS = -ggdb3 -Og -Wall -Wextra -pedantic -fwrapv
 
 all: generators
 
-generators: lexer.c lexer.h parser.c parser.h
+generators: lexical.c lexical.h syntactical.c syntactical.h
 
-lexer.c lexer.h: spl.l parser.h
-	flex --outfile=lexer.c --header-file=lexer.h $<
+lexical.c lexical.h: spl.l syntactical.h
+	flex --outfile=lexical.c --header-file=lexical.h $<
 
-parser.c parser.h: spl.y
-	bison --output=parser.c --header=parser.h --debug $<
+syntactical.c syntactical.h: spl.y
+	bison --output=syntactical.c --header=syntactical.h --debug $<
 
-clownassembler: main.c lexer.c parser.c symbols.c
+clownassembler: main.c lexical.c syntactical.c symbols.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)

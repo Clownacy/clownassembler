@@ -7,8 +7,8 @@
 #include "types.h"
 
 #define YY_NO_UNISTD_H
-#include "lexer.h"
-#include "parser.h"
+#include "lexical.h"
+#include "syntactical.h"
 
 #define ERROR(message) do { fputs("Error: " message "\n", stderr); exit_code = EXIT_FAILURE; } while (0)
 

@@ -1,7 +1,7 @@
 /build
 /clownassembler
 /clownassembler.exe
-/parser.c
-/parser.h
-/lexer.c
-/lexer.h
+/syntactical.c
+/syntactical.h
+/lexical.c
+/lexical.h

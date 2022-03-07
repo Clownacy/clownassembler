@@ -4,10 +4,10 @@ project(clownassembler LANGUAGES C)
 
 add_executable(clownassembler
 	"main.c"
-	"lexer.c"
-	"lexer.h"
-	"parser.c"
-	"parser.h"
+	"lexical.c"
+	"lexical.h"
+	"syntactical.c"
+	"syntactical.h"
 	"symbols.c"
 	"symbols.h"
 	"types.h"
