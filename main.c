@@ -20,6 +20,11 @@ int yywrap(void)
 	return 1;
 }
 
+void yyerror(char *s)
+{
+    fprintf(stderr, "Error : Exiting %s\n", s);
+}
+
 int main(int argc, char **argv)
 {
 	int exit_code = EXIT_SUCCESS;
@@ -55,9 +60,4 @@ int main(int argc, char **argv)
 	}
 
 	return exit_code;
-}
-
-void yyerror(char *s)
-{
-    fprintf(stderr, "Error : Exiting %s\n", s);
 }
