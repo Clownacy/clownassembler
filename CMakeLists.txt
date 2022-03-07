@@ -8,6 +8,8 @@ add_executable(clownassembler
 	"lexer.h"
 	"parser.c"
 	"parser.h"
+	"symbols.c"
+	"symbols.h"
 	"types.h"
 )
 
