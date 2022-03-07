@@ -12,38 +12,79 @@
 
 #define ERROR(message) do { fputs("Error: " message "\n", stderr); exit_code = EXIT_FAILURE; } while (0)
 
+typedef struct FixUp
+{
+	struct FixUp *next;
+
+	const Instruction *instruction;
+	unsigned long program_counter;
+	long output_position;
+} FixUp;
+
 /* TODO - Stupid hack */
 extern StatementListNode *statement_list_head;
 
-static cc_bool success;
+static cc_bool assemble_instruction_success;
 static unsigned long program_counter;
+
+static cc_bool doing_fix_ups;
+static FixUp *fix_up_list_head;
 
 int yywrap(void)
 {
 	return 1;
 }
 
-static unsigned long ResolveValue(const Value *value)
+static void AddFixUp(const Instruction *instruction, FILE *output_file)
 {
-	unsigned long value_integer = 0;
+	FixUp *fix_up = malloc(sizeof(FixUp));
+
+	if (fix_up == NULL)
+	{
+		fprintf(stderr, "Error: Could not allocate memory for fix-up\n");
+		assemble_instruction_success = cc_false;
+	}
+	else
+	{
+		fix_up->next = fix_up_list_head;
+		fix_up_list_head = fix_up;
+
+		fix_up->instruction = instruction;
+		fix_up->program_counter = program_counter;
+		fix_up->output_position = ftell(output_file);
+	}
+}
+
+static cc_bool ResolveValue(const Value *value, unsigned long *value_integer, const Instruction *instruction, FILE *output_file)
+{
+	cc_bool success = cc_true;
 
 	switch (value->type)
 	{
 		case TOKEN_NUMBER:
-			value_integer = value->data.integer;
+			*value_integer = value->data.integer;
 			break;
 
 		case TOKEN_IDENTIFIER:
-			if (!ObtainSymbol(value->data.identifier, &value_integer))
+			if (!ObtainSymbol(value->data.identifier, value_integer))
 			{
-				fprintf(stderr, "Error: Symbol '%s' undefined\n", value->data.identifier);
 				success = cc_false;
+
+				if (doing_fix_ups)
+				{
+					fprintf(stderr, "Error: Symbol '%s' undefined\n", value->data.identifier);
+					assemble_instruction_success = cc_false;
+				}
+				else
+				{
+					AddFixUp(instruction, output_file);
+				}
 			}
 
 			break;
 	}
 
-	return value_integer;
+	return success;
 }
 
 static unsigned int ConstructSizeBits(Size size)
@@ -128,7 +169,7 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
 
 				default:
 					fprintf(stderr, "Error: Absolute address can only be word- or longword-sized - assuming longword\n");
-					success = cc_false;
+					assemble_instruction_success = cc_false;
 					/* Fallthrough */
 				case SIZE_UNDEFINED:
 				case SIZE_LONGWORD:
@@ -145,7 +186,7 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
 
 		default:
 			fprintf(stderr, "Error: Invalid operand type - register lists, USP, SR, and CCR cannot be used here\n");
-			success = cc_false;
+			assemble_instruction_success = cc_false;
 			/* Just pretend it's data register 0 to keep things moving along. */
 			m = 0;
 			xn = 0;
@@ -155,7 +196,7 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
 	return (m << 3) | (xn << 0);
 }
 
-static void OutputOperands(FILE *file, const Operand *operands, Size opcode_size)
+static void OutputOperands(FILE *file, const Operand *operands, Size opcode_size, const Instruction *instruction)
 {
 	const Operand *operand;
 
@@ -172,7 +213,10 @@ static void OutputOperands(FILE *file, const Operand *operands, Size opcode_size
 			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 			{
 				unsigned int i = 2;
-				unsigned long value = ResolveValue(&operand->literal);
+				unsigned long value;
+
+				if (!ResolveValue(&operand->literal, &value, instruction, file))
+					value = 0;
 
 				switch (operand->type)
 				{
@@ -185,7 +229,7 @@ static void OutputOperands(FILE *file, const Operand *operands, Size opcode_size
 							case SIZE_BYTE:
 							case SIZE_SHORT:
 								fprintf(stderr, "Error: Address cannot be byte-sized\n");
-								success = cc_false;
+								assemble_instruction_success = cc_false;
 								i = 2;
 								break;
 
@@ -195,7 +239,7 @@ static void OutputOperands(FILE *file, const Operand *operands, Size opcode_size
 								if (value >= 0x8000 && value < 0xFFFF8000)
 								{
 									fprintf(stderr, "Error: Word-sized address cannot be higher than $7FFF or lower than $FFFF8000\n");
-									success = cc_false;
+									assemble_instruction_success = cc_false;
 								}
 
 								break;
@@ -218,18 +262,19 @@ static void OutputOperands(FILE *file, const Operand *operands, Size opcode_size
 								if (value >= 0x100 && value < 0xFFFFFF00)
 								{
 									fprintf(stderr, "Error: Byte-sized literal cannot be larger than $FF or smaller than -$100\n");
-									success = cc_false;
+									assemble_instruction_success = cc_false;
 								}
 
 								break;
 
+							case SIZE_UNDEFINED:
 							case SIZE_WORD:
 								i = 2;
 
 								if (value >= 0x10000 && value < 0xFFFF0000)
 								{
 									fprintf(stderr, "Error: Word-sized literal cannot be larger than $FFFF or smaller than -$10000\n");
-									success = cc_false;
+									assemble_instruction_success = cc_false;
 								}
 
 								break;
@@ -237,19 +282,6 @@ static void OutputOperands(FILE *file, const Operand *operands, Size opcode_size
 							case SIZE_LONGWORD:
 								i = 4;
 								break;
-
-							case SIZE_UNDEFINED:
-							{
-								/* Automatically determine size. */
-								const unsigned long value = ResolveValue(&operand->literal);
-
-								if (value >= 0xFFFF0000 || value < 0x10000)
-									i = 2;
-								else
-									i = 4;
-
-								break;
-							}
 						}
 
 						break;
@@ -261,13 +293,13 @@ static void OutputOperands(FILE *file, const Operand *operands, Size opcode_size
 						if (value >= 0x80 && value < 0xFFFFFF80)
 						{
 							fprintf(stderr, "Error: Displacement value cannot be larger than $7F or smaller than -$80\n");
-							success = cc_false;
+							assemble_instruction_success = cc_false;
 						}
 
 						if (operand->size == SIZE_BYTE || operand->size == SIZE_SHORT)
 						{
 							fprintf(stderr, "Error: Index register cannot be byte-sized\n");
-							success = cc_false;
+							assemble_instruction_success = cc_false;
 						}
 
 						value |= operand->index_register << 12;
@@ -287,7 +319,7 @@ static void OutputOperands(FILE *file, const Operand *operands, Size opcode_size
 						if (value >= 0x8000 && value < 0xFFFF8000)
 						{
 							fprintf(stderr, "Error: Displacement value cannot be larger than $7FFF or smaller than -$8000\n");
-							success = cc_false;
+							assemble_instruction_success = cc_false;
 						}
 
 						break;
@@ -1524,7 +1556,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 	const Operand *operands_to_output = instruction->operands;
 	Operand custom_operand;
 
-	success = cc_true;
+	assemble_instruction_success = cc_true;
 
 	program_counter += 2;
 
@@ -1546,7 +1578,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 		if (total_operands_have != 1 && total_operands_have != 2)
 		{
 			fprintf(stderr, "Error: '%s' instruction has %u operands, but it should have either 1 or 2\n", instruction_metadata->name, total_operands_have);
-			success = cc_false;
+			assemble_instruction_success = cc_false;
 		}
 	}
 	else
@@ -1554,11 +1586,11 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 		if (total_operands_wanted != total_operands_have)
 		{
 			fprintf(stderr, "Error: '%s' instruction has %u operands, but it should have %u\n", instruction_metadata->name, total_operands_have, total_operands_wanted);
-			success = cc_false;
+			assemble_instruction_success = cc_false;
 		}
 	}
 
-	if (success)
+	if (assemble_instruction_success)
 	{
 		/* Determine the machine code for the opcode and perform sanity-checking. */
 		switch (instruction->opcode.type)
@@ -1712,7 +1744,10 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				}
 				else
 				{
-					const unsigned long value = ResolveValue(&source_operand->literal);
+					unsigned long value;
+
+					if (!ResolveValue(&source_operand->literal, &value, instruction, file))
+						value = 0;
 
 					/* Check whether the literal value will wrap or not, and warn the user if so. */
 					if (destination_operand->type == OPERAND_DATA_REGISTER)
@@ -1754,7 +1789,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					if (instruction->opcode.size != SIZE_LONGWORD && instruction->opcode.size != SIZE_UNDEFINED)
 					{
 						fprintf(stderr, "Error: 'BTST/BCHG/BCLR/BSET' instruction must be longword-sized when its destination operand is a data register\n");
-						success = cc_false;
+						assemble_instruction_success = cc_false;
 					}
 				}
 				else
@@ -1762,7 +1797,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					if (instruction->opcode.size != SIZE_BYTE && instruction->opcode.size != SIZE_SHORT && instruction->opcode.size != SIZE_UNDEFINED)
 					{
 						fprintf(stderr, "Error: 'BTST/BCHG/BCLR/BSET' instruction must be byte-sized when its destination operand is memory\n");
-						success = cc_false;
+						assemble_instruction_success = cc_false;
 					}
 				}
 
@@ -1970,12 +2005,15 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				/* Just a check to prevent reading uninitialised memory. */
 				if (instruction->operands->type == OPERAND_LITERAL)
 				{
-					const unsigned long value = ResolveValue(&instruction->operands->literal);
+					unsigned long value;
+
+					if (!ResolveValue(&instruction->operands->literal, &value, instruction, file))
+						value = 0;
 
 					if (value > 15)
 					{
 						fprintf(stderr, "Error: 'TRAP' instruction's vector cannot be higher than 15\n");
-						success = cc_false;
+						assemble_instruction_success = cc_false;
 					}
 					else
 					{
@@ -2129,12 +2167,15 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 				if (source_operand->type == OPERAND_LITERAL)
 				{
-					const unsigned long value = ResolveValue(&source_operand->literal);
+					unsigned long value;
+
+					if (!ResolveValue(&source_operand->literal, &value, instruction, file))
+						value = 1;
 
 					if (value < 1 || value > 8)
 					{
 						fprintf(stderr, "Error: 'ADDQ'/'SUBQ' instruction's immediate value cannot be lower than 1 or higher than 8\n");
-						success = cc_false;
+						assemble_instruction_success = cc_false;
 					}
 					else
 					{
@@ -2164,7 +2205,10 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 				if (address_operand->type == OPERAND_ADDRESS)
 				{
-					const unsigned long value = ResolveValue(&address_operand->literal);
+					unsigned long value;
+
+					if (!ResolveValue(&address_operand->literal, &value, instruction, file))
+						value = program_counter - 2;
 
 					custom_operand.next = NULL;
 					custom_operand.type = OPERAND_LITERAL;
@@ -2177,7 +2221,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						if (offset > 0x7FFF)
 						{
 							fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was 0x%lX bytes away)\n", offset);
-							success = cc_false;
+							assemble_instruction_success = cc_false;
 						}
 
 						custom_operand.literal.data.integer = offset;
@@ -2189,7 +2233,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 						if (offset > 0x8000)
 						{
 							fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was 0x%lX bytes away)\n", offset);
-							success = cc_false;
+							assemble_instruction_success = cc_false;
 						}
 
 						custom_operand.literal.data.integer = 0 - offset;
@@ -2224,8 +2268,11 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 				if (instruction->operands->type == OPERAND_ADDRESS)
 				{
-					const unsigned long value = ResolveValue(&instruction->operands->literal);
 					unsigned long offset;
+					unsigned long value;
+
+					if (!ResolveValue(&instruction->operands->literal, &value, instruction, file))
+						value = program_counter - 2;
 
 					if (value >= program_counter)
 					{
@@ -2236,12 +2283,12 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 							if (offset == 0)
 							{
 								fprintf(stderr, "Error: Destination cannot be 0 bytes away when using a short-sized branch\n");
-								success = cc_false;
+								assemble_instruction_success = cc_false;
 							}
 							else if (offset > 0x7F)
 							{
 								fprintf(stderr, "Error: Destination is too far away (must be less than 0x80 bytes after start of instruction, but was 0x%lX bytes away)\n", offset);
-								success = cc_false;
+								assemble_instruction_success = cc_false;
 							}
 						}
 						else
@@ -2249,7 +2296,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 							if (offset > 0x7FFF)
 							{
 								fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was 0x%lX bytes away)\n", offset);
-								success = cc_false;
+								assemble_instruction_success = cc_false;
 							}
 						}
 					}
@@ -2262,7 +2309,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 							if (offset > 0x80)
 							{
 								fprintf(stderr, "Error: Destination is too far away (must be less than 0x81 bytes before start of instruction, but was 0x%lX bytes away)\n", offset);
-								success = cc_false;
+								assemble_instruction_success = cc_false;
 							}
 						}
 						else
@@ -2270,7 +2317,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 							if (offset > 0x8000)
 							{
 								fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was 0x%lX bytes away)\n", offset);
-								success = cc_false;
+								assemble_instruction_success = cc_false;
 							}
 						}
 
@@ -2304,12 +2351,15 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 				if (literal_operand->type == OPERAND_LITERAL)
 				{
-					const unsigned long value = ResolveValue(&literal_operand->literal);
+					unsigned long value;
+
+					if (!ResolveValue(&literal_operand->literal, &value, instruction, file))
+						value = 0;
 
 					if (value > 0x7F && value < 0xFFFFFF80)
 					{
 						fprintf(stderr, "Error: Literal is too large: it must be between -$80 and $7F\n");
-						success = cc_false;
+						assemble_instruction_success = cc_false;
 					}
 					else
 					{
@@ -2417,7 +2467,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				if (destination_operand->type == OPERAND_ADDRESS_REGISTER && instruction->opcode.size == SIZE_BYTE)
 				{
 					fprintf(stderr, "Error: Instruction cannot be byte-sized when destination is an address register\n");
-					success = cc_false;
+					assemble_instruction_success = cc_false;
 				}
 
 				switch (instruction->opcode.type)
@@ -2646,12 +2696,15 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					}
 					else if (first_operand->type == OPERAND_LITERAL)
 					{
-						const unsigned long value = ResolveValue(&first_operand->literal);
+						unsigned long value;
+
+						if (!ResolveValue(&first_operand->literal, &value, instruction, file))
+							value = 0;
 
 						if (value > 8 || value < 1)
 						{
 							fprintf(stderr, "Error: Shift value must not be greater than 8 or lower than 1\n");
-							success = cc_false;
+							assemble_instruction_success = cc_false;
 						}
 						else
 						{
@@ -2661,7 +2714,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					else
 					{
 						fprintf(stderr, "Error: First operand must be a data register or a literal\n");
-						success = cc_false;
+						assemble_instruction_success = cc_false;
 					}
 
 					if (second_operand->type == OPERAND_DATA_REGISTER)
@@ -2676,7 +2729,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					if (first_operand->type == OPERAND_DATA_REGISTER || first_operand->type == OPERAND_LITERAL)
 					{
 						fprintf(stderr, "Error: A second operand is needed\n");
-						success = cc_false;
+						assemble_instruction_success = cc_false;
 					}
 
 					machine_code |= ConstructEffectiveAddressBits(first_operand);
@@ -2686,7 +2739,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 
 			default:
 				fprintf(stderr, "Internal error: Unrecognised instruction\n");
-				success = cc_false;
+				assemble_instruction_success = cc_false;
 				break;
 			}
 		}
@@ -2768,7 +2821,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				}
 
 				fprintf(stderr, "Error: '%s' instruction parameter %u cannot be %s\n", instruction_metadata->name, i, operand_string);
-				success = cc_false;
+				assemble_instruction_success = cc_false;
 			}
 
 			operand = operand->next;
@@ -2794,7 +2847,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 		if (instruction_metadata->allowed_sizes & SIZE_UNDEFINED)
 			fprintf(stderr, "  %s\n", instruction_metadata->name);
 
-		success = cc_false;
+		assemble_instruction_success = cc_false;
 	}
 
 	fprintf(stderr, "Machine code: 0x%X\n", machine_code);
@@ -2804,9 +2857,9 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 		fputc((machine_code >> (8 * i)) & 0xFF, file);
 
 	/* Output the data for the operands. */
-	OutputOperands(file, operands_to_output, instruction->opcode.size);
+	OutputOperands(file, operands_to_output, instruction->opcode.size, instruction);
 
-	return success;
+	return assemble_instruction_success;
 }
 
 int main(int argc, char **argv)
@@ -2847,7 +2900,11 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					StatementListNode *statement_list_node;
+					const StatementListNode *statement_list_node;
+					const FixUp *fix_up;
+
+					doing_fix_ups = cc_false;
+					program_counter = 0;
 
 					for (statement_list_node = statement_list_head; statement_list_node != NULL; statement_list_node = statement_list_node->next)
 					{
@@ -2861,15 +2918,24 @@ int main(int argc, char **argv)
 
 							case STATEMENT_TYPE_INSTRUCTION:
 								if (!AssembleInstruction(output_file, &statement_list_node->statement.data.instruction))
-								{
 									exit_code = EXIT_FAILURE;
-								}
 
 								break;
 
 							case STATEMENT_TYPE_MACRO:
 								break;
 						}
+					}
+
+					doing_fix_ups = cc_true;
+
+					for (fix_up = fix_up_list_head; fix_up != NULL; fix_up = fix_up->next)
+					{
+						program_counter = fix_up->program_counter;
+						fseek(output_file, fix_up->output_position , SEEK_SET);
+
+						if (!AssembleInstruction(output_file, fix_up->instruction))
+							exit_code = EXIT_FAILURE;
 					}
 
 					fclose(output_file);

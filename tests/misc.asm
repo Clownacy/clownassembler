@@ -269,4 +269,8 @@ Label:
 TestLabel:
 	bra.s	TestLabel
 
+
+	; Testing fix-ups
+	bra.s	DeclareAfterUseLabel
+DeclareAfterUseLabel:
   ; More blank lines to test support for trailing blank statements
