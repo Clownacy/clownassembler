@@ -2859,6 +2859,61 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 	return assemble_instruction_success;
 }
 
+static cc_bool ProcessParseTree(const StatementListNode *statement_list)
+{
+	cc_bool success = cc_true;
+
+	FILE *output_file = fopen("output.bin", "wb");
+
+	if (output_file == NULL)
+	{
+		fprintf(stderr, "Error: Could not open output file\n");
+		success = cc_false;
+	}
+	else
+	{
+		const StatementListNode *statement_list_node;
+		const FixUp *fix_up;
+		unsigned long program_counter;
+
+		program_counter = 0;
+
+		for (statement_list_node = statement_list; statement_list_node != NULL; statement_list_node = statement_list_node->next)
+		{
+			if (statement_list_node->statement.label != NULL)
+				AddSymbol(statement_list_node->statement.label, program_counter);
+
+			switch (statement_list_node->statement.type)
+			{
+				case STATEMENT_TYPE_EMPTY:
+					break;
+
+				case STATEMENT_TYPE_INSTRUCTION:
+					if (!AssembleInstruction(output_file, &statement_list_node->statement.data.instruction, &program_counter, cc_false))
+						success = cc_false;
+
+					break;
+
+				case STATEMENT_TYPE_MACRO:
+					break;
+			}
+		}
+
+		for (fix_up = fix_up_list_head; fix_up != NULL; fix_up = fix_up->next)
+		{
+			program_counter = fix_up->program_counter;
+			fseek(output_file, fix_up->output_position , SEEK_SET);
+
+			if (!AssembleInstruction(output_file, fix_up->instruction, &program_counter, cc_true))
+				success = cc_false;
+		}
+
+		fclose(output_file);
+	}
+
+	return success;
+}
+
 int main(int argc, char **argv)
 {
 	int exit_code = EXIT_SUCCESS;
@@ -2883,59 +2938,13 @@ int main(int argc, char **argv)
 			yydebug = 1;
 		#endif
 
-			(void)yyparse();
+			if (yyparse() != 0)
+				exit_code = EXIT_FAILURE;
 
 			fclose(yyin);
 
-			/* Parse the parse tree */
-			{
-				FILE *output_file = fopen("output.bin", "wb");
-
-				if (output_file == NULL)
-				{
-					ERROR("Could not open output file");
-				}
-				else
-				{
-					const StatementListNode *statement_list_node;
-					const FixUp *fix_up;
-					unsigned long program_counter;
-
-					program_counter = 0;
-
-					for (statement_list_node = statement_list_head; statement_list_node != NULL; statement_list_node = statement_list_node->next)
-					{
-						if (statement_list_node->statement.label != NULL)
-							AddSymbol(statement_list_node->statement.label, program_counter);
-
-						switch (statement_list_node->statement.type)
-						{
-							case STATEMENT_TYPE_EMPTY:
-								break;
-
-							case STATEMENT_TYPE_INSTRUCTION:
-								if (!AssembleInstruction(output_file, &statement_list_node->statement.data.instruction, &program_counter, cc_false))
-									exit_code = EXIT_FAILURE;
-
-								break;
-
-							case STATEMENT_TYPE_MACRO:
-								break;
-						}
-					}
-
-					for (fix_up = fix_up_list_head; fix_up != NULL; fix_up = fix_up->next)
-					{
-						program_counter = fix_up->program_counter;
-						fseek(output_file, fix_up->output_position , SEEK_SET);
-
-						if (!AssembleInstruction(output_file, fix_up->instruction, &program_counter, cc_true))
-							exit_code = EXIT_FAILURE;
-					}
-
-					fclose(output_file);
-				}
-			}
+			if (!ProcessParseTree(statement_list_head))
+				exit_code = EXIT_FAILURE;
 		}
 	}
 
