@@ -2224,13 +2224,16 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 								machine_code = 0x1000;
 								break;
 
-							case SIZE_UNDEFINED:
 							case SIZE_WORD:
 								machine_code = 0x3000;
 								break;
 
 							case SIZE_LONGWORD:
 								machine_code = 0x2000;
+								break;
+
+							case SIZE_UNDEFINED:
+								/* Should never happen. */
 								break;
 						}
 
