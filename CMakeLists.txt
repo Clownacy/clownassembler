@@ -5,7 +5,10 @@ project(clownassembler LANGUAGES C)
 add_executable(clownassembler
 	"main.c"
 	"lexer.c"
+	"lexer.h"
 	"parser.c"
+	"parser.h"
+	"types.h"
 )
 
 set_target_properties(clownassembler PROPERTIES
