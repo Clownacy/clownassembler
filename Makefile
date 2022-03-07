@@ -1,4 +1,4 @@
-CFLAGS = -ggdb3 -Og -Wall -Wextra -pedantic -fwrapv
+CFLAGS = -ggdb3 -Og -Wall -Wextra -pedantic -fwrapv -ansi -Wno-long-long
 
 all: generators
 
