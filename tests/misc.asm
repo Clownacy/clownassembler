@@ -273,4 +273,18 @@ TestLabel:
 	; Testing fix-ups
 	bra.w	DeclareAfterUseLabel
 DeclareAfterUseLabel:
+
+	; Some actual regular code
+CoolFunction:
+	moveq	#0,d2
+	tst.w	d1
+	beq.s	CoolFunction_Exit
+
+CoolFunction_Loop:
+	add.w	d0,d2
+	dbf	d1,CoolFunction_Loop
+
+CoolFunction_Exit:
+	rts
+
   ; More blank lines to test support for trailing blank statements
