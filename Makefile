@@ -4,10 +4,10 @@ all: generators
 
 generators: lexical.c lexical.h syntactical.c syntactical.h
 
-lexical.c lexical.h: spl.l syntactical.h
+lexical.c lexical.h: clownassembler-flex.l syntactical.h
 	flex --outfile=lexical.c --header-file=lexical.h $<
 
-syntactical.c syntactical.h: spl.y
+syntactical.c syntactical.h: clownassembler-bison.y
 	bison --output=syntactical.c --header=syntactical.h --debug $<
 
 clownassembler: main.c lexical.c syntactical.c symbols.c
