@@ -287,4 +287,6 @@ CoolFunction_Loop:
 CoolFunction_Exit:
 	rts
 
+	move.w	#%0101010101010101,d0
+
   ; More blank lines to test support for trailing blank statements
