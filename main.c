@@ -25,7 +25,6 @@ typedef struct FixUp
 extern StatementListNode *statement_list_head;
 
 static cc_bool assemble_instruction_success;
-static unsigned long program_counter;
 
 static cc_bool doing_fix_ups;
 static FixUp *fix_up_list_head;
@@ -35,27 +34,25 @@ int yywrap(void)
 	return 1;
 }
 
-static void AddFixUp(const Instruction *instruction, FILE *output_file)
+static void AddFixUp(const FixUp *fix_up)
 {
-	FixUp *fix_up = malloc(sizeof(FixUp));
+	FixUp *fix_up_list_node = malloc(sizeof(FixUp));
 
-	if (fix_up == NULL)
+	if (fix_up_list_node == NULL)
 	{
-		fprintf(stderr, "Error: Could not allocate memory for fix-up\n");
+		fprintf(stderr, "Error: Could not allocate memory for fix-up list node\n");
 		assemble_instruction_success = cc_false;
 	}
 	else
 	{
-		fix_up->next = fix_up_list_head;
-		fix_up_list_head = fix_up;
+		*fix_up_list_node = *fix_up;
 
-		fix_up->instruction = instruction;
-		fix_up->program_counter = program_counter;
-		fix_up->output_position = ftell(output_file);
+		fix_up_list_node->next = fix_up_list_head;
+		fix_up_list_head = fix_up_list_node;
 	}
 }
 
-static cc_bool ResolveValue(const Value *value, unsigned long *value_integer, const Instruction *instruction, FILE *output_file)
+static cc_bool ResolveValue(const Value *value, unsigned long *value_integer, const FixUp *fix_up)
 {
 	cc_bool success = cc_true;
 
@@ -77,7 +74,7 @@ static cc_bool ResolveValue(const Value *value, unsigned long *value_integer, co
 				}
 				else
 				{
-					AddFixUp(instruction, output_file);
+					AddFixUp(fix_up);
 				}
 			}
 
@@ -196,179 +193,6 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
 	return (m << 3) | (xn << 0);
 }
 
-static void OutputOperands(FILE *file, const Operand *operands, Size opcode_size, const Instruction *instruction)
-{
-	const Operand *operand;
-
-	for (operand = operands; operand != NULL; operand = operand->next)
-	{
-		switch (operand->type)
-		{
-			case OPERAND_ADDRESS:
-			case OPERAND_ADDRESS_ABSOLUTE:
-			case OPERAND_LITERAL:
-			case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
-			case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
-			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-			{
-				unsigned int i = 2;
-				unsigned long value;
-
-				if (!ResolveValue(&operand->literal, &value, instruction, file))
-					value = 0;
-
-				switch (operand->type)
-				{
-					default:
-						break;
-
-					case OPERAND_ADDRESS:
-						switch (operand->size)
-						{
-							case SIZE_BYTE:
-							case SIZE_SHORT:
-								fprintf(stderr, "Error: Address cannot be byte-sized\n");
-								assemble_instruction_success = cc_false;
-								i = 2;
-								break;
-
-							case SIZE_WORD:
-								i = 2;
-
-								if (value >= 0x8000 && value < 0xFFFF8000)
-								{
-									fprintf(stderr, "Error: Word-sized address cannot be higher than $7FFF or lower than $FFFF8000\n");
-									assemble_instruction_success = cc_false;
-								}
-
-								break;
-
-							case SIZE_UNDEFINED:
-							case SIZE_LONGWORD:
-								i = 4;
-								break;
-						}
-
-						break;
-
-					case OPERAND_LITERAL:
-						switch (opcode_size)
-						{
-							case SIZE_BYTE:
-							case SIZE_SHORT:
-								i = 2;
-
-								if (value >= 0x100 && value < 0xFFFFFF00)
-								{
-									fprintf(stderr, "Error: Byte-sized literal cannot be larger than $FF or smaller than -$100\n");
-									assemble_instruction_success = cc_false;
-								}
-
-								break;
-
-							case SIZE_UNDEFINED:
-							case SIZE_WORD:
-								i = 2;
-
-								if (value >= 0x10000 && value < 0xFFFF0000)
-								{
-									fprintf(stderr, "Error: Word-sized literal cannot be larger than $FFFF or smaller than -$10000\n");
-									assemble_instruction_success = cc_false;
-								}
-
-								break;
-
-							case SIZE_LONGWORD:
-								i = 4;
-								break;
-						}
-
-						break;
-
-					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-						i = 2;
-
-						if (value >= 0x80 && value < 0xFFFFFF80)
-						{
-							fprintf(stderr, "Error: Displacement value cannot be larger than $7F or smaller than -$80\n");
-							assemble_instruction_success = cc_false;
-						}
-
-						if (operand->size == SIZE_BYTE || operand->size == SIZE_SHORT)
-						{
-							fprintf(stderr, "Error: Index register cannot be byte-sized\n");
-							assemble_instruction_success = cc_false;
-						}
-
-						value |= operand->index_register << 12;
-
-						if (operand->size == SIZE_LONGWORD)
-							value |= 0x800;
-
-						if (operand->index_register_is_address_register)
-							value |= 0x8000;
-
-						break;
-
-					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
-					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
-						i = 2;
-
-						if (value >= 0x8000 && value < 0xFFFF8000)
-						{
-							fprintf(stderr, "Error: Displacement value cannot be larger than $7FFF or smaller than -$8000\n");
-							assemble_instruction_success = cc_false;
-						}
-
-						break;
-				}
-
-				program_counter += i;
-
-				while (i-- > 0)
-					fputc((value >> (8 * i)) & 0xFF, file);
-
-				break;
-			}
-
-			case OPERAND_REGISTER_LIST:
-			{
-				unsigned int i;
-				unsigned int register_list = operand->main_register;
-
-				/* Ugly hack to reverse the register list when doing `movem.w/.l d0-a7,-(aN)` */
-				if (operands != NULL && operands->next != NULL && operands->next->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-				{
-					static unsigned int reverse_nibble[0x10] = {0x0, 0x8, 0x4, 0xC, 0x2, 0xA, 0x6, 0xE, 0x1, 0x9, 0x5, 0xD, 0x3, 0xB, 0x7, 0xF};
-
-					register_list = reverse_nibble[(register_list >> (4 * 0)) & 0xF] << (4 * 3)
-					              | reverse_nibble[(register_list >> (4 * 1)) & 0xF] << (4 * 2)
-					              | reverse_nibble[(register_list >> (4 * 2)) & 0xF] << (4 * 1)
-					              | reverse_nibble[(register_list >> (4 * 3)) & 0xF] << (4 * 0);
-				}
-
-				for (i = 2; i-- > 0; )
-					fputc((register_list >> (8 * i)) & 0xFF, file);
-
-				program_counter += 2;
-
-				break;
-			}
-
-			case OPERAND_DATA_REGISTER:
-			case OPERAND_ADDRESS_REGISTER:
-			case OPERAND_ADDRESS_REGISTER_INDIRECT:
-			case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
-			case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
-			case OPERAND_STATUS_REGISTER:
-			case OPERAND_CONDITION_CODE_REGISTER:
-			case OPERAND_USER_STACK_POINTER_REGISTER:
-				break;
-		}
-	}
-}
 /*
 static cc_bool OperandIsUnusual(const Operand *operand)
 {
@@ -1544,7 +1368,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 };
 
-static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
+static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, unsigned long *program_counter)
 {
 	unsigned int total_operands_wanted;
 	unsigned int total_operands_have;
@@ -1555,10 +1379,15 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 	const InstructionMetadata *instruction_metadata = &instruction_metadata_all[instruction->opcode.type];
 	const Operand *operands_to_output = instruction->operands;
 	Operand custom_operand;
+	FixUp fix_up;
 
 	assemble_instruction_success = cc_true;
 
-	program_counter += 2;
+	fix_up.instruction = instruction;
+	fix_up.program_counter = *program_counter;
+	fix_up.output_position = ftell(file);
+
+	*program_counter += 2;
 
 	/* Count operands that we want. */
 	total_operands_wanted = 0;
@@ -1746,7 +1575,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				{
 					unsigned long value;
 
-					if (!ResolveValue(&source_operand->literal, &value, instruction, file))
+					if (!ResolveValue(&source_operand->literal, &value, &fix_up))
 						value = 0;
 
 					/* Check whether the literal value will wrap or not, and warn the user if so. */
@@ -2007,7 +1836,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				{
 					unsigned long value;
 
-					if (!ResolveValue(&instruction->operands->literal, &value, instruction, file))
+					if (!ResolveValue(&instruction->operands->literal, &value, &fix_up))
 						value = 0;
 
 					if (value > 15)
@@ -2169,7 +1998,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				{
 					unsigned long value;
 
-					if (!ResolveValue(&source_operand->literal, &value, instruction, file))
+					if (!ResolveValue(&source_operand->literal, &value, &fix_up))
 						value = 1;
 
 					if (value < 1 || value > 8)
@@ -2207,16 +2036,16 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				{
 					unsigned long value;
 
-					if (!ResolveValue(&address_operand->literal, &value, instruction, file))
-						value = program_counter - 2;
+					if (!ResolveValue(&address_operand->literal, &value, &fix_up))
+						value = *program_counter - 2;
 
 					custom_operand.next = NULL;
 					custom_operand.type = OPERAND_LITERAL;
 					custom_operand.literal.type = TOKEN_NUMBER;
 
-					if (value >= program_counter)
+					if (value >= *program_counter)
 					{
-						const unsigned long offset = value - program_counter;
+						const unsigned long offset = value - *program_counter;
 
 						if (offset > 0x7FFF)
 						{
@@ -2228,7 +2057,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					}
 					else
 					{
-						const unsigned long offset = program_counter - value;
+						const unsigned long offset = *program_counter - value;
 
 						if (offset > 0x8000)
 						{
@@ -2271,12 +2100,12 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					unsigned long offset;
 					unsigned long value;
 
-					if (!ResolveValue(&instruction->operands->literal, &value, instruction, file))
-						value = program_counter - 2;
+					if (!ResolveValue(&instruction->operands->literal, &value, &fix_up))
+						value = *program_counter - 2;
 
-					if (value >= program_counter)
+					if (value >= *program_counter)
 					{
-						offset = value - program_counter;
+						offset = value - *program_counter;
 
 						if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
 						{
@@ -2302,7 +2131,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					}
 					else
 					{
-						offset = program_counter - value;
+						offset = *program_counter - value;
 
 						if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
 						{
@@ -2353,7 +2182,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 				{
 					unsigned long value;
 
-					if (!ResolveValue(&literal_operand->literal, &value, instruction, file))
+					if (!ResolveValue(&literal_operand->literal, &value, &fix_up))
 						value = 0;
 
 					if (value > 0x7F && value < 0xFFFFFF80)
@@ -2698,7 +2527,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					{
 						unsigned long value;
 
-						if (!ResolveValue(&first_operand->literal, &value, instruction, file))
+						if (!ResolveValue(&first_operand->literal, &value, &fix_up))
 							value = 0;
 
 						if (value > 8 || value < 1)
@@ -2857,7 +2686,176 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 		fputc((machine_code >> (8 * i)) & 0xFF, file);
 
 	/* Output the data for the operands. */
-	OutputOperands(file, operands_to_output, instruction->opcode.size, instruction);
+	for (; operands_to_output != NULL; operands_to_output = operands_to_output->next)
+	{
+		const Operand *operand = operands_to_output;
+
+		switch (operand->type)
+		{
+			case OPERAND_ADDRESS:
+			case OPERAND_ADDRESS_ABSOLUTE:
+			case OPERAND_LITERAL:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
+			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+			{
+				unsigned int i = 2;
+				unsigned long value;
+
+				if (!ResolveValue(&operand->literal, &value, &fix_up))
+					value = 0;
+
+				switch (operand->type)
+				{
+					default:
+						break;
+
+					case OPERAND_ADDRESS:
+						switch (operand->size)
+						{
+							case SIZE_BYTE:
+							case SIZE_SHORT:
+								fprintf(stderr, "Error: Address cannot be byte-sized\n");
+								assemble_instruction_success = cc_false;
+								i = 2;
+								break;
+
+							case SIZE_WORD:
+								i = 2;
+
+								if (value >= 0x8000 && value < 0xFFFF8000)
+								{
+									fprintf(stderr, "Error: Word-sized address cannot be higher than $7FFF or lower than $FFFF8000\n");
+									assemble_instruction_success = cc_false;
+								}
+
+								break;
+
+							case SIZE_UNDEFINED:
+							case SIZE_LONGWORD:
+								i = 4;
+								break;
+						}
+
+						break;
+
+					case OPERAND_LITERAL:
+						switch (instruction->opcode.size)
+						{
+							case SIZE_BYTE:
+							case SIZE_SHORT:
+								i = 2;
+
+								if (value >= 0x100 && value < 0xFFFFFF00)
+								{
+									fprintf(stderr, "Error: Byte-sized literal cannot be larger than $FF or smaller than -$100\n");
+									assemble_instruction_success = cc_false;
+								}
+
+								break;
+
+							case SIZE_UNDEFINED:
+							case SIZE_WORD:
+								i = 2;
+
+								if (value >= 0x10000 && value < 0xFFFF0000)
+								{
+									fprintf(stderr, "Error: Word-sized literal cannot be larger than $FFFF or smaller than -$10000\n");
+									assemble_instruction_success = cc_false;
+								}
+
+								break;
+
+							case SIZE_LONGWORD:
+								i = 4;
+								break;
+						}
+
+						break;
+
+					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+						i = 2;
+
+						if (value >= 0x80 && value < 0xFFFFFF80)
+						{
+							fprintf(stderr, "Error: Displacement value cannot be larger than $7F or smaller than -$80\n");
+							assemble_instruction_success = cc_false;
+						}
+
+						if (operand->size == SIZE_BYTE || operand->size == SIZE_SHORT)
+						{
+							fprintf(stderr, "Error: Index register cannot be byte-sized\n");
+							assemble_instruction_success = cc_false;
+						}
+
+						value |= operand->index_register << 12;
+
+						if (operand->size == SIZE_LONGWORD)
+							value |= 0x800;
+
+						if (operand->index_register_is_address_register)
+							value |= 0x8000;
+
+						break;
+
+					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
+					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
+						i = 2;
+
+						if (value >= 0x8000 && value < 0xFFFF8000)
+						{
+							fprintf(stderr, "Error: Displacement value cannot be larger than $7FFF or smaller than -$8000\n");
+							assemble_instruction_success = cc_false;
+						}
+
+						break;
+				}
+
+				*program_counter += i;
+
+				while (i-- > 0)
+					fputc((value >> (8 * i)) & 0xFF, file);
+
+				break;
+			}
+
+			case OPERAND_REGISTER_LIST:
+			{
+				unsigned int i;
+				unsigned int register_list = operand->main_register;
+
+				/* Ugly hack to reverse the register list when doing `movem.w/.l d0-a7,-(aN)` */
+				if (instruction->operands != NULL && instruction->operands->next != NULL && instruction->operands->next->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+				{
+					static unsigned int reverse_nibble[0x10] = {0x0, 0x8, 0x4, 0xC, 0x2, 0xA, 0x6, 0xE, 0x1, 0x9, 0x5, 0xD, 0x3, 0xB, 0x7, 0xF};
+
+					register_list = reverse_nibble[(register_list >> (4 * 0)) & 0xF] << (4 * 3)
+						      | reverse_nibble[(register_list >> (4 * 1)) & 0xF] << (4 * 2)
+						      | reverse_nibble[(register_list >> (4 * 2)) & 0xF] << (4 * 1)
+						      | reverse_nibble[(register_list >> (4 * 3)) & 0xF] << (4 * 0);
+				}
+
+				for (i = 2; i-- > 0; )
+					fputc((register_list >> (8 * i)) & 0xFF, file);
+
+				*program_counter += 2;
+
+				break;
+			}
+
+			case OPERAND_DATA_REGISTER:
+			case OPERAND_ADDRESS_REGISTER:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
+			case OPERAND_STATUS_REGISTER:
+			case OPERAND_CONDITION_CODE_REGISTER:
+			case OPERAND_USER_STACK_POINTER_REGISTER:
+				break;
+		}
+	}
 
 	return assemble_instruction_success;
 }
@@ -2902,6 +2900,7 @@ int main(int argc, char **argv)
 				{
 					const StatementListNode *statement_list_node;
 					const FixUp *fix_up;
+					unsigned long program_counter;
 
 					doing_fix_ups = cc_false;
 					program_counter = 0;
@@ -2917,7 +2916,7 @@ int main(int argc, char **argv)
 								break;
 
 							case STATEMENT_TYPE_INSTRUCTION:
-								if (!AssembleInstruction(output_file, &statement_list_node->statement.data.instruction))
+								if (!AssembleInstruction(output_file, &statement_list_node->statement.data.instruction, &program_counter))
 									exit_code = EXIT_FAILURE;
 
 								break;
@@ -2934,7 +2933,7 @@ int main(int argc, char **argv)
 						program_counter = fix_up->program_counter;
 						fseek(output_file, fix_up->output_position , SEEK_SET);
 
-						if (!AssembleInstruction(output_file, fix_up->instruction))
+						if (!AssembleInstruction(output_file, fix_up->instruction, &program_counter))
 							exit_code = EXIT_FAILURE;
 					}
 
