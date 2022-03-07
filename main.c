@@ -2250,8 +2250,6 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 								success = cc_false;
 							}
 						}
-
-						custom_operand.literal.data.integer = offset;
 					}
 					else
 					{
@@ -2280,13 +2278,14 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 					if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
 					{
 						machine_code |= offset & 0xFF;
+						operands_to_output = NULL;
 					}
 					else
 					{
 						custom_operand.next = NULL;
 						custom_operand.type = OPERAND_LITERAL;
 						custom_operand.literal.type = TOKEN_NUMBER;
-						custom_operand.literal.data.integer = 0 - offset;
+						custom_operand.literal.data.integer = offset;
 						operands_to_output = &custom_operand;
 					}
 				}
