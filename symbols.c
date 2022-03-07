@@ -15,13 +15,13 @@ typedef struct Symbol
 	unsigned long value;
 } Symbol;
 
-static Symbol *symbol_table[0x100];
+static Symbol *symbol_table['z' - 'A']; /* Identifiers can only start with letters A-Z/a-z. */
 
 static Symbol** FindSymbol(const char *identifier)
 {
 	Symbol **symbol;
 
-	for (symbol = &symbol_table[identifier[0]]; *symbol != NULL; symbol = &(*symbol)->next)
+	for (symbol = &symbol_table[identifier[0] - 'A']; *symbol != NULL; symbol = &(*symbol)->next)
 		if (strcmp((*symbol)->identifier, identifier) == 0)
 			return symbol;
 
@@ -69,7 +69,7 @@ cc_bool AddSymbol(const char *identifier, unsigned long value)
 		}
 		else
 		{
-			Symbol **bucket = &symbol_table[identifier[0]];
+			Symbol **bucket = &symbol_table[identifier[0] - 'A'];
 
 			symbol->next = *bucket;
 			symbol->identifier = (char*)(symbol + 1);
