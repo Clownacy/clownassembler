@@ -147,7 +147,7 @@ typedef struct Value
 
 typedef struct Opcode
 {
-	int type;
+	OpcodeType type;
 	Condition condition;
 	Size size;
 } Opcode;
