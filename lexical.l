@@ -33,7 +33,8 @@ letter            [A-Za-z]
 binary_digit      [0-1]
 decimal_digit     [0-9]
 hexadecimal_digit [0-9a-fA-F]
-identifier        {letter}({letter}|{decimal_digit})*
+identifier_character_nondigit {letter}|_
+identifier        {identifier_character_nondigit}({identifier_character_nondigit}|{decimal_digit})*
 binary            {binary_digit}+
 decimal           {decimal_digit}+
 hexadecimal       {hexadecimal_digit}+
