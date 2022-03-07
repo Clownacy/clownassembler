@@ -293,10 +293,10 @@ static void OutputOperands(FILE *file, const Operand *operands, Size opcode_size
 						break;
 				}
 
+				program_counter += i;
+
 				while (i-- > 0)
 					fputc((value >> (8 * i)) & 0xFF, file);
-
-				program_counter += 2;
 
 				break;
 			}
@@ -1525,6 +1525,8 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 	Operand custom_operand;
 
 	success = cc_true;
+
+	program_counter += 2;
 
 	/* Count operands that we want. */
 	total_operands_wanted = 0;
@@ -2800,8 +2802,6 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction)
 	/* Output the machine code for the opcode. */
 	for (i = 2; i-- > 0; )
 		fputc((machine_code >> (8 * i)) & 0xFF, file);
-
-	program_counter += 2;
 
 	/* Output the data for the operands. */
 	OutputOperands(file, operands_to_output, instruction->opcode.size);
