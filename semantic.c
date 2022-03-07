@@ -2041,7 +2041,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 
 						if (offset > 0x7FFF)
 						{
-							fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was 0x%lX bytes away)\n", offset);
+							fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was $%lX bytes away)\n", offset);
 							assemble_instruction_success = cc_false;
 						}
 
@@ -2053,7 +2053,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 
 						if (offset > 0x8000)
 						{
-							fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was 0x%lX bytes away)\n", offset);
+							fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was $%lX bytes away)\n", offset);
 							assemble_instruction_success = cc_false;
 						}
 
@@ -2108,7 +2108,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 							}
 							else if (offset > 0x7F)
 							{
-								fprintf(stderr, "Error: Destination is too far away (must be less than 0x80 bytes after start of instruction, but was 0x%lX bytes away)\n", offset);
+								fprintf(stderr, "Error: Destination is too far away (must be less than 0x80 bytes after start of instruction, but was $%lX bytes away)\n", offset);
 								assemble_instruction_success = cc_false;
 							}
 						}
@@ -2116,7 +2116,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						{
 							if (offset > 0x7FFF)
 							{
-								fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was 0x%lX bytes away)\n", offset);
+								fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was $%lX bytes away)\n", offset);
 								assemble_instruction_success = cc_false;
 							}
 						}
@@ -2129,7 +2129,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						{
 							if (offset > 0x80)
 							{
-								fprintf(stderr, "Error: Destination is too far away (must be less than 0x81 bytes before start of instruction, but was 0x%lX bytes away)\n", offset);
+								fprintf(stderr, "Error: Destination is too far away (must be less than 0x81 bytes before start of instruction, but was $%lX bytes away)\n", offset);
 								assemble_instruction_success = cc_false;
 							}
 						}
@@ -2137,7 +2137,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						{
 							if (offset > 0x8000)
 							{
-								fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was 0x%lX bytes away)\n", offset);
+								fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was $%lX bytes away)\n", offset);
 								assemble_instruction_success = cc_false;
 							}
 						}
