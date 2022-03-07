@@ -2297,11 +2297,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 
 					case OPCODE_SWAP:
 						machine_code = 0x4840;
-
-						/* Just a check to prevent reading uninitialised memory. */
-						if (instruction->operands->type == OPERAND_DATA_REGISTER)
-							machine_code |= instruction->operands->main_register;
-
+						machine_code |= instruction->operands->main_register;
 						break;
 
 					case OPCODE_PEA:
@@ -2319,45 +2315,35 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						break;
 
 					case OPCODE_TRAP:
+					{
+						unsigned long value;
+
 						machine_code = 0x4E40;
 
-						/* Just a check to prevent reading uninitialised memory. */
-						if (instruction->operands->type == OPERAND_LITERAL)
+						if (!ResolveValue(&instruction->operands->literal, &value, &fix_up, doing_fix_up))
+							value = 0;
+
+						if (value > 15)
 						{
-							unsigned long value;
-
-							if (!ResolveValue(&instruction->operands->literal, &value, &fix_up, doing_fix_up))
-								value = 0;
-
-							if (value > 15)
-							{
-								fprintf(stderr, "Error: 'TRAP' instruction's vector cannot be higher than 15\n");
-								assemble_instruction_success = cc_false;
-							}
-							else
-							{
-								machine_code |= value;
-							}
+							fprintf(stderr, "Error: 'TRAP' instruction's vector cannot be higher than 15\n");
+							assemble_instruction_success = cc_false;
+						}
+						else
+						{
+							machine_code |= value;
 						}
 
 						break;
+					}
 
 					case OPCODE_LINK:
 						machine_code = 0x4E50;
-
-						/* Just a check to prevent reading uninitialised memory. */
-						if (instruction->operands->type == OPERAND_ADDRESS_REGISTER)
-							machine_code |= instruction->operands->main_register;
-
+						machine_code |= instruction->operands->main_register;
 						break;
 
 					case OPCODE_UNLK:
 						machine_code = 0x4E58;
-
-						/* Just a check to prevent reading uninitialised memory. */
-						if (instruction->operands->type == OPERAND_ADDRESS_REGISTER)
-							machine_code |= instruction->operands->main_register;
-
+						machine_code |= instruction->operands->main_register;
 						break;
 
 					case OPCODE_MOVE_TO_USP:
@@ -2473,10 +2459,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 								break;
 						}
 
-						/* Just a check to prevent reading uninitialised memory. */
-						if (destination_operand->type == OPERAND_DATA_REGISTER || destination_operand->type == OPERAND_ADDRESS_REGISTER)
-							machine_code |= destination_operand->main_register << 9;
-
+						machine_code |= destination_operand->main_register << 9;
 						machine_code |= ConstructEffectiveAddressBits(source_operand);
 
 						break;
@@ -2487,6 +2470,8 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 					{
 						const Operand* const source_operand = instruction->operands;
 						const Operand* const destination_operand = instruction->operands->next;
+
+						unsigned long value;
 
 						/* Skip the immediate operand since that goes in the machine code instead. */
 						operands_to_output = destination_operand;
@@ -2508,22 +2493,17 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						machine_code |= ConstructSizeBits(instruction->opcode.size);
 						machine_code |= ConstructEffectiveAddressBits(destination_operand);
 
-						if (source_operand->type == OPERAND_LITERAL)
+						if (!ResolveValue(&source_operand->literal, &value, &fix_up, doing_fix_up))
+							value = 1;
+
+						if (value < 1 || value > 8)
 						{
-							unsigned long value;
-
-							if (!ResolveValue(&source_operand->literal, &value, &fix_up, doing_fix_up))
-								value = 1;
-
-							if (value < 1 || value > 8)
-							{
-								fprintf(stderr, "Error: 'ADDQ'/'SUBQ' instruction's immediate value cannot be lower than 1 or higher than 8\n");
-								assemble_instruction_success = cc_false;
-							}
-							else
-							{
-								machine_code |= (value - 1) << 9;
-							}
+							fprintf(stderr, "Error: 'ADDQ'/'SUBQ' instruction's immediate value cannot be lower than 1 or higher than 8\n");
+							assemble_instruction_success = cc_false;
+						}
+						else
+						{
+							machine_code |= (value - 1) << 9;
 						}
 
 						break;
@@ -2540,50 +2520,45 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						const Operand* const data_register_operand = instruction->operands;
 						const Operand* const address_operand = instruction->operands->next;
 
+						unsigned long value;
+
 						machine_code = 0x50C8;
 						machine_code |= instruction->opcode.condition << 8;
+						machine_code |= data_register_operand->main_register;
 
-						if (data_register_operand->type == OPERAND_DATA_REGISTER)
-							machine_code |= data_register_operand->main_register;
+						if (!ResolveValue(&address_operand->literal, &value, &fix_up, doing_fix_up))
+							value = *program_counter - 2;
 
-						if (address_operand->type == OPERAND_ADDRESS)
+						custom_operand.next = NULL;
+						custom_operand.type = OPERAND_LITERAL;
+						custom_operand.literal.type = TOKEN_NUMBER;
+
+						if (value >= *program_counter)
 						{
-							unsigned long value;
+							const unsigned long offset = value - *program_counter;
 
-							if (!ResolveValue(&address_operand->literal, &value, &fix_up, doing_fix_up))
-								value = *program_counter - 2;
-
-							custom_operand.next = NULL;
-							custom_operand.type = OPERAND_LITERAL;
-							custom_operand.literal.type = TOKEN_NUMBER;
-
-							if (value >= *program_counter)
+							if (offset > 0x7FFF)
 							{
-								const unsigned long offset = value - *program_counter;
-
-								if (offset > 0x7FFF)
-								{
-									fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was $%lX bytes away)\n", offset);
-									assemble_instruction_success = cc_false;
-								}
-
-								custom_operand.literal.data.integer = offset;
-							}
-							else
-							{
-								const unsigned long offset = *program_counter - value;
-
-								if (offset > 0x8000)
-								{
-									fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was $%lX bytes away)\n", offset);
-									assemble_instruction_success = cc_false;
-								}
-
-								custom_operand.literal.data.integer = 0 - offset;
+								fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was $%lX bytes away)\n", offset);
+								assemble_instruction_success = cc_false;
 							}
 
-							operands_to_output = &custom_operand;
+							custom_operand.literal.data.integer = offset;
 						}
+						else
+						{
+							const unsigned long offset = *program_counter - value;
+
+							if (offset > 0x8000)
+							{
+								fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was $%lX bytes away)\n", offset);
+								assemble_instruction_success = cc_false;
+							}
+
+							custom_operand.literal.data.integer = 0 - offset;
+						}
+
+						operands_to_output = &custom_operand;
 
 						break;
 					}
@@ -2592,6 +2567,9 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 					case OPCODE_BSR:
 					case OPCODE_Bcc:
 					{
+						unsigned long offset;
+						unsigned long value;
+
 						machine_code = 0x6000;
 
 						switch (specific_opcode_type)
@@ -2612,77 +2590,71 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 								break;
 						}
 
-						if (instruction->operands->type == OPERAND_ADDRESS)
+						if (!ResolveValue(&instruction->operands->literal, &value, &fix_up, doing_fix_up))
+							value = *program_counter - 2;
+
+						if (value >= *program_counter)
 						{
-							unsigned long offset;
-							unsigned long value;
-
-							if (!ResolveValue(&instruction->operands->literal, &value, &fix_up, doing_fix_up))
-								value = *program_counter - 2;
-
-							if (value >= *program_counter)
-							{
-								offset = value - *program_counter;
-
-								if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
-								{
-									if (offset == 0)
-									{
-										fprintf(stderr, "Error: Destination cannot be 0 bytes away when using a short-sized branch\n");
-										assemble_instruction_success = cc_false;
-									}
-									else if (offset > 0x7F)
-									{
-										fprintf(stderr, "Error: Destination is too far away (must be less than 0x80 bytes after start of instruction, but was $%lX bytes away)\n", offset);
-										assemble_instruction_success = cc_false;
-									}
-								}
-								else
-								{
-									if (offset > 0x7FFF)
-									{
-										fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was $%lX bytes away)\n", offset);
-										assemble_instruction_success = cc_false;
-									}
-								}
-							}
-							else
-							{
-								offset = *program_counter - value;
-
-								if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
-								{
-									if (offset > 0x80)
-									{
-										fprintf(stderr, "Error: Destination is too far away (must be less than 0x81 bytes before start of instruction, but was $%lX bytes away)\n", offset);
-										assemble_instruction_success = cc_false;
-									}
-								}
-								else
-								{
-									if (offset > 0x8000)
-									{
-										fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was $%lX bytes away)\n", offset);
-										assemble_instruction_success = cc_false;
-									}
-								}
-
-								offset = 0 - offset;
-							}
+							offset = value - *program_counter;
 
 							if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
 							{
-								machine_code |= offset & 0xFF;
-								operands_to_output = NULL;
+								if (offset == 0)
+								{
+									fprintf(stderr, "Error: Destination cannot be 0 bytes away when using a short-sized branch\n");
+									assemble_instruction_success = cc_false;
+								}
+								else if (offset > 0x7F)
+								{
+									fprintf(stderr, "Error: Destination is too far away (must be less than 0x80 bytes after start of instruction, but was $%lX bytes away)\n", offset);
+									assemble_instruction_success = cc_false;
+								}
 							}
 							else
 							{
-								custom_operand.next = NULL;
-								custom_operand.type = OPERAND_LITERAL;
-								custom_operand.literal.type = TOKEN_NUMBER;
-								custom_operand.literal.data.integer = offset;
-								operands_to_output = &custom_operand;
+								if (offset > 0x7FFF)
+								{
+									fprintf(stderr, "Error: Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was $%lX bytes away)\n", offset);
+									assemble_instruction_success = cc_false;
+								}
 							}
+						}
+						else
+						{
+							offset = *program_counter - value;
+
+							if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
+							{
+								if (offset > 0x80)
+								{
+									fprintf(stderr, "Error: Destination is too far away (must be less than 0x81 bytes before start of instruction, but was $%lX bytes away)\n", offset);
+									assemble_instruction_success = cc_false;
+								}
+							}
+							else
+							{
+								if (offset > 0x8000)
+								{
+									fprintf(stderr, "Error: Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was $%lX bytes away)\n", offset);
+									assemble_instruction_success = cc_false;
+								}
+							}
+
+							offset = 0 - offset;
+						}
+
+						if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
+						{
+							machine_code |= offset & 0xFF;
+							operands_to_output = NULL;
+						}
+						else
+						{
+							custom_operand.next = NULL;
+							custom_operand.type = OPERAND_LITERAL;
+							custom_operand.literal.type = TOKEN_NUMBER;
+							custom_operand.literal.data.integer = offset;
+							operands_to_output = &custom_operand;
 						}
 
 						break;
@@ -2693,28 +2665,24 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						const Operand* const literal_operand = instruction->operands;
 						const Operand* const data_register_operand = instruction->operands->next;
 
+						unsigned long value;
+
 						machine_code = 0x7000;
 
-						if (literal_operand->type == OPERAND_LITERAL)
+						if (!ResolveValue(&literal_operand->literal, &value, &fix_up, doing_fix_up))
+							value = 0;
+
+						if (value > 0x7F && value < 0xFFFFFF80)
 						{
-							unsigned long value;
-
-							if (!ResolveValue(&literal_operand->literal, &value, &fix_up, doing_fix_up))
-								value = 0;
-
-							if (value > 0x7F && value < 0xFFFFFF80)
-							{
-								fprintf(stderr, "Error: Literal is too large: it must be between -$80 and $7F\n");
-								assemble_instruction_success = cc_false;
-							}
-							else
-							{
-								machine_code |= value & 0xFF;
-							}
+							fprintf(stderr, "Error: Literal is too large: it must be between -$80 and $7F\n");
+							assemble_instruction_success = cc_false;
+						}
+						else
+						{
+							machine_code |= value & 0xFF;
 						}
 
-						if (data_register_operand->type == OPERAND_DATA_REGISTER)
-							machine_code |= data_register_operand->main_register << 9;
+						machine_code |= data_register_operand->main_register << 9;
 
 						/* MOVEQ's operands are embedded directly into the machine code, so we don't need to output them separately. */
 						operands_to_output = NULL;
@@ -2887,10 +2855,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						}
 
 						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 8;
-
-						if (destination_operand->type == OPERAND_ADDRESS_REGISTER)
-							machine_code |= destination_operand->main_register << 9;
-
+						machine_code |= destination_operand->main_register << 9;
 						machine_code |= ConstructEffectiveAddressBits(source_operand);
 
 						break;
@@ -2903,12 +2868,8 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 
 						machine_code = 0xB108;
 						machine_code |= ConstructSizeBits(instruction->opcode.size);
-
-						if (first_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT)
-							machine_code |= first_operand->main_register << 0;
-
-						if (second_operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT)
-							machine_code |= second_operand->main_register << 9;
+						machine_code |= first_operand->main_register << 0;
+						machine_code |= second_operand->main_register << 9;
 
 						break;
 					}
