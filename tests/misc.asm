@@ -75,9 +75,9 @@ Label:
 	cmpi.w	#1,-(a0)
 	cmpi.w	#1,$10(a0)
 	cmpi.w	#1,(a0,d0.w)
-	cmpi.w	#1,$10(pc)
-	cmpi.w	#1,$10(pc,d0.w)
-
+	cmpi.w	#1,DummyDummyDummy(pc)
+	cmpi.w	#1,DummyDummyDummy(pc,d0.w)
+DummyDummyDummy:
 	; Testing both modes of BTST/BCHG/BCLR/BSET
 	btst.l	#0,d0
 	btst.b	#0,(a0)
@@ -298,10 +298,26 @@ CoolFunction_Exit:
 	move.w	#1--1,d0      ; 2
 
 	; The Macro Assembler AS would fail to assemble this line (it would mistake the `(1*2)` for an absolute address)
-	move.w	(1*2)+1(pc,d0.w),d0
+	move.w	(1*2)+1(a0,d0.w),d0
 
 	dc.b	0,1,2,3,4
 	dc.w	0,1,2,3,4
 	dc.l	0,1,2,3,4
 
+Object:
+	moveq	#0,d0
+	move.b	2(a0),d0
+	add.w	d0,d0
+	move.w	Object_Offsets(pc,d0.w),d0
+	jmp	Object_Offsets(pc,d0.w)
+
+Object_Offsets:
+	dc.w	Object_Offset1-Object_Offsets
+	dc.w	Object_Offset2-Object_Offsets
+
+Object_Offset1:
+	rts
+
+Object_Offset2:
+	rts
   ; More blank lines to test support for trailing blank statements

@@ -1399,6 +1399,8 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 	Operand custom_operand;
 	Opcode opcode;
 
+	const unsigned long start_program_counter = *program_counter + 2;
+
 	assemble_instruction_success = cc_true;
 
 	*program_counter += 2;
@@ -2425,15 +2427,15 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						machine_code |= data_register_operand->main_register;
 
 						if (!ResolveValue(&address_operand->literal, &value, doing_fix_up))
-							value = *program_counter - 2;
+							value = start_program_counter - 2;
 
 						custom_operand.next = NULL;
 						custom_operand.type = OPERAND_LITERAL;
 						custom_operand.literal.type = VALUE_NUMBER;
 
-						if (value >= *program_counter)
+						if (value >= start_program_counter)
 						{
-							const unsigned long offset = value - *program_counter;
+							const unsigned long offset = value - start_program_counter;
 
 							if (offset > 0x7FFF)
 							{
@@ -2445,7 +2447,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						}
 						else
 						{
-							const unsigned long offset = *program_counter - value;
+							const unsigned long offset = start_program_counter - value;
 
 							if (offset > 0x8000)
 							{
@@ -2489,11 +2491,11 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						}
 
 						if (!ResolveValue(&instruction->operands->literal, &value, doing_fix_up))
-							value = *program_counter - 2;
+							value = start_program_counter - 2;
 
-						if (value >= *program_counter)
+						if (value >= start_program_counter)
 						{
-							offset = value - *program_counter;
+							offset = value - start_program_counter;
 
 							if (opcode.size == SIZE_BYTE || opcode.size == SIZE_SHORT)
 							{
@@ -2519,7 +2521,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						}
 						else
 						{
-							offset = *program_counter - value;
+							offset = start_program_counter - value;
 
 							if (opcode.size == SIZE_BYTE || opcode.size == SIZE_SHORT)
 							{
@@ -2992,10 +2994,8 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 		fputc((machine_code >> (8 * i)) & 0xFF, file);
 
 	/* Output the data for the operands. */
-	for (; operands_to_output != NULL; operands_to_output = operands_to_output->next)
+	for (operand = operands_to_output; operand != NULL; operand = operand->next)
 	{
-		const Operand *operand = operands_to_output;
-
 		switch (operand->type)
 		{
 			case OPERAND_ADDRESS:
@@ -3010,7 +3010,12 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 				unsigned long value;
 
 				if (!ResolveValue(&operand->literal, &value, doing_fix_up))
-					value = 0;
+				{
+					if (operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT || operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER)
+						value = start_program_counter; /* Prevent out-of-range displacements later on. */
+					else
+						value = 0;
+				}
 
 				switch (operand->type)
 				{
@@ -3080,8 +3085,10 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 
 						break;
 
-					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+						value -= start_program_counter;
+						/* Fallthrough */
+					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 						i = 2;
 
 						if (value >= 0x80 && value < 0xFFFFFF80)
@@ -3106,8 +3113,10 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 
 						break;
 
-					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
 					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
+						value -= start_program_counter;
+						/* Fallthrough */
+					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
 						i = 2;
 
 						if (value >= 0x8000 && value < 0xFFFF8000)
