@@ -85,6 +85,9 @@ static cc_bool ResolveValue(const Value *value, unsigned long *value_integer, cc
 						/* Should never happen. */
 						break;
 				}
+
+				/* Prevent 'bleeding' out of the 68k's 32-bit range. */
+				*value_integer &= 0xFFFFFFFF;
 			}
 
 			break;
@@ -117,6 +120,9 @@ static cc_bool ResolveValue(const Value *value, unsigned long *value_integer, cc
 						/* Should never happen. */
 						break;
 				}
+
+				/* Prevent 'bleeding' out of the 68k's 32-bit range. */
+				*value_integer &= 0xFFFFFFFF;
 			}
 
 			break;
@@ -3027,7 +3033,7 @@ static cc_bool ProcessDirective(FILE *file, const Directive *directive, unsigned
 				{
 					case SIZE_BYTE:
 					case SIZE_SHORT:
-						if (resolved_value > 0xFFul && resolved_value < -0x100ul)
+						if (resolved_value > 0xFF && resolved_value < 0xFFFFFF00)
 						{
 							fprintf(stderr, "Error: Value cannot be higher than $FF or lower than -$100\n");
 							success = cc_false;
@@ -3038,7 +3044,7 @@ static cc_bool ProcessDirective(FILE *file, const Directive *directive, unsigned
 						break;
 
 					case SIZE_WORD:
-						if (resolved_value > 0xFFFFul && resolved_value < -0x10000ul)
+						if (resolved_value > 0xFFFF && resolved_value < 0xFFFF0000)
 						{
 							fprintf(stderr, "Error: Value cannot be higher than $FFFF or lower than -$10000\n");
 							success = cc_false;
