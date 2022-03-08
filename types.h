@@ -244,4 +244,10 @@ typedef struct StatementListNode
 	struct StatementListNode *next;
 } StatementListNode;
 
+typedef struct ListMetadata
+{
+  void *head;
+  void *tail;
+} ListMetadata;
+
 #endif /* TYPES_H */

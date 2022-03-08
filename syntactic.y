@@ -116,7 +116,7 @@ StatementListNode *statement_list_head;
     Operand *operand_pointer;
     Instruction instruction;
     Statement statement;
-    StatementListNode *statement_list;
+    ListMetadata list_metadata;
     Value value;
 }
 
@@ -264,7 +264,7 @@ StatementListNode *statement_list_head;
 %type<generic.integer> register_span
 %type<generic.integer> data_or_address_register
 %type<statement> statement
-%type<statement_list> statement_list
+%type<list_metadata> statement_list
 %type<value> value
 %type<value> value1
 %type<value> value2
@@ -285,6 +285,9 @@ end_of_line          : TOKEN_NEWLINE
                      ;
 
 program              : statement_list
+                     {
+                       statement_list_head = $1.head;
+                     }
                      ;
 
 statement_list       : statement
@@ -292,48 +295,49 @@ statement_list       : statement
                        /* Don't bother adding empty statements to the statement list */
                        if ($1.label == NULL && $1.type == STATEMENT_TYPE_EMPTY)
                        {
-                         $$ = NULL;
+                         $$.head = NULL;
+                         $$.tail = NULL;
                        }
                        else
                        {
-                         $$ = malloc(sizeof(StatementListNode));
+                         StatementListNode *node = malloc(sizeof(StatementListNode));
 
-                         if ($$ == NULL)
+                         if (node == NULL)
                          {
                            yyerror("Could not allocate memory for statement list node");
                          }
                          else
                          {
-                           $$->statement = $1;
-                           $$->next = NULL;
-                         }
+                           node->statement = $1;
+                           node->next = NULL;
 
-                         statement_list_head = $$;
+                           $$.head = $$.tail = node;
+                         }
                        }
                      }
                      | statement_list statement
                      {
-                       /* Don't bother adding empty statements to the statement list */
-                       if ($2.label == NULL && $2.type == STATEMENT_TYPE_EMPTY)
-                       {
-                         $$ = $1;
-                       }
-                       else
-                       {
-                         $$ = malloc(sizeof(StatementListNode));
+                       $$ = $1;
 
-                         if ($$ == NULL)
+                       /* Don't bother adding empty statements to the statement list */
+                       if ($2.label != NULL || $2.type != STATEMENT_TYPE_EMPTY)
+                       {
+                         StatementListNode *node = malloc(sizeof(StatementListNode));
+
+                         if (node == NULL)
                          {
                            yyerror("Could not allocate memory for statement list node");
                          }
                          else
                          {
-                           $$->statement = $2;
+                           node->statement = $2;
 
-                           if ($1 == NULL)
-                             statement_list_head = $$;
+                           if ($$.head == NULL)
+                             $$.head = node;
                            else
-                             $1->next = $$;
+                             ((StatementListNode*)$$.tail)->next = node;
+
+                           $$.tail = node;
                          }
                        }
                      }
