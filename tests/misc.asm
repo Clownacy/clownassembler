@@ -300,9 +300,9 @@ CoolFunction_Exit:
 	; The Macro Assembler AS would fail to assemble this line (it would mistake the `(1*2)` for an absolute address)
 	move.w	(1*2)+1(a0,d0.w),d0
 
-	dc.b	0,1,2,3,4
-	dc.w	0,1,2,3,4
-	dc.l	0,1,2,3,4
+	dc.b	0,1,2,3,4,5
+	dc.w	0,1,2,3,4,5
+	dc.l	0,1,2,3,4,5
 
 Object:
 	moveq	#0,d0
@@ -323,4 +323,6 @@ Object_Offset2:
 
 	bra.s	*
 	bra.s	1*(**1) ; Amazingly, this actually works as intended
+
+	dc.l	*,*,*
   ; More blank lines to test support for trailing blank statements

@@ -3190,6 +3190,9 @@ static cc_bool ProcessDirective(FILE *file, const Directive *directive, unsigned
 				unsigned int bytes_to_write = 0;
 				unsigned long resolved_value;
 
+				/* Update the program counter symbol in between values, to keep it up to date. */
+				SetSymbol("*", SYMBOL_VARIABLE, *program_counter);
+
 				if (!ResolveValue(&value_list_node->value, &resolved_value, doing_fix_up))
 					resolved_value = 0;
 
