@@ -308,7 +308,7 @@ statement_list       : statement
                          if (node == NULL)
                          {
                            yyerror("Could not allocate memory for statement list node");
-			   YYABORT;
+                           YYABORT;
                          }
                          else
                          {
@@ -331,7 +331,7 @@ statement_list       : statement
                          if (node == NULL)
                          {
                            yyerror("Could not allocate memory for statement list node");
-			   YYABORT;
+                           YYABORT;
                          }
                          else
                          {
@@ -404,44 +404,44 @@ statement            : end_of_line
 
 directive            : TOKEN_DIRECTIVE_DC '.' size TOKEN_WHITESPACE value_list
                      {
-		       $$.type = DIRECTIVE_DC;
-		       $$.data.dc.size = $3;
-		       $$.data.dc.values = $5.head;
+                       $$.type = DIRECTIVE_DC;
+                       $$.data.dc.size = $3;
+                       $$.data.dc.values = $5.head;
                      }
                      ;
 
 value_list           : value
                      {
-		       ValueListNode *node = malloc(sizeof(ValueListNode));
+                       ValueListNode *node = malloc(sizeof(ValueListNode));
 
-		       if (node == NULL)
-		       {
+                       if (node == NULL)
+                       {
                          yyerror("Could not allocate memory for value list node");
-			 YYABORT;
-		       }
-		       else
-		       {
-		         node->value = $1;
-			 node->next = NULL;
-		       }
+                         YYABORT;
+                       }
+                       else
+                       {
+                         node->value = $1;
+                         node->next = NULL;
+                       }
 
                        $$.head = $$.tail = node;
-		     }
+                     }
                      | value_list ',' value
-		     {
-		       ValueListNode *node = malloc(sizeof(ValueListNode));
+                     {
+                       ValueListNode *node = malloc(sizeof(ValueListNode));
 
                        $$ = $1;
 
-		       if (node == NULL)
-		       {
+                       if (node == NULL)
+                       {
                          yyerror("Could not allocate memory for value list node");
-			 YYABORT;
-		       }
-		       else
-		       {
-		         node->value = $3;
-			 node->next = NULL;
+                         YYABORT;
+                       }
+                       else
+                       {
+                         node->value = $3;
+                         node->next = NULL;
 
                          if ($$.head == NULL)
                            $$.head = node;
@@ -449,9 +449,9 @@ value_list           : value
                            ((ValueListNode*)$$.tail)->next = node;
 
                          $$.tail = node;
-		       }
-		     }
-		     ;
+                       }
+                     }
+                     ;
 
 instruction          : TOKEN_WHITESPACE full_opcode end_of_line
                      {
@@ -461,7 +461,7 @@ instruction          : TOKEN_WHITESPACE full_opcode end_of_line
                      }
                      | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand_list end_of_line
                      {
-		       $$ = $4;
+                       $$ = $4;
                        $$.opcode = $2;
                      }
                      ;
@@ -1014,22 +1014,22 @@ size                 : TOKEN_SIZE_BYTE
 
 operand_list         : operand
                      {
-		       $$.operands[0] = $1;
-		       $$.operands[1].type = 0;
+                       $$.operands[0] = $1;
+                       $$.operands[1].type = 0;
                      }
                      | operand_list ',' operand
                      {
-		       $$ = $1;
+                       $$ = $1;
 
-		       if ($$.operands[1].type != 0)
-		       {
+                       if ($$.operands[1].type != 0)
+                       {
                          yyerror("Instructions can never have more than two operands");
-			 YYABORT;
-		       }
-		       else
-		       {
-			 $$.operands[1] = $3;
-		       }
+                         YYABORT;
+                       }
+                       else
+                       {
+                         $$.operands[1] = $3;
+                       }
                      }
                      ;
 
@@ -1273,7 +1273,7 @@ value                : value1
                        if ($$.data.values == NULL)
                        {
                          yyerror("Could not allocate memory for Value");
-			 YYABORT;
+                         YYABORT;
                        }
                        else
                        {
@@ -1296,7 +1296,7 @@ value1               : value2
                        if ($$.data.values == NULL)
                        {
                          yyerror("Could not allocate memory for Value");
-			 YYABORT;
+                         YYABORT;
                        }
                        else
                        {
@@ -1319,7 +1319,7 @@ value2               : value3
                        if ($$.data.values == NULL)
                        {
                          yyerror("Could not allocate memory for Value");
-			 YYABORT;
+                         YYABORT;
                        }
                        else
                        {
@@ -1342,7 +1342,7 @@ value3               : value4
                        if ($$.data.values == NULL)
                        {
                          yyerror("Could not allocate memory for Value");
-			 YYABORT;
+                         YYABORT;
                        }
                        else
                        {
@@ -1363,14 +1363,14 @@ value4               : value5
                        $$.data.values = malloc(sizeof(Value));
 
                        if ($$.data.values == NULL)
-		       {
+                       {
                          yyerror("Could not allocate memory for Value");
-			 YYABORT;
-		       }
+                         YYABORT;
+                       }
                        else
-		       {
+                       {
                          $$.data.values[0] = $2;
-		       }
+                       }
                      }
                      | '~' value4
                      {
@@ -1379,14 +1379,14 @@ value4               : value5
                        $$.data.values = malloc(sizeof(Value));
 
                        if ($$.data.values == NULL)
-		       {
+                       {
                          yyerror("Could not allocate memory for Value");
-			 YYABORT;
-		       }
+                         YYABORT;
+                       }
                        else
-		       {
+                       {
                          $$.data.values[0] = $2;
-		       }
+                       }
                      }
                      | '!' value4
                      {
@@ -1395,14 +1395,14 @@ value4               : value5
                        $$.data.values = malloc(sizeof(Value));
 
                        if ($$.data.values == NULL)
-		       {
+                       {
                          yyerror("Could not allocate memory for Value");
-			 YYABORT;
-		       }
+                         YYABORT;
+                       }
                        else
-		       {
+                       {
                          $$.data.values[0] = $2;
-		       }
+                       }
                      }
                      ;
 
