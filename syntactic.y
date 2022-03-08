@@ -114,6 +114,7 @@ StatementListNode *statement_list_head;
     Opcode opcode;
     Operand operand;
     Instruction instruction;
+    Directive directive;
     Statement statement;
     ListMetadata list_metadata;
     Value value;
@@ -240,6 +241,7 @@ StatementListNode *statement_list_head;
 %token TOKEN_OPCODE_ROXR
 %token TOKEN_OPCODE_ROL
 %token TOKEN_OPCODE_ROR
+%token TOKEN_DIRECTIVE_DC
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -264,6 +266,8 @@ StatementListNode *statement_list_head;
 %type<generic.integer> data_or_address_register
 %type<statement> statement
 %type<list_metadata> statement_list
+%type<directive> directive
+%type<list_metadata> value_list
 %type<value> value
 %type<value> value1
 %type<value> value2
@@ -330,6 +334,7 @@ statement_list       : statement
                          else
                          {
                            node->statement = $2;
+                           node->next = NULL;
 
                            if ($$.head == NULL)
                              $$.head = node;
@@ -375,7 +380,74 @@ statement            : end_of_line
                        $$.type = STATEMENT_TYPE_INSTRUCTION;
                        $$.data.instruction = $3;
                      }
+                     | TOKEN_WHITESPACE directive
+                     {
+                       $$.label = NULL;
+                       $$.type = STATEMENT_TYPE_DIRECTIVE;
+                       $$.data.directive = $2;
+                     }
+                     | TOKEN_IDENTIFIER TOKEN_WHITESPACE directive
+                     {
+                       $$.label = $1;
+                       $$.type = STATEMENT_TYPE_DIRECTIVE;
+                       $$.data.directive = $3;
+                     }
+                     | TOKEN_IDENTIFIER ':' TOKEN_WHITESPACE directive
+                     {
+                       $$.label = $1;
+                       $$.type = STATEMENT_TYPE_DIRECTIVE;
+                       $$.data.directive = $4;
+                     }
                      ;
+
+directive            : TOKEN_DIRECTIVE_DC '.' size TOKEN_WHITESPACE value_list
+                     {
+		       $$.type = DIRECTIVE_DC;
+		       $$.data.dc.size = $3;
+		       $$.data.dc.values = $5.head;
+                     }
+                     ;
+
+value_list           : value
+                     {
+		       ValueListNode *node = malloc(sizeof(ValueListNode));
+
+		       if (node == NULL)
+		       {
+                         yyerror("Could not allocate memory for value list node");
+		       }
+		       else
+		       {
+		         node->value = $1;
+			 node->next = NULL;
+		       }
+
+                       $$.head = $$.tail = node;
+		     }
+                     | value_list ',' value
+		     {
+		       ValueListNode *node = malloc(sizeof(ValueListNode));
+
+                       $$ = $1;
+
+		       if (node == NULL)
+		       {
+                         yyerror("Could not allocate memory for value list node");
+		       }
+		       else
+		       {
+		         node->value = $3;
+			 node->next = NULL;
+
+                         if ($$.head == NULL)
+                           $$.head = node;
+                         else
+                           ((ValueListNode*)$$.tail)->next = node;
+
+                         $$.tail = node;
+		       }
+		     }
+		     ;
 
 instruction          : TOKEN_WHITESPACE full_opcode end_of_line
                      {
@@ -955,6 +1027,8 @@ operand_list         : operand
                      {
                        Operand *operand = malloc(sizeof(Operand));
 
+                       $$ = $1;
+
                        if (operand == NULL)
                        {
                          yyerror("Could not allocate memory for operand list node");
@@ -963,9 +1037,14 @@ operand_list         : operand
 		       {
 		         *operand = $3;
 			 operand->next = NULL;
-		       }
 
-                       ((Operand*)$$.tail)->next = operand;
+                         if ($$.head == NULL)
+                           $$.head = operand;
+                         else
+                           ((Operand*)$$.tail)->next = operand;
+
+		         $$.tail = operand;
+		       }
                      }
                      ;
 

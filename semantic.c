@@ -12,7 +12,7 @@ typedef struct FixUp
 {
 	struct FixUp *next;
 
-	const Instruction *instruction;
+	const Statement *statement;
 	unsigned long program_counter;
 	long output_position;
 } FixUp;
@@ -23,6 +23,7 @@ extern StatementListNode *statement_list_head;
 static cc_bool assemble_instruction_success;
 
 static FixUp *fix_up_list_head;
+static cc_bool fix_up_needed;
 
 static void AddFixUp(const FixUp *fix_up)
 {
@@ -42,7 +43,7 @@ static void AddFixUp(const FixUp *fix_up)
 	}
 }
 
-static cc_bool ResolveValue(const Value *value, unsigned long *value_integer, const FixUp *fix_up, cc_bool doing_fix_up)
+static cc_bool ResolveValue(const Value *value, unsigned long *value_integer, cc_bool doing_fix_up)
 {
 	cc_bool success = cc_true;
 
@@ -56,7 +57,7 @@ static cc_bool ResolveValue(const Value *value, unsigned long *value_integer, co
 			unsigned long left_value;
 			unsigned long right_value;
 
-			if (!ResolveValue(&value->data.values[0], &left_value, fix_up, doing_fix_up) || !ResolveValue(&value->data.values[1], &right_value, fix_up, doing_fix_up))
+			if (!ResolveValue(&value->data.values[0], &left_value, doing_fix_up) || !ResolveValue(&value->data.values[1], &right_value, doing_fix_up))
 			{
 				success = cc_false;
 			}
@@ -92,7 +93,7 @@ static cc_bool ResolveValue(const Value *value, unsigned long *value_integer, co
 		case VALUE_NEGATE:
 		case VALUE_BITWISE_NOT:
 		case VALUE_LOGICAL_NOT:
-			if (!ResolveValue(value->data.values, value_integer, fix_up, doing_fix_up))
+			if (!ResolveValue(value->data.values, value_integer, doing_fix_up))
 			{
 				success = cc_false;
 			}
@@ -136,7 +137,7 @@ static cc_bool ResolveValue(const Value *value, unsigned long *value_integer, co
 				}
 				else
 				{
-					AddFixUp(fix_up);
+					fix_up_needed = cc_true;
 				}
 			}
 
@@ -1396,15 +1397,9 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 	const InstructionMetadata *instruction_metadata;
 	const Operand *operands_to_output = instruction->operands;
 	Operand custom_operand;
-	FixUp fix_up;
 	Opcode opcode;
 
 	assemble_instruction_success = cc_true;
-
-	/* Construct the fix-up struct now, before the program counter and output file position get a chance to be modified. */
-	fix_up.instruction = instruction;
-	fix_up.program_counter = *program_counter;
-	fix_up.output_position = ftell(file);
 
 	*program_counter += 2;
 
@@ -1981,7 +1976,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 							{
 								unsigned long value;
 
-								if (!ResolveValue(&source_operand->literal, &value, &fix_up, doing_fix_up))
+								if (!ResolveValue(&source_operand->literal, &value, doing_fix_up))
 									value = 0;
 
 								/* Check whether the literal value will wrap or not, and warn the user if so. */
@@ -2223,7 +2218,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 
 						machine_code = 0x4E40;
 
-						if (!ResolveValue(&instruction->operands->literal, &value, &fix_up, doing_fix_up))
+						if (!ResolveValue(&instruction->operands->literal, &value, doing_fix_up))
 							value = 0;
 
 						if (value > 15)
@@ -2396,7 +2391,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						machine_code |= ConstructSizeBits(opcode.size);
 						machine_code |= ConstructEffectiveAddressBits(destination_operand);
 
-						if (!ResolveValue(&source_operand->literal, &value, &fix_up, doing_fix_up))
+						if (!ResolveValue(&source_operand->literal, &value, doing_fix_up))
 							value = 1;
 
 						if (value < 1 || value > 8)
@@ -2429,7 +2424,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						machine_code |= instruction->opcode.condition << 8;
 						machine_code |= data_register_operand->main_register;
 
-						if (!ResolveValue(&address_operand->literal, &value, &fix_up, doing_fix_up))
+						if (!ResolveValue(&address_operand->literal, &value, doing_fix_up))
 							value = *program_counter - 2;
 
 						custom_operand.next = NULL;
@@ -2493,7 +2488,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 								break;
 						}
 
-						if (!ResolveValue(&instruction->operands->literal, &value, &fix_up, doing_fix_up))
+						if (!ResolveValue(&instruction->operands->literal, &value, doing_fix_up))
 							value = *program_counter - 2;
 
 						if (value >= *program_counter)
@@ -2572,7 +2567,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 
 						machine_code = 0x7000;
 
-						if (!ResolveValue(&literal_operand->literal, &value, &fix_up, doing_fix_up))
+						if (!ResolveValue(&literal_operand->literal, &value, doing_fix_up))
 							value = 0;
 
 						if (value > 0x7F && value < 0xFFFFFF80)
@@ -2933,7 +2928,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 							{
 								unsigned long value;
 
-								if (!ResolveValue(&first_operand->literal, &value, &fix_up, doing_fix_up))
+								if (!ResolveValue(&first_operand->literal, &value, doing_fix_up))
 									value = 0;
 
 								if (value > 8 || value < 1)
@@ -3014,7 +3009,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 				unsigned int i = 2;
 				unsigned long value;
 
-				if (!ResolveValue(&operand->literal, &value, &fix_up, doing_fix_up))
+				if (!ResolveValue(&operand->literal, &value, doing_fix_up))
 					value = 0;
 
 				switch (operand->type)
@@ -3171,6 +3166,97 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 	return assemble_instruction_success;
 }
 
+static cc_bool ProcessDirective(FILE *file, const Directive *directive, unsigned long *program_counter, cc_bool doing_fix_up)
+{
+	cc_bool success = cc_true;
+
+	switch (directive->type)
+	{
+		case DIRECTIVE_DC:
+		{
+			const ValueListNode *value_list_node;
+
+			for (value_list_node = directive->data.dc.values; value_list_node != NULL; value_list_node = value_list_node->next)
+			{
+				unsigned int bytes_to_write = 0;
+				unsigned long resolved_value;
+
+				if (!ResolveValue(&value_list_node->value, &resolved_value, doing_fix_up))
+					resolved_value = 0;
+
+				switch (directive->data.dc.size)
+				{
+					case SIZE_BYTE:
+					case SIZE_SHORT:
+						if (resolved_value > 0xFFul && resolved_value < -0x100ul)
+						{
+							fprintf(stderr, "Error: Value cannot be higher than $FF or lower than -$100\n");
+							success = cc_false;
+						}
+
+						bytes_to_write = 1;
+
+						break;
+
+					case SIZE_WORD:
+						if (resolved_value > 0xFFFFul && resolved_value < -0x10000ul)
+						{
+							fprintf(stderr, "Error: Value cannot be higher than $FFFF or lower than -$10000\n");
+							success = cc_false;
+						}
+
+						bytes_to_write = 2;
+
+						break;
+
+					case SIZE_LONGWORD:
+						bytes_to_write = 4;
+						break;
+
+					case SIZE_UNDEFINED:
+						/* Should never occur. */
+						break;
+				}
+
+				*program_counter += bytes_to_write;
+
+				while (bytes_to_write-- != 0)
+					fputc((resolved_value >> (bytes_to_write * 8)) & 0xFF, file);
+			}
+
+			break;
+		}
+	}
+
+	return success;
+}
+
+static cc_bool ProcessStatement(FILE *output_file, const Statement *statement, unsigned long *program_counter, cc_bool doing_fix_up)
+{
+	cc_bool success = cc_true;
+
+	switch (statement->type)
+	{
+		case STATEMENT_TYPE_EMPTY:
+			break;
+
+		case STATEMENT_TYPE_INSTRUCTION:
+			if (!AssembleInstruction(output_file, &statement->data.instruction, program_counter, doing_fix_up))
+				success = cc_false;
+
+			break;
+
+		case STATEMENT_TYPE_DIRECTIVE:
+			if (!ProcessDirective(output_file, &statement->data.directive, program_counter, doing_fix_up))
+				success = cc_false;
+
+		case STATEMENT_TYPE_MACRO:
+			break;
+	}
+
+	return success;
+}
+
 cc_bool ProcessParseTree(const StatementListNode *statement_list)
 {
 	cc_bool success = cc_true;
@@ -3192,23 +3278,23 @@ cc_bool ProcessParseTree(const StatementListNode *statement_list)
 
 		for (statement_list_node = statement_list; statement_list_node != NULL; statement_list_node = statement_list_node->next)
 		{
+			FixUp fix_up;
+
+			/* Construct the fix-up struct now, before the program counter and output file position get a chance to be modified. */
+			fix_up.statement = &statement_list_node->statement;
+			fix_up.program_counter = program_counter;
+			fix_up.output_position = ftell(output_file);
+
 			if (statement_list_node->statement.label != NULL)
 				AddSymbol(statement_list_node->statement.label, program_counter);
 
-			switch (statement_list_node->statement.type)
-			{
-				case STATEMENT_TYPE_EMPTY:
-					break;
+			fix_up_needed = cc_false;
 
-				case STATEMENT_TYPE_INSTRUCTION:
-					if (!AssembleInstruction(output_file, &statement_list_node->statement.data.instruction, &program_counter, cc_false))
-						success = cc_false;
+			if (!ProcessStatement(output_file, &statement_list_node->statement, &program_counter, cc_false))
+				success = cc_false;
 
-					break;
-
-				case STATEMENT_TYPE_MACRO:
-					break;
-			}
+			if (fix_up_needed)
+				AddFixUp(&fix_up);
 		}
 
 		for (fix_up = fix_up_list_head; fix_up != NULL; fix_up = fix_up->next)
@@ -3216,7 +3302,7 @@ cc_bool ProcessParseTree(const StatementListNode *statement_list)
 			program_counter = fix_up->program_counter;
 			fseek(output_file, fix_up->output_position , SEEK_SET);
 
-			if (!AssembleInstruction(output_file, fix_up->instruction, &program_counter, cc_true))
+			if (!ProcessStatement(output_file, fix_up->statement, &program_counter, cc_true))
 				success = cc_false;
 		}
 

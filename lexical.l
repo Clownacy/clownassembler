@@ -171,6 +171,7 @@ roxl            TOKEN(OPCODE_ROXL)
 roxr            TOKEN(OPCODE_ROXR)
 rol             TOKEN(OPCODE_ROL)
 ror             TOKEN(OPCODE_ROR)
+dc              TOKEN(DIRECTIVE_DC)
 "("             return yytext[0];
 ")"             return yytext[0];
 "b"             TOKEN(SIZE_BYTE)

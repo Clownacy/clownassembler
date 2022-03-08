@@ -175,6 +175,13 @@ typedef struct Value
 	} data;
 } Value;
 
+typedef struct ValueListNode
+{
+	Value value;
+
+	struct ValueListNode *next;
+} ValueListNode;
+
 typedef struct Opcode
 {
 	OpcodeType type;
@@ -221,6 +228,24 @@ typedef struct Instruction
 	Operand *operands;
 } Instruction;
 
+typedef enum DirectiveType
+{
+	DIRECTIVE_DC
+} DirectiveType;
+
+typedef struct Directive
+{
+	DirectiveType type;
+	union
+	{
+		struct
+		{
+			Size size;
+			ValueListNode *values;
+		} dc;
+	} data;
+} Directive;
+
 typedef struct Statement
 {
 	char *label;
@@ -229,11 +254,13 @@ typedef struct Statement
 	{
 		STATEMENT_TYPE_EMPTY,
 		STATEMENT_TYPE_INSTRUCTION,
+		STATEMENT_TYPE_DIRECTIVE,
 		STATEMENT_TYPE_MACRO
 	} type;
 	union
 	{
 		Instruction instruction;
+		Directive directive;
 	} data;
 } Statement;
 
