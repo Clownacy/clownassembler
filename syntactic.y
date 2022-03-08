@@ -266,6 +266,11 @@ StatementListNode *statement_list_head;
 %type<statement> statement
 %type<statement_list> statement_list
 %type<value> value
+%type<value> value1
+%type<value> value2
+%type<value> value3
+%type<value> value4
+%type<value> value5
 
 /*
 %token<iVal> CHARACTER_CONSTANT IDENTIFIER NUMBER
@@ -975,7 +980,7 @@ operand              : '(' TOKEN_ADDRESS_REGISTER ')'
                      | '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_DATA_REGISTER '.' size ')'
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-                       $$.literal.type = TOKEN_NUMBER;
+                       $$.literal.type = VALUE_NUMBER;
                        $$.literal.data.integer = 0;
                        $$.main_register = $2;
                        $$.index_register = $4;
@@ -994,7 +999,7 @@ operand              : '(' TOKEN_ADDRESS_REGISTER ')'
                      | '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
                      {
                        $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-                       $$.literal.type = TOKEN_NUMBER;
+                       $$.literal.type = VALUE_NUMBER;
                        $$.literal.data.integer = 0;
                        $$.main_register = $2;
                        $$.index_register = $4;
@@ -1018,7 +1023,7 @@ operand              : '(' TOKEN_ADDRESS_REGISTER ')'
                      | '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_DATA_REGISTER '.' size ')'
                      {
                        $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-                       $$.literal.type = TOKEN_NUMBER;
+                       $$.literal.type = VALUE_NUMBER;
                        $$.literal.data.integer = 0;
                        $$.index_register = $4;
                        $$.size = $6;
@@ -1035,7 +1040,7 @@ operand              : '(' TOKEN_ADDRESS_REGISTER ')'
                      | '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
                      {
                        $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-                       $$.literal.type = TOKEN_NUMBER;
+                       $$.literal.type = VALUE_NUMBER;
                        $$.literal.data.integer = 0;
                        $$.index_register = $4;
                        $$.size = $6;
@@ -1177,15 +1182,146 @@ number               : TOKEN_NUMBER
                      ;
 */
 
-value                : TOKEN_NUMBER
+value                : value1
                      {
-                       $$.type = TOKEN_NUMBER;
+		       $$ = $1;
+		     }
+		     | value1 '-' value
+		     {
+		       $$.type = VALUE_ARITHMETIC_SUBTRACT;
+
+                       $$.data.values = malloc(sizeof(Value) * 2);
+
+                       if ($$.data.values == NULL)
+                       {
+                         yyerror("Could not allocate memory for Value");
+                       }
+		       else
+		       {
+		         $$.data.values[0] = $1;
+		         $$.data.values[1] = $3;
+		       }
+		     }
+		     ;
+
+value1               : value2
+                     {
+		       $$ = $1;
+		     }
+		     | value2 '+' value1
+		     {
+		       $$.type = VALUE_ARITHMETIC_ADD;
+
+                       $$.data.values = malloc(sizeof(Value) * 2);
+
+                       if ($$.data.values == NULL)
+                       {
+                         yyerror("Could not allocate memory for Value");
+                       }
+		       else
+		       {
+		         $$.data.values[0] = $1;
+		         $$.data.values[1] = $3;
+		       }
+		     }
+		     ;
+
+value2               : value3
+                     {
+		       $$ = $1;
+		     }
+		     | value3 '*' value2
+		     {
+		       $$.type = VALUE_ARITHMETIC_MULTIPLY;
+
+                       $$.data.values = malloc(sizeof(Value) * 2);
+
+                       if ($$.data.values == NULL)
+                       {
+                         yyerror("Could not allocate memory for Value");
+                       }
+		       else
+		       {
+		         $$.data.values[0] = $1;
+		         $$.data.values[1] = $3;
+		       }
+		     }
+		     ;
+
+value3               : value4
+                     {
+		       $$ = $1;
+		     }
+		     | value4 '/' value3
+		     {
+		       $$.type = VALUE_ARITHMETIC_DIVIDE;
+
+                       $$.data.values = malloc(sizeof(Value) * 2);
+
+                       if ($$.data.values == NULL)
+                       {
+                         yyerror("Could not allocate memory for Value");
+                       }
+		       else
+		       {
+		         $$.data.values[0] = $1;
+		         $$.data.values[1] = $3;
+		       }
+		     }
+		     ;
+
+value4               : value5
+                     {
+                       $$ = $1;
+                     }
+                     | '-' value4
+                     {
+                       $$.type = VALUE_NEGATE;
+
+                       $$.data.values = malloc(sizeof(Value));
+
+                       if ($$.data.values == NULL)
+                         yyerror("Could not allocate memory for Value");
+		       else
+                         $$.data.values[0] = $2;
+                     }
+                     | '~' value4
+                     {
+                       $$.type = VALUE_BITWISE_NOT;
+
+                       $$.data.values = malloc(sizeof(Value));
+
+                       if ($$.data.values == NULL)
+                         yyerror("Could not allocate memory for Value");
+		       else
+                         $$.data.values[0] = $2;
+		     }
+                     | '!' value4
+                     {
+                       $$.type = VALUE_LOGICAL_NOT;
+
+                       $$.data.values = malloc(sizeof(Value));
+
+                       if ($$.data.values == NULL)
+                         yyerror("Could not allocate memory for Value");
+		       else
+                         $$.data.values[0] = $2;
+		     }
+                     ;
+
+value5               : TOKEN_NUMBER
+                     {
+                       $$.type = VALUE_NUMBER;
                        $$.data.integer = $1;
                      }
                      | TOKEN_IDENTIFIER
                      {
-                       $$.type = TOKEN_IDENTIFIER;
+                       $$.type = VALUE_IDENTIFIER;
                        $$.data.identifier = $1;
+                     }
+                     | '(' value ')'
+                     {
+                       $$ = $2;
                      }
                      ;
 

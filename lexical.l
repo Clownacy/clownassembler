@@ -181,6 +181,7 @@ ror             TOKEN(OPCODE_ROR)
 ":"             return yytext[0];
 "+"             return yytext[0];
 "-"             return yytext[0];
+"*"             return yytext[0];
 "/"             return yytext[0];
 sr              TOKEN(STATUS_REGISTER)
 ccr             TOKEN(CONDITION_CODE_REGISTER)

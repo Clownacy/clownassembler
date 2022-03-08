@@ -6,8 +6,6 @@
 #include "clowncommon.h"
 
 #include "symbols.h"
-#define YY_NO_UNISTD_H
-#include "syntactic.h"
 #include "types.h"
 
 typedef struct FixUp
@@ -50,11 +48,83 @@ static cc_bool ResolveValue(const Value *value, unsigned long *value_integer, co
 
 	switch (value->type)
 	{
-		case TOKEN_NUMBER:
+		case VALUE_ARITHMETIC_SUBTRACT:
+		case VALUE_ARITHMETIC_ADD:
+		case VALUE_ARITHMETIC_MULTIPLY:
+		case VALUE_ARITHMETIC_DIVIDE:
+		{
+			unsigned long left_value;
+			unsigned long right_value;
+
+			if (!ResolveValue(&value->data.values[0], &left_value, fix_up, doing_fix_up) || !ResolveValue(&value->data.values[1], &right_value, fix_up, doing_fix_up))
+			{
+				success = cc_false;
+			}
+			else
+			{
+				switch (value->type)
+				{
+					case VALUE_ARITHMETIC_SUBTRACT:
+						*value_integer = left_value - right_value;
+						break;
+
+					case VALUE_ARITHMETIC_ADD:
+						*value_integer = left_value + right_value;
+						break;
+
+					case VALUE_ARITHMETIC_MULTIPLY:
+						*value_integer = left_value * right_value;
+						break;
+
+					case VALUE_ARITHMETIC_DIVIDE:
+						*value_integer = left_value / right_value;
+						break;
+
+					default:
+						/* Should never happen. */
+						break;
+				}
+			}
+
+			break;
+		}
+
+		case VALUE_NEGATE:
+		case VALUE_BITWISE_NOT:
+		case VALUE_LOGICAL_NOT:
+			if (!ResolveValue(value->data.values, value_integer, fix_up, doing_fix_up))
+			{
+				success = cc_false;
+			}
+			else
+			{
+				switch (value->type)
+				{
+					case VALUE_NEGATE:
+						*value_integer = 0 - *value_integer;
+						break;
+
+					case VALUE_BITWISE_NOT:
+						*value_integer = ~*value_integer;
+						break;
+
+					case VALUE_LOGICAL_NOT:
+						*value_integer = !*value_integer;
+						break;
+
+					default:
+						/* Should never happen. */
+						break;
+				}
+			}
+
+			break;
+
+		case VALUE_NUMBER:
 			*value_integer = value->data.integer;
 			break;
 
-		case TOKEN_IDENTIFIER:
+		case VALUE_IDENTIFIER:
 			if (!ObtainSymbol(value->data.identifier, value_integer))
 			{
 				success = cc_false;
@@ -2364,7 +2434,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 
 						custom_operand.next = NULL;
 						custom_operand.type = OPERAND_LITERAL;
-						custom_operand.literal.type = TOKEN_NUMBER;
+						custom_operand.literal.type = VALUE_NUMBER;
 
 						if (value >= *program_counter)
 						{
@@ -2485,7 +2555,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *instruction, u
 						{
 							custom_operand.next = NULL;
 							custom_operand.type = OPERAND_LITERAL;
-							custom_operand.literal.type = TOKEN_NUMBER;
+							custom_operand.literal.type = VALUE_NUMBER;
 							custom_operand.literal.data.integer = offset;
 							operands_to_output = &custom_operand;
 						}

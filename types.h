@@ -151,13 +151,27 @@ typedef enum OpCodeType
 	OPCODE_ROR_SINGLE
 } OpcodeType;
 
+typedef enum ValueType
+{
+	VALUE_ARITHMETIC_SUBTRACT,
+	VALUE_ARITHMETIC_ADD,
+	VALUE_ARITHMETIC_MULTIPLY,
+	VALUE_ARITHMETIC_DIVIDE,
+	VALUE_NEGATE,
+	VALUE_BITWISE_NOT,
+	VALUE_LOGICAL_NOT,
+	VALUE_NUMBER,
+	VALUE_IDENTIFIER
+} ValueType;
+
 typedef struct Value
 {
-	int type;
+	ValueType type;
 	union
 	{
 		unsigned long integer;
 		char *identifier;
+		struct Value *values;
 	} data;
 } Value;
 

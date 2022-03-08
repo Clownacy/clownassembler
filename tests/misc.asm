@@ -289,4 +289,12 @@ CoolFunction_Exit:
 
 	move.w	#%0101010101010101,d0
 
+	; Testing out arithmetic in literals
+	move.w	#1+1,d0       ; 2
+	move.w	#1+(2*3),d0   ; 7
+	move.w	#(2*3)+1,d0   ; 7
+	move.w	#-1,d0        ; $FFFF
+	move.w	#1+2-3*4/5,d0 ; 3
+	move.w	#1--1,d0      ; 2
+
   ; More blank lines to test support for trailing blank statements
