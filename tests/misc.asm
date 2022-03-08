@@ -325,4 +325,5 @@ Object_Offset2:
 	bra.s	1*(**1) ; Amazingly, this actually works as intended
 
 	dc.l	*,*,*
+
   ; More blank lines to test support for trailing blank statements

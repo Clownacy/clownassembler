@@ -213,8 +213,6 @@ typedef struct Operand
 {
 	OperandType type;
 
-	struct Operand *next;
-
 	unsigned int main_register;
 	unsigned int index_register;
 	Size size;
@@ -225,7 +223,7 @@ typedef struct Operand
 typedef struct Instruction
 {
 	Opcode opcode;
-	Operand *operands;
+	Operand operands[2];
 } Instruction;
 
 typedef enum DirectiveType

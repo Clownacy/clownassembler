@@ -259,7 +259,7 @@ StatementListNode *statement_list_head;
 %type<opcode> opcode
 %type<generic.integer> size
 %type<opcode> full_opcode
-%type<list_metadata> operand_list
+%type<instruction> operand_list
 %type<operand> operand
 %type<generic.integer> register_list
 %type<generic.integer> register_span
@@ -308,6 +308,7 @@ statement_list       : statement
                          if (node == NULL)
                          {
                            yyerror("Could not allocate memory for statement list node");
+			   YYABORT;
                          }
                          else
                          {
@@ -330,6 +331,7 @@ statement_list       : statement
                          if (node == NULL)
                          {
                            yyerror("Could not allocate memory for statement list node");
+			   YYABORT;
                          }
                          else
                          {
@@ -415,6 +417,7 @@ value_list           : value
 		       if (node == NULL)
 		       {
                          yyerror("Could not allocate memory for value list node");
+			 YYABORT;
 		       }
 		       else
 		       {
@@ -433,6 +436,7 @@ value_list           : value
 		       if (node == NULL)
 		       {
                          yyerror("Could not allocate memory for value list node");
+			 YYABORT;
 		       }
 		       else
 		       {
@@ -452,12 +456,13 @@ value_list           : value
 instruction          : TOKEN_WHITESPACE full_opcode end_of_line
                      {
                        $$.opcode = $2;
-                       $$.operands = NULL;
+                       $$.operands[0].type = 0;
+                       $$.operands[1].type = 0;
                      }
                      | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand_list end_of_line
                      {
+		       $$ = $4;
                        $$.opcode = $2;
-                       $$.operands = $4.head;
                      }
                      ;
 
@@ -1009,41 +1014,21 @@ size                 : TOKEN_SIZE_BYTE
 
 operand_list         : operand
                      {
-                       Operand *operand = malloc(sizeof(Operand));
-
-                       if (operand == NULL)
-                       {
-                         yyerror("Could not allocate memory for operand list node");
-                       }
-		       else
-		       {
-		         *operand = $1;
-			 operand->next = NULL;
-		       }
-
-                       $$.head = $$.tail = operand;
+		       $$.operands[0] = $1;
+		       $$.operands[1].type = 0;
                      }
                      | operand_list ',' operand
                      {
-                       Operand *operand = malloc(sizeof(Operand));
+		       $$ = $1;
 
-                       $$ = $1;
-
-                       if (operand == NULL)
-                       {
-                         yyerror("Could not allocate memory for operand list node");
-                       }
+		       if ($$.operands[1].type != 0)
+		       {
+                         yyerror("Instructions can never have more than two operands");
+			 YYABORT;
+		       }
 		       else
 		       {
-		         *operand = $3;
-			 operand->next = NULL;
-
-                         if ($$.head == NULL)
-                           $$.head = operand;
-                         else
-                           ((Operand*)$$.tail)->next = operand;
-
-		         $$.tail = operand;
+			 $$.operands[1] = $3;
 		       }
                      }
                      ;
@@ -1288,6 +1273,7 @@ value                : value1
                        if ($$.data.values == NULL)
                        {
                          yyerror("Could not allocate memory for Value");
+			 YYABORT;
                        }
                        else
                        {
@@ -1310,6 +1296,7 @@ value1               : value2
                        if ($$.data.values == NULL)
                        {
                          yyerror("Could not allocate memory for Value");
+			 YYABORT;
                        }
                        else
                        {
@@ -1332,6 +1319,7 @@ value2               : value3
                        if ($$.data.values == NULL)
                        {
                          yyerror("Could not allocate memory for Value");
+			 YYABORT;
                        }
                        else
                        {
@@ -1354,6 +1342,7 @@ value3               : value4
                        if ($$.data.values == NULL)
                        {
                          yyerror("Could not allocate memory for Value");
+			 YYABORT;
                        }
                        else
                        {
@@ -1374,9 +1363,14 @@ value4               : value5
                        $$.data.values = malloc(sizeof(Value));
 
                        if ($$.data.values == NULL)
+		       {
                          yyerror("Could not allocate memory for Value");
+			 YYABORT;
+		       }
                        else
+		       {
                          $$.data.values[0] = $2;
+		       }
                      }
                      | '~' value4
                      {
@@ -1385,9 +1379,14 @@ value4               : value5
                        $$.data.values = malloc(sizeof(Value));
 
                        if ($$.data.values == NULL)
+		       {
                          yyerror("Could not allocate memory for Value");
+			 YYABORT;
+		       }
                        else
+		       {
                          $$.data.values[0] = $2;
+		       }
                      }
                      | '!' value4
                      {
@@ -1396,9 +1395,14 @@ value4               : value5
                        $$.data.values = malloc(sizeof(Value));
 
                        if ($$.data.values == NULL)
+		       {
                          yyerror("Could not allocate memory for Value");
+			 YYABORT;
+		       }
                        else
+		       {
                          $$.data.values[0] = $2;
+		       }
                      }
                      ;
 
