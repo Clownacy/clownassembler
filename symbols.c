@@ -12,6 +12,7 @@ typedef struct Symbol
 	struct Symbol *next;
 
 	char *identifier;
+	SymbolType type;
 	unsigned long value;
 } Symbol;
 
@@ -26,6 +27,36 @@ static Symbol** FindSymbol(const char *identifier)
 			return symbol;
 
 	return NULL;
+}
+
+static cc_bool AddSymbol(const char *identifier, SymbolType type, unsigned long value)
+{
+	cc_bool success = cc_true;
+
+	const size_t identifier_length = strlen(identifier) + 1;
+
+	Symbol *symbol = malloc(sizeof(Symbol) + identifier_length);
+
+	if (symbol == NULL)
+	{
+		fprintf(stderr, "Error: Could not allocate memory for symbol\n");
+		success = cc_false;
+	}
+	else
+	{
+		Symbol **bucket = &symbol_table[identifier[0] - 'A'];
+
+		symbol->next = *bucket;
+		symbol->identifier = (char*)(symbol + 1);
+		symbol->type = type;
+		symbol->value = value;
+
+		*bucket = symbol;
+
+		memcpy(symbol->identifier, identifier, identifier_length);
+	}
+
+	return success;
 }
 
 void ClearSymbols(void)
@@ -47,44 +78,54 @@ void ClearSymbols(void)
 	}
 }
 
-cc_bool AddSymbol(const char *identifier, unsigned long value)
+cc_bool SetSymbol(const char *identifier, SymbolType type, unsigned long value)
 {
 	cc_bool success = cc_true;
 
-	if (FindSymbol(identifier) != NULL)
+	Symbol **existing_symbol = FindSymbol(identifier);
+
+	switch (type)
 	{
-		fprintf(stderr, "Error: Symbol already defined\n");
-		success = cc_false;
-	}
-	else
-	{
-		const size_t identifier_length = strlen(identifier) + 1;
+		case SYMBOL_CONSTANT:
+			if (existing_symbol != NULL)
+			{
+				fprintf(stderr, "Error: Symbol already defined\n");
+				success = cc_false;
+			}
+			else
+			{
+				if (!AddSymbol(identifier, type, value))
+					success = cc_false;
+			}
 
-		Symbol *symbol = malloc(sizeof(Symbol) + identifier_length);
+			break;
 
-		if (symbol == NULL)
-		{
-			fprintf(stderr, "Error: Could not allocate memory for symbol\n");
-			success = cc_false;
-		}
-		else
-		{
-			Symbol **bucket = &symbol_table[identifier[0] - 'A'];
+		case SYMBOL_VARIABLE:
+			if (existing_symbol != NULL)
+			{
+				if ((*existing_symbol)->type != SYMBOL_VARIABLE)
+				{
+					fprintf(stderr, "Error: Symbol redefined with different type\n");
+					success = cc_false;
+				}
+				else
+				{
+					(*existing_symbol)->value = value;
+				}
+			}
+			else
+			{
+				if (!AddSymbol(identifier, type, value))
+					success = cc_false;
+			}
 
-			symbol->next = *bucket;
-			symbol->identifier = (char*)(symbol + 1);
-			symbol->value = value;
-
-			*bucket = symbol;
-
-			memcpy(symbol->identifier, identifier, identifier_length);
-		}
+			break;
 	}
 
 	return success;
 }
 
-cc_bool RemoveSymbol(const char *identifier)
+cc_bool UnsetSymbol(const char *identifier)
 {
 	cc_bool success = cc_true;
 
@@ -106,7 +147,7 @@ cc_bool RemoveSymbol(const char *identifier)
 	return success;
 }
 
-cc_bool ObtainSymbol(const char *identifier, unsigned long *value)
+cc_bool GetSymbol(const char *identifier, unsigned long *value)
 {
 	cc_bool success = cc_true;
 

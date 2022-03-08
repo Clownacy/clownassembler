@@ -143,8 +143,8 @@
 	cmpi.b	#$FF,$7F(a0,d0.w)
 	cmpi.b	#$FF,($FFFFFFFF).w
 	cmpi.b	#$FF,($FFFFFFFF).l
-	cmpi.b	#$FF,$7FFF(pc)
-	cmpi.b	#$FF,$7F(pc,d0.w)
+	cmpi.b	#$FF,*(pc)
+	cmpi.b	#$FF,*(pc,d0.w)
 	cmpi.w	#$FFFF,d0
 	cmpi.w	#$FFFF,(a0)
 	cmpi.w	#$FFFF,(a0)+
@@ -153,8 +153,8 @@
 	cmpi.w	#$FFFF,$7F(a0,d0.w)
 	cmpi.w	#$FFFF,($FFFFFFFF).w
 	cmpi.w	#$FFFF,($FFFFFFFF).l
-	cmpi.w	#$FFFF,$7FFF(pc)
-	cmpi.w	#$FFFF,$7F(pc,d0.w)
+	cmpi.w	#$FFFF,*(pc)
+	cmpi.w	#$FFFF,*(pc,d0.w)
 	cmpi.l	#$FFFFFFFF,d0
 	cmpi.l	#$FFFFFFFF,(a0)
 	cmpi.l	#$FFFFFFFF,(a0)+
@@ -163,8 +163,8 @@
 	cmpi.l	#$FFFFFFFF,$7F(a0,d0.w)
 	cmpi.l	#$FFFFFFFF,($FFFFFFFF).w
 	cmpi.l	#$FFFFFFFF,($FFFFFFFF).l
-	cmpi.l	#$FFFFFFFF,$7FFF(pc)
-	cmpi.l	#$FFFFFFFF,$7F(pc,d0.w)
+	cmpi.l	#$FFFFFFFF,*(pc)
+	cmpi.l	#$FFFFFFFF,*(pc,d0.w)
 
 	btst.l	d0,d0
 	btst.b	d0,(a0)
@@ -175,8 +175,8 @@
 	btst.b	d0,($FFFFFFFF).w
 	btst.b	d0,($FFFFFFFF).l
 	btst.b	d0,#$55
-	btst.b	d0,$7FFF(pc)
-	btst.b	d0,$7F(pc,d0.w)
+	btst.b	d0,*(pc)
+	btst.b	d0,*(pc,d0.w)
 
 	btst	d0,d0
 	btst	d0,(a0)
@@ -187,8 +187,8 @@
 	btst	d0,($FFFFFFFF).w
 	btst	d0,($FFFFFFFF).l
 	btst	d0,#$55
-	btst	d0,$7FFF(pc)
-	btst	d0,$7F(pc,d0.w)
+	btst	d0,*(pc)
+	btst	d0,*(pc,d0.w)
 
 	btst.l	#0,d0
 	btst.b	#0,(a0)
@@ -198,8 +198,8 @@
 	btst.b	#0,$7F(a0,d0.w)
 	btst.b	#0,($FFFFFFFF).w
 	btst.b	#0,($FFFFFFFF).l
-	btst.b	#0,$7FFF(pc)
-	btst.b	#0,$7F(pc,d0.w)
+	btst.b	#0,*(pc)
+	btst.b	#0,*(pc,d0.w)
 
 	btst	#0,d0
 	btst	#0,(a0)
@@ -209,8 +209,8 @@
 	btst	#0,$7F(a0,d0.w)
 	btst	#0,($FFFFFFFF).w
 	btst	#0,($FFFFFFFF).l
-	btst	#0,$7FFF(pc)
-	btst	#0,$7F(pc,d0.w)
+	btst	#0,*(pc)
+	btst	#0,*(pc,d0.w)
 
 	bchg.l	d0,d0
 	bchg.b	d0,(a0)
@@ -334,8 +334,8 @@
 	movea.w	$7F(a0,d0.w),a0
 	movea.w	($FFFFFFFF).w,a0
 	movea.w	($FFFFFFFF).l,a0
-	movea.w	$7FFF(pc),a0
-	movea.w	$7F(pc,d0.w),a0
+	movea.w	*(pc),a0
+	movea.w	*(pc,d0.w),a0
 	movea.l	d0,a0
 	movea.l	a0,a0
 	movea.l	(a0),a0
@@ -345,8 +345,8 @@
 	movea.l	$7F(a0,d0.w),a0
 	movea.l	($FFFFFFFF).w,a0
 	movea.l	($FFFFFFFF).l,a0
-	movea.l	$7FFF(pc),a0
-	movea.l	$7F(pc,d0.w),a0
+	movea.l	*(pc),a0
+	movea.l	*(pc,d0.w),a0
 
 	move.b	d0,d0
 	move.b	d0,(a0)
@@ -428,22 +428,22 @@
 	move.b	#$FF,$7F(a0,d0.w)
 	move.b	#$FF,($FFFFFFFF).w
 	move.b	#$FF,($FFFFFFFF).l
-	move.b	$7FFF(pc),d0
-	move.b	$7FFF(pc),(a0)
-	move.b	$7FFF(pc),(a0)+
-	move.b	$7FFF(pc),-(a0)
-	move.b	$7FFF(pc),$7FFF(a0)
-	move.b	$7FFF(pc),$7F(a0,d0.w)
-	move.b	$7FFF(pc),($FFFFFFFF).w
-	move.b	$7FFF(pc),($FFFFFFFF).l
-	move.b	$7F(pc,d0.w),d0
-	move.b	$7F(pc,d0.w),(a0)
-	move.b	$7F(pc,d0.w),(a0)+
-	move.b	$7F(pc,d0.w),-(a0)
-	move.b	$7F(pc,d0.w),$7FFF(a0)
-	move.b	$7F(pc,d0.w),$7F(a0,d0.w)
-	move.b	$7F(pc,d0.w),($FFFFFFFF).w
-	move.b	$7F(pc,d0.w),($FFFFFFFF).l
+	move.b	*(pc),d0
+	move.b	*(pc),(a0)
+	move.b	*(pc),(a0)+
+	move.b	*(pc),-(a0)
+	move.b	*(pc),$7FFF(a0)
+	move.b	*(pc),$7F(a0,d0.w)
+	move.b	*(pc),($FFFFFFFF).w
+	move.b	*(pc),($FFFFFFFF).l
+	move.b	*(pc,d0.w),d0
+	move.b	*(pc,d0.w),(a0)
+	move.b	*(pc,d0.w),(a0)+
+	move.b	*(pc,d0.w),-(a0)
+	move.b	*(pc,d0.w),$7FFF(a0)
+	move.b	*(pc,d0.w),$7F(a0,d0.w)
+	move.b	*(pc,d0.w),($FFFFFFFF).w
+	move.b	*(pc,d0.w),($FFFFFFFF).l
 	move.w	d0,d0
 	move.w	d0,(a0)
 	move.w	d0,(a0)+
@@ -524,22 +524,22 @@
 	move.w	#$FFFF,$7F(a0,d0.w)
 	move.w	#$FFFF,($FFFFFFFF).w
 	move.w	#$FF,($FFFFFFFF).l
-	move.w	$7FFF(pc),d0
-	move.w	$7FFF(pc),(a0)
-	move.w	$7FFF(pc),(a0)+
-	move.w	$7FFF(pc),-(a0)
-	move.w	$7FFF(pc),$7FFF(a0)
-	move.w	$7FFF(pc),$7F(a0,d0.w)
-	move.w	$7FFF(pc),($FFFFFFFF).w
-	move.w	$7FFF(pc),($FFFFFFFF).l
-	move.w	$7F(pc,d0.w),d0
-	move.w	$7F(pc,d0.w),(a0)
-	move.w	$7F(pc,d0.w),(a0)+
-	move.w	$7F(pc,d0.w),-(a0)
-	move.w	$7F(pc,d0.w),$7FFF(a0)
-	move.w	$7F(pc,d0.w),$7F(a0,d0.w)
-	move.w	$7F(pc,d0.w),($FFFFFFFF).w
-	move.w	$7F(pc,d0.w),($FFFFFFFF).l
+	move.w	*(pc),d0
+	move.w	*(pc),(a0)
+	move.w	*(pc),(a0)+
+	move.w	*(pc),-(a0)
+	move.w	*(pc),$7FFF(a0)
+	move.w	*(pc),$7F(a0,d0.w)
+	move.w	*(pc),($FFFFFFFF).w
+	move.w	*(pc),($FFFFFFFF).l
+	move.w	*(pc,d0.w),d0
+	move.w	*(pc,d0.w),(a0)
+	move.w	*(pc,d0.w),(a0)+
+	move.w	*(pc,d0.w),-(a0)
+	move.w	*(pc,d0.w),$7FFF(a0)
+	move.w	*(pc,d0.w),$7F(a0,d0.w)
+	move.w	*(pc,d0.w),($FFFFFFFF).w
+	move.w	*(pc,d0.w),($FFFFFFFF).l
 	move.l	d0,d0
 	move.l	d0,(a0)
 	move.l	d0,(a0)+
@@ -620,22 +620,22 @@
 	move.l	#$FFFFFFFF,$7F(a0,d0.w)
 	move.l	#$FFFFFFFF,($FFFFFFFF).w
 	move.l	#$FFFFFFFF,($FFFFFFFF).l
-	move.l	$7FFF(pc),d0
-	move.l	$7FFF(pc),(a0)
-	move.l	$7FFF(pc),(a0)+
-	move.l	$7FFF(pc),-(a0)
-	move.l	$7FFF(pc),$7FFF(a0)
-	move.l	$7FFF(pc),$7F(a0,d0.w)
-	move.l	$7FFF(pc),($FFFFFFFF).w
-	move.l	$7FFF(pc),($FFFFFFFF).l
-	move.l	$7F(pc,d0.w),d0
-	move.l	$7F(pc,d0.w),(a0)
-	move.l	$7F(pc,d0.w),(a0)+
-	move.l	$7F(pc,d0.w),-(a0)
-	move.l	$7F(pc,d0.w),$7FFF(a0)
-	move.l	$7F(pc,d0.w),$7F(a0,d0.w)
-	move.l	$7F(pc,d0.w),($FFFFFFFF).w
-	move.l	$7F(pc,d0.w),($FFFFFFFF).l
+	move.l	*(pc),d0
+	move.l	*(pc),(a0)
+	move.l	*(pc),(a0)+
+	move.l	*(pc),-(a0)
+	move.l	*(pc),$7FFF(a0)
+	move.l	*(pc),$7F(a0,d0.w)
+	move.l	*(pc),($FFFFFFFF).w
+	move.l	*(pc),($FFFFFFFF).l
+	move.l	*(pc,d0.w),d0
+	move.l	*(pc,d0.w),(a0)
+	move.l	*(pc,d0.w),(a0)+
+	move.l	*(pc,d0.w),-(a0)
+	move.l	*(pc,d0.w),$7FFF(a0)
+	move.l	*(pc,d0.w),$7F(a0,d0.w)
+	move.l	*(pc,d0.w),($FFFFFFFF).w
+	move.l	*(pc,d0.w),($FFFFFFFF).l
 	move.w	sr,d0
 	move.w	sr,(a0)
 	move.w	sr,(a0)+
@@ -653,8 +653,8 @@
 	move.w	($FFFFFFFF).w,ccr
 	move.w	($FFFFFFFF).l,ccr
 	move.w	#$FFFF,ccr
-	move.w	$7FFF(pc),ccr
-	move.w	$7F(pc,d0.w),ccr
+	move.w	*(pc),ccr
+	move.w	*(pc,d0.w),ccr
 	move.w	d0,sr
 	move.w	(a0),sr
 	move.w	(a0)+,sr
@@ -664,8 +664,8 @@
 	move.w	($FFFFFFFF).w,sr
 	move.w	($FFFFFFFF).l,sr
 	move.w	#$FFFF,sr
-	move.w	$7FFF(pc),sr
-	move.w	$7F(pc,d0.w),sr
+	move.w	*(pc),sr
+	move.w	*(pc,d0.w),sr
 
 	negx.b	d0
 	negx.b	(a0)
@@ -795,15 +795,15 @@
 	pea.l	$7F(a0,d0.w)
 	pea.l	($FFFFFFFF).w
 	pea.l	($FFFFFFFF).l
-	pea.l	$7FFF(pc)
-	pea.l	$7F(pc,d0.w)
+	pea.l	*(pc)
+	pea.l	*(pc,d0.w)
 	pea	(a0)
 	pea	$7FFF(a0)
 	pea	$7F(a0,d0.w)
 	pea	($FFFFFFFF).w
 	pea	($FFFFFFFF).l
-	pea	$7FFF(pc)
-	pea	$7F(pc,d0.w)
+	pea	*(pc)
+	pea	*(pc,d0.w)
 
 	illegal
 
@@ -880,16 +880,16 @@
 	jsr	$7F(a0,d0.w)
 	jsr	($FFFFFFFF).w
 	jsr	($FFFFFFFF).l
-	jsr	$7FFF(pc)
-	jsr	$7F(pc,d0.w)
+	jsr	*(pc)
+	jsr	*(pc,d0.w)
 
 	jmp	(a0)
 	jmp	$7FFF(a0)
 	jmp	$7F(a0,d0.w)
 	jmp	($FFFFFFFF).w
 	jmp	($FFFFFFFF).l
-	jmp	$7FFF(pc)
-	jmp	$7F(pc,d0.w)
+	jmp	*(pc)
+	jmp	*(pc,d0.w)
 
 	movem.w	d0-a7,(a0)
 	movem.w	d0-a7,-(a0)
@@ -903,8 +903,8 @@
 	movem.w	$7F(a0,d0.w),d0-a7
 	movem.w	($FFFFFFFF).w,d0-a7
 	movem.w	($FFFFFFFF).l,d0-a7
-	movem.w	$7FFF(pc),d0-a7
-	movem.w	$7F(pc,d0.w),d0-a7
+	movem.w	*(pc),d0-a7
+	movem.w	*(pc,d0.w),d0-a7
 	movem.l	d0-a7,(a0)
 	movem.l	d0-a7,-(a0)
 	movem.l	d0-a7,$7FFF(a0)
@@ -917,23 +917,23 @@
 	movem.l	$7F(a0,d0.w),d0-a7
 	movem.l	($FFFFFFFF).w,d0-a7
 	movem.l	($FFFFFFFF).l,d0-a7
-	movem.l	$7FFF(pc),d0-a7
-	movem.l	$7F(pc,d0.w),d0-a7
+	movem.l	*(pc),d0-a7
+	movem.l	*(pc,d0.w),d0-a7
 
 	lea.l	(a0),a0
 	lea.l	$7FFF(a0),a0
 	lea.l	$7F(a0,d0.w),a0
 	lea.l	($FFFFFFFF).w,a0
 	lea.l	($FFFFFFFF).l,a0
-	lea.l	$7FFF(pc),a0
-	lea.l	$7F(pc,d0.w),a0
+	lea.l	*(pc),a0
+	lea.l	*(pc,d0.w),a0
 	lea	(a0),a0
 	lea	$7FFF(a0),a0
 	lea	$7F(a0,d0.w),a0
 	lea	($FFFFFFFF).w,a0
 	lea	($FFFFFFFF).l,a0
-	lea	$7FFF(pc),a0
-	lea	$7F(pc,d0.w),a0
+	lea	*(pc),a0
+	lea	*(pc,d0.w),a0
 
 	chk.w	d0,d0
 	chk.w	(a0),d0
@@ -944,8 +944,8 @@
 	chk.w	($FFFFFFFF).w,d0
 	chk.w	($FFFFFFFF).l,d0
 	chk.w	#$FFFF,d0
-	chk.w	$7FFF(pc),d0
-	chk.w	$7F(pc,d0.w),d0
+	chk.w	*(pc),d0
+	chk.w	*(pc,d0.w),d0
 	chk	d0,d0
 	chk	(a0),d0
 	chk	(a0)+,d0
@@ -955,8 +955,8 @@
 	chk	($FFFFFFFF).w,d0
 	chk	($FFFFFFFF).l,d0
 	chk	#$FFFF,d0
-	chk	$7FFF(pc),d0
-	chk	$7F(pc,d0.w),d0
+	chk	*(pc),d0
+	chk	*(pc,d0.w),d0
 
 	addq.b	#1,d0
 	addq.b	#1,(a0)
@@ -1406,8 +1406,8 @@
 	divu.w	($FFFFFFFF).w,d0
 	divu.w	($FFFFFFFF).l,d0
 	divu.w	#$FFFF,d0
-	divu.w	$7FFF(pc),d0
-	divu.w	$7F(pc,d0.w),d0
+	divu.w	*(pc),d0
+	divu.w	*(pc,d0.w),d0
 	divu	d0,d0
 	divu	(a0),d0
 	divu	(a0)+,d0
@@ -1417,8 +1417,8 @@
 	divu	($FFFFFFFF).w,d0
 	divu	($FFFFFFFF).l,d0
 	divu	#$FFFF,d0
-	divu	$7FFF(pc),d0
-	divu	$7F(pc,d0.w),d0
+	divu	*(pc),d0
+	divu	*(pc,d0.w),d0
 
 	divs.w	d0,d0
 	divs.w	(a0),d0
@@ -1429,8 +1429,8 @@
 	divs.w	($FFFFFFFF).w,d0
 	divs.w	($FFFFFFFF).l,d0
 	divs.w	#$FFFF,d0
-	divs.w	$7FFF(pc),d0
-	divs.w	$7F(pc,d0.w),d0
+	divs.w	*(pc),d0
+	divs.w	*(pc,d0.w),d0
 	divs	d0,d0
 	divs	(a0),d0
 	divs	(a0)+,d0
@@ -1440,8 +1440,8 @@
 	divs	($FFFFFFFF).w,d0
 	divs	($FFFFFFFF).l,d0
 	divs	#$FFFF,d0
-	divs	$7FFF(pc),d0
-	divs	$7F(pc,d0.w),d0
+	divs	*(pc),d0
+	divs	*(pc,d0.w),d0
 
 	sbcd.b	d0,d0
 	sbcd.b	-(a0),-(a0)
@@ -1456,8 +1456,8 @@
 	or.b	$7F(a0,d0.w),d0
 	or.b	($FFFFFFFF).w,d0
 	or.b	($FFFFFFFF).l,d0
-	or.b	$7FFF(pc),d0
-	or.b	$7F(pc,d0.w),d0
+	or.b	*(pc),d0
+	or.b	*(pc,d0.w),d0
 	or.b	d0,(a0)
 	or.b	d0,(a0)+
 	or.b	d0,-(a0)
@@ -1473,8 +1473,8 @@
 	or.w	$7F(a0,d0.w),d0
 	or.w	($FFFFFFFF).w,d0
 	or.w	($FFFFFFFF).l,d0
-	or.w	$7FFF(pc),d0
-	or.w	$7F(pc,d0.w),d0
+	or.w	*(pc),d0
+	or.w	*(pc,d0.w),d0
 	or.w	d0,(a0)
 	or.w	d0,(a0)+
 	or.w	d0,-(a0)
@@ -1490,8 +1490,8 @@
 	or.l	$7F(a0,d0.w),d0
 	or.l	($FFFFFFFF).w,d0
 	or.l	($FFFFFFFF).l,d0
-	or.l	$7FFF(pc),d0
-	or.l	$7F(pc,d0.w),d0
+	or.l	*(pc),d0
+	or.l	*(pc,d0.w),d0
 	or.l	d0,(a0)
 	or.l	d0,(a0)+
 	or.l	d0,-(a0)
@@ -1508,8 +1508,8 @@
 	sub.b	$7F(a0,d0.w),d0
 	sub.b	($FFFFFFFF).w,d0
 	sub.b	($FFFFFFFF).l,d0
-	sub.b	$7FFF(pc),d0
-	sub.b	$7F(pc,d0.w),d0
+	sub.b	*(pc),d0
+	sub.b	*(pc,d0.w),d0
 	sub.b	d0,(a0)
 	sub.b	d0,(a0)+
 	sub.b	d0,-(a0)
@@ -1525,8 +1525,8 @@
 	sub.w	$7F(a0,d0.w),d0
 	sub.w	($FFFFFFFF).w,d0
 	sub.w	($FFFFFFFF).l,d0
-	sub.w	$7FFF(pc),d0
-	sub.w	$7F(pc,d0.w),d0
+	sub.w	*(pc),d0
+	sub.w	*(pc,d0.w),d0
 	sub.w	d0,(a0)
 	sub.w	d0,(a0)+
 	sub.w	d0,-(a0)
@@ -1542,8 +1542,8 @@
 	sub.l	$7F(a0,d0.w),d0
 	sub.l	($FFFFFFFF).w,d0
 	sub.l	($FFFFFFFF).l,d0
-	sub.l	$7FFF(pc),d0
-	sub.l	$7F(pc,d0.w),d0
+	sub.l	*(pc),d0
+	sub.l	*(pc,d0.w),d0
 	sub.l	d0,(a0)
 	sub.l	d0,(a0)+
 	sub.l	d0,-(a0)
@@ -1569,8 +1569,8 @@
 	suba.w	($FFFFFFFF).w,a0
 	suba.w	($FFFFFFFF).l,a0
 	suba.w	#$7FFF,a0
-	suba.w	$7FFF(pc),a0
-	suba.w	$7F(pc,d0.w),a0
+	suba.w	*(pc),a0
+	suba.w	*(pc,d0.w),a0
 	suba.l	d0,a0
 	suba.l	a0,a0
 	suba.l	(a0),a0
@@ -1581,8 +1581,8 @@
 	suba.l	($FFFFFFFF).w,a0
 	suba.l	($FFFFFFFF).l,a0
 	suba.l	#$7FFF,a0
-	suba.l	$7FFF(pc),a0
-	suba.l	$7F(pc,d0.w),a0
+	suba.l	*(pc),a0
+	suba.l	*(pc,d0.w),a0
 
 	eor.b	d0,d0
 	eor.b	d0,(a0)
@@ -1621,8 +1621,8 @@
 	cmp.b	$7F(a0,d0.w),d0
 	cmp.b	($FFFFFFFF).w,d0
 	cmp.b	($FFFFFFFF).l,d0
-	cmp.b	$7FFF(pc),d0
-	cmp.b	$7F(pc,d0.w),d0
+	cmp.b	*(pc),d0
+	cmp.b	*(pc,d0.w),d0
 	cmp.w	d0,d0
 	cmp.w	(a0),d0
 	cmp.w	(a0)+,d0
@@ -1631,8 +1631,8 @@
 	cmp.w	$7F(a0,d0.w),d0
 	cmp.w	($FFFFFFFF).w,d0
 	cmp.w	($FFFFFFFF).l,d0
-	cmp.w	$7FFF(pc),d0
-	cmp.w	$7F(pc,d0.w),d0
+	cmp.w	*(pc),d0
+	cmp.w	*(pc,d0.w),d0
 	cmp.l	d0,d0
 	cmp.l	(a0),d0
 	cmp.l	(a0)+,d0
@@ -1641,8 +1641,8 @@
 	cmp.l	$7F(a0,d0.w),d0
 	cmp.l	($FFFFFFFF).w,d0
 	cmp.l	($FFFFFFFF).l,d0
-	cmp.l	$7FFF(pc),d0
-	cmp.l	$7F(pc,d0.w),d0
+	cmp.l	*(pc),d0
+	cmp.l	*(pc,d0.w),d0
 
 	cmpa.w	d0,a0
 	cmpa.w	a0,a0
@@ -1654,8 +1654,8 @@
 	cmpa.w	($FFFFFFFF).w,a0
 	cmpa.w	($FFFFFFFF).l,a0
 	cmpa.w	#$FFFF,a0
-	cmpa.w	$7FFF(pc),a0
-	cmpa.w	$7F(pc,d0.w),a0
+	cmpa.w	*(pc),a0
+	cmpa.w	*(pc,d0.w),a0
 	cmpa.l	d0,a0
 	cmpa.l	a0,a0
 	cmpa.l	(a0),a0
@@ -1666,8 +1666,8 @@
 	cmpa.l	($FFFFFFFF).w,a0
 	cmpa.l	($FFFFFFFF).l,a0
 	cmpa.l	#$FFFF,a0
-	cmpa.l	$7FFF(pc),a0
-	cmpa.l	$7F(pc,d0.w),a0
+	cmpa.l	*(pc),a0
+	cmpa.l	*(pc,d0.w),a0
 
 	mulu.w	d0,d0
 	mulu.w	(a0),d0
@@ -1678,8 +1678,8 @@
 	mulu.w	($FFFFFFFF).w,d0
 	mulu.w	($FFFFFFFF).l,d0
 	mulu.w	#$FFFF,d0
-	mulu.w	$7FFF(pc),d0
-	mulu.w	$7F(pc,d0.w),d0
+	mulu.w	*(pc),d0
+	mulu.w	*(pc,d0.w),d0
 	mulu	d0,d0
 	mulu	(a0),d0
 	mulu	(a0)+,d0
@@ -1689,8 +1689,8 @@
 	mulu	($FFFFFFFF).w,d0
 	mulu	($FFFFFFFF).l,d0
 	mulu	#$FFFF,d0
-	mulu	$7FFF(pc),d0
-	mulu	$7F(pc,d0.w),d0
+	mulu	*(pc),d0
+	mulu	*(pc,d0.w),d0
 
 	muls.w	d0,d0
 	muls.w	(a0),d0
@@ -1701,8 +1701,8 @@
 	muls.w	($FFFFFFFF).w,d0
 	muls.w	($FFFFFFFF).l,d0
 	muls.w	#$FFFF,d0
-	muls.w	$7FFF(pc),d0
-	muls.w	$7F(pc,d0.w),d0
+	muls.w	*(pc),d0
+	muls.w	*(pc,d0.w),d0
 	muls	d0,d0
 	muls	(a0),d0
 	muls	(a0)+,d0
@@ -1712,8 +1712,8 @@
 	muls	($FFFFFFFF).w,d0
 	muls	($FFFFFFFF).l,d0
 	muls	#$FFFF,d0
-	muls	$7FFF(pc),d0
-	muls	$7F(pc,d0.w),d0
+	muls	*(pc),d0
+	muls	*(pc,d0.w),d0
 
 	abcd.b	d0,d0
 	abcd.b	-(a0),-(a0)
@@ -1737,8 +1737,8 @@
 	and.b	$7F(a0,d0.w),d0
 	and.b	($FFFFFFFF).w,d0
 	and.b	($FFFFFFFF).l,d0
-	and.b	$7FFF(pc),d0
-	and.b	$7F(pc,d0.w),d0
+	and.b	*(pc),d0
+	and.b	*(pc,d0.w),d0
 	and.b	d0,(a0)
 	and.b	d0,(a0)+
 	and.b	d0,-(a0)
@@ -1754,8 +1754,8 @@
 	and.w	$7F(a0,d0.w),d0
 	and.w	($FFFFFFFF).w,d0
 	and.w	($FFFFFFFF).l,d0
-	and.w	$7FFF(pc),d0
-	and.w	$7F(pc,d0.w),d0
+	and.w	*(pc),d0
+	and.w	*(pc,d0.w),d0
 	and.w	d0,(a0)
 	and.w	d0,(a0)+
 	and.w	d0,-(a0)
@@ -1771,8 +1771,8 @@
 	and.l	$7F(a0,d0.w),d0
 	and.l	($FFFFFFFF).w,d0
 	and.l	($FFFFFFFF).l,d0
-	and.l	$7FFF(pc),d0
-	and.l	$7F(pc,d0.w),d0
+	and.l	*(pc),d0
+	and.l	*(pc,d0.w),d0
 	and.l	d0,(a0)
 	and.l	d0,(a0)+
 	and.l	d0,-(a0)
@@ -1789,8 +1789,8 @@
 	add.b	$7F(a0,d0.w),d0
 	add.b	($FFFFFFFF).w,d0
 	add.b	($FFFFFFFF).l,d0
-	add.b	$7FFF(pc),d0
-	add.b	$7F(pc,d0.w),d0
+	add.b	*(pc),d0
+	add.b	*(pc,d0.w),d0
 	add.b	d0,(a0)
 	add.b	d0,(a0)+
 	add.b	d0,-(a0)
@@ -1806,8 +1806,8 @@
 	add.w	$7F(a0,d0.w),d0
 	add.w	($FFFFFFFF).w,d0
 	add.w	($FFFFFFFF).l,d0
-	add.w	$7FFF(pc),d0
-	add.w	$7F(pc,d0.w),d0
+	add.w	*(pc),d0
+	add.w	*(pc,d0.w),d0
 	add.w	d0,(a0)
 	add.w	d0,(a0)+
 	add.w	d0,-(a0)
@@ -1823,8 +1823,8 @@
 	add.l	$7F(a0,d0.w),d0
 	add.l	($FFFFFFFF).w,d0
 	add.l	($FFFFFFFF).l,d0
-	add.l	$7FFF(pc),d0
-	add.l	$7F(pc,d0.w),d0
+	add.l	*(pc),d0
+	add.l	*(pc,d0.w),d0
 	add.l	d0,(a0)
 	add.l	d0,(a0)+
 	add.l	d0,-(a0)
@@ -1850,8 +1850,8 @@
 	adda.w	($FFFFFFFF).w,a0
 	adda.w	($FFFFFFFF).l,a0
 	adda.w	#$7FFF,a0
-	adda.w	$7FFF(pc),a0
-	adda.w	$7F(pc,d0.w),a0
+	adda.w	*(pc),a0
+	adda.w	*(pc,d0.w),a0
 	adda.l	d0,a0
 	adda.l	a0,a0
 	adda.l	(a0),a0
@@ -1862,8 +1862,8 @@
 	adda.l	($FFFFFFFF).w,a0
 	adda.l	($FFFFFFFF).l,a0
 	adda.l	#$7FFF,a0
-	adda.l	$7FFF(pc),a0
-	adda.l	$7F(pc,d0.w),a0
+	adda.l	*(pc),a0
+	adda.l	*(pc,d0.w),a0
 
 	asl.b	d0,d0
 	asl.b	#1,d0

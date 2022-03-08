@@ -126,7 +126,7 @@ static cc_bool ResolveValue(const Value *value, unsigned long *value_integer, cc
 			break;
 
 		case VALUE_IDENTIFIER:
-			if (!ObtainSymbol(value->data.identifier, value_integer))
+			if (!GetSymbol(value->data.identifier, value_integer))
 			{
 				success = cc_false;
 
@@ -3295,7 +3295,9 @@ cc_bool ProcessParseTree(const StatementListNode *statement_list)
 			fix_up.output_position = ftell(output_file);
 
 			if (statement_list_node->statement.label != NULL)
-				AddSymbol(statement_list_node->statement.label, program_counter);
+				SetSymbol(statement_list_node->statement.label, SYMBOL_CONSTANT, program_counter);
+
+			SetSymbol("*", SYMBOL_VARIABLE, program_counter);
 
 			fix_up_needed = cc_false;
 
@@ -3310,6 +3312,8 @@ cc_bool ProcessParseTree(const StatementListNode *statement_list)
 		{
 			program_counter = fix_up->program_counter;
 			fseek(output_file, fix_up->output_position , SEEK_SET);
+
+			SetSymbol("*", SYMBOL_VARIABLE, program_counter);
 
 			if (!ProcessStatement(output_file, fix_up->statement, &program_counter, cc_true))
 				success = cc_false;

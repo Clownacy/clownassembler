@@ -1412,6 +1412,11 @@ value5               : TOKEN_NUMBER
                        $$.type = VALUE_IDENTIFIER;
                        $$.data.identifier = $1;
                      }
+                     | '*'
+                     {
+                       $$.type = VALUE_IDENTIFIER;
+                       $$.data.identifier = "*";
+                     }
                      | '(' value ')'
                      {
                        $$ = $2;

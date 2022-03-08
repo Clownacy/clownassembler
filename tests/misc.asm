@@ -320,4 +320,7 @@ Object_Offset1:
 
 Object_Offset2:
 	rts
+
+	bra.s	*
+	bra.s	1*(**1) ; Amazingly, this actually works as intended
   ; More blank lines to test support for trailing blank statements
