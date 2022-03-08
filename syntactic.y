@@ -291,9 +291,9 @@ statement_list       : statement
                      {
                        /* Don't bother adding empty statements to the statement list */
                        if ($1.label == NULL && $1.type == STATEMENT_TYPE_EMPTY)
-		       {
-		         $$ = NULL;
-		       }
+                       {
+                         $$ = NULL;
+                       }
                        else
                        {
                          $$ = malloc(sizeof(StatementListNode));
@@ -308,16 +308,16 @@ statement_list       : statement
                            $$->next = NULL;
                          }
 
-		         statement_list_head = $$;
-		       }
+                         statement_list_head = $$;
+                       }
                      }
                      | statement_list statement
                      {
                        /* Don't bother adding empty statements to the statement list */
                        if ($2.label == NULL && $2.type == STATEMENT_TYPE_EMPTY)
-		       {
-		         $$ = $1;
-		       }
+                       {
+                         $$ = $1;
+                       }
                        else
                        {
                          $$ = malloc(sizeof(StatementListNode));
@@ -331,9 +331,9 @@ statement_list       : statement
                            $$->statement = $2;
 
                            if ($1 == NULL)
-			     statement_list_head = $$;
-			   else
-			     $1->next = $$;
+                             statement_list_head = $$;
+                           else
+                             $1->next = $$;
                          }
                        }
                      }
@@ -565,162 +565,162 @@ opcode               : TOKEN_OPCODE_ORI
                      | TOKEN_OPCODE_ST
                      {
                        $$.type = OPCODE_Scc;
-					   $$.condition = CONDITION_TRUE;
+                       $$.condition = CONDITION_TRUE;
                      }
                      | TOKEN_OPCODE_SF
                      {
                        $$.type = OPCODE_Scc;
-					   $$.condition = CONDITION_FALSE;
+                       $$.condition = CONDITION_FALSE;
                      }
                      | TOKEN_OPCODE_SHI
                      {
                        $$.type = OPCODE_Scc;
-					   $$.condition = CONDITION_HIGHER;
+                       $$.condition = CONDITION_HIGHER;
                      }
                      | TOKEN_OPCODE_SLS
                      {
                        $$.type = OPCODE_Scc;
-					   $$.condition = CONDITION_LOWER_OR_SAME;
+                       $$.condition = CONDITION_LOWER_OR_SAME;
                      }
                      | TOKEN_OPCODE_SCC
                      {
                        $$.type = OPCODE_Scc;
-					   $$.condition = CONDITION_CARRY_CLEAR;
+                       $$.condition = CONDITION_CARRY_CLEAR;
                      }
                      | TOKEN_OPCODE_SCS
                      {
                        $$.type = OPCODE_Scc;
-					   $$.condition = CONDITION_CARRY_SET;
+                       $$.condition = CONDITION_CARRY_SET;
                      }
                      | TOKEN_OPCODE_SNE
                      {
                        $$.type = OPCODE_Scc;
-					   $$.condition = CONDITION_NOT_EQUAL;
+                       $$.condition = CONDITION_NOT_EQUAL;
                      }
                      | TOKEN_OPCODE_SEQ
                      {
                        $$.type = OPCODE_Scc;
-					   $$.condition = CONDITION_EQUAL;
+                       $$.condition = CONDITION_EQUAL;
                      }
                      | TOKEN_OPCODE_SVC
                      {
                        $$.type = OPCODE_Scc;
-					   $$.condition = CONDITION_OVERFLOW_CLEAR;
+                       $$.condition = CONDITION_OVERFLOW_CLEAR;
                      }
                      | TOKEN_OPCODE_SVS
                      {
                        $$.type = OPCODE_Scc;
-					   $$.condition = CONDITION_OVERFLOW_SET;
+                       $$.condition = CONDITION_OVERFLOW_SET;
                      }
                      | TOKEN_OPCODE_SPL
                      {
                        $$.type = OPCODE_Scc;
-					   $$.condition = CONDITION_PLUS;
+                       $$.condition = CONDITION_PLUS;
                      }
                      | TOKEN_OPCODE_SMI
                      {
                        $$.type = OPCODE_Scc;
-					   $$.condition = CONDITION_MINUS;
+                       $$.condition = CONDITION_MINUS;
                      }
                      | TOKEN_OPCODE_SGE
                      {
                        $$.type = OPCODE_Scc;
-					   $$.condition = CONDITION_GREATER_OR_EQUAL;
+                       $$.condition = CONDITION_GREATER_OR_EQUAL;
                      }
                      | TOKEN_OPCODE_SLT
                      {
                        $$.type = OPCODE_Scc;
-					   $$.condition = CONDITION_LESS_THAN;
+                       $$.condition = CONDITION_LESS_THAN;
                      }
                      | TOKEN_OPCODE_SGT
                      {
                        $$.type = OPCODE_Scc;
-					   $$.condition = CONDITION_GREATER_THAN;
+                       $$.condition = CONDITION_GREATER_THAN;
                      }
                      | TOKEN_OPCODE_SLE
                      {
                        $$.type = OPCODE_Scc;
-					   $$.condition = CONDITION_LESS_OR_EQUAL;
+                       $$.condition = CONDITION_LESS_OR_EQUAL;
                      }
                      | TOKEN_OPCODE_DBT
                      {
                        $$.type = OPCODE_DBcc;
-					   $$.condition = CONDITION_TRUE;
+                       $$.condition = CONDITION_TRUE;
                      }
                      | TOKEN_OPCODE_DBF
                      {
                        $$.type = OPCODE_DBcc;
-					   $$.condition = CONDITION_FALSE;
+                       $$.condition = CONDITION_FALSE;
                      }
                      | TOKEN_OPCODE_DBHI
                      {
                        $$.type = OPCODE_DBcc;
-					   $$.condition = CONDITION_HIGHER;
+                       $$.condition = CONDITION_HIGHER;
                      }
                      | TOKEN_OPCODE_DBLS
                      {
                        $$.type = OPCODE_DBcc;
-					   $$.condition = CONDITION_LOWER_OR_SAME;
+                       $$.condition = CONDITION_LOWER_OR_SAME;
                      }
                      | TOKEN_OPCODE_DBCC
                      {
                        $$.type = OPCODE_DBcc;
-					   $$.condition = CONDITION_CARRY_CLEAR;
+                       $$.condition = CONDITION_CARRY_CLEAR;
                      }
                      | TOKEN_OPCODE_DBCS
                      {
                        $$.type = OPCODE_DBcc;
-					   $$.condition = CONDITION_CARRY_SET;
+                       $$.condition = CONDITION_CARRY_SET;
                      }
                      | TOKEN_OPCODE_DBNE
                      {
                        $$.type = OPCODE_DBcc;
-					   $$.condition = CONDITION_NOT_EQUAL;
+                       $$.condition = CONDITION_NOT_EQUAL;
                      }
                      | TOKEN_OPCODE_DBEQ
                      {
                        $$.type = OPCODE_DBcc;
-					   $$.condition = CONDITION_EQUAL;
+                       $$.condition = CONDITION_EQUAL;
                      }
                      | TOKEN_OPCODE_DBVC
                      {
                        $$.type = OPCODE_DBcc;
-					   $$.condition = CONDITION_OVERFLOW_CLEAR;
+                       $$.condition = CONDITION_OVERFLOW_CLEAR;
                      }
                      | TOKEN_OPCODE_DBVS
                      {
                        $$.type = OPCODE_DBcc;
-					   $$.condition = CONDITION_OVERFLOW_SET;
+                       $$.condition = CONDITION_OVERFLOW_SET;
                      }
                      | TOKEN_OPCODE_DBPL
                      {
                        $$.type = OPCODE_DBcc;
-					   $$.condition = CONDITION_PLUS;
+                       $$.condition = CONDITION_PLUS;
                      }
                      | TOKEN_OPCODE_DBMI
                      {
                        $$.type = OPCODE_DBcc;
-					   $$.condition = CONDITION_MINUS;
+                       $$.condition = CONDITION_MINUS;
                      }
                      | TOKEN_OPCODE_DBGE
                      {
                        $$.type = OPCODE_DBcc;
-					   $$.condition = CONDITION_GREATER_OR_EQUAL;
+                       $$.condition = CONDITION_GREATER_OR_EQUAL;
                      }
                      | TOKEN_OPCODE_DBLT
                      {
                        $$.type = OPCODE_DBcc;
-					   $$.condition = CONDITION_LESS_THAN;
+                       $$.condition = CONDITION_LESS_THAN;
                      }
                      | TOKEN_OPCODE_DBGT
                      {
                        $$.type = OPCODE_DBcc;
-					   $$.condition = CONDITION_GREATER_THAN;
+                       $$.condition = CONDITION_GREATER_THAN;
                      }
                      | TOKEN_OPCODE_DBLE
                      {
                        $$.type = OPCODE_DBcc;
-					   $$.condition = CONDITION_LESS_OR_EQUAL;
+                       $$.condition = CONDITION_LESS_OR_EQUAL;
                      }
                      | TOKEN_OPCODE_BRA
                      {
@@ -733,72 +733,72 @@ opcode               : TOKEN_OPCODE_ORI
                      | TOKEN_OPCODE_BHI
                      {
                        $$.type = OPCODE_Bcc;
-					   $$.condition = CONDITION_HIGHER;
+                       $$.condition = CONDITION_HIGHER;
                      }
                      | TOKEN_OPCODE_BLS
                      {
                        $$.type = OPCODE_Bcc;
-					   $$.condition = CONDITION_LOWER_OR_SAME;
+                       $$.condition = CONDITION_LOWER_OR_SAME;
                      }
                      | TOKEN_OPCODE_BCC
                      {
                        $$.type = OPCODE_Bcc;
-					   $$.condition = CONDITION_CARRY_CLEAR;
+                       $$.condition = CONDITION_CARRY_CLEAR;
                      }
                      | TOKEN_OPCODE_BCS
                      {
                        $$.type = OPCODE_Bcc;
-					   $$.condition = CONDITION_CARRY_SET;
+                       $$.condition = CONDITION_CARRY_SET;
                      }
                      | TOKEN_OPCODE_BNE
                      {
                        $$.type = OPCODE_Bcc;
-					   $$.condition = CONDITION_NOT_EQUAL;
+                       $$.condition = CONDITION_NOT_EQUAL;
                      }
                      | TOKEN_OPCODE_BEQ
                      {
                        $$.type = OPCODE_Bcc;
-					   $$.condition = CONDITION_EQUAL;
+                       $$.condition = CONDITION_EQUAL;
                      }
                      | TOKEN_OPCODE_BVC
                      {
                        $$.type = OPCODE_Bcc;
-					   $$.condition = CONDITION_OVERFLOW_CLEAR;
+                       $$.condition = CONDITION_OVERFLOW_CLEAR;
                      }
                      | TOKEN_OPCODE_BVS
                      {
                        $$.type = OPCODE_Bcc;
-					   $$.condition = CONDITION_OVERFLOW_SET;
+                       $$.condition = CONDITION_OVERFLOW_SET;
                      }
                      | TOKEN_OPCODE_BPL
                      {
                        $$.type = OPCODE_Bcc;
-					   $$.condition = CONDITION_PLUS;
+                       $$.condition = CONDITION_PLUS;
                      }
                      | TOKEN_OPCODE_BMI
                      {
                        $$.type = OPCODE_Bcc;
-					   $$.condition = CONDITION_MINUS;
+                       $$.condition = CONDITION_MINUS;
                      }
                      | TOKEN_OPCODE_BGE
                      {
                        $$.type = OPCODE_Bcc;
-					   $$.condition = CONDITION_GREATER_OR_EQUAL;
+                       $$.condition = CONDITION_GREATER_OR_EQUAL;
                      }
                      | TOKEN_OPCODE_BLT
                      {
                        $$.type = OPCODE_Bcc;
-					   $$.condition = CONDITION_LESS_THAN;
+                       $$.condition = CONDITION_LESS_THAN;
                      }
                      | TOKEN_OPCODE_BGT
                      {
                        $$.type = OPCODE_Bcc;
-					   $$.condition = CONDITION_GREATER_THAN;
+                       $$.condition = CONDITION_GREATER_THAN;
                      }
                      | TOKEN_OPCODE_BLE
                      {
                        $$.type = OPCODE_Bcc;
-					   $$.condition = CONDITION_LESS_OR_EQUAL;
+                       $$.condition = CONDITION_LESS_OR_EQUAL;
                      }
                      | TOKEN_OPCODE_MOVEQ
                      {
@@ -1187,11 +1187,11 @@ number               : TOKEN_NUMBER
 
 value                : value1
                      {
-		       $$ = $1;
-		     }
-		     | value1 '-' value
-		     {
-		       $$.type = VALUE_ARITHMETIC_SUBTRACT;
+                       $$ = $1;
+                     }
+                     | value1 '-' value
+                     {
+                       $$.type = VALUE_ARITHMETIC_SUBTRACT;
 
                        $$.data.values = malloc(sizeof(Value) * 2);
 
@@ -1199,21 +1199,21 @@ value                : value1
                        {
                          yyerror("Could not allocate memory for Value");
                        }
-		       else
-		       {
-		         $$.data.values[0] = $1;
-		         $$.data.values[1] = $3;
-		       }
-		     }
-		     ;
+                       else
+                       {
+                         $$.data.values[0] = $1;
+                         $$.data.values[1] = $3;
+                       }
+                     }
+                     ;
 
 value1               : value2
                      {
-		       $$ = $1;
-		     }
-		     | value2 '+' value1
-		     {
-		       $$.type = VALUE_ARITHMETIC_ADD;
+                       $$ = $1;
+                     }
+                     | value2 '+' value1
+                     {
+                       $$.type = VALUE_ARITHMETIC_ADD;
 
                        $$.data.values = malloc(sizeof(Value) * 2);
 
@@ -1221,21 +1221,21 @@ value1               : value2
                        {
                          yyerror("Could not allocate memory for Value");
                        }
-		       else
-		       {
-		         $$.data.values[0] = $1;
-		         $$.data.values[1] = $3;
-		       }
-		     }
-		     ;
+                       else
+                       {
+                         $$.data.values[0] = $1;
+                         $$.data.values[1] = $3;
+                       }
+                     }
+                     ;
 
 value2               : value3
                      {
-		       $$ = $1;
-		     }
-		     | value3 '*' value2
-		     {
-		       $$.type = VALUE_ARITHMETIC_MULTIPLY;
+                       $$ = $1;
+                     }
+                     | value3 '*' value2
+                     {
+                       $$.type = VALUE_ARITHMETIC_MULTIPLY;
 
                        $$.data.values = malloc(sizeof(Value) * 2);
 
@@ -1243,21 +1243,21 @@ value2               : value3
                        {
                          yyerror("Could not allocate memory for Value");
                        }
-		       else
-		       {
-		         $$.data.values[0] = $1;
-		         $$.data.values[1] = $3;
-		       }
-		     }
-		     ;
+                       else
+                       {
+                         $$.data.values[0] = $1;
+                         $$.data.values[1] = $3;
+                       }
+                     }
+                     ;
 
 value3               : value4
                      {
-		       $$ = $1;
-		     }
-		     | value4 '/' value3
-		     {
-		       $$.type = VALUE_ARITHMETIC_DIVIDE;
+                       $$ = $1;
+                     }
+                     | value4 '/' value3
+                     {
+                       $$.type = VALUE_ARITHMETIC_DIVIDE;
 
                        $$.data.values = malloc(sizeof(Value) * 2);
 
@@ -1265,13 +1265,13 @@ value3               : value4
                        {
                          yyerror("Could not allocate memory for Value");
                        }
-		       else
-		       {
-		         $$.data.values[0] = $1;
-		         $$.data.values[1] = $3;
-		       }
-		     }
-		     ;
+                       else
+                       {
+                         $$.data.values[0] = $1;
+                         $$.data.values[1] = $3;
+                       }
+                     }
+                     ;
 
 value4               : value5
                      {
@@ -1285,7 +1285,7 @@ value4               : value5
 
                        if ($$.data.values == NULL)
                          yyerror("Could not allocate memory for Value");
-		       else
+                       else
                          $$.data.values[0] = $2;
                      }
                      | '~' value4
@@ -1296,9 +1296,9 @@ value4               : value5
 
                        if ($$.data.values == NULL)
                          yyerror("Could not allocate memory for Value");
-		       else
+                       else
                          $$.data.values[0] = $2;
-		     }
+                     }
                      | '!' value4
                      {
                        $$.type = VALUE_LOGICAL_NOT;
@@ -1307,9 +1307,9 @@ value4               : value5
 
                        if ($$.data.values == NULL)
                          yyerror("Could not allocate memory for Value");
-		       else
+                       else
                          $$.data.values[0] = $2;
-		     }
+                     }
                      ;
 
 value5               : TOKEN_NUMBER
