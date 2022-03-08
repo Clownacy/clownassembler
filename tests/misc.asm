@@ -297,4 +297,7 @@ CoolFunction_Exit:
 	move.w	#1+2-3*4/5,d0 ; 3
 	move.w	#1--1,d0      ; 2
 
+	; The Macro Assembler AS would fail to assemble this line (it would mistake the `(1*2)` for an absolute address)
+	move.w	(1*2)+1(pc,d0.w),d0
+
   ; More blank lines to test support for trailing blank statements
