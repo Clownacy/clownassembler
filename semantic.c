@@ -1390,7 +1390,6 @@ static const InstructionMetadata instruction_metadata_all[] = {
 
 static cc_bool AssembleInstruction(FILE *file, const Instruction *original_instruction, unsigned long *program_counter, cc_bool doing_fix_up)
 {
-	const Operand *operand;
 	/* Default to NOP in case errors occur later on and we can't get the correct machine code. */
 	unsigned int machine_code = 0x4E71;
 	unsigned int i;
@@ -2822,7 +2821,7 @@ static cc_bool AssembleInstruction(FILE *file, const Instruction *original_instr
 	/* Output the data for the operands. */
 	for (i = 0; i < CC_COUNT_OF(instruction.operands); ++i)
 	{
-		operand = &instruction.operands[i];
+		const Operand *operand = &instruction.operands[i];
 
 		switch (operand->type)
 		{
