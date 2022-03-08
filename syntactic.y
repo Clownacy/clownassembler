@@ -113,7 +113,6 @@ StatementListNode *statement_list_head;
     } generic;
     Opcode opcode;
     Operand operand;
-    Operand *operand_pointer;
     Instruction instruction;
     Statement statement;
     ListMetadata list_metadata;
@@ -258,7 +257,7 @@ StatementListNode *statement_list_head;
 %type<opcode> opcode
 %type<generic.integer> size
 %type<opcode> full_opcode
-%type<operand_pointer> operand_list
+%type<list_metadata> operand_list
 %type<operand> operand
 %type<generic.integer> register_list
 %type<generic.integer> register_span
@@ -310,9 +309,9 @@ statement_list       : statement
                          {
                            node->statement = $1;
                            node->next = NULL;
-
-                           $$.head = $$.tail = node;
                          }
+
+                         $$.head = $$.tail = node;
                        }
                      }
                      | statement_list statement
@@ -386,7 +385,7 @@ instruction          : TOKEN_WHITESPACE full_opcode end_of_line
                      | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand_list end_of_line
                      {
                        $$.opcode = $2;
-                       $$.operands = $4;
+                       $$.operands = $4.head;
                      }
                      ;
 
@@ -938,27 +937,35 @@ size                 : TOKEN_SIZE_BYTE
 
 operand_list         : operand
                      {
-                       $$ = malloc(sizeof(Operand));
+                       Operand *operand = malloc(sizeof(Operand));
 
-                       if ($$ == NULL)
+                       if (operand == NULL)
                        {
                          yyerror("Could not allocate memory for operand list node");
                        }
+		       else
+		       {
+		         *operand = $1;
+			 operand->next = NULL;
+		       }
 
-                       *$$ = $1;
-                       $$->next = NULL;
+                       $$.head = $$.tail = operand;
                      }
-                     | operand ',' operand_list
+                     | operand_list ',' operand
                      {
-                       $$ = malloc(sizeof(Operand));
+                       Operand *operand = malloc(sizeof(Operand));
 
-                       if ($$ == NULL)
+                       if (operand == NULL)
                        {
                          yyerror("Could not allocate memory for operand list node");
                        }
+		       else
+		       {
+		         *operand = $3;
+			 operand->next = NULL;
+		       }
 
-                       *$$ = $1;
-                       $$->next = $3;
+                       ((Operand*)$$.tail)->next = operand;
                      }
                      ;
 
