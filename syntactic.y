@@ -285,18 +285,15 @@ end_of_line          : TOKEN_NEWLINE
                      ;
 
 program              : statement_list
-                     {
-                       statement_list_head = $1;
-                     }
                      ;
 
 statement_list       : statement
                      {
                        /* Don't bother adding empty statements to the statement list */
                        if ($1.label == NULL && $1.type == STATEMENT_TYPE_EMPTY)
-                       {
-                         $$ = NULL;
-                       }
+		       {
+		         $$ = NULL;
+		       }
                        else
                        {
                          $$ = malloc(sizeof(StatementListNode));
@@ -310,15 +307,17 @@ statement_list       : statement
                            $$->statement = $1;
                            $$->next = NULL;
                          }
-                       }
+
+		         statement_list_head = $$;
+		       }
                      }
-                     | statement statement_list
+                     | statement_list statement
                      {
                        /* Don't bother adding empty statements to the statement list */
-                       if ($1.label == NULL && $1.type == STATEMENT_TYPE_EMPTY)
-                       {
-                         $$ = $2;
-                       }
+                       if ($2.label == NULL && $2.type == STATEMENT_TYPE_EMPTY)
+		       {
+		         $$ = $1;
+		       }
                        else
                        {
                          $$ = malloc(sizeof(StatementListNode));
@@ -329,8 +328,12 @@ statement_list       : statement
                          }
                          else
                          {
-                           $$->statement = $1;
-                           $$->next = $2;
+                           $$->statement = $2;
+
+                           if ($1 == NULL)
+			     statement_list_head = $$;
+			   else
+			     $1->next = $$;
                          }
                        }
                      }
