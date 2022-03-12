@@ -12,7 +12,6 @@ add_executable(clownassembler
 	"syntactic.h"
 	"symbols.c"
 	"symbols.h"
-	"types.h"
 )
 
 set_target_properties(clownassembler PROPERTIES

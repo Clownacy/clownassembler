@@ -3,7 +3,7 @@
 
 #include "clowncommon.h"
 
-#include "types.h"
+#include "syntactic.h"
 
 cc_bool ProcessParseTree(const StatementListNode *statement_list);
 
