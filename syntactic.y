@@ -1,6 +1,10 @@
 /*%define parse.trace*/
 
-%{
+%code requires {
+#include "types.h"
+}
+
+%code {
 
 /* declare some standard headers to be used to import declarations
    and libraries into the parser. */
@@ -86,11 +90,9 @@ long currentSymTabSize = 0;
 
 /* clownassembler stuff */
 
-#include "types.h"
-
 StatementListNode *statement_list_head;
 
-%}
+}
 
 /****************/
 /* Start symbol */

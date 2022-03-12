@@ -6,7 +6,7 @@
 #include "clowncommon.h"
 
 #include "symbols.h"
-#include "types.h"
+#include "syntactic.h"
 
 typedef struct FixUp
 {

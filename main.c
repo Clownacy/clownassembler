@@ -3,8 +3,6 @@
 
 #include "clowncommon.h"
 
-#include "types.h"
-
 #define YY_NO_UNISTD_H
 #include "lexical.h"
 #include "semantic.h"
