@@ -15,11 +15,6 @@
 /* TODO - Stupid hack */
 extern StatementListNode *statement_list_head;
 
-int yywrap(void)
-{
-	return 1;
-}
-
 void yyerror(char *s)
 {
     fprintf(stderr, "Error : Exiting %s\n", s);

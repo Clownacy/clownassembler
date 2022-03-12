@@ -1,5 +1,6 @@
 %option never-interactive
 %option nounistd
+%option nounput noinput noyywrap
 
 %{
 
