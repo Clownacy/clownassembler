@@ -15,7 +15,7 @@ void m68kasm_error(void *scanner, StatementListNode **statement_list_head, const
 	(void)scanner;
 	(void)statement_list_head;
 
-	fprintf(stderr, "Error : Exiting %s\n", message);
+	fprintf(stderr, "Bison error: %s\n", message);
 }
 
 int main(int argc, char **argv)

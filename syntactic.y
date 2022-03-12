@@ -8,6 +8,8 @@
 
 %parse-param {StatementListNode **statement_list_head}
 
+%define parse.error verbose
+
 %code requires {
 
 #include "clowncommon.h"
