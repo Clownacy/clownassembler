@@ -55,6 +55,8 @@ int main(int argc, char **argv)
 				m68kasm_debug = 1;
 			#endif
 
+				statement_list_head = NULL;
+
 				if (m68kasm_parse(flex_state, &statement_list_head) != 0)
 					exit_code = EXIT_FAILURE;
 
