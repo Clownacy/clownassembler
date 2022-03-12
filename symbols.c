@@ -18,11 +18,16 @@ typedef struct Symbol
 
 static Symbol *symbol_table['z' - 'A']; /* Identifiers usually only start with letters A-Z/a-z. */
 
+static Symbol** GetBucket(const char *identifier)
+{
+	return &symbol_table[identifier[0] % CC_COUNT_OF(symbol_table)];
+}
+
 static Symbol** FindSymbol(const char *identifier)
 {
 	Symbol **symbol;
 
-	for (symbol = &symbol_table[identifier[0] % CC_COUNT_OF(symbol_table)]; *symbol != NULL; symbol = &(*symbol)->next)
+	for (symbol = GetBucket(identifier); *symbol != NULL; symbol = &(*symbol)->next)
 		if (strcmp((*symbol)->identifier, identifier) == 0)
 			return symbol;
 
@@ -44,7 +49,7 @@ static cc_bool AddSymbol(const char *identifier, SymbolType type, unsigned long 
 	}
 	else
 	{
-		Symbol **bucket = &symbol_table[identifier[0] % CC_COUNT_OF(symbol_table)];
+		Symbol **bucket = GetBucket(identifier);
 
 		symbol->next = *bucket;
 		symbol->identifier = (char*)(symbol + 1);
