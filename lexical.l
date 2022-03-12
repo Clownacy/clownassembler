@@ -25,7 +25,7 @@
 #define IDENTIFIER_TOKEN(x) yylval.iVal = installId(yytext); return TOKEN_ ## x;
 #endif
 
-void yyerror (char *);
+void yyerror(void *yyscanner, const char *message);
 
 %}
 
@@ -198,7 +198,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
                   if (string_end[0] != '\0')
                   {
-                    yyerror("Could not parse number");
+                    yyerror(yyscanner, "Could not parse number");
                     return YYerror;
                   }
 
@@ -210,7 +210,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
                   if (string_end[0] != '\0')
                   {
-                    yyerror("Could not parse number");
+                    yyerror(yyscanner, "Could not parse number");
                     return YYerror;
                   }
 
@@ -222,7 +222,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
                   if (string_end[0] != '\0')
                   {
-                    yyerror("Could not parse number");
+                    yyerror(yyscanner, "Could not parse number");
                     return YYerror;
                   }
 
@@ -233,7 +233,7 @@ pc              TOKEN(PROGRAM_COUNTER)
                   yylval->generic.string = malloc(length);
                   if (yylval->generic.string == NULL)
                   {
-                    yyerror("Could not allocate memory for generic string");
+                    yyerror(yyscanner, "Could not allocate memory for generic string");
                     return YYerror;
                   }
                   else

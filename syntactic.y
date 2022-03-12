@@ -293,7 +293,7 @@ typedef struct ListMetadata
 
 /* make forward declarations to avoid compiler warnings */
 int yylex(YYSTYPE *yylval_param , void *yyscanner);
-void yyerror(void *yyscanner, const char *);
+void yyerror(void *yyscanner, const char *message);
 
 StatementListNode *statement_list_head;
 

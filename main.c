@@ -13,11 +13,11 @@
 /* TODO - Stupid hack */
 extern StatementListNode *statement_list_head;
 
-void yyerror(void *yyscanner, const char *s)
+void yyerror(void *yyscanner, const char *message)
 {
 	(void)yyscanner;
 
-	fprintf(stderr, "Error : Exiting %s\n", s);
+	fprintf(stderr, "Error : Exiting %s\n", message);
 }
 
 int main(int argc, char **argv)
