@@ -6,6 +6,8 @@
 
 %param {void *scanner}
 
+%parse-param {StatementListNode **statement_list_head}
+
 %code requires {
 
 #include "clowncommon.h"
@@ -297,7 +299,7 @@ typedef struct ListMetadata
 
 /* make forward declarations to avoid compiler warnings */
 int m68kasm_lex(YYSTYPE *yylval_param , void *yyscanner);
-void m68kasm_error(void *scanner, const char *message);
+void m68kasm_error(void *scanner, StatementListNode **statement_list_head, const char *message);
 
 StatementListNode *statement_list_head;
 
@@ -491,7 +493,7 @@ end_of_line          : TOKEN_NEWLINE
 
 program              : statement_list
                      {
-                       statement_list_head = $1.head;
+                       *statement_list_head = $1.head;
                      }
                      ;
 
@@ -509,7 +511,7 @@ statement_list       : statement
 
                          if (node == NULL)
                          {
-                           m68kasm_error(scanner, "Could not allocate memory for statement list node");
+                           m68kasm_error(scanner, statement_list_head, "Could not allocate memory for statement list node");
                            YYABORT;
                          }
                          else
@@ -532,7 +534,7 @@ statement_list       : statement
 
                          if (node == NULL)
                          {
-                           m68kasm_error(scanner, "Could not allocate memory for statement list node");
+                           m68kasm_error(scanner, statement_list_head, "Could not allocate memory for statement list node");
                            YYABORT;
                          }
                          else
@@ -618,7 +620,7 @@ value_list           : value
 
                        if (node == NULL)
                        {
-                         m68kasm_error(scanner, "Could not allocate memory for value list node");
+                         m68kasm_error(scanner, statement_list_head, "Could not allocate memory for value list node");
                          YYABORT;
                        }
                        else
@@ -637,7 +639,7 @@ value_list           : value
 
                        if (node == NULL)
                        {
-                         m68kasm_error(scanner, "Could not allocate memory for value list node");
+                         m68kasm_error(scanner, statement_list_head, "Could not allocate memory for value list node");
                          YYABORT;
                        }
                        else
@@ -1225,7 +1227,7 @@ operand_list         : operand
 
                        if ($$.operands[1].type != 0)
                        {
-                         m68kasm_error(scanner, "Instructions can never have more than two operands");
+                         m68kasm_error(scanner, statement_list_head, "Instructions can never have more than two operands");
                          YYABORT;
                        }
                        else
@@ -1474,7 +1476,7 @@ value                : value1
 
                        if ($$.data.values == NULL)
                        {
-                         m68kasm_error(scanner, "Could not allocate memory for Value");
+                         m68kasm_error(scanner, statement_list_head, "Could not allocate memory for Value");
                          YYABORT;
                        }
                        else
@@ -1497,7 +1499,7 @@ value1               : value2
 
                        if ($$.data.values == NULL)
                        {
-                         m68kasm_error(scanner, "Could not allocate memory for Value");
+                         m68kasm_error(scanner, statement_list_head, "Could not allocate memory for Value");
                          YYABORT;
                        }
                        else
@@ -1520,7 +1522,7 @@ value2               : value3
 
                        if ($$.data.values == NULL)
                        {
-                         m68kasm_error(scanner, "Could not allocate memory for Value");
+                         m68kasm_error(scanner, statement_list_head, "Could not allocate memory for Value");
                          YYABORT;
                        }
                        else
@@ -1543,7 +1545,7 @@ value3               : value4
 
                        if ($$.data.values == NULL)
                        {
-                         m68kasm_error(scanner, "Could not allocate memory for Value");
+                         m68kasm_error(scanner, statement_list_head, "Could not allocate memory for Value");
                          YYABORT;
                        }
                        else
@@ -1566,7 +1568,7 @@ value4               : value5
 
                        if ($$.data.values == NULL)
                        {
-                         m68kasm_error(scanner, "Could not allocate memory for Value");
+                         m68kasm_error(scanner, statement_list_head, "Could not allocate memory for Value");
                          YYABORT;
                        }
                        else
@@ -1582,7 +1584,7 @@ value4               : value5
 
                        if ($$.data.values == NULL)
                        {
-                         m68kasm_error(scanner, "Could not allocate memory for Value");
+                         m68kasm_error(scanner, statement_list_head, "Could not allocate memory for Value");
                          YYABORT;
                        }
                        else
@@ -1598,7 +1600,7 @@ value4               : value5
 
                        if ($$.data.values == NULL)
                        {
-                         m68kasm_error(scanner, "Could not allocate memory for Value");
+                         m68kasm_error(scanner, statement_list_head, "Could not allocate memory for Value");
                          YYABORT;
                        }
                        else
