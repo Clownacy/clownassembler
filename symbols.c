@@ -16,11 +16,20 @@ typedef struct Symbol
 	unsigned long value;
 } Symbol;
 
-static Symbol *symbol_table['z' - 'A']; /* Identifiers usually only start with letters A-Z/a-z. */
+static Symbol *symbol_table[0x100];
 
 static Symbol** GetBucket(const char *identifier)
 {
-	return &symbol_table[identifier[0] % CC_COUNT_OF(symbol_table)];
+	unsigned int hash, character;
+
+	/* Hash the identifier, using djb2. */
+	/* http://www.cse.yorku.ca/~oz/hash.html */
+	hash = 5381;
+
+	while ((character = (unsigned int)*identifier++) != '\0')
+		hash = hash * 33 + character;
+
+	return &symbol_table[hash % CC_COUNT_OF(symbol_table)];
 }
 
 static Symbol** FindSymbol(const char *identifier)
