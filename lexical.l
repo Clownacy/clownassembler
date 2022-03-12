@@ -2,6 +2,7 @@
 %option nounistd
 %option nounput noinput noyywrap
 %option reentrant bison-bridge
+%option prefix="m68kasm_"
 
 %{
 
@@ -25,7 +26,7 @@
 #define IDENTIFIER_TOKEN(x) yylval.iVal = installId(yytext); return TOKEN_ ## x;
 #endif
 
-void yyerror(void *yyscanner, const char *message);
+void m68kasm_error(void *scanner, const char *message);
 
 %}
 
@@ -198,8 +199,8 @@ pc              TOKEN(PROGRAM_COUNTER)
 
                   if (string_end[0] != '\0')
                   {
-                    yyerror(yyscanner, "Could not parse number");
-                    return YYerror;
+                    m68kasm_error(yyscanner, "Could not parse number");
+                    return M68KASM_error;
                   }
 
                   return TOKEN_NUMBER;
@@ -210,8 +211,8 @@ pc              TOKEN(PROGRAM_COUNTER)
 
                   if (string_end[0] != '\0')
                   {
-                    yyerror(yyscanner, "Could not parse number");
-                    return YYerror;
+                    m68kasm_error(yyscanner, "Could not parse number");
+                    return M68KASM_error;
                   }
 
                   return TOKEN_NUMBER;
@@ -222,8 +223,8 @@ pc              TOKEN(PROGRAM_COUNTER)
 
                   if (string_end[0] != '\0')
                   {
-                    yyerror(yyscanner, "Could not parse number");
-                    return YYerror;
+                    m68kasm_error(yyscanner, "Could not parse number");
+                    return M68KASM_error;
                   }
 
                   return TOKEN_NUMBER;
@@ -233,8 +234,8 @@ pc              TOKEN(PROGRAM_COUNTER)
                   yylval->generic.string = malloc(length);
                   if (yylval->generic.string == NULL)
                   {
-                    yyerror(yyscanner, "Could not allocate memory for generic string");
-                    return YYerror;
+                    m68kasm_error(yyscanner, "Could not allocate memory for generic string");
+                    return M68KASM_error;
                   }
                   else
                   {

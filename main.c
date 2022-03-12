@@ -13,9 +13,9 @@
 /* TODO - Stupid hack */
 extern StatementListNode *statement_list_head;
 
-void yyerror(void *yyscanner, const char *message)
+void m68kasm_error(void *scanner, const char *message)
 {
-	(void)yyscanner;
+	(void)scanner;
 
 	fprintf(stderr, "Error : Exiting %s\n", message);
 }
@@ -39,24 +39,24 @@ int main(int argc, char **argv)
 		else
 		{
 			yyscan_t flex_state;
-			if (yylex_init(&flex_state) != 0)
+			if (m68kasm_lex_init(&flex_state) != 0)
 			{
 				ERROR("yylex_init failed");
 			}
 			else
 			{
-				yyset_in(file, flex_state);
+				m68kasm_set_in(file, flex_state);
 
-				/*yylex(); */
+				/*m68kasm_lex(); */
 
 			#if YYDEBUG
-				yydebug = 1;
+				m68kasm_debug = 1;
 			#endif
 
-				if (yyparse(flex_state) != 0)
+				if (m68kasm_parse(flex_state) != 0)
 					exit_code = EXIT_FAILURE;
 
-				if (yylex_destroy(flex_state) != 0)
+				if (m68kasm_lex_destroy(flex_state) != 0)
 					ERROR("yylex_destroy failed");
 
 				fclose(file);
