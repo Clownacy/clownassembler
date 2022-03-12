@@ -1,8 +1,9 @@
 %option never-interactive
 %option nounistd
 %option nounput noinput noyywrap
-%option reentrant bison-bridge
+%option reentrant bison-bridge bison-locations
 %option prefix="m68kasm_"
+%option yylineno
 
 %{
 
@@ -26,7 +27,9 @@
 #define IDENTIFIER_TOKEN(x) yylval.iVal = installId(yytext); return TOKEN_ ## x;
 #endif
 
-void m68kasm_error(void *scanner, StatementListNode **statement_list_head, const char *message);
+void m68kasm_error(M68KASM_LTYPE *yylloc_param, void *scanner, StatementListNode **statement_list_head, const char *message);
+
+#define YY_USER_ACTION yylloc->first_line = yylloc->last_line = yylineno;
 
 %}
 
@@ -199,7 +202,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
                   if (string_end[0] != '\0')
                   {
-                    m68kasm_error(yyscanner, NULL, "Could not parse number");
+                    m68kasm_error(yylloc, yyscanner, NULL, "Could not parse number");
                     return M68KASM_error;
                   }
 
@@ -211,7 +214,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
                   if (string_end[0] != '\0')
                   {
-                    m68kasm_error(yyscanner, NULL, "Could not parse number");
+                    m68kasm_error(yylloc, yyscanner, NULL, "Could not parse number");
                     return M68KASM_error;
                   }
 
@@ -223,7 +226,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
                   if (string_end[0] != '\0')
                   {
-                    m68kasm_error(yyscanner, NULL, "Could not parse number");
+                    m68kasm_error(yylloc, yyscanner, NULL, "Could not parse number");
                     return M68KASM_error;
                   }
 
@@ -234,7 +237,7 @@ pc              TOKEN(PROGRAM_COUNTER)
                   yylval->generic.string = malloc(length);
                   if (yylval->generic.string == NULL)
                   {
-                    m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string");
+                    m68kasm_error(yylloc, yyscanner, NULL, "Could not allocate memory for generic string");
                     return M68KASM_error;
                   }
                   else

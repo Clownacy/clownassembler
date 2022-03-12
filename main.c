@@ -10,12 +10,12 @@
 
 #define ERROR(message) do { fputs("Error: " message "\n", stderr); exit_code = EXIT_FAILURE; } while (0)
 
-void m68kasm_error(void *scanner, StatementListNode **statement_list_head, const char *message)
+void m68kasm_error(M68KASM_LTYPE *location, void *scanner, StatementListNode **statement_list_head, const char *message)
 {
 	(void)scanner;
 	(void)statement_list_head;
 
-	fprintf(stderr, "Bison error: %s\n", message);
+	fprintf(stderr, "Bison error at line %d: %s\n", location->first_line, message);
 }
 
 int main(int argc, char **argv)
