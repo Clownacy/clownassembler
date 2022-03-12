@@ -49,7 +49,7 @@ int main(int argc, char **argv)
 
 				/*m68kasm_lex(); */
 
-			#if YYDEBUG
+			#if M68KASM_DEBUG
 				m68kasm_debug = 1;
 			#endif
 
