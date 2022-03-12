@@ -3,19 +3,21 @@
 
 #include "clowncommon.h"
 
+#include "syntactic.h"
 #define YY_NO_UNISTD_H
 #include "lexical.h"
 #include "semantic.h"
-#include "syntactic.h"
 
 #define ERROR(message) do { fputs("Error: " message "\n", stderr); exit_code = EXIT_FAILURE; } while (0)
 
 /* TODO - Stupid hack */
 extern StatementListNode *statement_list_head;
 
-void yyerror(char *s)
+void yyerror(void *yyscanner, const char *s)
 {
-    fprintf(stderr, "Error : Exiting %s\n", s);
+	(void)yyscanner;
+
+	fprintf(stderr, "Error : Exiting %s\n", s);
 }
 
 int main(int argc, char **argv)
@@ -28,27 +30,40 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		yyin = fopen(argv[1], "r");
+		FILE *file = fopen(argv[1], "r");
 
-		if (yyin == NULL)
+		if (file == NULL)
 		{
 			ERROR("Could not open input file");
 		}
 		else
 		{
-			/*yylex(); */
+			yyscan_t flex_state;
+			if (yylex_init(&flex_state) != 0)
+			{
+				ERROR("yylex_init failed");
+			}
+			else
+			{
+				yyset_in(file, flex_state);
 
-		#if YYDEBUG
-			yydebug = 1;
-		#endif
+				/*yylex(); */
 
-			if (yyparse() != 0)
-				exit_code = EXIT_FAILURE;
+			#if YYDEBUG
+				yydebug = 1;
+			#endif
 
-			fclose(yyin);
+				if (yyparse(flex_state) != 0)
+					exit_code = EXIT_FAILURE;
 
-			if (!ProcessParseTree(statement_list_head))
-				exit_code = EXIT_FAILURE;
+				if (yylex_destroy(flex_state) != 0)
+					ERROR("yylex_destroy failed");
+
+				fclose(file);
+
+				if (!ProcessParseTree(statement_list_head))
+					exit_code = EXIT_FAILURE;
+			}
 		}
 	}
 

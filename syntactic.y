@@ -1,5 +1,9 @@
 /*%define parse.trace*/
 
+%define api.pure
+
+%param {void *scanner}
+
 %code requires {
 
 #include "clowncommon.h"
@@ -288,8 +292,8 @@ typedef struct ListMetadata
 #include <string.h>
 
 /* make forward declarations to avoid compiler warnings */
-int yylex (void);
-void yyerror (char *);
+int yylex(YYSTYPE *yylval_param , void *yyscanner);
+void yyerror(void *yyscanner, const char *);
 
 /*
    Some constants.
@@ -583,7 +587,7 @@ statement_list       : statement
 
                          if (node == NULL)
                          {
-                           yyerror("Could not allocate memory for statement list node");
+                           yyerror(scanner, "Could not allocate memory for statement list node");
                            YYABORT;
                          }
                          else
@@ -606,7 +610,7 @@ statement_list       : statement
 
                          if (node == NULL)
                          {
-                           yyerror("Could not allocate memory for statement list node");
+                           yyerror(scanner, "Could not allocate memory for statement list node");
                            YYABORT;
                          }
                          else
@@ -692,7 +696,7 @@ value_list           : value
 
                        if (node == NULL)
                        {
-                         yyerror("Could not allocate memory for value list node");
+                         yyerror(scanner, "Could not allocate memory for value list node");
                          YYABORT;
                        }
                        else
@@ -711,7 +715,7 @@ value_list           : value
 
                        if (node == NULL)
                        {
-                         yyerror("Could not allocate memory for value list node");
+                         yyerror(scanner, "Could not allocate memory for value list node");
                          YYABORT;
                        }
                        else
@@ -1299,7 +1303,7 @@ operand_list         : operand
 
                        if ($$.operands[1].type != 0)
                        {
-                         yyerror("Instructions can never have more than two operands");
+                         yyerror(scanner, "Instructions can never have more than two operands");
                          YYABORT;
                        }
                        else
@@ -1548,7 +1552,7 @@ value                : value1
 
                        if ($$.data.values == NULL)
                        {
-                         yyerror("Could not allocate memory for Value");
+                         yyerror(scanner, "Could not allocate memory for Value");
                          YYABORT;
                        }
                        else
@@ -1571,7 +1575,7 @@ value1               : value2
 
                        if ($$.data.values == NULL)
                        {
-                         yyerror("Could not allocate memory for Value");
+                         yyerror(scanner, "Could not allocate memory for Value");
                          YYABORT;
                        }
                        else
@@ -1594,7 +1598,7 @@ value2               : value3
 
                        if ($$.data.values == NULL)
                        {
-                         yyerror("Could not allocate memory for Value");
+                         yyerror(scanner, "Could not allocate memory for Value");
                          YYABORT;
                        }
                        else
@@ -1617,7 +1621,7 @@ value3               : value4
 
                        if ($$.data.values == NULL)
                        {
-                         yyerror("Could not allocate memory for Value");
+                         yyerror(scanner, "Could not allocate memory for Value");
                          YYABORT;
                        }
                        else
@@ -1640,7 +1644,7 @@ value4               : value5
 
                        if ($$.data.values == NULL)
                        {
-                         yyerror("Could not allocate memory for Value");
+                         yyerror(scanner, "Could not allocate memory for Value");
                          YYABORT;
                        }
                        else
@@ -1656,7 +1660,7 @@ value4               : value5
 
                        if ($$.data.values == NULL)
                        {
-                         yyerror("Could not allocate memory for Value");
+                         yyerror(scanner, "Could not allocate memory for Value");
                          YYABORT;
                        }
                        else
@@ -1672,7 +1676,7 @@ value4               : value5
 
                        if ($$.data.values == NULL)
                        {
-                         yyerror("Could not allocate memory for Value");
+                         yyerror(scanner, "Could not allocate memory for Value");
                          YYABORT;
                        }
                        else

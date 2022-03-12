@@ -1,6 +1,7 @@
 %option never-interactive
 %option nounistd
 %option nounput noinput noyywrap
+%option reentrant bison-bridge
 
 %{
 
@@ -186,14 +187,14 @@ dc              TOKEN(DIRECTIVE_DC)
 "/"             return yytext[0];
 sr              TOKEN(STATUS_REGISTER)
 ccr             TOKEN(CONDITION_CODE_REGISTER)
-sp              yylval.generic.integer = 7; return TOKEN_ADDRESS_REGISTER;
+sp              yylval->generic.integer = 7; return TOKEN_ADDRESS_REGISTER;
 usp             TOKEN(USER_STACK_POINTER_REGISTER)
 pc              TOKEN(PROGRAM_COUNTER)
-[Dd]{decimal}   yylval.generic.integer = yytext[1] - '0'; return TOKEN_DATA_REGISTER;
-[Aa]{decimal}   yylval.generic.integer = yytext[1] - '0'; return TOKEN_ADDRESS_REGISTER;
+[Dd]{decimal}   yylval->generic.integer = yytext[1] - '0'; return TOKEN_DATA_REGISTER;
+[Aa]{decimal}   yylval->generic.integer = yytext[1] - '0'; return TOKEN_ADDRESS_REGISTER;
 {decimal}       {
                   char *string_end;
-                  yylval.generic.integer = strtoul(yytext, &string_end, 10);
+                  yylval->generic.integer = strtoul(yytext, &string_end, 10);
 
                   if (string_end[0] != '\0')
                   {
@@ -205,7 +206,7 @@ pc              TOKEN(PROGRAM_COUNTER)
                 }
 \${hexadecimal} {
                   char *string_end;
-                  yylval.generic.integer = strtoul(yytext + 1, &string_end, 16);
+                  yylval->generic.integer = strtoul(yytext + 1, &string_end, 16);
 
                   if (string_end[0] != '\0')
                   {
@@ -217,7 +218,7 @@ pc              TOKEN(PROGRAM_COUNTER)
                 }
 \%{binary}      {
                   char *string_end;
-                  yylval.generic.integer = strtoul(yytext + 1, &string_end, 2);
+                  yylval->generic.integer = strtoul(yytext + 1, &string_end, 2);
 
                   if (string_end[0] != '\0')
                   {
@@ -229,15 +230,15 @@ pc              TOKEN(PROGRAM_COUNTER)
                 }
 {identifier}    {
                   const size_t length = strlen(yytext) + 1;
-                  yylval.generic.string = malloc(length);
-                  if (yylval.generic.string == NULL)
+                  yylval->generic.string = malloc(length);
+                  if (yylval->generic.string == NULL)
                   {
                     yyerror("Could not allocate memory for generic string");
                     return YYerror;
                   }
                   else
                   {
-                    memcpy(yylval.generic.string, yytext, length);
+                    memcpy(yylval->generic.string, yytext, length);
                     return TOKEN_IDENTIFIER;
                   }
                 }
