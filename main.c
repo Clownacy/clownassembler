@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 			yyscan_t flex_state;
 			if (m68kasm_lex_init(&flex_state) != 0)
 			{
-				ERROR("yylex_init failed");
+				ERROR("m68kasm_lex_init failed");
 			}
 			else
 			{
@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 					exit_code = EXIT_FAILURE;
 
 				if (m68kasm_lex_destroy(flex_state) != 0)
-					ERROR("yylex_destroy failed");
+					ERROR("m68kasm_lex_destroy failed");
 
 				fclose(file);
 
