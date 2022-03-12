@@ -41,6 +41,8 @@ int main(int argc, char **argv)
 			yyscan_t flex_state;
 			if (m68kasm_lex_init(&flex_state) != 0)
 			{
+				fclose(file);
+
 				ERROR("yylex_init failed");
 			}
 			else
