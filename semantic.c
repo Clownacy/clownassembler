@@ -81,7 +81,7 @@ static cc_bool AddFixUp(SemanticState *state, const FixUp *fix_up)
 	return success;
 }
 
-static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned long *value_integer, cc_bool doing_fix_up)
+static cc_bool ResolveValue(SemanticState *state, cc_bool *parent_success, const Value *value, unsigned long *value_integer, cc_bool doing_fix_up)
 {
 	cc_bool success = cc_true;
 
@@ -95,7 +95,7 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 			unsigned long left_value;
 			unsigned long right_value;
 
-			if (!ResolveValue(state, &value->data.values[0], &left_value, doing_fix_up) || !ResolveValue(state, &value->data.values[1], &right_value, doing_fix_up))
+			if (!ResolveValue(state, parent_success, &value->data.values[0], &left_value, doing_fix_up) || !ResolveValue(state, parent_success, &value->data.values[1], &right_value, doing_fix_up))
 			{
 				success = cc_false;
 			}
@@ -134,7 +134,7 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 		case VALUE_NEGATE:
 		case VALUE_BITWISE_NOT:
 		case VALUE_LOGICAL_NOT:
-			if (!ResolveValue(state, value->data.values, value_integer, doing_fix_up))
+			if (!ResolveValue(state, parent_success, value->data.values, value_integer, doing_fix_up))
 			{
 				success = cc_false;
 			}
@@ -175,9 +175,14 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 				success = cc_false;
 
 				if (doing_fix_up)
+				{
 					SemanticError("Symbol '%s' undefined\n", value->data.identifier);
+					*parent_success = cc_false;
+				}
 				else
+				{
 					state->fix_up_needed = cc_true;
+				}
 			}
 
 			break;
@@ -206,7 +211,7 @@ static unsigned int ConstructSizeBits(Size size)
 	}
 }
 
-static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
+static unsigned int ConstructEffectiveAddressBits(cc_bool *success, const Operand *operand)
 {
 	unsigned int m, xn;
 
@@ -269,6 +274,7 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
 
 				default:
 					SemanticError("Absolute address can only be word- or longword-sized\n");
+					*success = cc_false;
 					/* Fallthrough */
 				case SIZE_UNDEFINED:
 				case SIZE_LONGWORD:
@@ -285,6 +291,7 @@ static unsigned int ConstructEffectiveAddressBits(const Operand *operand)
 
 		default:
 			SemanticError("Invalid operand type - register lists, USP, SR, and CCR cannot be used here\n");
+			*success = cc_false;
 			/* Just pretend it's data register 0 to keep things moving along. */
 			m = 0;
 			xn = 0;
@@ -1733,6 +1740,7 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 		}
 
 		SemanticError("'%s' instruction cannot be this size - allowed sizes are...\n%s%s%s%s%s%s%s%s", instruction_metadata->name, opcode_byte, size_byte, opcode_short, size_short, opcode_word, size_word, opcode_longword, size_longword, opcode_undefined, size_undefined);
+		assemble_instruction_success = cc_false;
 	}
 	else
 	{
@@ -1847,6 +1855,7 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 					}
 
 					SemanticError("'%s' instruction operand %u cannot be %s\n", instruction_metadata->name, i, operand_string);
+					assemble_instruction_success = cc_false;
 				}
 			}
 
@@ -1866,7 +1875,7 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 					case OPCODE_ORI:
 						machine_code = 0x0000;
 						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[1]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[1]);
 						break;
 
 					case OPCODE_ANDI_TO_CCR:
@@ -1880,19 +1889,19 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 					case OPCODE_ANDI:
 						machine_code = 0x0200;
 						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[1]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[1]);
 						break;
 
 					case OPCODE_SUBI:
 						machine_code = 0x0400;
 						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[1]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[1]);
 						break;
 
 					case OPCODE_ADDI:
 						machine_code = 0x0600;
 						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[1]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[1]);
 						break;
 
 					case OPCODE_EORI_TO_CCR:
@@ -1906,13 +1915,13 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 					case OPCODE_EORI:
 						machine_code = 0x0A00;
 						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[1]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[1]);
 						break;
 
 					case OPCODE_CMPI:
 						machine_code = 0x0C00;
 						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[1]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[1]);
 						break;
 
 					case OPCODE_BTST_STATIC:
@@ -1932,13 +1941,8 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 							{
 								unsigned long value;
 
-								if (!ResolveValue(state, &instruction.operands[0].literal, &value, doing_fix_up))
-								{
-									if (doing_fix_up)
-										assemble_instruction_success = cc_false;
-
+								if (!ResolveValue(state, &assemble_instruction_success, &instruction.operands[0].literal, &value, doing_fix_up))
 									value = 0;
-								}
 
 								/* Check whether the literal value will wrap or not, and warn the user if so. */
 								if (instruction.operands[1].type == OPERAND_DATA_REGISTER)
@@ -1998,15 +2002,21 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 						if (instruction.operands[1].type == OPERAND_DATA_REGISTER)
 						{
 							if (instruction.opcode.size != SIZE_LONGWORD && instruction.opcode.size != SIZE_UNDEFINED)
+							{
 								SemanticError("'BTST/BCHG/BCLR/BSET' instruction must be longword-sized when its destination operand is a data register\n");
+								assemble_instruction_success = cc_false;
+							}
 						}
 						else
 						{
 							if (instruction.opcode.size != SIZE_BYTE && instruction.opcode.size != SIZE_SHORT && instruction.opcode.size != SIZE_UNDEFINED)
+							{
 								SemanticError("'BTST/BCHG/BCLR/BSET' instruction must be byte-sized when its destination operand is memory\n");
+								assemble_instruction_success = cc_false;
+							}
 						}
 
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[1]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[1]);
 
 						break;
 
@@ -2058,24 +2068,24 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 								break;
 						}
 
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[0]);
-						machine_code |= ToAlternateEffectiveAddressBits(ConstructEffectiveAddressBits(&instruction.operands[1]));
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[0]);
+						machine_code |= ToAlternateEffectiveAddressBits(ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[1]));
 
 						break;
 
 					case OPCODE_MOVE_FROM_SR:
 						machine_code = 0x40C0;
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[1]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[1]);
 						break;
 
 					case OPCODE_MOVE_TO_CCR:
 						machine_code = 0x44C0;
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[0]);
 						break;
 
 					case OPCODE_MOVE_TO_SR:
 						machine_code = 0x46C0;
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[0]);
 						break;
 
 					case OPCODE_NEGX:
@@ -2110,19 +2120,19 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 						}
 
 						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[0]);
 
 						break;
 
 					case OPCODE_EXT:
 						machine_code = 0x4880;
 						machine_code |= (instruction.opcode.size == SIZE_LONGWORD) << 6;
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[0]);
 						break;
 
 					case OPCODE_NBCD:
 						machine_code = 0x4800;
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[0]);
 						break;
 
 					case OPCODE_SWAP:
@@ -2132,7 +2142,7 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 
 					case OPCODE_PEA:
 						machine_code = 0x4840;
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[0]);
 						break;
 
 					case OPCODE_ILLEGAL:
@@ -2141,7 +2151,7 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 
 					case OPCODE_TAS:
 						machine_code = 0x4AC0;
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[0]);
 						break;
 
 					case OPCODE_TRAP:
@@ -2150,18 +2160,18 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 
 						machine_code = 0x4E40;
 
-						if (!ResolveValue(state, &instruction.operands[0].literal, &value, doing_fix_up))
-						{
-							if (doing_fix_up)
-								assemble_instruction_success = cc_false;
-
+						if (!ResolveValue(state, &assemble_instruction_success, &instruction.operands[0].literal, &value, doing_fix_up))
 							value = 0;
-						}
 
 						if (value > 15)
+						{
 							SemanticError("'TRAP' instruction's vector cannot be higher than 15\n");
+							assemble_instruction_success = cc_false;
+						}
 						else
+						{
 							machine_code |= value;
+						}
 
 						break;
 					}
@@ -2216,12 +2226,12 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 
 					case OPCODE_JSR:
 						machine_code = 0x4E80;
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[0]);
 						break;
 
 					case OPCODE_JMP:
 						machine_code = 0x4EC0;
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[0]);
 						break;
 
 					case OPCODE_MOVEM_TO_REGS:
@@ -2232,11 +2242,11 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 						if (instruction.opcode.type == OPCODE_MOVEM_TO_REGS)
 						{
 							machine_code |= 1 << 10;
-							machine_code |= ConstructEffectiveAddressBits(&instruction.operands[0]);
+							machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[0]);
 						}
 						else
 						{
-							machine_code |= ConstructEffectiveAddressBits(&instruction.operands[1]);
+							machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[1]);
 						}
 
 						break;
@@ -2278,7 +2288,7 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 						}
 
 						machine_code |= instruction.operands[1].main_register << 9;
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[0]);
 
 						break;
 
@@ -2302,20 +2312,20 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 						}
 
 						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[1]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[1]);
 
-						if (!ResolveValue(state, &instruction.operands[0].literal, &value, doing_fix_up))
-						{
-							if (doing_fix_up)
-								assemble_instruction_success = cc_false;
-
+						if (!ResolveValue(state, &assemble_instruction_success, &instruction.operands[0].literal, &value, doing_fix_up))
 							value = 1;
-						}
 
 						if (value < 1 || value > 8)
+						{
 							SemanticError("'ADDQ'/'SUBQ' instruction's immediate value cannot be lower than 1 or higher than 8\n");
+							assemble_instruction_success = cc_false;
+						}
 						else
+						{
 							machine_code |= (value - 1) << 9;
+						}
 
 						/* Skip the immediate operand since that goes in the machine code instead. */
 						instruction.operands[0] = instruction.operands[1];
@@ -2327,7 +2337,7 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 					case OPCODE_Scc:
 						machine_code = 0x50C0;
 						machine_code |= instruction.opcode.condition << 8;
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[0]);
 						break;
 
 					case OPCODE_DBcc:
@@ -2338,13 +2348,8 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 						machine_code |= instruction.opcode.condition << 8;
 						machine_code |= instruction.operands[0].main_register;
 
-						if (!ResolveValue(state, &instruction.operands[1].literal, &value, doing_fix_up))
-						{
-							if (doing_fix_up)
-								assemble_instruction_success = cc_false;
-
+						if (!ResolveValue(state, &assemble_instruction_success, &instruction.operands[1].literal, &value, doing_fix_up))
 							value = start_program_counter - 2;
-						}
 
 						instruction.operands[0].type = OPERAND_LITERAL;
 						instruction.operands[0].literal.type = VALUE_NUMBER;
@@ -2355,7 +2360,10 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 							const unsigned long offset = value - start_program_counter;
 
 							if (offset > 0x7FFF)
+							{
 								SemanticError("Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was $%lX bytes away)\n", offset);
+								assemble_instruction_success = cc_false;
+							}
 
 							instruction.operands[0].literal.data.integer = offset;
 						}
@@ -2364,7 +2372,10 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 							const unsigned long offset = start_program_counter - value;
 
 							if (offset > 0x8000)
+							{
 								SemanticError("Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was $%lX bytes away)\n", offset);
+								assemble_instruction_success = cc_false;
+							}
 
 							instruction.operands[0].literal.data.integer = 0 - offset;
 						}
@@ -2399,13 +2410,8 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 								break;
 						}
 
-						if (!ResolveValue(state, &instruction.operands[0].literal, &value, doing_fix_up))
-						{
-							if (doing_fix_up)
-								assemble_instruction_success = cc_false;
-
+						if (!ResolveValue(state, &assemble_instruction_success, &instruction.operands[0].literal, &value, doing_fix_up))
 							value = start_program_counter - 2;
-						}
 
 						if (value >= start_program_counter)
 						{
@@ -2414,14 +2420,23 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 							if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
 							{
 								if (offset == 0)
+								{
 									SemanticError("Destination cannot be 0 bytes away when using a short-sized branch\n");
+									assemble_instruction_success = cc_false;
+								}
 								else if (offset > 0x7F)
+								{
 									SemanticError("Destination is too far away (must be less than 0x80 bytes after start of instruction, but was $%lX bytes away)\n", offset);
+									assemble_instruction_success = cc_false;
+								}
 							}
 							else
 							{
 								if (offset > 0x7FFF)
+								{
 									SemanticError("Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was $%lX bytes away)\n", offset);
+									assemble_instruction_success = cc_false;
+								}
 							}
 						}
 						else
@@ -2431,12 +2446,18 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 							if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
 							{
 								if (offset > 0x80)
+								{
 									SemanticError("Destination is too far away (must be less than 0x81 bytes before start of instruction, but was $%lX bytes away)\n", offset);
+									assemble_instruction_success = cc_false;
+								}
 							}
 							else
 							{
 								if (offset > 0x8000)
+								{
 									SemanticError("Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was $%lX bytes away)\n", offset);
+									assemble_instruction_success = cc_false;
+								}
 							}
 
 							offset = 0 - offset;
@@ -2463,18 +2484,18 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 
 						machine_code = 0x7000;
 
-						if (!ResolveValue(state, &instruction.operands[0].literal, &value, doing_fix_up))
-						{
-							if (doing_fix_up)
-								assemble_instruction_success = cc_false;
-
+						if (!ResolveValue(state, &assemble_instruction_success, &instruction.operands[0].literal, &value, doing_fix_up))
 							value = 0;
-						}
 
 						if (value > 0x7F && value < 0xFFFFFF80)
+						{
 							SemanticError("Literal is too large: it must be between -$80 and $7F\n");
+							assemble_instruction_success = cc_false;
+						}
 						else
+						{
 							machine_code |= value & 0xFF;
+						}
 
 						machine_code |= instruction.operands[1].main_register << 9;
 
@@ -2547,7 +2568,10 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 					case OPCODE_ADD_TO_REG:
 					case OPCODE_ADD_FROM_REG:
 						if (instruction.operands[1].type == OPERAND_ADDRESS_REGISTER && instruction.opcode.size == SIZE_BYTE)
+						{
 							SemanticError("Instruction cannot be byte-sized when destination is an address register\n");
+							assemble_instruction_success = cc_false;
+						}
 
 						switch (instruction.opcode.type)
 						{
@@ -2600,12 +2624,12 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 						if (instruction.operands[1].type == OPERAND_DATA_REGISTER)
 						{
 							machine_code |= instruction.operands[1].main_register << 9;
-							machine_code |= ConstructEffectiveAddressBits(&instruction.operands[0]);
+							machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[0]);
 						}
 						else
 						{
 							machine_code |= instruction.operands[0].main_register << 9;
-							machine_code |= ConstructEffectiveAddressBits(&instruction.operands[1]);
+							machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[1]);
 						}
 
 						break;
@@ -2633,7 +2657,7 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 
 						machine_code |= (instruction.opcode.size == SIZE_LONGWORD) << 8;
 						machine_code |= instruction.operands[1].main_register << 9;
-						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[0]);
 
 						break;
 
@@ -2793,18 +2817,18 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 							{
 								unsigned long value;
 
-								if (!ResolveValue(state, &instruction.operands[0].literal, &value, doing_fix_up))
-								{
-									if (doing_fix_up)
-										assemble_instruction_success = cc_false;
-
+								if (!ResolveValue(state, &assemble_instruction_success, &instruction.operands[0].literal, &value, doing_fix_up))
 									value = 0;
-								}
 
 								if (value > 8 || value < 1)
+								{
 									SemanticError("Shift value must not be greater than 8 or lower than 1\n");
+									assemble_instruction_success = cc_false;
+								}
 								else
+								{
 									machine_code |= (value - 1) << 9;
+								}
 
 								machine_code |= identifier << 3;
 								machine_code |= instruction.operands[1].main_register << 0;
@@ -2836,7 +2860,7 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 							case OPCODE_ROR_SINGLE:
 								machine_code |= identifier << 9;
 								machine_code |= 0x00C0;
-								machine_code |= ConstructEffectiveAddressBits(&instruction.operands[0]);
+								machine_code |= ConstructEffectiveAddressBits(&assemble_instruction_success, &instruction.operands[0]);
 								break;
 
 							default:
@@ -2874,11 +2898,8 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 				unsigned int bytes_to_write = 2;
 				unsigned long value;
 
-				if (!ResolveValue(state, &operand->literal, &value, doing_fix_up))
+				if (!ResolveValue(state, &assemble_instruction_success, &operand->literal, &value, doing_fix_up))
 				{
-					if (doing_fix_up)
-						assemble_instruction_success = cc_false;
-
 					if (operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT || operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER)
 						value = start_program_counter; /* Prevent out-of-range displacements later on. */
 					else
@@ -2896,6 +2917,7 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 							case SIZE_BYTE:
 							case SIZE_SHORT:
 								SemanticError("Address cannot be byte-sized\n");
+								assemble_instruction_success = cc_false;
 								bytes_to_write = 2;
 								break;
 
@@ -2903,7 +2925,10 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 								bytes_to_write = 2;
 
 								if (value >= 0x8000 && value < 0xFFFF8000)
+								{
 									SemanticError("Word-sized address cannot be higher than $7FFF or lower than $FFFF8000\n");
+									assemble_instruction_success = cc_false;
+								}
 
 								break;
 
@@ -2923,7 +2948,10 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 								bytes_to_write = 2;
 
 								if (value >= 0x100 && value < 0xFFFFFF00)
+								{
 									SemanticError("Byte-sized literal cannot be larger than $FF or smaller than -$100\n");
+									assemble_instruction_success = cc_false;
+								}
 
 								break;
 
@@ -2932,7 +2960,10 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 								bytes_to_write = 2;
 
 								if (value >= 0x10000 && value < 0xFFFF0000)
+								{
 									SemanticError("Word-sized literal cannot be larger than $FFFF or smaller than -$10000\n");
+									assemble_instruction_success = cc_false;
+								}
 
 								break;
 
@@ -2950,10 +2981,16 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 						bytes_to_write = 2;
 
 						if (value >= 0x80 && value < 0xFFFFFF80)
+						{
 							SemanticError("Displacement value cannot be larger than $7F or smaller than -$80\n");
+							assemble_instruction_success = cc_false;
+						}
 
 						if (operand->size == SIZE_BYTE || operand->size == SIZE_SHORT)
+						{
 							SemanticError("Index register cannot be byte-sized\n");
+							assemble_instruction_success = cc_false;
+						}
 
 						value |= operand->index_register << 12;
 
@@ -2972,7 +3009,10 @@ static cc_bool AssembleInstruction(SemanticState *state, FILE *file, const Instr
 						bytes_to_write = 2;
 
 						if (value >= 0x8000 && value < 0xFFFF8000)
+						{
 							SemanticError("Displacement value cannot be larger than $7FFF or smaller than -$8000\n");
+							assemble_instruction_success = cc_false;
+						}
 
 						break;
 				}
@@ -3042,20 +3082,18 @@ static cc_bool ProcessDirective(SemanticState *state, FILE *file, const Directiv
 				/* Update the program counter symbol in between values, to keep it up to date. */
 				SetSymbol("*", SYMBOL_VARIABLE, state->program_counter);
 
-				if (!ResolveValue(state, &value_list_node->value, &resolved_value, doing_fix_up))
-				{
-					if (doing_fix_up)
-						success = cc_false;
-
+				if (!ResolveValue(state, &success, &value_list_node->value, &resolved_value, doing_fix_up))
 					resolved_value = 0;
-				}
 
 				switch (directive->data.dc.size)
 				{
 					case SIZE_BYTE:
 					case SIZE_SHORT:
 						if (resolved_value > 0xFF && resolved_value < 0xFFFFFF00)
+						{
 							SemanticError("Value cannot be higher than $FF or lower than -$100\n");
+							success = cc_false;
+						}
 
 						bytes_to_write = 1;
 
@@ -3063,7 +3101,10 @@ static cc_bool ProcessDirective(SemanticState *state, FILE *file, const Directiv
 
 					case SIZE_WORD:
 						if (resolved_value > 0xFFFF && resolved_value < 0xFFFF0000)
+						{
 							SemanticError("Value cannot be higher than $FFFF or lower than -$10000\n");
+							success = cc_false;
+						}
 
 						bytes_to_write = 2;
 
