@@ -196,56 +196,60 @@ usp             TOKEN(USER_STACK_POINTER_REGISTER)
 pc              TOKEN(PROGRAM_COUNTER)
 [Dd]{decimal}   yylval->generic.integer = yytext[1] - '0'; return TOKEN_DATA_REGISTER;
 [Aa]{decimal}   yylval->generic.integer = yytext[1] - '0'; return TOKEN_ADDRESS_REGISTER;
-{decimal}       {
-                  char *string_end;
-                  yylval->generic.integer = strtoul(yytext, &string_end, 10);
 
-                  if (string_end[0] != '\0')
-                  {
-                    m68kasm_error(yylloc, yyscanner, NULL, "Could not parse number");
-                    return M68KASM_error;
-                  }
+{decimal} {
+	char *string_end;
+	yylval->generic.integer = strtoul(yytext, &string_end, 10);
 
-                  return TOKEN_NUMBER;
-                }
+	if (string_end[0] != '\0')
+	{
+		m68kasm_error(yylloc, yyscanner, NULL, "Could not parse number");
+		return M68KASM_error;
+	}
+
+	return TOKEN_NUMBER;
+}
+
 \${hexadecimal} {
-                  char *string_end;
-                  yylval->generic.integer = strtoul(yytext + 1, &string_end, 16);
+	char *string_end;
+	yylval->generic.integer = strtoul(yytext + 1, &string_end, 16);
 
-                  if (string_end[0] != '\0')
-                  {
-                    m68kasm_error(yylloc, yyscanner, NULL, "Could not parse number");
-                    return M68KASM_error;
-                  }
+	if (string_end[0] != '\0')
+	{
+		m68kasm_error(yylloc, yyscanner, NULL, "Could not parse number");
+		return M68KASM_error;
+	}
 
-                  return TOKEN_NUMBER;
-                }
-\%{binary}      {
-                  char *string_end;
-                  yylval->generic.integer = strtoul(yytext + 1, &string_end, 2);
+	return TOKEN_NUMBER;
+}
 
-                  if (string_end[0] != '\0')
-                  {
-                    m68kasm_error(yylloc, yyscanner, NULL, "Could not parse number");
-                    return M68KASM_error;
-                  }
+\%{binary} {
+	char *string_end;
+	yylval->generic.integer = strtoul(yytext + 1, &string_end, 2);
 
-                  return TOKEN_NUMBER;
-                }
-{identifier}    {
-                  const size_t length = strlen(yytext) + 1;
-                  yylval->generic.string = malloc(length);
-                  if (yylval->generic.string == NULL)
-                  {
-                    m68kasm_error(yylloc, yyscanner, NULL, "Could not allocate memory for generic string");
-                    return M68KASM_error;
-                  }
-                  else
-                  {
-                    memcpy(yylval->generic.string, yytext, length);
-                    return TOKEN_IDENTIFIER;
-                  }
-                }
+	if (string_end[0] != '\0')
+	{
+		m68kasm_error(yylloc, yyscanner, NULL, "Could not parse number");
+		return M68KASM_error;
+	}
+
+	return TOKEN_NUMBER;
+}
+
+{identifier} {
+	const size_t length = strlen(yytext) + 1;
+	yylval->generic.string = malloc(length);
+	if (yylval->generic.string == NULL)
+	{
+		m68kasm_error(yylloc, yyscanner, NULL, "Could not allocate memory for generic string");
+		return M68KASM_error;
+	}
+	else
+	{
+		memcpy(yylval->generic.string, yytext, length);
+		return TOKEN_IDENTIFIER;
+	}
+}
 
 .               return yytext[0]; /* Make Bison signal a syntax error for unrecognised symbols */
 

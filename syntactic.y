@@ -289,8 +289,8 @@ typedef struct StatementListNode
 
 typedef struct ListMetadata
 {
-  void *head;
-  void *tail;
+	void *head;
+	void *tail;
 } ListMetadata;
 
 }
@@ -323,18 +323,18 @@ StatementListNode *statement_list_head;
 /**********************/
 
 %union {
-    struct
-    {
-        unsigned long integer;
-        char *string;
-    } generic;
-    Opcode opcode;
-    Operand operand;
-    Instruction instruction;
-    Directive directive;
-    Statement statement;
-    ListMetadata list_metadata;
-    Value value;
+	struct
+	{
+		unsigned long integer;
+		char *string;
+	} generic;
+	Opcode opcode;
+	Operand operand;
+	Instruction instruction;
+	Directive directive;
+	Statement statement;
+	ListMetadata list_metadata;
+	Value value;
 }
 
 /* We can declare types of tree nodes */
@@ -494,1158 +494,1180 @@ StatementListNode *statement_list_head;
 
 %%
 
-end_of_line          : TOKEN_NEWLINE
-                     | TOKEN_WHITESPACE TOKEN_NEWLINE
-                     ;
+end_of_line
+	: TOKEN_NEWLINE
+	| TOKEN_WHITESPACE TOKEN_NEWLINE
+	;
 
-program              : statement_list
-                     {
-                       *statement_list_head = $1.head;
-                     }
-                     ;
+program
+	: statement_list
+	{
+		*statement_list_head = $1.head;
+	}
+	;
 
-statement_list       : statement
-                     {
-                       /* Don't bother adding empty statements to the statement list */
-                       if ($1.label == NULL && $1.type == STATEMENT_TYPE_EMPTY)
-                       {
-                         $$.head = NULL;
-                         $$.tail = NULL;
-                       }
-                       else
-                       {
-                         StatementListNode *node = malloc(sizeof(StatementListNode));
+statement_list
+	: statement
+	{
+		/* Don't bother adding empty statements to the statement list */
+		if ($1.label == NULL && $1.type == STATEMENT_TYPE_EMPTY)
+		{
+			$$.head = NULL;
+			$$.tail = NULL;
+		}
+		else
+		{
+			StatementListNode *node = malloc(sizeof(StatementListNode));
 
-                         if (node == NULL)
-                         {
-                           m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for statement list node");
-                           YYABORT;
-                         }
-                         else
-                         {
-                           node->statement = $1;
-                           node->next = NULL;
-                         }
+			if (node == NULL)
+			{
+				m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for statement list node");
+				YYABORT;
+			}
+			else
+			{
+				node->statement = $1;
+				node->next = NULL;
+			}
 
-                         $$.head = $$.tail = node;
-                       }
-                     }
-                     | statement_list statement
-                     {
-                       $$ = $1;
+			$$.head = $$.tail = node;
+		}
+	}
+	| statement_list statement
+	{
+		$$ = $1;
 
-                       /* Don't bother adding empty statements to the statement list */
-                       if ($2.label != NULL || $2.type != STATEMENT_TYPE_EMPTY)
-                       {
-                         StatementListNode *node = malloc(sizeof(StatementListNode));
+		/* Don't bother adding empty statements to the statement list */
+		if ($2.label != NULL || $2.type != STATEMENT_TYPE_EMPTY)
+		{
+			StatementListNode *node = malloc(sizeof(StatementListNode));
 
-                         if (node == NULL)
-                         {
-                           m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for statement list node");
-                           YYABORT;
-                         }
-                         else
-                         {
-                           node->statement = $2;
-                           node->next = NULL;
+			if (node == NULL)
+			{
+				m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for statement list node");
+				YYABORT;
+			}
+			else
+			{
+				node->statement = $2;
+				node->next = NULL;
 
-                           if ($$.head == NULL)
-                             $$.head = node;
-                           else
-                             ((StatementListNode*)$$.tail)->next = node;
+				if ($$.head == NULL)
+					$$.head = node;
+				else
+					((StatementListNode*)$$.tail)->next = node;
 
-                           $$.tail = node;
-                         }
-                       }
-                     }
-                     ;
+				$$.tail = node;
+			}
+		}
+	}
+	;
 
-statement            : end_of_line
-                     {
-                       $$.line_number = yylloc.first_line;
-                       $$.label = NULL;
-                       $$.type = STATEMENT_TYPE_EMPTY;
-                     }
-                     | TOKEN_IDENTIFIER end_of_line
-                     {
-                       $$.line_number = yylloc.first_line;
-                       $$.label = $1;
-                       $$.type = STATEMENT_TYPE_EMPTY;
-                     }
-                     | TOKEN_IDENTIFIER ':' end_of_line
-                     {
-                       $$.line_number = yylloc.first_line;
-                       $$.label = $1;
-                       $$.type = STATEMENT_TYPE_EMPTY;
-                     }
-                     | instruction
-                     {
-                       $$.line_number = yylloc.first_line;
-                       $$.label = NULL;
-                       $$.type = STATEMENT_TYPE_INSTRUCTION;
-                       $$.data.instruction = $1;
-                     }
-                     | TOKEN_IDENTIFIER instruction
-                     {
-                       $$.line_number = yylloc.first_line;
-                       $$.label = $1;
-                       $$.type = STATEMENT_TYPE_INSTRUCTION;
-                       $$.data.instruction = $2;
-                     }
-                     | TOKEN_IDENTIFIER ':' instruction
-                     {
-                       $$.line_number = yylloc.first_line;
-                       $$.label = $1;
-                       $$.type = STATEMENT_TYPE_INSTRUCTION;
-                       $$.data.instruction = $3;
-                     }
-                     | TOKEN_WHITESPACE directive
-                     {
-                       $$.line_number = yylloc.first_line;
-                       $$.label = NULL;
-                       $$.type = STATEMENT_TYPE_DIRECTIVE;
-                       $$.data.directive = $2;
-                     }
-                     | TOKEN_IDENTIFIER TOKEN_WHITESPACE directive
-                     {
-                       $$.line_number = yylloc.first_line;
-                       $$.label = $1;
-                       $$.type = STATEMENT_TYPE_DIRECTIVE;
-                       $$.data.directive = $3;
-                     }
-                     | TOKEN_IDENTIFIER ':' TOKEN_WHITESPACE directive
-                     {
-                       $$.line_number = yylloc.first_line;
-                       $$.label = $1;
-                       $$.type = STATEMENT_TYPE_DIRECTIVE;
-                       $$.data.directive = $4;
-                     }
-                     ;
+statement
+	: end_of_line
+	{
+		$$.line_number = yylloc.first_line;
+		$$.label = NULL;
+		$$.type = STATEMENT_TYPE_EMPTY;
+	}
+	| TOKEN_IDENTIFIER end_of_line
+	{
+		$$.line_number = yylloc.first_line;
+		$$.label = $1;
+		$$.type = STATEMENT_TYPE_EMPTY;
+	}
+	| TOKEN_IDENTIFIER ':' end_of_line
+	{
+		$$.line_number = yylloc.first_line;
+		$$.label = $1;
+		$$.type = STATEMENT_TYPE_EMPTY;
+	}
+	| instruction
+	{
+		$$.line_number = yylloc.first_line;
+		$$.label = NULL;
+		$$.type = STATEMENT_TYPE_INSTRUCTION;
+		$$.data.instruction = $1;
+	}
+	| TOKEN_IDENTIFIER instruction
+	{
+		$$.line_number = yylloc.first_line;
+		$$.label = $1;
+		$$.type = STATEMENT_TYPE_INSTRUCTION;
+		$$.data.instruction = $2;
+	}
+	| TOKEN_IDENTIFIER ':' instruction
+	{
+		$$.line_number = yylloc.first_line;
+		$$.label = $1;
+		$$.type = STATEMENT_TYPE_INSTRUCTION;
+		$$.data.instruction = $3;
+	}
+	| TOKEN_WHITESPACE directive
+	{
+		$$.line_number = yylloc.first_line;
+		$$.label = NULL;
+		$$.type = STATEMENT_TYPE_DIRECTIVE;
+		$$.data.directive = $2;
+	}
+	| TOKEN_IDENTIFIER TOKEN_WHITESPACE directive
+	{
+		$$.line_number = yylloc.first_line;
+		$$.label = $1;
+		$$.type = STATEMENT_TYPE_DIRECTIVE;
+		$$.data.directive = $3;
+	}
+	| TOKEN_IDENTIFIER ':' TOKEN_WHITESPACE directive
+	{
+		$$.line_number = yylloc.first_line;
+		$$.label = $1;
+		$$.type = STATEMENT_TYPE_DIRECTIVE;
+		$$.data.directive = $4;
+	}
+	;
 
-directive            : TOKEN_DIRECTIVE_DC '.' size TOKEN_WHITESPACE value_list
-                     {
-                       $$.type = DIRECTIVE_DC;
-                       $$.data.dc.size = $3;
-                       $$.data.dc.values = $5.head;
-                     }
-                     ;
+directive
+	: TOKEN_DIRECTIVE_DC '.' size TOKEN_WHITESPACE value_list
+	{
+		$$.type = DIRECTIVE_DC;
+		$$.data.dc.size = $3;
+		$$.data.dc.values = $5.head;
+	}
+	;
 
-value_list           : value
-                     {
-                       ValueListNode *node = malloc(sizeof(ValueListNode));
+value_list
+	: value
+	{
+		ValueListNode *node = malloc(sizeof(ValueListNode));
 
-                       if (node == NULL)
-                       {
-                         m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for value list node");
-                         YYABORT;
-                       }
-                       else
-                       {
-                         node->value = $1;
-                         node->next = NULL;
-                       }
+		if (node == NULL)
+		{
+			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for value list node");
+			YYABORT;
+		}
+		else
+		{
+			node->value = $1;
+			node->next = NULL;
+		}
 
-                       $$.head = $$.tail = node;
-                     }
-                     | value_list ',' value
-                     {
-                       ValueListNode *node = malloc(sizeof(ValueListNode));
+		$$.head = $$.tail = node;
+	}
+	| value_list ',' value
+	{
+		ValueListNode *node = malloc(sizeof(ValueListNode));
 
-                       $$ = $1;
+		$$ = $1;
 
-                       if (node == NULL)
-                       {
-                         m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for value list node");
-                         YYABORT;
-                       }
-                       else
-                       {
-                         node->value = $3;
-                         node->next = NULL;
+		if (node == NULL)
+		{
+			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for value list node");
+			YYABORT;
+		}
+		else
+		{
+			node->value = $3;
+			node->next = NULL;
 
-                         if ($$.head == NULL)
-                           $$.head = node;
-                         else
-                           ((ValueListNode*)$$.tail)->next = node;
+			if ($$.head == NULL)
+				$$.head = node;
+			else
+				((ValueListNode*)$$.tail)->next = node;
 
-                         $$.tail = node;
-                       }
-                     }
-                     ;
+			$$.tail = node;
+		}
+	}
+	;
 
-instruction          : TOKEN_WHITESPACE full_opcode end_of_line
-                     {
-                       $$.opcode = $2;
-                       $$.operands[0].type = 0;
-                       $$.operands[1].type = 0;
-                     }
-                     | TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand_list end_of_line
-                     {
-                       $$ = $4;
-                       $$.opcode = $2;
-                     }
-                     ;
+instruction
+	: TOKEN_WHITESPACE full_opcode end_of_line
+	{
+		$$.opcode = $2;
+		$$.operands[0].type = 0;
+		$$.operands[1].type = 0;
+	}
+	| TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand_list end_of_line
+	{
+		$$ = $4;
+		$$.opcode = $2;
+	}
+	;
 
-full_opcode          : opcode
-                     {
-                       $$ = $1;
-                       $$.size = SIZE_UNDEFINED;
-                     }
-                     | opcode '.' size
-                     {
-                       $$ = $1;
-                       $$.size = $3;
-                     }
-                     ;
+full_opcode
+	: opcode
+	{
+		$$ = $1;
+		$$.size = SIZE_UNDEFINED;
+	}
+	| opcode '.' size
+	{
+		$$ = $1;
+		$$.size = $3;
+	}
+	;
 
-opcode               : TOKEN_OPCODE_ORI
-                     {
-                       $$.type = OPCODE_ORI;
-                     }
-                     | TOKEN_OPCODE_ANDI
-                     {
-                       $$.type = OPCODE_ANDI;
-                     }
-                     | TOKEN_OPCODE_SUBI
-                     {
-                       $$.type = OPCODE_SUBI;
-                     }
-                     | TOKEN_OPCODE_ADDI
-                     {
-                       $$.type = OPCODE_ADDI;
-                     }
-                     | TOKEN_OPCODE_EORI
-                     {
-                       $$.type = OPCODE_EORI;
-                     }
-                     | TOKEN_OPCODE_CMPI
-                     {
-                       $$.type = OPCODE_CMPI;
-                     }
-                     | TOKEN_OPCODE_BTST
-                     {
-                       $$.type = OPCODE_BTST_STATIC;
-                     }
-                     | TOKEN_OPCODE_BCHG
-                     {
-                       $$.type = OPCODE_BCHG_STATIC;
-                     }
-                     | TOKEN_OPCODE_BCLR
-                     {
-                       $$.type = OPCODE_BCLR_STATIC;
-                     }
-                     | TOKEN_OPCODE_BSET
-                     {
-                       $$.type = OPCODE_BSET_STATIC;
-                     }
-                     | TOKEN_OPCODE_MOVEP
-                     {
-                       $$.type = OPCODE_MOVEP_TO_REG;
-                     }
-                     | TOKEN_OPCODE_MOVEA
-                     {
-                       $$.type = OPCODE_MOVEA;
-                     }
-                     | TOKEN_OPCODE_MOVE
-                     {
-                       $$.type = OPCODE_MOVE;
-                     }
-                     | TOKEN_OPCODE_NEGX
-                     {
-                       $$.type = OPCODE_NEGX;
-                     }
-                     | TOKEN_OPCODE_CLR
-                     {
-                       $$.type = OPCODE_CLR;
-                     }
-                     | TOKEN_OPCODE_NEG
-                     {
-                       $$.type = OPCODE_NEG;
-                     }
-                     | TOKEN_OPCODE_NOT
-                     {
-                       $$.type = OPCODE_NOT;
-                     }
-                     | TOKEN_OPCODE_EXT
-                     {
-                       $$.type = OPCODE_EXT;
-                     }
-                     | TOKEN_OPCODE_NBCD
-                     {
-                       $$.type = OPCODE_NBCD;
-                     }
-                     | TOKEN_OPCODE_SWAP
-                     {
-                       $$.type = OPCODE_SWAP;
-                     }
-                     | TOKEN_OPCODE_PEA
-                     {
-                       $$.type = OPCODE_PEA;
-                     }
-                     | TOKEN_OPCODE_ILLEGAL
-                     {
-                       $$.type = OPCODE_ILLEGAL;
-                     }
-                     | TOKEN_OPCODE_TAS
-                     {
-                       $$.type = OPCODE_TAS;
-                     }
-                     | TOKEN_OPCODE_TST
-                     {
-                       $$.type = OPCODE_TST;
-                     }
-                     | TOKEN_OPCODE_TRAP
-                     {
-                       $$.type = OPCODE_TRAP;
-                     }
-                     | TOKEN_OPCODE_LINK
-                     {
-                       $$.type = OPCODE_LINK;
-                     }
-                     | TOKEN_OPCODE_UNLK
-                     {
-                       $$.type = OPCODE_UNLK;
-                     }
-                     | TOKEN_OPCODE_RESET
-                     {
-                       $$.type = OPCODE_RESET;
-                     }
-                     | TOKEN_OPCODE_NOP
-                     {
-                       $$.type = OPCODE_NOP;
-                     }
-                     | TOKEN_OPCODE_STOP
-                     {
-                       $$.type = OPCODE_STOP;
-                     }
-                     | TOKEN_OPCODE_RTE
-                     {
-                       $$.type = OPCODE_RTE;
-                     }
-                     | TOKEN_OPCODE_RTS
-                     {
-                       $$.type = OPCODE_RTS;
-                     }
-                     | TOKEN_OPCODE_TRAPV
-                     {
-                       $$.type = OPCODE_TRAPV;
-                     }
-                     | TOKEN_OPCODE_RTR
-                     {
-                       $$.type = OPCODE_RTR;
-                     }
-                     | TOKEN_OPCODE_JSR
-                     {
-                       $$.type = OPCODE_JSR;
-                     }
-                     | TOKEN_OPCODE_JMP
-                     {
-                       $$.type = OPCODE_JMP;
-                     }
-                     | TOKEN_OPCODE_MOVEM
-                     {
-                       $$.type = OPCODE_MOVEM_TO_REGS;
-                     }
-                     | TOKEN_OPCODE_LEA
-                     {
-                       $$.type = OPCODE_LEA;
-                     }
-                     | TOKEN_OPCODE_CHK
-                     {
-                       $$.type = OPCODE_CHK;
-                     }
-                     | TOKEN_OPCODE_ADDQ
-                     {
-                       $$.type = OPCODE_ADDQ;
-                     }
-                     | TOKEN_OPCODE_SUBQ
-                     {
-                       $$.type = OPCODE_SUBQ;
-                     }
-                     | TOKEN_OPCODE_ST
-                     {
-                       $$.type = OPCODE_Scc;
-                       $$.condition = CONDITION_TRUE;
-                     }
-                     | TOKEN_OPCODE_SF
-                     {
-                       $$.type = OPCODE_Scc;
-                       $$.condition = CONDITION_FALSE;
-                     }
-                     | TOKEN_OPCODE_SHI
-                     {
-                       $$.type = OPCODE_Scc;
-                       $$.condition = CONDITION_HIGHER;
-                     }
-                     | TOKEN_OPCODE_SLS
-                     {
-                       $$.type = OPCODE_Scc;
-                       $$.condition = CONDITION_LOWER_OR_SAME;
-                     }
-                     | TOKEN_OPCODE_SCC
-                     {
-                       $$.type = OPCODE_Scc;
-                       $$.condition = CONDITION_CARRY_CLEAR;
-                     }
-                     | TOKEN_OPCODE_SCS
-                     {
-                       $$.type = OPCODE_Scc;
-                       $$.condition = CONDITION_CARRY_SET;
-                     }
-                     | TOKEN_OPCODE_SNE
-                     {
-                       $$.type = OPCODE_Scc;
-                       $$.condition = CONDITION_NOT_EQUAL;
-                     }
-                     | TOKEN_OPCODE_SEQ
-                     {
-                       $$.type = OPCODE_Scc;
-                       $$.condition = CONDITION_EQUAL;
-                     }
-                     | TOKEN_OPCODE_SVC
-                     {
-                       $$.type = OPCODE_Scc;
-                       $$.condition = CONDITION_OVERFLOW_CLEAR;
-                     }
-                     | TOKEN_OPCODE_SVS
-                     {
-                       $$.type = OPCODE_Scc;
-                       $$.condition = CONDITION_OVERFLOW_SET;
-                     }
-                     | TOKEN_OPCODE_SPL
-                     {
-                       $$.type = OPCODE_Scc;
-                       $$.condition = CONDITION_PLUS;
-                     }
-                     | TOKEN_OPCODE_SMI
-                     {
-                       $$.type = OPCODE_Scc;
-                       $$.condition = CONDITION_MINUS;
-                     }
-                     | TOKEN_OPCODE_SGE
-                     {
-                       $$.type = OPCODE_Scc;
-                       $$.condition = CONDITION_GREATER_OR_EQUAL;
-                     }
-                     | TOKEN_OPCODE_SLT
-                     {
-                       $$.type = OPCODE_Scc;
-                       $$.condition = CONDITION_LESS_THAN;
-                     }
-                     | TOKEN_OPCODE_SGT
-                     {
-                       $$.type = OPCODE_Scc;
-                       $$.condition = CONDITION_GREATER_THAN;
-                     }
-                     | TOKEN_OPCODE_SLE
-                     {
-                       $$.type = OPCODE_Scc;
-                       $$.condition = CONDITION_LESS_OR_EQUAL;
-                     }
-                     | TOKEN_OPCODE_DBT
-                     {
-                       $$.type = OPCODE_DBcc;
-                       $$.condition = CONDITION_TRUE;
-                     }
-                     | TOKEN_OPCODE_DBF
-                     {
-                       $$.type = OPCODE_DBcc;
-                       $$.condition = CONDITION_FALSE;
-                     }
-                     | TOKEN_OPCODE_DBHI
-                     {
-                       $$.type = OPCODE_DBcc;
-                       $$.condition = CONDITION_HIGHER;
-                     }
-                     | TOKEN_OPCODE_DBLS
-                     {
-                       $$.type = OPCODE_DBcc;
-                       $$.condition = CONDITION_LOWER_OR_SAME;
-                     }
-                     | TOKEN_OPCODE_DBCC
-                     {
-                       $$.type = OPCODE_DBcc;
-                       $$.condition = CONDITION_CARRY_CLEAR;
-                     }
-                     | TOKEN_OPCODE_DBCS
-                     {
-                       $$.type = OPCODE_DBcc;
-                       $$.condition = CONDITION_CARRY_SET;
-                     }
-                     | TOKEN_OPCODE_DBNE
-                     {
-                       $$.type = OPCODE_DBcc;
-                       $$.condition = CONDITION_NOT_EQUAL;
-                     }
-                     | TOKEN_OPCODE_DBEQ
-                     {
-                       $$.type = OPCODE_DBcc;
-                       $$.condition = CONDITION_EQUAL;
-                     }
-                     | TOKEN_OPCODE_DBVC
-                     {
-                       $$.type = OPCODE_DBcc;
-                       $$.condition = CONDITION_OVERFLOW_CLEAR;
-                     }
-                     | TOKEN_OPCODE_DBVS
-                     {
-                       $$.type = OPCODE_DBcc;
-                       $$.condition = CONDITION_OVERFLOW_SET;
-                     }
-                     | TOKEN_OPCODE_DBPL
-                     {
-                       $$.type = OPCODE_DBcc;
-                       $$.condition = CONDITION_PLUS;
-                     }
-                     | TOKEN_OPCODE_DBMI
-                     {
-                       $$.type = OPCODE_DBcc;
-                       $$.condition = CONDITION_MINUS;
-                     }
-                     | TOKEN_OPCODE_DBGE
-                     {
-                       $$.type = OPCODE_DBcc;
-                       $$.condition = CONDITION_GREATER_OR_EQUAL;
-                     }
-                     | TOKEN_OPCODE_DBLT
-                     {
-                       $$.type = OPCODE_DBcc;
-                       $$.condition = CONDITION_LESS_THAN;
-                     }
-                     | TOKEN_OPCODE_DBGT
-                     {
-                       $$.type = OPCODE_DBcc;
-                       $$.condition = CONDITION_GREATER_THAN;
-                     }
-                     | TOKEN_OPCODE_DBLE
-                     {
-                       $$.type = OPCODE_DBcc;
-                       $$.condition = CONDITION_LESS_OR_EQUAL;
-                     }
-                     | TOKEN_OPCODE_BRA
-                     {
-                       $$.type = OPCODE_BRA;
-                     }
-                     | TOKEN_OPCODE_BSR
-                     {
-                       $$.type = OPCODE_BSR;
-                     }
-                     | TOKEN_OPCODE_BHI
-                     {
-                       $$.type = OPCODE_Bcc;
-                       $$.condition = CONDITION_HIGHER;
-                     }
-                     | TOKEN_OPCODE_BLS
-                     {
-                       $$.type = OPCODE_Bcc;
-                       $$.condition = CONDITION_LOWER_OR_SAME;
-                     }
-                     | TOKEN_OPCODE_BCC
-                     {
-                       $$.type = OPCODE_Bcc;
-                       $$.condition = CONDITION_CARRY_CLEAR;
-                     }
-                     | TOKEN_OPCODE_BCS
-                     {
-                       $$.type = OPCODE_Bcc;
-                       $$.condition = CONDITION_CARRY_SET;
-                     }
-                     | TOKEN_OPCODE_BNE
-                     {
-                       $$.type = OPCODE_Bcc;
-                       $$.condition = CONDITION_NOT_EQUAL;
-                     }
-                     | TOKEN_OPCODE_BEQ
-                     {
-                       $$.type = OPCODE_Bcc;
-                       $$.condition = CONDITION_EQUAL;
-                     }
-                     | TOKEN_OPCODE_BVC
-                     {
-                       $$.type = OPCODE_Bcc;
-                       $$.condition = CONDITION_OVERFLOW_CLEAR;
-                     }
-                     | TOKEN_OPCODE_BVS
-                     {
-                       $$.type = OPCODE_Bcc;
-                       $$.condition = CONDITION_OVERFLOW_SET;
-                     }
-                     | TOKEN_OPCODE_BPL
-                     {
-                       $$.type = OPCODE_Bcc;
-                       $$.condition = CONDITION_PLUS;
-                     }
-                     | TOKEN_OPCODE_BMI
-                     {
-                       $$.type = OPCODE_Bcc;
-                       $$.condition = CONDITION_MINUS;
-                     }
-                     | TOKEN_OPCODE_BGE
-                     {
-                       $$.type = OPCODE_Bcc;
-                       $$.condition = CONDITION_GREATER_OR_EQUAL;
-                     }
-                     | TOKEN_OPCODE_BLT
-                     {
-                       $$.type = OPCODE_Bcc;
-                       $$.condition = CONDITION_LESS_THAN;
-                     }
-                     | TOKEN_OPCODE_BGT
-                     {
-                       $$.type = OPCODE_Bcc;
-                       $$.condition = CONDITION_GREATER_THAN;
-                     }
-                     | TOKEN_OPCODE_BLE
-                     {
-                       $$.type = OPCODE_Bcc;
-                       $$.condition = CONDITION_LESS_OR_EQUAL;
-                     }
-                     | TOKEN_OPCODE_MOVEQ
-                     {
-                       $$.type = OPCODE_MOVEQ;
-                     }
-                     | TOKEN_OPCODE_DIVU
-                     {
-                       $$.type = OPCODE_DIVU;
-                     }
-                     | TOKEN_OPCODE_DIVS
-                     {
-                       $$.type = OPCODE_DIVS;
-                     }
-                     | TOKEN_OPCODE_SBCD
-                     {
-                       $$.type = OPCODE_SBCD_DATA_REGS;
-                     }
-                     | TOKEN_OPCODE_OR
-                     {
-                       $$.type = OPCODE_OR_TO_REG;
-                     }
-                     | TOKEN_OPCODE_SUB
-                     {
-                       $$.type = OPCODE_SUB_TO_REG;
-                     }
-                     | TOKEN_OPCODE_SUBX
-                     {
-                       $$.type = OPCODE_SUBX_DATA_REGS;
-                     }
-                     | TOKEN_OPCODE_SUBA
-                     {
-                       $$.type = OPCODE_SUBA;
-                     }
-                     | TOKEN_OPCODE_EOR
-                     {
-                       $$.type = OPCODE_EOR;
-                     }
-                     | TOKEN_OPCODE_CMPM
-                     {
-                       $$.type = OPCODE_CMPM;
-                     }
-                     | TOKEN_OPCODE_CMP
-                     {
-                       $$.type = OPCODE_CMP;
-                     }
-                     | TOKEN_OPCODE_CMPA
-                     {
-                       $$.type = OPCODE_CMPA;
-                     }
-                     | TOKEN_OPCODE_MULU
-                     {
-                       $$.type = OPCODE_MULU;
-                     }
-                     | TOKEN_OPCODE_MULS
-                     {
-                       $$.type = OPCODE_MULS;
-                     }
-                     | TOKEN_OPCODE_ABCD
-                     {
-                       $$.type = OPCODE_ABCD_DATA_REGS;
-                     }
-                     | TOKEN_OPCODE_EXG
-                     {
-                       $$.type = OPCODE_EXG;
-                     }
-                     | TOKEN_OPCODE_AND
-                     {
-                       $$.type = OPCODE_AND_TO_REG;
-                     }
-                     | TOKEN_OPCODE_ADD
-                     {
-                       $$.type = OPCODE_ADD_TO_REG;
-                     }
-                     | TOKEN_OPCODE_ADDX
-                     {
-                       $$.type = OPCODE_ADDX_DATA_REGS;
-                     }
-                     | TOKEN_OPCODE_ADDA
-                     {
-                       $$.type = OPCODE_ADDA;
-                     }
-                     | TOKEN_OPCODE_ASL
-                     {
-                       $$.type = OPCODE_ASL_STATIC;
-                     }
-                     | TOKEN_OPCODE_ASR
-                     {
-                       $$.type = OPCODE_ASR_STATIC;
-                     }
-                     | TOKEN_OPCODE_LSL
-                     {
-                       $$.type = OPCODE_LSL_STATIC;
-                     }
-                     | TOKEN_OPCODE_LSR
-                     {
-                       $$.type = OPCODE_LSR_STATIC;
-                     }
-                     | TOKEN_OPCODE_ROXL
-                     {
-                       $$.type = OPCODE_ROXL_STATIC;
-                     }
-                     | TOKEN_OPCODE_ROXR
-                     {
-                       $$.type = OPCODE_ROXR_STATIC;
-                     }
-                     | TOKEN_OPCODE_ROL
-                     {
-                       $$.type = OPCODE_ROL_STATIC;
-                     }
-                     | TOKEN_OPCODE_ROR
-                     {
-                       $$.type = OPCODE_ROR_STATIC;
-                     }
-                     ;
+opcode
+	: TOKEN_OPCODE_ORI
+	{
+		$$.type = OPCODE_ORI;
+	}
+	| TOKEN_OPCODE_ANDI
+	{
+		$$.type = OPCODE_ANDI;
+	}
+	| TOKEN_OPCODE_SUBI
+	{
+		$$.type = OPCODE_SUBI;
+	}
+	| TOKEN_OPCODE_ADDI
+	{
+		$$.type = OPCODE_ADDI;
+	}
+	| TOKEN_OPCODE_EORI
+	{
+		$$.type = OPCODE_EORI;
+	}
+	| TOKEN_OPCODE_CMPI
+	{
+		$$.type = OPCODE_CMPI;
+	}
+	| TOKEN_OPCODE_BTST
+	{
+		$$.type = OPCODE_BTST_STATIC;
+	}
+	| TOKEN_OPCODE_BCHG
+	{
+		$$.type = OPCODE_BCHG_STATIC;
+	}
+	| TOKEN_OPCODE_BCLR
+	{
+		$$.type = OPCODE_BCLR_STATIC;
+	}
+	| TOKEN_OPCODE_BSET
+	{
+		$$.type = OPCODE_BSET_STATIC;
+	}
+	| TOKEN_OPCODE_MOVEP
+	{
+		$$.type = OPCODE_MOVEP_TO_REG;
+	}
+	| TOKEN_OPCODE_MOVEA
+	{
+		$$.type = OPCODE_MOVEA;
+	}
+	| TOKEN_OPCODE_MOVE
+	{
+		$$.type = OPCODE_MOVE;
+	}
+	| TOKEN_OPCODE_NEGX
+	{
+		$$.type = OPCODE_NEGX;
+	}
+	| TOKEN_OPCODE_CLR
+	{
+		$$.type = OPCODE_CLR;
+	}
+	| TOKEN_OPCODE_NEG
+	{
+		$$.type = OPCODE_NEG;
+	}
+	| TOKEN_OPCODE_NOT
+	{
+		$$.type = OPCODE_NOT;
+	}
+	| TOKEN_OPCODE_EXT
+	{
+		$$.type = OPCODE_EXT;
+	}
+	| TOKEN_OPCODE_NBCD
+	{
+		$$.type = OPCODE_NBCD;
+	}
+	| TOKEN_OPCODE_SWAP
+	{
+		$$.type = OPCODE_SWAP;
+	}
+	| TOKEN_OPCODE_PEA
+	{
+		$$.type = OPCODE_PEA;
+	}
+	| TOKEN_OPCODE_ILLEGAL
+	{
+		$$.type = OPCODE_ILLEGAL;
+	}
+	| TOKEN_OPCODE_TAS
+	{
+		$$.type = OPCODE_TAS;
+	}
+	| TOKEN_OPCODE_TST
+	{
+		$$.type = OPCODE_TST;
+	}
+	| TOKEN_OPCODE_TRAP
+	{
+		$$.type = OPCODE_TRAP;
+	}
+	| TOKEN_OPCODE_LINK
+	{
+		$$.type = OPCODE_LINK;
+	}
+	| TOKEN_OPCODE_UNLK
+	{
+		$$.type = OPCODE_UNLK;
+	}
+	| TOKEN_OPCODE_RESET
+	{
+		$$.type = OPCODE_RESET;
+	}
+	| TOKEN_OPCODE_NOP
+	{
+		$$.type = OPCODE_NOP;
+	}
+	| TOKEN_OPCODE_STOP
+	{
+		$$.type = OPCODE_STOP;
+	}
+	| TOKEN_OPCODE_RTE
+	{
+		$$.type = OPCODE_RTE;
+	}
+	| TOKEN_OPCODE_RTS
+	{
+		$$.type = OPCODE_RTS;
+	}
+	| TOKEN_OPCODE_TRAPV
+	{
+		$$.type = OPCODE_TRAPV;
+	}
+	| TOKEN_OPCODE_RTR
+	{
+		$$.type = OPCODE_RTR;
+	}
+	| TOKEN_OPCODE_JSR
+	{
+		$$.type = OPCODE_JSR;
+	}
+	| TOKEN_OPCODE_JMP
+	{
+		$$.type = OPCODE_JMP;
+	}
+	| TOKEN_OPCODE_MOVEM
+	{
+		$$.type = OPCODE_MOVEM_TO_REGS;
+	}
+	| TOKEN_OPCODE_LEA
+	{
+		$$.type = OPCODE_LEA;
+	}
+	| TOKEN_OPCODE_CHK
+	{
+		$$.type = OPCODE_CHK;
+	}
+	| TOKEN_OPCODE_ADDQ
+	{
+		$$.type = OPCODE_ADDQ;
+	}
+	| TOKEN_OPCODE_SUBQ
+	{
+		$$.type = OPCODE_SUBQ;
+	}
+	| TOKEN_OPCODE_ST
+	{
+		$$.type = OPCODE_Scc;
+		$$.condition = CONDITION_TRUE;
+	}
+	| TOKEN_OPCODE_SF
+	{
+		$$.type = OPCODE_Scc;
+		$$.condition = CONDITION_FALSE;
+	}
+	| TOKEN_OPCODE_SHI
+	{
+		$$.type = OPCODE_Scc;
+		$$.condition = CONDITION_HIGHER;
+	}
+	| TOKEN_OPCODE_SLS
+	{
+		$$.type = OPCODE_Scc;
+		$$.condition = CONDITION_LOWER_OR_SAME;
+	}
+	| TOKEN_OPCODE_SCC
+	{
+		$$.type = OPCODE_Scc;
+		$$.condition = CONDITION_CARRY_CLEAR;
+	}
+	| TOKEN_OPCODE_SCS
+	{
+		$$.type = OPCODE_Scc;
+		$$.condition = CONDITION_CARRY_SET;
+	}
+	| TOKEN_OPCODE_SNE
+	{
+		$$.type = OPCODE_Scc;
+		$$.condition = CONDITION_NOT_EQUAL;
+	}
+	| TOKEN_OPCODE_SEQ
+	{
+		$$.type = OPCODE_Scc;
+		$$.condition = CONDITION_EQUAL;
+	}
+	| TOKEN_OPCODE_SVC
+	{
+		$$.type = OPCODE_Scc;
+		$$.condition = CONDITION_OVERFLOW_CLEAR;
+	}
+	| TOKEN_OPCODE_SVS
+	{
+		$$.type = OPCODE_Scc;
+		$$.condition = CONDITION_OVERFLOW_SET;
+	}
+	| TOKEN_OPCODE_SPL
+	{
+		$$.type = OPCODE_Scc;
+		$$.condition = CONDITION_PLUS;
+	}
+	| TOKEN_OPCODE_SMI
+	{
+		$$.type = OPCODE_Scc;
+		$$.condition = CONDITION_MINUS;
+	}
+	| TOKEN_OPCODE_SGE
+	{
+		$$.type = OPCODE_Scc;
+		$$.condition = CONDITION_GREATER_OR_EQUAL;
+	}
+	| TOKEN_OPCODE_SLT
+	{
+		$$.type = OPCODE_Scc;
+		$$.condition = CONDITION_LESS_THAN;
+	}
+	| TOKEN_OPCODE_SGT
+	{
+		$$.type = OPCODE_Scc;
+		$$.condition = CONDITION_GREATER_THAN;
+	}
+	| TOKEN_OPCODE_SLE
+	{
+		$$.type = OPCODE_Scc;
+		$$.condition = CONDITION_LESS_OR_EQUAL;
+	}
+	| TOKEN_OPCODE_DBT
+	{
+		$$.type = OPCODE_DBcc;
+		$$.condition = CONDITION_TRUE;
+	}
+	| TOKEN_OPCODE_DBF
+	{
+		$$.type = OPCODE_DBcc;
+		$$.condition = CONDITION_FALSE;
+	}
+	| TOKEN_OPCODE_DBHI
+	{
+		$$.type = OPCODE_DBcc;
+		$$.condition = CONDITION_HIGHER;
+	}
+	| TOKEN_OPCODE_DBLS
+	{
+		$$.type = OPCODE_DBcc;
+		$$.condition = CONDITION_LOWER_OR_SAME;
+	}
+	| TOKEN_OPCODE_DBCC
+	{
+		$$.type = OPCODE_DBcc;
+		$$.condition = CONDITION_CARRY_CLEAR;
+	}
+	| TOKEN_OPCODE_DBCS
+	{
+		$$.type = OPCODE_DBcc;
+		$$.condition = CONDITION_CARRY_SET;
+	}
+	| TOKEN_OPCODE_DBNE
+	{
+		$$.type = OPCODE_DBcc;
+		$$.condition = CONDITION_NOT_EQUAL;
+	}
+	| TOKEN_OPCODE_DBEQ
+	{
+		$$.type = OPCODE_DBcc;
+		$$.condition = CONDITION_EQUAL;
+	}
+	| TOKEN_OPCODE_DBVC
+	{
+		$$.type = OPCODE_DBcc;
+		$$.condition = CONDITION_OVERFLOW_CLEAR;
+	}
+	| TOKEN_OPCODE_DBVS
+	{
+		$$.type = OPCODE_DBcc;
+		$$.condition = CONDITION_OVERFLOW_SET;
+	}
+	| TOKEN_OPCODE_DBPL
+	{
+		$$.type = OPCODE_DBcc;
+		$$.condition = CONDITION_PLUS;
+	}
+	| TOKEN_OPCODE_DBMI
+	{
+		$$.type = OPCODE_DBcc;
+		$$.condition = CONDITION_MINUS;
+	}
+	| TOKEN_OPCODE_DBGE
+	{
+		$$.type = OPCODE_DBcc;
+		$$.condition = CONDITION_GREATER_OR_EQUAL;
+	}
+	| TOKEN_OPCODE_DBLT
+	{
+		$$.type = OPCODE_DBcc;
+		$$.condition = CONDITION_LESS_THAN;
+	}
+	| TOKEN_OPCODE_DBGT
+	{
+		$$.type = OPCODE_DBcc;
+		$$.condition = CONDITION_GREATER_THAN;
+	}
+	| TOKEN_OPCODE_DBLE
+	{
+		$$.type = OPCODE_DBcc;
+		$$.condition = CONDITION_LESS_OR_EQUAL;
+	}
+	| TOKEN_OPCODE_BRA
+	{
+		$$.type = OPCODE_BRA;
+	}
+	| TOKEN_OPCODE_BSR
+	{
+		$$.type = OPCODE_BSR;
+	}
+	| TOKEN_OPCODE_BHI
+	{
+		$$.type = OPCODE_Bcc;
+		$$.condition = CONDITION_HIGHER;
+	}
+	| TOKEN_OPCODE_BLS
+	{
+		$$.type = OPCODE_Bcc;
+		$$.condition = CONDITION_LOWER_OR_SAME;
+	}
+	| TOKEN_OPCODE_BCC
+	{
+		$$.type = OPCODE_Bcc;
+		$$.condition = CONDITION_CARRY_CLEAR;
+	}
+	| TOKEN_OPCODE_BCS
+	{
+		$$.type = OPCODE_Bcc;
+		$$.condition = CONDITION_CARRY_SET;
+	}
+	| TOKEN_OPCODE_BNE
+	{
+		$$.type = OPCODE_Bcc;
+		$$.condition = CONDITION_NOT_EQUAL;
+	}
+	| TOKEN_OPCODE_BEQ
+	{
+		$$.type = OPCODE_Bcc;
+		$$.condition = CONDITION_EQUAL;
+	}
+	| TOKEN_OPCODE_BVC
+	{
+		$$.type = OPCODE_Bcc;
+		$$.condition = CONDITION_OVERFLOW_CLEAR;
+	}
+	| TOKEN_OPCODE_BVS
+	{
+		$$.type = OPCODE_Bcc;
+		$$.condition = CONDITION_OVERFLOW_SET;
+	}
+	| TOKEN_OPCODE_BPL
+	{
+		$$.type = OPCODE_Bcc;
+		$$.condition = CONDITION_PLUS;
+	}
+	| TOKEN_OPCODE_BMI
+	{
+		$$.type = OPCODE_Bcc;
+		$$.condition = CONDITION_MINUS;
+	}
+	| TOKEN_OPCODE_BGE
+	{
+		$$.type = OPCODE_Bcc;
+		$$.condition = CONDITION_GREATER_OR_EQUAL;
+	}
+	| TOKEN_OPCODE_BLT
+	{
+		$$.type = OPCODE_Bcc;
+		$$.condition = CONDITION_LESS_THAN;
+	}
+	| TOKEN_OPCODE_BGT
+	{
+		$$.type = OPCODE_Bcc;
+		$$.condition = CONDITION_GREATER_THAN;
+	}
+	| TOKEN_OPCODE_BLE
+	{
+		$$.type = OPCODE_Bcc;
+		$$.condition = CONDITION_LESS_OR_EQUAL;
+	}
+	| TOKEN_OPCODE_MOVEQ
+	{
+		$$.type = OPCODE_MOVEQ;
+	}
+	| TOKEN_OPCODE_DIVU
+	{
+		$$.type = OPCODE_DIVU;
+	}
+	| TOKEN_OPCODE_DIVS
+	{
+		$$.type = OPCODE_DIVS;
+	}
+	| TOKEN_OPCODE_SBCD
+	{
+		$$.type = OPCODE_SBCD_DATA_REGS;
+	}
+	| TOKEN_OPCODE_OR
+	{
+		$$.type = OPCODE_OR_TO_REG;
+	}
+	| TOKEN_OPCODE_SUB
+	{
+		$$.type = OPCODE_SUB_TO_REG;
+	}
+	| TOKEN_OPCODE_SUBX
+	{
+		$$.type = OPCODE_SUBX_DATA_REGS;
+	}
+	| TOKEN_OPCODE_SUBA
+	{
+		$$.type = OPCODE_SUBA;
+	}
+	| TOKEN_OPCODE_EOR
+	{
+		$$.type = OPCODE_EOR;
+	}
+	| TOKEN_OPCODE_CMPM
+	{
+		$$.type = OPCODE_CMPM;
+	}
+	| TOKEN_OPCODE_CMP
+	{
+		$$.type = OPCODE_CMP;
+	}
+	| TOKEN_OPCODE_CMPA
+	{
+		$$.type = OPCODE_CMPA;
+	}
+	| TOKEN_OPCODE_MULU
+	{
+		$$.type = OPCODE_MULU;
+	}
+	| TOKEN_OPCODE_MULS
+	{
+		$$.type = OPCODE_MULS;
+	}
+	| TOKEN_OPCODE_ABCD
+	{
+		$$.type = OPCODE_ABCD_DATA_REGS;
+	}
+	| TOKEN_OPCODE_EXG
+	{
+		$$.type = OPCODE_EXG;
+	}
+	| TOKEN_OPCODE_AND
+	{
+		$$.type = OPCODE_AND_TO_REG;
+	}
+	| TOKEN_OPCODE_ADD
+	{
+		$$.type = OPCODE_ADD_TO_REG;
+	}
+	| TOKEN_OPCODE_ADDX
+	{
+		$$.type = OPCODE_ADDX_DATA_REGS;
+	}
+	| TOKEN_OPCODE_ADDA
+	{
+		$$.type = OPCODE_ADDA;
+	}
+	| TOKEN_OPCODE_ASL
+	{
+		$$.type = OPCODE_ASL_STATIC;
+	}
+	| TOKEN_OPCODE_ASR
+	{
+		$$.type = OPCODE_ASR_STATIC;
+	}
+	| TOKEN_OPCODE_LSL
+	{
+		$$.type = OPCODE_LSL_STATIC;
+	}
+	| TOKEN_OPCODE_LSR
+	{
+		$$.type = OPCODE_LSR_STATIC;
+	}
+	| TOKEN_OPCODE_ROXL
+	{
+		$$.type = OPCODE_ROXL_STATIC;
+	}
+	| TOKEN_OPCODE_ROXR
+	{
+		$$.type = OPCODE_ROXR_STATIC;
+	}
+	| TOKEN_OPCODE_ROL
+	{
+		$$.type = OPCODE_ROL_STATIC;
+	}
+	| TOKEN_OPCODE_ROR
+	{
+		$$.type = OPCODE_ROR_STATIC;
+	}
+	;
 
-size                 : TOKEN_SIZE_BYTE
-                     {
-                       $$ = SIZE_BYTE;
-                     }
-                     | TOKEN_SIZE_SHORT
-                     {
-                       $$ = SIZE_SHORT;
-                     }
-                     | TOKEN_SIZE_WORD
-                     {
-                       $$ = SIZE_WORD;
-                     }
-                     | TOKEN_SIZE_LONG
-                     {
-                       $$ = SIZE_LONGWORD;
-                     }
-                     ;
+size
+	: TOKEN_SIZE_BYTE
+	{
+		$$ = SIZE_BYTE;
+	}
+	| TOKEN_SIZE_SHORT
+	{
+		$$ = SIZE_SHORT;
+	}
+	| TOKEN_SIZE_WORD
+	{
+		$$ = SIZE_WORD;
+	}
+	| TOKEN_SIZE_LONG
+	{
+		$$ = SIZE_LONGWORD;
+	}
+	;
 
-operand_list         : operand
-                     {
-                       $$.operands[0] = $1;
-                       $$.operands[1].type = 0;
-                     }
-                     | operand_list ',' operand
-                     {
-                       $$ = $1;
+operand_list
+	: operand
+	{
+		$$.operands[0] = $1;
+		$$.operands[1].type = 0;
+	}
+	| operand_list ',' operand
+	{
+		$$ = $1;
 
-                       if ($$.operands[1].type != 0)
-                       {
-                         m68kasm_error(&yylloc, scanner, statement_list_head, "Instructions can never have more than two operands");
-                         YYABORT;
-                       }
-                       else
-                       {
-                         $$.operands[1] = $3;
-                       }
-                     }
-                     ;
+		if ($$.operands[1].type != 0)
+		{
+			m68kasm_error(&yylloc, scanner, statement_list_head, "Instructions can never have more than two operands");
+			YYABORT;
+		}
+		else
+		{
+			$$.operands[1] = $3;
+		}
+	}
+	;
 
-                     /* Indirect address register */
-operand              : '(' TOKEN_ADDRESS_REGISTER ')'
-                     {
-                       $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT;
-                       $$.main_register = $2;
-                     }
-                     | '(' TOKEN_ADDRESS_REGISTER ')' '+'
-                     {
-                       $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT;
-                       $$.main_register = $2;
-                     }
-                     | '-' '(' TOKEN_ADDRESS_REGISTER ')'
-                     {
-                       $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT;
-                       $$.main_register = $3;
-                     }
-                     | value '(' TOKEN_ADDRESS_REGISTER ')'
-                     {
-                       $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
-                       $$.literal = $1;
-                       $$.main_register = $3;
-                     }
-                     | '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_DATA_REGISTER '.' size ')'
-                     {
-                       $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-                       $$.literal.type = VALUE_NUMBER;
-                       $$.literal.data.integer = 0;
-                       $$.main_register = $2;
-                       $$.index_register = $4;
-                       $$.size = $6;
-                       $$.index_register_is_address_register = cc_false;
-                     }
-                     | value '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_DATA_REGISTER '.' size ')'
-                     {
-                       $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-                       $$.literal = $1;
-                       $$.main_register = $3;
-                       $$.index_register = $5;
-                       $$.size = $7;
-                       $$.index_register_is_address_register = cc_false;
-                     }
-                     | '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
-                     {
-                       $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-                       $$.literal.type = VALUE_NUMBER;
-                       $$.literal.data.integer = 0;
-                       $$.main_register = $2;
-                       $$.index_register = $4;
-                       $$.size = $6;
-                       $$.index_register_is_address_register = cc_true;
-                     }
-                     | value '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
-                     {
-                       $$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-                       $$.literal = $1;
-                       $$.main_register = $3;
-                       $$.index_register = $5;
-                       $$.size = $7;
-                       $$.index_register_is_address_register = cc_true;
-                     }
-                     | value '(' TOKEN_PROGRAM_COUNTER ')'
-                     {
-                       $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
-                       $$.literal = $1;
-                     }
-                     | '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_DATA_REGISTER '.' size ')'
-                     {
-                       $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-                       $$.literal.type = VALUE_NUMBER;
-                       $$.literal.data.integer = 0;
-                       $$.index_register = $4;
-                       $$.size = $6;
-                       $$.index_register_is_address_register = cc_false;
-                     }
-                     | value '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_DATA_REGISTER '.' size ')'
-                     {
-                       $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-                       $$.literal = $1;
-                       $$.index_register = $5;
-                       $$.size = $7;
-                       $$.index_register_is_address_register = cc_false;
-                     }
-                     | '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
-                     {
-                       $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-                       $$.literal.type = VALUE_NUMBER;
-                       $$.literal.data.integer = 0;
-                       $$.index_register = $4;
-                       $$.size = $6;
-                       $$.index_register_is_address_register = cc_true;
-                     }
-                     | value '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
-                     {
-                       $$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-                       $$.literal = $1;
-                       $$.index_register = $5;
-                       $$.size = $7;
-                       $$.index_register_is_address_register = cc_true;
-                     }
-                     /* Literal */
-                     | '#' value
-                     {
-                       $$.type = OPERAND_LITERAL;
-                       $$.literal = $2;
-                     }
-                     /* Registers */
-/*                     | TOKEN_DATA_REGISTER
-                     {
-                       $$.type = OPERAND_DATA_REGISTER;
-                       $$.main_register = $1;
-                     }
-                     | TOKEN_ADDRESS_REGISTER
-                     {
-                       $$.type = OPERAND_ADDRESS_REGISTER;
-                       $$.main_register = $1;
-                     }
-*/                     | TOKEN_STATUS_REGISTER
-                     {
-                       $$.type = OPERAND_STATUS_REGISTER;
-                     }
-                     | TOKEN_CONDITION_CODE_REGISTER
-                     {
-                       $$.type = OPERAND_CONDITION_CODE_REGISTER;
-                     }
-                     | TOKEN_USER_STACK_POINTER_REGISTER
-                     {
-                       $$.type = OPERAND_USER_STACK_POINTER_REGISTER;
-                     }
-                     /* Addresses */
-                     | value
-                     {
-                       $$.type = OPERAND_ADDRESS;
-                       $$.literal = $1;
-                       $$.size = SIZE_UNDEFINED;
-                     }
-                     | '(' value ')' '.' size
-                     {
-                       $$.type = OPERAND_ADDRESS_ABSOLUTE;
-                       $$.literal = $2;
-                       $$.size = $5;
-                     }
-                     /* Register list */
-                     | register_list
-                     {
-                       /* Neat trick to check if only one bit is set (yes, I know that it evaluates to true for 0, but that doesn't matter here). */
-                       if (($1 & ($1 - 1)) == 0)
-                       {
-                         /* This is a single register. */
-                         $$.main_register = 0;
+	/* Indirect address register */
+operand
+	: '(' TOKEN_ADDRESS_REGISTER ')'
+	{
+		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT;
+		$$.main_register = $2;
+	}
+	| '(' TOKEN_ADDRESS_REGISTER ')' '+'
+	{
+		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT;
+		$$.main_register = $2;
+	}
+	| '-' '(' TOKEN_ADDRESS_REGISTER ')'
+	{
+		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT;
+		$$.main_register = $3;
+	}
+	| value '(' TOKEN_ADDRESS_REGISTER ')'
+	{
+		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
+		$$.literal = $1;
+		$$.main_register = $3;
+	}
+	| '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_DATA_REGISTER '.' size ')'
+	{
+		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+		$$.literal.type = VALUE_NUMBER;
+		$$.literal.data.integer = 0;
+		$$.main_register = $2;
+		$$.index_register = $4;
+		$$.size = $6;
+		$$.index_register_is_address_register = cc_false;
+	}
+	| value '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_DATA_REGISTER '.' size ')'
+	{
+		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+		$$.literal = $1;
+		$$.main_register = $3;
+		$$.index_register = $5;
+		$$.size = $7;
+		$$.index_register_is_address_register = cc_false;
+	}
+	| '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
+	{
+		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+		$$.literal.type = VALUE_NUMBER;
+		$$.literal.data.integer = 0;
+		$$.main_register = $2;
+		$$.index_register = $4;
+		$$.size = $6;
+		$$.index_register_is_address_register = cc_true;
+	}
+	| value '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
+	{
+		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+		$$.literal = $1;
+		$$.main_register = $3;
+		$$.index_register = $5;
+		$$.size = $7;
+		$$.index_register_is_address_register = cc_true;
+	}
+	| value '(' TOKEN_PROGRAM_COUNTER ')'
+	{
+		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
+		$$.literal = $1;
+	}
+	| '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_DATA_REGISTER '.' size ')'
+	{
+		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+		$$.literal.type = VALUE_NUMBER;
+		$$.literal.data.integer = 0;
+		$$.index_register = $4;
+		$$.size = $6;
+		$$.index_register_is_address_register = cc_false;
+	}
+	| value '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_DATA_REGISTER '.' size ')'
+	{
+		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+		$$.literal = $1;
+		$$.index_register = $5;
+		$$.size = $7;
+		$$.index_register_is_address_register = cc_false;
+	}
+	| '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
+	{
+		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+		$$.literal.type = VALUE_NUMBER;
+		$$.literal.data.integer = 0;
+		$$.index_register = $4;
+		$$.size = $6;
+		$$.index_register_is_address_register = cc_true;
+	}
+	| value '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
+	{
+		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+		$$.literal = $1;
+		$$.index_register = $5;
+		$$.size = $7;
+		$$.index_register_is_address_register = cc_true;
+	}
+	/* Literal */
+	| '#' value
+	{
+		$$.type = OPERAND_LITERAL;
+		$$.literal = $2;
+	}
+	/* Registers */
+/*	| TOKEN_DATA_REGISTER
+	{
+		$$.type = OPERAND_DATA_REGISTER;
+		$$.main_register = $1;
+	}
+	| TOKEN_ADDRESS_REGISTER
+	{
+		$$.type = OPERAND_ADDRESS_REGISTER;
+		$$.main_register = $1;
+	}
+*/	| TOKEN_STATUS_REGISTER
+	{
+		$$.type = OPERAND_STATUS_REGISTER;
+	}
+	| TOKEN_CONDITION_CODE_REGISTER
+	{
+		$$.type = OPERAND_CONDITION_CODE_REGISTER;
+	}
+	| TOKEN_USER_STACK_POINTER_REGISTER
+	{
+		$$.type = OPERAND_USER_STACK_POINTER_REGISTER;
+	}
+	/* Addresses */
+	| value
+	{
+		$$.type = OPERAND_ADDRESS;
+		$$.literal = $1;
+		$$.size = SIZE_UNDEFINED;
+	}
+	| '(' value ')' '.' size
+	{
+		$$.type = OPERAND_ADDRESS_ABSOLUTE;
+		$$.literal = $2;
+		$$.size = $5;
+	}
+	/* Register list */
+	| register_list
+	{
+		/* Neat trick to check if only one bit is set (yes, I know that it evaluates to true for 0, but that doesn't matter here). */
+		if (($1 & ($1 - 1)) == 0)
+		{
+			/* This is a single register. */
+			$$.main_register = 0;
 
-                         while (($1 & (1 << $$.main_register)) == 0)
-                             ++$$.main_register;
+			while (($1 & (1 << $$.main_register)) == 0)
+					++$$.main_register;
 
-                         if ($1 >= 8)
-                         {
-                           $$.type = OPERAND_ADDRESS_REGISTER;
-                           $$.main_register -= 8;
-                         }
-                         else
-                         {
-                           $$.type = OPERAND_DATA_REGISTER;
-                         }
-                       }
-                       else
-                       {
-                           /* This is multiple registers. */
-                           $$.type = OPERAND_REGISTER_LIST;
-                           $$.main_register = $1; /* Such a hack... */
-                       }
-                     }
-                     ;
+			if ($1 >= 8)
+			{
+				$$.type = OPERAND_ADDRESS_REGISTER;
+				$$.main_register -= 8;
+			}
+			else
+			{
+				$$.type = OPERAND_DATA_REGISTER;
+			}
+		}
+		else
+		{
+				/* This is multiple registers. */
+				$$.type = OPERAND_REGISTER_LIST;
+				$$.main_register = $1; /* Such a hack... */
+		}
+	}
+	;
 
-register_list        : register_span
-                     {
-                       $$ = $1;
-                     }
-                     | register_span '/' register_list
-                     {
-                       $$ = $1 | $3;
-                     }
+register_list
+	: register_span
+	{
+		$$ = $1;
+	}
+	| register_span '/' register_list
+	{
+		$$ = $1 | $3;
+	}
 
-register_span        : data_or_address_register
-                     {
-                       $$ = 1 << $1;
-                     }
-                     | data_or_address_register '-' data_or_address_register
-                     {
-                       unsigned long start;
-                       unsigned long end;
-                       unsigned long i;
+register_span
+	: data_or_address_register
+	{
+		$$ = 1 << $1;
+	}
+	| data_or_address_register '-' data_or_address_register
+	{
+		unsigned long start;
+		unsigned long end;
+		unsigned long i;
 
-                       if ($1 < $3)
-                       {
-                         start = $1;
-                         end = $3;
-                       }
-                       else
-                       {
-                         start = $3;
-                         end = $1;
-                       }
+		if ($1 < $3)
+		{
+			start = $1;
+			end = $3;
+		}
+		else
+		{
+			start = $3;
+			end = $1;
+		}
 
-                       $$ = 0;
+		$$ = 0;
 
-                       for (i = start; i <= end; ++i)
-                       {
-                         $$ |= 1 << i;
-                       }
-                     }
-                     ;
+		for (i = start; i <= end; ++i)
+		{
+			$$ |= 1 << i;
+		}
+	}
+	;
 
-data_or_address_register : TOKEN_DATA_REGISTER
-                     {
-                       $$ = 0 + $1;
-                     }
-                     | TOKEN_ADDRESS_REGISTER
-                     {
-                       $$ = 8 + $1;
-                     }
-                     ;
+data_or_address_register
+	: TOKEN_DATA_REGISTER
+	{
+		$$ = 0 + $1;
+	}
+	| TOKEN_ADDRESS_REGISTER
+	{
+		$$ = 8 + $1;
+	}
+	;
 
 /*
-number               : TOKEN_NUMBER
-                     | '$' TOKEN_NUMBER
-                     ;
+number
+	: TOKEN_NUMBER
+	| '$' TOKEN_NUMBER
+	;
 */
 
-value                : value1
-                     {
-                       $$ = $1;
-                     }
-                     | value1 '-' value
-                     {
-                       $$.type = VALUE_ARITHMETIC_SUBTRACT;
+value
+	: value1
+	{
+		$$ = $1;
+	}
+	| value1 '-' value
+	{
+		$$.type = VALUE_ARITHMETIC_SUBTRACT;
 
-                       $$.data.values = malloc(sizeof(Value) * 2);
+		$$.data.values = malloc(sizeof(Value) * 2);
 
-                       if ($$.data.values == NULL)
-                       {
-                         m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
-                         YYABORT;
-                       }
-                       else
-                       {
-                         $$.data.values[0] = $1;
-                         $$.data.values[1] = $3;
-                       }
-                     }
-                     ;
+		if ($$.data.values == NULL)
+		{
+			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
+			YYABORT;
+		}
+		else
+		{
+			$$.data.values[0] = $1;
+			$$.data.values[1] = $3;
+		}
+	}
+	;
 
-value1               : value2
-                     {
-                       $$ = $1;
-                     }
-                     | value2 '+' value1
-                     {
-                       $$.type = VALUE_ARITHMETIC_ADD;
+value1
+	: value2
+	{
+		$$ = $1;
+	}
+	| value2 '+' value1
+	{
+		$$.type = VALUE_ARITHMETIC_ADD;
 
-                       $$.data.values = malloc(sizeof(Value) * 2);
+		$$.data.values = malloc(sizeof(Value) * 2);
 
-                       if ($$.data.values == NULL)
-                       {
-                         m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
-                         YYABORT;
-                       }
-                       else
-                       {
-                         $$.data.values[0] = $1;
-                         $$.data.values[1] = $3;
-                       }
-                     }
-                     ;
+		if ($$.data.values == NULL)
+		{
+			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
+			YYABORT;
+		}
+		else
+		{
+			$$.data.values[0] = $1;
+			$$.data.values[1] = $3;
+		}
+	}
+	;
 
-value2               : value3
-                     {
-                       $$ = $1;
-                     }
-                     | value3 '*' value2
-                     {
-                       $$.type = VALUE_ARITHMETIC_MULTIPLY;
+value2
+	: value3
+	{
+		$$ = $1;
+	}
+	| value3 '*' value2
+	{
+		$$.type = VALUE_ARITHMETIC_MULTIPLY;
 
-                       $$.data.values = malloc(sizeof(Value) * 2);
+		$$.data.values = malloc(sizeof(Value) * 2);
 
-                       if ($$.data.values == NULL)
-                       {
-                         m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
-                         YYABORT;
-                       }
-                       else
-                       {
-                         $$.data.values[0] = $1;
-                         $$.data.values[1] = $3;
-                       }
-                     }
-                     ;
+		if ($$.data.values == NULL)
+		{
+			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
+			YYABORT;
+		}
+		else
+		{
+			$$.data.values[0] = $1;
+			$$.data.values[1] = $3;
+		}
+	}
+	;
 
-value3               : value4
-                     {
-                       $$ = $1;
-                     }
-                     | value4 '/' value3
-                     {
-                       $$.type = VALUE_ARITHMETIC_DIVIDE;
+value3
+	: value4
+	{
+		$$ = $1;
+	}
+	| value4 '/' value3
+	{
+		$$.type = VALUE_ARITHMETIC_DIVIDE;
 
-                       $$.data.values = malloc(sizeof(Value) * 2);
+		$$.data.values = malloc(sizeof(Value) * 2);
 
-                       if ($$.data.values == NULL)
-                       {
-                         m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
-                         YYABORT;
-                       }
-                       else
-                       {
-                         $$.data.values[0] = $1;
-                         $$.data.values[1] = $3;
-                       }
-                     }
-                     ;
+		if ($$.data.values == NULL)
+		{
+			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
+			YYABORT;
+		}
+		else
+		{
+			$$.data.values[0] = $1;
+			$$.data.values[1] = $3;
+		}
+	}
+	;
 
-value4               : value5
-                     {
-                       $$ = $1;
-                     }
-                     | '-' value4
-                     {
-                       $$.type = VALUE_NEGATE;
+value4
+	: value5
+	{
+		$$ = $1;
+	}
+	| '-' value4
+	{
+		$$.type = VALUE_NEGATE;
 
-                       $$.data.values = malloc(sizeof(Value));
+		$$.data.values = malloc(sizeof(Value));
 
-                       if ($$.data.values == NULL)
-                       {
-                         m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
-                         YYABORT;
-                       }
-                       else
-                       {
-                         $$.data.values[0] = $2;
-                       }
-                     }
-                     | '~' value4
-                     {
-                       $$.type = VALUE_BITWISE_NOT;
+		if ($$.data.values == NULL)
+		{
+			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
+			YYABORT;
+		}
+		else
+		{
+			$$.data.values[0] = $2;
+		}
+	}
+	| '~' value4
+	{
+		$$.type = VALUE_BITWISE_NOT;
 
-                       $$.data.values = malloc(sizeof(Value));
+		$$.data.values = malloc(sizeof(Value));
 
-                       if ($$.data.values == NULL)
-                       {
-                         m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
-                         YYABORT;
-                       }
-                       else
-                       {
-                         $$.data.values[0] = $2;
-                       }
-                     }
-                     | '!' value4
-                     {
-                       $$.type = VALUE_LOGICAL_NOT;
+		if ($$.data.values == NULL)
+		{
+			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
+			YYABORT;
+		}
+		else
+		{
+			$$.data.values[0] = $2;
+		}
+	}
+	| '!' value4
+	{
+		$$.type = VALUE_LOGICAL_NOT;
 
-                       $$.data.values = malloc(sizeof(Value));
+		$$.data.values = malloc(sizeof(Value));
 
-                       if ($$.data.values == NULL)
-                       {
-                         m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
-                         YYABORT;
-                       }
-                       else
-                       {
-                         $$.data.values[0] = $2;
-                       }
-                     }
-                     ;
+		if ($$.data.values == NULL)
+		{
+			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
+			YYABORT;
+		}
+		else
+		{
+			$$.data.values[0] = $2;
+		}
+	}
+	;
 
-value5               : TOKEN_NUMBER
-                     {
-                       $$.type = VALUE_NUMBER;
-                       $$.data.integer = $1;
-                     }
-                     | TOKEN_IDENTIFIER
-                     {
-                       $$.type = VALUE_IDENTIFIER;
-                       $$.data.identifier = $1;
-                     }
-                     | '*'
-                     {
-                       $$.type = VALUE_IDENTIFIER;
-                       $$.data.identifier = "*";
-                     }
-                     | '(' value ')'
-                     {
-                       $$ = $2;
-                     }
-                     ;
+value5
+	: TOKEN_NUMBER
+	{
+		$$.type = VALUE_NUMBER;
+		$$.data.integer = $1;
+	}
+	| TOKEN_IDENTIFIER
+	{
+		$$.type = VALUE_IDENTIFIER;
+		$$.data.identifier = $1;
+	}
+	| '*'
+	{
+		$$.type = VALUE_IDENTIFIER;
+		$$.data.identifier = "*";
+	}
+	| '(' value ')'
+	{
+		$$ = $2;
+	}
+	;
 
 
 %%
