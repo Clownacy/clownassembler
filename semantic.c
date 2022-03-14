@@ -31,7 +31,12 @@ typedef struct SemanticState
 	int line_number;
 } SemanticState;
 
-static void SemanticWarning(SemanticState *state, const char *fmt, ...)
+/* Prevent errors when __attribute__ is not supported. */
+#ifndef __GNUC__
+#define  __attribute__(x)
+#endif
+
+__attribute__((format(printf, 2, 3))) static void SemanticWarning(SemanticState *state, const char *fmt, ...)
 {
 	va_list args;
 
@@ -42,7 +47,7 @@ static void SemanticWarning(SemanticState *state, const char *fmt, ...)
 	va_end(args);
 }
 
-static void SemanticError(SemanticState *state, const char *fmt, ...)
+__attribute__((format(printf, 2, 3))) static void SemanticError(SemanticState *state, const char *fmt, ...)
 {
 	va_list args;
 
@@ -55,7 +60,7 @@ static void SemanticError(SemanticState *state, const char *fmt, ...)
 	state->success = cc_false;
 }
 
-static void InternalError(SemanticState *state, const char *fmt, ...)
+__attribute__((format(printf, 2, 3))) static void InternalError(SemanticState *state, const char *fmt, ...)
 {
 	va_list args;
 
