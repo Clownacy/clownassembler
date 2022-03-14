@@ -1458,9 +1458,9 @@ operand
 		}
 		else
 		{
-				/* This is multiple registers. */
-				$$.type = OPERAND_REGISTER_LIST;
-				$$.main_register = $1; /* Such a hack... */
+			/* This is multiple registers. */
+			$$.type = OPERAND_REGISTER_LIST;
+			$$.main_register = $1; /* Such a hack... */
 		}
 	}
 	;
