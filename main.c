@@ -15,7 +15,7 @@ void m68kasm_error(M68KASM_LTYPE *location, void *scanner, StatementListNode **s
 	(void)scanner;
 	(void)statement_list_head;
 
-	fprintf(stderr, "Error at line %d: %s\n", location->first_line, message);
+	fprintf(stderr, "Lexical/syntax error on line %d: %s\n", location->first_line, message);
 }
 
 int main(int argc, char **argv)
