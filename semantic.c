@@ -1776,7 +1776,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 			size_undefined = "\n";
 		}
 
-		SemanticError(state, "'%s' instruction cannot be this size - allowed sizes are...\n%s%s%s%s%s%s%s%s", instruction_metadata->name, opcode_byte, size_byte, opcode_short, size_short, opcode_word, size_word, opcode_longword, size_longword, opcode_undefined, size_undefined);
+		SemanticError(state, "'%s' instruction cannot be this size - allowed sizes are...\n%s%s%s%s%s%s%s%s%s%s", instruction_metadata->name, opcode_byte, size_byte, opcode_short, size_short, opcode_word, size_word, opcode_longword, size_longword, opcode_undefined, size_undefined);
 	}
 	else
 	{
