@@ -51,6 +51,8 @@ static void SemanticError(SemanticState *state, const char *fmt, ...)
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
 	va_end(args);
+
+	state->success = cc_false;
 }
 
 static void InternalError(SemanticState *state, const char *fmt, ...)
@@ -62,6 +64,8 @@ static void InternalError(SemanticState *state, const char *fmt, ...)
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
 	va_end(args);
+
+	state->success = cc_false;
 }
 
 static char* ExpandLocalIdentifier(SemanticState *state, const char *identifier)
@@ -88,17 +92,14 @@ static void HandleSymbolError(SemanticState *state, SymbolError error)
 
 		case SYMBOL_ERROR_CONSTANT_ALREADY_DEFINED:
 			SemanticError(state, "Symbol already defined\n");
-			state->success = cc_false;
 			break;
 
 		case SYMBOL_ERROR_VARIABLE_REDEFINED_WITH_DIFFERENT_TYPE:
 			SemanticError(state, "Symbol redefined with different type\n");
-			state->success = cc_false;
 			break;
 
 		case SYMBOL_ERROR_OUT_OF_MEMORY:
 			SemanticError(state, "Could not allocate memory for symbol\n");
-			state->success = cc_false;
 			break;
 	}
 }
@@ -202,14 +203,9 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 				expanded_identifier = ExpandLocalIdentifier(state, value->data.identifier);
 
 				if (expanded_identifier == NULL)
-				{
 					InternalError(state, "Could not allocate memory for expanded identifier");
-					state->success = cc_false;
-				}
 				else
-				{
 					identifier = expanded_identifier;
-				}
 			}
 
 			if (!GetSymbol(&state->symbol_state, identifier, value_integer))
@@ -217,14 +213,9 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 				success = cc_false;
 
 				if (doing_fix_up)
-				{
 					SemanticError(state, "Symbol '%s' undefined\n", identifier);
-					state->success = cc_false;
-				}
 				else
-				{
 					state->fix_up_needed = cc_true;
-				}
 			}
 
 			free(expanded_identifier);
@@ -319,7 +310,6 @@ static unsigned int ConstructEffectiveAddressBits(SemanticState *state, const Op
 
 				default:
 					SemanticError(state, "Absolute address can only be word- or longword-sized\n");
-					state->success = cc_false;
 					/* Fallthrough */
 				case SIZE_UNDEFINED:
 				case SIZE_LONGWORD:
@@ -336,7 +326,6 @@ static unsigned int ConstructEffectiveAddressBits(SemanticState *state, const Op
 
 		default:
 			SemanticError(state, "Invalid operand type - register lists, USP, SR, and CCR cannot be used here\n");
-			state->success = cc_false;
 			/* Just pretend it's data register 0 to keep things moving along. */
 			m = 0;
 			xn = 0;
@@ -1783,7 +1772,6 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 		}
 
 		SemanticError(state, "'%s' instruction cannot be this size - allowed sizes are...\n%s%s%s%s%s%s%s%s", instruction_metadata->name, opcode_byte, size_byte, opcode_short, size_short, opcode_word, size_word, opcode_longword, size_longword, opcode_undefined, size_undefined);
-		state->success = cc_false;
 	}
 	else
 	{
@@ -1819,7 +1807,6 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 		if (total_operands_wanted != total_operands_have)
 		{
 			SemanticError(state, "'%s' instruction has %u operands, but it should have %u\n", instruction_metadata->name, total_operands_have, total_operands_wanted);
-			state->success = cc_false;
 		}
 		else
 		{
@@ -1898,7 +1885,6 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 					}
 
 					SemanticError(state, "'%s' instruction operand %u cannot be %s\n", instruction_metadata->name, i, operand_string);
-					state->success = cc_false;
 				}
 			}
 
@@ -2045,18 +2031,12 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 						if (instruction.operands[1].type == OPERAND_DATA_REGISTER)
 						{
 							if (instruction.opcode.size != SIZE_LONGWORD && instruction.opcode.size != SIZE_UNDEFINED)
-							{
 								SemanticError(state, "'BTST/BCHG/BCLR/BSET' instruction must be longword-sized when its destination operand is a data register\n");
-								state->success = cc_false;
-							}
 						}
 						else
 						{
 							if (instruction.opcode.size != SIZE_BYTE && instruction.opcode.size != SIZE_SHORT && instruction.opcode.size != SIZE_UNDEFINED)
-							{
 								SemanticError(state, "'BTST/BCHG/BCLR/BSET' instruction must be byte-sized when its destination operand is memory\n");
-								state->success = cc_false;
-							}
 						}
 
 						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
@@ -2207,14 +2187,9 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 							value = 0;
 
 						if (value > 15)
-						{
 							SemanticError(state, "'TRAP' instruction's vector cannot be higher than 15\n");
-							state->success = cc_false;
-						}
 						else
-						{
 							machine_code |= value;
-						}
 
 						break;
 					}
@@ -2361,14 +2336,9 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 							value = 1;
 
 						if (value < 1 || value > 8)
-						{
 							SemanticError(state, "'ADDQ'/'SUBQ' instruction's immediate value cannot be lower than 1 or higher than 8\n");
-							state->success = cc_false;
-						}
 						else
-						{
 							machine_code |= (value - 1) << 9;
-						}
 
 						/* Skip the immediate operand since that goes in the machine code instead. */
 						instruction.operands[0] = instruction.operands[1];
@@ -2403,10 +2373,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 							const unsigned long offset = value - start_program_counter;
 
 							if (offset > 0x7FFF)
-							{
 								SemanticError(state, "Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was $%lX bytes away)\n", offset);
-								state->success = cc_false;
-							}
 
 							instruction.operands[0].literal.data.integer = offset;
 						}
@@ -2415,10 +2382,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 							const unsigned long offset = start_program_counter - value;
 
 							if (offset > 0x8000)
-							{
 								SemanticError(state, "Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was $%lX bytes away)\n", offset);
-								state->success = cc_false;
-							}
 
 							instruction.operands[0].literal.data.integer = 0 - offset;
 						}
@@ -2463,23 +2427,14 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 							if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
 							{
 								if (offset == 0)
-								{
 									SemanticError(state, "Destination cannot be 0 bytes away when using a short-sized branch\n");
-									state->success = cc_false;
-								}
 								else if (offset > 0x7F)
-								{
 									SemanticError(state, "Destination is too far away (must be less than 0x80 bytes after start of instruction, but was $%lX bytes away)\n", offset);
-									state->success = cc_false;
-								}
 							}
 							else
 							{
 								if (offset > 0x7FFF)
-								{
 									SemanticError(state, "Destination is too far away (must be less than 0x8000 bytes after start of instruction, but was $%lX bytes away)\n", offset);
-									state->success = cc_false;
-								}
 							}
 						}
 						else
@@ -2489,18 +2444,12 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 							if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
 							{
 								if (offset > 0x80)
-								{
 									SemanticError(state, "Destination is too far away (must be less than 0x81 bytes before start of instruction, but was $%lX bytes away)\n", offset);
-									state->success = cc_false;
-								}
 							}
 							else
 							{
 								if (offset > 0x8000)
-								{
 									SemanticError(state, "Destination is too far away (must be less than 0x8001 bytes before start of instruction, but was $%lX bytes away)\n", offset);
-									state->success = cc_false;
-								}
 							}
 
 							offset = 0 - offset;
@@ -2531,14 +2480,9 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 							value = 0;
 
 						if (value > 0x7F && value < 0xFFFFFF80)
-						{
 							SemanticError(state, "Literal is too large: it must be between -$80 and $7F\n");
-							state->success = cc_false;
-						}
 						else
-						{
 							machine_code |= value & 0xFF;
-						}
 
 						machine_code |= instruction.operands[1].main_register << 9;
 
@@ -2611,10 +2555,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 					case OPCODE_ADD_TO_REG:
 					case OPCODE_ADD_FROM_REG:
 						if (instruction.operands[1].type == OPERAND_ADDRESS_REGISTER && instruction.opcode.size == SIZE_BYTE)
-						{
 							SemanticError(state, "Instruction cannot be byte-sized when destination is an address register\n");
-							state->success = cc_false;
-						}
 
 						switch (instruction.opcode.type)
 						{
@@ -2864,14 +2805,9 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 									value = 0;
 
 								if (value > 8 || value < 1)
-								{
 									SemanticError(state, "Shift value must not be greater than 8 or lower than 1\n");
-									state->success = cc_false;
-								}
 								else
-								{
 									machine_code |= (value - 1) << 9;
-								}
 
 								machine_code |= identifier << 3;
 								machine_code |= instruction.operands[1].main_register << 0;
@@ -2960,7 +2896,6 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 							case SIZE_BYTE:
 							case SIZE_SHORT:
 								SemanticError(state, "Address cannot be byte-sized\n");
-								state->success = cc_false;
 								bytes_to_write = 2;
 								break;
 
@@ -2968,10 +2903,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 								bytes_to_write = 2;
 
 								if (value >= 0x8000 && value < 0xFFFF8000)
-								{
 									SemanticError(state, "Word-sized address cannot be higher than $7FFF or lower than $FFFF8000\n");
-									state->success = cc_false;
-								}
 
 								break;
 
@@ -2991,10 +2923,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 								bytes_to_write = 2;
 
 								if (value >= 0x100 && value < 0xFFFFFF00)
-								{
 									SemanticError(state, "Byte-sized literal cannot be larger than $FF or smaller than -$100\n");
-									state->success = cc_false;
-								}
 
 								break;
 
@@ -3003,10 +2932,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 								bytes_to_write = 2;
 
 								if (value >= 0x10000 && value < 0xFFFF0000)
-								{
 									SemanticError(state, "Word-sized literal cannot be larger than $FFFF or smaller than -$10000\n");
-									state->success = cc_false;
-								}
 
 								break;
 
@@ -3024,16 +2950,10 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 						bytes_to_write = 2;
 
 						if (value >= 0x80 && value < 0xFFFFFF80)
-						{
 							SemanticError(state, "Displacement value cannot be larger than $7F or smaller than -$80\n");
-							state->success = cc_false;
-						}
 
 						if (operand->size == SIZE_BYTE || operand->size == SIZE_SHORT)
-						{
 							SemanticError(state, "Index register cannot be byte-sized\n");
-							state->success = cc_false;
-						}
 
 						value |= operand->index_register << 12;
 
@@ -3052,10 +2972,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 						bytes_to_write = 2;
 
 						if (value >= 0x8000 && value < 0xFFFF8000)
-						{
 							SemanticError(state, "Displacement value cannot be larger than $7FFF or smaller than -$8000\n");
-							state->success = cc_false;
-						}
 
 						break;
 				}
@@ -3129,10 +3046,7 @@ static void ProcessDirective(SemanticState *state, FILE *file, const Directive *
 					case SIZE_BYTE:
 					case SIZE_SHORT:
 						if (resolved_value > 0xFF && resolved_value < 0xFFFFFF00)
-						{
 							SemanticError(state, "Value cannot be higher than $FF or lower than -$100\n");
-							state->success = cc_false;
-						}
 
 						bytes_to_write = 1;
 
@@ -3140,10 +3054,7 @@ static void ProcessDirective(SemanticState *state, FILE *file, const Directive *
 
 					case SIZE_WORD:
 						if (resolved_value > 0xFFFF && resolved_value < 0xFFFF0000)
-						{
 							SemanticError(state, "Value cannot be higher than $FFFF or lower than -$10000\n");
-							state->success = cc_false;
-						}
 
 						bytes_to_write = 2;
 
@@ -3225,14 +3136,9 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 				expanded_identifier = ExpandLocalIdentifier(&state, statement_list_node->statement.label);
 
 				if (expanded_identifier == NULL)
-				{
 					InternalError(&state, "Could not allocate memory for expanded label");
-					state.success = cc_false;
-				}
 				else
-				{
 					identifier = expanded_identifier;
-				}
 			}
 
 			HandleSymbolError(&state, SetSymbol(&state.symbol_state, identifier, SYMBOL_CONSTANT, state.program_counter));
@@ -3253,7 +3159,6 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 			if (fix_up == NULL)
 			{
 				InternalError(&state, "Could not allocate memory for fix-up list node\n");
-				state.success = cc_false;
 			}
 			else
 			{
