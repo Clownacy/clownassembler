@@ -311,14 +311,8 @@ typedef struct ListMetadata
 
 %code {
 
-/* declare some standard headers to be used to import declarations
-   and libraries into the parser. */
-
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
-/* make forward declarations to avoid compiler warnings */
 int m68kasm_lex(M68KASM_STYPE *yylval_param, M68KASM_LTYPE *yylloc_param, void *yyscanner);
 void m68kasm_error(M68KASM_LTYPE *yylloc_param, void *scanner, StatementListNode **statement_list_head, const char *message);
 
@@ -1730,8 +1724,6 @@ value11
 
 
 %%
-
-/* Stuff goes here. */
 
 static cc_bool DoValue(M68KASM_LTYPE *yylloc, Value *value, ValueType type, Value *left_value, Value *right_value)
 {
