@@ -62,6 +62,21 @@ static void InternalError(const char *fmt, ...)
 	va_end(args);
 }
 
+static char* ExpandLocalIdentifier(SemanticState *state, const char *identifier)
+{
+	const size_t prefix_length = strlen(state->last_global_label);
+	const size_t suffix_length = strlen(identifier);
+	char *expanded_identifier = malloc(prefix_length + suffix_length + 1);
+
+	if (expanded_identifier != NULL)
+	{
+		memcpy(expanded_identifier, state->last_global_label, prefix_length);
+		memcpy(expanded_identifier + prefix_length, identifier, suffix_length + 1);
+	}
+
+	return expanded_identifier;
+}
+
 static cc_bool HandleSymbolError(SymbolError error)
 {
 	cc_bool success = cc_true;
@@ -180,25 +195,22 @@ static cc_bool ResolveValue(SemanticState *state, cc_bool *parent_success, const
 
 		case VALUE_IDENTIFIER:
 		{
-			char *expanded_label = NULL;
+			char *expanded_identifier = NULL;
 
 			const char *identifier = value->data.identifier;
 
 			if (value->data.identifier[0] == '@')
 			{
-				expanded_label = malloc(strlen(state->last_global_label) + strlen(identifier) + 1);
+				expanded_identifier = ExpandLocalIdentifier(state, value->data.identifier);
 
-				if (expanded_label == NULL)
+				if (expanded_identifier == NULL)
 				{
-					InternalError("Could not allocate memory for expanded label");
+					InternalError("Could not allocate memory for expanded identifier");
 					success = cc_false;
 				}
 				else
 				{
-					strcpy(expanded_label, state->last_global_label);
-					strcat(expanded_label, identifier);
-
-					identifier = expanded_label;
+					identifier = expanded_identifier;
 				}
 			}
 
@@ -217,7 +229,7 @@ static cc_bool ResolveValue(SemanticState *state, cc_bool *parent_success, const
 				}
 			}
 
-			free(expanded_label);
+			free(expanded_identifier);
 
 			break;
 		}
@@ -3217,33 +3229,32 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 
 		if (statement_list_node->statement.label != NULL)
 		{
+			char *expanded_identifier = NULL;
+			const char *identifier = statement_list_node->statement.label;
+
 			if (statement_list_node->statement.label[0] != '@')
 			{
 				state.last_global_label = statement_list_node->statement.label;
-
-				if (!HandleSymbolError(SetSymbol(&state.symbol_state, statement_list_node->statement.label, SYMBOL_CONSTANT, state.program_counter)))
-					success = cc_false;
 			}
 			else
 			{
-				char *expanded_label = malloc(strlen(state.last_global_label) + strlen(statement_list_node->statement.label) + 1);
+				expanded_identifier = ExpandLocalIdentifier(&state, statement_list_node->statement.label);
 
-				if (expanded_label == NULL)
+				if (expanded_identifier == NULL)
 				{
 					InternalError("Could not allocate memory for expanded label");
 					success = cc_false;
 				}
 				else
 				{
-					strcpy(expanded_label, state.last_global_label);
-					strcat(expanded_label, statement_list_node->statement.label);
-
-					if (!HandleSymbolError(SetSymbol(&state.symbol_state, expanded_label, SYMBOL_CONSTANT, state.program_counter)))
-						success = cc_false;
-
-					free(expanded_label);
+					identifier = expanded_identifier;
 				}
 			}
+
+			if (!HandleSymbolError(SetSymbol(&state.symbol_state, identifier, SYMBOL_CONSTANT, state.program_counter)))
+				success = cc_false;
+
+			free(expanded_identifier);
 		}
 
 		if (!HandleSymbolError(SetSymbol(&state.symbol_state, "*", SYMBOL_VARIABLE, state.program_counter)))
