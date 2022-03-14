@@ -308,8 +308,6 @@ typedef struct ListMetadata
 int m68kasm_lex(M68KASM_STYPE *yylval_param, M68KASM_LTYPE *yylloc_param, void *yyscanner);
 void m68kasm_error(M68KASM_LTYPE *yylloc_param, void *scanner, StatementListNode **statement_list_head, const char *message);
 
-StatementListNode *statement_list_head;
-
 }
 
 /****************/
