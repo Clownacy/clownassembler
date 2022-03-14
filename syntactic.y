@@ -169,16 +169,14 @@ typedef enum OpCodeType
 
 typedef enum ValueType
 {
-	VALUE_ARITHMETIC_SUBTRACT,
-	VALUE_ARITHMETIC_ADD,
-	VALUE_ARITHMETIC_MULTIPLY,
-	VALUE_ARITHMETIC_DIVIDE,
-	VALUE_ARITHMETIC_MODULO,
+	VALUE_SUBTRACT,
+	VALUE_ADD,
+	VALUE_MULTIPLY,
+	VALUE_DIVIDE,
+	VALUE_MODULO,
 	VALUE_NEGATE,
 	VALUE_BITWISE_NOT,
 	VALUE_LOGICAL_NOT,
-	VALUE_NUMBER,
-	VALUE_IDENTIFIER,
 	VALUE_LOGICAL_OR,
 	VALUE_LOGICAL_AND,
 	VALUE_ARITHMETIC_OR,
@@ -191,7 +189,9 @@ typedef enum ValueType
 	VALUE_MORE_THAN,
 	VALUE_MORE_OR_EQUAL,
 	VALUE_LEFT_SHIFT,
-	VALUE_RIGHT_SHIFT
+	VALUE_RIGHT_SHIFT,
+	VALUE_NUMBER,
+	VALUE_IDENTIFIER
 } ValueType;
 
 typedef struct Value
@@ -1652,12 +1652,12 @@ value8
 	}
 	| value9 '+' value8
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_ARITHMETIC_ADD, &$1, &$3))
+		if (!DoValue(&yylloc, &$$, VALUE_ADD, &$1, &$3))
 			YYABORT;
 	}
 	| value9 '-' value8
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_ARITHMETIC_SUBTRACT, &$1, &$3))
+		if (!DoValue(&yylloc, &$$, VALUE_SUBTRACT, &$1, &$3))
 			YYABORT;
 	}
 	;
@@ -1669,17 +1669,17 @@ value9
 	}
 	| value10 '*' value9
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_ARITHMETIC_MULTIPLY, &$1, &$3))
+		if (!DoValue(&yylloc, &$$, VALUE_MULTIPLY, &$1, &$3))
 			YYABORT;
 	}
 	| value10 '/' value9
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_ARITHMETIC_DIVIDE, &$1, &$3))
+		if (!DoValue(&yylloc, &$$, VALUE_DIVIDE, &$1, &$3))
 			YYABORT;
 	}
 	| value10 '%' value9
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_ARITHMETIC_MODULO, &$1, &$3))
+		if (!DoValue(&yylloc, &$$, VALUE_MODULO, &$1, &$3))
 			YYABORT;
 	}
 	;

@@ -115,11 +115,11 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 
 	switch (value->type)
 	{
-		case VALUE_ARITHMETIC_SUBTRACT:
-		case VALUE_ARITHMETIC_ADD:
-		case VALUE_ARITHMETIC_MULTIPLY:
-		case VALUE_ARITHMETIC_DIVIDE:
-		case VALUE_ARITHMETIC_MODULO:
+		case VALUE_SUBTRACT:
+		case VALUE_ADD:
+		case VALUE_MULTIPLY:
+		case VALUE_DIVIDE:
+		case VALUE_MODULO:
 		case VALUE_LOGICAL_OR:
 		case VALUE_LOGICAL_AND:
 		case VALUE_ARITHMETIC_OR:
@@ -145,23 +145,23 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 			{
 				switch (value->type)
 				{
-					case VALUE_ARITHMETIC_SUBTRACT:
+					case VALUE_SUBTRACT:
 						*value_integer = left_value - right_value;
 						break;
 
-					case VALUE_ARITHMETIC_ADD:
+					case VALUE_ADD:
 						*value_integer = left_value + right_value;
 						break;
 
-					case VALUE_ARITHMETIC_MULTIPLY:
+					case VALUE_MULTIPLY:
 						*value_integer = left_value * right_value;
 						break;
 
-					case VALUE_ARITHMETIC_DIVIDE:
+					case VALUE_DIVIDE:
 						*value_integer = left_value / right_value;
 						break;
 
-					case VALUE_ARITHMETIC_MODULO:
+					case VALUE_MODULO:
 						*value_integer = left_value % right_value;
 						break;
 
