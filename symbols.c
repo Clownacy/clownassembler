@@ -60,6 +60,19 @@ static SymbolError AddSymbol(SymbolState *state, const char *identifier, SymbolT
 	return error;
 }
 
+void InitSymbols(SymbolState *state)
+{
+	unsigned int i;
+
+	for (i = 0; i < CC_COUNT_OF(state->symbol_table); ++i)
+		state->symbol_table[i] = NULL;
+}
+
+void DeinitSymbols(SymbolState *state)
+{
+	ClearSymbols(state);
+}
+
 void ClearSymbols(SymbolState *state)
 {
 	Symbol **bucket;

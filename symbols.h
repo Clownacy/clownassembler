@@ -31,6 +31,8 @@ typedef enum SymbolError
 	SYMBOL_ERROR_OUT_OF_MEMORY
 } SymbolError;
 
+void InitSymbols(SymbolState *state);
+void DeinitSymbols(SymbolState *state);
 void ClearSymbols(SymbolState *state);
 SymbolError SetSymbol(SymbolState *state, const char *identifier, SymbolType type, unsigned long value);
 cc_bool UnsetSymbol(SymbolState *state, const char *identifier);

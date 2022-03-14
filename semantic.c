@@ -3206,6 +3206,7 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 	/* Perform first pass, and create a list of fix-ups if needed. */
 
 	state.program_counter = 0;
+	InitSymbols(&state.symbol_state);
 	state.last_global_label = "";
 	fix_up_list_head = NULL;
 
@@ -3296,6 +3297,8 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 
 		fix_up = next_fix_up;
 	}
+
+	DeinitSymbols(&state.symbol_state);
 
 	return success;
 }
