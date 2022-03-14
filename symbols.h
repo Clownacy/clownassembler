@@ -9,9 +9,23 @@ typedef enum SymbolType
 	SYMBOL_VARIABLE
 } SymbolType;
 
-void ClearSymbols(void);
-cc_bool SetSymbol(const char *identifier, SymbolType type, unsigned long value);
-cc_bool UnsetSymbol(const char *identifier);
-cc_bool GetSymbol(const char *identifier, unsigned long *value);
+typedef struct Symbol
+{
+	struct Symbol *next;
+
+	char *identifier;
+	SymbolType type;
+	unsigned long value;
+} Symbol;
+
+typedef struct SymbolState
+{
+	Symbol *symbol_table[0x100];
+} SymbolState;
+
+void ClearSymbols(SymbolState *state);
+cc_bool SetSymbol(SymbolState *state, const char *identifier, SymbolType type, unsigned long value);
+cc_bool UnsetSymbol(SymbolState *state, const char *identifier);
+cc_bool GetSymbol(SymbolState *state, const char *identifier, unsigned long *value);
 
 #endif  /* SYMBOLS_H */

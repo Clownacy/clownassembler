@@ -7,18 +7,7 @@
 
 #include "clowncommon.h"
 
-typedef struct Symbol
-{
-	struct Symbol *next;
-
-	char *identifier;
-	SymbolType type;
-	unsigned long value;
-} Symbol;
-
-static Symbol *symbol_table[0x100];
-
-static Symbol** GetBucket(const char *identifier)
+static Symbol** GetBucket(SymbolState *state, const char *identifier)
 {
 	unsigned int hash, character;
 
@@ -29,21 +18,21 @@ static Symbol** GetBucket(const char *identifier)
 	while ((character = (unsigned int)*identifier++) != '\0')
 		hash = hash * 33 + character;
 
-	return &symbol_table[hash % CC_COUNT_OF(symbol_table)];
+	return &state->symbol_table[hash % CC_COUNT_OF(state->symbol_table)];
 }
 
-static Symbol** FindSymbol(const char *identifier)
+static Symbol** FindSymbol(SymbolState *state, const char *identifier)
 {
 	Symbol **symbol;
 
-	for (symbol = GetBucket(identifier); *symbol != NULL; symbol = &(*symbol)->next)
+	for (symbol = GetBucket(state, identifier); *symbol != NULL; symbol = &(*symbol)->next)
 		if (strcmp((*symbol)->identifier, identifier) == 0)
 			return symbol;
 
 	return NULL;
 }
 
-static cc_bool AddSymbol(const char *identifier, SymbolType type, unsigned long value)
+static cc_bool AddSymbol(SymbolState *state, const char *identifier, SymbolType type, unsigned long value)
 {
 	cc_bool success = cc_true;
 
@@ -58,7 +47,7 @@ static cc_bool AddSymbol(const char *identifier, SymbolType type, unsigned long 
 	}
 	else
 	{
-		Symbol **bucket = GetBucket(identifier);
+		Symbol **bucket = GetBucket(state, identifier);
 
 		symbol->next = *bucket;
 		symbol->identifier = (char*)(symbol + 1);
@@ -73,11 +62,11 @@ static cc_bool AddSymbol(const char *identifier, SymbolType type, unsigned long 
 	return success;
 }
 
-void ClearSymbols(void)
+void ClearSymbols(SymbolState *state)
 {
 	Symbol **bucket;
 
-	for (bucket = symbol_table; bucket < &symbol_table[CC_COUNT_OF(symbol_table)]; ++bucket)
+	for (bucket = state->symbol_table; bucket < &state->symbol_table[CC_COUNT_OF(state->symbol_table)]; ++bucket)
 	{
 		Symbol *symbol = *bucket;
 
@@ -92,11 +81,11 @@ void ClearSymbols(void)
 	}
 }
 
-cc_bool SetSymbol(const char *identifier, SymbolType type, unsigned long value)
+cc_bool SetSymbol(SymbolState *state, const char *identifier, SymbolType type, unsigned long value)
 {
 	cc_bool success = cc_true;
 
-	Symbol **existing_symbol = FindSymbol(identifier);
+	Symbol **existing_symbol = FindSymbol(state, identifier);
 
 	switch (type)
 	{
@@ -108,7 +97,7 @@ cc_bool SetSymbol(const char *identifier, SymbolType type, unsigned long value)
 			}
 			else
 			{
-				if (!AddSymbol(identifier, type, value))
+				if (!AddSymbol(state, identifier, type, value))
 					success = cc_false;
 			}
 
@@ -129,7 +118,7 @@ cc_bool SetSymbol(const char *identifier, SymbolType type, unsigned long value)
 			}
 			else
 			{
-				if (!AddSymbol(identifier, type, value))
+				if (!AddSymbol(state, identifier, type, value))
 					success = cc_false;
 			}
 
@@ -139,11 +128,11 @@ cc_bool SetSymbol(const char *identifier, SymbolType type, unsigned long value)
 	return success;
 }
 
-cc_bool UnsetSymbol(const char *identifier)
+cc_bool UnsetSymbol(SymbolState *state, const char *identifier)
 {
 	cc_bool success = cc_true;
 
-	Symbol **symbol = FindSymbol(identifier);
+	Symbol **symbol = FindSymbol(state, identifier);
 
 	if (symbol == NULL)
 	{
@@ -161,11 +150,11 @@ cc_bool UnsetSymbol(const char *identifier)
 	return success;
 }
 
-cc_bool GetSymbol(const char *identifier, unsigned long *value)
+cc_bool GetSymbol(SymbolState *state, const char *identifier, unsigned long *value)
 {
 	cc_bool success = cc_true;
 
-	Symbol **symbol = FindSymbol(identifier);
+	Symbol **symbol = FindSymbol(state, identifier);
 
 	if (symbol == NULL)
 		success = cc_false;

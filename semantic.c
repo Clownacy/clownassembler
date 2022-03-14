@@ -24,6 +24,7 @@ typedef struct SemanticState
 	unsigned long program_counter;
 	FixUp *fix_up_list_head;
 	cc_bool fix_up_needed;
+	SymbolState symbol_state;
 } SemanticState;
 
 static void SemanticWarning(const char *fmt, ...)
@@ -170,7 +171,7 @@ static cc_bool ResolveValue(SemanticState *state, cc_bool *parent_success, const
 			break;
 
 		case VALUE_IDENTIFIER:
-			if (!GetSymbol(value->data.identifier, value_integer))
+			if (!GetSymbol(&state->symbol_state, value->data.identifier, value_integer))
 			{
 				success = cc_false;
 
@@ -3080,7 +3081,7 @@ static cc_bool ProcessDirective(SemanticState *state, FILE *file, const Directiv
 				unsigned long resolved_value;
 
 				/* Update the program counter symbol in between values, to keep it up to date. */
-				SetSymbol("*", SYMBOL_VARIABLE, state->program_counter);
+				SetSymbol(&state->symbol_state, "*", SYMBOL_VARIABLE, state->program_counter);
 
 				if (!ResolveValue(state, &success, &value_list_node->value, &resolved_value, doing_fix_up))
 					resolved_value = 0;
@@ -3179,9 +3180,9 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 		fix_up.output_position = ftell(output_file);
 
 		if (statement_list_node->statement.label != NULL)
-			SetSymbol(statement_list_node->statement.label, SYMBOL_CONSTANT, state.program_counter);
+			SetSymbol(&state.symbol_state, statement_list_node->statement.label, SYMBOL_CONSTANT, state.program_counter);
 
-		SetSymbol("*", SYMBOL_VARIABLE, state.program_counter);
+		SetSymbol(&state.symbol_state, "*", SYMBOL_VARIABLE, state.program_counter);
 
 		state.fix_up_needed = cc_false;
 
@@ -3198,7 +3199,7 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 		state.program_counter = fix_up->program_counter;
 		fseek(output_file, fix_up->output_position , SEEK_SET);
 
-		SetSymbol("*", SYMBOL_VARIABLE, state.program_counter);
+		SetSymbol(&state.symbol_state, "*", SYMBOL_VARIABLE, state.program_counter);
 
 		if (!ProcessStatement(&state, output_file, fix_up->statement, cc_true))
 			success = cc_false;
