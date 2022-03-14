@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "clowncommon.h"
 
@@ -17,6 +18,7 @@ typedef struct FixUp
 	const Statement *statement;
 	unsigned long program_counter;
 	long output_position;
+	char *last_global_label;
 } FixUp;
 
 typedef struct SemanticState
@@ -24,6 +26,7 @@ typedef struct SemanticState
 	unsigned long program_counter;
 	cc_bool fix_up_needed;
 	SymbolState symbol_state;
+	char *last_global_label;
 } SemanticState;
 
 static void SemanticWarning(const char *fmt, ...)
@@ -176,13 +179,36 @@ static cc_bool ResolveValue(SemanticState *state, cc_bool *parent_success, const
 			break;
 
 		case VALUE_IDENTIFIER:
-			if (!GetSymbol(&state->symbol_state, value->data.identifier, value_integer))
+		{
+			char *expanded_label = NULL;
+
+			const char *identifier = value->data.identifier;
+
+			if (value->data.identifier[0] == '@')
+			{
+				expanded_label = malloc(strlen(state->last_global_label) + strlen(identifier) + 1);
+
+				if (expanded_label == NULL)
+				{
+					InternalError("Could not allocate memory for expanded label");
+					success = cc_false;
+				}
+				else
+				{
+					strcpy(expanded_label, state->last_global_label);
+					strcat(expanded_label, identifier);
+
+					identifier = expanded_label;
+				}
+			}
+
+			if (!GetSymbol(&state->symbol_state, identifier, value_integer))
 			{
 				success = cc_false;
 
 				if (doing_fix_up)
 				{
-					SemanticError("Symbol '%s' undefined\n", value->data.identifier);
+					SemanticError("Symbol '%s' undefined\n", identifier);
 					*parent_success = cc_false;
 				}
 				else
@@ -191,7 +217,10 @@ static cc_bool ResolveValue(SemanticState *state, cc_bool *parent_success, const
 				}
 			}
 
+			free(expanded_label);
+
 			break;
+		}
 	}
 
 	return success;
@@ -3177,6 +3206,7 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 	/* Perform first pass, and create a list of fix-ups if needed. */
 
 	state.program_counter = 0;
+	state.last_global_label = "";
 	fix_up_list_head = NULL;
 
 	for (statement_list_node = statement_list; statement_list_node != NULL; statement_list_node = statement_list_node->next)
@@ -3185,8 +3215,35 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 		const long starting_output_position = ftell(output_file);
 
 		if (statement_list_node->statement.label != NULL)
-			if (!HandleSymbolError(SetSymbol(&state.symbol_state, statement_list_node->statement.label, SYMBOL_CONSTANT, state.program_counter)))
-				success = cc_false;
+		{
+			if (statement_list_node->statement.label[0] != '@')
+			{
+				state.last_global_label = statement_list_node->statement.label;
+
+				if (!HandleSymbolError(SetSymbol(&state.symbol_state, statement_list_node->statement.label, SYMBOL_CONSTANT, state.program_counter)))
+					success = cc_false;
+			}
+			else
+			{
+				char *expanded_label = malloc(strlen(state.last_global_label) + strlen(statement_list_node->statement.label) + 1);
+
+				if (expanded_label == NULL)
+				{
+					InternalError("Could not allocate memory for expanded label");
+					success = cc_false;
+				}
+				else
+				{
+					strcpy(expanded_label, state.last_global_label);
+					strcat(expanded_label, statement_list_node->statement.label);
+
+					if (!HandleSymbolError(SetSymbol(&state.symbol_state, expanded_label, SYMBOL_CONSTANT, state.program_counter)))
+						success = cc_false;
+
+					free(expanded_label);
+				}
+			}
+		}
 
 		if (!HandleSymbolError(SetSymbol(&state.symbol_state, "*", SYMBOL_VARIABLE, state.program_counter)))
 			success = cc_false;
@@ -3210,6 +3267,7 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 				fix_up->statement = &statement_list_node->statement;
 				fix_up->program_counter = starting_program_counter;
 				fix_up->output_position = starting_output_position;
+				fix_up->last_global_label = state.last_global_label;
 
 				fix_up->next = fix_up_list_head;
 				fix_up_list_head = fix_up;
@@ -3226,6 +3284,7 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 
 		state.program_counter = fix_up->program_counter;
 		fseek(output_file, fix_up->output_position , SEEK_SET);
+		state.last_global_label = fix_up->last_global_label;
 
 		if (!HandleSymbolError(SetSymbol(&state.symbol_state, "*", SYMBOL_VARIABLE, state.program_counter)))
 			success = cc_false;

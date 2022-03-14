@@ -308,17 +308,17 @@ Object:
 	moveq	#0,d0
 	move.b	2(a0),d0
 	add.w	d0,d0
-	move.w	Object_Offsets(pc,d0.w),d0
-	jmp	Object_Offsets(pc,d0.w)
+	move.w	@Offsets(pc,d0.w),d0
+	jmp	@Offsets(pc,d0.w)
 
-Object_Offsets:
-	dc.w	Object_Offset1-Object_Offsets
-	dc.w	Object_Offset2-Object_Offsets
+@Offsets:
+	dc.w	@Offset1-Object@Offsets
+	dc.w	Object@Offset2-@Offsets
 
-Object_Offset1:
+@Offset1:
 	rts
 
-Object_Offset2:
+@Offset2:
 	rts
 
 	bra.s	*
