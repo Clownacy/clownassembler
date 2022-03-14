@@ -26,6 +26,7 @@ typedef struct SemanticState
 	cc_bool success;
 	unsigned long program_counter;
 	cc_bool fix_up_needed;
+	cc_bool doing_fix_up;
 	SymbolState symbol_state;
 	char *last_global_label;
 	int line_number;
@@ -109,7 +110,7 @@ static void HandleSymbolError(SemanticState *state, SymbolError error)
 	}
 }
 
-static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned long *value_integer, cc_bool doing_fix_up)
+static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned long *value_integer)
 {
 	cc_bool success = cc_true;
 
@@ -137,7 +138,7 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 			unsigned long left_value;
 			unsigned long right_value;
 
-			if (!ResolveValue(state, &value->data.values[0], &left_value, doing_fix_up) || !ResolveValue(state, &value->data.values[1], &right_value, doing_fix_up))
+			if (!ResolveValue(state, &value->data.values[0], &left_value) || !ResolveValue(state, &value->data.values[1], &right_value))
 			{
 				success = cc_false;
 			}
@@ -232,7 +233,7 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 		case VALUE_NEGATE:
 		case VALUE_BITWISE_NOT:
 		case VALUE_LOGICAL_NOT:
-			if (!ResolveValue(state, value->data.values, value_integer, doing_fix_up))
+			if (!ResolveValue(state, value->data.values, value_integer))
 			{
 				success = cc_false;
 			}
@@ -287,7 +288,7 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 			{
 				success = cc_false;
 
-				if (doing_fix_up)
+				if (state->doing_fix_up)
 					SemanticError(state, "Symbol '%s' undefined\n", identifier);
 				else
 					state->fix_up_needed = cc_true;
@@ -1540,7 +1541,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 };
 
-static void AssembleInstruction(SemanticState *state, FILE *file, const Instruction *original_instruction, cc_bool doing_fix_up)
+static void AssembleInstruction(SemanticState *state, FILE *file, const Instruction *original_instruction)
 {
 	/* Default to NOP in case errors occur later on and we can't get the correct machine code. */
 	unsigned int machine_code = 0x4E71;
@@ -2049,7 +2050,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 							{
 								unsigned long value;
 
-								if (!ResolveValue(state, &instruction.operands[0].literal, &value, doing_fix_up))
+								if (!ResolveValue(state, &instruction.operands[0].literal, &value))
 									value = 0;
 
 								/* Check whether the literal value will wrap or not, and warn the user if so. */
@@ -2262,7 +2263,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 
 						machine_code = 0x4E40;
 
-						if (!ResolveValue(state, &instruction.operands[0].literal, &value, doing_fix_up))
+						if (!ResolveValue(state, &instruction.operands[0].literal, &value))
 							value = 0;
 
 						if (value > 15)
@@ -2411,7 +2412,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 						machine_code |= ConstructSizeBits(instruction.opcode.size);
 						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
 
-						if (!ResolveValue(state, &instruction.operands[0].literal, &value, doing_fix_up))
+						if (!ResolveValue(state, &instruction.operands[0].literal, &value))
 							value = 1;
 
 						if (value < 1 || value > 8)
@@ -2440,7 +2441,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 						machine_code |= instruction.opcode.condition << 8;
 						machine_code |= instruction.operands[0].main_register;
 
-						if (!ResolveValue(state, &instruction.operands[1].literal, &value, doing_fix_up))
+						if (!ResolveValue(state, &instruction.operands[1].literal, &value))
 							value = start_program_counter - 2;
 
 						instruction.operands[0].type = OPERAND_LITERAL;
@@ -2496,7 +2497,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 								break;
 						}
 
-						if (!ResolveValue(state, &instruction.operands[0].literal, &value, doing_fix_up))
+						if (!ResolveValue(state, &instruction.operands[0].literal, &value))
 							value = start_program_counter - 2;
 
 						if (value >= start_program_counter)
@@ -2555,7 +2556,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 
 						machine_code = 0x7000;
 
-						if (!ResolveValue(state, &instruction.operands[0].literal, &value, doing_fix_up))
+						if (!ResolveValue(state, &instruction.operands[0].literal, &value))
 							value = 0;
 
 						if (value > 0x7F && value < 0xFFFFFF80)
@@ -2880,7 +2881,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 							{
 								unsigned long value;
 
-								if (!ResolveValue(state, &instruction.operands[0].literal, &value, doing_fix_up))
+								if (!ResolveValue(state, &instruction.operands[0].literal, &value))
 									value = 0;
 
 								if (value > 8 || value < 1)
@@ -2956,7 +2957,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 				unsigned int bytes_to_write = 2;
 				unsigned long value;
 
-				if (!ResolveValue(state, &operand->literal, &value, doing_fix_up))
+				if (!ResolveValue(state, &operand->literal, &value))
 				{
 					if (operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT || operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER)
 						value = start_program_counter; /* Prevent out-of-range displacements later on. */
@@ -3101,7 +3102,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 	}
 }
 
-static void ProcessDirective(SemanticState *state, FILE *file, const Directive *directive, cc_bool doing_fix_up)
+static void ProcessDirective(SemanticState *state, FILE *file, const Directive *directive)
 {
 	switch (directive->type)
 	{
@@ -3117,7 +3118,7 @@ static void ProcessDirective(SemanticState *state, FILE *file, const Directive *
 				/* Update the program counter symbol in between values, to keep it up to date. */
 				HandleSymbolError(state, SetSymbol(&state->symbol_state, "*", SYMBOL_VARIABLE, state->program_counter));
 
-				if (!ResolveValue(state, &value_list_node->value, &resolved_value, doing_fix_up))
+				if (!ResolveValue(state, &value_list_node->value, &resolved_value))
 					resolved_value = 0;
 
 				switch (directive->data.dc.size)
@@ -3159,7 +3160,7 @@ static void ProcessDirective(SemanticState *state, FILE *file, const Directive *
 	}
 }
 
-static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement, cc_bool doing_fix_up)
+static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement)
 {
 	state->line_number = statement->line_number;
 
@@ -3169,11 +3170,11 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			break;
 
 		case STATEMENT_TYPE_INSTRUCTION:
-			AssembleInstruction(state, output_file, &statement->data.instruction, doing_fix_up);
+			AssembleInstruction(state, output_file, &statement->data.instruction);
 			break;
 
 		case STATEMENT_TYPE_DIRECTIVE:
-			ProcessDirective(state, output_file, &statement->data.directive, doing_fix_up);
+			ProcessDirective(state, output_file, &statement->data.directive);
 			break;
 
 		case STATEMENT_TYPE_MACRO:
@@ -3194,6 +3195,7 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 	state.program_counter = 0;
 	InitSymbols(&state.symbol_state);
 	state.last_global_label = "";
+	state.doing_fix_up = cc_false;
 	fix_up_list_head = NULL;
 
 	for (statement_list_node = statement_list; statement_list_node != NULL; statement_list_node = statement_list_node->next)
@@ -3229,7 +3231,7 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 
 		state.fix_up_needed = cc_false;
 
-		ProcessStatement(&state, output_file, &statement_list_node->statement, cc_false);
+		ProcessStatement(&state, output_file, &statement_list_node->statement);
 
 		if (state.fix_up_needed)
 		{
@@ -3254,6 +3256,8 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 
 	/* Process the fix-ups, reassembling instructions and reprocessing directives that could not be done in the first pass. */
 
+	state.doing_fix_up = cc_true;
+
 	fix_up = fix_up_list_head;
 	while (fix_up != NULL)
 	{
@@ -3265,7 +3269,7 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 
 		HandleSymbolError(&state, SetSymbol(&state.symbol_state, "*", SYMBOL_VARIABLE, state.program_counter));
 
-		ProcessStatement(&state, output_file, fix_up->statement, cc_true);
+		ProcessStatement(&state, output_file, fix_up->statement);
 
 		free(fix_up);
 
