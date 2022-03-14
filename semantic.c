@@ -34,7 +34,7 @@ static void SemanticWarning(SemanticState *state, const char *fmt, ...)
 {
 	va_list args;
 
-	fprintf(stderr, "Semantic warning on line %d: ", state->line_number);
+	fprintf(stderr, "Semantic warning on line %d: ", state->line_number - 1);
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
@@ -45,7 +45,7 @@ static void SemanticError(SemanticState *state, const char *fmt, ...)
 {
 	va_list args;
 
-	fprintf(stderr, "Semantic error on line %d: ", state->line_number);
+	fprintf(stderr, "Semantic error on line %d: ", state->line_number - 1);
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
@@ -56,7 +56,7 @@ static void InternalError(SemanticState *state, const char *fmt, ...)
 {
 	va_list args;
 
-	fprintf(stderr, "Internal error on line %d: ", state->line_number);
+	fprintf(stderr, "Internal error on line %d: ", state->line_number - 1);
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
