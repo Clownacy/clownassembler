@@ -1780,6 +1780,8 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 	}
 	else
 	{
+		cc_bool good_operands = cc_true;
+
 		unsigned int total_operands_wanted;
 		unsigned int total_operands_have;
 
@@ -1812,6 +1814,7 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 		if (total_operands_wanted != total_operands_have)
 		{
 			SemanticError(state, "'%s' instruction has %u operands, but it should have %u\n", instruction_metadata->name, total_operands_have, total_operands_wanted);
+			good_operands = cc_false;
 		}
 		else
 		{
@@ -1890,10 +1893,11 @@ static void AssembleInstruction(SemanticState *state, FILE *file, const Instruct
 					}
 
 					SemanticError(state, "'%s' instruction operand %u cannot be %s\n", instruction_metadata->name, i, operand_string);
+					good_operands = cc_false;
 				}
 			}
 
-			if (state->success)
+			if (good_operands)
 			{
 				/* Determine the machine code for the opcode and perform sanity-checking. */
 				switch (instruction.opcode.type)
