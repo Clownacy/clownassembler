@@ -347,7 +347,6 @@ static cc_bool DoValue(M68KASM_LTYPE *yylloc, Value *value, ValueType type, Valu
 
 /* We can declare types of tree nodes */
 
-%token TOKEN_WHITESPACE
 %token TOKEN_NEWLINE
 %token TOKEN_OPCODE_ORI
 %token TOKEN_OPCODE_ANDI
@@ -519,7 +518,6 @@ static cc_bool DoValue(M68KASM_LTYPE *yylloc, Value *value, ValueType type, Valu
 
 end_of_line
 	: TOKEN_NEWLINE
-	| TOKEN_WHITESPACE TOKEN_NEWLINE
 	;
 
 program
@@ -639,11 +637,11 @@ substatement
 	;
 
 directive
-	: TOKEN_DIRECTIVE_DC '.' size TOKEN_WHITESPACE value_list end_of_line
+	: TOKEN_DIRECTIVE_DC '.' size value_list end_of_line
 	{
 		$$.type = DIRECTIVE_DC;
 		$$.data.dc.size = $3;
-		$$.data.dc.values = $5.head;
+		$$.data.dc.values = $4.head;
 	}
 	;
 
@@ -692,16 +690,16 @@ value_list
 	;
 
 instruction
-	: TOKEN_WHITESPACE full_opcode end_of_line
+	: full_opcode end_of_line
 	{
-		$$.opcode = $2;
+		$$.opcode = $1;
 		$$.operands[0].type = 0;
 		$$.operands[1].type = 0;
 	}
-	| TOKEN_WHITESPACE full_opcode TOKEN_WHITESPACE operand_list end_of_line
+	| full_opcode operand_list end_of_line
 	{
-		$$ = $4;
-		$$.opcode = $2;
+		$$ = $2;
+		$$.opcode = $1;
 	}
 	;
 

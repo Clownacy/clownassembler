@@ -48,7 +48,7 @@ comment           \;.*$
 
 %%
 
-{whitespace}    TOKEN(WHITESPACE); /* Ignore whitespace */
+{whitespace}    ; /* Ignore whitespace */
 {comment}       ; /* Ignore comments */
 "."             return yytext[0];
 ","             return yytext[0];
