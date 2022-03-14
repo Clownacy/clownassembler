@@ -498,6 +498,7 @@ static cc_bool DoValue(M68KASM_LTYPE *yylloc, Value *value, ValueType type, Valu
 %type<generic.integer> register_span
 %type<generic.integer> data_or_address_register
 %type<statement> statement
+%type<statement> substatement
 %type<list_metadata> statement_list
 %type<directive> directive
 %type<list_metadata> value_list
@@ -604,52 +605,41 @@ statement
 		$$.label = $1;
 		$$.type = STATEMENT_TYPE_EMPTY;
 	}
-	| instruction
+	| substatement
 	{
+		$$ = $1;
 		$$.line_number = @1.first_line;
 		$$.label = NULL;
+	}
+	| TOKEN_IDENTIFIER substatement
+	{
+		$$ = $2;
+		$$.line_number = @1.first_line;
+		$$.label = $1;
+	}
+	| TOKEN_IDENTIFIER ':' substatement
+	{
+		$$ = $3;
+		$$.line_number = @1.first_line;
+		$$.label = $1;
+	}
+	;
+
+substatement
+	: instruction
+	{
 		$$.type = STATEMENT_TYPE_INSTRUCTION;
 		$$.data.instruction = $1;
 	}
-	| TOKEN_IDENTIFIER instruction
+	| directive
 	{
-		$$.line_number = @1.first_line;
-		$$.label = $1;
-		$$.type = STATEMENT_TYPE_INSTRUCTION;
-		$$.data.instruction = $2;
-	}
-	| TOKEN_IDENTIFIER ':' instruction
-	{
-		$$.line_number = @1.first_line;
-		$$.label = $1;
-		$$.type = STATEMENT_TYPE_INSTRUCTION;
-		$$.data.instruction = $3;
-	}
-	| TOKEN_WHITESPACE directive
-	{
-		$$.line_number = @1.first_line;
-		$$.label = NULL;
 		$$.type = STATEMENT_TYPE_DIRECTIVE;
-		$$.data.directive = $2;
-	}
-	| TOKEN_IDENTIFIER TOKEN_WHITESPACE directive
-	{
-		$$.line_number = @1.first_line;
-		$$.label = $1;
-		$$.type = STATEMENT_TYPE_DIRECTIVE;
-		$$.data.directive = $3;
-	}
-	| TOKEN_IDENTIFIER ':' TOKEN_WHITESPACE directive
-	{
-		$$.line_number = @1.first_line;
-		$$.label = $1;
-		$$.type = STATEMENT_TYPE_DIRECTIVE;
-		$$.data.directive = $4;
+		$$.data.directive = $1;
 	}
 	;
 
 directive
-	: TOKEN_DIRECTIVE_DC '.' size TOKEN_WHITESPACE value_list
+	: TOKEN_DIRECTIVE_DC '.' size TOKEN_WHITESPACE value_list end_of_line
 	{
 		$$.type = DIRECTIVE_DC;
 		$$.data.dc.size = $3;
