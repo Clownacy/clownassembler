@@ -22,7 +22,6 @@ typedef struct FixUp
 typedef struct SemanticState
 {
 	unsigned long program_counter;
-	FixUp *fix_up_list_head;
 	cc_bool fix_up_needed;
 	SymbolState symbol_state;
 } SemanticState;
@@ -83,28 +82,6 @@ static cc_bool HandleSymbolError(SymbolError error)
 			SemanticError("Could not allocate memory for symbol\n");
 			success = cc_false;
 			break;
-	}
-
-	return success;
-}
-
-static cc_bool AddFixUp(SemanticState *state, const FixUp *fix_up)
-{
-	cc_bool success = cc_true;
-
-	FixUp *fix_up_list_node = malloc(sizeof(FixUp));
-
-	if (fix_up_list_node == NULL)
-	{
-		InternalError("Could not allocate memory for fix-up list node\n");
-		success = cc_false;
-	}
-	else
-	{
-		*fix_up_list_node = *fix_up;
-
-		fix_up_list_node->next = state->fix_up_list_head;
-		state->fix_up_list_head = fix_up_list_node;
 	}
 
 	return success;
@@ -3193,20 +3170,19 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 	cc_bool success = cc_true;
 
 	const StatementListNode *statement_list_node;
-	const FixUp *fix_up;
+	FixUp *fix_up_list_head;
+	FixUp *fix_up;
 	SemanticState state;
 
+	/* Perform first pass, and create a list of fix-ups if needed. */
+
 	state.program_counter = 0;
-	state.fix_up_list_head = NULL;
+	fix_up_list_head = NULL;
 
 	for (statement_list_node = statement_list; statement_list_node != NULL; statement_list_node = statement_list_node->next)
 	{
-		FixUp fix_up;
-
-		/* Construct the fix-up struct now, before the program counter and output file position get a chance to be modified. */
-		fix_up.statement = &statement_list_node->statement;
-		fix_up.program_counter = state.program_counter;
-		fix_up.output_position = ftell(output_file);
+		const unsigned long starting_program_counter = state.program_counter;
+		const long starting_output_position = ftell(output_file);
 
 		if (statement_list_node->statement.label != NULL)
 			if (!HandleSymbolError(SetSymbol(&state.symbol_state, statement_list_node->statement.label, SYMBOL_CONSTANT, state.program_counter)))
@@ -3221,12 +3197,33 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 			success = cc_false;
 
 		if (state.fix_up_needed)
-			if (!AddFixUp(&state, &fix_up))
+		{
+			fix_up = malloc(sizeof(FixUp));
+
+			if (fix_up == NULL)
+			{
+				InternalError("Could not allocate memory for fix-up list node\n");
 				success = cc_false;
+			}
+			else
+			{
+				fix_up->statement = &statement_list_node->statement;
+				fix_up->program_counter = starting_program_counter;
+				fix_up->output_position = starting_output_position;
+
+				fix_up->next = fix_up_list_head;
+				fix_up_list_head = fix_up;
+			}
+		}
 	}
 
-	for (fix_up = state.fix_up_list_head; fix_up != NULL; fix_up = fix_up->next)
+	/* Process the fix-ups, reassembling instructions and reprocessing directives that could not be done in the first pass. */
+
+	fix_up = fix_up_list_head;
+	while (fix_up != NULL)
 	{
+		FixUp *next_fix_up = fix_up->next;
+
 		state.program_counter = fix_up->program_counter;
 		fseek(output_file, fix_up->output_position , SEEK_SET);
 
@@ -3235,6 +3232,10 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 
 		if (!ProcessStatement(&state, output_file, fix_up->statement, cc_true))
 			success = cc_false;
+
+		free(fix_up);
+
+		fix_up = next_fix_up;
 	}
 
 	return success;
