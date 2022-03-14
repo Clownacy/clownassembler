@@ -566,60 +566,60 @@ statement_list
 statement
 	: end_of_line
 	{
-		$$.line_number = yylloc.first_line;
+		$$.line_number = @1.first_line;
 		$$.label = NULL;
 		$$.type = STATEMENT_TYPE_EMPTY;
 	}
 	| TOKEN_IDENTIFIER end_of_line
 	{
-		$$.line_number = yylloc.first_line;
+		$$.line_number = @1.first_line;
 		$$.label = $1;
 		$$.type = STATEMENT_TYPE_EMPTY;
 	}
 	| TOKEN_IDENTIFIER ':' end_of_line
 	{
-		$$.line_number = yylloc.first_line;
+		$$.line_number = @1.first_line;
 		$$.label = $1;
 		$$.type = STATEMENT_TYPE_EMPTY;
 	}
 	| instruction
 	{
-		$$.line_number = yylloc.first_line;
+		$$.line_number = @1.first_line;
 		$$.label = NULL;
 		$$.type = STATEMENT_TYPE_INSTRUCTION;
 		$$.data.instruction = $1;
 	}
 	| TOKEN_IDENTIFIER instruction
 	{
-		$$.line_number = yylloc.first_line;
+		$$.line_number = @1.first_line;
 		$$.label = $1;
 		$$.type = STATEMENT_TYPE_INSTRUCTION;
 		$$.data.instruction = $2;
 	}
 	| TOKEN_IDENTIFIER ':' instruction
 	{
-		$$.line_number = yylloc.first_line;
+		$$.line_number = @1.first_line;
 		$$.label = $1;
 		$$.type = STATEMENT_TYPE_INSTRUCTION;
 		$$.data.instruction = $3;
 	}
 	| TOKEN_WHITESPACE directive
 	{
-		$$.line_number = yylloc.first_line;
+		$$.line_number = @1.first_line;
 		$$.label = NULL;
 		$$.type = STATEMENT_TYPE_DIRECTIVE;
 		$$.data.directive = $2;
 	}
 	| TOKEN_IDENTIFIER TOKEN_WHITESPACE directive
 	{
-		$$.line_number = yylloc.first_line;
+		$$.line_number = @1.first_line;
 		$$.label = $1;
 		$$.type = STATEMENT_TYPE_DIRECTIVE;
 		$$.data.directive = $3;
 	}
 	| TOKEN_IDENTIFIER ':' TOKEN_WHITESPACE directive
 	{
-		$$.line_number = yylloc.first_line;
+		$$.line_number = @1.first_line;
 		$$.label = $1;
 		$$.type = STATEMENT_TYPE_DIRECTIVE;
 		$$.data.directive = $4;
