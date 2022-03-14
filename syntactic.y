@@ -274,6 +274,12 @@ typedef struct Directive
 	} data;
 } Directive;
 
+typedef struct Rept
+{
+	Value total_repeats;
+	struct StatementListNode *statement_list;
+} Rept;
+
 typedef struct Statement
 {
 	int line_number;
@@ -285,12 +291,14 @@ typedef struct Statement
 		STATEMENT_TYPE_EMPTY,
 		STATEMENT_TYPE_INSTRUCTION,
 		STATEMENT_TYPE_DIRECTIVE,
+		STATEMENT_TYPE_REPT,
 		STATEMENT_TYPE_MACRO
 	} type;
 	union
 	{
 		Instruction instruction;
 		Directive directive;
+		Rept rept;
 	} data;
 } Statement;
 
@@ -486,6 +494,8 @@ static cc_bool DoValue(M68KASM_LTYPE *yylloc, Value *value, ValueType type, Valu
 %token TOKEN_MORE_OR_EQUAL
 %token TOKEN_LEFT_SHIFT
 %token TOKEN_RIGHT_SHIFT
+%token TOKEN_REPT
+%token TOKEN_ENDR
 
 %type<instruction> instruction
 %type<opcode> opcode
@@ -633,6 +643,12 @@ substatement
 	{
 		$$.type = STATEMENT_TYPE_DIRECTIVE;
 		$$.data.directive = $1;
+	}
+	| TOKEN_REPT value end_of_line statement_list TOKEN_ENDR end_of_line
+	{
+		$$.type = STATEMENT_TYPE_REPT;
+		$$.data.rept.total_repeats = $2;
+		$$.data.rept.statement_list = $4.head;
 	}
 	;
 

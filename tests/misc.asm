@@ -329,4 +329,10 @@ Object:
 	; Test operators
 	dc.b	1<<1, 4>>1, 3&2, 7^5, 0|2, 6%4, 1==1, 1<>0, 1>0, 0<1, 1&&1, 1||1, 0+1, 2-1 , 1*1 , 1/1
 
+	; Testing REPT
+Delta:	rept 8
+	dc.b	*-Delta
+	endr
+
+
   ; More blank lines to test support for trailing blank statements

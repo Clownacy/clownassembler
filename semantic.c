@@ -25,6 +25,7 @@ typedef struct SemanticState
 {
 	cc_bool success;
 	unsigned long program_counter;
+	FixUp *fix_up_list_head;
 	cc_bool fix_up_needed;
 	cc_bool doing_fix_up;
 	SymbolState symbol_state;
@@ -3160,6 +3161,88 @@ static void ProcessDirective(SemanticState *state, FILE *file, const Directive *
 	}
 }
 
+/* A forward declaration because ProcessStatement and ProcessStatementList have a circular dependency. */
+static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement);
+
+static void ProcessStatementList(SemanticState *state, FILE *output_file, const StatementListNode *statement_list)
+{
+	const StatementListNode *statement_list_node;
+
+	for (statement_list_node = statement_list; statement_list_node != NULL; statement_list_node = statement_list_node->next)
+	{
+		const unsigned long starting_program_counter = state->program_counter;
+		const long starting_output_position = ftell(output_file);
+
+		if (statement_list_node->statement.label != NULL)
+		{
+			char *expanded_identifier = NULL;
+			const char *identifier = statement_list_node->statement.label;
+
+			if (statement_list_node->statement.label[0] != '@')
+			{
+				state->last_global_label = statement_list_node->statement.label;
+			}
+			else
+			{
+				expanded_identifier = ExpandLocalIdentifier(state, statement_list_node->statement.label);
+
+				if (expanded_identifier == NULL)
+					InternalError(state, "Could not allocate memory for expanded label");
+				else
+					identifier = expanded_identifier;
+			}
+
+			HandleSymbolError(state, SetSymbol(&state->symbol_state, identifier, SYMBOL_CONSTANT, state->program_counter));
+
+			free(expanded_identifier);
+		}
+
+		HandleSymbolError(state, SetSymbol(&state->symbol_state, "*", SYMBOL_VARIABLE, state->program_counter));
+
+		state->fix_up_needed = cc_false;
+
+		ProcessStatement(state, output_file, &statement_list_node->statement);
+
+		if (state->fix_up_needed)
+		{
+			FixUp *fix_up = malloc(sizeof(FixUp));
+
+			if (fix_up == NULL)
+			{
+				InternalError(state, "Could not allocate memory for fix-up list node\n");
+			}
+			else
+			{
+				fix_up->statement = &statement_list_node->statement;
+				fix_up->program_counter = starting_program_counter;
+				fix_up->output_position = starting_output_position;
+				fix_up->last_global_label = state->last_global_label;
+
+				fix_up->next = state->fix_up_list_head;
+				state->fix_up_list_head = fix_up;
+			}
+		}
+	}
+
+	/* Prevent things like REPT statements being added to the fix-up list. */
+	state->fix_up_needed = cc_false;
+}
+
+static void ProcessRept(SemanticState *state, FILE *output_file, const Rept *rept)
+{
+	unsigned long value;
+	unsigned long i;
+
+	if (!ResolveValue(state, &rept->total_repeats, &value))
+	{
+		SemanticError(state, "REPT value must be evaluable on the first pass\n");
+		value = 1;
+	}
+
+	for (i = 0; i < value; ++i)
+		ProcessStatementList(state, output_file, rept->statement_list);
+}
+
 static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement)
 {
 	state->line_number = statement->line_number;
@@ -3177,6 +3260,10 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			ProcessDirective(state, output_file, &statement->data.directive);
 			break;
 
+		case STATEMENT_TYPE_REPT:
+			ProcessRept(state, output_file, &statement->data.rept);
+			break;
+
 		case STATEMENT_TYPE_MACRO:
 			break;
 	}
@@ -3184,8 +3271,6 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 
 cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_list)
 {
-	const StatementListNode *statement_list_node;
-	FixUp *fix_up_list_head;
 	FixUp *fix_up;
 	SemanticState state;
 
@@ -3196,69 +3281,15 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 	InitSymbols(&state.symbol_state);
 	state.last_global_label = "";
 	state.doing_fix_up = cc_false;
-	fix_up_list_head = NULL;
+	state.fix_up_list_head = NULL;
 
-	for (statement_list_node = statement_list; statement_list_node != NULL; statement_list_node = statement_list_node->next)
-	{
-		const unsigned long starting_program_counter = state.program_counter;
-		const long starting_output_position = ftell(output_file);
-
-		if (statement_list_node->statement.label != NULL)
-		{
-			char *expanded_identifier = NULL;
-			const char *identifier = statement_list_node->statement.label;
-
-			if (statement_list_node->statement.label[0] != '@')
-			{
-				state.last_global_label = statement_list_node->statement.label;
-			}
-			else
-			{
-				expanded_identifier = ExpandLocalIdentifier(&state, statement_list_node->statement.label);
-
-				if (expanded_identifier == NULL)
-					InternalError(&state, "Could not allocate memory for expanded label");
-				else
-					identifier = expanded_identifier;
-			}
-
-			HandleSymbolError(&state, SetSymbol(&state.symbol_state, identifier, SYMBOL_CONSTANT, state.program_counter));
-
-			free(expanded_identifier);
-		}
-
-		HandleSymbolError(&state, SetSymbol(&state.symbol_state, "*", SYMBOL_VARIABLE, state.program_counter));
-
-		state.fix_up_needed = cc_false;
-
-		ProcessStatement(&state, output_file, &statement_list_node->statement);
-
-		if (state.fix_up_needed)
-		{
-			fix_up = malloc(sizeof(FixUp));
-
-			if (fix_up == NULL)
-			{
-				InternalError(&state, "Could not allocate memory for fix-up list node\n");
-			}
-			else
-			{
-				fix_up->statement = &statement_list_node->statement;
-				fix_up->program_counter = starting_program_counter;
-				fix_up->output_position = starting_output_position;
-				fix_up->last_global_label = state.last_global_label;
-
-				fix_up->next = fix_up_list_head;
-				fix_up_list_head = fix_up;
-			}
-		}
-	}
+	ProcessStatementList(&state, output_file, statement_list);
 
 	/* Process the fix-ups, reassembling instructions and reprocessing directives that could not be done in the first pass. */
 
 	state.doing_fix_up = cc_true;
 
-	fix_up = fix_up_list_head;
+	fix_up = state.fix_up_list_head;
 	while (fix_up != NULL)
 	{
 		FixUp *next_fix_up = fix_up->next;

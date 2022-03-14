@@ -202,6 +202,8 @@ ccr             TOKEN(CONDITION_CODE_REGISTER)
 sp              yylval->generic.integer = 7; return TOKEN_ADDRESS_REGISTER;
 usp             TOKEN(USER_STACK_POINTER_REGISTER)
 pc              TOKEN(PROGRAM_COUNTER)
+rept            TOKEN(REPT)
+endr            TOKEN(ENDR)
 [Dd]{decimal}   yylval->generic.integer = yytext[1] - '0'; return TOKEN_DATA_REGISTER;
 [Aa]{decimal}   yylval->generic.integer = yytext[1] - '0'; return TOKEN_ADDRESS_REGISTER;
 
