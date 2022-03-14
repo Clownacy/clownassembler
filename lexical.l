@@ -189,6 +189,14 @@ dc              TOKEN(DIRECTIVE_DC)
 "-"             return yytext[0];
 "*"             return yytext[0];
 "/"             return yytext[0];
+"&&"            TOKEN(LOGICAL_AND)
+"||"            TOKEN(LOGICAL_OR)
+"=="            TOKEN(EQUALITY)
+"<>"            TOKEN(INEQUALITY)
+"<="            TOKEN(LESS_OR_EQUAL)
+">="            TOKEN(MORE_OR_EQUAL)
+"<<"            TOKEN(LEFT_SHIFT)
+">>"            TOKEN(RIGHT_SHIFT)
 sr              TOKEN(STATUS_REGISTER)
 ccr             TOKEN(CONDITION_CODE_REGISTER)
 sp              yylval->generic.integer = 7; return TOKEN_ADDRESS_REGISTER;

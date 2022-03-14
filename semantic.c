@@ -119,6 +119,20 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 		case VALUE_ARITHMETIC_ADD:
 		case VALUE_ARITHMETIC_MULTIPLY:
 		case VALUE_ARITHMETIC_DIVIDE:
+		case VALUE_ARITHMETIC_MODULO:
+		case VALUE_LOGICAL_OR:
+		case VALUE_LOGICAL_AND:
+		case VALUE_ARITHMETIC_OR:
+		case VALUE_ARITHMETIC_XOR:
+		case VALUE_ARITHMETIC_AND:
+		case VALUE_EQUALITY:
+		case VALUE_INEQUALITY:
+		case VALUE_LESS_THAN:
+		case VALUE_LESS_OR_EQUAL:
+		case VALUE_MORE_THAN:
+		case VALUE_MORE_OR_EQUAL:
+		case VALUE_LEFT_SHIFT:
+		case VALUE_RIGHT_SHIFT:
 		{
 			unsigned long left_value;
 			unsigned long right_value;
@@ -145,6 +159,62 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 
 					case VALUE_ARITHMETIC_DIVIDE:
 						*value_integer = left_value / right_value;
+						break;
+
+					case VALUE_ARITHMETIC_MODULO:
+						*value_integer = left_value % right_value;
+						break;
+
+					case VALUE_LOGICAL_OR:
+						*value_integer = left_value || right_value;
+						break;
+
+					case VALUE_LOGICAL_AND:
+						*value_integer = left_value && right_value;
+						break;
+
+					case VALUE_ARITHMETIC_OR:
+						*value_integer = left_value | right_value;
+						break;
+
+					case VALUE_ARITHMETIC_XOR:
+						*value_integer = left_value ^ right_value;
+						break;
+
+					case VALUE_ARITHMETIC_AND:
+						*value_integer = left_value & right_value;
+						break;
+
+					case VALUE_EQUALITY:
+						*value_integer = left_value == right_value;
+						break;
+
+					case VALUE_INEQUALITY:
+						*value_integer = left_value != right_value;
+						break;
+
+					case VALUE_LESS_THAN:
+						*value_integer = left_value < right_value;
+						break;
+
+					case VALUE_LESS_OR_EQUAL:
+						*value_integer = left_value <= right_value;
+						break;
+
+					case VALUE_MORE_THAN:
+						*value_integer = left_value > right_value;
+						break;
+
+					case VALUE_MORE_OR_EQUAL:
+						*value_integer = left_value >= right_value;
+						break;
+
+					case VALUE_LEFT_SHIFT:
+						*value_integer = left_value << right_value;
+						break;
+
+					case VALUE_RIGHT_SHIFT:
+						*value_integer = left_value >> right_value;
 						break;
 
 					default:

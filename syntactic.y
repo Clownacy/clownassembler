@@ -173,11 +173,25 @@ typedef enum ValueType
 	VALUE_ARITHMETIC_ADD,
 	VALUE_ARITHMETIC_MULTIPLY,
 	VALUE_ARITHMETIC_DIVIDE,
+	VALUE_ARITHMETIC_MODULO,
 	VALUE_NEGATE,
 	VALUE_BITWISE_NOT,
 	VALUE_LOGICAL_NOT,
 	VALUE_NUMBER,
-	VALUE_IDENTIFIER
+	VALUE_IDENTIFIER,
+	VALUE_LOGICAL_OR,
+	VALUE_LOGICAL_AND,
+	VALUE_ARITHMETIC_OR,
+	VALUE_ARITHMETIC_XOR,
+	VALUE_ARITHMETIC_AND,
+	VALUE_EQUALITY,
+	VALUE_INEQUALITY,
+	VALUE_LESS_THAN,
+	VALUE_LESS_OR_EQUAL,
+	VALUE_MORE_THAN,
+	VALUE_MORE_OR_EQUAL,
+	VALUE_LEFT_SHIFT,
+	VALUE_RIGHT_SHIFT
 } ValueType;
 
 typedef struct Value
@@ -307,6 +321,8 @@ typedef struct ListMetadata
 /* make forward declarations to avoid compiler warnings */
 int m68kasm_lex(M68KASM_STYPE *yylval_param, M68KASM_LTYPE *yylloc_param, void *yyscanner);
 void m68kasm_error(M68KASM_LTYPE *yylloc_param, void *scanner, StatementListNode **statement_list_head, const char *message);
+
+static cc_bool DoValue(M68KASM_LTYPE *yylloc, Value *value, ValueType type, Value *left_value, Value *right_value);
 
 }
 
@@ -469,6 +485,14 @@ void m68kasm_error(M68KASM_LTYPE *yylloc_param, void *scanner, StatementListNode
 %token TOKEN_CONDITION_CODE_REGISTER
 %token TOKEN_USER_STACK_POINTER_REGISTER
 %token TOKEN_PROGRAM_COUNTER
+%token TOKEN_LOGICAL_AND
+%token TOKEN_LOGICAL_OR
+%token TOKEN_EQUALITY
+%token TOKEN_INEQUALITY
+%token TOKEN_LESS_OR_EQUAL
+%token TOKEN_MORE_OR_EQUAL
+%token TOKEN_LEFT_SHIFT
+%token TOKEN_RIGHT_SHIFT
 
 %type<instruction> instruction
 %type<opcode> opcode
@@ -489,6 +513,12 @@ void m68kasm_error(M68KASM_LTYPE *yylloc_param, void *scanner, StatementListNode
 %type<value> value3
 %type<value> value4
 %type<value> value5
+%type<value> value6
+%type<value> value7
+%type<value> value8
+%type<value> value9
+%type<value> value10
+%type<value> value11
 
 %%
 
@@ -1499,22 +1529,10 @@ value
 	{
 		$$ = $1;
 	}
-	| value1 '-' value
+	| value1 TOKEN_LOGICAL_OR value
 	{
-		$$.type = VALUE_ARITHMETIC_SUBTRACT;
-
-		$$.data.values = malloc(sizeof(Value) * 2);
-
-		if ($$.data.values == NULL)
-		{
-			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
+		if (!DoValue(&yylloc, &$$, VALUE_LOGICAL_OR, &$1, &$3))
 			YYABORT;
-		}
-		else
-		{
-			$$.data.values[0] = $1;
-			$$.data.values[1] = $3;
-		}
 	}
 	;
 
@@ -1523,22 +1541,10 @@ value1
 	{
 		$$ = $1;
 	}
-	| value2 '+' value1
+	| value2 TOKEN_LOGICAL_AND value1
 	{
-		$$.type = VALUE_ARITHMETIC_ADD;
-
-		$$.data.values = malloc(sizeof(Value) * 2);
-
-		if ($$.data.values == NULL)
-		{
-			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
+		if (!DoValue(&yylloc, &$$, VALUE_LOGICAL_AND, &$1, &$3))
 			YYABORT;
-		}
-		else
-		{
-			$$.data.values[0] = $1;
-			$$.data.values[1] = $3;
-		}
 	}
 	;
 
@@ -1547,22 +1553,10 @@ value2
 	{
 		$$ = $1;
 	}
-	| value3 '*' value2
+	| value3 '|' value2
 	{
-		$$.type = VALUE_ARITHMETIC_MULTIPLY;
-
-		$$.data.values = malloc(sizeof(Value) * 2);
-
-		if ($$.data.values == NULL)
-		{
-			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
+		if (!DoValue(&yylloc, &$$, VALUE_ARITHMETIC_OR, &$1, &$3))
 			YYABORT;
-		}
-		else
-		{
-			$$.data.values[0] = $1;
-			$$.data.values[1] = $3;
-		}
 	}
 	;
 
@@ -1571,22 +1565,10 @@ value3
 	{
 		$$ = $1;
 	}
-	| value4 '/' value3
+	| value4 '^' value3
 	{
-		$$.type = VALUE_ARITHMETIC_DIVIDE;
-
-		$$.data.values = malloc(sizeof(Value) * 2);
-
-		if ($$.data.values == NULL)
-		{
-			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
+		if (!DoValue(&yylloc, &$$, VALUE_ARITHMETIC_XOR, &$1, &$3))
 			YYABORT;
-		}
-		else
-		{
-			$$.data.values[0] = $1;
-			$$.data.values[1] = $3;
-		}
 	}
 	;
 
@@ -1595,57 +1577,136 @@ value4
 	{
 		$$ = $1;
 	}
-	| '-' value4
+	| value5 '&' value4
 	{
-		$$.type = VALUE_NEGATE;
-
-		$$.data.values = malloc(sizeof(Value));
-
-		if ($$.data.values == NULL)
-		{
-			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
+		if (!DoValue(&yylloc, &$$, VALUE_ARITHMETIC_AND, &$1, &$3))
 			YYABORT;
-		}
-		else
-		{
-			$$.data.values[0] = $2;
-		}
-	}
-	| '~' value4
-	{
-		$$.type = VALUE_BITWISE_NOT;
-
-		$$.data.values = malloc(sizeof(Value));
-
-		if ($$.data.values == NULL)
-		{
-			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
-			YYABORT;
-		}
-		else
-		{
-			$$.data.values[0] = $2;
-		}
-	}
-	| '!' value4
-	{
-		$$.type = VALUE_LOGICAL_NOT;
-
-		$$.data.values = malloc(sizeof(Value));
-
-		if ($$.data.values == NULL)
-		{
-			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for Value");
-			YYABORT;
-		}
-		else
-		{
-			$$.data.values[0] = $2;
-		}
 	}
 	;
 
 value5
+	: value6
+	{
+		$$ = $1;
+	}
+	| value6 TOKEN_EQUALITY value5
+	{
+		if (!DoValue(&yylloc, &$$, VALUE_EQUALITY, &$1, &$3))
+			YYABORT;
+	}
+	| value6 TOKEN_INEQUALITY value5
+	{
+		if (!DoValue(&yylloc, &$$, VALUE_INEQUALITY, &$1, &$3))
+			YYABORT;
+	}
+	;
+
+value6
+	: value7
+	{
+		$$ = $1;
+	}
+	| value7 '<' value6
+	{
+		if (!DoValue(&yylloc, &$$, VALUE_LESS_THAN, &$1, &$3))
+			YYABORT;
+	}
+	| value7 TOKEN_LESS_OR_EQUAL value6
+	{
+		if (!DoValue(&yylloc, &$$, VALUE_LESS_OR_EQUAL, &$1, &$3))
+			YYABORT;
+	}
+	| value7 '>' value6
+	{
+		if (!DoValue(&yylloc, &$$, VALUE_MORE_THAN, &$1, &$3))
+			YYABORT;
+	}
+	| value7 TOKEN_MORE_OR_EQUAL value6
+	{
+		if (!DoValue(&yylloc, &$$, VALUE_MORE_OR_EQUAL, &$1, &$3))
+			YYABORT;
+	}
+	;
+
+value7
+	: value8
+	{
+		$$ = $1;
+	}
+	| value8 TOKEN_LEFT_SHIFT value7
+	{
+		if (!DoValue(&yylloc, &$$, VALUE_LEFT_SHIFT, &$1, &$3))
+			YYABORT;
+	}
+	| value8 TOKEN_RIGHT_SHIFT value7
+	{
+		if (!DoValue(&yylloc, &$$, VALUE_RIGHT_SHIFT, &$1, &$3))
+			YYABORT;
+	}
+	;
+
+value8
+	: value9
+	{
+		$$ = $1;
+	}
+	| value9 '+' value8
+	{
+		if (!DoValue(&yylloc, &$$, VALUE_ARITHMETIC_ADD, &$1, &$3))
+			YYABORT;
+	}
+	| value9 '-' value8
+	{
+		if (!DoValue(&yylloc, &$$, VALUE_ARITHMETIC_SUBTRACT, &$1, &$3))
+			YYABORT;
+	}
+	;
+
+value9
+	: value10
+	{
+		$$ = $1;
+	}
+	| value10 '*' value9
+	{
+		if (!DoValue(&yylloc, &$$, VALUE_ARITHMETIC_MULTIPLY, &$1, &$3))
+			YYABORT;
+	}
+	| value10 '/' value9
+	{
+		if (!DoValue(&yylloc, &$$, VALUE_ARITHMETIC_DIVIDE, &$1, &$3))
+			YYABORT;
+	}
+	| value10 '%' value9
+	{
+		if (!DoValue(&yylloc, &$$, VALUE_ARITHMETIC_MODULO, &$1, &$3))
+			YYABORT;
+	}
+	;
+
+value10
+	: value11
+	{
+		$$ = $1;
+	}
+	| '-' value10
+	{
+		if (!DoValue(&yylloc, &$$, VALUE_NEGATE, &$2, NULL))
+			YYABORT;
+	}
+	| '~' value10
+	{
+		if (!DoValue(&yylloc, &$$, VALUE_BITWISE_NOT, &$2, NULL))
+			YYABORT;
+	}
+	| '!' value10
+	{
+		if (!DoValue(&yylloc, &$$, VALUE_LOGICAL_NOT, &$2, NULL))
+			YYABORT;
+	}
+	;
+
+value11
 	: TOKEN_NUMBER
 	{
 		$$.type = VALUE_NUMBER;
@@ -1671,3 +1732,27 @@ value5
 %%
 
 /* Stuff goes here. */
+
+static cc_bool DoValue(M68KASM_LTYPE *yylloc, Value *value, ValueType type, Value *left_value, Value *right_value)
+{
+	cc_bool success = cc_true;
+
+	value->type = type;
+
+	value->data.values = malloc(sizeof(Value) * (right_value != NULL ? 2 : 1));
+
+	if (value->data.values == NULL)
+	{
+		m68kasm_error(yylloc, NULL, NULL, "Could not allocate memory for Value");
+		success = cc_false;
+	}
+	else
+	{
+		value->data.values[0] = *left_value;
+
+		if (right_value != NULL)
+			value->data.values[1] = *right_value;
+	}
+
+	return success;
+}
