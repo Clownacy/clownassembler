@@ -22,52 +22,62 @@ int main(int argc, char **argv)
 {
 	int exit_code = EXIT_SUCCESS;
 
-	if (argc < 2)
+	if (argc < 3)
 	{
-		ERROR("Input file must be passed as a parameter");
+		ERROR("Input and output file paths must be passed as parameters");
 	}
 	else
 	{
-		FILE *file = fopen(argv[1], "r");
+		FILE *input_file = fopen(argv[1], "r");
 
-		if (file == NULL)
+		if (input_file == NULL)
 		{
 			ERROR("Could not open input file");
 		}
 		else
 		{
-			yyscan_t flex_state;
-			if (m68kasm_lex_init(&flex_state) != 0)
-			{
-				fclose(file);
+			FILE *output_file = fopen(argv[2], "wb");
 
-				ERROR("m68kasm_lex_init failed");
+			if (output_file == NULL)
+			{
+				ERROR("Could not open output file");
 			}
 			else
 			{
-				StatementListNode *statement_list_head;
+				yyscan_t flex_state;
 
-				m68kasm_set_in(file, flex_state);
+				if (m68kasm_lex_init(&flex_state) != 0)
+				{
+					ERROR("m68kasm_lex_init failed");
+				}
+				else
+				{
+					StatementListNode *statement_list_head;
 
-				/*m68kasm_lex(); */
+					m68kasm_set_in(input_file, flex_state);
 
-			#if M68KASM_DEBUG
-				m68kasm_debug = 1;
-			#endif
+					/*m68kasm_lex(); */
 
-				statement_list_head = NULL;
+				#if M68KASM_DEBUG
+					m68kasm_debug = 1;
+				#endif
 
-				if (m68kasm_parse(flex_state, &statement_list_head) != 0)
-					exit_code = EXIT_FAILURE;
+					statement_list_head = NULL;
 
-				if (m68kasm_lex_destroy(flex_state) != 0)
-					ERROR("m68kasm_lex_destroy failed");
+					if (m68kasm_parse(flex_state, &statement_list_head) != 0)
+						exit_code = EXIT_FAILURE;
 
-				fclose(file);
+					if (m68kasm_lex_destroy(flex_state) != 0)
+						ERROR("m68kasm_lex_destroy failed");
 
-				if (!ProcessParseTree(statement_list_head))
-					exit_code = EXIT_FAILURE;
+					if (!ProcessParseTree(output_file, statement_list_head))
+						exit_code = EXIT_FAILURE;
+				}
+
+				fclose(output_file);
 			}
+
+			fclose(input_file);
 		}
 	}
 

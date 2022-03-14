@@ -3158,62 +3158,50 @@ static cc_bool ProcessStatement(SemanticState *state, FILE *output_file, const S
 	return success;
 }
 
-cc_bool ProcessParseTree(const StatementListNode *statement_list)
+cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_list)
 {
 	cc_bool success = cc_true;
 
-	FILE *output_file = fopen("output.bin", "wb");
+	const StatementListNode *statement_list_node;
+	const FixUp *fix_up;
+	SemanticState state;
 
-	if (output_file == NULL)
+	state.program_counter = 0;
+	state.fix_up_list_head = NULL;
+
+	for (statement_list_node = statement_list; statement_list_node != NULL; statement_list_node = statement_list_node->next)
 	{
-		fprintf(stderr, "Error: Could not open output file\n");
-		success = cc_false;
+		FixUp fix_up;
+
+		/* Construct the fix-up struct now, before the program counter and output file position get a chance to be modified. */
+		fix_up.statement = &statement_list_node->statement;
+		fix_up.program_counter = state.program_counter;
+		fix_up.output_position = ftell(output_file);
+
+		if (statement_list_node->statement.label != NULL)
+			SetSymbol(statement_list_node->statement.label, SYMBOL_CONSTANT, state.program_counter);
+
+		SetSymbol("*", SYMBOL_VARIABLE, state.program_counter);
+
+		state.fix_up_needed = cc_false;
+
+		if (!ProcessStatement(&state, output_file, &statement_list_node->statement, cc_false))
+			success = cc_false;
+
+		if (state.fix_up_needed)
+			if (!AddFixUp(&state, &fix_up))
+				success = cc_false;
 	}
-	else
+
+	for (fix_up = state.fix_up_list_head; fix_up != NULL; fix_up = fix_up->next)
 	{
-		const StatementListNode *statement_list_node;
-		const FixUp *fix_up;
-		SemanticState state;
+		state.program_counter = fix_up->program_counter;
+		fseek(output_file, fix_up->output_position , SEEK_SET);
 
-		state.program_counter = 0;
-		state.fix_up_list_head = NULL;
+		SetSymbol("*", SYMBOL_VARIABLE, state.program_counter);
 
-		for (statement_list_node = statement_list; statement_list_node != NULL; statement_list_node = statement_list_node->next)
-		{
-			FixUp fix_up;
-
-			/* Construct the fix-up struct now, before the program counter and output file position get a chance to be modified. */
-			fix_up.statement = &statement_list_node->statement;
-			fix_up.program_counter = state.program_counter;
-			fix_up.output_position = ftell(output_file);
-
-			if (statement_list_node->statement.label != NULL)
-				SetSymbol(statement_list_node->statement.label, SYMBOL_CONSTANT, state.program_counter);
-
-			SetSymbol("*", SYMBOL_VARIABLE, state.program_counter);
-
-			state.fix_up_needed = cc_false;
-
-			if (!ProcessStatement(&state, output_file, &statement_list_node->statement, cc_false))
-				success = cc_false;
-
-			if (state.fix_up_needed)
-				if (!AddFixUp(&state, &fix_up))
-					success = cc_false;
-		}
-
-		for (fix_up = state.fix_up_list_head; fix_up != NULL; fix_up = fix_up->next)
-		{
-			state.program_counter = fix_up->program_counter;
-			fseek(output_file, fix_up->output_position , SEEK_SET);
-
-			SetSymbol("*", SYMBOL_VARIABLE, state.program_counter);
-
-			if (!ProcessStatement(&state, output_file, fix_up->statement, cc_true))
-				success = cc_false;
-		}
-
-		fclose(output_file);
+		if (!ProcessStatement(&state, output_file, fix_up->statement, cc_true))
+			success = cc_false;
 	}
 
 	return success;
