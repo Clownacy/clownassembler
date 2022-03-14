@@ -60,6 +60,34 @@ static void InternalError(const char *fmt, ...)
 	va_end(args);
 }
 
+static cc_bool HandleSymbolError(SymbolError error)
+{
+	cc_bool success = cc_true;
+
+	switch (error)
+	{
+		case SYMBOL_ERROR_NONE:
+			break;
+
+		case SYMBOL_ERROR_CONSTANT_ALREADY_DEFINED:
+			SemanticError("Symbol already defined\n");
+			success = cc_false;
+			break;
+
+		case SYMBOL_ERROR_VARIABLE_REDEFINED_WITH_DIFFERENT_TYPE:
+			SemanticError("Symbol redefined with different type\n");
+			success = cc_false;
+			break;
+
+		case SYMBOL_ERROR_OUT_OF_MEMORY:
+			SemanticError("Could not allocate memory for symbol\n");
+			success = cc_false;
+			break;
+	}
+
+	return success;
+}
+
 static cc_bool AddFixUp(SemanticState *state, const FixUp *fix_up)
 {
 	cc_bool success = cc_true;
@@ -3081,7 +3109,8 @@ static cc_bool ProcessDirective(SemanticState *state, FILE *file, const Directiv
 				unsigned long resolved_value;
 
 				/* Update the program counter symbol in between values, to keep it up to date. */
-				SetSymbol(&state->symbol_state, "*", SYMBOL_VARIABLE, state->program_counter);
+				if (!HandleSymbolError(SetSymbol(&state->symbol_state, "*", SYMBOL_VARIABLE, state->program_counter)))
+					success = cc_false;
 
 				if (!ResolveValue(state, &success, &value_list_node->value, &resolved_value, doing_fix_up))
 					resolved_value = 0;
@@ -3180,9 +3209,11 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 		fix_up.output_position = ftell(output_file);
 
 		if (statement_list_node->statement.label != NULL)
-			SetSymbol(&state.symbol_state, statement_list_node->statement.label, SYMBOL_CONSTANT, state.program_counter);
+			if (!HandleSymbolError(SetSymbol(&state.symbol_state, statement_list_node->statement.label, SYMBOL_CONSTANT, state.program_counter)))
+				success = cc_false;
 
-		SetSymbol(&state.symbol_state, "*", SYMBOL_VARIABLE, state.program_counter);
+		if (!HandleSymbolError(SetSymbol(&state.symbol_state, "*", SYMBOL_VARIABLE, state.program_counter)))
+			success = cc_false;
 
 		state.fix_up_needed = cc_false;
 
@@ -3199,7 +3230,8 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 		state.program_counter = fix_up->program_counter;
 		fseek(output_file, fix_up->output_position , SEEK_SET);
 
-		SetSymbol(&state.symbol_state, "*", SYMBOL_VARIABLE, state.program_counter);
+		if (!HandleSymbolError(SetSymbol(&state.symbol_state, "*", SYMBOL_VARIABLE, state.program_counter)))
+			success = cc_false;
 
 		if (!ProcessStatement(&state, output_file, fix_up->statement, cc_true))
 			success = cc_false;

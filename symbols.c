@@ -1,7 +1,6 @@
 #include "symbols.h"
 
 #include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -32,9 +31,9 @@ static Symbol** FindSymbol(SymbolState *state, const char *identifier)
 	return NULL;
 }
 
-static cc_bool AddSymbol(SymbolState *state, const char *identifier, SymbolType type, unsigned long value)
+static SymbolError AddSymbol(SymbolState *state, const char *identifier, SymbolType type, unsigned long value)
 {
-	cc_bool success = cc_true;
+	SymbolError error = SYMBOL_ERROR_NONE;
 
 	const size_t identifier_length = strlen(identifier) + 1;
 
@@ -42,8 +41,7 @@ static cc_bool AddSymbol(SymbolState *state, const char *identifier, SymbolType 
 
 	if (symbol == NULL)
 	{
-		fprintf(stderr, "Error: Could not allocate memory for symbol\n");
-		success = cc_false;
+		error = SYMBOL_ERROR_OUT_OF_MEMORY;
 	}
 	else
 	{
@@ -59,7 +57,7 @@ static cc_bool AddSymbol(SymbolState *state, const char *identifier, SymbolType 
 		memcpy(symbol->identifier, identifier, identifier_length);
 	}
 
-	return success;
+	return error;
 }
 
 void ClearSymbols(SymbolState *state)
@@ -81,9 +79,9 @@ void ClearSymbols(SymbolState *state)
 	}
 }
 
-cc_bool SetSymbol(SymbolState *state, const char *identifier, SymbolType type, unsigned long value)
+SymbolError SetSymbol(SymbolState *state, const char *identifier, SymbolType type, unsigned long value)
 {
-	cc_bool success = cc_true;
+	SymbolError error = SYMBOL_ERROR_NONE;
 
 	Symbol **existing_symbol = FindSymbol(state, identifier);
 
@@ -91,15 +89,9 @@ cc_bool SetSymbol(SymbolState *state, const char *identifier, SymbolType type, u
 	{
 		case SYMBOL_CONSTANT:
 			if (existing_symbol != NULL)
-			{
-				fprintf(stderr, "Error: Symbol already defined\n");
-				success = cc_false;
-			}
+				error = SYMBOL_ERROR_CONSTANT_ALREADY_DEFINED;
 			else
-			{
-				if (!AddSymbol(state, identifier, type, value))
-					success = cc_false;
-			}
+				error = AddSymbol(state, identifier, type, value);
 
 			break;
 
@@ -107,25 +99,19 @@ cc_bool SetSymbol(SymbolState *state, const char *identifier, SymbolType type, u
 			if (existing_symbol != NULL)
 			{
 				if ((*existing_symbol)->type != SYMBOL_VARIABLE)
-				{
-					fprintf(stderr, "Error: Symbol redefined with different type\n");
-					success = cc_false;
-				}
+					error = SYMBOL_ERROR_VARIABLE_REDEFINED_WITH_DIFFERENT_TYPE;
 				else
-				{
 					(*existing_symbol)->value = value;
-				}
 			}
 			else
 			{
-				if (!AddSymbol(state, identifier, type, value))
-					success = cc_false;
+				error = AddSymbol(state, identifier, type, value);
 			}
 
 			break;
 	}
 
-	return success;
+	return error;
 }
 
 cc_bool UnsetSymbol(SymbolState *state, const char *identifier)
