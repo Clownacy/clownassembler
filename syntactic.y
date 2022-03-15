@@ -328,16 +328,6 @@ static cc_bool DoValue(M68KASM_LTYPE *yylloc, Value *value, ValueType type, Valu
 
 }
 
-/****************/
-/* Start symbol */
-/****************/
-
-%start program
-
-/**********************/
-/* Action value types */
-/**********************/
-
 %union {
 	struct
 	{
@@ -352,8 +342,6 @@ static cc_bool DoValue(M68KASM_LTYPE *yylloc, Value *value, ValueType type, Valu
 	ListMetadata list_metadata;
 	Value value;
 }
-
-/* We can declare types of tree nodes */
 
 %token TOKEN_NEWLINE
 %token TOKEN_OPCODE_ORI
@@ -523,6 +511,8 @@ static cc_bool DoValue(M68KASM_LTYPE *yylloc, Value *value, ValueType type, Valu
 %type<value> value9
 %type<value> value10
 %type<value> value11
+
+%start program
 
 %%
 
