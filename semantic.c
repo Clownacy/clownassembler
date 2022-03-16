@@ -501,20 +501,6 @@ typedef struct InstructionMetadata
 	OperandType allowed_operands[2];
 } InstructionMetadata;
 
-/*
-	OPCODE_MOVE,
-	OPCODE_MOVE_TO_USP,
-	OPCODE_MOVE_FROM_USP,
-	OPCODE_MOVE_TO_CCR,
-	OPCODE_MOVE_TO_SR,
-	OPCODE_MOVE_FROM_SR,
-	OPCODE_ADD,
-	OPCODE_ORI_TO_CCR,
-	OPCODE_ORI_TO_SR,
-	OPCODE_ORI
-			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER | OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT | OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER | OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE | OPERAND_LITERAL | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
-*/
-
 /* The order of this array absolutely must match the order of the OperandType enum! */
 static const InstructionMetadata instruction_metadata_all[] = {
 	{	/* OPCODE_ORI_TO_CCR */
@@ -1595,7 +1581,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 };
 
-static void AssembleInstruction(SemanticState *state, FILE *file, const Instruction *original_instruction)
+static void ProcessInstruction(SemanticState *state, FILE *file, const Instruction *original_instruction)
 {
 	/* Default to NOP in case errors occur later on and we can't get the correct machine code. */
 	unsigned int machine_code = 0x4E71;
@@ -3229,7 +3215,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			break;
 
 		case STATEMENT_TYPE_INSTRUCTION:
-			AssembleInstruction(state, output_file, &statement->data.instruction);
+			ProcessInstruction(state, output_file, &statement->data.instruction);
 			break;
 
 		case STATEMENT_TYPE_DC:
