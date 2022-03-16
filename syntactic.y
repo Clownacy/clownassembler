@@ -1350,6 +1350,7 @@ register_list
 	{
 		$$ = $1 | $3;
 	}
+	;
 
 register_span
 	: data_or_address_register
@@ -1603,7 +1604,6 @@ value11
 		$$ = $2;
 	}
 	;
-
 
 %%
 
