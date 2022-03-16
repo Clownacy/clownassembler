@@ -7,6 +7,6 @@
 
 #include "syntactic.h"
 
-cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_list);
+cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file);
 
 #endif /* SEMANTIC_H */

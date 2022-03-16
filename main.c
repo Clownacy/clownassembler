@@ -4,7 +4,7 @@
 
 #include "clowncommon.h"
 
-#include "clownassembler.h"
+#include "semantic.h"
 
 #define ERROR(message) do { fputs("Error: " message "\n", stderr); exit_code = EXIT_FAILURE;} while (0)
 

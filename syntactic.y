@@ -15,7 +15,6 @@
 #include "clowncommon.h"
 
 #define YYSTYPE M68KASM_STYPE
-#define YYLTYPE M68KASM_LTYPE
 
 typedef enum Size
 {
@@ -271,13 +270,13 @@ typedef struct Directive
 		} dc;
 	} data;
 } Directive;
-
+/*
 typedef struct Rept
 {
 	Value total_repeats;
 	struct StatementListNode *statement_list;
 } Rept;
-
+*/
 typedef struct Statement
 {
 	char *label;
@@ -294,16 +293,9 @@ typedef struct Statement
 	{
 		Instruction instruction;
 		Directive directive;
-		Rept rept;
+		/*Rept rept;*/
 	} data;
 } Statement;
-
-typedef struct StatementListNode
-{
-	Statement statement;
-
-	struct StatementListNode *next;
-} StatementListNode;
 
 typedef struct ListMetadata
 {
@@ -315,6 +307,7 @@ typedef struct ListMetadata
 
 %code {
 
+#include <stddef.h>
 #include <stdlib.h>
 
 int m68kasm_lex(M68KASM_STYPE *yylval_param, void *yyscanner);

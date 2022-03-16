@@ -26,7 +26,7 @@
 #define IDENTIFIER_TOKEN(x) yylval.iVal = installId(yytext); return TOKEN_ ## x;
 #endif
 
-void m68kasm_error(void *scanner, StatementListNode **statement_list_head, const char *message);
+void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
 %}
 
