@@ -40,16 +40,13 @@ identifier        {identifier_character_nondigit}({identifier_character_nondigit
 binary            {binary_digit}+
 decimal           {decimal_digit}+
 hexadecimal       {hexadecimal_digit}+
-newline           \r\n|\r|\n
-comment           \;.*$
 
 %%
 
 {whitespace}    ; /* Ignore whitespace */
-{comment}       ; /* Ignore comments */
+[;\r\n]         yyterminate(); ; /* Terminate at comment or newline */
 "."             return yytext[0];
 ","             return yytext[0];
-{newline}       TOKEN(NEWLINE)
 ori             TOKEN(OPCODE_ORI)
 andi            TOKEN(OPCODE_ANDI)
 subi            TOKEN(OPCODE_SUBI)

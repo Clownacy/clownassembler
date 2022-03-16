@@ -339,7 +339,6 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 	Value value;
 }
 
-%token TOKEN_NEWLINE
 %token TOKEN_OPCODE_ORI
 %token TOKEN_OPCODE_ANDI
 %token TOKEN_OPCODE_SUBI
@@ -510,22 +509,18 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 
 %%
 
-end_of_line
-	: TOKEN_NEWLINE
-	;
-
 statement
-	: end_of_line
+	:
 	{
 		statement->label = NULL;
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
-	| TOKEN_IDENTIFIER end_of_line
+	| TOKEN_IDENTIFIER
 	{
 		statement->label = $1;
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
-	| TOKEN_IDENTIFIER ':' end_of_line
+	| TOKEN_IDENTIFIER ':'
 	{
 		statement->label = $1;
 		statement->type = STATEMENT_TYPE_EMPTY;
@@ -567,7 +562,7 @@ substatement
 	;
 
 directive
-	: TOKEN_DIRECTIVE_DC '.' size value_list end_of_line
+	: TOKEN_DIRECTIVE_DC '.' size value_list
 	{
 		$$.type = DIRECTIVE_DC;
 		$$.data.dc.size = $3;
@@ -620,13 +615,13 @@ value_list
 	;
 
 instruction
-	: full_opcode end_of_line
+	: full_opcode
 	{
 		$$.opcode = $1;
 		$$.operands[0].type = 0;
 		$$.operands[1].type = 0;
 	}
-	| full_opcode operand_list end_of_line
+	| full_opcode operand_list
 	{
 		$$ = $2;
 		$$.opcode = $1;
