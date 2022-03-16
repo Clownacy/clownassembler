@@ -3213,22 +3213,6 @@ static void ProcessDirective(SemanticState *state, FILE *file, const Directive *
 		}
 	}
 }
-#if 0
-/* A forward declaration because ProcessStatement and ProcessStatementList have a circular dependency. */
-static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement);
-
-static void ProcessStatementList(SemanticState *state, FILE *output_file, const StatementListNode *statement_list)
-{
-	const StatementListNode *statement_list_node;
-
-	for (statement_list_node = statement_list; statement_list_node != NULL; statement_list_node = statement_list_node->next)
-	{
-	}
-
-	/* Prevent things like REPT statements being added to the fix-up list. */
-	state->fix_up_needed = cc_false;
-}
-#endif
 /*
 static void ProcessRept(SemanticState *state, FILE *output_file, const Rept *rept)
 {
@@ -3275,25 +3259,29 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 	YY_BUFFER_STATE buffer;
 	int parse_result;
 
+	/* Back these up, before they get a chance to be modified by ProcessStatement. */
 	const unsigned long starting_program_counter = state->program_counter;
 	const long starting_output_position = ftell(output_file);
 
 	state->source_line = source_line;
 
+	/* Parse the source line with Flex and Bison (Lex and Yacc). */
 	buffer = m68kasm__scan_string(source_line, state->flex_state);
 	parse_result = m68kasm_parse(state->flex_state, &statement);
 	m68kasm__delete_buffer(buffer, state->flex_state);
 
 	switch (parse_result)
 	{
-		case 2:
+		case 2: /* Out of memory. */
 			OutOfMemoryError(state);
 			break;
 
-		case 1:
+		case 1: /* Parsing error. */
+			/* An error message will have already been printed, so we don't need to do one here. */
 			break;
 
-		case 0:
+		case 0: /* No error. */
+			/* Add label to symbol table. */
 			if (statement.label != NULL)
 			{
 				char *expanded_identifier;
@@ -3305,6 +3293,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 
 				if (statement.label[0] != '@')
 				{
+					/* This is a global label - cache it for later. */
 					free(state->last_global_label);
 					state->last_global_label = DuplicateString(statement.label);
 
@@ -3313,6 +3302,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				}
 				else
 				{
+					/* This is a local label - prefix it with the previous global label. */
 					expanded_identifier = ExpandLocalIdentifier(state, statement.label);
 
 					if (expanded_identifier == NULL)
@@ -3321,6 +3311,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 						identifier = expanded_identifier;
 				}
 
+				/* Now add it to the symbol table. */
 				if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
 				{
 					OutOfMemoryError(state);
@@ -3344,6 +3335,8 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 
 			ProcessStatement(state, output_file, &statement);
 
+			/* If the statement cannot currently be processed because of undefined symbols,
+			   add it to the fix-up list so we can try again later. */
 			if (state->fix_up_needed)
 			{
 				FixUp *fix_up = malloc(sizeof(FixUp));
@@ -3354,7 +3347,10 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				}
 				else
 				{
+					/* Backup the statement. */
 					fix_up->statement = statement;
+
+					/* Backup some state. */
 					fix_up->program_counter = starting_program_counter;
 					fix_up->output_position = starting_output_position;
 					fix_up->last_global_label = DuplicateString(state->last_global_label);
@@ -3367,10 +3363,12 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 					if (fix_up->source_line == NULL)
 						OutOfMemoryError(state);
 
+					/* Add the new fix-up to the list. */
 					fix_up->next = state->fix_up_list_head;
 					state->fix_up_list_head = fix_up;
 				}
 			}
+
 			break;
 	}
 }
@@ -3453,6 +3451,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
 			{
 				FixUp *next_fix_up = fix_up->next;
 
+				/* Reset some state to how it was at the time the statement was first processed. */
 				state.program_counter = fix_up->program_counter;
 				fseek(output_file, fix_up->output_position , SEEK_SET);
 				state.last_global_label = fix_up->last_global_label;
@@ -3460,8 +3459,10 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
 
 				Dictionary_LookUp(&state.dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state.program_counter;
 
+				/* Re-process statement. */
 				ProcessStatement(&state, output_file, &fix_up->statement);
 
+				/* We're done with this fix-up - now delete it. */
 				free(fix_up->last_global_label);
 				free(fix_up->source_line);
 				free(fix_up);
