@@ -253,23 +253,11 @@ typedef struct Instruction
 	Operand operands[2];
 } Instruction;
 
-typedef enum DirectiveType
+typedef struct Dc
 {
-	DIRECTIVE_DC
-} DirectiveType;
-
-typedef struct Directive
-{
-	DirectiveType type;
-	union
-	{
-		struct
-		{
-			Size size;
-			ValueListNode *values;
-		} dc;
-	} data;
-} Directive;
+	Size size;
+	ValueListNode *values;
+} Dc;
 /*
 typedef struct Rept
 {
@@ -285,14 +273,14 @@ typedef struct Statement
 	{
 		STATEMENT_TYPE_EMPTY,
 		STATEMENT_TYPE_INSTRUCTION,
-		STATEMENT_TYPE_DIRECTIVE,
+		STATEMENT_TYPE_DC,
 		STATEMENT_TYPE_REPT,
 		STATEMENT_TYPE_MACRO
 	} type;
 	union
 	{
 		Instruction instruction;
-		Directive directive;
+		Dc dc;
 		/*Rept rept;*/
 	} data;
 } Statement;
@@ -326,7 +314,6 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 	Opcode opcode;
 	Operand operand;
 	Instruction instruction;
-	Directive directive;
 	Statement statement;
 	ListMetadata list_metadata;
 	Value value;
@@ -450,6 +437,8 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 %token TOKEN_OPCODE_ROL
 %token TOKEN_OPCODE_ROR
 %token TOKEN_DIRECTIVE_DC
+%token TOKEN_DIRECTIVE_REPT
+%token TOKEN_DIRECTIVE_ENDR
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -470,8 +459,6 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 %token TOKEN_MORE_OR_EQUAL
 %token TOKEN_LEFT_SHIFT
 %token TOKEN_RIGHT_SHIFT
-%token TOKEN_REPT
-%token TOKEN_ENDR
 
 %type<instruction> instruction
 %type<opcode> opcode
@@ -483,7 +470,6 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 %type<generic.integer> register_span
 %type<generic.integer> data_or_address_register
 %type<statement> substatement
-%type<directive> directive
 %type<list_metadata> value_list
 %type<value> value
 %type<value> value1
@@ -541,26 +527,18 @@ substatement
 		$$.type = STATEMENT_TYPE_INSTRUCTION;
 		$$.data.instruction = $1;
 	}
-	| directive
+	| TOKEN_DIRECTIVE_DC '.' size value_list
 	{
-		$$.type = STATEMENT_TYPE_DIRECTIVE;
-		$$.data.directive = $1;
+		$$.type = STATEMENT_TYPE_DC;
+		$$.data.dc.size = $3;
+		$$.data.dc.values = $4.head;
 	}
-/*	| TOKEN_REPT value end_of_line statement_list TOKEN_ENDR end_of_line
+/*	| TOKEN_DIRECTIVE_REPT value statement_list TOKEN_DIRECTIVE_ENDR
 	{
 		$$.type = STATEMENT_TYPE_REPT;
 		$$.data.rept.total_repeats = $2;
 		$$.data.rept.statement_list = $4.head;
 	}*/
-	;
-
-directive
-	: TOKEN_DIRECTIVE_DC '.' size value_list
-	{
-		$$.type = DIRECTIVE_DC;
-		$$.data.dc.size = $3;
-		$$.data.dc.values = $4.head;
-	}
 	;
 
 value_list
