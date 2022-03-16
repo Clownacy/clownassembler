@@ -3329,7 +3329,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
 			FixUp *fix_up;
 
 		#if M68KASM_DEBUG
-			m68kasm_set_debug(1, flex_state);
+			m68kasm_debug = 1;
 		#endif
 
 			/* Perform first pass, and create a list of fix-ups if needed. */
