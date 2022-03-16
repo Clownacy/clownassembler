@@ -3380,7 +3380,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
 
 	state.success = cc_true;
 	state.program_counter = 0;
-	state.last_global_label = DuplicateString("");
+	state.last_global_label = NULL;
 	state.doing_fix_up = cc_false;
 	state.fix_up_list_head = NULL;
 	state.line_number = 1;
