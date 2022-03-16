@@ -1581,7 +1581,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 };
 
-static void ProcessInstruction(SemanticState *state, FILE *file, const Instruction *original_instruction)
+static void ProcessInstruction(SemanticState *state, FILE *output_file, const Instruction *original_instruction)
 {
 	/* Default to NOP in case errors occur later on and we can't get the correct machine code. */
 	unsigned int machine_code = 0x4E71;
@@ -2977,7 +2977,7 @@ static void ProcessInstruction(SemanticState *state, FILE *file, const Instructi
 
 	/* Output the machine code for the opcode. */
 	for (i = 2; i-- > 0; )
-		fputc((machine_code >> (8 * i)) & 0xFF, file);
+		fputc((machine_code >> (8 * i)) & 0xFF, output_file);
 
 	/* Output the data for the operands. */
 	for (i = 0; i < CC_COUNT_OF(instruction.operands); ++i)
@@ -3100,7 +3100,7 @@ static void ProcessInstruction(SemanticState *state, FILE *file, const Instructi
 				state->program_counter += bytes_to_write;
 
 				while (bytes_to_write-- > 0)
-					fputc((value >> (8 * bytes_to_write)) & 0xFF, file);
+					fputc((value >> (8 * bytes_to_write)) & 0xFF, output_file);
 
 				break;
 			}
@@ -3122,7 +3122,7 @@ static void ProcessInstruction(SemanticState *state, FILE *file, const Instructi
 				}
 
 				for (bytes_to_write = 2; bytes_to_write-- > 0; )
-					fputc((register_list >> (8 * bytes_to_write)) & 0xFF, file);
+					fputc((register_list >> (8 * bytes_to_write)) & 0xFF, output_file);
 
 				state->program_counter += 2;
 
@@ -3142,7 +3142,7 @@ static void ProcessInstruction(SemanticState *state, FILE *file, const Instructi
 	}
 }
 
-static void ProcessDc(SemanticState *state, FILE *file, const Dc *dc)
+static void ProcessDc(SemanticState *state, FILE *output_file, const Dc *dc)
 {
 	const ValueListNode *value_list_node;
 
@@ -3188,7 +3188,7 @@ static void ProcessDc(SemanticState *state, FILE *file, const Dc *dc)
 		state->program_counter += bytes_to_write;
 
 		while (bytes_to_write-- != 0)
-			fputc((resolved_value >> (bytes_to_write * 8)) & 0xFF, file);
+			fputc((resolved_value >> (bytes_to_write * 8)) & 0xFF, output_file);
 	}
 }
 /*
