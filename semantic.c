@@ -3170,7 +3170,7 @@ static void ProcessDirective(SemanticState *state, FILE *file, const Directive *
 				unsigned long resolved_value;
 
 				/* Update the program counter symbol in between values, to keep it up to date. */
-				Dictionary_LookUp(&state->dictionary, "*")->data.unsigned_integer = state->program_counter;
+				Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state->program_counter;
 
 				if (!ResolveValue(state, &value_list_node->value, &resolved_value))
 					resolved_value = 0;
@@ -3338,7 +3338,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				free(expanded_identifier);
 			}
 
-			Dictionary_LookUp(&state->dictionary, "*")->data.unsigned_integer = state->program_counter;
+			Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state->program_counter;
 
 			state->fix_up_needed = cc_false;
 
@@ -3391,7 +3391,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
 	Dictionary_Init(&state.dictionary);
 
 	/* Create the dictionary entry for the program counter ahead of time. */
-	if (!Dictionary_LookUpAndCreateIfNotExist(&state.dictionary, "*", &dictionary_entry))
+	if (!Dictionary_LookUpAndCreateIfNotExist(&state.dictionary, ",,PROGRAM_COUNTER,,", &dictionary_entry))
 	{
 		OutOfMemoryError(&state);
 	}
@@ -3458,7 +3458,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
 				state.last_global_label = fix_up->last_global_label;
 				state.source_line = fix_up->source_line != NULL ? fix_up->source_line : "[No source line]";
 
-				Dictionary_LookUp(&state.dictionary, "*")->data.unsigned_integer = state.program_counter;
+				Dictionary_LookUp(&state.dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state.program_counter;
 
 				ProcessStatement(&state, output_file, &fix_up->statement);
 

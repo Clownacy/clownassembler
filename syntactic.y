@@ -1625,7 +1625,7 @@ value11
 	| '*'
 	{
 		$$.type = VALUE_IDENTIFIER;
-		$$.data.identifier = "*";
+		$$.data.identifier = ",,PROGRAM_COUNTER,,";
 	}
 	| '(' value ')'
 	{
