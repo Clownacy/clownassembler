@@ -38,6 +38,7 @@ typedef struct SemanticState
 	cc_bool doing_fix_up;
 	Dictionary_State dictionary;
 	char *last_global_label;
+	unsigned long line_number;
 } SemanticState;
 
 /* Prevent errors when __attribute__ is not supported. */
@@ -51,7 +52,7 @@ __attribute__((format(printf, 2, 3))) static void SemanticWarning(SemanticState 
 
 	(void)state;
 
-	fputs("Semantic warning: ", stderr);
+	fprintf(stderr, "Semantic warning on line %lu: ", state->line_number);
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
@@ -62,7 +63,7 @@ __attribute__((format(printf, 2, 3))) static void SemanticError(SemanticState *s
 {
 	va_list args;
 
-	fprintf(stderr, "Semantic error: ");
+	fprintf(stderr, "Semantic error on line %lu: ", state->line_number);
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
@@ -75,7 +76,7 @@ __attribute__((format(printf, 2, 3))) static void InternalError(SemanticState *s
 {
 	va_list args;
 
-	fprintf(stderr, "Internal error: ");
+	fprintf(stderr, "Internal error on line %lu: ", state->line_number);
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
@@ -86,10 +87,11 @@ __attribute__((format(printf, 2, 3))) static void InternalError(SemanticState *s
 
 void m68kasm_error(void *scanner, Statement *statement, const char *message)
 {
-	(void)scanner;
+	SemanticState *state = m68kasm_get_extra(scanner);
+
 	(void)statement;
 
-	fprintf(stderr, "Lexical/syntax error: %s\n", message);
+	fprintf(stderr, "Lexical/syntax error on line %lu: %s\n", state->line_number, message);
 }
 
 static char* ExpandLocalIdentifier(SemanticState *state, const char *identifier)
@@ -3302,6 +3304,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
 	state.last_global_label = "";
 	state.doing_fix_up = cc_false;
 	state.fix_up_list_head = NULL;
+	state.line_number = 1;
 
 	Dictionary_Init(&state.dictionary);
 
@@ -3316,7 +3319,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
 
 		dictionary_entry->type = SYMBOL_VARIABLE;
 
-		if (m68kasm_lex_init(&flex_state) != 0)
+		if (m68kasm_lex_init_extra(&state, &flex_state) != 0)
 		{
 			InternalError(&state, "m68kasm_lex_init failed\n");
 		}
@@ -3343,6 +3346,8 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
 					ProcessStatementWithFixUp(&state, output_file, &statement);
 
 				m68kasm__delete_buffer(buffer, flex_state);
+
+				++state.line_number;
 			}
 
 			if (m68kasm_lex_destroy(flex_state) != 0)
