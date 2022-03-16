@@ -334,5 +334,12 @@ Delta:	rept 8
 	dc.b	*-Delta
 	endr
 
+	; Testing case-insensitivity
+	MOVE.B	D0,D0
+	mOvE.b	(A0,d0.W),(a1,D1.l)
 
   ; More blank lines to test support for trailing blank statements
+
+
+
+

@@ -3,6 +3,7 @@
 %option nounput noinput noyywrap
 %option reentrant bison-bridge
 %option prefix="m68kasm_"
+%option caseless
 
 %{
 
@@ -174,10 +175,10 @@ dc              TOKEN(DIRECTIVE_DC)
 ","             return yytext[0];
 "("             return yytext[0];
 ")"             return yytext[0];
-"b"             return yytext[0];
-"s"             return yytext[0];
-"w"             return yytext[0];
-"l"             return yytext[0];
+"b"             TOKEN(SIZE_BYTE)
+"s"             TOKEN(SIZE_SHORT)
+"w"             TOKEN(SIZE_WORD)
+"l"             TOKEN(SIZE_LONGWORD)
 "$"             return yytext[0];
 ":"             return yytext[0];
 "+"             return yytext[0];
