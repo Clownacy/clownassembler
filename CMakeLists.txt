@@ -4,14 +4,14 @@ project(clownassembler LANGUAGES C)
 
 add_executable(clownassembler
 	"main.c"
+	"dictionary.c"
+	"dictionary.h"
 	"lexical.c"
 	"lexical.h"
 	"semantic.c"
 	"semantic.h"
 	"syntactic.c"
 	"syntactic.h"
-	"symbols.c"
-	"symbols.h"
 )
 
 set_target_properties(clownassembler PROPERTIES

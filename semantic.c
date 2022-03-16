@@ -8,8 +8,14 @@
 
 #include "clowncommon.h"
 
-#include "symbols.h"
+#include "dictionary.h"
 #include "syntactic.h"
+
+typedef enum SymbolType
+{
+	SYMBOL_CONSTANT,
+	SYMBOL_VARIABLE
+} SymbolType;
 
 typedef struct FixUp
 {
@@ -28,7 +34,7 @@ typedef struct SemanticState
 	FixUp *fix_up_list_head;
 	cc_bool fix_up_needed;
 	cc_bool doing_fix_up;
-	SymbolState symbol_state;
+	Dictionary_State dictionary;
 	char *last_global_label;
 	int line_number;
 } SemanticState;
@@ -88,27 +94,6 @@ static char* ExpandLocalIdentifier(SemanticState *state, const char *identifier)
 	}
 
 	return expanded_identifier;
-}
-
-static void HandleSymbolError(SemanticState *state, SymbolError error)
-{
-	switch (error)
-	{
-		case SYMBOL_ERROR_NONE:
-			break;
-
-		case SYMBOL_ERROR_CONSTANT_ALREADY_DEFINED:
-			SemanticError(state, "Symbol already defined\n");
-			break;
-
-		case SYMBOL_ERROR_VARIABLE_REDEFINED_WITH_DIFFERENT_TYPE:
-			SemanticError(state, "Symbol redefined with different type\n");
-			break;
-
-		case SYMBOL_ERROR_OUT_OF_MEMORY:
-			SemanticError(state, "Could not allocate memory for symbol\n");
-			break;
-	}
 }
 
 static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned long *value_integer)
@@ -272,20 +257,22 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 		case VALUE_IDENTIFIER:
 		{
 			char *expanded_identifier = NULL;
-
 			const char *identifier = value->data.identifier;
+			Dictionary_Entry *dictionary_entry;
 
 			if (value->data.identifier[0] == '@')
 			{
 				expanded_identifier = ExpandLocalIdentifier(state, value->data.identifier);
 
 				if (expanded_identifier == NULL)
-					InternalError(state, "Could not allocate memory for expanded identifier");
+					InternalError(state, "Could not allocate memory for expanded identifier\n");
 				else
 					identifier = expanded_identifier;
 			}
 
-			if (!GetSymbol(&state->symbol_state, identifier, value_integer))
+			dictionary_entry = Dictionary_LookUp(&state->dictionary, identifier);
+
+			if (dictionary_entry == NULL)
 			{
 				success = cc_false;
 
@@ -293,6 +280,15 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 					SemanticError(state, "Symbol '%s' undefined\n", identifier);
 				else
 					state->fix_up_needed = cc_true;
+			}
+			else if (dictionary_entry->type != SYMBOL_CONSTANT && dictionary_entry->type != SYMBOL_VARIABLE)
+			{
+				success = cc_false;
+				SemanticError(state, "Symbol '%s' is not a constant or a variable\n", identifier);
+			}
+			else
+			{
+				*value_integer = dictionary_entry->data.unsigned_integer;
 			}
 
 			free(expanded_identifier);
@@ -3117,7 +3113,7 @@ static void ProcessDirective(SemanticState *state, FILE *file, const Directive *
 				unsigned long resolved_value;
 
 				/* Update the program counter symbol in between values, to keep it up to date. */
-				HandleSymbolError(state, SetSymbol(&state->symbol_state, "*", SYMBOL_VARIABLE, state->program_counter));
+				Dictionary_LookUp(&state->dictionary, "*")->data.unsigned_integer = state->program_counter;
 
 				if (!ResolveValue(state, &value_list_node->value, &resolved_value))
 					resolved_value = 0;
@@ -3177,6 +3173,7 @@ static void ProcessStatementList(SemanticState *state, FILE *output_file, const 
 		{
 			char *expanded_identifier = NULL;
 			const char *identifier = statement_list_node->statement.label;
+			Dictionary_Entry *dictionary_entry;
 
 			if (statement_list_node->statement.label[0] != '@')
 			{
@@ -3187,17 +3184,29 @@ static void ProcessStatementList(SemanticState *state, FILE *output_file, const 
 				expanded_identifier = ExpandLocalIdentifier(state, statement_list_node->statement.label);
 
 				if (expanded_identifier == NULL)
-					InternalError(state, "Could not allocate memory for expanded label");
+					InternalError(state, "Could not allocate memory for expanded label\n");
 				else
 					identifier = expanded_identifier;
 			}
 
-			HandleSymbolError(state, SetSymbol(&state->symbol_state, identifier, SYMBOL_CONSTANT, state->program_counter));
+			if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
+			{
+				InternalError(state, "Could not allocate memory for symbol\n");
+			}
+			else if (dictionary_entry->type != -1)
+			{
+				SemanticError(state, "Symbol '%s' already defined\n", identifier);
+			}
+			else
+			{
+				dictionary_entry->type = SYMBOL_CONSTANT;
+				dictionary_entry->data.unsigned_integer = state->program_counter;
+			}
 
 			free(expanded_identifier);
 		}
 
-		HandleSymbolError(state, SetSymbol(&state->symbol_state, "*", SYMBOL_VARIABLE, state->program_counter));
+		Dictionary_LookUp(&state->dictionary, "*")->data.unsigned_integer = state->program_counter;
 
 		state->fix_up_needed = cc_false;
 
@@ -3273,41 +3282,52 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 {
 	FixUp *fix_up;
 	SemanticState state;
+	Dictionary_Entry *dictionary_entry;
 
 	/* Perform first pass, and create a list of fix-ups if needed. */
 
 	state.success = cc_true;
 	state.program_counter = 0;
-	InitSymbols(&state.symbol_state);
 	state.last_global_label = "";
 	state.doing_fix_up = cc_false;
 	state.fix_up_list_head = NULL;
 
-	ProcessStatementList(&state, output_file, statement_list);
-
-	/* Process the fix-ups, reassembling instructions and reprocessing directives that could not be done in the first pass. */
-
-	state.doing_fix_up = cc_true;
-
-	fix_up = state.fix_up_list_head;
-	while (fix_up != NULL)
+	Dictionary_Init(&state.dictionary);
+	/* Create the dictionary entry for the program counter ahead of time. */
+	if (!Dictionary_LookUpAndCreateIfNotExist(&state.dictionary, "*", &dictionary_entry))
 	{
-		FixUp *next_fix_up = fix_up->next;
+		InternalError(&state, "Could not allocate memory for symbol\n");
+	}
+	else
+	{
+		dictionary_entry->type = SYMBOL_VARIABLE;
 
-		state.program_counter = fix_up->program_counter;
-		fseek(output_file, fix_up->output_position , SEEK_SET);
-		state.last_global_label = fix_up->last_global_label;
+		ProcessStatementList(&state, output_file, statement_list);
 
-		HandleSymbolError(&state, SetSymbol(&state.symbol_state, "*", SYMBOL_VARIABLE, state.program_counter));
+		/* Process the fix-ups, reassembling instructions and reprocessing directives that could not be done in the first pass. */
 
-		ProcessStatement(&state, output_file, fix_up->statement);
+		state.doing_fix_up = cc_true;
 
-		free(fix_up);
+		fix_up = state.fix_up_list_head;
+		while (fix_up != NULL)
+		{
+			FixUp *next_fix_up = fix_up->next;
 
-		fix_up = next_fix_up;
+			state.program_counter = fix_up->program_counter;
+			fseek(output_file, fix_up->output_position , SEEK_SET);
+			state.last_global_label = fix_up->last_global_label;
+
+			Dictionary_LookUp(&state.dictionary, "*")->data.unsigned_integer = state.program_counter;
+
+			ProcessStatement(&state, output_file, fix_up->statement);
+
+			free(fix_up);
+
+			fix_up = next_fix_up;
+		}
 	}
 
-	DeinitSymbols(&state.symbol_state);
+	Dictionary_Deinit(&state.dictionary);
 
 	return state.success;
 }

@@ -13,5 +13,5 @@ lexical.c lexical.h: lexical.l syntactic.h
 syntactic.c syntactic.h: syntactic.y
 	$(YACC) --output=syntactic.c --header=syntactic.h --debug $<
 
-clownassembler: main.c lexical.c semantic.c syntactic.c symbols.c
+clownassembler: main.c dictionary.c lexical.c semantic.c syntactic.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
