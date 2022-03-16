@@ -457,10 +457,6 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 %token TOKEN_OPCODE_ROL
 %token TOKEN_OPCODE_ROR
 %token TOKEN_DIRECTIVE_DC
-%token TOKEN_SIZE_BYTE
-%token TOKEN_SIZE_SHORT
-%token TOKEN_SIZE_WORD
-%token TOKEN_SIZE_LONG
 %token<generic.integer> TOKEN_DATA_REGISTER
 %token<generic.integer> TOKEN_ADDRESS_REGISTER
 %token<generic.integer> TOKEN_NUMBER
@@ -1157,19 +1153,19 @@ opcode
 	;
 
 size
-	: TOKEN_SIZE_BYTE
+	: 'b'
 	{
 		$$ = SIZE_BYTE;
 	}
-	| TOKEN_SIZE_SHORT
+	| 's'
 	{
 		$$ = SIZE_SHORT;
 	}
-	| TOKEN_SIZE_WORD
+	| 'w'
 	{
 		$$ = SIZE_WORD;
 	}
-	| TOKEN_SIZE_LONG
+	| 'l'
 	{
 		$$ = SIZE_LONGWORD;
 	}

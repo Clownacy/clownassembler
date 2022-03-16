@@ -45,8 +45,6 @@ hexadecimal       {hexadecimal_digit}+
 
 {whitespace}    ; /* Ignore whitespace */
 [;\r\n]         yyterminate(); ; /* Terminate at comment or newline */
-"."             return yytext[0];
-","             return yytext[0];
 ori             TOKEN(OPCODE_ORI)
 andi            TOKEN(OPCODE_ANDI)
 subi            TOKEN(OPCODE_SUBI)
@@ -172,12 +170,14 @@ roxr            TOKEN(OPCODE_ROXR)
 rol             TOKEN(OPCODE_ROL)
 ror             TOKEN(OPCODE_ROR)
 dc              TOKEN(DIRECTIVE_DC)
+"."             return yytext[0];
+","             return yytext[0];
 "("             return yytext[0];
 ")"             return yytext[0];
-"b"             TOKEN(SIZE_BYTE)
-"s"             TOKEN(SIZE_SHORT)
-"w"             TOKEN(SIZE_WORD)
-"l"             TOKEN(SIZE_LONG)
+"b"             return yytext[0];
+"s"             return yytext[0];
+"w"             return yytext[0];
+"l"             return yytext[0];
 "$"             return yytext[0];
 ":"             return yytext[0];
 "+"             return yytext[0];
