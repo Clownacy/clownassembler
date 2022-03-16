@@ -97,6 +97,13 @@ __attribute__((format(printf, 2, 3))) static void InternalError(SemanticState *s
 	state->success = cc_false;
 }
 
+static void OutOfMemoryError(SemanticState *state)
+{
+	fprintf(stderr, "Internal error on line %lu: Could not allocate memory\n", state->line_number);
+
+	state->success = cc_false;
+}
+
 void m68kasm_error(void *scanner, Statement *statement, const char *message)
 {
 	SemanticState *state = m68kasm_get_extra(scanner);
@@ -303,7 +310,7 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 				expanded_identifier = ExpandLocalIdentifier(state, value->data.identifier);
 
 				if (expanded_identifier == NULL)
-					InternalError(state, "Could not allocate memory for expanded identifier\n");
+					OutOfMemoryError(state);
 				else
 					identifier = expanded_identifier;
 			}
@@ -3286,21 +3293,21 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				state->last_global_label = DuplicateString(statement.label);
 
 				if (state->last_global_label == NULL)
-					InternalError(state, "Could not allocate memory\n");
+					OutOfMemoryError(state);
 			}
 			else
 			{
 				expanded_identifier = ExpandLocalIdentifier(state, statement.label);
 
 				if (expanded_identifier == NULL)
-					InternalError(state, "Could not allocate memory for expanded label\n");
+					OutOfMemoryError(state);
 				else
 					identifier = expanded_identifier;
 			}
 
 			if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
 			{
-				InternalError(state, "Could not allocate memory for symbol\n");
+				OutOfMemoryError(state);
 			}
 			else if (dictionary_entry->type != -1)
 			{
@@ -3327,7 +3334,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 
 			if (fix_up == NULL)
 			{
-				InternalError(state, "Could not allocate memory for fix-up list node\n");
+				OutOfMemoryError(state);
 			}
 			else
 			{
@@ -3337,12 +3344,12 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				fix_up->last_global_label = DuplicateString(state->last_global_label);
 
 				if (fix_up->last_global_label == NULL)
-					InternalError(state, "Could not allocate memory\n");
+					OutOfMemoryError(state);
 
 				fix_up->source_line = DuplicateString(state->source_line);
 
 				if (fix_up->source_line == NULL)
-					InternalError(state, "Could not allocate memory\n");
+					OutOfMemoryError(state);
 
 				fix_up->next = state->fix_up_list_head;
 				state->fix_up_list_head = fix_up;
@@ -3369,7 +3376,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
 	/* Create the dictionary entry for the program counter ahead of time. */
 	if (!Dictionary_LookUpAndCreateIfNotExist(&state.dictionary, "*", &dictionary_entry))
 	{
-		InternalError(&state, "Could not allocate memory for symbol\n");
+		OutOfMemoryError(&state);
 	}
 	else
 	{
