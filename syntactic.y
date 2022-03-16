@@ -6,7 +6,7 @@
 
 %param {void *scanner}
 
-%parse-param {StatementListNode **statement_list_head}
+%parse-param {Statement *statement}
 
 %define parse.error verbose
 
@@ -322,7 +322,7 @@ typedef struct ListMetadata
 #include <stdlib.h>
 
 int m68kasm_lex(M68KASM_STYPE *yylval_param, M68KASM_LTYPE *yylloc_param, void *yyscanner);
-void m68kasm_error(M68KASM_LTYPE *yylloc_param, void *scanner, StatementListNode **statement_list_head, const char *message);
+void m68kasm_error(M68KASM_LTYPE *yylloc_param, void *scanner, Statement *statement, const char *message);
 
 static cc_bool DoValue(M68KASM_LTYPE *yylloc, Value *value, ValueType type, Value *left_value, Value *right_value);
 
@@ -494,9 +494,7 @@ static cc_bool DoValue(M68KASM_LTYPE *yylloc, Value *value, ValueType type, Valu
 %type<generic.integer> register_list
 %type<generic.integer> register_span
 %type<generic.integer> data_or_address_register
-%type<statement> statement
 %type<statement> substatement
-%type<list_metadata> statement_list
 %type<directive> directive
 %type<list_metadata> value_list
 %type<value> value
@@ -512,7 +510,7 @@ static cc_bool DoValue(M68KASM_LTYPE *yylloc, Value *value, ValueType type, Valu
 %type<value> value10
 %type<value> value11
 
-%start program
+%start statement
 
 %%
 
@@ -520,106 +518,42 @@ end_of_line
 	: TOKEN_NEWLINE
 	;
 
-program
-	: statement_list
-	{
-		*statement_list_head = $1.head;
-	}
-	;
-
-statement_list
-	: statement
-	{
-		/* Don't bother adding empty statements to the statement list */
-		if ($1.label == NULL && $1.type == STATEMENT_TYPE_EMPTY)
-		{
-			$$.head = NULL;
-			$$.tail = NULL;
-		}
-		else
-		{
-			StatementListNode *node = malloc(sizeof(StatementListNode));
-
-			if (node == NULL)
-			{
-				m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for statement list node");
-				YYABORT;
-			}
-			else
-			{
-				node->statement = $1;
-				node->next = NULL;
-			}
-
-			$$.head = $$.tail = node;
-		}
-	}
-	| statement_list statement
-	{
-		$$ = $1;
-
-		/* Don't bother adding empty statements to the statement list */
-		if ($2.label != NULL || $2.type != STATEMENT_TYPE_EMPTY)
-		{
-			StatementListNode *node = malloc(sizeof(StatementListNode));
-
-			if (node == NULL)
-			{
-				m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for statement list node");
-				YYABORT;
-			}
-			else
-			{
-				node->statement = $2;
-				node->next = NULL;
-
-				if ($$.head == NULL)
-					$$.head = node;
-				else
-					((StatementListNode*)$$.tail)->next = node;
-
-				$$.tail = node;
-			}
-		}
-	}
-	;
-
 statement
 	: end_of_line
 	{
-		$$.line_number = @1.first_line;
-		$$.label = NULL;
-		$$.type = STATEMENT_TYPE_EMPTY;
+		statement->line_number = @1.first_line;
+		statement->label = NULL;
+		statement->type = STATEMENT_TYPE_EMPTY;
 	}
 	| TOKEN_IDENTIFIER end_of_line
 	{
-		$$.line_number = @1.first_line;
-		$$.label = $1;
-		$$.type = STATEMENT_TYPE_EMPTY;
+		statement->line_number = @1.first_line;
+		statement->label = $1;
+		statement->type = STATEMENT_TYPE_EMPTY;
 	}
 	| TOKEN_IDENTIFIER ':' end_of_line
 	{
-		$$.line_number = @1.first_line;
-		$$.label = $1;
-		$$.type = STATEMENT_TYPE_EMPTY;
+		statement->line_number = @1.first_line;
+		statement->label = $1;
+		statement->type = STATEMENT_TYPE_EMPTY;
 	}
 	| substatement
 	{
-		$$ = $1;
-		$$.line_number = @1.first_line;
-		$$.label = NULL;
+		*statement = $1;
+		statement->line_number = @1.first_line;
+		statement->label = NULL;
 	}
 	| TOKEN_IDENTIFIER substatement
 	{
-		$$ = $2;
-		$$.line_number = @1.first_line;
-		$$.label = $1;
+		*statement = $2;
+		statement->line_number = @1.first_line;
+		statement->label = $1;
 	}
 	| TOKEN_IDENTIFIER ':' substatement
 	{
-		$$ = $3;
-		$$.line_number = @1.first_line;
-		$$.label = $1;
+		*statement = $3;
+		statement->line_number = @1.first_line;
+		statement->label = $1;
 	}
 	;
 
@@ -634,12 +568,12 @@ substatement
 		$$.type = STATEMENT_TYPE_DIRECTIVE;
 		$$.data.directive = $1;
 	}
-	| TOKEN_REPT value end_of_line statement_list TOKEN_ENDR end_of_line
+/*	| TOKEN_REPT value end_of_line statement_list TOKEN_ENDR end_of_line
 	{
 		$$.type = STATEMENT_TYPE_REPT;
 		$$.data.rept.total_repeats = $2;
 		$$.data.rept.statement_list = $4.head;
-	}
+	}*/
 	;
 
 directive
@@ -658,7 +592,7 @@ value_list
 
 		if (node == NULL)
 		{
-			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for value list node");
+			m68kasm_error(&yylloc, scanner, statement, "Could not allocate memory for value list node");
 			YYABORT;
 		}
 		else
@@ -677,7 +611,7 @@ value_list
 
 		if (node == NULL)
 		{
-			m68kasm_error(&yylloc, scanner, statement_list_head, "Could not allocate memory for value list node");
+			m68kasm_error(&yylloc, scanner, statement, "Could not allocate memory for value list node");
 			YYABORT;
 		}
 		else
@@ -1270,7 +1204,7 @@ operand_list
 
 		if ($$.operands[1].type != 0)
 		{
-			m68kasm_error(&yylloc, scanner, statement_list_head, "Instructions can never have more than two operands");
+			m68kasm_error(&yylloc, scanner, statement, "Instructions can never have more than two operands");
 			YYABORT;
 		}
 		else

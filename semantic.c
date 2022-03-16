@@ -10,6 +10,8 @@
 
 #include "dictionary.h"
 #include "syntactic.h"
+#define YY_NO_UNISTD_H
+#include "lexical.h"
 
 typedef enum SymbolType
 {
@@ -21,7 +23,7 @@ typedef struct FixUp
 {
 	struct FixUp *next;
 
-	const Statement *statement;
+	Statement statement;
 	unsigned long program_counter;
 	long output_position;
 	char *last_global_label;
@@ -79,6 +81,14 @@ __attribute__((format(printf, 2, 3))) static void InternalError(SemanticState *s
 	va_end(args);
 
 	state->success = cc_false;
+}
+
+void m68kasm_error(M68KASM_LTYPE *location, void *scanner, Statement *statement, const char *message)
+{
+	(void)scanner;
+	(void)statement;
+
+	fprintf(stderr, "Lexical/syntax error on line %d: %s\n", location->first_line, message);
 }
 
 static char* ExpandLocalIdentifier(SemanticState *state, const char *identifier)
@@ -3156,7 +3166,7 @@ static void ProcessDirective(SemanticState *state, FILE *file, const Directive *
 		}
 	}
 }
-
+#if 0
 /* A forward declaration because ProcessStatement and ProcessStatementList have a circular dependency. */
 static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement);
 
@@ -3166,77 +3176,13 @@ static void ProcessStatementList(SemanticState *state, FILE *output_file, const 
 
 	for (statement_list_node = statement_list; statement_list_node != NULL; statement_list_node = statement_list_node->next)
 	{
-		const unsigned long starting_program_counter = state->program_counter;
-		const long starting_output_position = ftell(output_file);
-
-		if (statement_list_node->statement.label != NULL)
-		{
-			char *expanded_identifier = NULL;
-			const char *identifier = statement_list_node->statement.label;
-			Dictionary_Entry *dictionary_entry;
-
-			if (statement_list_node->statement.label[0] != '@')
-			{
-				state->last_global_label = statement_list_node->statement.label;
-			}
-			else
-			{
-				expanded_identifier = ExpandLocalIdentifier(state, statement_list_node->statement.label);
-
-				if (expanded_identifier == NULL)
-					InternalError(state, "Could not allocate memory for expanded label\n");
-				else
-					identifier = expanded_identifier;
-			}
-
-			if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
-			{
-				InternalError(state, "Could not allocate memory for symbol\n");
-			}
-			else if (dictionary_entry->type != -1)
-			{
-				SemanticError(state, "Symbol '%s' already defined\n", identifier);
-			}
-			else
-			{
-				dictionary_entry->type = SYMBOL_CONSTANT;
-				dictionary_entry->data.unsigned_integer = state->program_counter;
-			}
-
-			free(expanded_identifier);
-		}
-
-		Dictionary_LookUp(&state->dictionary, "*")->data.unsigned_integer = state->program_counter;
-
-		state->fix_up_needed = cc_false;
-
-		ProcessStatement(state, output_file, &statement_list_node->statement);
-
-		if (state->fix_up_needed)
-		{
-			FixUp *fix_up = malloc(sizeof(FixUp));
-
-			if (fix_up == NULL)
-			{
-				InternalError(state, "Could not allocate memory for fix-up list node\n");
-			}
-			else
-			{
-				fix_up->statement = &statement_list_node->statement;
-				fix_up->program_counter = starting_program_counter;
-				fix_up->output_position = starting_output_position;
-				fix_up->last_global_label = state->last_global_label;
-
-				fix_up->next = state->fix_up_list_head;
-				state->fix_up_list_head = fix_up;
-			}
-		}
 	}
 
 	/* Prevent things like REPT statements being added to the fix-up list. */
 	state->fix_up_needed = cc_false;
 }
-
+#endif
+/*
 static void ProcessRept(SemanticState *state, FILE *output_file, const Rept *rept)
 {
 	unsigned long value;
@@ -3251,7 +3197,7 @@ static void ProcessRept(SemanticState *state, FILE *output_file, const Rept *rep
 	for (i = 0; i < value; ++i)
 		ProcessStatementList(state, output_file, rept->statement_list);
 }
-
+*/
 static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement)
 {
 	state->line_number = statement->line_number;
@@ -3270,7 +3216,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			break;
 
 		case STATEMENT_TYPE_REPT:
-			ProcessRept(state, output_file, &statement->data.rept);
+			/*ProcessRept(state, output_file, &statement->data.rept);*/
 			break;
 
 		case STATEMENT_TYPE_MACRO:
@@ -3278,13 +3224,79 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 	}
 }
 
-cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_list)
+static void ProcessStatementWithFixUp(SemanticState *state, FILE *output_file, const Statement *statement)
 {
-	FixUp *fix_up;
+	const unsigned long starting_program_counter = state->program_counter;
+	const long starting_output_position = ftell(output_file);
+
+	if (statement->label != NULL)
+	{
+		char *expanded_identifier = NULL;
+		const char *identifier = statement->label;
+		Dictionary_Entry *dictionary_entry;
+
+		if (statement->label[0] != '@')
+		{
+			state->last_global_label = statement->label;
+		}
+		else
+		{
+			expanded_identifier = ExpandLocalIdentifier(state, statement->label);
+
+			if (expanded_identifier == NULL)
+				InternalError(state, "Could not allocate memory for expanded label\n");
+			else
+				identifier = expanded_identifier;
+		}
+
+		if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
+		{
+			InternalError(state, "Could not allocate memory for symbol\n");
+		}
+		else if (dictionary_entry->type != -1)
+		{
+			SemanticError(state, "Symbol '%s' already defined\n", identifier);
+		}
+		else
+		{
+			dictionary_entry->type = SYMBOL_CONSTANT;
+			dictionary_entry->data.unsigned_integer = state->program_counter;
+		}
+
+		free(expanded_identifier);
+	}
+
+	Dictionary_LookUp(&state->dictionary, "*")->data.unsigned_integer = state->program_counter;
+
+	state->fix_up_needed = cc_false;
+
+	ProcessStatement(state, output_file, statement);
+
+	if (state->fix_up_needed)
+	{
+		FixUp *fix_up = malloc(sizeof(FixUp));
+
+		if (fix_up == NULL)
+		{
+			InternalError(state, "Could not allocate memory for fix-up list node\n");
+		}
+		else
+		{
+			fix_up->statement = *statement;
+			fix_up->program_counter = starting_program_counter;
+			fix_up->output_position = starting_output_position;
+			fix_up->last_global_label = state->last_global_label;
+
+			fix_up->next = state->fix_up_list_head;
+			state->fix_up_list_head = fix_up;
+		}
+	}
+}
+
+cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
+{
 	SemanticState state;
 	Dictionary_Entry *dictionary_entry;
-
-	/* Perform first pass, and create a list of fix-ups if needed. */
 
 	state.success = cc_true;
 	state.program_counter = 0;
@@ -3293,6 +3305,7 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 	state.fix_up_list_head = NULL;
 
 	Dictionary_Init(&state.dictionary);
+
 	/* Create the dictionary entry for the program counter ahead of time. */
 	if (!Dictionary_LookUpAndCreateIfNotExist(&state.dictionary, "*", &dictionary_entry))
 	{
@@ -3300,30 +3313,63 @@ cc_bool ProcessParseTree(FILE *output_file, const StatementListNode *statement_l
 	}
 	else
 	{
+		yyscan_t flex_state;
+
 		dictionary_entry->type = SYMBOL_VARIABLE;
 
-		ProcessStatementList(&state, output_file, statement_list);
-
-		/* Process the fix-ups, reassembling instructions and reprocessing directives that could not be done in the first pass. */
-
-		state.doing_fix_up = cc_true;
-
-		fix_up = state.fix_up_list_head;
-		while (fix_up != NULL)
+		if (m68kasm_lex_init(&flex_state) != 0)
 		{
-			FixUp *next_fix_up = fix_up->next;
+			InternalError(&state, "m68kasm_lex_init failed\n");
+		}
+		else
+		{
+			char line_buffer[1024];
+			FixUp *fix_up;
 
-			state.program_counter = fix_up->program_counter;
-			fseek(output_file, fix_up->output_position , SEEK_SET);
-			state.last_global_label = fix_up->last_global_label;
+		#if M68KASM_DEBUG
+			m68kasm_set_debug(1, flex_state);
+		#endif
 
-			Dictionary_LookUp(&state.dictionary, "*")->data.unsigned_integer = state.program_counter;
+			/* Perform first pass, and create a list of fix-ups if needed. */
+			while (fgets(line_buffer, sizeof(line_buffer), input_file) != NULL)
+			{
+				Statement statement;
+				YY_BUFFER_STATE buffer;
 
-			ProcessStatement(&state, output_file, fix_up->statement);
+				buffer = m68kasm__scan_string(line_buffer, flex_state);
 
-			free(fix_up);
+				if (m68kasm_parse(flex_state, &statement) != 0)
+					InternalError(&state, "m68kasm_parse failed\n");
+				else
+					ProcessStatementWithFixUp(&state, output_file, &statement);
 
-			fix_up = next_fix_up;
+				m68kasm__delete_buffer(buffer, flex_state);
+			}
+
+			if (m68kasm_lex_destroy(flex_state) != 0)
+				InternalError(&state, "m68kasm_lex_destroy failed\n");
+
+			/* Process the fix-ups, reassembling instructions and reprocessing directives that could not be done in the first pass. */
+			state.doing_fix_up = cc_true;
+
+			fix_up = state.fix_up_list_head;
+
+			while (fix_up != NULL)
+			{
+				FixUp *next_fix_up = fix_up->next;
+
+				state.program_counter = fix_up->program_counter;
+				fseek(output_file, fix_up->output_position , SEEK_SET);
+				state.last_global_label = fix_up->last_global_label;
+
+				Dictionary_LookUp(&state.dictionary, "*")->data.unsigned_integer = state.program_counter;
+
+				ProcessStatement(&state, output_file, &fix_up->statement);
+
+				free(fix_up);
+
+				fix_up = next_fix_up;
+			}
 		}
 	}
 

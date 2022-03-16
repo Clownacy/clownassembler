@@ -1,22 +1,12 @@
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "clowncommon.h"
 
-#include "syntactic.h"
-#define YY_NO_UNISTD_H
-#include "lexical.h"
-#include "semantic.h"
+#include "clownassembler.h"
 
-#define ERROR(message) do { fputs("Error: " message "\n", stderr); exit_code = EXIT_FAILURE; } while (0)
-
-void m68kasm_error(M68KASM_LTYPE *location, void *scanner, StatementListNode **statement_list_head, const char *message)
-{
-	(void)scanner;
-	(void)statement_list_head;
-
-	fprintf(stderr, "Lexical/syntax error on line %d: %s\n", location->first_line, message);
-}
+#define ERROR(message) do { fputs("Error: " message "\n", stderr); exit_code = EXIT_FAILURE;} while (0)
 
 int main(int argc, char **argv)
 {
@@ -44,35 +34,8 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				yyscan_t flex_state;
-
-				if (m68kasm_lex_init(&flex_state) != 0)
-				{
-					ERROR("m68kasm_lex_init failed");
-				}
-				else
-				{
-					StatementListNode *statement_list_head;
-
-					m68kasm_set_in(input_file, flex_state);
-
-					/*m68kasm_lex(); */
-
-				#if M68KASM_DEBUG
-					m68kasm_debug = 1;
-				#endif
-
-					statement_list_head = NULL;
-
-					if (m68kasm_parse(flex_state, &statement_list_head) != 0)
-						exit_code = EXIT_FAILURE;
-
-					if (m68kasm_lex_destroy(flex_state) != 0)
-						ERROR("m68kasm_lex_destroy failed");
-
-					if (!ProcessParseTree(output_file, statement_list_head))
-						exit_code = EXIT_FAILURE;
-				}
+				if (!ClownAssembler_Assemble(input_file, output_file))
+					ERROR("Could not assemble");
 
 				fclose(output_file);
 			}
