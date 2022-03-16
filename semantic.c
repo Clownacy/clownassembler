@@ -115,12 +115,24 @@ void m68kasm_error(void *scanner, Statement *statement, const char *message)
 
 static char* DuplicateString(const char *string)
 {
-	const size_t string_size = strlen(string) + 1;
+	char *duplicated_string;
 
-	char *duplicated_string = malloc(string_size);
+	if (string == NULL)
+	{
+		duplicated_string = malloc(1);
 
-	if (duplicated_string != NULL)
-		memcpy(duplicated_string, string, string_size);
+		if (duplicated_string != NULL)
+			duplicated_string[0] = '\0';
+	}
+	else
+	{
+		const size_t string_size = strlen(string) + 1;
+
+		duplicated_string = malloc(string_size);
+
+		if (duplicated_string != NULL)
+			memcpy(duplicated_string, string, string_size);
+	}
 
 	return duplicated_string;
 }
