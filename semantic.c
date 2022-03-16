@@ -3284,89 +3284,94 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 	parse_result = m68kasm_parse(state->flex_state, &statement);
 	m68kasm__delete_buffer(buffer, state->flex_state);
 
-	if (parse_result != 0)
+	switch (parse_result)
 	{
-		InternalError(state, "m68kasm_parse failed\n");
-	}
-	else
-	{
-		if (statement.label != NULL)
-		{
-			char *expanded_identifier;
-			const char *identifier;
-			Dictionary_Entry *dictionary_entry;
+		case 2:
+			OutOfMemoryError(state);
+			break;
 
-			expanded_identifier = NULL;
-			identifier = statement.label;
+		case 1:
+			break;
 
-			if (statement.label[0] != '@')
+		case 0:
+			if (statement.label != NULL)
 			{
-				free(state->last_global_label);
-				state->last_global_label = DuplicateString(statement.label);
+				char *expanded_identifier;
+				const char *identifier;
+				Dictionary_Entry *dictionary_entry;
 
-				if (state->last_global_label == NULL)
-					OutOfMemoryError(state);
-			}
-			else
-			{
-				expanded_identifier = ExpandLocalIdentifier(state, statement.label);
+				expanded_identifier = NULL;
+				identifier = statement.label;
 
-				if (expanded_identifier == NULL)
-					OutOfMemoryError(state);
+				if (statement.label[0] != '@')
+				{
+					free(state->last_global_label);
+					state->last_global_label = DuplicateString(statement.label);
+
+					if (state->last_global_label == NULL)
+						OutOfMemoryError(state);
+				}
 				else
-					identifier = expanded_identifier;
-			}
+				{
+					expanded_identifier = ExpandLocalIdentifier(state, statement.label);
 
-			if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
-			{
-				OutOfMemoryError(state);
-			}
-			else if (dictionary_entry->type != -1)
-			{
-				SemanticError(state, "Symbol '%s' already defined\n", identifier);
-			}
-			else
-			{
-				dictionary_entry->type = SYMBOL_CONSTANT;
-				dictionary_entry->data.unsigned_integer = state->program_counter;
-			}
+					if (expanded_identifier == NULL)
+						OutOfMemoryError(state);
+					else
+						identifier = expanded_identifier;
+				}
 
-			free(expanded_identifier);
-		}
-
-		Dictionary_LookUp(&state->dictionary, "*")->data.unsigned_integer = state->program_counter;
-
-		state->fix_up_needed = cc_false;
-
-		ProcessStatement(state, output_file, &statement);
-
-		if (state->fix_up_needed)
-		{
-			FixUp *fix_up = malloc(sizeof(FixUp));
-
-			if (fix_up == NULL)
-			{
-				OutOfMemoryError(state);
-			}
-			else
-			{
-				fix_up->statement = statement;
-				fix_up->program_counter = starting_program_counter;
-				fix_up->output_position = starting_output_position;
-				fix_up->last_global_label = DuplicateString(state->last_global_label);
-
-				if (fix_up->last_global_label == NULL)
+				if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
+				{
 					OutOfMemoryError(state);
+				}
+				else if (dictionary_entry->type != -1)
+				{
+					SemanticError(state, "Symbol '%s' already defined\n", identifier);
+				}
+				else
+				{
+					dictionary_entry->type = SYMBOL_CONSTANT;
+					dictionary_entry->data.unsigned_integer = state->program_counter;
+				}
 
-				fix_up->source_line = DuplicateString(state->source_line);
-
-				if (fix_up->source_line == NULL)
-					OutOfMemoryError(state);
-
-				fix_up->next = state->fix_up_list_head;
-				state->fix_up_list_head = fix_up;
+				free(expanded_identifier);
 			}
-		}
+
+			Dictionary_LookUp(&state->dictionary, "*")->data.unsigned_integer = state->program_counter;
+
+			state->fix_up_needed = cc_false;
+
+			ProcessStatement(state, output_file, &statement);
+
+			if (state->fix_up_needed)
+			{
+				FixUp *fix_up = malloc(sizeof(FixUp));
+
+				if (fix_up == NULL)
+				{
+					OutOfMemoryError(state);
+				}
+				else
+				{
+					fix_up->statement = statement;
+					fix_up->program_counter = starting_program_counter;
+					fix_up->output_position = starting_output_position;
+					fix_up->last_global_label = DuplicateString(state->last_global_label);
+
+					if (fix_up->last_global_label == NULL)
+						OutOfMemoryError(state);
+
+					fix_up->source_line = DuplicateString(state->source_line);
+
+					if (fix_up->source_line == NULL)
+						OutOfMemoryError(state);
+
+					fix_up->next = state->fix_up_list_head;
+					state->fix_up_list_head = fix_up;
+				}
+			}
+			break;
 	}
 }
 
