@@ -10,8 +10,6 @@
 
 %define parse.error verbose
 
-%locations
-
 %code requires {
 
 #include "clowncommon.h"
@@ -282,8 +280,6 @@ typedef struct Rept
 
 typedef struct Statement
 {
-	int line_number;
-
 	char *label;
 
 	enum
@@ -321,10 +317,10 @@ typedef struct ListMetadata
 
 #include <stdlib.h>
 
-int m68kasm_lex(M68KASM_STYPE *yylval_param, M68KASM_LTYPE *yylloc_param, void *yyscanner);
-void m68kasm_error(M68KASM_LTYPE *yylloc_param, void *scanner, Statement *statement, const char *message);
+int m68kasm_lex(M68KASM_STYPE *yylval_param, void *yyscanner);
+void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
-static cc_bool DoValue(M68KASM_LTYPE *yylloc, Value *value, ValueType type, Value *left_value, Value *right_value);
+static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *right_value);
 
 }
 
@@ -521,38 +517,32 @@ end_of_line
 statement
 	: end_of_line
 	{
-		statement->line_number = @1.first_line;
 		statement->label = NULL;
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
 	| TOKEN_IDENTIFIER end_of_line
 	{
-		statement->line_number = @1.first_line;
 		statement->label = $1;
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
 	| TOKEN_IDENTIFIER ':' end_of_line
 	{
-		statement->line_number = @1.first_line;
 		statement->label = $1;
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
 	| substatement
 	{
 		*statement = $1;
-		statement->line_number = @1.first_line;
 		statement->label = NULL;
 	}
 	| TOKEN_IDENTIFIER substatement
 	{
 		*statement = $2;
-		statement->line_number = @1.first_line;
 		statement->label = $1;
 	}
 	| TOKEN_IDENTIFIER ':' substatement
 	{
 		*statement = $3;
-		statement->line_number = @1.first_line;
 		statement->label = $1;
 	}
 	;
@@ -592,7 +582,7 @@ value_list
 
 		if (node == NULL)
 		{
-			m68kasm_error(&yylloc, scanner, statement, "Could not allocate memory for value list node");
+			m68kasm_error(scanner, statement, "Could not allocate memory for value list node");
 			YYABORT;
 		}
 		else
@@ -611,7 +601,7 @@ value_list
 
 		if (node == NULL)
 		{
-			m68kasm_error(&yylloc, scanner, statement, "Could not allocate memory for value list node");
+			m68kasm_error(scanner, statement, "Could not allocate memory for value list node");
 			YYABORT;
 		}
 		else
@@ -1204,7 +1194,7 @@ operand_list
 
 		if ($$.operands[1].type != 0)
 		{
-			m68kasm_error(&yylloc, scanner, statement, "Instructions can never have more than two operands");
+			m68kasm_error(scanner, statement, "Instructions can never have more than two operands");
 			YYABORT;
 		}
 		else
@@ -1453,7 +1443,7 @@ value
 	}
 	| value1 TOKEN_LOGICAL_OR value
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_LOGICAL_OR, &$1, &$3))
+		if (!DoValue(&$$, VALUE_LOGICAL_OR, &$1, &$3))
 			YYABORT;
 	}
 	;
@@ -1465,7 +1455,7 @@ value1
 	}
 	| value2 TOKEN_LOGICAL_AND value1
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_LOGICAL_AND, &$1, &$3))
+		if (!DoValue(&$$, VALUE_LOGICAL_AND, &$1, &$3))
 			YYABORT;
 	}
 	;
@@ -1477,7 +1467,7 @@ value2
 	}
 	| value3 '|' value2
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_ARITHMETIC_OR, &$1, &$3))
+		if (!DoValue(&$$, VALUE_ARITHMETIC_OR, &$1, &$3))
 			YYABORT;
 	}
 	;
@@ -1489,7 +1479,7 @@ value3
 	}
 	| value4 '^' value3
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_ARITHMETIC_XOR, &$1, &$3))
+		if (!DoValue(&$$, VALUE_ARITHMETIC_XOR, &$1, &$3))
 			YYABORT;
 	}
 	;
@@ -1501,7 +1491,7 @@ value4
 	}
 	| value5 '&' value4
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_ARITHMETIC_AND, &$1, &$3))
+		if (!DoValue(&$$, VALUE_ARITHMETIC_AND, &$1, &$3))
 			YYABORT;
 	}
 	;
@@ -1513,12 +1503,12 @@ value5
 	}
 	| value6 TOKEN_EQUALITY value5
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_EQUALITY, &$1, &$3))
+		if (!DoValue(&$$, VALUE_EQUALITY, &$1, &$3))
 			YYABORT;
 	}
 	| value6 TOKEN_INEQUALITY value5
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_INEQUALITY, &$1, &$3))
+		if (!DoValue(&$$, VALUE_INEQUALITY, &$1, &$3))
 			YYABORT;
 	}
 	;
@@ -1530,22 +1520,22 @@ value6
 	}
 	| value7 '<' value6
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_LESS_THAN, &$1, &$3))
+		if (!DoValue(&$$, VALUE_LESS_THAN, &$1, &$3))
 			YYABORT;
 	}
 	| value7 TOKEN_LESS_OR_EQUAL value6
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_LESS_OR_EQUAL, &$1, &$3))
+		if (!DoValue(&$$, VALUE_LESS_OR_EQUAL, &$1, &$3))
 			YYABORT;
 	}
 	| value7 '>' value6
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_MORE_THAN, &$1, &$3))
+		if (!DoValue(&$$, VALUE_MORE_THAN, &$1, &$3))
 			YYABORT;
 	}
 	| value7 TOKEN_MORE_OR_EQUAL value6
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_MORE_OR_EQUAL, &$1, &$3))
+		if (!DoValue(&$$, VALUE_MORE_OR_EQUAL, &$1, &$3))
 			YYABORT;
 	}
 	;
@@ -1557,12 +1547,12 @@ value7
 	}
 	| value8 TOKEN_LEFT_SHIFT value7
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_LEFT_SHIFT, &$1, &$3))
+		if (!DoValue(&$$, VALUE_LEFT_SHIFT, &$1, &$3))
 			YYABORT;
 	}
 	| value8 TOKEN_RIGHT_SHIFT value7
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_RIGHT_SHIFT, &$1, &$3))
+		if (!DoValue(&$$, VALUE_RIGHT_SHIFT, &$1, &$3))
 			YYABORT;
 	}
 	;
@@ -1574,12 +1564,12 @@ value8
 	}
 	| value9 '+' value8
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_ADD, &$1, &$3))
+		if (!DoValue(&$$, VALUE_ADD, &$1, &$3))
 			YYABORT;
 	}
 	| value9 '-' value8
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_SUBTRACT, &$1, &$3))
+		if (!DoValue(&$$, VALUE_SUBTRACT, &$1, &$3))
 			YYABORT;
 	}
 	;
@@ -1591,17 +1581,17 @@ value9
 	}
 	| value10 '*' value9
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_MULTIPLY, &$1, &$3))
+		if (!DoValue(&$$, VALUE_MULTIPLY, &$1, &$3))
 			YYABORT;
 	}
 	| value10 '/' value9
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_DIVIDE, &$1, &$3))
+		if (!DoValue(&$$, VALUE_DIVIDE, &$1, &$3))
 			YYABORT;
 	}
 	| value10 '%' value9
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_MODULO, &$1, &$3))
+		if (!DoValue(&$$, VALUE_MODULO, &$1, &$3))
 			YYABORT;
 	}
 	;
@@ -1613,17 +1603,17 @@ value10
 	}
 	| '-' value10
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_NEGATE, &$2, NULL))
+		if (!DoValue(&$$, VALUE_NEGATE, &$2, NULL))
 			YYABORT;
 	}
 	| '~' value10
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_BITWISE_NOT, &$2, NULL))
+		if (!DoValue(&$$, VALUE_BITWISE_NOT, &$2, NULL))
 			YYABORT;
 	}
 	| '!' value10
 	{
-		if (!DoValue(&yylloc, &$$, VALUE_LOGICAL_NOT, &$2, NULL))
+		if (!DoValue(&$$, VALUE_LOGICAL_NOT, &$2, NULL))
 			YYABORT;
 	}
 	;
@@ -1653,7 +1643,7 @@ value11
 
 %%
 
-static cc_bool DoValue(M68KASM_LTYPE *yylloc, Value *value, ValueType type, Value *left_value, Value *right_value)
+static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *right_value)
 {
 	cc_bool success = cc_true;
 
@@ -1663,7 +1653,7 @@ static cc_bool DoValue(M68KASM_LTYPE *yylloc, Value *value, ValueType type, Valu
 
 	if (value->data.values == NULL)
 	{
-		m68kasm_error(yylloc, NULL, NULL, "Could not allocate memory for Value");
+		m68kasm_error(NULL, NULL, "Could not allocate memory for Value");
 		success = cc_false;
 	}
 	else

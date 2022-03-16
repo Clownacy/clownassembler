@@ -38,7 +38,6 @@ typedef struct SemanticState
 	cc_bool doing_fix_up;
 	Dictionary_State dictionary;
 	char *last_global_label;
-	int line_number;
 } SemanticState;
 
 /* Prevent errors when __attribute__ is not supported. */
@@ -50,7 +49,9 @@ __attribute__((format(printf, 2, 3))) static void SemanticWarning(SemanticState 
 {
 	va_list args;
 
-	fprintf(stderr, "Semantic warning on line %d: ", state->line_number);
+	(void)state;
+
+	fputs("Semantic warning: ", stderr);
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
@@ -61,7 +62,7 @@ __attribute__((format(printf, 2, 3))) static void SemanticError(SemanticState *s
 {
 	va_list args;
 
-	fprintf(stderr, "Semantic error on line %d: ", state->line_number);
+	fprintf(stderr, "Semantic error: ");
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
@@ -74,7 +75,7 @@ __attribute__((format(printf, 2, 3))) static void InternalError(SemanticState *s
 {
 	va_list args;
 
-	fprintf(stderr, "Internal error on line %d: ", state->line_number);
+	fprintf(stderr, "Internal error: ");
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
@@ -83,12 +84,12 @@ __attribute__((format(printf, 2, 3))) static void InternalError(SemanticState *s
 	state->success = cc_false;
 }
 
-void m68kasm_error(M68KASM_LTYPE *location, void *scanner, Statement *statement, const char *message)
+void m68kasm_error(void *scanner, Statement *statement, const char *message)
 {
 	(void)scanner;
 	(void)statement;
 
-	fprintf(stderr, "Lexical/syntax error on line %d: %s\n", location->first_line, message);
+	fprintf(stderr, "Lexical/syntax error: %s\n", message);
 }
 
 static char* ExpandLocalIdentifier(SemanticState *state, const char *identifier)
@@ -3200,8 +3201,6 @@ static void ProcessRept(SemanticState *state, FILE *output_file, const Rept *rep
 */
 static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement)
 {
-	state->line_number = statement->line_number;
-
 	switch (statement->type)
 	{
 		case STATEMENT_TYPE_EMPTY:
