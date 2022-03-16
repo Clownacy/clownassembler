@@ -577,8 +577,7 @@ value_list
 
 		if (node == NULL)
 		{
-			m68kasm_error(scanner, statement, "Could not allocate memory for value list node");
-			YYABORT;
+			YYNOMEM;
 		}
 		else
 		{
@@ -596,8 +595,7 @@ value_list
 
 		if (node == NULL)
 		{
-			m68kasm_error(scanner, statement, "Could not allocate memory for value list node");
-			YYABORT;
+			YYNOMEM;
 		}
 		else
 		{
@@ -1439,7 +1437,7 @@ value
 	| value1 TOKEN_LOGICAL_OR value
 	{
 		if (!DoValue(&$$, VALUE_LOGICAL_OR, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	;
 
@@ -1451,7 +1449,7 @@ value1
 	| value2 TOKEN_LOGICAL_AND value1
 	{
 		if (!DoValue(&$$, VALUE_LOGICAL_AND, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	;
 
@@ -1463,7 +1461,7 @@ value2
 	| value3 '|' value2
 	{
 		if (!DoValue(&$$, VALUE_ARITHMETIC_OR, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	;
 
@@ -1475,7 +1473,7 @@ value3
 	| value4 '^' value3
 	{
 		if (!DoValue(&$$, VALUE_ARITHMETIC_XOR, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	;
 
@@ -1487,7 +1485,7 @@ value4
 	| value5 '&' value4
 	{
 		if (!DoValue(&$$, VALUE_ARITHMETIC_AND, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	;
 
@@ -1499,12 +1497,12 @@ value5
 	| value6 TOKEN_EQUALITY value5
 	{
 		if (!DoValue(&$$, VALUE_EQUALITY, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	| value6 TOKEN_INEQUALITY value5
 	{
 		if (!DoValue(&$$, VALUE_INEQUALITY, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	;
 
@@ -1516,22 +1514,22 @@ value6
 	| value7 '<' value6
 	{
 		if (!DoValue(&$$, VALUE_LESS_THAN, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	| value7 TOKEN_LESS_OR_EQUAL value6
 	{
 		if (!DoValue(&$$, VALUE_LESS_OR_EQUAL, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	| value7 '>' value6
 	{
 		if (!DoValue(&$$, VALUE_MORE_THAN, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	| value7 TOKEN_MORE_OR_EQUAL value6
 	{
 		if (!DoValue(&$$, VALUE_MORE_OR_EQUAL, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	;
 
@@ -1543,12 +1541,12 @@ value7
 	| value8 TOKEN_LEFT_SHIFT value7
 	{
 		if (!DoValue(&$$, VALUE_LEFT_SHIFT, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	| value8 TOKEN_RIGHT_SHIFT value7
 	{
 		if (!DoValue(&$$, VALUE_RIGHT_SHIFT, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	;
 
@@ -1560,12 +1558,12 @@ value8
 	| value9 '+' value8
 	{
 		if (!DoValue(&$$, VALUE_ADD, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	| value9 '-' value8
 	{
 		if (!DoValue(&$$, VALUE_SUBTRACT, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	;
 
@@ -1577,17 +1575,17 @@ value9
 	| value10 '*' value9
 	{
 		if (!DoValue(&$$, VALUE_MULTIPLY, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	| value10 '/' value9
 	{
 		if (!DoValue(&$$, VALUE_DIVIDE, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	| value10 '%' value9
 	{
 		if (!DoValue(&$$, VALUE_MODULO, &$1, &$3))
-			YYABORT;
+			YYNOMEM;
 	}
 	;
 
@@ -1599,17 +1597,17 @@ value10
 	| '-' value10
 	{
 		if (!DoValue(&$$, VALUE_NEGATE, &$2, NULL))
-			YYABORT;
+			YYNOMEM;
 	}
 	| '~' value10
 	{
 		if (!DoValue(&$$, VALUE_BITWISE_NOT, &$2, NULL))
-			YYABORT;
+			YYNOMEM;
 	}
 	| '!' value10
 	{
 		if (!DoValue(&$$, VALUE_LOGICAL_NOT, &$2, NULL))
-			YYABORT;
+			YYNOMEM;
 	}
 	;
 
@@ -1648,7 +1646,6 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 
 	if (value->data.values == NULL)
 	{
-		m68kasm_error(NULL, NULL, "Could not allocate memory for Value");
 		success = cc_false;
 	}
 	else
