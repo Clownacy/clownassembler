@@ -3398,8 +3398,26 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
 			/* Perform first pass, and create a list of fix-ups if needed. */
 			while (fgets(line_buffer, sizeof(line_buffer), input_file) != NULL)
 			{
+				const size_t newline_index = strcspn(line_buffer, "\r\n");
+
+				/* If there is no newline, then we've either reached the end of the file,
+				   or the source line was too long to fit in the buffer. */
+				if (line_buffer[newline_index] == '\0')
+				{
+					int character = fgetc(input_file);
+
+					if (character != EOF)
+					{
+						InternalError(&state, "The source line was too long to fit in the internal buffer\n");
+
+						/* Fast-forward through until the end of the line. */
+						while (character != '\r' && character != '\n' && character != EOF)
+							character = fgetc(input_file);
+					}
+				}
+
 				/* Remove newlines from the string, so they don't appear in the error message. */
-				line_buffer[strcspn(line_buffer, "\r\n")] = '\0';
+				line_buffer[newline_index] = '\0';
 
 				AssembleLine(&state, output_file, line_buffer);
 
