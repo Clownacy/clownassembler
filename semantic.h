@@ -7,6 +7,6 @@
 
 #include "syntactic.h"
 
-cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file);
+cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char *input_file_path);
 
 #endif /* SEMANTIC_H */

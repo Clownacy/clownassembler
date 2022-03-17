@@ -173,6 +173,7 @@ ror             TOKEN(OPCODE_ROR)
 dc              TOKEN(DIRECTIVE_DC)
 rept            TOKEN(DIRECTIVE_REPT)
 endr            TOKEN(DIRECTIVE_ENDR)
+include         TOKEN(DIRECTIVE_INCLUDE)
 "."             return yytext[0];
 ","             return yytext[0];
 "("             return yytext[0];
@@ -242,7 +243,22 @@ pc              TOKEN(PROGRAM_COUNTER)
 }
 
 {identifier} {
-	const size_t length = strlen(yytext) + 1;
+	const size_t length = strlen(yytext);
+	yylval->generic.string = malloc(length + 1);
+	if (yylval->generic.string == NULL)
+	{
+		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string");
+		return M68KASM_error;
+	}
+	else
+	{
+		memcpy(yylval->generic.string, yytext, length + 1);
+		return TOKEN_IDENTIFIER;
+	}
+}
+
+\"[^\"]+\" {
+	const size_t length = strlen(yytext) - 2;
 	yylval->generic.string = malloc(length);
 	if (yylval->generic.string == NULL)
 	{
@@ -251,8 +267,9 @@ pc              TOKEN(PROGRAM_COUNTER)
 	}
 	else
 	{
-		memcpy(yylval->generic.string, yytext, length);
-		return TOKEN_IDENTIFIER;
+		memcpy(yylval->generic.string, yytext + 1, length);
+		yylval->generic.string[length] = '\0';
+		return TOKEN_STRING;
 	}
 }
 

@@ -20,6 +20,14 @@ typedef enum SymbolType
 	SYMBOL_MACRO
 } SymbolType;
 
+typedef struct Location
+{
+	struct Location *previous;
+
+	const char *file_path;
+	unsigned long line_number;
+} Location;
+
 typedef struct FixUp
 {
 	struct FixUp *next;
@@ -29,6 +37,7 @@ typedef struct FixUp
 	long output_position;
 	char *last_global_label;
 	char *source_line;
+	Location location;
 } FixUp;
 
 typedef struct SemanticState
@@ -40,9 +49,9 @@ typedef struct SemanticState
 	cc_bool doing_fix_up;
 	Dictionary_State dictionary;
 	char *last_global_label;
-	unsigned long line_number;
+	Location location;
 	yyscan_t flex_state;
-	const char *source_line;
+	char line_buffer[1024];
 } SemanticState;
 
 /* Prevent errors when __attribute__ is not supported. */
@@ -50,34 +59,42 @@ typedef struct SemanticState
 #define  __attribute__(x)
 #endif
 
+static void ErrorMessageCommon(SemanticState *state, const char *message_type)
+{
+	const Location *location;
+
+	fputs(message_type, stderr);
+
+	for (location = &state->location; location != NULL; location = location->previous)
+		fprintf(stderr, "On line %lu of '%s'...\n", location->line_number, location->file_path);
+}
+
 __attribute__((format(printf, 2, 3))) static void SemanticWarning(SemanticState *state, const char *fmt, ...)
 {
 	va_list args;
 
-	(void)state;
-
-	fprintf(stderr, "Semantic warning on line %lu: ", state->line_number);
+	ErrorMessageCommon(state, "Semantic warning!\n");
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
 	va_end(args);
 
-	fputs(state->source_line, stderr);
-	fputc('\n', stderr);
+	fputs(state->line_buffer, stderr);
+	fputs("\n\n", stderr);
 }
 
 __attribute__((format(printf, 2, 3))) static void SemanticError(SemanticState *state, const char *fmt, ...)
 {
 	va_list args;
 
-	fprintf(stderr, "Semantic error on line %lu: ", state->line_number);
+	ErrorMessageCommon(state, "Semantic error!\n");
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
 	va_end(args);
 
-	fputs(state->source_line, stderr);
-	fputc('\n', stderr);
+	fputs(state->line_buffer, stderr);
+	fputs("\n\n", stderr);
 
 	state->success = cc_false;
 }
@@ -86,21 +103,24 @@ __attribute__((format(printf, 2, 3))) static void InternalError(SemanticState *s
 {
 	va_list args;
 
-	fprintf(stderr, "Internal error on line %lu: ", state->line_number);
+	ErrorMessageCommon(state, "Internal error!\n");
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
 	va_end(args);
 
-	fputs(state->source_line, stderr);
-	fputc('\n', stderr);
+	fputs(state->line_buffer, stderr);
+	fputs("\n\n", stderr);
 
 	state->success = cc_false;
 }
 
 static void OutOfMemoryError(SemanticState *state)
 {
-	fprintf(stderr, "Internal error on line %lu: Could not allocate memory\n", state->line_number);
+	ErrorMessageCommon(state, "Out-of-memory error!\n");
+
+	fputs(state->line_buffer, stderr);
+	fputs("\n\n", stderr);
 
 	state->success = cc_false;
 }
@@ -111,7 +131,12 @@ void m68kasm_error(void *scanner, Statement *statement, const char *message)
 
 	(void)statement;
 
-	fprintf(stderr, "Lexical/syntax error on line %lu: %s\n%s\n", state->line_number, message, state->source_line);
+	ErrorMessageCommon(state, "Lexical/syntax error!\n");
+
+	fputs(message, stderr);
+	fputc('\n', stderr);
+	fputs(state->line_buffer, stderr);
+	fputs("\n\n", stderr);
 }
 
 static char* DuplicateString(const char *string)
@@ -3192,6 +3217,31 @@ static void ProcessDc(SemanticState *state, FILE *output_file, const Dc *dc)
 			fputc((resolved_value >> (bytes_to_write * 8)) & 0xFF, output_file);
 	}
 }
+
+static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_file);
+
+static void ProcessInclude(SemanticState *state, FILE *output_file, const Include *include)
+{
+	FILE *input_file = fopen(include->path, "r");
+
+	if (input_file == NULL)
+	{
+		SemanticError(state, "File '%s' could not be opened\n", include->path);
+	}
+	else
+	{
+		/* Backup file path and line number. */
+		Location location = state->location;
+		state->location.previous = &location;
+		state->location.file_path = include->path;
+		state->location.line_number = 1;
+
+		AssembleFile(state, output_file, input_file);
+
+		state->location = location;
+	}
+}
+
 /*
 static void ProcessRept(SemanticState *state, FILE *output_file, const Rept *rept)
 {
@@ -3221,6 +3271,10 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 
 		case STATEMENT_TYPE_DC:
 			ProcessDc(state, output_file, &statement->data.dc);
+			break;
+
+		case STATEMENT_TYPE_INCLUDE:
+			ProcessInclude(state, output_file, &statement->data.include);
 			break;
 
 		case STATEMENT_TYPE_REPT:
@@ -3291,8 +3345,6 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 		/* Back these up, before they get a chance to be modified by ProcessStatement. */
 		const unsigned long starting_program_counter = state->program_counter;
 		const long starting_output_position = ftell(output_file);
-
-		state->source_line = source_line;
 
 		/* Parse the source line with Flex and Bison (Lex and Yacc). */
 		buffer = m68kasm__scan_string(source_line_sans_label, state->flex_state);
@@ -3376,6 +3428,9 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 					}
 					else
 					{
+						Location *source_location = &state->location;
+						Location *destination_location = &fix_up->location;
+
 						/* Backup the statement. */
 						fix_up->statement = statement;
 
@@ -3387,15 +3442,36 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 						if (fix_up->last_global_label == NULL)
 							OutOfMemoryError(state);
 
-						fix_up->source_line = DuplicateString(state->source_line);
+						fix_up->source_line = DuplicateString(state->line_buffer);
 
 						if (fix_up->source_line == NULL)
 							OutOfMemoryError(state);
+
+						/* Clone the location. */
+						*destination_location = *source_location;
+
+						for (source_location = source_location->previous; source_location != NULL; source_location = source_location->previous)
+						{
+							destination_location->previous = malloc(sizeof(Location));
+
+							if (destination_location->previous == NULL)
+							{
+								OutOfMemoryError(state);
+								break;
+							}
+							else
+							{
+								destination_location = destination_location->previous;
+								*destination_location = *source_location;
+							}
+						}
 
 						/* Add the new fix-up to the list. */
 						fix_up->next = state->fix_up_list_head;
 						state->fix_up_list_head = fix_up;
 					}
+
+					state->fix_up_needed = cc_false;
 				}
 
 				break;
@@ -3405,7 +3481,38 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 	free(label);
 }
 
-cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
+static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_file)
+{
+	while (fgets(state->line_buffer, sizeof(state->line_buffer), input_file) != NULL)
+	{
+		const size_t newline_index = strcspn(state->line_buffer, "\r\n");
+
+		/* If there is no newline, then we've either reached the end of the file,
+		   or the source line was too long to fit in the buffer. */
+		if (state->line_buffer[newline_index] == '\0')
+		{
+			int character = fgetc(input_file);
+
+			if (character != EOF)
+			{
+				InternalError(state, "The source line was too long to fit in the internal buffer\n");
+
+				/* Fast-forward through until the end of the line. */
+				while (character != '\r' && character != '\n' && character != EOF)
+					character = fgetc(input_file);
+			}
+		}
+
+		/* Remove newlines from the string, so they don't appear in the error message. */
+		state->line_buffer[newline_index] = '\0';
+
+		AssembleLine(state, output_file, state->line_buffer);
+
+		++state->location.line_number;
+	}
+}
+
+cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char *input_file_path)
 {
 	SemanticState state;
 	Dictionary_Entry *dictionary_entry;
@@ -3415,8 +3522,10 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
 	state.last_global_label = NULL;
 	state.doing_fix_up = cc_false;
 	state.fix_up_list_head = NULL;
-	state.line_number = 1;
-	state.source_line = "[No source line]";
+	state.location.previous = NULL;
+	state.location.file_path = input_file_path != NULL ? input_file_path : "[No path given]";
+	state.location.line_number = 1;
+	strncpy(state.line_buffer, "[No source line]", sizeof(state.line_buffer));
 
 	Dictionary_Init(&state.dictionary);
 
@@ -3435,7 +3544,6 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
 		}
 		else
 		{
-			char line_buffer[1024];
 			FixUp *fix_up;
 
 		#if M68KASM_DEBUG
@@ -3443,33 +3551,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
 		#endif
 
 			/* Perform first pass, and create a list of fix-ups if needed. */
-			while (fgets(line_buffer, sizeof(line_buffer), input_file) != NULL)
-			{
-				const size_t newline_index = strcspn(line_buffer, "\r\n");
-
-				/* If there is no newline, then we've either reached the end of the file,
-				   or the source line was too long to fit in the buffer. */
-				if (line_buffer[newline_index] == '\0')
-				{
-					int character = fgetc(input_file);
-
-					if (character != EOF)
-					{
-						InternalError(&state, "The source line was too long to fit in the internal buffer\n");
-
-						/* Fast-forward through until the end of the line. */
-						while (character != '\r' && character != '\n' && character != EOF)
-							character = fgetc(input_file);
-					}
-				}
-
-				/* Remove newlines from the string, so they don't appear in the error message. */
-				line_buffer[newline_index] = '\0';
-
-				AssembleLine(&state, output_file, line_buffer);
-
-				++state.line_number;
-			}
+			AssembleFile(&state, output_file, input_file);
 
 			if (m68kasm_lex_destroy(state.flex_state) != 0)
 				InternalError(&state, "m68kasm_lex_destroy failed\n");
@@ -3481,13 +3563,15 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
 
 			while (fix_up != NULL)
 			{
+				Location *location;
 				FixUp *next_fix_up = fix_up->next;
 
 				/* Reset some state to how it was at the time the statement was first processed. */
 				state.program_counter = fix_up->program_counter;
 				fseek(output_file, fix_up->output_position , SEEK_SET);
 				state.last_global_label = fix_up->last_global_label;
-				state.source_line = fix_up->source_line != NULL ? fix_up->source_line : "[No source line]";
+				strncpy(state.line_buffer, fix_up->source_line != NULL ? fix_up->source_line : "[No source line]", sizeof(state.line_buffer));
+				state.location = fix_up->location;
 
 				Dictionary_LookUp(&state.dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state.program_counter;
 
@@ -3497,6 +3581,15 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)
 				/* We're done with this fix-up - now delete it. */
 				free(fix_up->last_global_label);
 				free(fix_up->source_line);
+
+				location = fix_up->location.previous;
+				while (location != NULL)
+				{
+					Location *previous_location = location->previous;
+					free(location);
+					location = previous_location;
+				}
+
 				free(fix_up);
 
 				fix_up = next_fix_up;

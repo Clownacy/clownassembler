@@ -258,6 +258,12 @@ typedef struct Dc
 	Size size;
 	ValueListNode *values;
 } Dc;
+
+typedef struct Include
+{
+	char *path;
+} Include;
+
 /*
 typedef struct Rept
 {
@@ -272,6 +278,7 @@ typedef struct Statement
 		STATEMENT_TYPE_EMPTY,
 		STATEMENT_TYPE_INSTRUCTION,
 		STATEMENT_TYPE_DC,
+		STATEMENT_TYPE_INCLUDE,
 		STATEMENT_TYPE_REPT,
 		STATEMENT_TYPE_MACRO
 	} type;
@@ -279,6 +286,7 @@ typedef struct Statement
 	{
 		Instruction instruction;
 		Dc dc;
+		Include include;
 		/*Rept rept;*/
 	} data;
 } Statement;
@@ -437,6 +445,7 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 %token TOKEN_DIRECTIVE_DC
 %token TOKEN_DIRECTIVE_REPT
 %token TOKEN_DIRECTIVE_ENDR
+%token TOKEN_DIRECTIVE_INCLUDE
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -445,6 +454,7 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 %token<generic.integer> TOKEN_ADDRESS_REGISTER
 %token<generic.integer> TOKEN_NUMBER
 %token<generic.string> TOKEN_IDENTIFIER
+%token<generic.string> TOKEN_STRING
 %token TOKEN_STATUS_REGISTER
 %token TOKEN_CONDITION_CODE_REGISTER
 %token TOKEN_USER_STACK_POINTER_REGISTER
@@ -500,6 +510,11 @@ statement
 		statement->type = STATEMENT_TYPE_DC;
 		statement->data.dc.size = $3;
 		statement->data.dc.values = $4.head;
+	}
+	| TOKEN_DIRECTIVE_INCLUDE TOKEN_STRING
+	{
+		statement->type = STATEMENT_TYPE_INCLUDE;
+		statement->data.include.path = $2;
 	}
 /*	| TOKEN_DIRECTIVE_REPT value statement_list TOKEN_DIRECTIVE_ENDR
 	{
