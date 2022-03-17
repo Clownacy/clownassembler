@@ -182,7 +182,6 @@ endr            TOKEN(DIRECTIVE_ENDR)
 "w"             TOKEN(SIZE_WORD)
 "l"             TOKEN(SIZE_LONGWORD)
 "$"             return yytext[0];
-":"             return yytext[0];
 "+"             return yytext[0];
 "-"             return yytext[0];
 "*"             return yytext[0];

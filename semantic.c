@@ -16,7 +16,8 @@
 typedef enum SymbolType
 {
 	SYMBOL_CONSTANT,
-	SYMBOL_VARIABLE
+	SYMBOL_VARIABLE,
+	SYMBOL_MACRO
 } SymbolType;
 
 typedef struct FixUp
@@ -3233,122 +3234,175 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 
 static void AssembleLine(SemanticState *state, FILE *output_file, const char *source_line)
 {
-	Statement statement;
-	YY_BUFFER_STATE buffer;
-	int parse_result;
+	size_t label_length;
+	const char *source_line_sans_label;
+	char *label;
+	const Dictionary_Entry *entry;
 
-	/* Back these up, before they get a chance to be modified by ProcessStatement. */
-	const unsigned long starting_program_counter = state->program_counter;
-	const long starting_output_position = ftell(output_file);
+	label_length = strcspn(source_line, " \t:;");
 
-	state->source_line = source_line;
-
-	/* Parse the source line with Flex and Bison (Lex and Yacc). */
-	buffer = m68kasm__scan_string(source_line, state->flex_state);
-	parse_result = m68kasm_parse(state->flex_state, &statement);
-	m68kasm__delete_buffer(buffer, state->flex_state);
-
-	switch (parse_result)
+	if (label_length == 0)
 	{
-		case 2: /* Out of memory. */
-			OutOfMemoryError(state);
-			break;
-
-		case 1: /* Parsing error. */
-			/* An error message will have already been printed, so we don't need to do one here. */
-			break;
-
-		case 0: /* No error. */
-			/* Add label to symbol table. */
-			if (statement.label != NULL)
-			{
-				char *expanded_identifier;
-				const char *identifier;
-				Dictionary_Entry *dictionary_entry;
-
-				expanded_identifier = NULL;
-				identifier = statement.label;
-
-				if (statement.label[0] != '@')
-				{
-					/* This is a global label - cache it for later. */
-					free(state->last_global_label);
-					state->last_global_label = DuplicateString(statement.label);
-
-					if (state->last_global_label == NULL)
-						OutOfMemoryError(state);
-				}
-				else
-				{
-					/* This is a local label - prefix it with the previous global label. */
-					expanded_identifier = ExpandLocalIdentifier(state, statement.label);
-
-					if (expanded_identifier == NULL)
-						OutOfMemoryError(state);
-					else
-						identifier = expanded_identifier;
-				}
-
-				/* Now add it to the symbol table. */
-				if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
-				{
-					OutOfMemoryError(state);
-				}
-				else if (dictionary_entry->type != -1)
-				{
-					SemanticError(state, "Symbol '%s' already defined\n", identifier);
-				}
-				else
-				{
-					dictionary_entry->type = SYMBOL_CONSTANT;
-					dictionary_entry->data.unsigned_integer = state->program_counter;
-				}
-
-				free(expanded_identifier);
-			}
-
-			Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state->program_counter;
-
-			state->fix_up_needed = cc_false;
-
-			ProcessStatement(state, output_file, &statement);
-
-			/* If the statement cannot currently be processed because of undefined symbols,
-			   add it to the fix-up list so we can try again later. */
-			if (state->fix_up_needed)
-			{
-				FixUp *fix_up = malloc(sizeof(FixUp));
-
-				if (fix_up == NULL)
-				{
-					OutOfMemoryError(state);
-				}
-				else
-				{
-					/* Backup the statement. */
-					fix_up->statement = statement;
-
-					/* Backup some state. */
-					fix_up->program_counter = starting_program_counter;
-					fix_up->output_position = starting_output_position;
-					fix_up->last_global_label = DuplicateString(state->last_global_label);
-
-					if (fix_up->last_global_label == NULL)
-						OutOfMemoryError(state);
-
-					fix_up->source_line = DuplicateString(state->source_line);
-
-					if (fix_up->source_line == NULL)
-						OutOfMemoryError(state);
-
-					/* Add the new fix-up to the list. */
-					fix_up->next = state->fix_up_list_head;
-					state->fix_up_list_head = fix_up;
-				}
-			}
-
-			break;
+		/* This line does not have a label. */
+		label = NULL;
 	}
+	else
+	{
+		/* This line has a label. */
+		label = malloc(label_length + 1);
+
+		if (label == NULL)
+		{
+			OutOfMemoryError(state);
+		}
+		else
+		{
+			memcpy(label, source_line, label_length);
+			label[label_length] = '\0';
+		}
+	}
+
+	source_line_sans_label = &source_line[label_length];
+	source_line_sans_label += strspn(source_line_sans_label, " \t:");
+
+	/* TODO - case-insensitivity */
+
+	entry = Dictionary_LookUp(&state->dictionary, source_line_sans_label);
+
+	if (entry != NULL && entry->type == SYMBOL_MACRO)
+	{
+		/* Macro invocation. */
+	}
+	else if (strcmp(source_line_sans_label, "macro") == 0)
+	{
+		/* Macro declaration begin. */
+	}
+	else if (strcmp(source_line_sans_label, "endm") == 0)
+	{
+		/* Macro declaration end. */
+	}
+	else
+	{
+		/* Normal assembly line. */
+		Statement statement;
+		YY_BUFFER_STATE buffer;
+		int parse_result;
+
+		/* Back these up, before they get a chance to be modified by ProcessStatement. */
+		const unsigned long starting_program_counter = state->program_counter;
+		const long starting_output_position = ftell(output_file);
+
+		state->source_line = source_line;
+
+		/* Parse the source line with Flex and Bison (Lex and Yacc). */
+		buffer = m68kasm__scan_string(source_line_sans_label, state->flex_state);
+		parse_result = m68kasm_parse(state->flex_state, &statement);
+		m68kasm__delete_buffer(buffer, state->flex_state);
+
+		switch (parse_result)
+		{
+			case 2: /* Out of memory. */
+				OutOfMemoryError(state);
+				break;
+
+			case 1: /* Parsing error. */
+				/* An error message will have already been printed, so we don't need to do one here. */
+				break;
+
+			case 0: /* No error. */
+				/* Add label to symbol table. */
+				if (label != NULL)
+				{
+					char *expanded_identifier;
+					const char *identifier;
+					Dictionary_Entry *dictionary_entry;
+
+					expanded_identifier = NULL;
+					identifier = label;
+
+					if (label[0] != '@')
+					{
+						/* This is a global label - cache it for later. */
+						free(state->last_global_label);
+						state->last_global_label = DuplicateString(label);
+
+						if (state->last_global_label == NULL)
+							OutOfMemoryError(state);
+					}
+					else
+					{
+						/* This is a local label - prefix it with the previous global label. */
+						expanded_identifier = ExpandLocalIdentifier(state, label);
+
+						if (expanded_identifier == NULL)
+							OutOfMemoryError(state);
+						else
+							identifier = expanded_identifier;
+					}
+
+					/* Now add it to the symbol table. */
+					if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
+					{
+						OutOfMemoryError(state);
+					}
+					else if (dictionary_entry->type != -1)
+					{
+						SemanticError(state, "Symbol '%s' already defined\n", identifier);
+					}
+					else
+					{
+						dictionary_entry->type = SYMBOL_CONSTANT;
+						dictionary_entry->data.unsigned_integer = state->program_counter;
+					}
+
+					free(expanded_identifier);
+				}
+
+				Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state->program_counter;
+
+				state->fix_up_needed = cc_false;
+
+				ProcessStatement(state, output_file, &statement);
+
+				/* If the statement cannot currently be processed because of undefined symbols,
+				   add it to the fix-up list so we can try again later. */
+				if (state->fix_up_needed)
+				{
+					FixUp *fix_up = malloc(sizeof(FixUp));
+
+					if (fix_up == NULL)
+					{
+						OutOfMemoryError(state);
+					}
+					else
+					{
+						/* Backup the statement. */
+						fix_up->statement = statement;
+
+						/* Backup some state. */
+						fix_up->program_counter = starting_program_counter;
+						fix_up->output_position = starting_output_position;
+						fix_up->last_global_label = DuplicateString(state->last_global_label);
+
+						if (fix_up->last_global_label == NULL)
+							OutOfMemoryError(state);
+
+						fix_up->source_line = DuplicateString(state->source_line);
+
+						if (fix_up->source_line == NULL)
+							OutOfMemoryError(state);
+
+						/* Add the new fix-up to the list. */
+						fix_up->next = state->fix_up_list_head;
+						state->fix_up_list_head = fix_up;
+					}
+				}
+
+				break;
+		}
+	}
+
+	free(label);
 }
 
 cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file)

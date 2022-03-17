@@ -267,8 +267,6 @@ typedef struct Rept
 */
 typedef struct Statement
 {
-	char *label;
-
 	enum
 	{
 		STATEMENT_TYPE_EMPTY,
@@ -469,7 +467,6 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 %type<generic.integer> register_list
 %type<generic.integer> register_span
 %type<generic.integer> data_or_address_register
-%type<statement> substatement
 %type<list_metadata> value_list
 %type<value> value
 %type<value> value1
@@ -491,47 +488,18 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 statement
 	:
 	{
-		statement->label = NULL;
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
-	| TOKEN_IDENTIFIER
+	| instruction
 	{
-		statement->label = $1;
-		statement->type = STATEMENT_TYPE_EMPTY;
-	}
-	| TOKEN_IDENTIFIER ':'
-	{
-		statement->label = $1;
-		statement->type = STATEMENT_TYPE_EMPTY;
-	}
-	| substatement
-	{
-		*statement = $1;
-		statement->label = NULL;
-	}
-	| TOKEN_IDENTIFIER substatement
-	{
-		*statement = $2;
-		statement->label = $1;
-	}
-	| TOKEN_IDENTIFIER ':' substatement
-	{
-		*statement = $3;
-		statement->label = $1;
-	}
-	;
-
-substatement
-	: instruction
-	{
-		$$.type = STATEMENT_TYPE_INSTRUCTION;
-		$$.data.instruction = $1;
+		statement->type = STATEMENT_TYPE_INSTRUCTION;
+		statement->data.instruction = $1;
 	}
 	| TOKEN_DIRECTIVE_DC '.' size value_list
 	{
-		$$.type = STATEMENT_TYPE_DC;
-		$$.data.dc.size = $3;
-		$$.data.dc.values = $4.head;
+		statement->type = STATEMENT_TYPE_DC;
+		statement->data.dc.size = $3;
+		statement->data.dc.values = $4.head;
 	}
 /*	| TOKEN_DIRECTIVE_REPT value statement_list TOKEN_DIRECTIVE_ENDR
 	{
