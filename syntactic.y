@@ -264,13 +264,11 @@ typedef struct Include
 	char *path;
 } Include;
 
-/*
 typedef struct Rept
 {
 	Value total_repeats;
-	struct StatementListNode *statement_list;
 } Rept;
-*/
+
 typedef struct Statement
 {
 	enum
@@ -280,6 +278,7 @@ typedef struct Statement
 		STATEMENT_TYPE_DC,
 		STATEMENT_TYPE_INCLUDE,
 		STATEMENT_TYPE_REPT,
+		STATEMENT_TYPE_ENDR,
 		STATEMENT_TYPE_MACRO
 	} type;
 	union
@@ -287,7 +286,7 @@ typedef struct Statement
 		Instruction instruction;
 		Dc dc;
 		Include include;
-		/*Rept rept;*/
+		Rept rept;
 	} data;
 } Statement;
 
@@ -516,12 +515,15 @@ statement
 		statement->type = STATEMENT_TYPE_INCLUDE;
 		statement->data.include.path = $2;
 	}
-/*	| TOKEN_DIRECTIVE_REPT value statement_list TOKEN_DIRECTIVE_ENDR
+	| TOKEN_DIRECTIVE_REPT value
 	{
-		$$.type = STATEMENT_TYPE_REPT;
-		$$.data.rept.total_repeats = $2;
-		$$.data.rept.statement_list = $4.head;
-	}*/
+		statement->type = STATEMENT_TYPE_REPT;
+		statement->data.rept.total_repeats = $2;
+	}
+	| TOKEN_DIRECTIVE_ENDR
+	{
+		statement->type = STATEMENT_TYPE_ENDR;
+	}
 	;
 
 value_list

@@ -24,7 +24,7 @@ typedef struct Location
 {
 	struct Location *previous;
 
-	const char *file_path;
+	char *file_path;
 	unsigned long line_number;
 } Location;
 
@@ -40,6 +40,13 @@ typedef struct FixUp
 	Location location;
 } FixUp;
 
+typedef struct SourceLineListNode
+{
+	struct SourceLineListNode *next;
+
+	char *source_line;
+} SourceLineListNode;
+
 typedef struct SemanticState
 {
 	cc_bool success;
@@ -52,6 +59,17 @@ typedef struct SemanticState
 	Location location;
 	yyscan_t flex_state;
 	char line_buffer[1024];
+	enum
+	{
+		MODE_NORMAL,
+		MODE_REPT
+	} mode;
+	struct
+	{
+		unsigned long total_repeats;
+		SourceLineListNode *source_line_list_head;
+		SourceLineListNode *source_line_list_tail;
+	} rept;
 } SemanticState;
 
 /* Prevent errors when __attribute__ is not supported. */
@@ -159,6 +177,16 @@ static char* DuplicateString(const char *string)
 		if (duplicated_string != NULL)
 			memcpy(duplicated_string, string, string_size);
 	}
+
+	return duplicated_string;
+}
+
+static char* DuplicateStringAndHandleError(SemanticState *state, const char *string)
+{
+	char *duplicated_string = DuplicateString(string);
+
+	if (duplicated_string == NULL)
+		OutOfMemoryError(state);
 
 	return duplicated_string;
 }
@@ -3233,31 +3261,30 @@ static void ProcessInclude(SemanticState *state, FILE *output_file, const Includ
 		/* Backup file path and line number. */
 		Location location = state->location;
 		state->location.previous = &location;
-		state->location.file_path = include->path;
-		state->location.line_number = 1;
+		state->location.file_path = DuplicateStringAndHandleError(state, include->path);
+		state->location.line_number = 0;
 
 		AssembleFile(state, output_file, input_file);
 
+		free(state->location.file_path);
 		state->location = location;
 	}
 }
 
-/*
-static void ProcessRept(SemanticState *state, FILE *output_file, const Rept *rept)
+static void ProcessRept(SemanticState *state, const Rept *rept)
 {
-	unsigned long value;
-	unsigned long i;
+	state->mode = MODE_REPT;
 
-	if (!ResolveValue(state, &rept->total_repeats, &value))
+	if (!ResolveValue(state, &rept->total_repeats, &state->rept.total_repeats))
 	{
 		SemanticError(state, "REPT value must be evaluable on the first pass\n");
-		value = 1;
+		state->rept.total_repeats = 1;
 	}
 
-	for (i = 0; i < value; ++i)
-		ProcessStatementList(state, output_file, rept->statement_list);
+	state->rept.source_line_list_head = NULL;
+	state->rept.source_line_list_tail = NULL;
 }
-*/
+
 static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement)
 {
 	switch (statement->type)
@@ -3278,7 +3305,11 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			break;
 
 		case STATEMENT_TYPE_REPT:
-			/*ProcessRept(state, output_file, &statement->data.rept);*/
+			ProcessRept(state, &statement->data.rept);
+			break;
+
+		case STATEMENT_TYPE_ENDR:
+			SemanticError(state, "Stray ENDR detected");
 			break;
 
 		case STATEMENT_TYPE_MACRO:
@@ -3291,7 +3322,6 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 	size_t label_length;
 	const char *source_line_sans_label;
 	char *label;
-	const Dictionary_Entry *entry;
 
 	label_length = strcspn(source_line, " \t:;");
 
@@ -3319,166 +3349,239 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 	source_line_sans_label = &source_line[label_length];
 	source_line_sans_label += strspn(source_line_sans_label, " \t:");
 
-	/* TODO - case-insensitivity */
-
-	entry = Dictionary_LookUp(&state->dictionary, source_line_sans_label);
-
-	if (entry != NULL && entry->type == SYMBOL_MACRO)
+	switch (state->mode)
 	{
-		/* Macro invocation. */
-	}
-	else if (strcmp(source_line_sans_label, "macro") == 0)
-	{
-		/* Macro declaration begin. */
-	}
-	else if (strcmp(source_line_sans_label, "endm") == 0)
-	{
-		/* Macro declaration end. */
-	}
-	else
-	{
-		/* Normal assembly line. */
-		Statement statement;
-		YY_BUFFER_STATE buffer;
-		int parse_result;
-
-		/* Back these up, before they get a chance to be modified by ProcessStatement. */
-		const unsigned long starting_program_counter = state->program_counter;
-		const long starting_output_position = ftell(output_file);
-
-		/* Parse the source line with Flex and Bison (Lex and Yacc). */
-		buffer = m68kasm__scan_string(source_line_sans_label, state->flex_state);
-		parse_result = m68kasm_parse(state->flex_state, &statement);
-		m68kasm__delete_buffer(buffer, state->flex_state);
-
-		switch (parse_result)
+		case MODE_NORMAL:
 		{
-			case 2: /* Out of memory. */
-				OutOfMemoryError(state);
-				break;
+			const Dictionary_Entry *entry;
 
-			case 1: /* Parsing error. */
-				/* An error message will have already been printed, so we don't need to do one here. */
-				break;
+			/* TODO - case-insensitivity */
 
-			case 0: /* No error. */
-				/* Add label to symbol table. */
-				if (label != NULL)
+			entry = Dictionary_LookUp(&state->dictionary, source_line_sans_label);
+
+			if (entry != NULL && entry->type == SYMBOL_MACRO)
+			{
+				/* Macro invocation. */
+			}
+			else if (strcmp(source_line_sans_label, "macro") == 0)
+			{
+				/* Macro declaration begin. */
+			}
+			else if (strcmp(source_line_sans_label, "endm") == 0)
+			{
+				/* Macro declaration end. */
+			}
+			else
+			{
+				/* Normal assembly line. */
+				Statement statement;
+				YY_BUFFER_STATE buffer;
+				int parse_result;
+
+				/* Back these up, before they get a chance to be modified by ProcessStatement. */
+				const unsigned long starting_program_counter = state->program_counter;
+				const long starting_output_position = ftell(output_file);
+
+				++state->location.line_number;
+
+				/* Parse the source line with Flex and Bison (Lex and Yacc). */
+				buffer = m68kasm__scan_string(source_line_sans_label, state->flex_state);
+				parse_result = m68kasm_parse(state->flex_state, &statement);
+				m68kasm__delete_buffer(buffer, state->flex_state);
+
+				switch (parse_result)
 				{
-					char *expanded_identifier;
-					const char *identifier;
-					Dictionary_Entry *dictionary_entry;
-
-					expanded_identifier = NULL;
-					identifier = label;
-
-					if (label[0] != '@')
-					{
-						/* This is a global label - cache it for later. */
-						free(state->last_global_label);
-						state->last_global_label = DuplicateString(label);
-
-						if (state->last_global_label == NULL)
-							OutOfMemoryError(state);
-					}
-					else
-					{
-						/* This is a local label - prefix it with the previous global label. */
-						expanded_identifier = ExpandLocalIdentifier(state, label);
-
-						if (expanded_identifier == NULL)
-							OutOfMemoryError(state);
-						else
-							identifier = expanded_identifier;
-					}
-
-					/* Now add it to the symbol table. */
-					if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
-					{
+					case 2: /* Out of memory. */
 						OutOfMemoryError(state);
-					}
-					else if (dictionary_entry->type != -1)
-					{
-						SemanticError(state, "Symbol '%s' already defined\n", identifier);
-					}
-					else
-					{
-						dictionary_entry->type = SYMBOL_CONSTANT;
-						dictionary_entry->data.unsigned_integer = state->program_counter;
-					}
+						break;
 
-					free(expanded_identifier);
-				}
+					case 1: /* Parsing error. */
+						/* An error message will have already been printed, so we don't need to do one here. */
+						break;
 
-				Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state->program_counter;
-
-				state->fix_up_needed = cc_false;
-
-				ProcessStatement(state, output_file, &statement);
-
-				/* If the statement cannot currently be processed because of undefined symbols,
-				   add it to the fix-up list so we can try again later. */
-				if (state->fix_up_needed)
-				{
-					FixUp *fix_up = malloc(sizeof(FixUp));
-
-					if (fix_up == NULL)
-					{
-						OutOfMemoryError(state);
-					}
-					else
-					{
-						Location *source_location = &state->location;
-						Location *destination_location = &fix_up->location;
-
-						/* Backup the statement. */
-						fix_up->statement = statement;
-
-						/* Backup some state. */
-						fix_up->program_counter = starting_program_counter;
-						fix_up->output_position = starting_output_position;
-						fix_up->last_global_label = DuplicateString(state->last_global_label);
-
-						if (fix_up->last_global_label == NULL)
-							OutOfMemoryError(state);
-
-						fix_up->source_line = DuplicateString(state->line_buffer);
-
-						if (fix_up->source_line == NULL)
-							OutOfMemoryError(state);
-
-						/* Clone the location. */
-						*destination_location = *source_location;
-
-						for (source_location = source_location->previous; source_location != NULL; source_location = source_location->previous)
+					case 0: /* No error. */
+						/* Add label to symbol table. */
+						if (label != NULL)
 						{
-							destination_location->previous = malloc(sizeof(Location));
+							char *expanded_identifier;
+							const char *identifier;
+							Dictionary_Entry *dictionary_entry;
 
-							if (destination_location->previous == NULL)
+							expanded_identifier = NULL;
+							identifier = label;
+
+							if (label[0] != '@')
 							{
-								OutOfMemoryError(state);
-								break;
+								/* This is a global label - cache it for later. */
+								free(state->last_global_label);
+								state->last_global_label = DuplicateStringAndHandleError(state, label);
 							}
 							else
 							{
-								destination_location = destination_location->previous;
-								*destination_location = *source_location;
+								/* This is a local label - prefix it with the previous global label. */
+								expanded_identifier = ExpandLocalIdentifier(state, label);
+
+								if (expanded_identifier == NULL)
+									OutOfMemoryError(state);
+								else
+									identifier = expanded_identifier;
 							}
+
+							/* Now add it to the symbol table. */
+							if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
+							{
+								OutOfMemoryError(state);
+							}
+							else if (dictionary_entry->type != -1)
+							{
+								SemanticError(state, "Symbol '%s' already defined\n", identifier);
+							}
+							else
+							{
+								dictionary_entry->type = SYMBOL_CONSTANT;
+								dictionary_entry->data.unsigned_integer = state->program_counter;
+							}
+
+							free(expanded_identifier);
 						}
 
-						/* Add the new fix-up to the list. */
-						fix_up->next = state->fix_up_list_head;
-						state->fix_up_list_head = fix_up;
-					}
+						Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state->program_counter;
 
-					state->fix_up_needed = cc_false;
+						state->fix_up_needed = cc_false;
+
+						ProcessStatement(state, output_file, &statement);
+
+						/* If the statement cannot currently be processed because of undefined symbols,
+						   add it to the fix-up list so we can try again later. */
+						if (state->fix_up_needed)
+						{
+							FixUp *fix_up = malloc(sizeof(FixUp));
+
+							if (fix_up == NULL)
+							{
+								OutOfMemoryError(state);
+							}
+							else
+							{
+								Location *source_location = &state->location;
+								Location *destination_location = &fix_up->location;
+
+								/* Backup the statement. */
+								fix_up->statement = statement;
+
+								/* Backup some state. */
+								fix_up->program_counter = starting_program_counter;
+								fix_up->output_position = starting_output_position;
+								fix_up->last_global_label = DuplicateStringAndHandleError(state, state->last_global_label);
+								fix_up->source_line = DuplicateStringAndHandleError(state, state->line_buffer);
+
+								/* Clone the location. */
+								*destination_location = *source_location;
+								destination_location->file_path = DuplicateStringAndHandleError(state, source_location->file_path);
+
+								for (source_location = source_location->previous; source_location != NULL; source_location = source_location->previous)
+								{
+									destination_location->previous = malloc(sizeof(Location));
+
+									if (destination_location->previous == NULL)
+									{
+										OutOfMemoryError(state);
+										break;
+									}
+									else
+									{
+										destination_location = destination_location->previous;
+										*destination_location = *source_location;
+										destination_location->file_path = DuplicateStringAndHandleError(state, source_location->file_path);
+									}
+								}
+
+								/* Add the new fix-up to the list. */
+								fix_up->next = state->fix_up_list_head;
+								state->fix_up_list_head = fix_up;
+							}
+
+							state->fix_up_needed = cc_false;
+						}
+
+						break;
+				}
+			}
+
+			free(label);
+
+			break;
+		}
+
+		case MODE_REPT:
+			if (strcmp(source_line_sans_label, "endr") == 0)
+			{
+				Location location;
+				unsigned long countdown;
+				SourceLineListNode *source_line_list_node;
+
+				/* Set the current location to this REPT. */
+				location = state->location;
+				state->location.previous = &location;
+				/* TODO - Get rid of this hack. */
+				state->location.file_path = DuplicateStringAndHandleError(state, "[SOME REPT]");
+
+				/* Exit ENDR mode before we recurse into the REPT's nested statements. */
+				state->mode = MODE_NORMAL;
+
+				/* Repeat the statements as many times as requested. */
+				countdown = state->rept.total_repeats;
+
+				while (countdown-- != 0)
+				{
+					/* Rewind back to line 0 of the REPT. */
+					state->location.line_number = 0;
+
+					/* Process the REPT's nested statements. */
+					for (source_line_list_node = state->rept.source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
+						AssembleLine(state, output_file, source_line_list_node->source_line);
 				}
 
-				break;
-		}
-	}
+				/* Deallocate the path. */
+				free(state->location.file_path);
 
-	free(label);
+				/* Revert back to the previous location. */
+				state->location = location;
+
+				/* Increment the line number once for each nested statement. */
+				for (source_line_list_node = state->rept.source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
+					++state->location.line_number;
+
+				/* Increment the line number once again for the ENDR statement. */
+				++state->location.line_number;
+			}
+			else
+			{
+				/* Add this source line to the REPT's list. */
+				SourceLineListNode *source_line_list_node = malloc(sizeof(SourceLineListNode));
+
+				if (source_line_list_node == NULL)
+				{
+					OutOfMemoryError(state);
+				}
+				else
+				{
+					/* Append to the end of the list. */
+					if (state->rept.source_line_list_tail != NULL)
+						state->rept.source_line_list_tail->next = source_line_list_node;
+					else
+						state->rept.source_line_list_head = source_line_list_node;
+
+					state->rept.source_line_list_tail = source_line_list_node;
+
+					/* Initialise the list node. */
+					source_line_list_node->next = NULL;
+					source_line_list_node->source_line = DuplicateStringAndHandleError(state, source_line);
+				}
+			}
+
+			break;
+	}
 }
 
 static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_file)
@@ -3507,8 +3610,6 @@ static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_fi
 		state->line_buffer[newline_index] = '\0';
 
 		AssembleLine(state, output_file, state->line_buffer);
-
-		++state->location.line_number;
 	}
 }
 
@@ -3523,9 +3624,12 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 	state.doing_fix_up = cc_false;
 	state.fix_up_list_head = NULL;
 	state.location.previous = NULL;
-	state.location.file_path = input_file_path != NULL ? input_file_path : "[No path given]";
-	state.location.line_number = 1;
+	state.location.file_path = DuplicateStringAndHandleError(&state, input_file_path != NULL ? input_file_path : "[No path given]");
+	state.location.line_number = 0;
 	strncpy(state.line_buffer, "[No source line]", sizeof(state.line_buffer));
+	state.mode = MODE_NORMAL;
+	state.rept.source_line_list_head = NULL;
+	state.rept.source_line_list_tail = NULL;
 
 	Dictionary_Init(&state.dictionary);
 
@@ -3586,6 +3690,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 				while (location != NULL)
 				{
 					Location *previous_location = location->previous;
+					free(location->file_path);
 					free(location);
 					location = previous_location;
 				}
