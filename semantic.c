@@ -3440,8 +3440,6 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				}
 			}
 
-			free(label);
-
 			break;
 		}
 
@@ -3514,6 +3512,8 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 
 			break;
 	}
+
+	free(label);
 }
 
 static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_file)
