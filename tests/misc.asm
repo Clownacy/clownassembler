@@ -334,6 +334,11 @@ Delta:	rept 8
 	dc.b	*-Delta
 	endr
 
+	; Check that multiple REPTs in the same file work
+	rept 2
+	dc.l	$FEEDBEEF
+	endr
+
 	; Testing case-insensitivity
 	MOVE.B	D0,D0
 	mOvE.b	(A0,d0.W),(a1,D1.l)

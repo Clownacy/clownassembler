@@ -3571,7 +3571,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 		{
 
 			/* Perform first pass, and create a list of fix-ups if needed. */
-			/* TODO - Some of these should be done elsehere. */
+			/* TODO - Some of these should be done elsewhere. */
 			state.program_counter = 0;
 			state.last_global_label = NULL;
 			state.location.previous = NULL;
@@ -3579,12 +3579,12 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 			state.location.line_number = 0;
 			state.source_line = "[No source line]";
 			state.mode = MODE_NORMAL;
-			state.rept.source_line_list_head = NULL;
-			state.rept.source_line_list_tail = NULL;
 
 			state.doing_fix_up = cc_false;
 
 			AssembleFile(&state, output_file, input_file);
+
+			free(state.location.file_path);
 
 			/* Process the fix-ups, reassembling instructions and reprocessing directives that could not be done in the first pass. */
 			state.program_counter = 0;
@@ -3594,8 +3594,6 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 			state.location.line_number = 0;
 			state.source_line = "[No source line]";
 			state.mode = MODE_NORMAL;
-			state.rept.source_line_list_head = NULL;
-			state.rept.source_line_list_tail = NULL;
 
 			state.doing_fix_up = cc_true;
 
@@ -3604,6 +3602,8 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 
 			/* Perform first pass, and create a list of fix-ups if needed. */
 			AssembleFile(&state, output_file, input_file);
+
+			free(state.location.file_path);
 
 			if (m68kasm_lex_destroy(state.flex_state) != 0)
 				InternalError(&state, "m68kasm_lex_destroy failed\n");
