@@ -3294,6 +3294,8 @@ static void ProcessInclude(SemanticState *state, FILE *output_file, const Includ
 
 		free(state->location.file_path);
 		state->location = location;
+
+		fclose(input_file);
 	}
 }
 
