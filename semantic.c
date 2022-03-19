@@ -3529,10 +3529,14 @@ static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_fi
 	while (fgets(state->line_buffer, sizeof(state->line_buffer), input_file) != NULL)
 	{
 		const size_t newline_index = strcspn(state->line_buffer, "\r\n");
+		const char newline_character = state->line_buffer[newline_index];
+
+		/* Remove newlines from the string, so they don't appear in the error message. */
+		state->line_buffer[newline_index] = '\0';
 
 		/* If there is no newline, then we've either reached the end of the file,
 		   or the source line was too long to fit in the buffer. */
-		if (state->line_buffer[newline_index] == '\0')
+		if (newline_character == '\0')
 		{
 			int character = fgetc(input_file);
 
@@ -3545,9 +3549,6 @@ static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_fi
 					character = fgetc(input_file);
 			}
 		}
-
-		/* Remove newlines from the string, so they don't appear in the error message. */
-		state->line_buffer[newline_index] = '\0';
 
 		AssembleLine(state, output_file, state->line_buffer);
 	}
