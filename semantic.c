@@ -3530,6 +3530,17 @@ static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_fi
 
 		AssembleLine(state, output_file, state->line_buffer);
 	}
+
+	switch (state->mode)
+	{
+		case MODE_NORMAL:
+			/* All okay. */
+			break;
+
+		case MODE_REPT:
+			SemanticError(state, "REPT statement beginning at line %lu is missing its ENDR\n", state->rept.line_number);
+			break;
+	}
 }
 
 cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char *input_file_path)
