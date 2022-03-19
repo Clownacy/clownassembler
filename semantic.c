@@ -59,6 +59,7 @@ typedef struct SemanticState
 	Location location;
 	yyscan_t flex_state;
 	char line_buffer[1024];
+	const char *source_line;
 	enum
 	{
 		MODE_NORMAL,
@@ -97,7 +98,7 @@ __attribute__((format(printf, 2, 3))) static void SemanticWarning(SemanticState 
 	vfprintf(stderr, fmt, args);
 	va_end(args);
 
-	fputs(state->line_buffer, stderr);
+	fputs(state->source_line, stderr);
 	fputs("\n\n", stderr);
 }
 
@@ -111,7 +112,7 @@ __attribute__((format(printf, 2, 3))) static void SemanticError(SemanticState *s
 	vfprintf(stderr, fmt, args);
 	va_end(args);
 
-	fputs(state->line_buffer, stderr);
+	fputs(state->source_line, stderr);
 	fputs("\n\n", stderr);
 
 	state->success = cc_false;
@@ -127,7 +128,7 @@ __attribute__((format(printf, 2, 3))) static void InternalError(SemanticState *s
 	vfprintf(stderr, fmt, args);
 	va_end(args);
 
-	fputs(state->line_buffer, stderr);
+	fputs(state->source_line, stderr);
 	fputs("\n\n", stderr);
 
 	state->success = cc_false;
@@ -137,7 +138,7 @@ static void OutOfMemoryError(SemanticState *state)
 {
 	ErrorMessageCommon(state, "Out-of-memory error!\n");
 
-	fputs(state->line_buffer, stderr);
+	fputs(state->source_line, stderr);
 	fputs("\n\n", stderr);
 
 	state->success = cc_false;
@@ -153,7 +154,7 @@ void m68kasm_error(void *scanner, Statement *statement, const char *message)
 
 	fputs(message, stderr);
 	fputc('\n', stderr);
-	fputs(state->line_buffer, stderr);
+	fputs(state->source_line, stderr);
 	fputs("\n\n", stderr);
 }
 
@@ -3309,7 +3310,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			break;
 
 		case STATEMENT_TYPE_ENDR:
-			SemanticError(state, "Stray ENDR detected");
+			SemanticError(state, "Stray ENDR with no preceeding REPT detected");
 			break;
 
 		case STATEMENT_TYPE_MACRO:
@@ -3322,6 +3323,8 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 	size_t label_length;
 	const char *source_line_sans_label;
 	char *label;
+
+	state->source_line = source_line;
 
 	label_length = strcspn(source_line, " \t:;");
 
@@ -3473,7 +3476,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 								fix_up->program_counter = starting_program_counter;
 								fix_up->output_position = starting_output_position;
 								fix_up->last_global_label = DuplicateStringAndHandleError(state, state->last_global_label);
-								fix_up->source_line = DuplicateStringAndHandleError(state, state->line_buffer);
+								fix_up->source_line = DuplicateStringAndHandleError(state, source_line);
 
 								/* Clone the location. */
 								*destination_location = *source_location;
@@ -3626,7 +3629,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 	state.location.previous = NULL;
 	state.location.file_path = DuplicateStringAndHandleError(&state, input_file_path != NULL ? input_file_path : "[No path given]");
 	state.location.line_number = 0;
-	strncpy(state.line_buffer, "[No source line]", sizeof(state.line_buffer));
+	state.source_line = "[No source line]";
 	state.mode = MODE_NORMAL;
 	state.rept.source_line_list_head = NULL;
 	state.rept.source_line_list_tail = NULL;
@@ -3674,7 +3677,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 				state.program_counter = fix_up->program_counter;
 				fseek(output_file, fix_up->output_position , SEEK_SET);
 				state.last_global_label = fix_up->last_global_label;
-				strncpy(state.line_buffer, fix_up->source_line != NULL ? fix_up->source_line : "[No source line]", sizeof(state.line_buffer));
+				state.source_line = fix_up->source_line != NULL ? fix_up->source_line : "[No source line]";
 				state.location = fix_up->location;
 
 				Dictionary_LookUp(&state.dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state.program_counter;
