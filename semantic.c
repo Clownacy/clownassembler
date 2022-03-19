@@ -54,6 +54,7 @@ typedef struct SemanticState
 	struct
 	{
 		unsigned long total_repeats;
+		unsigned long line_number;
 		SourceLineListNode *source_line_list_head;
 		SourceLineListNode *source_line_list_tail;
 	} rept;
@@ -3266,6 +3267,8 @@ static void ProcessRept(SemanticState *state, const Rept *rept)
 		state->rept.total_repeats = 1;
 	}
 
+	state->rept.line_number = state->location.line_number;
+
 	state->rept.source_line_list_head = NULL;
 	state->rept.source_line_list_tail = NULL;
 }
@@ -3307,6 +3310,8 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 	size_t label_length;
 	const char *source_line_sans_label;
 	char *label;
+
+	++state->location.line_number;
 
 	state->source_line = source_line;
 
@@ -3364,8 +3369,6 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				Statement statement;
 				YY_BUFFER_STATE buffer;
 				int parse_result;
-
-				++state->location.line_number;
 
 				/* Parse the source line with Flex and Bison (Lex and Yacc). */
 				buffer = m68kasm__scan_string(source_line_sans_label, state->flex_state);
@@ -3446,15 +3449,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 		case MODE_REPT:
 			if (strcmp(source_line_sans_label, "endr") == 0)
 			{
-				Location location;
 				unsigned long countdown;
-				SourceLineListNode *source_line_list_node;
-
-				/* Set the current location to this REPT. */
-				location = state->location;
-				state->location.previous = &location;
-				/* TODO - Get rid of this hack. */
-				state->location.file_path = DuplicateStringAndHandleError(state, "[SOME REPT]");
 
 				/* Exit ENDR mode before we recurse into the REPT's nested statements. */
 				state->mode = MODE_NORMAL;
@@ -3464,25 +3459,17 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 
 				while (countdown-- != 0)
 				{
-					/* Rewind back to line 0 of the REPT. */
-					state->location.line_number = 0;
+					SourceLineListNode *source_line_list_node;
+
+					/* Rewind back to line number of the start of the REPT. */
+					state->location.line_number = state->rept.line_number;
 
 					/* Process the REPT's nested statements. */
 					for (source_line_list_node = state->rept.source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
 						AssembleLine(state, output_file, source_line_list_node->source_line);
 				}
 
-				/* Deallocate the path. */
-				free(state->location.file_path);
-
-				/* Revert back to the previous location. */
-				state->location = location;
-
-				/* Increment the line number once for each nested statement. */
-				for (source_line_list_node = state->rept.source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-					++state->location.line_number;
-
-				/* Increment the line number once again for the ENDR statement. */
+				/* Increment past the ENDR line number. */
 				++state->location.line_number;
 			}
 			else
