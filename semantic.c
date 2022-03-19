@@ -60,6 +60,10 @@ typedef struct SemanticState
 	} rept;
 } SemanticState;
 
+/* Some forward declarations that are needed because some functions recurse into each other. */
+static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_file);
+static void AssembleLine(SemanticState *state, FILE *output_file, const char *source_line);
+
 /* Prevent errors when __attribute__ is not supported. */
 #ifndef __GNUC__
 #define  __attribute__(x)
@@ -177,6 +181,44 @@ static char* DuplicateStringAndHandleError(SemanticState *state, const char *str
 		OutOfMemoryError(state);
 
 	return duplicated_string;
+}
+
+static void TerminateRept(SemanticState *state, FILE *output_file)
+{
+	unsigned long countdown;
+	SourceLineListNode *source_line_list_node;
+
+	/* Exit ENDR mode before we recurse into the REPT's nested statements. */
+	state->mode = MODE_NORMAL;
+
+	/* Repeat the statements as many times as requested. */
+	countdown = state->rept.total_repeats;
+
+	while (countdown-- != 0)
+	{
+		/* Rewind back to line number of the start of the REPT. */
+		state->location.line_number = state->rept.line_number;
+
+		/* Process the REPT's nested statements. */
+		for (source_line_list_node = state->rept.source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
+			AssembleLine(state, output_file, source_line_list_node->source_line);
+	}
+
+	/* Increment past the ENDR line number. */
+	++state->location.line_number;
+
+	/* Free the source line list. */
+	source_line_list_node = state->rept.source_line_list_head;
+
+	while (source_line_list_node != NULL)
+	{
+		SourceLineListNode *next_source_line_list_node = source_line_list_node->next;
+
+		free(source_line_list_node->source_line);
+		free(source_line_list_node);
+
+		source_line_list_node = next_source_line_list_node;
+	}
 }
 
 static char* ExpandLocalIdentifier(SemanticState *state, const char *identifier)
@@ -3232,8 +3274,6 @@ static void ProcessDc(SemanticState *state, FILE *output_file, const Dc *dc)
 	}
 }
 
-static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_file);
-
 static void ProcessInclude(SemanticState *state, FILE *output_file, const Include *include)
 {
 	FILE *input_file = fopen(include->path, "r");
@@ -3449,28 +3489,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 		case MODE_REPT:
 			if (strcmp(source_line_sans_label, "endr") == 0)
 			{
-				unsigned long countdown;
-
-				/* Exit ENDR mode before we recurse into the REPT's nested statements. */
-				state->mode = MODE_NORMAL;
-
-				/* Repeat the statements as many times as requested. */
-				countdown = state->rept.total_repeats;
-
-				while (countdown-- != 0)
-				{
-					SourceLineListNode *source_line_list_node;
-
-					/* Rewind back to line number of the start of the REPT. */
-					state->location.line_number = state->rept.line_number;
-
-					/* Process the REPT's nested statements. */
-					for (source_line_list_node = state->rept.source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-						AssembleLine(state, output_file, source_line_list_node->source_line);
-				}
-
-				/* Increment past the ENDR line number. */
-				++state->location.line_number;
+				TerminateRept(state, output_file);
 			}
 			else
 			{
@@ -3538,6 +3557,8 @@ static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_fi
 			break;
 
 		case MODE_REPT:
+			TerminateRept(state, output_file);
+
 			SemanticError(state, "REPT statement beginning at line %lu is missing its ENDR\n", state->rept.line_number);
 			break;
 	}
@@ -3549,6 +3570,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 	Dictionary_Entry *dictionary_entry;
 
 	state.success = cc_true;
+	state.mode = MODE_NORMAL;
 
 	Dictionary_Init(&state.dictionary);
 
@@ -3576,12 +3598,12 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 			state.location.file_path = DuplicateStringAndHandleError(&state, input_file_path != NULL ? input_file_path : "[No path given]");
 			state.location.line_number = 0;
 			state.source_line = "[No source line]";
-			state.mode = MODE_NORMAL;
 
 			state.doing_fix_up = cc_false;
 
 			AssembleFile(&state, output_file, input_file);
 
+			free(state.last_global_label);
 			free(state.location.file_path);
 
 			/* Process the fix-ups, reassembling instructions and reprocessing directives that could not be done in the first pass. */
@@ -3591,7 +3613,6 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 			state.location.file_path = DuplicateStringAndHandleError(&state, input_file_path != NULL ? input_file_path : "[No path given]");
 			state.location.line_number = 0;
 			state.source_line = "[No source line]";
-			state.mode = MODE_NORMAL;
 
 			state.doing_fix_up = cc_true;
 
@@ -3601,6 +3622,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 			/* Perform first pass, and create a list of fix-ups if needed. */
 			AssembleFile(&state, output_file, input_file);
 
+			free(state.last_global_label);
 			free(state.location.file_path);
 
 			if (m68kasm_lex_destroy(state.flex_state) != 0)
