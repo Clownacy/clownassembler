@@ -3592,6 +3592,9 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 		}
 		else
 		{
+		#if M68KASM_DEBUG
+			m68kasm_debug = 1;
+		#endif
 
 			/* Perform first pass, and create a list of fix-ups if needed. */
 			/* TODO - Some of these should be done elsewhere. */
@@ -3609,6 +3612,9 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 			free(state.last_global_label);
 			free(state.location.file_path);
 
+			rewind(input_file);
+			rewind(output_file);
+
 			/* Process the fix-ups, reassembling instructions and reprocessing directives that could not be done in the first pass. */
 			state.program_counter = 0;
 			state.last_global_label = NULL;
@@ -3618,9 +3624,6 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 			state.source_line = "[No source line]";
 
 			state.doing_fix_up = cc_true;
-
-			rewind(input_file);
-			rewind(output_file);
 
 			/* Perform first pass, and create a list of fix-ups if needed. */
 			AssembleFile(&state, output_file, input_file);
