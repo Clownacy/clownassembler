@@ -259,7 +259,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
 \"[^\"]+\" {
 	const size_t length = strlen(yytext) - 2;
-	yylval->generic.string = malloc(length);
+	yylval->generic.string = malloc(length + 1);
 	if (yylval->generic.string == NULL)
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string");
