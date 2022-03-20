@@ -3573,6 +3573,10 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 	Dictionary_Entry *dictionary_entry;
 
 	state.success = cc_true;
+	state.location.previous = NULL;
+	state.location.file_path = DuplicateStringAndHandleError(&state, input_file_path != NULL ? input_file_path : "[No path given]");
+	state.location.line_number = 0;
+	state.source_line = "[No source line]";
 	state.mode = MODE_NORMAL;
 
 	Dictionary_Init(&state.dictionary);
@@ -3600,28 +3604,25 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 			/* TODO - Some of these should be done elsewhere. */
 			state.program_counter = 0;
 			state.last_global_label = NULL;
-			state.location.previous = NULL;
-			state.location.file_path = DuplicateStringAndHandleError(&state, input_file_path != NULL ? input_file_path : "[No path given]");
-			state.location.line_number = 0;
-			state.source_line = "[No source line]";
 
 			state.doing_fix_up = cc_false;
 
 			AssembleFile(&state, output_file, input_file);
 
 			free(state.last_global_label);
-			free(state.location.file_path);
 
+			/* Revert back to the initial state. */
 			rewind(input_file);
 			rewind(output_file);
+			state.location.previous = NULL;
+			free(state.location.file_path);
+			state.location.file_path = DuplicateStringAndHandleError(&state, input_file_path != NULL ? input_file_path : "[No path given]");
+			state.location.line_number = 0;
+			state.source_line = "[No source line]";
 
 			/* Process the fix-ups, reassembling instructions and reprocessing directives that could not be done in the first pass. */
 			state.program_counter = 0;
 			state.last_global_label = NULL;
-			state.location.previous = NULL;
-			state.location.file_path = DuplicateStringAndHandleError(&state, input_file_path != NULL ? input_file_path : "[No path given]");
-			state.location.line_number = 0;
-			state.source_line = "[No source line]";
 
 			state.doing_fix_up = cc_true;
 
@@ -3629,7 +3630,6 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 			AssembleFile(&state, output_file, input_file);
 
 			free(state.last_global_label);
-			free(state.location.file_path);
 
 			if (m68kasm_lex_destroy(state.flex_state) != 0)
 				InternalError(&state, "m68kasm_lex_destroy failed\n");
@@ -3637,6 +3637,8 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 	}
 
 	Dictionary_Deinit(&state.dictionary);
+
+	free(state.location.file_path);
 
 	return state.success;
 }
