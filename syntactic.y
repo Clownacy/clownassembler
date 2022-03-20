@@ -1305,7 +1305,7 @@ operand
 			$$.main_register = 0;
 
 			while (($1 & (1 << $$.main_register)) == 0)
-					++$$.main_register;
+				++$$.main_register;
 
 			if ($1 >= 8)
 			{
@@ -1362,9 +1362,7 @@ register_span
 		$$ = 0;
 
 		for (i = start; i <= end; ++i)
-		{
 			$$ |= 1 << i;
-		}
 	}
 	;
 
