@@ -3966,8 +3966,9 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 									/* Split the line in two, and insert the parameter between them. */
 									char *new_modified_line;
 
+									const char* const parameter = parameters[parameter_index] != NULL ? parameters[parameter_index] : ""; /* Just in case '\0' is used but no size was specified. */
 									const size_t first_half_length = parameter_position - modified_line;
-									const size_t parameter_length = strlen(parameters[parameter_index]);
+									const size_t parameter_length = strlen(parameter);
 									const size_t second_half_length = strlen(line_after_parameter);
 
 									new_modified_line = MallocAndHandleError(state, first_half_length + parameter_length + second_half_length + 1);
@@ -3975,7 +3976,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 									if (new_modified_line != NULL)
 									{
 										memcpy(new_modified_line, modified_line, first_half_length);
-										memcpy(new_modified_line + first_half_length, parameters[parameter_index], parameter_length);
+										memcpy(new_modified_line + first_half_length, parameter, parameter_length);
 										memcpy(new_modified_line + first_half_length + parameter_length, line_after_parameter, second_half_length);
 										new_modified_line[first_half_length + parameter_length + second_half_length] = '\0';
 
