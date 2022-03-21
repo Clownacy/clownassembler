@@ -1446,7 +1446,7 @@ operand
 			while (($1 & (1 << $$.main_register)) == 0)
 				++$$.main_register;
 
-			if ($1 >= 8)
+			if ($$.main_register >= 8)
 			{
 				$$.type = OPERAND_ADDRESS_REGISTER;
 				$$.main_register -= 8;
