@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				if (!ClownAssembler_Assemble(input_file, output_file, argv[1]))
+				if (!ClownAssembler_Assemble(input_file, output_file, argv[1], argc > 3))
 					ERROR("Could not assemble");
 
 				fclose(output_file);

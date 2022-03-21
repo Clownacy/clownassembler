@@ -4082,7 +4082,7 @@ static cc_bool DeleteNonConstants(Dictionary_Entry *entry, const char *identifie
 	return (strcmp(identifier, ",,PROGRAM_COUNTER,,") == 0 || entry->type == SYMBOL_CONSTANT);
 }
 
-cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char *input_file_path)
+cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char *input_file_path, cc_bool debug)
 {
 	SemanticState state;
 	Dictionary_Entry *symbol;
@@ -4110,7 +4110,8 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 		else
 		{
 		#if M68KASM_DEBUG
-			m68kasm_debug = 1;
+			if (debug)
+				m68kasm_debug = 1;
 		#endif
 
 			/* Perform first pass, and create a list of fix-ups if needed. */
