@@ -3915,15 +3915,29 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 								const char *line_after_parameter;
 								unsigned long parameter_index;
 								const IdentifierListNode *parameter_name;
-								const char *parameter_indentifier;
 								unsigned long i;
 
 								/* Search for the earliest macro parameter placeholder in the line, storing its location in 'parameter_position'. */
 
+								/* Silence bogus(?) 'variable may be used uninitialised' compiler warnings. */
+								line_after_parameter = NULL;
+								parameter_index = 0;
+
 								/* Find numerical macro parameter placeholder. */
 								parameter_position = strchr(remaining_line, '\\');
-								parameter_index = 0;
-								parameter_indentifier = NULL;
+
+								if (parameter_position != NULL)
+								{
+									char *end;
+
+									/* Obtain numerical index of the parameter. */
+									parameter_index = strtoul(parameter_position + 1, &end, 10);
+									line_after_parameter = end;
+
+									/* Check if conversion failed. */
+									if (end == parameter_position + 1)
+										parameter_position = NULL;
+								}
 
 								/* Now find the identifier-based macro parameter placeholders. */
 								for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
@@ -3934,27 +3948,13 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 									{
 										parameter_index = i;
 										parameter_position = other_parameter_position;
-										parameter_indentifier = parameter_name->identifier;
+										line_after_parameter = parameter_position + strlen(parameter_name->identifier);
 									}
 								}
 
 								/* If no placeholders can be found, then we are done here. */
 								if (parameter_position == NULL)
 									break;
-
-								/* If this is a numerical placeholder, then parse it. */
-								if (parameter_position[0] == '\\')
-								{
-									char *end;
-
-									/* Obtain numerical index of the parameter. */
-									parameter_index = strtoul(parameter_position + 1, &end, 10);
-									line_after_parameter = end;
-								}
-								else
-								{
-									line_after_parameter = parameter_position + strlen(parameter_indentifier);
-								}
 
 								/* Don't bother inserting parameters that were not passed to the macro. */
 								if (parameter_index >= total_parameters)
