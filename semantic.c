@@ -1864,7 +1864,7 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const In
 					else if (instruction.operands[1].type == OPERAND_ADDRESS_REGISTER)
 					{
 						instruction.opcode.type = OPCODE_MOVEA; /* MOVEA mistyped as MOVE */
-						SemanticWarning(state, "MOVE should be MOVEA");
+						SemanticWarning(state, "MOVE should be MOVEA.");
 					}
 
 					break;

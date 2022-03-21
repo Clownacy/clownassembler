@@ -221,7 +221,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
 	if (string_end[0] != '\0')
 	{
-		m68kasm_error(yyscanner, NULL, "Could not parse number");
+		m68kasm_error(yyscanner, NULL, "Could not parse number.");
 		return M68KASM_error;
 	}
 
@@ -234,7 +234,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
 	if (string_end[0] != '\0')
 	{
-		m68kasm_error(yyscanner, NULL, "Could not parse number");
+		m68kasm_error(yyscanner, NULL, "Could not parse number.");
 		return M68KASM_error;
 	}
 
@@ -247,7 +247,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
 	if (string_end[0] != '\0')
 	{
-		m68kasm_error(yyscanner, NULL, "Could not parse number");
+		m68kasm_error(yyscanner, NULL, "Could not parse number.");
 		return M68KASM_error;
 	}
 
@@ -259,7 +259,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 	yylval->generic.string = malloc(length + 1);
 	if (yylval->generic.string == NULL)
 	{
-		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string");
+		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
 		return M68KASM_error;
 	}
 	else
@@ -274,7 +274,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 	yylval->generic.string = malloc(length + 1);
 	if (yylval->generic.string == NULL)
 	{
-		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string");
+		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
 		return M68KASM_error;
 	}
 	else
@@ -290,7 +290,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
 	if (length > 4)
 	{
-		m68kasm_error(yyscanner, NULL, "Character literals cannot be more than 4 characters long");
+		m68kasm_error(yyscanner, NULL, "Character literals cannot be more than 4 characters long.");
 		return M68KASM_error;
 	}
 	else

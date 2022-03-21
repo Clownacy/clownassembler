@@ -791,7 +791,7 @@ full_opcode
 	{
 		$$ = $1;
 		$$.size = SIZE_UNDEFINED;
-		m68kasm_warning(scanner, statement, "Opcode has a dot but no size; either remove the dot or add an explicit size");
+		m68kasm_warning(scanner, statement, "Opcode has a dot but no size; either remove the dot or add an explicit size.");
 	}
 	| opcode '.' size
 	{
@@ -1348,7 +1348,7 @@ operand_list
 
 		if ($$.operands[1].type != 0)
 		{
-			m68kasm_error(scanner, statement, "Instructions can never have more than two operands");
+			m68kasm_error(scanner, statement, "Instructions can never have more than two operands.");
 			YYABORT;
 		}
 		else
@@ -1402,7 +1402,7 @@ operand
 	}
 	| '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'
 	{
-		m68kasm_warning(scanner, statement, "Index register lacks a size specifier - assuming word-size for now, but you should really add an explicit size");
+		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = VALUE_NUMBER;
 		$$.literal.data.integer = 0;
@@ -1413,7 +1413,7 @@ operand
 	}
 	| value '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'
 	{
-		m68kasm_warning(scanner, statement, "Index register lacks a size specifier - assuming word-size for now, but you should really add an explicit size");
+		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
 		$$.main_register = $3;
@@ -1445,7 +1445,7 @@ operand
 	}
 	| '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'
 	{
-		m68kasm_warning(scanner, statement, "Index register lacks a size specifier - assuming word-size for now, but you should really add an explicit size");
+		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = VALUE_NUMBER;
 		$$.literal.data.integer = 0;
@@ -1455,7 +1455,7 @@ operand
 	}
 	| value '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'
 	{
-		m68kasm_warning(scanner, statement, "Index register lacks a size specifier - assuming word-size for now, but you should really add an explicit size");
+		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
 		$$.index_register = $5 % 8;
