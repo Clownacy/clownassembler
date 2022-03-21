@@ -343,6 +343,14 @@ Delta:	rept 8
 	MOVE.B	D0,D0
 	mOvE.b	(A0,d0.W),(a1,D1.l)
 
+	; Testing macros
+TheGreatestMacro macro
+	dc.l	*
+	endm
+
+	TheGreatestMacro
+	TheGreatestMacro
+
   ; More blank lines to test support for trailing blank statements
 
 

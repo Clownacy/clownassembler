@@ -6,6 +6,8 @@
 
 #include "clowncommon.h"
 
+/* TODO - Destructors */
+
 static Dictionary_BucketNode** GetBucket(Dictionary_State *state, const char *identifier)
 {
 	unsigned int hash, character;
@@ -129,4 +131,29 @@ cc_bool Dictionary_Remove(Dictionary_State *state, const char *identifier)
 	}
 
 	return success;
+}
+
+void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dictionary_Entry *entry, const char *identifier, void *user_data), void *user_data)
+{
+	size_t i;
+
+	for (i = 0; i < CC_COUNT_OF(state->buckets); ++i)
+	{
+		Dictionary_BucketNode **node_pointer = &state->buckets[i];
+
+		while (*node_pointer != NULL)
+		{
+			Dictionary_BucketNode *node = *node_pointer;
+
+			if (!filter_function(&node->entry, node->identifier, user_data))
+			{
+				*node_pointer = node->next;
+				free(node);
+			}
+			else
+			{
+				node_pointer = &node->next;
+			}
+		}
+	}
 }

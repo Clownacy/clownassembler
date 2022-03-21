@@ -173,6 +173,8 @@ ror             TOKEN(OPCODE_ROR)
 dc              TOKEN(DIRECTIVE_DC)
 rept            TOKEN(DIRECTIVE_REPT)
 endr            TOKEN(DIRECTIVE_ENDR)
+macro           TOKEN(DIRECTIVE_MACRO)
+endm            TOKEN(DIRECTIVE_ENDM)
 include         TOKEN(DIRECTIVE_INCLUDE)
 "."             return yytext[0];
 ","             return yytext[0];

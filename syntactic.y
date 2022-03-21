@@ -279,7 +279,8 @@ typedef struct Statement
 		STATEMENT_TYPE_INCLUDE,
 		STATEMENT_TYPE_REPT,
 		STATEMENT_TYPE_ENDR,
-		STATEMENT_TYPE_MACRO
+		STATEMENT_TYPE_MACRO,
+		STATEMENT_TYPE_ENDM
 	} type;
 	union
 	{
@@ -444,6 +445,8 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 %token TOKEN_DIRECTIVE_DC
 %token TOKEN_DIRECTIVE_REPT
 %token TOKEN_DIRECTIVE_ENDR
+%token TOKEN_DIRECTIVE_MACRO
+%token TOKEN_DIRECTIVE_ENDM
 %token TOKEN_DIRECTIVE_INCLUDE
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
@@ -523,6 +526,14 @@ statement
 	| TOKEN_DIRECTIVE_ENDR
 	{
 		statement->type = STATEMENT_TYPE_ENDR;
+	}
+	| TOKEN_DIRECTIVE_MACRO
+	{
+		statement->type = STATEMENT_TYPE_MACRO;
+	}
+	| TOKEN_DIRECTIVE_ENDM
+	{
+		statement->type = STATEMENT_TYPE_ENDM;
 	}
 	;
 

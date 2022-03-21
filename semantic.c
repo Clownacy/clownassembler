@@ -22,7 +22,7 @@ typedef enum SymbolType
 
 typedef struct Location
 {
-	struct Location *previous;
+	const struct Location *previous;
 
 	char *file_path;
 	unsigned long line_number;
@@ -34,6 +34,12 @@ typedef struct SourceLineListNode
 
 	char *source_line;
 } SourceLineListNode;
+
+typedef struct SourceLineList
+{
+	SourceLineListNode *head;
+	SourceLineListNode *tail;
+} SourceLineList;
 
 typedef struct SemanticState
 {
@@ -49,16 +55,28 @@ typedef struct SemanticState
 	enum
 	{
 		MODE_NORMAL,
-		MODE_REPT
+		MODE_REPT,
+		MODE_MACRO
 	} mode;
 	struct
 	{
 		unsigned long total_repeats;
 		unsigned long line_number;
-		SourceLineListNode *source_line_list_head;
-		SourceLineListNode *source_line_list_tail;
+		SourceLineList source_line_list;
 	} rept;
+	struct
+	{
+		char *name;
+		unsigned long line_number;
+		SourceLineList source_line_list;
+	} macro;
 } SemanticState;
+
+typedef struct Macro
+{
+	char *name;
+	SourceLineListNode *source_line_list_head;
+} Macro;
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
 static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_file);
@@ -178,6 +196,24 @@ static char* DuplicateStringAndHandleError(SemanticState *state, const char *str
 	return duplicated_string;
 }
 
+static Dictionary_Entry *Dictionary_LookUpAndCreateIfNotExistAndHandleError(SemanticState *state, const char *identifier)
+{
+	Dictionary_Entry *dictionary_entry;
+
+	if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
+	{
+		OutOfMemoryError(state);
+		dictionary_entry = NULL;
+	}
+	else if (dictionary_entry->type != -1)
+	{
+		SemanticError(state, "Symbol '%s' already defined.", identifier);
+		dictionary_entry = NULL;
+	}
+
+	return dictionary_entry;
+}
+
 static void TerminateRept(SemanticState *state, FILE *output_file)
 {
 	unsigned long countdown;
@@ -195,7 +231,7 @@ static void TerminateRept(SemanticState *state, FILE *output_file)
 		state->location.line_number = state->rept.line_number;
 
 		/* Process the REPT's nested statements. */
-		for (source_line_list_node = state->rept.source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
+		for (source_line_list_node = state->rept.source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
 			AssembleLine(state, output_file, source_line_list_node->source_line);
 	}
 
@@ -203,7 +239,7 @@ static void TerminateRept(SemanticState *state, FILE *output_file)
 	++state->location.line_number;
 
 	/* Free the source line list. */
-	source_line_list_node = state->rept.source_line_list_head;
+	source_line_list_node = state->rept.source_line_list.head;
 
 	while (source_line_list_node != NULL)
 	{
@@ -213,6 +249,57 @@ static void TerminateRept(SemanticState *state, FILE *output_file)
 		free(source_line_list_node);
 
 		source_line_list_node = next_source_line_list_node;
+	}
+}
+
+static void TerminateMacro(SemanticState *state)
+{
+	Dictionary_Entry *dictionary_entry;
+
+	state->mode = MODE_NORMAL;
+
+	dictionary_entry = Dictionary_LookUpAndCreateIfNotExistAndHandleError(state, state->macro.name);
+
+	if (dictionary_entry != NULL)
+	{
+		Macro *macro = malloc(sizeof(Macro));
+
+		if (macro == NULL)
+		{
+			OutOfMemoryError(state);
+		}
+		else
+		{
+			macro->name = state->macro.name;
+			macro->source_line_list_head = state->macro.source_line_list.head;
+
+			dictionary_entry->type = SYMBOL_MACRO;
+			dictionary_entry->data.pointer = macro;
+		}
+	}
+}
+
+static void AddToSourceLineList(SemanticState *state, SourceLineList *source_line_list, const char *source_line)
+{
+	SourceLineListNode *source_line_list_node = malloc(sizeof(SourceLineListNode));
+
+	if (source_line_list_node == NULL)
+	{
+		OutOfMemoryError(state);
+	}
+	else
+	{
+		/* Append to the end of the list. */
+		if (source_line_list->tail != NULL)
+			source_line_list->tail->next = source_line_list_node;
+		else
+			source_line_list->head = source_line_list_node;
+
+		source_line_list->tail = source_line_list_node;
+
+		/* Initialise the list node. */
+		source_line_list_node->next = NULL;
+		source_line_list_node->source_line = DuplicateStringAndHandleError(state, source_line);
 	}
 }
 
@@ -3286,7 +3373,7 @@ static void ProcessInclude(SemanticState *state, FILE *output_file, const Includ
 	else
 	{
 		/* Backup file path and line number. */
-		Location location = state->location;
+		const Location location = state->location;
 		state->location.previous = &location;
 		state->location.file_path = DuplicateStringAndHandleError(state, include->path);
 		state->location.line_number = 0;
@@ -3312,12 +3399,85 @@ static void ProcessRept(SemanticState *state, const Rept *rept)
 
 	state->rept.line_number = state->location.line_number;
 
-	state->rept.source_line_list_head = NULL;
-	state->rept.source_line_list_tail = NULL;
+	state->rept.source_line_list.head = NULL;
+	state->rept.source_line_list.tail = NULL;
 }
 
-static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement)
+static void ProcessMacro(SemanticState *state, const char *label)
 {
+	state->mode = MODE_MACRO;
+
+	state->macro.name = DuplicateStringAndHandleError(state, label);
+	state->macro.line_number = state->location.line_number;
+
+	state->macro.source_line_list.head = NULL;
+	state->macro.source_line_list.tail = NULL;
+}
+
+static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement, const char *label)
+{
+	switch (statement->type)
+	{
+		case STATEMENT_TYPE_EMPTY:
+		case STATEMENT_TYPE_INSTRUCTION:
+		case STATEMENT_TYPE_DC:
+		case STATEMENT_TYPE_INCLUDE:
+		case STATEMENT_TYPE_REPT:
+			/* Add label to symbol table. */
+			if (label != NULL)
+			{
+				if (label[0] != '@')
+				{
+					/* This is a global label - cache it for later. */
+					free(state->last_global_label);
+					state->last_global_label = DuplicateStringAndHandleError(state, label);
+				}
+
+				if (!state->doing_fix_up)
+				{
+					char *expanded_identifier;
+					const char *identifier;
+					Dictionary_Entry *dictionary_entry;
+
+					expanded_identifier = NULL;
+					identifier = label;
+
+					if (label[0] == '@')
+					{
+						/* This is a local label - prefix it with the previous global label. */
+						expanded_identifier = ExpandLocalIdentifier(state, label);
+
+						if (expanded_identifier == NULL)
+							OutOfMemoryError(state);
+						else
+							identifier = expanded_identifier;
+					}
+
+					/* Now add it to the symbol table. */
+					dictionary_entry = Dictionary_LookUpAndCreateIfNotExistAndHandleError(state, identifier);
+
+					if (dictionary_entry != NULL)
+					{
+						dictionary_entry->type = SYMBOL_CONSTANT;
+						dictionary_entry->data.unsigned_integer = state->program_counter;
+					}
+
+					free(expanded_identifier);
+				}
+			}
+
+			break;
+
+		case STATEMENT_TYPE_ENDR:
+		case STATEMENT_TYPE_ENDM:
+			SemanticError(state, "Cannot have a label on this type of statement.");
+			break;
+
+		case STATEMENT_TYPE_MACRO:
+			/* Silently passed through to ProcessMacro... */
+			break;
+	}
+
 	switch (statement->type)
 	{
 		case STATEMENT_TYPE_EMPTY:
@@ -3344,6 +3504,11 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			break;
 
 		case STATEMENT_TYPE_MACRO:
+			ProcessMacro(state, label);
+			break;
+
+		case STATEMENT_TYPE_ENDM:
+			SemanticError(state, "Stray ENDM with no preceeding MACRO detected.");
 			break;
 	}
 }
@@ -3382,7 +3547,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 	}
 
 	source_line_sans_label = &source_line[label_length];
-	source_line_sans_label += strspn(source_line_sans_label, " \t:");
+	source_line_sans_label += strspn(source_line_sans_label, " \t:"); /* TODO - Remove the ':' for variable assignments! */
 
 	switch (state->mode)
 	{
@@ -3397,14 +3562,18 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 			if (entry != NULL && entry->type == SYMBOL_MACRO)
 			{
 				/* Macro invocation. */
-			}
-			else if (strcmp(source_line_sans_label, "macro") == 0)
-			{
-				/* Macro declaration begin. */
-			}
-			else if (strcmp(source_line_sans_label, "endm") == 0)
-			{
-				/* Macro declaration end. */
+				const Macro *macro = entry->data.pointer;
+				const SourceLineListNode *source_line_list_node;
+
+				const Location location = state->location;
+				state->location.previous = &location;
+				state->location.file_path = macro->name;
+				state->location.line_number = 0;
+
+				for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
+					AssembleLine(state, output_file, source_line_list_node->source_line);
+
+				state->location = location;
 			}
 			else
 			{
@@ -3429,58 +3598,9 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 						break;
 
 					case 0: /* No error. */
-						/* Add label to symbol table. */
-						if (label != NULL)
-						{
-							if (label[0] != '@')
-							{
-								/* This is a global label - cache it for later. */
-								free(state->last_global_label);
-								state->last_global_label = DuplicateStringAndHandleError(state, label);
-							}
-
-							if (!state->doing_fix_up)
-							{
-								char *expanded_identifier;
-								const char *identifier;
-								Dictionary_Entry *dictionary_entry;
-
-								expanded_identifier = NULL;
-								identifier = label;
-
-								if (label[0] == '@')
-								{
-									/* This is a local label - prefix it with the previous global label. */
-									expanded_identifier = ExpandLocalIdentifier(state, label);
-
-									if (expanded_identifier == NULL)
-										OutOfMemoryError(state);
-									else
-										identifier = expanded_identifier;
-								}
-
-								/* Now add it to the symbol table. */
-								if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
-								{
-									OutOfMemoryError(state);
-								}
-								else if (dictionary_entry->type != -1)
-								{
-									SemanticError(state, "Symbol '%s' already defined.", identifier);
-								}
-								else
-								{
-									dictionary_entry->type = SYMBOL_CONSTANT;
-									dictionary_entry->data.unsigned_integer = state->program_counter;
-								}
-
-								free(expanded_identifier);
-							}
-						}
-
 						Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state->program_counter;
 
-						ProcessStatement(state, output_file, &statement);
+						ProcessStatement(state, output_file, &statement, label);
 
 						break;
 				}
@@ -3491,33 +3611,17 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 
 		case MODE_REPT:
 			if (strcmp(source_line_sans_label, "endr") == 0)
-			{
 				TerminateRept(state, output_file);
-			}
 			else
-			{
-				/* Add this source line to the REPT's list. */
-				SourceLineListNode *source_line_list_node = malloc(sizeof(SourceLineListNode));
+				AddToSourceLineList(state, &state->rept.source_line_list, source_line);
 
-				if (source_line_list_node == NULL)
-				{
-					OutOfMemoryError(state);
-				}
-				else
-				{
-					/* Append to the end of the list. */
-					if (state->rept.source_line_list_tail != NULL)
-						state->rept.source_line_list_tail->next = source_line_list_node;
-					else
-						state->rept.source_line_list_head = source_line_list_node;
+			break;
 
-					state->rept.source_line_list_tail = source_line_list_node;
-
-					/* Initialise the list node. */
-					source_line_list_node->next = NULL;
-					source_line_list_node->source_line = DuplicateStringAndHandleError(state, source_line);
-				}
-			}
+		case MODE_MACRO:
+			if (strcmp(source_line_sans_label, "endm") == 0)
+				TerminateMacro(state);
+			else
+				AddToSourceLineList(state, &state->macro.source_line_list, source_line);
 
 			break;
 	}
@@ -3565,7 +3669,20 @@ static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_fi
 
 			SemanticError(state, "REPT statement beginning at line %lu is missing its ENDR.", state->rept.line_number);
 			break;
+
+		case MODE_MACRO:
+			TerminateMacro(state);
+
+			SemanticError(state, "MACRO statement beginning at line %lu is missing its ENDM.", state->macro.line_number);
+			break;
 	}
+}
+
+static cc_bool DeleteNonConstants(Dictionary_Entry *entry, const char *identifier, void *user_data)
+{
+	(void)user_data;
+
+	return (strcmp(identifier, ",,PROGRAM_COUNTER,,") == 0 || entry->type == SYMBOL_CONSTANT);
 }
 
 cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char *input_file_path)
@@ -3582,12 +3699,10 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 
 	Dictionary_Init(&state.dictionary);
 
+	dictionary_entry = Dictionary_LookUpAndCreateIfNotExistAndHandleError(&state, ",,PROGRAM_COUNTER,,");
+
 	/* Create the dictionary entry for the program counter ahead of time. */
-	if (!Dictionary_LookUpAndCreateIfNotExist(&state.dictionary, ",,PROGRAM_COUNTER,,", &dictionary_entry))
-	{
-		OutOfMemoryError(&state);
-	}
-	else
+	if (dictionary_entry != NULL)
 	{
 		dictionary_entry->type = SYMBOL_VARIABLE;
 
@@ -3611,6 +3726,8 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 			AssembleFile(&state, output_file, input_file);
 
 			free(state.last_global_label);
+
+			Dictionary_Filter(&state.dictionary, DeleteNonConstants, NULL);
 
 			/* Revert back to the initial state. */
 			rewind(input_file);
