@@ -3497,14 +3497,19 @@ static void ProcessEqu(SemanticState *state, const Value *value, const char *lab
 {
 	if (!state->doing_fix_up)
 	{
-		Dictionary_Entry *symbol;
+		unsigned long resolved_value;
 
-		symbol = CreateSymbol(state, label);
-
-		if (symbol != NULL)
+		if (ResolveValue(state, value, &resolved_value))
 		{
-			if (ResolveValue(state, value, &symbol->data.unsigned_integer))
+			Dictionary_Entry *symbol;
+
+			symbol = CreateSymbol(state, label);
+
+			if (symbol != NULL)
+			{
 				symbol->type = SYMBOL_CONSTANT;
+				symbol->data.unsigned_integer = resolved_value;
+			}
 		}
 	}
 }
