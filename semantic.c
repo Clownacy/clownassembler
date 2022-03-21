@@ -3543,6 +3543,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			case STATEMENT_TYPE_INCBIN:
 			case STATEMENT_TYPE_REPT:
 			case STATEMENT_TYPE_IF:
+			case STATEMENT_TYPE_EVEN:
 				/* Add label to symbol table. */
 				if (label != NULL)
 				{
@@ -3673,6 +3674,13 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 					state->if_condition = cc_true;
 					--state->if_nesting;
 				}
+
+				break;
+
+			case STATEMENT_TYPE_EVEN:
+				/* Pad to the nearest even address. */
+				if (state->program_counter & 1)
+					fputc(0, output_file);
 
 				break;
 		}

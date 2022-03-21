@@ -184,6 +184,7 @@ if              TOKEN(DIRECTIVE_IF)
 else            TOKEN(DIRECTIVE_ELSE)
 endc            TOKEN(DIRECTIVE_ENDC)
 endif           TOKEN(DIRECTIVE_ENDC)
+even            TOKEN(DIRECTIVE_EVEN)
 "."             return yytext[0];
 ","             return yytext[0];
 "("             return yytext[0];
