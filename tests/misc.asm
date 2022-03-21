@@ -375,6 +375,13 @@ TheGreatestMacro2 macro opcode
 	dcb.w	4,$22
 	dcb.l	4,$44
 
+	; Testing EQU
+TimesToRept equ 2
+
+	rept TimesToRept
+	dc.l	'TWO2'
+	endr
+
   ; More blank lines to test support for trailing blank statements
 
 

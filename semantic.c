@@ -3473,6 +3473,24 @@ static void ProcessMacro(SemanticState *state, const StatementMacro *macro, cons
 	state->macro.source_line_list.tail = NULL;
 }
 
+static void ProcessEqu(SemanticState *state, const StatementEqu *equ, const char *label)
+{
+	if (!state->doing_fix_up)
+	{
+		Dictionary_Entry *dictionary_entry;
+
+		dictionary_entry = Dictionary_LookUpAndCreateIfNotExistAndHandleError(state, label);
+
+		if (dictionary_entry != NULL)
+		{
+			if (!ResolveValue(state, &equ->value, &dictionary_entry->data.unsigned_integer))
+				SemanticError(state, "EQU value must be evaluable on the first pass.");
+			else
+				dictionary_entry->type = SYMBOL_CONSTANT;
+		}
+	}
+}
+
 static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement, const char *label)
 {
 	switch (statement->type)
@@ -3533,7 +3551,13 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			break;
 
 		case STATEMENT_TYPE_MACRO:
-			/* Silently passed through to ProcessMacro... */
+		case STATEMENT_TYPE_EQU:
+			if (label == NULL)
+			{
+				SemanticError(state, "This type of statement must have a label.");
+				return;
+			}
+
 			break;
 	}
 
@@ -3577,6 +3601,10 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 		case STATEMENT_TYPE_ENDM:
 			SemanticError(state, "Stray ENDM with no preceeding MACRO detected.");
 			break;
+
+		case STATEMENT_TYPE_EQU:
+			ProcessEqu(state, &statement->data.equ, label);
+			break;
 	}
 }
 
@@ -3610,7 +3638,11 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 	}
 
 	source_line_sans_label = &source_line[label_length];
-	source_line_sans_label += strspn(source_line_sans_label, " \t:"); /* TODO - Remove the ':' for variable assignments! */
+
+	if (source_line_sans_label[0] == ':')
+		++source_line_sans_label;
+
+	source_line_sans_label += strspn(source_line_sans_label, " \t");
 
 	switch (state->mode)
 	{
