@@ -271,6 +271,12 @@ typedef struct Include
 	char *path;
 } Include;
 
+typedef struct StatementIncbin
+{
+	char *path;
+	Value start;
+} StatementIncbin;
+
 typedef struct Rept
 {
 	Value total_repeats;
@@ -289,6 +295,7 @@ typedef struct Statement
 		STATEMENT_TYPE_INSTRUCTION,
 		STATEMENT_TYPE_DC,
 		STATEMENT_TYPE_INCLUDE,
+		STATEMENT_TYPE_INCBIN,
 		STATEMENT_TYPE_REPT,
 		STATEMENT_TYPE_ENDR,
 		STATEMENT_TYPE_MACRO,
@@ -299,6 +306,7 @@ typedef struct Statement
 		Instruction instruction;
 		Dc dc;
 		Include include;
+		StatementIncbin incbin;
 		Rept rept;
 		StatementMacro macro;
 	} data;
@@ -461,6 +469,7 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 %token TOKEN_DIRECTIVE_MACRO
 %token TOKEN_DIRECTIVE_ENDM
 %token TOKEN_DIRECTIVE_INCLUDE
+%token TOKEN_DIRECTIVE_INCBIN
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -531,6 +540,19 @@ statement
 	{
 		statement->type = STATEMENT_TYPE_INCLUDE;
 		statement->data.include.path = $2;
+	}
+	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING
+	{
+		statement->type = STATEMENT_TYPE_INCBIN;
+		statement->data.incbin.path = $2;
+		statement->data.incbin.start.type = VALUE_NUMBER;
+		statement->data.incbin.start.data.integer = 0;
+	}
+	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' value
+	{
+		statement->type = STATEMENT_TYPE_INCBIN;
+		statement->data.incbin.path = $2;
+		statement->data.incbin.start = $4;
 	}
 	| TOKEN_DIRECTIVE_REPT value
 	{

@@ -3390,6 +3390,34 @@ static void ProcessInclude(SemanticState *state, FILE *output_file, const Includ
 	}
 }
 
+static void ProcessIncbin(SemanticState *state, FILE *output_file, const StatementIncbin *incbin)
+{
+	FILE *input_file = fopen(incbin->path, "rb");
+
+	if (input_file == NULL)
+	{
+		SemanticError(state, "File '%s' could not be opened.", incbin->path);
+	}
+	else
+	{
+		unsigned long value;
+		int character;
+
+		if (!ResolveValue(state, &incbin->start, &value))
+		{
+			SemanticError(state, "INCBIN start value must be evaluable on the first pass.");
+			value = 0;
+		}
+
+		fseek(input_file, value, SEEK_SET);
+
+		while ((character = fgetc(input_file)) != EOF)
+			fputc(character, output_file);
+
+		fclose(input_file);
+	}
+}
+
 static void ProcessRept(SemanticState *state, const Rept *rept)
 {
 	state->mode = MODE_REPT;
@@ -3426,6 +3454,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 		case STATEMENT_TYPE_INSTRUCTION:
 		case STATEMENT_TYPE_DC:
 		case STATEMENT_TYPE_INCLUDE:
+		case STATEMENT_TYPE_INCBIN:
 		case STATEMENT_TYPE_REPT:
 			/* Add label to symbol table. */
 			if (label != NULL)
@@ -3495,6 +3524,10 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 
 		case STATEMENT_TYPE_INCLUDE:
 			ProcessInclude(state, output_file, &statement->data.include);
+			break;
+
+		case STATEMENT_TYPE_INCBIN:
+			ProcessIncbin(state, output_file, &statement->data.incbin);
 			break;
 
 		case STATEMENT_TYPE_REPT:

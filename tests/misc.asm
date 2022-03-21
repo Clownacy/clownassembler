@@ -365,6 +365,10 @@ TheGreatestMacro2 macro opcode
 	dc.w	'SE','GA'
 	dc.l	'SEGA'
 
+	binclude "binary.bin"
+	dc.l	'STRT'
+	binclude "binary.bin",2
+
   ; More blank lines to test support for trailing blank statements
 
 

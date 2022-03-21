@@ -176,6 +176,8 @@ endr            TOKEN(DIRECTIVE_ENDR)
 macro           TOKEN(DIRECTIVE_MACRO)
 endm            TOKEN(DIRECTIVE_ENDM)
 include         TOKEN(DIRECTIVE_INCLUDE)
+incbin          TOKEN(DIRECTIVE_INCBIN)
+binclude        TOKEN(DIRECTIVE_INCBIN)
 "."             return yytext[0];
 ","             return yytext[0];
 "("             return yytext[0];
