@@ -221,7 +221,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
 	if (string_end[0] != '\0')
 	{
-		m68kasm_error(yyscanner, NULL, "Could not parse number.");
+		m68kasm_error(yyscanner, NULL, "This decimal number is invalid and cannot be parsed.");
 		return M68KASM_error;
 	}
 
@@ -234,7 +234,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
 	if (string_end[0] != '\0')
 	{
-		m68kasm_error(yyscanner, NULL, "Could not parse number.");
+		m68kasm_error(yyscanner, NULL, "This hexacdecimal number is invalid and cannot be parsed.");
 		return M68KASM_error;
 	}
 
@@ -247,7 +247,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
 	if (string_end[0] != '\0')
 	{
-		m68kasm_error(yyscanner, NULL, "Could not parse number.");
+		m68kasm_error(yyscanner, NULL, "This binary number is invalid and cannot be parsed.");
 		return M68KASM_error;
 	}
 
