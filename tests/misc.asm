@@ -346,10 +346,11 @@ Delta:	rept 8
 	; Testing macros
 TheGreatestMacro macro
 	dc.l	*
+	move.\0	\1,\2
 	endm
 
-	TheGreatestMacro (a0,d0.w),(a1,d1.l)
-	TheGreatestMacro
+	TheGreatestMacro.b (a0,d0.w),(a1,d1.l)
+	TheGreatestMacro.w #1000,(0).l
 
   ; More blank lines to test support for trailing blank statements
 

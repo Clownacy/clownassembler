@@ -3666,14 +3666,83 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 					const Macro *macro = entry->data.pointer;
 					const SourceLineListNode *source_line_list_node;
 
+					/* Push a new location (this macro).*/
 					const Location location = state->location;
 					state->location.previous = &location;
 					state->location.file_path = macro->name;
 					state->location.line_number = 0;
 
 					for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-						AssembleLine(state, output_file, source_line_list_node->source_line);
+					{
+						const char *parameter_position;
+						const char *remaining_line;
+						char *modified_line;
 
+						/* Update the source line for the error printers. */
+						state->source_line = source_line_list_node->source_line;
+
+						/* A bit of a cheat so that errors that occur before the call to AssembleLine still show the correct line number. */
+						++state->location.line_number;
+
+						/* Replace the parameter placeholders with their proper contents. */
+						remaining_line = modified_line = DuplicateStringAndHandleError(state, source_line_list_node->source_line);
+
+						if (modified_line != NULL)
+						{
+							/* Replace numerical parameter placeholders ('\0', '\1', '\2', etc.). */
+							while ((parameter_position = strchr(remaining_line, '\\')) != NULL)
+							{
+								/* Obtain numerical index of the parameter. */
+								char *end;
+
+								const unsigned long index = strtoul(parameter_position + 1, &end, 10);
+
+								/* Error if the requested parameter was not passed to the macro. */
+								if (index >= total_parameters)
+								{
+									SemanticError(state, "Macro parameter %lu used but not supplied by the caller.", index);
+									remaining_line = end;
+								}
+								else
+								{
+									/* Split the line in two, and insert the parameter between them. */
+									char *new_modified_line;
+
+									const size_t first_half_length = parameter_position - modified_line;
+									const size_t parameter_length = strlen(parameters[index]);
+									const size_t second_half_length = strlen(end);
+
+									new_modified_line = MallocAndHandleError(state, first_half_length + parameter_length + second_half_length + 1);
+
+									if (new_modified_line != NULL)
+									{
+										memcpy(new_modified_line, modified_line, first_half_length);
+										memcpy(new_modified_line + first_half_length, parameters[index], parameter_length);
+										memcpy(new_modified_line + first_half_length + parameter_length, end, second_half_length);
+										new_modified_line[first_half_length + parameter_length + second_half_length] = '\0';
+
+										/* Continue our search from after the inserted parameter. */
+										remaining_line = &new_modified_line[first_half_length + parameter_length];
+
+										/* We don't need the old copy of the line anymore: free it, and replace it with the new copy. */
+										free(modified_line);
+										modified_line = new_modified_line;
+									}
+								}
+							}
+						}
+
+						/* Undo our hack from before. */
+						--state->location.line_number;
+
+						/* Send our expanded macro line to be assembled. */
+						AssembleLine(state, output_file, modified_line != NULL ? modified_line : source_line_list_node->source_line);
+
+						/* The expanded line is done, so we can free it now. */
+						free(modified_line);
+					}
+
+					/* Pop location. */
 					state->location = location;
 				}
 
@@ -3684,26 +3753,6 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 					for (i = 0; i < total_parameters; ++i)
 						free(parameters[i]);
 				}
-
-#if 0
-				const Macro *macro = entry->data.pointer;
-				const SourceLineListNode *source_line_list_node;
-
-				for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-				{
-					const char *remaining_line = source_line_list_node->source_line;
-					const char *parameter_position;
-
-					while ((parameter_position = strchr(remaining_line, '\\')) != NULL)
-					{
-						char *end;
-						unsigned long index = strtoul(parameter_position + 1, &end);
-						remaining_line = end;
-					}
-
-
-				}
-#endif
 			}
 			else
 			{
