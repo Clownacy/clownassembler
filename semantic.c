@@ -3485,9 +3485,7 @@ static void ProcessEqu(SemanticState *state, const Value *value, const char *lab
 
 		if (symbol != NULL)
 		{
-			if (!ResolveValue(state, value, &symbol->data.unsigned_integer))
-				SemanticError(state, "EQU value must be evaluable on the first pass.");
-			else
+			if (ResolveValue(state, value, &symbol->data.unsigned_integer))
 				symbol->type = SYMBOL_CONSTANT;
 		}
 	}
