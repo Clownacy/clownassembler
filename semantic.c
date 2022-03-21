@@ -3457,7 +3457,6 @@ static void ProcessIncbin(SemanticState *state, FILE *output_file, const Stateme
 	else
 	{
 		unsigned long value;
-		int character;
 
 		if (!ResolveValue(state, &incbin->start, &value))
 		{
@@ -3465,7 +3464,8 @@ static void ProcessIncbin(SemanticState *state, FILE *output_file, const Stateme
 			value = 0;
 		}
 
-		fseek(input_file, value, SEEK_SET);
+		if (fseek(input_file, value, SEEK_SET) != 0)
+			SemanticError(state, "Invalid start value.");
 
 		if (incbin->has_length)
 		{
@@ -3478,11 +3478,23 @@ static void ProcessIncbin(SemanticState *state, FILE *output_file, const Stateme
 				length = 0;
 			}
 
-			for (i = 0; i < length && (character = fgetc(input_file)) != EOF; ++i)
+			for (i = 0; i < length; ++i)
+			{
+				const int character = fgetc(input_file);
+
+				if (character == EOF)
+				{
+					SemanticError(state, "Length value is larger than the remaining bytes in the file.");
+					break;
+				}
+
 				fputc(character, output_file);
+			}
 		}
 		else
 		{
+			int character;
+
 			while ((character = fgetc(input_file)) != EOF)
 				fputc(character, output_file);
 		}
