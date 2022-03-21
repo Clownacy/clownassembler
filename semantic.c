@@ -52,6 +52,8 @@ typedef struct SemanticState
 	yyscan_t flex_state;
 	char line_buffer[1024];
 	const char *source_line;
+	cc_bool if_condition;
+	unsigned int if_nesting;
 	enum
 	{
 		MODE_NORMAL,
@@ -71,7 +73,6 @@ typedef struct SemanticState
 		IdentifierListNode *parameter_names;
 		SourceLineList source_line_list;
 	} macro;
-	cc_bool if_condition;
 } SemanticState;
 
 typedef struct Macro
@@ -3503,127 +3504,157 @@ static void ProcessIf(SemanticState *state, const Value *value)
 	}
 
 	state->if_condition = resolved_value != 0;
+
+	++state->if_nesting;
 }
 
 static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement, const char *label)
 {
-	switch (statement->type)
+	if (state->if_condition || statement->type == STATEMENT_TYPE_ELSE || statement->type == STATEMENT_TYPE_ENDC)
 	{
-		case STATEMENT_TYPE_EMPTY:
-		case STATEMENT_TYPE_INSTRUCTION:
-		case STATEMENT_TYPE_DC:
-		case STATEMENT_TYPE_DCB:
-		case STATEMENT_TYPE_INCLUDE:
-		case STATEMENT_TYPE_INCBIN:
-		case STATEMENT_TYPE_REPT:
-		case STATEMENT_TYPE_IF:
-			/* Add label to symbol table. */
-			if (label != NULL)
-			{
-				if (label[0] != '@')
+		switch (statement->type)
+		{
+			case STATEMENT_TYPE_EMPTY:
+			case STATEMENT_TYPE_INSTRUCTION:
+			case STATEMENT_TYPE_DC:
+			case STATEMENT_TYPE_DCB:
+			case STATEMENT_TYPE_INCLUDE:
+			case STATEMENT_TYPE_INCBIN:
+			case STATEMENT_TYPE_REPT:
+			case STATEMENT_TYPE_IF:
+				/* Add label to symbol table. */
+				if (label != NULL)
 				{
-					/* This is a global label - cache it for later. */
-					free(state->last_global_label);
-					state->last_global_label = DuplicateStringAndHandleError(state, label);
-				}
-
-				if (!state->doing_fix_up)
-				{
-					char *expanded_identifier;
-					const char *identifier;
-					Dictionary_Entry *symbol;
-
-					expanded_identifier = NULL;
-					identifier = label;
-
-					if (label[0] == '@')
+					if (label[0] != '@')
 					{
-						/* This is a local label - prefix it with the previous global label. */
-						expanded_identifier = ExpandLocalIdentifier(state, label);
-
-						if (expanded_identifier != NULL)
-							identifier = expanded_identifier;
+						/* This is a global label - cache it for later. */
+						free(state->last_global_label);
+						state->last_global_label = DuplicateStringAndHandleError(state, label);
 					}
 
-					/* Now add it to the symbol table. */
-					symbol = CreateSymbol(state, identifier);
-
-					if (symbol != NULL)
+					if (!state->doing_fix_up)
 					{
-						symbol->type = SYMBOL_CONSTANT;
-						symbol->data.unsigned_integer = state->program_counter;
+						char *expanded_identifier;
+						const char *identifier;
+						Dictionary_Entry *symbol;
+
+						expanded_identifier = NULL;
+						identifier = label;
+
+						if (label[0] == '@')
+						{
+							/* This is a local label - prefix it with the previous global label. */
+							expanded_identifier = ExpandLocalIdentifier(state, label);
+
+							if (expanded_identifier != NULL)
+								identifier = expanded_identifier;
+						}
+
+						/* Now add it to the symbol table. */
+						symbol = CreateSymbol(state, identifier);
+
+						if (symbol != NULL)
+						{
+							symbol->type = SYMBOL_CONSTANT;
+							symbol->data.unsigned_integer = state->program_counter;
+						}
+
+						free(expanded_identifier);
 					}
-
-					free(expanded_identifier);
 				}
-			}
 
-			break;
+				break;
 
-		case STATEMENT_TYPE_ENDR:
-		case STATEMENT_TYPE_ENDM:
-			SemanticError(state, "Cannot have a label on this type of statement.");
-			break;
+			case STATEMENT_TYPE_ENDR:
+			case STATEMENT_TYPE_ENDM:
+			case STATEMENT_TYPE_ELSE:
+			case STATEMENT_TYPE_ENDC:
+				if (label != NULL)
+					SemanticError(state, "Cannot have a label on this type of statement.");
 
-		case STATEMENT_TYPE_MACRO:
-		case STATEMENT_TYPE_EQU:
-			if (label == NULL)
-			{
-				SemanticError(state, "This type of statement must have a label.");
-				return;
-			}
+				break;
 
-			break;
-	}
+			case STATEMENT_TYPE_MACRO:
+			case STATEMENT_TYPE_EQU:
+				if (label == NULL)
+				{
+					SemanticError(state, "This type of statement must have a label.");
+					return;
+				}
 
-	switch (statement->type)
-	{
-		case STATEMENT_TYPE_EMPTY:
-			break;
+				break;
+		}
 
-		case STATEMENT_TYPE_INSTRUCTION:
-			ProcessInstruction(state, output_file, &statement->data.instruction);
-			break;
+		switch (statement->type)
+		{
+			case STATEMENT_TYPE_EMPTY:
+				break;
 
-		case STATEMENT_TYPE_DC:
-			ProcessDc(state, output_file, &statement->data.dc);
-			break;
+			case STATEMENT_TYPE_INSTRUCTION:
+				ProcessInstruction(state, output_file, &statement->data.instruction);
+				break;
 
-		case STATEMENT_TYPE_DCB:
-			ProcessDcb(state, output_file, &statement->data.dcb);
-			break;
+			case STATEMENT_TYPE_DC:
+				ProcessDc(state, output_file, &statement->data.dc);
+				break;
 
-		case STATEMENT_TYPE_INCLUDE:
-			ProcessInclude(state, output_file, &statement->data.include);
-			break;
+			case STATEMENT_TYPE_DCB:
+				ProcessDcb(state, output_file, &statement->data.dcb);
+				break;
 
-		case STATEMENT_TYPE_INCBIN:
-			ProcessIncbin(state, output_file, &statement->data.incbin);
-			break;
+			case STATEMENT_TYPE_INCLUDE:
+				ProcessInclude(state, output_file, &statement->data.include);
+				break;
 
-		case STATEMENT_TYPE_REPT:
-			ProcessRept(state, &statement->data.rept);
-			break;
+			case STATEMENT_TYPE_INCBIN:
+				ProcessIncbin(state, output_file, &statement->data.incbin);
+				break;
 
-		case STATEMENT_TYPE_ENDR:
-			SemanticError(state, "Stray ENDR with no preceeding REPT detected.");
-			break;
+			case STATEMENT_TYPE_REPT:
+				ProcessRept(state, &statement->data.rept);
+				break;
 
-		case STATEMENT_TYPE_MACRO:
-			ProcessMacro(state, &statement->data.macro, label);
-			break;
+			case STATEMENT_TYPE_ENDR:
+				SemanticError(state, "Stray ENDR with no preceeding REPT detected.");
+				break;
 
-		case STATEMENT_TYPE_ENDM:
-			SemanticError(state, "Stray ENDM with no preceeding MACRO detected.");
-			break;
+			case STATEMENT_TYPE_MACRO:
+				ProcessMacro(state, &statement->data.macro, label);
+				break;
 
-		case STATEMENT_TYPE_EQU:
-			ProcessEqu(state, &statement->data.value, label);
-			break;
+			case STATEMENT_TYPE_ENDM:
+				SemanticError(state, "Stray ENDM with no preceeding MACRO detected.");
+				break;
 
-		case STATEMENT_TYPE_IF:
-			ProcessIf(state, &statement->data.value);
-			break;
+			case STATEMENT_TYPE_EQU:
+				ProcessEqu(state, &statement->data.value, label);
+				break;
+
+			case STATEMENT_TYPE_IF:
+				ProcessIf(state, &statement->data.value);
+				break;
+
+			case STATEMENT_TYPE_ELSE:
+				if (state->if_nesting == 0)
+					SemanticError(state, "Stray ELSE with no preceeding IF detected.");
+				else
+					state->if_condition = !state->if_condition;
+
+				break;
+
+			case STATEMENT_TYPE_ENDC:
+				if (state->if_nesting == 0)
+				{
+					SemanticError(state, "Stray ENDC with no preceeding IF detected.");
+				}
+				else
+				{
+					state->if_condition = cc_true;
+					--state->if_nesting;
+				}
+
+				break;
+		}
 	}
 }
 
@@ -3929,15 +3960,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				if (!Dictionary_Remove(&state->dictionary, "narg"))
 					InternalError(state, "Could not symbol 'narg' from the dictionary.");
 			}
-			else if (strcmp(source_line_sans_label, "else") == 0)
-			{
-				state->if_condition = !state->if_condition;
-			}
-			else if (strcmp(source_line_sans_label, "endc") == 0)
-			{
-				state->if_condition = cc_true;
-			}
-			else if (state->if_condition)
+			else
 			{
 				/* Normal assembly line. */
 				Statement statement;
@@ -4082,6 +4105,8 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 			/* TODO - Some of these should be done elsewhere. */
 			state.program_counter = 0;
 			state.last_global_label = NULL;
+			state.if_condition = cc_true;
+			state.if_nesting = 0;
 
 			state.doing_fix_up = cc_false;
 
@@ -4103,6 +4128,8 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 			/* Process the fix-ups, reassembling instructions and reprocessing directives that could not be done in the first pass. */
 			state.program_counter = 0;
 			state.last_global_label = NULL;
+			state.if_condition = cc_true;
+			state.if_nesting = 0;
 
 			state.doing_fix_up = cc_true;
 

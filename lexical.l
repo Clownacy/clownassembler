@@ -181,6 +181,8 @@ incbin          TOKEN(DIRECTIVE_INCBIN)
 binclude        TOKEN(DIRECTIVE_INCBIN)
 equ             TOKEN(DIRECTIVE_EQU)
 if              TOKEN(DIRECTIVE_IF)
+else            TOKEN(DIRECTIVE_ELSE)
+endc            TOKEN(DIRECTIVE_ENDC)
 "."             return yytext[0];
 ","             return yytext[0];
 "("             return yytext[0];
