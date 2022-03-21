@@ -204,9 +204,19 @@ typedef struct Value
 
 typedef struct ValueListNode
 {
-	Value value;
-
 	struct ValueListNode *next;
+
+	enum
+	{
+		VALUE_LIST_NODE_TYPE_VALUE,
+		VALUE_LIST_NODE_TYPE_STRING
+	} type;
+
+	union
+	{
+		Value value;
+		char *string;
+	} shared;
 } ValueListNode;
 
 typedef struct IdentifierListNode
@@ -634,7 +644,8 @@ value_list
 		}
 		else
 		{
-			node->value = $1;
+			node->type = VALUE_LIST_NODE_TYPE_VALUE;
+			node->shared.value = $1;
 			node->next = NULL;
 		}
 
@@ -652,7 +663,49 @@ value_list
 		}
 		else
 		{
-			node->value = $3;
+			node->type = VALUE_LIST_NODE_TYPE_VALUE;
+			node->shared.value = $3;
+			node->next = NULL;
+
+			if ($$.head == NULL)
+				$$.head = node;
+			else
+				((ValueListNode*)$$.tail)->next = node;
+
+			$$.tail = node;
+		}
+	}
+	| TOKEN_STRING
+	{
+		ValueListNode *node = malloc(sizeof(ValueListNode));
+
+		if (node == NULL)
+		{
+			YYNOMEM;
+		}
+		else
+		{
+			node->type = VALUE_LIST_NODE_TYPE_STRING;
+			node->shared.string = $1;
+			node->next = NULL;
+		}
+
+		$$.head = $$.tail = node;
+	}
+	| value_list ',' TOKEN_STRING
+	{
+		ValueListNode *node = malloc(sizeof(ValueListNode));
+
+		$$ = $1;
+
+		if (node == NULL)
+		{
+			YYNOMEM;
+		}
+		else
+		{
+			node->type = VALUE_LIST_NODE_TYPE_STRING;
+			node->shared.string = $3;
 			node->next = NULL;
 
 			if ($$.head == NULL)

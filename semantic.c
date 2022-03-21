@@ -3364,12 +3364,30 @@ static void ProcessDc(SemanticState *state, FILE *output_file, const Dc *dc)
 
 	for (value_list_node = dc->values; value_list_node != NULL; value_list_node = value_list_node->next)
 	{
-		unsigned long value;
+		switch (value_list_node->type)
+		{
+			case VALUE_LIST_NODE_TYPE_VALUE:
+			{
+				unsigned long value;
 
-		if (!ResolveValue(state, &value_list_node->value, &value))
-			value = 0;
+				if (!ResolveValue(state, &value_list_node->shared.value, &value))
+					value = 0;
 
-		OutputDcValue(state, output_file, dc->size, value);
+				OutputDcValue(state, output_file, dc->size, value);
+
+				break;
+			}
+
+			case VALUE_LIST_NODE_TYPE_STRING:
+			{
+				const char *character;
+
+				for (character = value_list_node->shared.string; *character != '\0'; ++character)
+					OutputDcValue(state, output_file, dc->size, *character);
+
+				break;
+			}
+		}
 	}
 }
 
