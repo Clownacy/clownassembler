@@ -52,8 +52,8 @@ typedef struct SemanticState
 	yyscan_t flex_state;
 	char line_buffer[1024];
 	const char *source_line;
-	cc_bool if_condition;
-	unsigned int if_nesting;
+	unsigned int current_if_level;
+	unsigned int false_if_level;
 	enum
 	{
 		MODE_NORMAL,
@@ -3525,22 +3525,28 @@ static void ProcessEqu(SemanticState *state, const Value *value, const char *lab
 
 static void ProcessIf(SemanticState *state, const Value *value)
 {
-	unsigned long resolved_value;
+	++state->current_if_level;
 
-	if (!ResolveValue(state, value, &resolved_value))
+	/* If one of the current if levels is false, then this if statement is null and void. */
+	if (state->false_if_level == 0)
 	{
-		SemanticError(state, "IF value must be evaluable on the first pass.");
-		resolved_value = 1;
+		unsigned long resolved_value;
+
+		if (!ResolveValue(state, value, &resolved_value))
+		{
+			SemanticError(state, "IF value must be evaluable on the first pass.");
+			resolved_value = 1;
+		}
+
+		/* If this condition is false, then mark this as the false if level. */
+		if (resolved_value == 0)
+			state->false_if_level = state->current_if_level;
 	}
-
-	state->if_condition = resolved_value != 0;
-
-	++state->if_nesting;
 }
 
 static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement, const char *label)
 {
-	if (state->if_condition || statement->type == STATEMENT_TYPE_ELSE || statement->type == STATEMENT_TYPE_ENDC)
+	if (state->false_if_level == 0 || statement->type == STATEMENT_TYPE_IF || statement->type == STATEMENT_TYPE_ELSE || statement->type == STATEMENT_TYPE_ENDC)
 	{
 		switch (statement->type)
 		{
@@ -3666,22 +3672,34 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 				break;
 
 			case STATEMENT_TYPE_ELSE:
-				if (state->if_nesting == 0)
+				if (state->current_if_level == 0)
+				{
 					SemanticError(state, "Stray ELSE with no preceeding IF detected.");
+				}
 				else
-					state->if_condition = !state->if_condition;
+				{
+					/* If there is no false if level, then there is now. */
+					/* Likewise, if this is the false if level, then it isn't anymore. */
+					if (state->false_if_level == 0)
+						state->false_if_level = state->current_if_level;
+					else if (state->false_if_level == state->current_if_level)
+						state->false_if_level = 0;
+				}
 
 				break;
 
 			case STATEMENT_TYPE_ENDC:
-				if (state->if_nesting == 0)
+				if (state->current_if_level == 0)
 				{
 					SemanticError(state, "Stray ENDC with no preceeding IF detected.");
 				}
 				else
 				{
-					state->if_condition = cc_true;
-					--state->if_nesting;
+					/* If this is the false if level, then it isn't anymore. */
+					if (state->false_if_level == state->current_if_level)
+						state->false_if_level = 0;
+
+					--state->current_if_level;
 				}
 
 				break;
@@ -4186,8 +4204,8 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 			/* TODO - Some of these should be done elsewhere. */
 			state.program_counter = 0;
 			state.last_global_label = NULL;
-			state.if_condition = cc_true;
-			state.if_nesting = 0;
+			state.current_if_level = 0;
+			state.false_if_level = 0;
 
 			state.doing_fix_up = cc_false;
 
@@ -4209,8 +4227,8 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 			/* Process the fix-ups, reassembling instructions and reprocessing directives that could not be done in the first pass. */
 			state.program_counter = 0;
 			state.last_global_label = NULL;
-			state.if_condition = cc_true;
-			state.if_nesting = 0;
+			state.current_if_level = 0;
+			state.false_if_level = 0;
 
 			state.doing_fix_up = cc_true;
 
