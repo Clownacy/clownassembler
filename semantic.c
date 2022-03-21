@@ -3996,17 +3996,31 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 
 		case MODE_REPT:
 			if (strcmp(source_line_sans_label, "endr") == 0)
+			{
+				if (label != NULL)
+					SemanticError(state, "Cannot have a label on this type of statement.");
+
 				TerminateRept(state, output_file);
+			}
 			else
+			{
 				AddToSourceLineList(state, &state->rept.source_line_list, source_line);
+			}
 
 			break;
 
 		case MODE_MACRO:
 			if (strcmp(source_line_sans_label, "endm") == 0)
+			{
+				if (label != NULL)
+					SemanticError(state, "Cannot have a label on this type of statement.");
+
 				TerminateMacro(state);
+			}
 			else
+			{
 				AddToSourceLineList(state, &state->macro.source_line_list, source_line);
+			}
 
 			break;
 	}
