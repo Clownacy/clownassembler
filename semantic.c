@@ -3956,10 +3956,9 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 									line_after_parameter = parameter_position + strlen(parameter_indentifier);
 								}
 
-								/* Error if the requested parameter was not passed to the macro. */
+								/* Don't bother inserting parameters that were not passed to the macro. */
 								if (parameter_index >= total_parameters)
 								{
-									SemanticError(state, "Macro parameter %lu used but not supplied by the caller.", parameter_index);
 									remaining_line = line_after_parameter;
 								}
 								else
