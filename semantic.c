@@ -107,7 +107,7 @@ __attribute__((format(printf, 2, 3))) static void SemanticWarning(SemanticState 
 {
 	va_list args;
 
-	ErrorMessageCommon(state, "Semantic warning!");
+	ErrorMessageCommon(state, "Warning!");
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
@@ -120,7 +120,7 @@ __attribute__((format(printf, 2, 3))) static void SemanticError(SemanticState *s
 {
 	va_list args;
 
-	ErrorMessageCommon(state, "Semantic error!");
+	ErrorMessageCommon(state, "Error!");
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
@@ -161,7 +161,7 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message)
 
 	(void)statement;
 
-	ErrorMessageCommon(state, "Lexical/syntax warning!");
+	ErrorMessageCommon(state, "Warning!");
 
 	fprintf(stderr, "%s\n\n", message);
 }
@@ -172,7 +172,7 @@ void m68kasm_error(void *scanner, Statement *statement, const char *message)
 
 	(void)statement;
 
-	ErrorMessageCommon(state, "Lexical/syntax error!");
+	ErrorMessageCommon(state, "Error!");
 
 	fprintf(stderr, "%s\n\n", message);
 }
