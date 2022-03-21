@@ -3682,18 +3682,46 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 static void AssembleLine(SemanticState *state, FILE *output_file, const char *source_line)
 {
 	size_t label_length;
-	const char *source_line_sans_label;
+	const char *source_line_pointer;
 	char *label;
 
 	++state->location.line_number;
 
 	state->source_line = source_line;
+	source_line_pointer = source_line;
 
-	label_length = strcspn(source_line, " \t:;");
+	label_length = strcspn(source_line_pointer, " \t:;");
+
+	if (label_length != 0)
+	{
+		/* We've found a label! */
+	}
+	else
+	{
+		/* Maybe the label has some whitespace before it: check again. */
+		source_line_pointer += strspn(source_line_pointer, " \t");
+
+		label_length = strcspn(source_line_pointer, " \t:;");
+
+		if (label_length != 0)
+		{
+			/* Since we've encountered whitespace, it's ambiguous whether this is a label or a statement.
+			   To figure it out, we have to rely on the label having a ':' after it. */
+			if (source_line_pointer[label_length] == ':')
+			{
+				/* We've found the label */
+			}
+			else
+			{
+				/* Not a label. Set 'label_length' to 0 so that later code knows that no label was found. */
+				label_length = 0;
+			}
+		}
+	}
 
 	if (label_length == 0)
 	{
-		/* This line does not have a label. */
+		/* "My disappointment is immeasurable, and my day is ruined." */
 		label = NULL;
 	}
 	else
@@ -3703,17 +3731,17 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 
 		if (label != NULL)
 		{
-			memcpy(label, source_line, label_length);
+			memcpy(label, source_line_pointer, label_length);
 			label[label_length] = '\0';
 		}
+
+		source_line_pointer += label_length;
+
+		if (source_line_pointer[0] == ':')
+			++source_line_pointer;
 	}
 
-	source_line_sans_label = &source_line[label_length];
-
-	if (source_line_sans_label[0] == ':')
-		++source_line_sans_label;
-
-	source_line_sans_label += strspn(source_line_sans_label, " \t");
+	source_line_pointer += strspn(source_line_pointer, " \t");
 
 	switch (state->mode)
 	{
@@ -3724,12 +3752,12 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 			char *keyword;
 
 			/* Extract the keyword from the source line, and look it up in the dictionary to see if it's a macro. */
-			keyword_length = strcspn(source_line_sans_label, " \t.;");
+			keyword_length = strcspn(source_line_pointer, " \t.;");
 			keyword = MallocAndHandleError(state, keyword_length + 1);
 
 			if (keyword != NULL)
 			{
-				memcpy(keyword, source_line_sans_label, keyword_length);
+				memcpy(keyword, source_line_pointer, keyword_length);
 				keyword[keyword_length] = '\0';
 
 				macro_dictionary_entry = Dictionary_LookUp(&state->dictionary, keyword);
@@ -3742,7 +3770,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 			if (macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO)
 			{
 				/* Macro invocation. */
-				const char *string_pointer = source_line_sans_label + strcspn(source_line_sans_label, " \t.;");
+				const char *string_pointer = source_line_pointer + strcspn(source_line_pointer, " \t.;");
 				char **parameters = MallocAndHandleError(state, sizeof(char*));
 				size_t total_parameters = 1;
 
@@ -3989,7 +4017,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				int parse_result;
 
 				/* Parse the source line with Flex and Bison (Lex and Yacc). */
-				buffer = m68kasm__scan_string(source_line_sans_label, state->flex_state);
+				buffer = m68kasm__scan_string(source_line_pointer, state->flex_state);
 				parse_result = m68kasm_parse(state->flex_state, &statement);
 				m68kasm__delete_buffer(buffer, state->flex_state);
 
@@ -4016,7 +4044,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 		}
 
 		case MODE_REPT:
-			if (strcmp(source_line_sans_label, "endr") == 0)
+			if (strcmp(source_line_pointer, "endr") == 0)
 			{
 				if (label != NULL)
 					SemanticError(state, "Cannot have a label on this type of statement.");
@@ -4031,7 +4059,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 			break;
 
 		case MODE_MACRO:
-			if (strcmp(source_line_sans_label, "endm") == 0)
+			if (strcmp(source_line_pointer, "endm") == 0)
 			{
 				if (label != NULL)
 					SemanticError(state, "Cannot have a label on this type of statement.");
