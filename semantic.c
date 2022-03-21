@@ -3148,8 +3148,6 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const In
 		}
 	}
 
-	fprintf(stderr, "Machine code: 0x%X\n", machine_code);
-
 	/* Output the machine code for the opcode. */
 	for (i = 2; i-- > 0; )
 		fputc((machine_code >> (8 * i)) & 0xFF, output_file);
