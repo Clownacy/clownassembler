@@ -786,6 +786,11 @@ full_opcode
 		$$ = $1;
 		$$.size = SIZE_UNDEFINED;
 	}
+	| opcode '.'
+	{
+		$$ = $1;
+		$$.size = SIZE_UNDEFINED;
+	}
 	| opcode '.' size
 	{
 		$$ = $1;
