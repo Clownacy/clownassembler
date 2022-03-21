@@ -208,7 +208,7 @@ static char* DuplicateStringAndHandleError(SemanticState *state, const char *str
 	return duplicated_string;
 }
 
-static Dictionary_Entry *Dictionary_LookUpAndCreateIfNotExistAndHandleError(SemanticState *state, const char *identifier)
+static Dictionary_Entry* CreateSymbol(SemanticState *state, const char *identifier)
 {
 	Dictionary_Entry *dictionary_entry;
 
@@ -266,13 +266,13 @@ static void TerminateRept(SemanticState *state, FILE *output_file)
 
 static void TerminateMacro(SemanticState *state)
 {
-	Dictionary_Entry *dictionary_entry;
+	Dictionary_Entry *symbol;
 
 	state->mode = MODE_NORMAL;
 
-	dictionary_entry = Dictionary_LookUpAndCreateIfNotExistAndHandleError(state, state->macro.name);
+	symbol = CreateSymbol(state, state->macro.name);
 
-	if (dictionary_entry != NULL)
+	if (symbol != NULL)
 	{
 		Macro *macro = MallocAndHandleError(state, sizeof(Macro));
 
@@ -282,8 +282,8 @@ static void TerminateMacro(SemanticState *state)
 			macro->parameter_names = state->macro.parameter_names;
 			macro->source_line_list_head = state->macro.source_line_list.head;
 
-			dictionary_entry->type = SYMBOL_MACRO;
-			dictionary_entry->data.pointer = macro;
+			symbol->type = SYMBOL_MACRO;
+			symbol->data.pointer = macro;
 		}
 	}
 }
@@ -3477,16 +3477,16 @@ static void ProcessEqu(SemanticState *state, const StatementEqu *equ, const char
 {
 	if (!state->doing_fix_up)
 	{
-		Dictionary_Entry *dictionary_entry;
+		Dictionary_Entry *symbol;
 
-		dictionary_entry = Dictionary_LookUpAndCreateIfNotExistAndHandleError(state, label);
+		symbol = CreateSymbol(state, label);
 
-		if (dictionary_entry != NULL)
+		if (symbol != NULL)
 		{
-			if (!ResolveValue(state, &equ->value, &dictionary_entry->data.unsigned_integer))
+			if (!ResolveValue(state, &equ->value, &symbol->data.unsigned_integer))
 				SemanticError(state, "EQU value must be evaluable on the first pass.");
 			else
-				dictionary_entry->type = SYMBOL_CONSTANT;
+				symbol->type = SYMBOL_CONSTANT;
 		}
 	}
 }
@@ -3516,7 +3516,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 				{
 					char *expanded_identifier;
 					const char *identifier;
-					Dictionary_Entry *dictionary_entry;
+					Dictionary_Entry *symbol;
 
 					expanded_identifier = NULL;
 					identifier = label;
@@ -3531,12 +3531,12 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 					}
 
 					/* Now add it to the symbol table. */
-					dictionary_entry = Dictionary_LookUpAndCreateIfNotExistAndHandleError(state, identifier);
+					symbol = CreateSymbol(state, identifier);
 
-					if (dictionary_entry != NULL)
+					if (symbol != NULL)
 					{
-						dictionary_entry->type = SYMBOL_CONSTANT;
-						dictionary_entry->data.unsigned_integer = state->program_counter;
+						symbol->type = SYMBOL_CONSTANT;
+						symbol->data.unsigned_integer = state->program_counter;
 					}
 
 					free(expanded_identifier);
@@ -3648,7 +3648,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 	{
 		case MODE_NORMAL:
 		{
-			const Dictionary_Entry *entry;
+			const Dictionary_Entry *macro_dictionary_entry;
 			size_t keyword_length;
 			char *keyword;
 
@@ -3661,14 +3661,14 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				memcpy(keyword, source_line_sans_label, keyword_length);
 				keyword[keyword_length] = '\0';
 
-				entry = Dictionary_LookUp(&state->dictionary, keyword);
+				macro_dictionary_entry = Dictionary_LookUp(&state->dictionary, keyword);
 			}
 			else
 			{
-				entry = NULL;
+				macro_dictionary_entry = NULL;
 			}
 
-			if (entry != NULL && entry->type == SYMBOL_MACRO)
+			if (macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO)
 			{
 				/* Macro invocation. */
 				const char *string_pointer = source_line_sans_label + strcspn(source_line_sans_label, " \t.;");
@@ -3764,20 +3764,20 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 
 				/* Define the 'narg' symbol, which represents how many parameters (arguments) have been passed to the macro. */
 				{
-					Dictionary_Entry *entry;
+					Dictionary_Entry *symbol;
 
-					entry = Dictionary_LookUpAndCreateIfNotExistAndHandleError(state, "narg");
+					symbol = CreateSymbol(state, "narg");
 
-					if (entry != NULL)
+					if (symbol != NULL)
 					{
-						entry->type = SYMBOL_CONSTANT;
-						entry->data.unsigned_integer = total_parameters - 1;
+						symbol->type = SYMBOL_CONSTANT;
+						symbol->data.unsigned_integer = total_parameters - 1;
 					}
 				}
 
 				/* Finally, invoke the macro. */
 				{
-					const Macro *macro = entry->data.pointer;
+					const Macro *macro = macro_dictionary_entry->data.pointer;
 					const SourceLineListNode *source_line_list_node;
 
 					/* Push a new location (this macro).*/
@@ -4023,7 +4023,7 @@ static cc_bool DeleteNonConstants(Dictionary_Entry *entry, const char *identifie
 cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char *input_file_path)
 {
 	SemanticState state;
-	Dictionary_Entry *dictionary_entry;
+	Dictionary_Entry *symbol;
 
 	state.success = cc_true;
 	state.location.previous = NULL;
@@ -4034,12 +4034,12 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 
 	Dictionary_Init(&state.dictionary);
 
-	dictionary_entry = Dictionary_LookUpAndCreateIfNotExistAndHandleError(&state, ",,PROGRAM_COUNTER,,");
+	symbol = CreateSymbol(&state, ",,PROGRAM_COUNTER,,");
 
 	/* Create the dictionary entry for the program counter ahead of time. */
-	if (dictionary_entry != NULL)
+	if (symbol != NULL)
 	{
-		dictionary_entry->type = SYMBOL_VARIABLE;
+		symbol->type = SYMBOL_VARIABLE;
 
 		if (m68kasm_lex_init_extra(&state, &state.flex_state) != 0)
 		{
