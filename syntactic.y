@@ -1400,6 +1400,27 @@ operand
 		$$.size = $7;
 		$$.index_register_is_address_register = $5 / 8 !=0;
 	}
+	| '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'
+	{
+		m68kasm_warning(scanner, statement, "Index register lacks a size specifier - assuming word-size for now, but you should really add an explicit size");
+		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+		$$.literal.type = VALUE_NUMBER;
+		$$.literal.data.integer = 0;
+		$$.main_register = $2;
+		$$.index_register = $4 % 8;
+		$$.size = SIZE_WORD;
+		$$.index_register_is_address_register = $4 / 8 != 0;
+	}
+	| value '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'
+	{
+		m68kasm_warning(scanner, statement, "Index register lacks a size specifier - assuming word-size for now, but you should really add an explicit size");
+		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+		$$.literal = $1;
+		$$.main_register = $3;
+		$$.index_register = $5 % 8;
+		$$.size = SIZE_WORD;
+		$$.index_register_is_address_register = $5 / 8 !=0;
+	}
 	| value '(' TOKEN_PROGRAM_COUNTER ')'
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
@@ -1420,6 +1441,25 @@ operand
 		$$.literal = $1;
 		$$.index_register = $5 % 8;
 		$$.size = $7;
+		$$.index_register_is_address_register = $5 / 8 != 0;
+	}
+	| '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'
+	{
+		m68kasm_warning(scanner, statement, "Index register lacks a size specifier - assuming word-size for now, but you should really add an explicit size");
+		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+		$$.literal.type = VALUE_NUMBER;
+		$$.literal.data.integer = 0;
+		$$.index_register = $4 % 8;
+		$$.size = SIZE_WORD;
+		$$.index_register_is_address_register = $4 / 8 != 0;
+	}
+	| value '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'
+	{
+		m68kasm_warning(scanner, statement, "Index register lacks a size specifier - assuming word-size for now, but you should really add an explicit size");
+		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+		$$.literal = $1;
+		$$.index_register = $5 % 8;
+		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $5 / 8 != 0;
 	}
 	/* Literal */
