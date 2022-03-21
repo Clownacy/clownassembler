@@ -3467,8 +3467,25 @@ static void ProcessIncbin(SemanticState *state, FILE *output_file, const Stateme
 
 		fseek(input_file, value, SEEK_SET);
 
-		while ((character = fgetc(input_file)) != EOF)
-			fputc(character, output_file);
+		if (incbin->has_length)
+		{
+			unsigned long length;
+			unsigned long i;
+
+			if (!ResolveValue(state, &incbin->length, &length))
+			{
+				SemanticError(state, "INCBIN length value must be evaluable on the first pass.");
+				length = 0;
+			}
+
+			for (i = 0; i < length && (character = fgetc(input_file)) != EOF; ++i)
+				fputc(character, output_file);
+		}
+		else
+		{
+			while ((character = fgetc(input_file)) != EOF)
+				fputc(character, output_file);
+		}
 
 		fclose(input_file);
 	}

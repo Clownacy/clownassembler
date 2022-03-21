@@ -292,6 +292,8 @@ typedef struct StatementIncbin
 {
 	char *path;
 	Value start;
+	cc_bool has_length;
+	Value length;
 } StatementIncbin;
 
 typedef struct Rept
@@ -586,12 +588,22 @@ statement
 		statement->data.incbin.path = $2;
 		statement->data.incbin.start.type = VALUE_NUMBER;
 		statement->data.incbin.start.data.integer = 0;
+		statement->data.incbin.has_length = cc_false;
 	}
 	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' value
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->data.incbin.path = $2;
 		statement->data.incbin.start = $4;
+		statement->data.incbin.has_length = cc_false;
+	}
+	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' value ',' value
+	{
+		statement->type = STATEMENT_TYPE_INCBIN;
+		statement->data.incbin.path = $2;
+		statement->data.incbin.start = $4;
+		statement->data.incbin.has_length = cc_true;
+		statement->data.incbin.length = $6;
 	}
 	| TOKEN_DIRECTIVE_REPT value
 	{

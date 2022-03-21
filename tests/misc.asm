@@ -369,6 +369,8 @@ TheGreatestMacro2 macro opcode
 	binclude "binary.bin"
 	dc.l	'STRT'
 	incbin "binary.bin",2
+	dc.l	'AGAI'
+	incbin "binary.bin",1,1
 
 	; Testing DCB
 	dcb.b	4,$11
