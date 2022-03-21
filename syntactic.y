@@ -633,6 +633,11 @@ statement
 		statement->type = STATEMENT_TYPE_EQU;
 		statement->data.value = $2;
 	}
+	| '=' value
+	{
+		statement->type = STATEMENT_TYPE_EQU;
+		statement->data.value = $2;
+	}
 	| TOKEN_DIRECTIVE_IF value
 	{
 		statement->type = STATEMENT_TYPE_IF;

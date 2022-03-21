@@ -379,6 +379,7 @@ TheGreatestMacro2 macro opcode
 
 	; Testing EQU
 TimesToRept equ 2
+TimesToNotRept = 1
 
 	rept TimesToRept
 	dc.l	'TWO2'
