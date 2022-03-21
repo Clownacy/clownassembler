@@ -192,6 +192,7 @@ binclude        TOKEN(DIRECTIVE_INCBIN)
 "-"             return yytext[0];
 "*"             return yytext[0];
 "/"             return yytext[0];
+"="             return yytext[0];
 "&&"            TOKEN(LOGICAL_AND)
 "||"            TOKEN(LOGICAL_OR)
 "=="            TOKEN(EQUALITY)

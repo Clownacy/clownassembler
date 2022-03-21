@@ -1561,6 +1561,11 @@ value5
 	{
 		$$ = $1;
 	}
+	| value6 '=' value5
+	{
+		if (!DoValue(&$$, VALUE_EQUALITY, &$1, &$3))
+			YYNOMEM;
+	}
 	| value6 TOKEN_EQUALITY value5
 	{
 		if (!DoValue(&$$, VALUE_EQUALITY, &$1, &$3))
