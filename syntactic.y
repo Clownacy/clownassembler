@@ -1381,82 +1381,46 @@ operand
 		$$.literal = $1;
 		$$.main_register = $3;
 	}
-	| '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_DATA_REGISTER '.' size ')'
+	| '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register '.' size ')'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = VALUE_NUMBER;
 		$$.literal.data.integer = 0;
 		$$.main_register = $2;
-		$$.index_register = $4;
+		$$.index_register = $4 % 8;
 		$$.size = $6;
-		$$.index_register_is_address_register = cc_false;
+		$$.index_register_is_address_register = $4 / 8 != 0;
 	}
-	| value '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_DATA_REGISTER '.' size ')'
+	| value '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register '.' size ')'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
 		$$.main_register = $3;
-		$$.index_register = $5;
+		$$.index_register = $5 % 8;
 		$$.size = $7;
-		$$.index_register_is_address_register = cc_false;
-	}
-	| '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
-	{
-		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-		$$.literal.type = VALUE_NUMBER;
-		$$.literal.data.integer = 0;
-		$$.main_register = $2;
-		$$.index_register = $4;
-		$$.size = $6;
-		$$.index_register_is_address_register = cc_true;
-	}
-	| value '(' TOKEN_ADDRESS_REGISTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
-	{
-		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-		$$.literal = $1;
-		$$.main_register = $3;
-		$$.index_register = $5;
-		$$.size = $7;
-		$$.index_register_is_address_register = cc_true;
+		$$.index_register_is_address_register = $5 / 8 !=0;
 	}
 	| value '(' TOKEN_PROGRAM_COUNTER ')'
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		$$.literal = $1;
 	}
-	| '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_DATA_REGISTER '.' size ')'
+	| '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register '.' size ')'
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = VALUE_NUMBER;
 		$$.literal.data.integer = 0;
-		$$.index_register = $4;
+		$$.index_register = $4 % 8;
 		$$.size = $6;
-		$$.index_register_is_address_register = cc_false;
+		$$.index_register_is_address_register = $4 / 8 != 0;
 	}
-	| value '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_DATA_REGISTER '.' size ')'
+	| value '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register '.' size ')'
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
-		$$.index_register = $5;
+		$$.index_register = $5 % 8;
 		$$.size = $7;
-		$$.index_register_is_address_register = cc_false;
-	}
-	| '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
-	{
-		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-		$$.literal.type = VALUE_NUMBER;
-		$$.literal.data.integer = 0;
-		$$.index_register = $4;
-		$$.size = $6;
-		$$.index_register_is_address_register = cc_true;
-	}
-	| value '(' TOKEN_PROGRAM_COUNTER ',' TOKEN_ADDRESS_REGISTER '.' size ')'
-	{
-		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-		$$.literal = $1;
-		$$.index_register = $5;
-		$$.size = $7;
-		$$.index_register_is_address_register = cc_true;
+		$$.index_register_is_address_register = $5 / 8 != 0;
 	}
 	/* Literal */
 	| '#' value
