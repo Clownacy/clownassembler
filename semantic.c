@@ -2668,7 +2668,7 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const In
 							const unsigned long offset = value - start_program_counter;
 
 							if (offset > 0x7FFF)
-								SemanticError(state, "Destination is too far away: it must be less than 0x8000 bytes after start of instruction, but was $%lX bytes away.", offset);
+								SemanticError(state, "Destination is too far away: it must be less than $8000 bytes after start of instruction, but was $%lX bytes away.", offset);
 
 							instruction.operands[0].literal.data.integer = offset;
 						}
@@ -2677,7 +2677,7 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const In
 							const unsigned long offset = start_program_counter - value;
 
 							if (offset > 0x8000)
-								SemanticError(state, "Destination is too far away: it must be less than 0x8001 bytes before start of instruction, but was $%lX bytes away.", offset);
+								SemanticError(state, "Destination is too far away: it must be less than $8001 bytes before start of instruction, but was $%lX bytes away.", offset);
 
 							instruction.operands[0].literal.data.integer = 0 - offset;
 						}
@@ -2724,12 +2724,12 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const In
 								if (offset == 0)
 									SemanticError(state, "Destination cannot be 0 bytes away when using a short-sized branch.");
 								else if (offset > 0x7F)
-									SemanticError(state, "Destination is too far away: it must be less than 0x80 bytes after start of instruction, but was $%lX bytes away.", offset);
+									SemanticError(state, "Destination is too far away: it must be less than $80 bytes after start of instruction, but was $%lX bytes away.", offset);
 							}
 							else
 							{
 								if (offset > 0x7FFF)
-									SemanticError(state, "Destination is too far away: it must be less than 0x8000 bytes after start of instruction, but was $%lX bytes away.", offset);
+									SemanticError(state, "Destination is too far away: it must be less than $8000 bytes after start of instruction, but was $%lX bytes away.", offset);
 							}
 						}
 						else
@@ -2739,12 +2739,12 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const In
 							if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
 							{
 								if (offset > 0x80)
-									SemanticError(state, "Destination is too far away: it must be less than 0x81 bytes before start of instruction, but was $%lX bytes away.", offset);
+									SemanticError(state, "Destination is too far away: it must be less than $81 bytes before start of instruction, but was $%lX bytes away.", offset);
 							}
 							else
 							{
 								if (offset > 0x8000)
-									SemanticError(state, "Destination is too far away: it must be less than 0x8001 bytes before start of instruction, but was $%lX bytes away.", offset);
+									SemanticError(state, "Destination is too far away: it must be less than $8001 bytes before start of instruction, but was $%lX bytes away.", offset);
 							}
 
 							offset = 0 - offset;
