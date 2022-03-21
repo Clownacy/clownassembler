@@ -351,6 +351,7 @@ typedef struct ListMetadata
 #include <stdlib.h>
 
 int m68kasm_lex(M68KASM_STYPE *yylval_param, void *yyscanner);
+void m68kasm_warning(void *scanner, Statement *statement, const char *message);
 void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
 static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *right_value);
@@ -790,6 +791,7 @@ full_opcode
 	{
 		$$ = $1;
 		$$.size = SIZE_UNDEFINED;
+		m68kasm_warning(scanner, statement, "Opcode has a dot but no size; either remove the dot or add an explicit size");
 	}
 	| opcode '.' size
 	{

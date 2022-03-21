@@ -155,6 +155,17 @@ static void OutOfMemoryError(SemanticState *state)
 	state->success = cc_false;
 }
 
+void m68kasm_warning(void *scanner, Statement *statement, const char *message)
+{
+	SemanticState *state = m68kasm_get_extra(scanner);
+
+	(void)statement;
+
+	ErrorMessageCommon(state, "Lexical/syntax warning!");
+
+	fprintf(stderr, "%s\n\n", message);
+}
+
 void m68kasm_error(void *scanner, Statement *statement, const char *message)
 {
 	SemanticState *state = m68kasm_get_extra(scanner);
