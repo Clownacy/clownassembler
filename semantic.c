@@ -3254,7 +3254,7 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const In
 						bytes_to_write = 2;
 
 						if (value >= 0x80 && value < 0xFFFFFF80)
-							SemanticError(state, "Displacement value cannot be larger than $7F or smaller than -$80.");
+							SemanticError(state, "Displacement value cannot be larger than $7F or smaller than -$80, but was $%lX.", value);
 
 						if (operand->size == SIZE_BYTE || operand->size == SIZE_SHORT)
 							SemanticError(state, "Index register cannot be byte-sized.");
@@ -3276,7 +3276,7 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const In
 						bytes_to_write = 2;
 
 						if (value >= 0x8000 && value < 0xFFFF8000)
-							SemanticError(state, "Displacement value cannot be larger than $7FFF or smaller than -$8000.");
+							SemanticError(state, "Displacement value cannot be larger than $7FFF or smaller than -$8000, but was $%lX.", value);
 
 						break;
 				}
