@@ -365,10 +365,12 @@ TheGreatestMacro2 macro opcode
 	dc.w	'SE','GA'
 	dc.l	'SEGA'
 
+	; Testing binclude/incbin
 	binclude "binary.bin"
 	dc.l	'STRT'
-	binclude "binary.bin",2
+	incbin "binary.bin",2
 
+	; Testing DCB
 	dcb.b	4,$11
 	dcb.w	4,$22
 	dcb.l	4,$44
