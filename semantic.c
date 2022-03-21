@@ -500,7 +500,7 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 
 			dictionary_entry = Dictionary_LookUp(&state->dictionary, identifier);
 
-			if (dictionary_entry == NULL)
+			if (dictionary_entry == NULL || dictionary_entry->type == -1)
 			{
 				success = cc_false;
 
