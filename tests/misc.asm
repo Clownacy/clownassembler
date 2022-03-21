@@ -360,6 +360,11 @@ TheGreatestMacro2 macro opcode
 
 	TheGreatestMacro2 illegal
 
+	; Testing character literals
+	dc.b	'S','E','G','A'
+	dc.w	'SE','GA'
+	dc.l	'SEGA'
+
   ; More blank lines to test support for trailing blank statements
 
 

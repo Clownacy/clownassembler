@@ -275,6 +275,30 @@ pc              TOKEN(PROGRAM_COUNTER)
 	}
 }
 
+\'[^\']+\' {
+	const size_t length = strlen(yytext) - 2;
+
+	if (length > 4)
+	{
+		m68kasm_error(yyscanner, NULL, "Character literals cannot be more than 4 characters long");
+		return M68KASM_error;
+	}
+	else
+	{
+		size_t i;
+
+		yylval->generic.integer = 0;
+
+		for (i = 0; i < length; ++i)
+		{
+			yylval->generic.integer <<= 8;
+			yylval->generic.integer |= yytext[1 + i];
+		}
+
+		return TOKEN_NUMBER;
+	}
+}
+
 .               return yytext[0]; /* Make Bison signal a syntax error for unrecognised symbols */
 
 %%
