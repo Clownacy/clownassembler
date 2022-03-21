@@ -162,6 +162,16 @@ void m68kasm_error(void *scanner, Statement *statement, const char *message)
 	fprintf(stderr, "%s\n\n", message);
 }
 
+static void* MallocAndHandleError(SemanticState *state, size_t size)
+{
+	void *memory = malloc(size);
+
+	if (memory == NULL)
+		OutOfMemoryError(state);
+
+	return memory;
+}
+
 static char* DuplicateString(const char *string)
 {
 	char *duplicated_string;
@@ -262,13 +272,9 @@ static void TerminateMacro(SemanticState *state)
 
 	if (dictionary_entry != NULL)
 	{
-		Macro *macro = malloc(sizeof(Macro));
+		Macro *macro = MallocAndHandleError(state, sizeof(Macro));
 
-		if (macro == NULL)
-		{
-			OutOfMemoryError(state);
-		}
-		else
+		if (macro != NULL)
 		{
 			macro->name = state->macro.name;
 			macro->source_line_list_head = state->macro.source_line_list.head;
@@ -281,13 +287,9 @@ static void TerminateMacro(SemanticState *state)
 
 static void AddToSourceLineList(SemanticState *state, SourceLineList *source_line_list, const char *source_line)
 {
-	SourceLineListNode *source_line_list_node = malloc(sizeof(SourceLineListNode));
+	SourceLineListNode *source_line_list_node = MallocAndHandleError(state, sizeof(SourceLineListNode));
 
-	if (source_line_list_node == NULL)
-	{
-		OutOfMemoryError(state);
-	}
-	else
+	if (source_line_list_node != NULL)
 	{
 		/* Append to the end of the list. */
 		if (source_line_list->tail != NULL)
@@ -308,7 +310,7 @@ static char* ExpandLocalIdentifier(SemanticState *state, const char *identifier)
 	const char *last_global_label = state->last_global_label != NULL ? state->last_global_label : "";
 	const size_t prefix_length = strlen(last_global_label);
 	const size_t suffix_length = strlen(identifier);
-	char *expanded_identifier = malloc(prefix_length + suffix_length + 1);
+	char *expanded_identifier = MallocAndHandleError(state, prefix_length + suffix_length + 1);
 
 	if (expanded_identifier != NULL)
 	{
@@ -487,9 +489,7 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 			{
 				expanded_identifier = ExpandLocalIdentifier(state, value->data.identifier);
 
-				if (expanded_identifier == NULL)
-					OutOfMemoryError(state);
-				else
+				if (expanded_identifier != NULL)
 					identifier = expanded_identifier;
 			}
 
@@ -3447,9 +3447,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 						/* This is a local label - prefix it with the previous global label. */
 						expanded_identifier = ExpandLocalIdentifier(state, label);
 
-						if (expanded_identifier == NULL)
-							OutOfMemoryError(state);
-						else
+						if (expanded_identifier != NULL)
 							identifier = expanded_identifier;
 					}
 
@@ -3533,13 +3531,9 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 	else
 	{
 		/* This line has a label. */
-		label = malloc(label_length + 1);
+		label = MallocAndHandleError(state, label_length + 1);
 
-		if (label == NULL)
-		{
-			OutOfMemoryError(state);
-		}
-		else
+		if (label != NULL)
 		{
 			memcpy(label, source_line, label_length);
 			label[label_length] = '\0';
