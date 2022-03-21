@@ -209,6 +209,13 @@ typedef struct ValueListNode
 	struct ValueListNode *next;
 } ValueListNode;
 
+typedef struct IdentifierListNode
+{
+	char *identifier;
+
+	struct IdentifierListNode *next;
+} IdentifierListNode;
+
 typedef struct Opcode
 {
 	OpcodeType type;
@@ -269,6 +276,11 @@ typedef struct Rept
 	Value total_repeats;
 } Rept;
 
+typedef struct StatementMacro
+{
+	IdentifierListNode *parameter_names;
+} StatementMacro;
+
 typedef struct Statement
 {
 	enum
@@ -288,6 +300,7 @@ typedef struct Statement
 		Dc dc;
 		Include include;
 		Rept rept;
+		StatementMacro macro;
 	} data;
 } Statement;
 
@@ -480,6 +493,7 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 %type<generic.integer> register_span
 %type<generic.integer> data_or_address_register
 %type<list_metadata> value_list
+%type<list_metadata> identifier_list
 %type<value> value
 %type<value> value1
 %type<value> value2
@@ -530,6 +544,12 @@ statement
 	| TOKEN_DIRECTIVE_MACRO
 	{
 		statement->type = STATEMENT_TYPE_MACRO;
+		statement->data.macro.parameter_names = NULL;
+	}
+	| TOKEN_DIRECTIVE_MACRO identifier_list
+	{
+		statement->type = STATEMENT_TYPE_MACRO;
+		statement->data.macro.parameter_names = $2.head;
 	}
 	| TOKEN_DIRECTIVE_ENDM
 	{
@@ -573,6 +593,48 @@ value_list
 				$$.head = node;
 			else
 				((ValueListNode*)$$.tail)->next = node;
+
+			$$.tail = node;
+		}
+	}
+	;
+
+identifier_list
+	: TOKEN_IDENTIFIER
+	{
+		IdentifierListNode *node = malloc(sizeof(IdentifierListNode));
+
+		if (node == NULL)
+		{
+			YYNOMEM;
+		}
+		else
+		{
+			node->identifier = $1;
+			node->next = NULL;
+		}
+
+		$$.head = $$.tail = node;
+	}
+	| identifier_list ',' TOKEN_IDENTIFIER
+	{
+		IdentifierListNode *node = malloc(sizeof(IdentifierListNode));
+
+		$$ = $1;
+
+		if (node == NULL)
+		{
+			YYNOMEM;
+		}
+		else
+		{
+			node->identifier = $3;
+			node->next = NULL;
+
+			if ($$.head == NULL)
+				$$.head = node;
+			else
+				((IdentifierListNode*)$$.tail)->next = node;
 
 			$$.tail = node;
 		}

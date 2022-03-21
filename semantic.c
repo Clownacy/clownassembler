@@ -68,6 +68,7 @@ typedef struct SemanticState
 	{
 		char *name;
 		unsigned long line_number;
+		IdentifierListNode *parameter_names;
 		SourceLineList source_line_list;
 	} macro;
 } SemanticState;
@@ -75,6 +76,7 @@ typedef struct SemanticState
 typedef struct Macro
 {
 	char *name;
+	IdentifierListNode *parameter_names;
 	SourceLineListNode *source_line_list_head;
 } Macro;
 
@@ -277,6 +279,7 @@ static void TerminateMacro(SemanticState *state)
 		if (macro != NULL)
 		{
 			macro->name = state->macro.name;
+			macro->parameter_names = state->macro.parameter_names;
 			macro->source_line_list_head = state->macro.source_line_list.head;
 
 			dictionary_entry->type = SYMBOL_MACRO;
@@ -3403,12 +3406,13 @@ static void ProcessRept(SemanticState *state, const Rept *rept)
 	state->rept.source_line_list.tail = NULL;
 }
 
-static void ProcessMacro(SemanticState *state, const char *label)
+static void ProcessMacro(SemanticState *state, const StatementMacro *macro, const char *label)
 {
 	state->mode = MODE_MACRO;
 
 	state->macro.name = DuplicateStringAndHandleError(state, label);
 	state->macro.line_number = state->location.line_number;
+	state->macro.parameter_names = macro->parameter_names;
 
 	state->macro.source_line_list.head = NULL;
 	state->macro.source_line_list.tail = NULL;
@@ -3502,7 +3506,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			break;
 
 		case STATEMENT_TYPE_MACRO:
-			ProcessMacro(state, label);
+			ProcessMacro(state, &statement->data.macro, label);
 			break;
 
 		case STATEMENT_TYPE_ENDM:
@@ -3687,7 +3691,6 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 
 					for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
 					{
-						const char *parameter_position;
 						const char *remaining_line;
 						char *modified_line;
 
@@ -3702,19 +3705,58 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 
 						if (modified_line != NULL)
 						{
-							/* Replace numerical parameter placeholders ('\0', '\1', '\2', etc.). */
-							while ((parameter_position = strchr(remaining_line, '\\')) != NULL)
+							for (;;)
 							{
-								/* Obtain numerical index of the parameter. */
-								char *end;
+								const char *parameter_position;
+								const char *line_after_parameter;
+								unsigned long parameter_index;
+								const IdentifierListNode *parameter_name;
+								const char *parameter_indentifier;
+								unsigned long i;
 
-								const unsigned long index = strtoul(parameter_position + 1, &end, 10);
+								/* Search for the earliest macro parameter placeholder in the line, storing its location in 'parameter_position'. */
+
+								/* Find numerical macro parameter placeholder. */
+								parameter_position = strchr(remaining_line, '\\');
+								parameter_index = 0;
+								parameter_indentifier = NULL;
+
+								/* Now find the identifier-based macro parameter placeholders. */
+								for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
+								{
+									const char *other_parameter_position = strstr(remaining_line, parameter_name->identifier);
+
+									if (parameter_position == NULL || (other_parameter_position != NULL && other_parameter_position < parameter_position))
+									{
+										parameter_index = i;
+										parameter_position = other_parameter_position;
+										parameter_indentifier = parameter_name->identifier;
+									}
+								}
+
+								/* If no placeholders can be found, then we are done here. */
+								if (parameter_position == NULL)
+									break;
+
+								/* If this is a numerical placeholder, then parse it. */
+								if (parameter_position[0] == '\\')
+								{
+									char *end;
+
+									/* Obtain numerical index of the parameter. */
+									parameter_index = strtoul(parameter_position + 1, &end, 10);
+									line_after_parameter = end;
+								}
+								else
+								{
+									line_after_parameter = parameter_position + strlen(parameter_indentifier);
+								}
 
 								/* Error if the requested parameter was not passed to the macro. */
-								if (index >= total_parameters)
+								if (parameter_index >= total_parameters)
 								{
-									SemanticError(state, "Macro parameter %lu used but not supplied by the caller.", index);
-									remaining_line = end;
+									SemanticError(state, "Macro parameter %lu used but not supplied by the caller.", parameter_index);
+									remaining_line = line_after_parameter;
 								}
 								else
 								{
@@ -3722,16 +3764,16 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 									char *new_modified_line;
 
 									const size_t first_half_length = parameter_position - modified_line;
-									const size_t parameter_length = strlen(parameters[index]);
-									const size_t second_half_length = strlen(end);
+									const size_t parameter_length = strlen(parameters[parameter_index]);
+									const size_t second_half_length = strlen(line_after_parameter);
 
 									new_modified_line = MallocAndHandleError(state, first_half_length + parameter_length + second_half_length + 1);
 
 									if (new_modified_line != NULL)
 									{
 										memcpy(new_modified_line, modified_line, first_half_length);
-										memcpy(new_modified_line + first_half_length, parameters[index], parameter_length);
-										memcpy(new_modified_line + first_half_length + parameter_length, end, second_half_length);
+										memcpy(new_modified_line + first_half_length, parameters[parameter_index], parameter_length);
+										memcpy(new_modified_line + first_half_length + parameter_length, line_after_parameter, second_half_length);
 										new_modified_line[first_half_length + parameter_length + second_half_length] = '\0';
 
 										/* Continue our search from after the inserted parameter. */

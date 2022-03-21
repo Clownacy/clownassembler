@@ -344,14 +344,21 @@ Delta:	rept 8
 	mOvE.b	(A0,d0.W),(a1,D1.l)
 
 	; Testing macros
-TheGreatestMacro macro
+TheGreatestMacro macro named_parameter_1, named_parameter_2
 	dc.l	*
 	move.\0	\1,\2
+	move.\0	named_parameter_1,named_parameter_2
 	dc.l	narg
 	endm
 
 	TheGreatestMacro.b (a0,d0.w),(a1,d1.l)
 	TheGreatestMacro.w #1000,(0).l,#$DEAD
+
+TheGreatestMacro2 macro opcode
+	opcode
+	endm
+
+	TheGreatestMacro2 illegal
 
   ; More blank lines to test support for trailing blank statements
 
