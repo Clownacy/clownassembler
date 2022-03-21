@@ -180,6 +180,7 @@ include         TOKEN(DIRECTIVE_INCLUDE)
 incbin          TOKEN(DIRECTIVE_INCBIN)
 binclude        TOKEN(DIRECTIVE_INCBIN)
 equ             TOKEN(DIRECTIVE_EQU)
+if              TOKEN(DIRECTIVE_IF)
 "."             return yytext[0];
 ","             return yytext[0];
 "("             return yytext[0];

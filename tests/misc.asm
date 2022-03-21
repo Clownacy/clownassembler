@@ -382,6 +382,17 @@ TimesToRept equ 2
 	dc.l	'TWO2'
 	endr
 
+	; Testing IF/ELSE/ENDC
+	if TimesToRept=2
+		if TimesToRept=1
+			dc.l	'NOPE'
+		endc
+
+		dc.l	'TRUE'
+	else
+		dc.l	'FLSE'
+	endc
+
   ; More blank lines to test support for trailing blank statements
 
 

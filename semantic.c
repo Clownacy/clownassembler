@@ -71,6 +71,7 @@ typedef struct SemanticState
 		IdentifierListNode *parameter_names;
 		SourceLineList source_line_list;
 	} macro;
+	cc_bool if_condition;
 } SemanticState;
 
 typedef struct Macro
@@ -3473,7 +3474,7 @@ static void ProcessMacro(SemanticState *state, const StatementMacro *macro, cons
 	state->macro.source_line_list.tail = NULL;
 }
 
-static void ProcessEqu(SemanticState *state, const StatementEqu *equ, const char *label)
+static void ProcessEqu(SemanticState *state, const Value *value, const char *label)
 {
 	if (!state->doing_fix_up)
 	{
@@ -3483,12 +3484,25 @@ static void ProcessEqu(SemanticState *state, const StatementEqu *equ, const char
 
 		if (symbol != NULL)
 		{
-			if (!ResolveValue(state, &equ->value, &symbol->data.unsigned_integer))
+			if (!ResolveValue(state, value, &symbol->data.unsigned_integer))
 				SemanticError(state, "EQU value must be evaluable on the first pass.");
 			else
 				symbol->type = SYMBOL_CONSTANT;
 		}
 	}
+}
+
+static void ProcessIf(SemanticState *state, const Value *value)
+{
+	unsigned long resolved_value;
+
+	if (!ResolveValue(state, value, &resolved_value))
+	{
+		SemanticError(state, "IF value must be evaluable on the first pass.");
+		resolved_value = 1;
+	}
+
+	state->if_condition = resolved_value != 0;
 }
 
 static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement, const char *label)
@@ -3502,6 +3516,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 		case STATEMENT_TYPE_INCLUDE:
 		case STATEMENT_TYPE_INCBIN:
 		case STATEMENT_TYPE_REPT:
+		case STATEMENT_TYPE_IF:
 			/* Add label to symbol table. */
 			if (label != NULL)
 			{
@@ -3603,7 +3618,11 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			break;
 
 		case STATEMENT_TYPE_EQU:
-			ProcessEqu(state, &statement->data.equ, label);
+			ProcessEqu(state, &statement->data.value, label);
+			break;
+
+		case STATEMENT_TYPE_IF:
+			ProcessIf(state, &statement->data.value);
 			break;
 	}
 }
@@ -3910,7 +3929,15 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				if (!Dictionary_Remove(&state->dictionary, "narg"))
 					InternalError(state, "Could not symbol 'narg' from the dictionary.");
 			}
-			else
+			else if (strcmp(source_line_sans_label, "else") == 0)
+			{
+				state->if_condition = !state->if_condition;
+			}
+			else if (strcmp(source_line_sans_label, "endc") == 0)
+			{
+				state->if_condition = cc_true;
+			}
+			else if (state->if_condition)
 			{
 				/* Normal assembly line. */
 				Statement statement;

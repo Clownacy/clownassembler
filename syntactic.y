@@ -294,11 +294,6 @@ typedef struct StatementMacro
 	IdentifierListNode *parameter_names;
 } StatementMacro;
 
-typedef struct StatementEqu
-{
-	Value value;
-} StatementEqu;
-
 typedef struct Statement
 {
 	enum
@@ -313,7 +308,8 @@ typedef struct Statement
 		STATEMENT_TYPE_ENDR,
 		STATEMENT_TYPE_MACRO,
 		STATEMENT_TYPE_ENDM,
-		STATEMENT_TYPE_EQU
+		STATEMENT_TYPE_EQU,
+		STATEMENT_TYPE_IF
 	} type;
 	union
 	{
@@ -324,7 +320,7 @@ typedef struct Statement
 		StatementIncbin incbin;
 		Rept rept;
 		StatementMacro macro;
-		StatementEqu equ;
+		Value value;
 	} data;
 } Statement;
 
@@ -488,6 +484,7 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 %token TOKEN_DIRECTIVE_INCLUDE
 %token TOKEN_DIRECTIVE_INCBIN
 %token TOKEN_DIRECTIVE_EQU
+%token TOKEN_DIRECTIVE_IF
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -605,7 +602,12 @@ statement
 	| TOKEN_DIRECTIVE_EQU value
 	{
 		statement->type = STATEMENT_TYPE_EQU;
-		statement->data.equ.value = $2;
+		statement->data.value = $2;
+	}
+	| TOKEN_DIRECTIVE_IF value
+	{
+		statement->type = STATEMENT_TYPE_IF;
+		statement->data.value = $2;
 	}
 	;
 
