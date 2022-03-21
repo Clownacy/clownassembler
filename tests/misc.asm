@@ -369,6 +369,10 @@ TheGreatestMacro2 macro opcode
 	dc.l	'STRT'
 	binclude "binary.bin",2
 
+	dcb.b	4,$11
+	dcb.w	4,$22
+	dcb.l	4,$44
+
   ; More blank lines to test support for trailing blank statements
 
 

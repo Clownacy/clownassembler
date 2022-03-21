@@ -266,6 +266,13 @@ typedef struct Dc
 	ValueListNode *values;
 } Dc;
 
+typedef struct Dcb
+{
+	Size size;
+	Value repetitions;
+	Value value;
+} Dcb;
+
 typedef struct Include
 {
 	char *path;
@@ -294,6 +301,7 @@ typedef struct Statement
 		STATEMENT_TYPE_EMPTY,
 		STATEMENT_TYPE_INSTRUCTION,
 		STATEMENT_TYPE_DC,
+		STATEMENT_TYPE_DCB,
 		STATEMENT_TYPE_INCLUDE,
 		STATEMENT_TYPE_INCBIN,
 		STATEMENT_TYPE_REPT,
@@ -305,6 +313,7 @@ typedef struct Statement
 	{
 		Instruction instruction;
 		Dc dc;
+		Dcb dcb;
 		Include include;
 		StatementIncbin incbin;
 		Rept rept;
@@ -464,6 +473,7 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 %token TOKEN_OPCODE_ROL
 %token TOKEN_OPCODE_ROR
 %token TOKEN_DIRECTIVE_DC
+%token TOKEN_DIRECTIVE_DCB
 %token TOKEN_DIRECTIVE_REPT
 %token TOKEN_DIRECTIVE_ENDR
 %token TOKEN_DIRECTIVE_MACRO
@@ -535,6 +545,13 @@ statement
 		statement->type = STATEMENT_TYPE_DC;
 		statement->data.dc.size = $3;
 		statement->data.dc.values = $4.head;
+	}
+	| TOKEN_DIRECTIVE_DCB '.' size value ',' value
+	{
+		statement->type = STATEMENT_TYPE_DCB;
+		statement->data.dcb.size = $3;
+		statement->data.dcb.repetitions = $4;
+		statement->data.dcb.value = $6;
 	}
 	| TOKEN_DIRECTIVE_INCLUDE TOKEN_STRING
 	{

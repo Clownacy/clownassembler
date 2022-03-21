@@ -3315,53 +3315,80 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const In
 	}
 }
 
+static void OutputDcValue(SemanticState *state, FILE *output_file, const Size size, unsigned long value)
+{
+	unsigned int bytes_to_write = 0;
+
+	/* Update the program counter symbol in between values, to keep it up to date. */
+	Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state->program_counter;
+
+	switch (size)
+	{
+		case SIZE_BYTE:
+		case SIZE_SHORT:
+			if (value > 0xFF && value < 0xFFFFFF00)
+				SemanticError(state, "Value cannot be higher than $FF or lower than -$100.");
+
+			bytes_to_write = 1;
+
+			break;
+
+		case SIZE_WORD:
+			if (value > 0xFFFF && value < 0xFFFF0000)
+				SemanticError(state, "Value cannot be higher than $FFFF or lower than -$10000.");
+
+			bytes_to_write = 2;
+
+			break;
+
+		case SIZE_LONGWORD:
+			bytes_to_write = 4;
+			break;
+
+		case SIZE_UNDEFINED:
+			/* Should never occur. */
+			break;
+	}
+
+	state->program_counter += bytes_to_write;
+
+	while (bytes_to_write-- != 0)
+		fputc((value >> (bytes_to_write * 8)) & 0xFF, output_file);
+}
+
 static void ProcessDc(SemanticState *state, FILE *output_file, const Dc *dc)
 {
 	const ValueListNode *value_list_node;
 
 	for (value_list_node = dc->values; value_list_node != NULL; value_list_node = value_list_node->next)
 	{
-		unsigned int bytes_to_write = 0;
-		unsigned long resolved_value;
+		unsigned long value;
 
-		/* Update the program counter symbol in between values, to keep it up to date. */
-		Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state->program_counter;
+		if (!ResolveValue(state, &value_list_node->value, &value))
+			value = 0;
 
-		if (!ResolveValue(state, &value_list_node->value, &resolved_value))
-			resolved_value = 0;
+		OutputDcValue(state, output_file, dc->size, value);
+	}
+}
 
-		switch (dc->size)
-		{
-			case SIZE_BYTE:
-			case SIZE_SHORT:
-				if (resolved_value > 0xFF && resolved_value < 0xFFFFFF00)
-					SemanticError(state, "Value cannot be higher than $FF or lower than -$100.");
+static void ProcessDcb(SemanticState *state, FILE *output_file, const Dcb *dcb)
+{
+	unsigned long repetitions;
 
-				bytes_to_write = 1;
+	if (!ResolveValue(state, &dcb->repetitions, &repetitions))
+	{
+		SemanticError(state, "'DCB' repetition value must be evaluable on first pass.");
+	}
+	else
+	{
+		unsigned long value;
+		unsigned long i;
 
-				break;
+		if (!ResolveValue(state, &dcb->value, &value))
+			value = 0;
 
-			case SIZE_WORD:
-				if (resolved_value > 0xFFFF && resolved_value < 0xFFFF0000)
-					SemanticError(state, "Value cannot be higher than $FFFF or lower than -$10000.");
-
-				bytes_to_write = 2;
-
-				break;
-
-			case SIZE_LONGWORD:
-				bytes_to_write = 4;
-				break;
-
-			case SIZE_UNDEFINED:
-				/* Should never occur. */
-				break;
-		}
-
-		state->program_counter += bytes_to_write;
-
-		while (bytes_to_write-- != 0)
-			fputc((resolved_value >> (bytes_to_write * 8)) & 0xFF, output_file);
+		for (i = 0; i < repetitions; ++i)
+			OutputDcValue(state, output_file, dcb->size, value);	
 	}
 }
 
@@ -3453,6 +3480,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 		case STATEMENT_TYPE_EMPTY:
 		case STATEMENT_TYPE_INSTRUCTION:
 		case STATEMENT_TYPE_DC:
+		case STATEMENT_TYPE_DCB:
 		case STATEMENT_TYPE_INCLUDE:
 		case STATEMENT_TYPE_INCBIN:
 		case STATEMENT_TYPE_REPT:
@@ -3520,6 +3548,10 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 
 		case STATEMENT_TYPE_DC:
 			ProcessDc(state, output_file, &statement->data.dc);
+			break;
+
+		case STATEMENT_TYPE_DCB:
+			ProcessDcb(state, output_file, &statement->data.dcb);
 			break;
 
 		case STATEMENT_TYPE_INCLUDE:
