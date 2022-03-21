@@ -3661,6 +3661,19 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 					} while (character != ';' && character != '\0');
 				}
 
+				/* Define the 'narg' symbol, which represents how many parameters (arguments) have been passed to the macro. */
+				{
+					Dictionary_Entry *entry;
+
+					entry = Dictionary_LookUpAndCreateIfNotExistAndHandleError(state, "narg");
+
+					if (entry != NULL)
+					{
+						entry->type = SYMBOL_CONSTANT;
+						entry->data.unsigned_integer = total_parameters - 1;
+					}
+				}
+
 				/* Finally, invoke the macro. */
 				{
 					const Macro *macro = entry->data.pointer;
@@ -3753,6 +3766,10 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 					for (i = 0; i < total_parameters; ++i)
 						free(parameters[i]);
 				}
+
+				/* Undefine the 'narg' symbol. */
+				if (!Dictionary_Remove(&state->dictionary, "narg"))
+					InternalError(state, "Could not symbol 'narg' from the dictionary.");
 			}
 			else
 			{

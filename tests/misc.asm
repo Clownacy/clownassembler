@@ -347,10 +347,11 @@ Delta:	rept 8
 TheGreatestMacro macro
 	dc.l	*
 	move.\0	\1,\2
+	dc.l	narg
 	endm
 
 	TheGreatestMacro.b (a0,d0.w),(a1,d1.l)
-	TheGreatestMacro.w #1000,(0).l
+	TheGreatestMacro.w #1000,(0).l,#$DEAD
 
   ; More blank lines to test support for trailing blank statements
 
