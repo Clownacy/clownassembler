@@ -3548,26 +3548,162 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 		case MODE_NORMAL:
 		{
 			const Dictionary_Entry *entry;
+			size_t keyword_length;
+			char *keyword;
 
-			/* TODO - case-insensitivity */
+			/* Extract the keyword from the source line, and look it up in the dictionary to see if it's a macro. */
+			keyword_length = strcspn(source_line_sans_label, " \t.;");
+			keyword = MallocAndHandleError(state, keyword_length + 1);
 
-			entry = Dictionary_LookUp(&state->dictionary, source_line_sans_label);
+			if (keyword != NULL)
+			{
+				memcpy(keyword, source_line_sans_label, keyword_length);
+				keyword[keyword_length] = '\0';
+
+				entry = Dictionary_LookUp(&state->dictionary, keyword);
+			}
+			else
+			{
+				entry = NULL;
+			}
 
 			if (entry != NULL && entry->type == SYMBOL_MACRO)
 			{
 				/* Macro invocation. */
+				const char *string_pointer = source_line_sans_label + strcspn(source_line_sans_label, " \t.;");
+				char **parameters = MallocAndHandleError(state, sizeof(char*));
+				size_t total_parameters = 1;
+
+				/* Extract and store the macro size specifier, if one exists. */
+				if (string_pointer[0] == '.')
+				{
+					size_t size_length;
+
+					++string_pointer;
+
+					size_length = strcspn(string_pointer, " \t;");
+					parameters[0] = MallocAndHandleError(state, size_length + 1);
+
+					if (parameters[0] != NULL)
+					{
+						memcpy(parameters[0], string_pointer, size_length);
+						parameters[0][size_length] = '\0';
+					}
+
+					string_pointer += size_length;
+				}
+				else
+				{
+					parameters[0] = NULL;
+				}
+
+				/* Extract and store the macro parameters, if they exist. */
+				{
+					char character;
+
+					do
+					{
+						const char* const parameter_start = string_pointer += strspn(string_pointer, " \t;");
+
+						do
+						{
+							character = *string_pointer++;
+
+							if (character == '(')
+							{
+								unsigned int parameter_depth = 1;
+
+								while (parameter_depth != 0)
+								{
+									character = *string_pointer++;
+
+									if (character == '(')
+										++parameter_depth;
+									else if (character == ')')
+										--parameter_depth;
+									else if (character == ';' || character == '\0')
+										break;
+								}
+							}
+
+							if (character == ',' || character == ';' || character == '\0')
+							{
+								const size_t parameter_string_length = string_pointer - parameter_start - 1;
+
+								if (parameter_string_length != 0)
+								{
+									char *parameter_string;
+
+									parameter_string = MallocAndHandleError(state, parameter_string_length + 1);
+
+									if (parameter_string != NULL)
+									{
+										memcpy(parameter_string, parameter_start, parameter_string_length);
+										parameter_string[parameter_string_length] = '\0';
+
+										parameters = realloc(parameters, sizeof(char*) * (total_parameters + 1));
+
+										if (parameters == NULL)
+										{
+											OutOfMemoryError(state);
+										}
+										else
+										{
+											parameters[total_parameters] = parameter_string;
+											++total_parameters;
+										}
+									}
+								}
+
+								break;
+							}
+						} while (character != ';' && character != '\0');
+					} while (character != ';' && character != '\0');
+				}
+
+				/* Finally, invoke the macro. */
+				{
+					const Macro *macro = entry->data.pointer;
+					const SourceLineListNode *source_line_list_node;
+
+					const Location location = state->location;
+					state->location.previous = &location;
+					state->location.file_path = macro->name;
+					state->location.line_number = 0;
+
+					for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
+						AssembleLine(state, output_file, source_line_list_node->source_line);
+
+					state->location = location;
+				}
+
+				/* Free the parameter strings. */
+				{
+					size_t i;
+
+					for (i = 0; i < total_parameters; ++i)
+						free(parameters[i]);
+				}
+
+#if 0
 				const Macro *macro = entry->data.pointer;
 				const SourceLineListNode *source_line_list_node;
 
-				const Location location = state->location;
-				state->location.previous = &location;
-				state->location.file_path = macro->name;
-				state->location.line_number = 0;
-
 				for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-					AssembleLine(state, output_file, source_line_list_node->source_line);
+				{
+					const char *remaining_line = source_line_list_node->source_line;
+					const char *parameter_position;
 
-				state->location = location;
+					while ((parameter_position = strchr(remaining_line, '\\')) != NULL)
+					{
+						char *end;
+						unsigned long index = strtoul(parameter_position + 1, &end);
+						remaining_line = end;
+					}
+
+
+				}
+#endif
 			}
 			else
 			{

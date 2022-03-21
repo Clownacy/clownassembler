@@ -348,7 +348,7 @@ TheGreatestMacro macro
 	dc.l	*
 	endm
 
-	TheGreatestMacro
+	TheGreatestMacro (a0,d0.w),(a1,d1.l)
 	TheGreatestMacro
 
   ; More blank lines to test support for trailing blank statements
