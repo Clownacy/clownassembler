@@ -4423,7 +4423,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 			/* Perform first pass, and create a list of fix-ups if needed. */
 			AssembleFile(&state, input_file);
 
-			if (state.false_if_level != 0)
+			if (state.current_if_level != 0)
 				SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
 
 			if (m68kasm_lex_destroy(state.flex_state) != 0)
