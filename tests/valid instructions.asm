@@ -356,14 +356,6 @@
 	move.b	d0,$7F(a0,d0.w)
 	move.b	d0,($FFFFFFFF).w
 	move.b	d0,($FFFFFFFF).l
-	move.b	a0,d0
-	move.b	a0,(a0)
-	move.b	a0,(a0)+
-	move.b	a0,-(a0)
-	move.b	a0,$7FFF(a0)
-	move.b	a0,$7F(a0,d0.w)
-	move.b	a0,($FFFFFFFF).w
-	move.b	a0,($FFFFFFFF).l
 	move.b	(a0),d0
 	move.b	(a0),(a0)
 	move.b	(a0),(a0)+
@@ -1318,81 +1310,81 @@
 	slo	($FFFFFFFF).w
 	slo	($FFFFFFFF).l
 
-	dbt.w	d0,$1230
-	dbf.w	d0,$1230
-	dbhi.w	d0,$1230
-	dbls.w	d0,$1230
-	dbcc.w	d0,$1230
-	dbcs.w	d0,$1230
-	dbne.w	d0,$1230
-	dbeq.w	d0,$1230
-	dbvc.w	d0,$1230
-	dbvs.w	d0,$1230
-	dbpl.w	d0,$1230
-	dbmi.w	d0,$1230
-	dbge.w	d0,$1230
-	dblt.w	d0,$1230
-	dbgt.w	d0,$1230
-	dble.w	d0,$1230
-	dbhs.w	d0,$1230
-	dblo.w	d0,$1230
-	dbt	d0,$1230
-	dbf	d0,$1230
-	dbhi	d0,$1230
-	dbls	d0,$1230
-	dbcc	d0,$1230
-	dbcs	d0,$1230
-	dbne	d0,$1230
-	dbeq	d0,$1230
-	dbvc	d0,$1230
-	dbvs	d0,$1230
-	dbpl	d0,$1230
-	dbmi	d0,$1230
-	dbge	d0,$1230
-	dblt	d0,$1230
-	dbgt	d0,$1230
-	dble	d0,$1230
-	dbhs	d0,$1230
-	dblo	d0,$1230
+	dbt.w	d0,*
+	dbf.w	d0,*
+	dbhi.w	d0,*
+	dbls.w	d0,*
+	dbcc.w	d0,*
+	dbcs.w	d0,*
+	dbne.w	d0,*
+	dbeq.w	d0,*
+	dbvc.w	d0,*
+	dbvs.w	d0,*
+	dbpl.w	d0,*
+	dbmi.w	d0,*
+	dbge.w	d0,*
+	dblt.w	d0,*
+	dbgt.w	d0,*
+	dble.w	d0,*
+	dbhs.w	d0,*
+	dblo.w	d0,*
+	dbt	d0,*
+	dbf	d0,*
+	dbhi	d0,*
+	dbls	d0,*
+	dbcc	d0,*
+	dbcs	d0,*
+	dbne	d0,*
+	dbeq	d0,*
+	dbvc	d0,*
+	dbvs	d0,*
+	dbpl	d0,*
+	dbmi	d0,*
+	dbge	d0,*
+	dblt	d0,*
+	dbgt	d0,*
+	dble	d0,*
+	dbhs	d0,*
+	dblo	d0,*
 
-	bra.s	$1330
-	bra.w	$1330
+	bra.s	*
+	bra.w	*
 
-	bsr.s	$1330
-	bsr.w	$1330
+	bsr.s	*
+	bsr.w	*
 
-	bhi.s	$1330
-	bls.s	$1330
-	bcc.s	$1330
-	bcs.s	$1330
-	bne.s	$1330
-	beq.s	$1330
-	bvc.s	$1330
-	bvs.s	$1330
-	bpl.s	$1330
-	bmi.s	$1330
-	bge.s	$1330
-	blt.s	$1330
-	bgt.s	$1330
-	ble.s	$1330
-	bhs.s	$1330
-	blo.s	$1330
-	bhi.w	$1330
-	bls.w	$1330
-	bcc.w	$1330
-	bcs.w	$1330
-	bne.w	$1330
-	beq.w	$1330
-	bvc.w	$1330
-	bvs.w	$1330
-	bpl.w	$1330
-	bmi.w	$1330
-	bge.w	$1330
-	blt.w	$1330
-	bgt.w	$1330
-	ble.w	$1330
-	bhs.w	$1330
-	blo.w	$1330
+	bhi.s	*
+	bls.s	*
+	bcc.s	*
+	bcs.s	*
+	bne.s	*
+	beq.s	*
+	bvc.s	*
+	bvs.s	*
+	bpl.s	*
+	bmi.s	*
+	bge.s	*
+	blt.s	*
+	bgt.s	*
+	ble.s	*
+	bhs.s	*
+	blo.s	*
+	bhi.w	*
+	bls.w	*
+	bcc.w	*
+	bcs.w	*
+	bne.w	*
+	beq.w	*
+	bvc.w	*
+	bvs.w	*
+	bpl.w	*
+	bmi.w	*
+	bge.w	*
+	blt.w	*
+	bgt.w	*
+	ble.w	*
+	bhs.w	*
+	blo.w	*
 
 	moveq.l	#0,d0
 	moveq	#0,d0
@@ -1867,15 +1859,10 @@
 
 	asl.b	d0,d0
 	asl.b	#1,d0
-	asl.b	(a0)
-	asl.b	(a0)+
-	asl.b	-(a0)
-	asl.b	$7FFF(a0)
-	asl.b	$7F(a0,d0.w)
-	asl.b	($FFFFFFFF).w
-	asl.b	($FFFFFFFF).l
 	asl.w	d0,d0
 	asl.w	#1,d0
+	asl.l	d0,d0
+	asl.l	#1,d0
 	asl.w	(a0)
 	asl.w	(a0)+
 	asl.w	-(a0)
@@ -1883,27 +1870,20 @@
 	asl.w	$7F(a0,d0.w)
 	asl.w	($FFFFFFFF).w
 	asl.w	($FFFFFFFF).l
-	asl.l	d0,d0
-	asl.l	#1,d0
-	asl.l	(a0)
-	asl.l	(a0)+
-	asl.l	-(a0)
-	asl.l	$7FFF(a0)
-	asl.l	$7F(a0,d0.w)
-	asl.l	($FFFFFFFF).w
-	asl.l	($FFFFFFFF).l
+	asl	(a0)
+	asl	(a0)+
+	asl	-(a0)
+	asl	$7FFF(a0)
+	asl	$7F(a0,d0.w)
+	asl	($FFFFFFFF).w
+	asl	($FFFFFFFF).l
 
 	asr.b	d0,d0
 	asr.b	#1,d0
-	asr.b	(a0)
-	asr.b	(a0)+
-	asr.b	-(a0)
-	asr.b	$7FFF(a0)
-	asr.b	$7F(a0,d0.w)
-	asr.b	($FFFFFFFF).w
-	asr.b	($FFFFFFFF).l
 	asr.w	d0,d0
 	asr.w	#1,d0
+	asr.l	d0,d0
+	asr.l	#1,d0
 	asr.w	(a0)
 	asr.w	(a0)+
 	asr.w	-(a0)
@@ -1911,27 +1891,20 @@
 	asr.w	$7F(a0,d0.w)
 	asr.w	($FFFFFFFF).w
 	asr.w	($FFFFFFFF).l
-	asr.l	d0,d0
-	asr.l	#1,d0
-	asr.l	(a0)
-	asr.l	(a0)+
-	asr.l	-(a0)
-	asr.l	$7FFF(a0)
-	asr.l	$7F(a0,d0.w)
-	asr.l	($FFFFFFFF).w
-	asr.l	($FFFFFFFF).l
+	asr	(a0)
+	asr	(a0)+
+	asr	-(a0)
+	asr	$7FFF(a0)
+	asr	$7F(a0,d0.w)
+	asr	($FFFFFFFF).w
+	asr	($FFFFFFFF).l
 
 	lsl.b	d0,d0
 	lsl.b	#1,d0
-	lsl.b	(a0)
-	lsl.b	(a0)+
-	lsl.b	-(a0)
-	lsl.b	$7FFF(a0)
-	lsl.b	$7F(a0,d0.w)
-	lsl.b	($FFFFFFFF).w
-	lsl.b	($FFFFFFFF).l
 	lsl.w	d0,d0
 	lsl.w	#1,d0
+	lsl.l	d0,d0
+	lsl.l	#1,d0
 	lsl.w	(a0)
 	lsl.w	(a0)+
 	lsl.w	-(a0)
@@ -1939,27 +1912,20 @@
 	lsl.w	$7F(a0,d0.w)
 	lsl.w	($FFFFFFFF).w
 	lsl.w	($FFFFFFFF).l
-	lsl.l	d0,d0
-	lsl.l	#1,d0
-	lsl.l	(a0)
-	lsl.l	(a0)+
-	lsl.l	-(a0)
-	lsl.l	$7FFF(a0)
-	lsl.l	$7F(a0,d0.w)
-	lsl.l	($FFFFFFFF).w
-	lsl.l	($FFFFFFFF).l
+	lsl	(a0)
+	lsl	(a0)+
+	lsl	-(a0)
+	lsl	$7FFF(a0)
+	lsl	$7F(a0,d0.w)
+	lsl	($FFFFFFFF).w
+	lsl	($FFFFFFFF).l
 
 	lsr.b	d0,d0
 	lsr.b	#1,d0
-	lsr.b	(a0)
-	lsr.b	(a0)+
-	lsr.b	-(a0)
-	lsr.b	$7FFF(a0)
-	lsr.b	$7F(a0,d0.w)
-	lsr.b	($FFFFFFFF).w
-	lsr.b	($FFFFFFFF).l
 	lsr.w	d0,d0
 	lsr.w	#1,d0
+	lsr.l	d0,d0
+	lsr.l	#1,d0
 	lsr.w	(a0)
 	lsr.w	(a0)+
 	lsr.w	-(a0)
@@ -1967,27 +1933,20 @@
 	lsr.w	$7F(a0,d0.w)
 	lsr.w	($FFFFFFFF).w
 	lsr.w	($FFFFFFFF).l
-	lsr.l	d0,d0
-	lsr.l	#1,d0
-	lsr.l	(a0)
-	lsr.l	(a0)+
-	lsr.l	-(a0)
-	lsr.l	$7FFF(a0)
-	lsr.l	$7F(a0,d0.w)
-	lsr.l	($FFFFFFFF).w
-	lsr.l	($FFFFFFFF).l
+	lsr	(a0)
+	lsr	(a0)+
+	lsr	-(a0)
+	lsr	$7FFF(a0)
+	lsr	$7F(a0,d0.w)
+	lsr	($FFFFFFFF).w
+	lsr	($FFFFFFFF).l
 
 	roxl.b	d0,d0
 	roxl.b	#1,d0
-	roxl.b	(a0)
-	roxl.b	(a0)+
-	roxl.b	-(a0)
-	roxl.b	$7FFF(a0)
-	roxl.b	$7F(a0,d0.w)
-	roxl.b	($FFFFFFFF).w
-	roxl.b	($FFFFFFFF).l
 	roxl.w	d0,d0
 	roxl.w	#1,d0
+	roxl.l	d0,d0
+	roxl.l	#1,d0
 	roxl.w	(a0)
 	roxl.w	(a0)+
 	roxl.w	-(a0)
@@ -1995,27 +1954,20 @@
 	roxl.w	$7F(a0,d0.w)
 	roxl.w	($FFFFFFFF).w
 	roxl.w	($FFFFFFFF).l
-	roxl.l	d0,d0
-	roxl.l	#1,d0
-	roxl.l	(a0)
-	roxl.l	(a0)+
-	roxl.l	-(a0)
-	roxl.l	$7FFF(a0)
-	roxl.l	$7F(a0,d0.w)
-	roxl.l	($FFFFFFFF).w
-	roxl.l	($FFFFFFFF).l
+	roxl	(a0)
+	roxl	(a0)+
+	roxl	-(a0)
+	roxl	$7FFF(a0)
+	roxl	$7F(a0,d0.w)
+	roxl	($FFFFFFFF).w
+	roxl	($FFFFFFFF).l
 
 	roxr.b	d0,d0
 	roxr.b	#1,d0
-	roxr.b	(a0)
-	roxr.b	(a0)+
-	roxr.b	-(a0)
-	roxr.b	$7FFF(a0)
-	roxr.b	$7F(a0,d0.w)
-	roxr.b	($FFFFFFFF).w
-	roxr.b	($FFFFFFFF).l
 	roxr.w	d0,d0
 	roxr.w	#1,d0
+	roxr.l	d0,d0
+	roxr.l	#1,d0
 	roxr.w	(a0)
 	roxr.w	(a0)+
 	roxr.w	-(a0)
@@ -2023,27 +1975,20 @@
 	roxr.w	$7F(a0,d0.w)
 	roxr.w	($FFFFFFFF).w
 	roxr.w	($FFFFFFFF).l
-	roxr.l	d0,d0
-	roxr.l	#1,d0
-	roxr.l	(a0)
-	roxr.l	(a0)+
-	roxr.l	-(a0)
-	roxr.l	$7FFF(a0)
-	roxr.l	$7F(a0,d0.w)
-	roxr.l	($FFFFFFFF).w
-	roxr.l	($FFFFFFFF).l
+	roxr	(a0)
+	roxr	(a0)+
+	roxr	-(a0)
+	roxr	$7FFF(a0)
+	roxr	$7F(a0,d0.w)
+	roxr	($FFFFFFFF).w
+	roxr	($FFFFFFFF).l
 
 	rol.b	d0,d0
 	rol.b	#1,d0
-	rol.b	(a0)
-	rol.b	(a0)+
-	rol.b	-(a0)
-	rol.b	$7FFF(a0)
-	rol.b	$7F(a0,d0.w)
-	rol.b	($FFFFFFFF).w
-	rol.b	($FFFFFFFF).l
 	rol.w	d0,d0
 	rol.w	#1,d0
+	rol.l	d0,d0
+	rol.l	#1,d0
 	rol.w	(a0)
 	rol.w	(a0)+
 	rol.w	-(a0)
@@ -2051,27 +1996,20 @@
 	rol.w	$7F(a0,d0.w)
 	rol.w	($FFFFFFFF).w
 	rol.w	($FFFFFFFF).l
-	rol.l	d0,d0
-	rol.l	#1,d0
-	rol.l	(a0)
-	rol.l	(a0)+
-	rol.l	-(a0)
-	rol.l	$7FFF(a0)
-	rol.l	$7F(a0,d0.w)
-	rol.l	($FFFFFFFF).w
-	rol.l	($FFFFFFFF).l
+	rol	(a0)
+	rol	(a0)+
+	rol	-(a0)
+	rol	$7FFF(a0)
+	rol	$7F(a0,d0.w)
+	rol	($FFFFFFFF).w
+	rol	($FFFFFFFF).l
 
 	ror.b	d0,d0
 	ror.b	#1,d0
-	ror.b	(a0)
-	ror.b	(a0)+
-	ror.b	-(a0)
-	ror.b	$7FFF(a0)
-	ror.b	$7F(a0,d0.w)
-	ror.b	($FFFFFFFF).w
-	ror.b	($FFFFFFFF).l
 	ror.w	d0,d0
 	ror.w	#1,d0
+	ror.l	d0,d0
+	ror.l	#1,d0
 	ror.w	(a0)
 	ror.w	(a0)+
 	ror.w	-(a0)
@@ -2079,12 +2017,10 @@
 	ror.w	$7F(a0,d0.w)
 	ror.w	($FFFFFFFF).w
 	ror.w	($FFFFFFFF).l
-	ror.l	d0,d0
-	ror.l	#1,d0
-	ror.l	(a0)
-	ror.l	(a0)+
-	ror.l	-(a0)
-	ror.l	$7FFF(a0)
-	ror.l	$7F(a0,d0.w)
-	ror.l	($FFFFFFFF).w
-	ror.l	($FFFFFFFF).l
+	ror	(a0)
+	ror	(a0)+
+	ror	-(a0)
+	ror	$7FFF(a0)
+	ror	$7F(a0,d0.w)
+	ror	($FFFFFFFF).w
+	ror	($FFFFFFFF).l
