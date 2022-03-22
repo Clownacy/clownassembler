@@ -3617,6 +3617,8 @@ static void ProcessIf(SemanticState *state, const Value *value)
 
 static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement, const char *label)
 {
+	Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state->program_counter;
+
 	switch (statement->type)
 	{
 		case STATEMENT_TYPE_EMPTY:
@@ -3715,17 +3717,32 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 
 		case STATEMENT_TYPE_ELSE:
 			if (state->current_if_level == 0)
+			{
 				SemanticError(state, "This stray ELSE has no preceeding IF.");
+			}
 			else
-				state->false_if_level = state->current_if_level;
+			{
+				if (state->false_if_level == state->current_if_level)
+					state->false_if_level = 0;
+				else if (state->false_if_level == 0)
+					state->false_if_level = state->current_if_level;
+			}
 
 			break;
 
 		case STATEMENT_TYPE_ENDC:
 			if (state->current_if_level == 0)
+			{
 				SemanticError(state, "This stray ENDC has no preceeding IF.");
+			}
 			else
+			{
+				/* If this is the false if level, then it isn't anymore. */
+				if (state->false_if_level == state->current_if_level)
+					state->false_if_level = 0;
+
 				--state->current_if_level;
+			}
 
 			break;
 
@@ -3745,6 +3762,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 	char *label;
 	size_t keyword_length;
 	char *keyword;
+	Statement statement;
 
 	++state->location.line_number;
 
@@ -3818,363 +3836,369 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 	{
 		case MODE_NORMAL:
 		{
-			/* Look up the keyword in the dictionary to see if it's a macro. */
-			const Dictionary_Entry* const macro_dictionary_entry = keyword != NULL ? Dictionary_LookUp(&state->dictionary, keyword) : NULL;
-
-			if (state->false_if_level == 0 && macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO)
+			if (state->false_if_level != 0)
 			{
-				/* Macro invocation. */
-				char **parameters;
-				size_t total_parameters;
-
-				source_line_pointer += strcspn(source_line_pointer, " \t.;");
-				parameters = MallocAndHandleError(state, sizeof(char*));
-				total_parameters = 1;
-
-				if (label != NULL)
+				if (strcmp(keyword, "if") == 0)
 				{
-					SetLastGlobalLabel(state, label);
-					AddLabelToSymbolTable(state, label, state->program_counter);
+					/* Create a false if statement. */
+					statement.type = STATEMENT_TYPE_IF;
+					statement.data.value.type = VALUE_NUMBER;
+					statement.data.value.data.integer = 0;
+					ProcessStatement(state, output_file, &statement, label);
 				}
-
-				/* Extract and store the macro size specifier, if one exists. */
-				if (source_line_pointer[0] == '.')
+				else if (strcmp(keyword, "else") == 0)
 				{
-					size_t size_length;
-
-					++source_line_pointer;
-
-					size_length = strcspn(source_line_pointer, " \t;");
-					parameters[0] = MallocAndHandleError(state, size_length + 1);
-
-					if (parameters[0] != NULL)
-					{
-						memcpy(parameters[0], source_line_pointer, size_length);
-						parameters[0][size_length] = '\0';
-					}
-
-					source_line_pointer += size_length;
+					statement.type = STATEMENT_TYPE_ELSE;
+					ProcessStatement(state, output_file, &statement, label);
+				}
+				else if (strcmp(keyword, "endc") == 0 || strcmp(keyword, "endif") == 0)
+				{
+					statement.type = STATEMENT_TYPE_ENDC;
+					ProcessStatement(state, output_file, &statement, label);
 				}
 				else
 				{
-					parameters[0] = NULL;
+					/* Drop the line completely, since it's inside the false half of an if statement. */
 				}
+			}
+			else
+			{
+				/* Look up the keyword in the dictionary to see if it's a macro. */
+				const Dictionary_Entry* const macro_dictionary_entry = keyword != NULL ? Dictionary_LookUp(&state->dictionary, keyword) : NULL;
 
-				/* Extract and store the macro parameters, if they exist. */
+				if (macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO)
 				{
-					char character;
+					/* Macro invocation. */
+					char **parameters;
+					size_t total_parameters;
 
-					do
+					source_line_pointer += strcspn(source_line_pointer, " \t.;");
+					parameters = MallocAndHandleError(state, sizeof(char*));
+					total_parameters = 1;
+
+					if (label != NULL)
 					{
-						const char* const parameter_start = source_line_pointer += strspn(source_line_pointer, " \t;");
+						SetLastGlobalLabel(state, label);
+						AddLabelToSymbolTable(state, label, state->program_counter);
+					}
+
+					/* Extract and store the macro size specifier, if one exists. */
+					if (source_line_pointer[0] == '.')
+					{
+						size_t size_length;
+
+						++source_line_pointer;
+
+						size_length = strcspn(source_line_pointer, " \t;");
+						parameters[0] = MallocAndHandleError(state, size_length + 1);
+
+						if (parameters[0] != NULL)
+						{
+							memcpy(parameters[0], source_line_pointer, size_length);
+							parameters[0][size_length] = '\0';
+						}
+
+						source_line_pointer += size_length;
+					}
+					else
+					{
+						parameters[0] = NULL;
+					}
+
+					/* Extract and store the macro parameters, if they exist. */
+					{
+						char character;
 
 						do
 						{
-							character = *source_line_pointer++;
+							const char* const parameter_start = source_line_pointer += strspn(source_line_pointer, " \t;");
 
-							if (character == '(')
+							do
 							{
-								unsigned int parameter_depth = 1;
+								character = *source_line_pointer++;
 
-								while (parameter_depth != 0)
+								if (character == '(')
 								{
-									character = *source_line_pointer++;
+									unsigned int parameter_depth = 1;
 
-									if (character == '(')
-										++parameter_depth;
-									else if (character == ')')
-										--parameter_depth;
-									else if (character == ';' || character == '\0')
+									while (parameter_depth != 0)
+									{
+										character = *source_line_pointer++;
+
+										if (character == '(')
+											++parameter_depth;
+										else if (character == ')')
+											--parameter_depth;
+										else if (character == ';' || character == '\0')
+											break;
+									}
+								}
+
+								if (character == ',' || character == ';' || character == '\0')
+								{
+									const size_t parameter_string_length = source_line_pointer - parameter_start - 1;
+
+									if (parameter_string_length != 0)
+									{
+										char *parameter_string;
+
+										parameter_string = MallocAndHandleError(state, parameter_string_length + 1);
+
+										if (parameter_string != NULL)
+										{
+											memcpy(parameter_string, parameter_start, parameter_string_length);
+											parameter_string[parameter_string_length] = '\0';
+
+											parameters = realloc(parameters, sizeof(char*) * (total_parameters + 1));
+
+											if (parameters == NULL)
+											{
+												OutOfMemoryError(state);
+											}
+											else
+											{
+												parameters[total_parameters] = parameter_string;
+												++total_parameters;
+											}
+										}
+									}
+
+									break;
+								}
+							} while (character != ';' && character != '\0');
+						} while (character != ';' && character != '\0');
+					}
+
+					/* Define the 'narg' symbol, which represents how many parameters (arguments) have been passed to the macro. */
+					{
+						Dictionary_Entry *symbol;
+
+						symbol = CreateSymbol(state, "narg");
+
+						if (symbol != NULL)
+						{
+							symbol->type = SYMBOL_CONSTANT;
+							symbol->data.unsigned_integer = total_parameters - 1;
+						}
+					}
+
+					/* Finally, invoke the macro. */
+					{
+						const Macro *macro = macro_dictionary_entry->data.pointer;
+						const SourceLineListNode *source_line_list_node;
+
+						/* Push a new location (this macro).*/
+						Location location = state->location;
+						state->location.previous = &location;
+						state->location.file_path = macro->name;
+						state->location.line_number = 0;
+
+						for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
+						{
+							const char *remaining_line;
+							char *modified_line;
+
+							/* Update the source line for the error printers. */
+							state->source_line = source_line_list_node->source_line;
+
+							/* A bit of a cheat so that errors that occur before the call to AssembleLine still show the correct line number. */
+							++state->location.line_number;
+
+							/* Replace the parameter placeholders with their proper contents. */
+							remaining_line = modified_line = DuplicateStringAndHandleError(state, source_line_list_node->source_line);
+
+							if (modified_line != NULL)
+							{
+								for (;;)
+								{
+									const char *parameter_position;
+									const char *line_after_parameter;
+									unsigned long parameter_index;
+									const IdentifierListNode *parameter_name;
+									unsigned long i;
+
+									/* Search for the earliest macro parameter placeholder in the line, storing its location in 'parameter_position'. */
+
+									/* Silence bogus(?) 'variable may be used uninitialised' compiler warnings. */
+									line_after_parameter = NULL;
+									parameter_index = 0;
+
+									/* Find numerical macro parameter placeholder. */
+									parameter_position = strchr(remaining_line, '\\');
+
+									if (parameter_position != NULL)
+									{
+										char *end;
+
+										/* Obtain numerical index of the parameter. */
+										parameter_index = strtoul(parameter_position + 1, &end, 10);
+										line_after_parameter = end;
+
+										/* Check if conversion failed. */
+										if (end == parameter_position + 1)
+											parameter_position = NULL;
+									}
+
+									/* Now find the identifier-based macro parameter placeholders. */
+									for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
+									{
+										const char *other_parameter_position = strstr(remaining_line, parameter_name->identifier);
+
+										if (parameter_position == NULL || (other_parameter_position != NULL && other_parameter_position < parameter_position))
+										{
+											parameter_index = i;
+											parameter_position = other_parameter_position;
+											line_after_parameter = parameter_position + strlen(parameter_name->identifier);
+										}
+									}
+
+									/* If no placeholders can be found, then we are done here. */
+									if (parameter_position == NULL)
 										break;
+
+									/* Split the line in two, and insert the parameter between them. */
+									{
+										char *new_modified_line;
+
+										const char* const parameter = (parameter_index < total_parameters && parameters[parameter_index] != NULL) ? parameters[parameter_index] : "";
+										const size_t first_half_length = parameter_position - modified_line;
+										const size_t parameter_length = strlen(parameter);
+										const size_t second_half_length = strlen(line_after_parameter);
+
+										new_modified_line = MallocAndHandleError(state, first_half_length + parameter_length + second_half_length + 1);
+
+										if (new_modified_line != NULL)
+										{
+											memcpy(new_modified_line, modified_line, first_half_length);
+											memcpy(new_modified_line + first_half_length, parameter, parameter_length);
+											memcpy(new_modified_line + first_half_length + parameter_length, line_after_parameter, second_half_length);
+											new_modified_line[first_half_length + parameter_length + second_half_length] = '\0';
+
+											/* Continue our search from after the inserted parameter. */
+											remaining_line = &new_modified_line[first_half_length + parameter_length];
+
+											/* We don't need the old copy of the line anymore: free it, and replace it with the new copy. */
+											free(modified_line);
+											modified_line = new_modified_line;
+										}
+									}
 								}
 							}
 
-							if (character == ',' || character == ';' || character == '\0')
+							/* Undo our hack from before. */
+							--state->location.line_number;
+
+							/* Send our expanded macro line to be assembled. */
+							AssembleLine(state, output_file, modified_line != NULL ? modified_line : source_line_list_node->source_line);
+
+							/* The expanded line is done, so we can free it now. */
+							free(modified_line);
+						}
+
+						/* Pop location. */
+						state->location = location;
+					}
+
+					/* Free the parameter strings. */
+					{
+						size_t i;
+
+						for (i = 0; i < total_parameters; ++i)
+							free(parameters[i]);
+					}
+
+					/* Undefine the 'narg' symbol. */
+					if (!Dictionary_Remove(&state->dictionary, "narg"))
+						InternalError(state, "Could not remove symbol 'narg' from the dictionary.");
+				}
+				else
+				{
+					/* Normal assembly line. */
+					YY_BUFFER_STATE buffer;
+					int parse_result;
+
+					/* Back these up, before they get a chance to be modified by ProcessStatement. */
+					const unsigned long starting_program_counter = state->program_counter;
+					const long starting_output_position = ftell(output_file);
+
+					/* Parse the source line with Flex and Bison (Lex and Yacc). */
+					buffer = m68kasm__scan_string(source_line_pointer, state->flex_state);
+					parse_result = m68kasm_parse(state->flex_state, &statement);
+					m68kasm__delete_buffer(buffer, state->flex_state);
+
+					switch (parse_result)
+					{
+						case 2: /* Out of memory. */
+							OutOfMemoryError(state);
+							break;
+
+						case 1: /* Parsing error. */
+							/* An error message will have already been printed, so we don't need to do one here. */
+							break;
+
+						case 0: /* No error. */
+							state->fix_up_needed = cc_false;
+
+							ProcessStatement(state, output_file, &statement, label);
+
+							/* If the statement cannot currently be processed because of undefined symbols,
+							   add it to the fix-up list so we can try again later. */
+							if (state->fix_up_needed)
 							{
-								const size_t parameter_string_length = source_line_pointer - parameter_start - 1;
+								FixUp *fix_up = MallocAndHandleError(state, sizeof(FixUp));
 
-								if (parameter_string_length != 0)
+								if (fix_up != NULL)
 								{
-									char *parameter_string;
+									const Location *source_location = &state->location;
+									Location *destination_location = &fix_up->location;
 
-									parameter_string = MallocAndHandleError(state, parameter_string_length + 1);
+									/* Backup the statement. */
+									fix_up->statement = statement;
+									/* TODO - Free statement. */
 
-									if (parameter_string != NULL)
+									/* Backup some state. */
+									fix_up->program_counter = starting_program_counter;
+									fix_up->output_position = starting_output_position;
+									fix_up->last_global_label = DuplicateStringAndHandleError(state, state->last_global_label);
+									fix_up->source_line = DuplicateStringAndHandleError(state, source_line);
+									fix_up->label = label != NULL ? DuplicateStringAndHandleError(state, label) : NULL;
+
+									/* Clone the location. */
+									*destination_location = *source_location;
+									destination_location->file_path = DuplicateStringAndHandleError(state, source_location->file_path);
+
+									for (source_location = source_location->previous; source_location != NULL; source_location = source_location->previous)
 									{
-										memcpy(parameter_string, parameter_start, parameter_string_length);
-										parameter_string[parameter_string_length] = '\0';
+										destination_location->previous = MallocAndHandleError(state, sizeof(Location));
 
-										parameters = realloc(parameters, sizeof(char*) * (total_parameters + 1));
-
-										if (parameters == NULL)
+										if (destination_location->previous == NULL)
 										{
-											OutOfMemoryError(state);
+											break;
 										}
 										else
 										{
-											parameters[total_parameters] = parameter_string;
-											++total_parameters;
+											destination_location = destination_location->previous;
+											*destination_location = *source_location;
+											destination_location->file_path = DuplicateStringAndHandleError(state, source_location->file_path);
 										}
 									}
-								}
 
-								break;
-							}
-						} while (character != ';' && character != '\0');
-					} while (character != ';' && character != '\0');
-				}
-
-				/* Define the 'narg' symbol, which represents how many parameters (arguments) have been passed to the macro. */
-				{
-					Dictionary_Entry *symbol;
-
-					symbol = CreateSymbol(state, "narg");
-
-					if (symbol != NULL)
-					{
-						symbol->type = SYMBOL_CONSTANT;
-						symbol->data.unsigned_integer = total_parameters - 1;
-					}
-				}
-
-				/* Finally, invoke the macro. */
-				{
-					const Macro *macro = macro_dictionary_entry->data.pointer;
-					const SourceLineListNode *source_line_list_node;
-
-					/* Push a new location (this macro).*/
-					Location location = state->location;
-					state->location.previous = &location;
-					state->location.file_path = macro->name;
-					state->location.line_number = 0;
-
-					for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-					{
-						const char *remaining_line;
-						char *modified_line;
-
-						/* Update the source line for the error printers. */
-						state->source_line = source_line_list_node->source_line;
-
-						/* A bit of a cheat so that errors that occur before the call to AssembleLine still show the correct line number. */
-						++state->location.line_number;
-
-						/* Replace the parameter placeholders with their proper contents. */
-						remaining_line = modified_line = DuplicateStringAndHandleError(state, source_line_list_node->source_line);
-
-						if (modified_line != NULL)
-						{
-							for (;;)
-							{
-								const char *parameter_position;
-								const char *line_after_parameter;
-								unsigned long parameter_index;
-								const IdentifierListNode *parameter_name;
-								unsigned long i;
-
-								/* Search for the earliest macro parameter placeholder in the line, storing its location in 'parameter_position'. */
-
-								/* Silence bogus(?) 'variable may be used uninitialised' compiler warnings. */
-								line_after_parameter = NULL;
-								parameter_index = 0;
-
-								/* Find numerical macro parameter placeholder. */
-								parameter_position = strchr(remaining_line, '\\');
-
-								if (parameter_position != NULL)
-								{
-									char *end;
-
-									/* Obtain numerical index of the parameter. */
-									parameter_index = strtoul(parameter_position + 1, &end, 10);
-									line_after_parameter = end;
-
-									/* Check if conversion failed. */
-									if (end == parameter_position + 1)
-										parameter_position = NULL;
-								}
-
-								/* Now find the identifier-based macro parameter placeholders. */
-								for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
-								{
-									const char *other_parameter_position = strstr(remaining_line, parameter_name->identifier);
-
-									if (parameter_position == NULL || (other_parameter_position != NULL && other_parameter_position < parameter_position))
-									{
-										parameter_index = i;
-										parameter_position = other_parameter_position;
-										line_after_parameter = parameter_position + strlen(parameter_name->identifier);
-									}
-								}
-
-								/* If no placeholders can be found, then we are done here. */
-								if (parameter_position == NULL)
-									break;
-
-								/* Split the line in two, and insert the parameter between them. */
-								{
-									char *new_modified_line;
-
-									const char* const parameter = (parameter_index < total_parameters && parameters[parameter_index] != NULL) ? parameters[parameter_index] : "";
-									const size_t first_half_length = parameter_position - modified_line;
-									const size_t parameter_length = strlen(parameter);
-									const size_t second_half_length = strlen(line_after_parameter);
-
-									new_modified_line = MallocAndHandleError(state, first_half_length + parameter_length + second_half_length + 1);
-
-									if (new_modified_line != NULL)
-									{
-										memcpy(new_modified_line, modified_line, first_half_length);
-										memcpy(new_modified_line + first_half_length, parameter, parameter_length);
-										memcpy(new_modified_line + first_half_length + parameter_length, line_after_parameter, second_half_length);
-										new_modified_line[first_half_length + parameter_length + second_half_length] = '\0';
-
-										/* Continue our search from after the inserted parameter. */
-										remaining_line = &new_modified_line[first_half_length + parameter_length];
-
-										/* We don't need the old copy of the line anymore: free it, and replace it with the new copy. */
-										free(modified_line);
-										modified_line = new_modified_line;
-									}
-								}
-							}
-						}
-
-						/* Undo our hack from before. */
-						--state->location.line_number;
-
-						/* Send our expanded macro line to be assembled. */
-						AssembleLine(state, output_file, modified_line != NULL ? modified_line : source_line_list_node->source_line);
-
-						/* The expanded line is done, so we can free it now. */
-						free(modified_line);
-					}
-
-					/* Pop location. */
-					state->location = location;
-				}
-
-				/* Free the parameter strings. */
-				{
-					size_t i;
-
-					for (i = 0; i < total_parameters; ++i)
-						free(parameters[i]);
-				}
-
-				/* Undefine the 'narg' symbol. */
-				if (!Dictionary_Remove(&state->dictionary, "narg"))
-					InternalError(state, "Could not remove symbol 'narg' from the dictionary.");
-			}
-			else if (state->false_if_level != 0 && strcmp(keyword, "else") == 0)
-			{
-				if (label != NULL)
-					SemanticError(state, "There cannot be a label on this type of statement.");
-
-				if (state->false_if_level == state->current_if_level)
-					state->false_if_level = 0;
-			}
-			else if (state->false_if_level != 0 && (strcmp(keyword, "endc") == 0 || strcmp(keyword, "endif") == 0))
-			{
-				if (label != NULL)
-					SemanticError(state, "There cannot be a label on this type of statement.");
-
-				/* If this is the false if level, then it isn't anymore. */
-				if (state->false_if_level == state->current_if_level)
-					state->false_if_level = 0;
-
-				--state->current_if_level;
-			}
-			else if (state->false_if_level == 0 || strcmp(keyword, "if") == 0)
-			{
-				/* Normal assembly line. */
-				Statement statement;
-				YY_BUFFER_STATE buffer;
-				int parse_result;
-
-				/* Back these up, before they get a chance to be modified by ProcessStatement. */
-				const unsigned long starting_program_counter = state->program_counter;
-				const long starting_output_position = ftell(output_file);
-
-				/* Parse the source line with Flex and Bison (Lex and Yacc). */
-				buffer = m68kasm__scan_string(source_line_pointer, state->flex_state);
-				parse_result = m68kasm_parse(state->flex_state, &statement);
-				m68kasm__delete_buffer(buffer, state->flex_state);
-
-				switch (parse_result)
-				{
-					case 2: /* Out of memory. */
-						OutOfMemoryError(state);
-						break;
-
-					case 1: /* Parsing error. */
-						/* An error message will have already been printed, so we don't need to do one here. */
-						break;
-
-					case 0: /* No error. */
-						Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state->program_counter;
-
-						state->fix_up_needed = cc_false;
-
-						ProcessStatement(state, output_file, &statement, label);
-
-						/* If the statement cannot currently be processed because of undefined symbols,
-						   add it to the fix-up list so we can try again later. */
-						if (state->fix_up_needed)
-						{
-							FixUp *fix_up = MallocAndHandleError(state, sizeof(FixUp));
-
-							if (fix_up != NULL)
-							{
-								const Location *source_location = &state->location;
-								Location *destination_location = &fix_up->location;
-
-								/* Backup the statement. */
-								fix_up->statement = statement;
-								/* TODO - Free statement. */
-
-								/* Backup some state. */
-								fix_up->program_counter = starting_program_counter;
-								fix_up->output_position = starting_output_position;
-								fix_up->last_global_label = DuplicateStringAndHandleError(state, state->last_global_label);
-								fix_up->source_line = DuplicateStringAndHandleError(state, source_line);
-								fix_up->label = label != NULL ? DuplicateStringAndHandleError(state, label) : NULL;
-
-								/* Clone the location. */
-								*destination_location = *source_location;
-								destination_location->file_path = DuplicateStringAndHandleError(state, source_location->file_path);
-
-								for (source_location = source_location->previous; source_location != NULL; source_location = source_location->previous)
-								{
-									destination_location->previous = MallocAndHandleError(state, sizeof(Location));
-
-									if (destination_location->previous == NULL)
-									{
-										break;
-									}
+									/* Add the new fix-up to the list. */
+									if (state->fix_up_list_head == NULL)
+										state->fix_up_list_head = fix_up;
 									else
-									{
-										destination_location = destination_location->previous;
-										*destination_location = *source_location;
-										destination_location->file_path = DuplicateStringAndHandleError(state, source_location->file_path);
-									}
+										state->fix_up_list_tail->next = fix_up;
+
+									state->fix_up_list_tail = fix_up;
+
+									fix_up->next = NULL;
 								}
 
-								/* Add the new fix-up to the list. */
-								if (state->fix_up_list_head == NULL)
-									state->fix_up_list_head = fix_up;
-								else
-									state->fix_up_list_tail->next = fix_up;
-
-								state->fix_up_list_tail = fix_up;
-
-								fix_up->next = NULL;
+								state->fix_up_needed = cc_false;
 							}
 
-							state->fix_up_needed = cc_false;
-						}
-
-						break;
+							break;
+					}
 				}
 			}
 
@@ -4346,8 +4370,6 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 					state.last_global_label = DuplicateStringAndHandleError(&state, fix_up->last_global_label);
 					state.source_line = fix_up->source_line != NULL ? fix_up->source_line : "[No source line]";
 					state.location = fix_up->location;
-
-					Dictionary_LookUp(&state.dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state.program_counter;
 
 					state.fix_up_needed = cc_false;
 
