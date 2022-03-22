@@ -4039,7 +4039,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				if (state->false_if_level == state->current_if_level)
 					state->false_if_level = 0;
 			}
-			else if (state->false_if_level != 0 && strcmp(keyword, "endc") == 0)
+			else if (state->false_if_level != 0 && (strcmp(keyword, "endc") == 0 || strcmp(keyword, "endif") == 0))
 			{
 				/* If this is the false if level, then it isn't anymore. */
 				if (state->false_if_level == state->current_if_level)
