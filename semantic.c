@@ -2463,6 +2463,9 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 
 					case OPCODE_MOVEA:
 					case OPCODE_MOVE:
+						if (instruction.operands[0].type == OPERAND_ADDRESS_REGISTER && instruction.opcode.size == SIZE_BYTE)
+							SemanticError(state, "This instruction cannot be byte-sized when its source is an address register.");
+
 						switch (instruction.opcode.size)
 						{
 							case SIZE_BYTE:
