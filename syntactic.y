@@ -1641,7 +1641,7 @@ value
 	{
 		$$ = $1;
 	}
-	| value1 TOKEN_LOGICAL_OR value
+	| value TOKEN_LOGICAL_OR value1
 	{
 		if (!DoValue(&$$, VALUE_LOGICAL_OR, &$1, &$3))
 			YYNOMEM;
@@ -1653,7 +1653,7 @@ value1
 	{
 		$$ = $1;
 	}
-	| value2 TOKEN_LOGICAL_AND value1
+	| value1 TOKEN_LOGICAL_AND value2
 	{
 		if (!DoValue(&$$, VALUE_LOGICAL_AND, &$1, &$3))
 			YYNOMEM;
@@ -1665,7 +1665,7 @@ value2
 	{
 		$$ = $1;
 	}
-	| value3 '|' value2
+	| value2 '|' value3
 	{
 		if (!DoValue(&$$, VALUE_ARITHMETIC_OR, &$1, &$3))
 			YYNOMEM;
@@ -1677,7 +1677,7 @@ value3
 	{
 		$$ = $1;
 	}
-	| value4 '^' value3
+	| value3 '^' value4
 	{
 		if (!DoValue(&$$, VALUE_ARITHMETIC_XOR, &$1, &$3))
 			YYNOMEM;
@@ -1689,7 +1689,7 @@ value4
 	{
 		$$ = $1;
 	}
-	| value5 '&' value4
+	| value4 '&' value5
 	{
 		if (!DoValue(&$$, VALUE_ARITHMETIC_AND, &$1, &$3))
 			YYNOMEM;
@@ -1701,17 +1701,17 @@ value5
 	{
 		$$ = $1;
 	}
-	| value6 '=' value5
+	| value5 '=' value6
 	{
 		if (!DoValue(&$$, VALUE_EQUALITY, &$1, &$3))
 			YYNOMEM;
 	}
-	| value6 TOKEN_EQUALITY value5
+	| value5 TOKEN_EQUALITY value6
 	{
 		if (!DoValue(&$$, VALUE_EQUALITY, &$1, &$3))
 			YYNOMEM;
 	}
-	| value6 TOKEN_INEQUALITY value5
+	| value5 TOKEN_INEQUALITY value6
 	{
 		if (!DoValue(&$$, VALUE_INEQUALITY, &$1, &$3))
 			YYNOMEM;
@@ -1723,22 +1723,22 @@ value6
 	{
 		$$ = $1;
 	}
-	| value7 '<' value6
+	| value6 '<' value7
 	{
 		if (!DoValue(&$$, VALUE_LESS_THAN, &$1, &$3))
 			YYNOMEM;
 	}
-	| value7 TOKEN_LESS_OR_EQUAL value6
+	| value6 TOKEN_LESS_OR_EQUAL value7
 	{
 		if (!DoValue(&$$, VALUE_LESS_OR_EQUAL, &$1, &$3))
 			YYNOMEM;
 	}
-	| value7 '>' value6
+	| value6 '>' value7
 	{
 		if (!DoValue(&$$, VALUE_MORE_THAN, &$1, &$3))
 			YYNOMEM;
 	}
-	| value7 TOKEN_MORE_OR_EQUAL value6
+	| value6 TOKEN_MORE_OR_EQUAL value7
 	{
 		if (!DoValue(&$$, VALUE_MORE_OR_EQUAL, &$1, &$3))
 			YYNOMEM;
@@ -1750,12 +1750,12 @@ value7
 	{
 		$$ = $1;
 	}
-	| value8 TOKEN_LEFT_SHIFT value7
+	| value7 TOKEN_LEFT_SHIFT value8
 	{
 		if (!DoValue(&$$, VALUE_LEFT_SHIFT, &$1, &$3))
 			YYNOMEM;
 	}
-	| value8 TOKEN_RIGHT_SHIFT value7
+	| value7 TOKEN_RIGHT_SHIFT value8
 	{
 		if (!DoValue(&$$, VALUE_RIGHT_SHIFT, &$1, &$3))
 			YYNOMEM;
@@ -1767,12 +1767,12 @@ value8
 	{
 		$$ = $1;
 	}
-	| value9 '+' value8
+	| value8 '+' value9
 	{
 		if (!DoValue(&$$, VALUE_ADD, &$1, &$3))
 			YYNOMEM;
 	}
-	| value9 '-' value8
+	| value8 '-' value9
 	{
 		if (!DoValue(&$$, VALUE_SUBTRACT, &$1, &$3))
 			YYNOMEM;
@@ -1784,17 +1784,17 @@ value9
 	{
 		$$ = $1;
 	}
-	| value10 '*' value9
+	| value9 '*' value10
 	{
 		if (!DoValue(&$$, VALUE_MULTIPLY, &$1, &$3))
 			YYNOMEM;
 	}
-	| value10 '/' value9
+	| value9 '/' value10
 	{
 		if (!DoValue(&$$, VALUE_DIVIDE, &$1, &$3))
 			YYNOMEM;
 	}
-	| value10 '%' value9
+	| value9 '%' value10
 	{
 		if (!DoValue(&$$, VALUE_MODULO, &$1, &$3))
 			YYNOMEM;
