@@ -3824,9 +3824,12 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 			if (state->false_if_level == 0 && macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO)
 			{
 				/* Macro invocation. */
-				const char *string_pointer = source_line_pointer + strcspn(source_line_pointer, " \t.;");
-				char **parameters = MallocAndHandleError(state, sizeof(char*));
-				size_t total_parameters = 1;
+				char **parameters;
+				size_t total_parameters;
+
+				source_line_pointer += strcspn(source_line_pointer, " \t.;");
+				parameters = MallocAndHandleError(state, sizeof(char*));
+				total_parameters = 1;
 
 				if (label != NULL)
 				{
@@ -3835,22 +3838,22 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				}
 
 				/* Extract and store the macro size specifier, if one exists. */
-				if (string_pointer[0] == '.')
+				if (source_line_pointer[0] == '.')
 				{
 					size_t size_length;
 
-					++string_pointer;
+					++source_line_pointer;
 
-					size_length = strcspn(string_pointer, " \t;");
+					size_length = strcspn(source_line_pointer, " \t;");
 					parameters[0] = MallocAndHandleError(state, size_length + 1);
 
 					if (parameters[0] != NULL)
 					{
-						memcpy(parameters[0], string_pointer, size_length);
+						memcpy(parameters[0], source_line_pointer, size_length);
 						parameters[0][size_length] = '\0';
 					}
 
-					string_pointer += size_length;
+					source_line_pointer += size_length;
 				}
 				else
 				{
@@ -3863,11 +3866,11 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 
 					do
 					{
-						const char* const parameter_start = string_pointer += strspn(string_pointer, " \t;");
+						const char* const parameter_start = source_line_pointer += strspn(source_line_pointer, " \t;");
 
 						do
 						{
-							character = *string_pointer++;
+							character = *source_line_pointer++;
 
 							if (character == '(')
 							{
@@ -3875,7 +3878,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 
 								while (parameter_depth != 0)
 								{
-									character = *string_pointer++;
+									character = *source_line_pointer++;
 
 									if (character == '(')
 										++parameter_depth;
@@ -3888,7 +3891,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 
 							if (character == ',' || character == ';' || character == '\0')
 							{
-								const size_t parameter_string_length = string_pointer - parameter_start - 1;
+								const size_t parameter_string_length = source_line_pointer - parameter_start - 1;
 
 								if (parameter_string_length != 0)
 								{
