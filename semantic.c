@@ -1801,13 +1801,13 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 };
 
-static void ProcessInstruction(SemanticState *state, FILE *output_file, const Instruction *original_instruction)
+static void ProcessInstruction(SemanticState *state, FILE *output_file, const StatementInstruction *original_instruction)
 {
 	/* Default to NOP in case errors occur later on and we can't get the correct machine code. */
 	unsigned int machine_code = 0x4E71;
 	unsigned int i;
 	const InstructionMetadata *instruction_metadata;
-	Instruction instruction = *original_instruction;
+	StatementInstruction instruction = *original_instruction;
 
 	const unsigned long start_program_counter = state->program_counter + 2;
 
@@ -3411,7 +3411,7 @@ static void OutputDcValue(SemanticState *state, FILE *output_file, const Size si
 		fputc((value >> (bytes_to_write * 8)) & 0xFF, output_file);
 }
 
-static void ProcessDc(SemanticState *state, FILE *output_file, const Dc *dc)
+static void ProcessDc(SemanticState *state, FILE *output_file, const StatementDc *dc)
 {
 	const ValueListNode *value_list_node;
 
@@ -3444,7 +3444,7 @@ static void ProcessDc(SemanticState *state, FILE *output_file, const Dc *dc)
 	}
 }
 
-static void ProcessDcb(SemanticState *state, FILE *output_file, const Dcb *dcb)
+static void ProcessDcb(SemanticState *state, FILE *output_file, const StatementDcb *dcb)
 {
 	unsigned long repetitions;
 
@@ -3465,7 +3465,7 @@ static void ProcessDcb(SemanticState *state, FILE *output_file, const Dcb *dcb)
 	}
 }
 
-static void ProcessInclude(SemanticState *state, FILE *output_file, const Include *include)
+static void ProcessInclude(SemanticState *state, FILE *output_file, const StatementInclude *include)
 {
 	FILE *input_file = fopen(include->path, "r");
 
@@ -3547,7 +3547,7 @@ static void ProcessIncbin(SemanticState *state, FILE *output_file, const Stateme
 	}
 }
 
-static void ProcessRept(SemanticState *state, const Rept *rept)
+static void ProcessRept(SemanticState *state, const StatementRept *rept)
 {
 	state->mode = MODE_REPT;
 

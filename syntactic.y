@@ -264,29 +264,29 @@ typedef struct Operand
 	cc_bool index_register_is_address_register;
 } Operand;
 
-typedef struct Instruction
+typedef struct StatementInstruction
 {
 	Opcode opcode;
 	Operand operands[2];
-} Instruction;
+} StatementInstruction;
 
-typedef struct Dc
+typedef struct StatementDc
 {
 	Size size;
 	ValueListNode *values;
-} Dc;
+} StatementDc;
 
-typedef struct Dcb
+typedef struct StatementDcb
 {
 	Size size;
 	Value repetitions;
 	Value value;
-} Dcb;
+} StatementDcb;
 
-typedef struct Include
+typedef struct StatementInclude
 {
 	char *path;
-} Include;
+} StatementInclude;
 
 typedef struct StatementIncbin
 {
@@ -296,10 +296,10 @@ typedef struct StatementIncbin
 	Value length;
 } StatementIncbin;
 
-typedef struct Rept
+typedef struct StatementRept
 {
 	Value total_repeats;
-} Rept;
+} StatementRept;
 
 typedef struct StatementMacro
 {
@@ -328,12 +328,12 @@ typedef struct Statement
 	} type;
 	union
 	{
-		Instruction instruction;
-		Dc dc;
-		Dcb dcb;
-		Include include;
+		StatementInstruction instruction;
+		StatementDc dc;
+		StatementDcb dcb;
+		StatementInclude include;
 		StatementIncbin incbin;
-		Rept rept;
+		StatementRept rept;
 		StatementMacro macro;
 		Value value;
 	} data;
@@ -368,7 +368,7 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 	} generic;
 	Opcode opcode;
 	Operand operand;
-	Instruction instruction;
+	StatementInstruction instruction;
 	Statement statement;
 	ListMetadata list_metadata;
 	Value value;
