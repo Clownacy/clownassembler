@@ -3846,7 +3846,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 		{
 			if (state->false_if_level != 0)
 			{
-				if (strcmp(keyword, "if") == 0)
+				if (strcmp(keyword, "if") == 0) /* TODO - Case-insensitivity. */
 				{
 					/* Create a false if statement. */
 					statement.type = STATEMENT_TYPE_IF;
@@ -3854,13 +3854,15 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 					statement.data.value.data.integer = 0;
 					ProcessStatement(state, output_file, &statement, label);
 				}
-				else if (strcmp(keyword, "else") == 0)
+				else if (strcmp(keyword, "else") == 0) /* TODO - Case-insensitivity. */
 				{
+					/* TODO - Detect code after the keyword and error if any is found. */
 					statement.type = STATEMENT_TYPE_ELSE;
 					ProcessStatement(state, output_file, &statement, label);
 				}
-				else if (strcmp(keyword, "endc") == 0 || strcmp(keyword, "endif") == 0)
+				else if (strcmp(keyword, "endc") == 0 || strcmp(keyword, "endif") == 0) /* TODO - Case-insensitivity. */
 				{
+					/* TODO - Detect code after the keyword and error if any is found. */
 					statement.type = STATEMENT_TYPE_ENDC;
 					ProcessStatement(state, output_file, &statement, label);
 				}
@@ -4214,8 +4216,9 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 		}
 
 		case MODE_REPT:
-			if (strcmp(keyword, "endr") == 0)
+			if (strcmp(keyword, "endr") == 0) /* TODO - Case-insensitivity. */
 			{
+				/* TODO - Detect code after the keyword and error if any is found. */
 				statement.type = STATEMENT_TYPE_ENDR;
 				ProcessStatement(state, output_file, &statement, label);
 			}
@@ -4227,8 +4230,9 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 			break;
 
 		case MODE_MACRO:
-			if (strcmp(keyword, "endm") == 0)
+			if (strcmp(keyword, "endm") == 0) /* TODO - Case-insensitivity. */
 			{
+				/* TODO - Detect code after the keyword and error if any is found. */
 				statement.type = STATEMENT_TYPE_ENDM;
 				ProcessStatement(state, output_file, &statement, label);
 			}
