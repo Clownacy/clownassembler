@@ -2586,6 +2586,9 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 						else
 							machine_code |= value;
 
+						/* The operand is embedded directly into the machine code, so we don't need to output it separately. */
+						instruction.operands[0].type = 0;
+
 						break;
 					}
 
@@ -2855,6 +2858,8 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 						if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
 						{
 							machine_code |= offset & 0xFF;
+
+							/* The operand is embedded directly into the machine code, so we don't need to output it separately. */
 							instruction.operands[0].type = 0;
 						}
 						else
