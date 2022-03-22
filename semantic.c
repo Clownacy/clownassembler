@@ -3795,7 +3795,10 @@ static void ProcessStatement(SemanticState *state, const Statement *statement, c
 		case STATEMENT_TYPE_EVEN:
 			/* Pad to the nearest even address. */
 			if (state->program_counter & 1)
+			{
+				++state->program_counter;
 				fputc(0, state->output_file);
+			}
 
 			break;
 
