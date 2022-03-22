@@ -22,11 +22,24 @@ typedef enum SymbolType
 
 typedef struct Location
 {
-	const struct Location *previous;
+	struct Location *previous;
 
 	char *file_path;
 	unsigned long line_number;
 } Location;
+
+typedef struct FixUp
+{
+	struct FixUp *next;
+
+	Statement statement;
+	unsigned long program_counter;
+	long output_position;
+	char *last_global_label;
+	char *source_line;
+	Location location;
+	char *label;
+} FixUp;
 
 typedef struct SourceLineListNode
 {
@@ -45,7 +58,11 @@ typedef struct SemanticState
 {
 	cc_bool success;
 	unsigned long program_counter;
-	cc_bool doing_second_pass;
+	FixUp *fix_up_list_head;
+	FixUp *fix_up_list_tail;
+	cc_bool fix_up_needed;
+	cc_bool doing_fix_up;
+	cc_bool doing_final_pass;
 	Dictionary_State dictionary;
 	char *last_global_label;
 	Location location;
@@ -515,8 +532,10 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 			{
 				success = cc_false;
 
-				if (state->doing_second_pass)
+				if (state->doing_final_pass)
 					SemanticError(state, "Symbol '%s' does not exist.", identifier);
+				else
+					state->fix_up_needed = cc_true;
 			}
 			else if (dictionary_entry->type != SYMBOL_CONSTANT && dictionary_entry->type != SYMBOL_VARIABLE)
 			{
@@ -672,7 +691,7 @@ static unsigned int ToAlternateEffectiveAddressBits(unsigned int bits)
 	return (m << 6) | (dn << 9);
 }
 
-static void AddLabelToSymbolTable(SemanticState *state, const char *label, unsigned long value)
+static void SetLastGlobalLabel(SemanticState *state, const char *label)
 {
 	if (label[0] != '@')
 	{
@@ -680,36 +699,36 @@ static void AddLabelToSymbolTable(SemanticState *state, const char *label, unsig
 		free(state->last_global_label);
 		state->last_global_label = DuplicateStringAndHandleError(state, label);
 	}
+}
 
-	if (!state->doing_second_pass)
+static void AddLabelToSymbolTable(SemanticState *state, const char *label, unsigned long value)
+{
+	char *expanded_identifier;
+	const char *identifier;
+	Dictionary_Entry *symbol;
+
+	expanded_identifier = NULL;
+	identifier = label;
+
+	if (label[0] == '@')
 	{
-		char *expanded_identifier;
-		const char *identifier;
-		Dictionary_Entry *symbol;
+		/* This is a local label - prefix it with the previous global label. */
+		expanded_identifier = ExpandLocalIdentifier(state, label);
 
-		expanded_identifier = NULL;
-		identifier = label;
-
-		if (label[0] == '@')
-		{
-			/* This is a local label - prefix it with the previous global label. */
-			expanded_identifier = ExpandLocalIdentifier(state, label);
-
-			if (expanded_identifier != NULL)
-				identifier = expanded_identifier;
-		}
-
-		/* Now add it to the symbol table. */
-		symbol = CreateSymbol(state, identifier);
-
-		if (symbol != NULL)
-		{
-			symbol->type = SYMBOL_CONSTANT;
-			symbol->data.unsigned_integer = value;
-		}
-
-		free(expanded_identifier);
+		if (expanded_identifier != NULL)
+			identifier = expanded_identifier;
 	}
+
+	/* Now add it to the symbol table. */
+	symbol = CreateSymbol(state, identifier);
+
+	if (symbol != NULL)
+	{
+		symbol->type = SYMBOL_CONSTANT;
+		symbol->data.unsigned_integer = value;
+	}
+
+	free(expanded_identifier);
 }
 
 typedef struct InstructionMetadata
@@ -3476,7 +3495,7 @@ static void ProcessInclude(SemanticState *state, FILE *output_file, const Statem
 	else
 	{
 		/* Backup file path and line number. */
-		const Location location = state->location;
+		Location location = state->location;
 		state->location.previous = &location;
 		state->location.file_path = DuplicateStringAndHandleError(state, include->path);
 		state->location.line_number = 0;
@@ -3575,17 +3594,6 @@ static void ProcessMacro(SemanticState *state, const StatementMacro *macro, cons
 	state->macro.source_line_list.tail = NULL;
 }
 
-static void ProcessEqu(SemanticState *state, const Value *value, const char *label)
-{
-	if (!state->doing_second_pass)
-	{
-		unsigned long resolved_value;
-
-		if (ResolveValue(state, value, &resolved_value))
-			AddLabelToSymbolTable(state, label, resolved_value);
-	}
-}
-
 static void ProcessIf(SemanticState *state, const Value *value)
 {
 	++state->current_if_level;
@@ -3620,8 +3628,11 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 		case STATEMENT_TYPE_REPT:
 		case STATEMENT_TYPE_IF:
 		case STATEMENT_TYPE_EVEN:
-			if (label != NULL)
+			if (label != NULL && !state->doing_fix_up && !state->doing_final_pass)
+			{
+				SetLastGlobalLabel(state, label);
 				AddLabelToSymbolTable(state, label, state->program_counter);
+			}
 
 			break;
 
@@ -3639,7 +3650,15 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			if (label == NULL)
 			{
 				SemanticError(state, "This type of statement must have a label.");
-				return;
+			}
+			else if (statement->type == STATEMENT_TYPE_EQU)
+			{
+				unsigned long resolved_value;
+
+				SetLastGlobalLabel(state, label);
+
+				if (ResolveValue(state, &statement->data.value, &resolved_value))
+					AddLabelToSymbolTable(state, label, resolved_value);
 			}
 
 			break;
@@ -3687,7 +3706,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			break;
 
 		case STATEMENT_TYPE_EQU:
-			ProcessEqu(state, &statement->data.value, label);
+			/* Doesn't do anything here: see above. */
 			break;
 
 		case STATEMENT_TYPE_IF:
@@ -3915,7 +3934,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 					const SourceLineListNode *source_line_list_node;
 
 					/* Push a new location (this macro).*/
-					const Location location = state->location;
+					Location location = state->location;
 					state->location.previous = &location;
 					state->location.file_path = macro->name;
 					state->location.line_number = 0;
@@ -4058,6 +4077,10 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				YY_BUFFER_STATE buffer;
 				int parse_result;
 
+				/* Back these up, before they get a chance to be modified by ProcessStatement. */
+				const unsigned long starting_program_counter = state->program_counter;
+				const long starting_output_position = ftell(output_file);
+
 				/* Parse the source line with Flex and Bison (Lex and Yacc). */
 				buffer = m68kasm__scan_string(source_line_pointer, state->flex_state);
 				parse_result = m68kasm_parse(state->flex_state, &statement);
@@ -4076,7 +4099,65 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 					case 0: /* No error. */
 						Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state->program_counter;
 
+						state->fix_up_needed = cc_false;
+
 						ProcessStatement(state, output_file, &statement, label);
+
+						/* If the statement cannot currently be processed because of undefined symbols,
+						   add it to the fix-up list so we can try again later. */
+						if (state->fix_up_needed)
+						{
+							FixUp *fix_up = MallocAndHandleError(state, sizeof(FixUp));
+
+							if (fix_up != NULL)
+							{
+								const Location *source_location = &state->location;
+								Location *destination_location = &fix_up->location;
+
+								/* Backup the statement. */
+								fix_up->statement = statement;
+								/* TODO - Free statement. */
+
+								/* Backup some state. */
+								fix_up->program_counter = starting_program_counter;
+								fix_up->output_position = starting_output_position;
+								fix_up->last_global_label = DuplicateStringAndHandleError(state, state->last_global_label);
+								fix_up->source_line = DuplicateStringAndHandleError(state, source_line);
+								fix_up->label = label != NULL ? DuplicateStringAndHandleError(state, label) : NULL;
+
+								/* Clone the location. */
+								*destination_location = *source_location;
+								destination_location->file_path = DuplicateStringAndHandleError(state, source_location->file_path);
+
+								for (source_location = source_location->previous; source_location != NULL; source_location = source_location->previous)
+								{
+									destination_location->previous = MallocAndHandleError(state, sizeof(Location));
+
+									if (destination_location->previous == NULL)
+									{
+										break;
+									}
+									else
+									{
+										destination_location = destination_location->previous;
+										*destination_location = *source_location;
+										destination_location->file_path = DuplicateStringAndHandleError(state, source_location->file_path);
+									}
+								}
+
+								/* Add the new fix-up to the list. */
+								if (state->fix_up_list_head == NULL)
+									state->fix_up_list_head = fix_up;
+								else
+									state->fix_up_list_tail->next = fix_up;
+
+								state->fix_up_list_tail = fix_up;
+
+								fix_up->next = NULL;
+							}
+
+							state->fix_up_needed = cc_false;
+						}
 
 						break;
 				}
@@ -4169,11 +4250,11 @@ static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_fi
 	}
 }
 
-static cc_bool DeleteNonConstants(Dictionary_Entry *entry, const char *identifier, void *user_data)
+static cc_bool DictionaryFilterDeleteVariables(Dictionary_Entry *entry, const char *identifier, void *user_data)
 {
 	(void)user_data;
 
-	return (strcmp(identifier, ",,PROGRAM_COUNTER,,") == 0 || entry->type == SYMBOL_CONSTANT);
+	return (entry->type != SYMBOL_VARIABLE || strcmp(identifier, ",,PROGRAM_COUNTER,,") == 0);
 }
 
 cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char *input_file_path, cc_bool debug)
@@ -4182,10 +4263,18 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 	Dictionary_Entry *symbol;
 
 	state.success = cc_true;
+	state.program_counter = 0;
+	state.fix_up_list_head = NULL;
+	state.fix_up_list_tail = NULL;
+	state.doing_fix_up = cc_false;
+	state.doing_final_pass = cc_false;
+	state.last_global_label = NULL;
 	state.location.previous = NULL;
 	state.location.file_path = DuplicateStringAndHandleError(&state, input_file_path != NULL ? input_file_path : "[No path given]");
 	state.location.line_number = 0;
 	state.source_line = "[No source line]";
+	state.current_if_level = 0;
+	state.false_if_level = 0;
 	state.mode = MODE_NORMAL;
 
 	Dictionary_Init(&state.dictionary);
@@ -4209,50 +4298,88 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 		#endif
 
 			/* Perform first pass, and create a list of fix-ups if needed. */
-			/* TODO - Some of these should be done elsewhere. */
-			state.program_counter = 0;
-			state.last_global_label = NULL;
-			state.current_if_level = 0;
-			state.false_if_level = 0;
-
-			state.doing_second_pass = cc_false;
-
 			AssembleFile(&state, output_file, input_file);
-
-			free(state.last_global_label);
-
-			if (state.false_if_level != 0)
-				SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
-
-			Dictionary_Filter(&state.dictionary, DeleteNonConstants, NULL);
-
-			/* Revert back to the initial state. */
-			rewind(input_file);
-			rewind(output_file);
-			free(state.location.file_path);
-			state.location.previous = NULL;
-			state.location.file_path = DuplicateStringAndHandleError(&state, input_file_path != NULL ? input_file_path : "[No path given]");
-			state.location.line_number = 0;
-			state.source_line = "[No source line]";
-
-			/* Process the fix-ups, reassembling instructions and reprocessing directives that could not be done in the first pass. */
-			state.program_counter = 0;
-			state.last_global_label = NULL;
-			state.current_if_level = 0;
-			state.false_if_level = 0;
-
-			state.doing_second_pass = cc_true;
-
-			/* Perform first pass, and create a list of fix-ups if needed. */
-			AssembleFile(&state, output_file, input_file);
-
-			free(state.last_global_label);
 
 			if (state.false_if_level != 0)
 				SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
 
 			if (m68kasm_lex_destroy(state.flex_state) != 0)
 				InternalError(&state, "m68kasm_lex_destroy failed.");
+
+			/* Filter variables out from the symbol table, (variables cannot be used before they are declared, since their values are position-dependent). */
+			Dictionary_Filter(&state.dictionary, DictionaryFilterDeleteVariables, NULL);
+
+			/* Process the fix-ups, reassembling instructions and reprocessing directives that could not be done in the first pass. */
+			state.doing_fix_up = cc_true;
+
+			for (;;)
+			{
+				cc_bool a_fix_up_has_been_fixed;
+				FixUp **fix_up_pointer;
+
+				a_fix_up_has_been_fixed = cc_false;
+
+				fix_up_pointer = &state.fix_up_list_head;
+
+				while (*fix_up_pointer != NULL)
+				{
+					FixUp *fix_up = *fix_up_pointer;
+
+					/* Reset some state to how it was at the time the statement was first processed. */
+					state.program_counter = fix_up->program_counter;
+					fseek(output_file, fix_up->output_position , SEEK_SET);
+					state.last_global_label = DuplicateStringAndHandleError(&state, fix_up->last_global_label);
+					state.source_line = fix_up->source_line != NULL ? fix_up->source_line : "[No source line]";
+					state.location = fix_up->location;
+
+					Dictionary_LookUp(&state.dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state.program_counter;
+
+					state.fix_up_needed = cc_false;
+
+					/* Re-process statement. */
+					ProcessStatement(&state, output_file, &fix_up->statement, fix_up->label != NULL ? fix_up->label : NULL);
+
+					if (!state.fix_up_needed)
+					{
+						/* This fix-up has been fixed, so we're done with it; now delete it. */
+						Location *location;
+
+						*fix_up_pointer = fix_up->next;
+
+						free(fix_up->last_global_label);
+						free(fix_up->source_line);
+						free(fix_up->label);
+
+						location = fix_up->location.previous;
+
+						while (location != NULL)
+						{
+							Location *previous_location = location->previous;
+							free(location->file_path);
+							free(location);
+							location = previous_location;
+						}
+
+						free(fix_up);
+
+						a_fix_up_has_been_fixed = cc_true;
+					}
+					else
+					{
+						fix_up_pointer = &fix_up->next;
+					}
+				}
+
+				/* Once the final pass has ended, we can exit this infinite loop. */
+				if (state.doing_final_pass)
+					break;
+
+				/* If no more fix-ups can be fixed, then do one final pass to print errors. */
+				if (!a_fix_up_has_been_fixed)
+					state.doing_final_pass = cc_true;
+			}
+
+			free(state.last_global_label);
 		}
 	}
 
