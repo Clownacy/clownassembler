@@ -306,6 +306,11 @@ typedef struct StatementMacro
 	IdentifierListNode *parameter_names;
 } StatementMacro;
 
+typedef struct StatementInform
+{
+	char *message;
+} StatementInform;
+
 typedef struct Statement
 {
 	enum
@@ -325,6 +330,7 @@ typedef struct Statement
 		STATEMENT_TYPE_ELSE,
 		STATEMENT_TYPE_ENDC,
 		STATEMENT_TYPE_EVEN,
+		STATEMENT_TYPE_INFORM,
 		STATEMENT_TYPE_END
 	} type;
 	union
@@ -336,6 +342,7 @@ typedef struct Statement
 		StatementIncbin incbin;
 		StatementRept rept;
 		StatementMacro macro;
+		StatementInform inform;
 		Value value;
 	} shared;
 } Statement;
@@ -660,13 +667,15 @@ statement
 	}
 	| TOKEN_DIRECTIVE_INFORM value ',' TOKEN_STRING
 	{
-		/* TODO */
-		statement->type = STATEMENT_TYPE_EMPTY;
+		/* TODO - Severity level(?) */
+		statement->type = STATEMENT_TYPE_INFORM;
+		statement->shared.inform.message = $4;
 	}
 	| TOKEN_DIRECTIVE_INFORM value ',' TOKEN_STRING ',' value_list
 	{
-		/* TODO */
-		statement->type = STATEMENT_TYPE_EMPTY;
+		/* TODO - Severity level(?) and parameters */
+		statement->type = STATEMENT_TYPE_INFORM;
+		statement->shared.inform.message = $4;
 	}
 	| TOKEN_DIRECTIVE_END
 	{

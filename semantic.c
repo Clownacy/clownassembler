@@ -3621,6 +3621,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 		case STATEMENT_TYPE_REPT:
 		case STATEMENT_TYPE_IF:
 		case STATEMENT_TYPE_EVEN:
+		case STATEMENT_TYPE_INFORM:
 		case STATEMENT_TYPE_END:
 			if (label != NULL && !state->doing_fix_up && !state->doing_final_pass)
 			{
@@ -3751,6 +3752,10 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			if (state->program_counter & 1)
 				fputc(0, output_file);
 
+			break;
+
+		case STATEMENT_TYPE_INFORM:
+			SemanticWarning(state, "INFORM: '%s'", statement->shared.inform.message);
 			break;
 
 		case STATEMENT_TYPE_END:
