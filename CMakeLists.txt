@@ -24,7 +24,8 @@ set_target_properties(clownassembler PROPERTIES
 
 enable_testing()
 
-add_test(NAME misc COMMAND clownassembler "${CMAKE_CURRENT_SOURCE_DIR}/tests/misc.asm" "output.bin" "listing.asm")
+add_test(NAME misc COMMAND clownassembler "${CMAKE_CURRENT_SOURCE_DIR}/tests/shim.asm" "output.bin" "listing.asm")
+set_property(TEST misc PROPERTY WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/")
 add_test(NAME INSTURCTION_MOVE_TO_SR_VALID COMMAND clownassembler "${CMAKE_CURRENT_SOURCE_DIR}/tests/instructions/MOVE_TO_SR/valid.asm" "output.bin" "listing.asm")
 add_test(NAME INSTURCTION_MOVE_TO_SR_INVALID_1 COMMAND clownassembler "${CMAKE_CURRENT_SOURCE_DIR}/tests/instructions/MOVE_TO_SR/invalid/1.asm" "output.bin" "listing.asm")
 set_property(TEST INSTURCTION_MOVE_TO_SR_INVALID_1 PROPERTY WILL_FAIL true)
