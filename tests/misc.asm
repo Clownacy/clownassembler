@@ -75,8 +75,6 @@ Label:
 	cmpi.w	#1,-(a0)
 	cmpi.w	#1,$10(a0)
 	cmpi.w	#1,(a0,d0.w)
-	cmpi.w	#1,DummyDummyDummy(pc)
-	cmpi.w	#1,DummyDummyDummy(pc,d0.w)
 DummyDummyDummy:
 	; Testing both modes of BTST/BCHG/BCLR/BSET
 	btst.l	#0,d0
