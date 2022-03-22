@@ -2597,12 +2597,12 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 						break;
 
 					case OPCODE_MOVE_TO_USP:
-						machine_code = 0x4E68;
+						machine_code = 0x4E60;
 						machine_code |= instruction.operands[0].main_register;
 						break;
 
 					case OPCODE_MOVE_FROM_USP:
-						machine_code = 0x4E60;
+						machine_code = 0x4E68;
 						machine_code |= instruction.operands[1].main_register;
 						break;
 
