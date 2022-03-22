@@ -3587,6 +3587,7 @@ static void ProcessIncbin(SemanticState *state, const StatementIncbin *incbin)
 					break;
 				}
 
+				++state->program_counter;
 				fputc(character, state->output_file);
 			}
 		}
@@ -3595,7 +3596,10 @@ static void ProcessIncbin(SemanticState *state, const StatementIncbin *incbin)
 			int character;
 
 			while ((character = fgetc(input_file)) != EOF)
+			{
+				++state->program_counter;
 				fputc(character, state->output_file);
+			}
 		}
 
 		fclose(input_file);
