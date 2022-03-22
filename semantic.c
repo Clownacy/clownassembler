@@ -3224,6 +3224,16 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const St
 
 		switch (operand->type)
 		{
+			case OPERAND_DATA_REGISTER:
+			case OPERAND_ADDRESS_REGISTER:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
+			case OPERAND_STATUS_REGISTER:
+			case OPERAND_CONDITION_CODE_REGISTER:
+			case OPERAND_USER_STACK_POINTER_REGISTER:
+				break;
+
 			case OPERAND_ADDRESS:
 			case OPERAND_ADDRESS_ABSOLUTE:
 			case OPERAND_LITERAL:
@@ -3245,10 +3255,19 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const St
 
 				switch (operand->type)
 				{
-					default:
+					case OPERAND_DATA_REGISTER:
+					case OPERAND_ADDRESS_REGISTER:
+					case OPERAND_ADDRESS_REGISTER_INDIRECT:
+					case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
+					case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
+					case OPERAND_STATUS_REGISTER:
+					case OPERAND_CONDITION_CODE_REGISTER:
+					case OPERAND_USER_STACK_POINTER_REGISTER:
+					case OPERAND_REGISTER_LIST:
 						break;
 
 					case OPERAND_ADDRESS:
+					case OPERAND_ADDRESS_ABSOLUTE:
 						switch (operand->size)
 						{
 							case SIZE_BYTE:
@@ -3366,16 +3385,6 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const St
 
 				break;
 			}
-
-			case OPERAND_DATA_REGISTER:
-			case OPERAND_ADDRESS_REGISTER:
-			case OPERAND_ADDRESS_REGISTER_INDIRECT:
-			case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
-			case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
-			case OPERAND_STATUS_REGISTER:
-			case OPERAND_CONDITION_CODE_REGISTER:
-			case OPERAND_USER_STACK_POINTER_REGISTER:
-				break;
 		}
 	}
 }
