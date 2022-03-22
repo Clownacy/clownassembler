@@ -2942,7 +2942,6 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 					case OPCODE_OR_FROM_REG:
 					case OPCODE_SUB_TO_REG:
 					case OPCODE_SUB_FROM_REG:
-					case OPCODE_EOR:
 					case OPCODE_CMP:
 					case OPCODE_AND_TO_REG:
 					case OPCODE_AND_FROM_REG:
@@ -2967,10 +2966,6 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 
 							case OPCODE_SUB_FROM_REG:
 								machine_code = 0x9100;
-								break;
-
-							case OPCODE_EOR:
-								machine_code = 0xB100;
 								break;
 
 							case OPCODE_CMP:
@@ -3037,6 +3032,13 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 						machine_code |= instruction.operands[1].main_register << 9;
 						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
 
+						break;
+
+					case OPCODE_EOR:
+						machine_code = 0xB100;
+						machine_code |= ConstructSizeBits(instruction.opcode.size);
+						machine_code |= instruction.operands[0].main_register << 9;
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
 						break;
 
 					case OPCODE_CMPM:
