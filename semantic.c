@@ -672,6 +672,46 @@ static unsigned int ToAlternateEffectiveAddressBits(unsigned int bits)
 	return (m << 6) | (dn << 9);
 }
 
+static void AddLabelToSymbolTable(SemanticState *state, const char *label, unsigned long value)
+{
+	if (label[0] != '@')
+	{
+		/* This is a global label - cache it for later. */
+		free(state->last_global_label);
+		state->last_global_label = DuplicateStringAndHandleError(state, label);
+	}
+
+	if (!state->doing_fix_up)
+	{
+		char *expanded_identifier;
+		const char *identifier;
+		Dictionary_Entry *symbol;
+
+		expanded_identifier = NULL;
+		identifier = label;
+
+		if (label[0] == '@')
+		{
+			/* This is a local label - prefix it with the previous global label. */
+			expanded_identifier = ExpandLocalIdentifier(state, label);
+
+			if (expanded_identifier != NULL)
+				identifier = expanded_identifier;
+		}
+
+		/* Now add it to the symbol table. */
+		symbol = CreateSymbol(state, identifier);
+
+		if (symbol != NULL)
+		{
+			symbol->type = SYMBOL_CONSTANT;
+			symbol->data.unsigned_integer = value;
+		}
+
+		free(expanded_identifier);
+	}
+}
+
 typedef struct InstructionMetadata
 {
 	const char *name;
@@ -3538,17 +3578,7 @@ static void ProcessEqu(SemanticState *state, const Value *value, const char *lab
 		unsigned long resolved_value;
 
 		if (ResolveValue(state, value, &resolved_value))
-		{
-			Dictionary_Entry *symbol;
-
-			symbol = CreateSymbol(state, label);
-
-			if (symbol != NULL)
-			{
-				symbol->type = SYMBOL_CONSTANT;
-				symbol->data.unsigned_integer = resolved_value;
-			}
-		}
+			AddLabelToSymbolTable(state, label, resolved_value);
 	}
 }
 
@@ -3588,46 +3618,8 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			case STATEMENT_TYPE_REPT:
 			case STATEMENT_TYPE_IF:
 			case STATEMENT_TYPE_EVEN:
-				/* Add label to symbol table. */
 				if (label != NULL)
-				{
-					if (label[0] != '@')
-					{
-						/* This is a global label - cache it for later. */
-						free(state->last_global_label);
-						state->last_global_label = DuplicateStringAndHandleError(state, label);
-					}
-
-					if (!state->doing_fix_up)
-					{
-						char *expanded_identifier;
-						const char *identifier;
-						Dictionary_Entry *symbol;
-
-						expanded_identifier = NULL;
-						identifier = label;
-
-						if (label[0] == '@')
-						{
-							/* This is a local label - prefix it with the previous global label. */
-							expanded_identifier = ExpandLocalIdentifier(state, label);
-
-							if (expanded_identifier != NULL)
-								identifier = expanded_identifier;
-						}
-
-						/* Now add it to the symbol table. */
-						symbol = CreateSymbol(state, identifier);
-
-						if (symbol != NULL)
-						{
-							symbol->type = SYMBOL_CONSTANT;
-							symbol->data.unsigned_integer = state->program_counter;
-						}
-
-						free(expanded_identifier);
-					}
-				}
+					AddLabelToSymbolTable(state, label, state->program_counter);
 
 				break;
 
