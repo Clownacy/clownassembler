@@ -381,6 +381,14 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 			{
 				switch (value->type)
 				{
+					case VALUE_NUMBER:
+					case VALUE_IDENTIFIER:
+					case VALUE_NEGATE:
+					case VALUE_BITWISE_NOT:
+					case VALUE_LOGICAL_NOT:
+						/* This code should never be ran. */
+						break;
+
 					case VALUE_SUBTRACT:
 						*value_integer = left_value - right_value;
 						break;
@@ -452,10 +460,6 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 					case VALUE_RIGHT_SHIFT:
 						*value_integer = left_value >> right_value;
 						break;
-
-					default:
-						/* Should never happen. */
-						break;
 				}
 
 				/* Prevent 'bleeding' out of the 68k's 32-bit range. */
@@ -476,6 +480,29 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 			{
 				switch (value->type)
 				{
+					case VALUE_NUMBER:
+					case VALUE_IDENTIFIER:
+					case VALUE_SUBTRACT:
+					case VALUE_ADD:
+					case VALUE_MULTIPLY:
+					case VALUE_DIVIDE:
+					case VALUE_MODULO:
+					case VALUE_LOGICAL_OR:
+					case VALUE_LOGICAL_AND:
+					case VALUE_ARITHMETIC_OR:
+					case VALUE_ARITHMETIC_XOR:
+					case VALUE_ARITHMETIC_AND:
+					case VALUE_EQUALITY:
+					case VALUE_INEQUALITY:
+					case VALUE_LESS_THAN:
+					case VALUE_LESS_OR_EQUAL:
+					case VALUE_MORE_THAN:
+					case VALUE_MORE_OR_EQUAL:
+					case VALUE_LEFT_SHIFT:
+					case VALUE_RIGHT_SHIFT:
+						/* This code should never be ran. */
+						break;
+
 					case VALUE_NEGATE:
 						*value_integer = 0 - *value_integer;
 						break;
@@ -486,10 +513,6 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 
 					case VALUE_LOGICAL_NOT:
 						*value_integer = !*value_integer;
-						break;
-
-					default:
-						/* Should never happen. */
 						break;
 				}
 
@@ -561,15 +584,22 @@ static unsigned int ConstructSizeBits(Size size)
 		case SIZE_LONGWORD:
 			return 0x0080;
 
-		default:
+		case SIZE_UNDEFINED:
 			assert(cc_false);
 			return 0x0000;
 	}
+
+	assert(cc_false);
+	return 0x0000;
 }
 
 static unsigned int ConstructEffectiveAddressBits(SemanticState *state, const Operand *operand)
 {
 	unsigned int m, xn;
+
+	/* Shut up 'variable may be used uninitialised' compiler warnings. */
+	m = 0;
+	xn = 0;
 
 	switch (operand->type)
 	{
@@ -628,7 +658,8 @@ static unsigned int ConstructEffectiveAddressBits(SemanticState *state, const Op
 					xn = 0; /* 000 */
 					break;
 
-				default:
+				case SIZE_BYTE:
+				case SIZE_SHORT:
 					SemanticError(state, "Absolute address can only be word- or longword-sized.");
 					/* Fallthrough */
 				case SIZE_UNDEFINED:
@@ -644,7 +675,10 @@ static unsigned int ConstructEffectiveAddressBits(SemanticState *state, const Op
 			xn = 4; /* 100 */
 			break;
 
-		default:
+		case OPERAND_STATUS_REGISTER:
+		case OPERAND_CONDITION_CODE_REGISTER:
+		case OPERAND_USER_STACK_POINTER_REGISTER:
+		case OPERAND_REGISTER_LIST:
 			SemanticError(state, "Invalid operand type: register lists, USP, SR, and CCR cannot be used here.");
 			/* Just pretend it's data register 0 to keep things moving along. */
 			m = 0;
