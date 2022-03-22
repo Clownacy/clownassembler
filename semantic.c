@@ -2430,6 +2430,9 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 								SemanticError(state, "Instruction must be byte-sized when its destination operand is memory.");
 						}
 
+						/* This is a bit of a hack, to prevent 'btst.l #0,d0' from outputting a longword-sized literal. */
+						instruction.opcode.size = SIZE_WORD;
+
 						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
 
 						break;
