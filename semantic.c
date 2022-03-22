@@ -58,6 +58,7 @@ typedef struct SemanticState
 {
 	cc_bool success;
 	FILE *output_file;
+	FILE *listing_file;
 	unsigned long program_counter;
 	FixUp *fix_up_list_head;
 	FixUp *fix_up_list_tail;
@@ -3817,6 +3818,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	char *keyword;
 	Statement statement;
 
+	fprintf(state->listing_file, "%08lX : %s\n", state->program_counter, source_line);
+
 	++state->location.line_number;
 
 	state->source_line = source_line;
@@ -4349,13 +4352,14 @@ static cc_bool DictionaryFilterDeleteVariables(Dictionary_Entry *entry, const ch
 	return (entry->type != SYMBOL_VARIABLE || strcmp(identifier, ",,PROGRAM_COUNTER,,") == 0);
 }
 
-cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char *input_file_path, cc_bool debug)
+cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listing_file, const char *input_file_path, cc_bool debug)
 {
 	SemanticState state;
 	Dictionary_Entry *symbol;
 
 	state.success = cc_true;
 	state.output_file = output_file;
+	state.listing_file = listing_file;
 	state.program_counter = 0;
 	state.fix_up_list_head = NULL;
 	state.fix_up_list_tail = NULL;

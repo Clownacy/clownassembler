@@ -12,9 +12,9 @@ int main(int argc, char **argv)
 {
 	int exit_code = EXIT_SUCCESS;
 
-	if (argc < 3)
+	if (argc < 4)
 	{
-		ERROR("Input and output file paths must be passed as parameters");
+		ERROR("Input, output, and listing file paths must be passed as parameters");
 	}
 	else
 	{
@@ -34,8 +34,19 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				if (!ClownAssembler_Assemble(input_file, output_file, argv[1], argc > 3))
-					ERROR("Could not assemble");
+				FILE *listing_file = fopen(argv[3], "w");
+
+				if (listing_file == NULL)
+				{
+					ERROR("Could not open listing file");
+				}
+				else
+				{
+					if (!ClownAssembler_Assemble(input_file, output_file, listing_file, argv[1], argc > 4))
+						ERROR("Could not assemble");
+
+					fclose(listing_file);
+				}
 
 				fclose(output_file);
 			}
