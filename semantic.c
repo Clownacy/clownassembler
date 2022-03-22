@@ -1854,8 +1854,6 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 	const InstructionMetadata *instruction_metadata;
 	StatementInstruction instruction = *original_instruction;
 
-	const unsigned long start_program_counter = state->program_counter + 2;
-
 	state->program_counter += 2;
 
 	/* Some instructions are ambiguous, so figure them out fully here. */
@@ -2761,15 +2759,15 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 						machine_code |= instruction.operands[0].main_register;
 
 						if (!ResolveValue(state, &instruction.operands[1].literal, &value))
-							value = start_program_counter - 2;
+							value = state->program_counter - 2;
 
 						instruction.operands[0].type = OPERAND_LITERAL;
 						instruction.operands[0].literal.type = VALUE_NUMBER;
 						instruction.operands[1].type = 0;
 
-						if (value >= start_program_counter)
+						if (value >= state->program_counter)
 						{
-							const unsigned long offset = value - start_program_counter;
+							const unsigned long offset = value - state->program_counter;
 
 							if (offset > 0x7FFF)
 								SemanticError(state, "The destination is too far away: it must be less than $8000 bytes after the start of the instruction, but instead it was $%lX bytes away.", offset);
@@ -2778,7 +2776,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 						}
 						else
 						{
-							const unsigned long offset = start_program_counter - value;
+							const unsigned long offset = state->program_counter - value;
 
 							if (offset > 0x8000)
 								SemanticError(state, "The destination is too far away: it must be less than $8001 bytes before the start of the instruction, but instead it was $%lX bytes away.", offset);
@@ -2817,11 +2815,11 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 						}
 
 						if (!ResolveValue(state, &instruction.operands[0].literal, &value))
-							value = start_program_counter - 2;
+							value = state->program_counter - 2;
 
-						if (value >= start_program_counter)
+						if (value >= state->program_counter)
 						{
-							offset = value - start_program_counter;
+							offset = value - state->program_counter;
 
 							if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
 							{
@@ -2838,7 +2836,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 						}
 						else
 						{
-							offset = start_program_counter - value;
+							offset = state->program_counter - value;
 
 							if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
 							{
@@ -3295,7 +3293,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 				if (!ResolveValue(state, &operand->literal, &value))
 				{
 					if (operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT || operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER)
-						value = start_program_counter; /* Prevent out-of-range displacements later on. */
+						value = state->program_counter; /* Prevent out-of-range displacements later on. */
 					else
 						value = 0;
 				}
@@ -3370,7 +3368,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 						break;
 
 					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-						value -= start_program_counter;
+						value -= state->program_counter;
 						/* Fallthrough */
 					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 						bytes_to_write = 2;
@@ -3394,7 +3392,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 						break;
 
 					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
-						value -= start_program_counter;
+						value -= state->program_counter;
 						/* Fallthrough */
 					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
 						bytes_to_write = 2;
