@@ -45,7 +45,7 @@ typedef struct SemanticState
 {
 	cc_bool success;
 	unsigned long program_counter;
-	cc_bool doing_fix_up;
+	cc_bool doing_second_pass;
 	Dictionary_State dictionary;
 	char *last_global_label;
 	Location location;
@@ -515,7 +515,7 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 			{
 				success = cc_false;
 
-				if (state->doing_fix_up)
+				if (state->doing_second_pass)
 					SemanticError(state, "Symbol '%s' does not exist.", identifier);
 			}
 			else if (dictionary_entry->type != SYMBOL_CONSTANT && dictionary_entry->type != SYMBOL_VARIABLE)
@@ -681,7 +681,7 @@ static void AddLabelToSymbolTable(SemanticState *state, const char *label, unsig
 		state->last_global_label = DuplicateStringAndHandleError(state, label);
 	}
 
-	if (!state->doing_fix_up)
+	if (!state->doing_second_pass)
 	{
 		char *expanded_identifier;
 		const char *identifier;
@@ -3577,7 +3577,7 @@ static void ProcessMacro(SemanticState *state, const StatementMacro *macro, cons
 
 static void ProcessEqu(SemanticState *state, const Value *value, const char *label)
 {
-	if (!state->doing_fix_up)
+	if (!state->doing_second_pass)
 	{
 		unsigned long resolved_value;
 
@@ -4215,7 +4215,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 			state.current_if_level = 0;
 			state.false_if_level = 0;
 
-			state.doing_fix_up = cc_false;
+			state.doing_second_pass = cc_false;
 
 			AssembleFile(&state, output_file, input_file);
 
@@ -4241,7 +4241,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 			state.current_if_level = 0;
 			state.false_if_level = 0;
 
-			state.doing_fix_up = cc_true;
+			state.doing_second_pass = cc_true;
 
 			/* Perform first pass, and create a list of fix-ups if needed. */
 			AssembleFile(&state, output_file, input_file);
