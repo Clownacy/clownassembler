@@ -2645,19 +2645,21 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 						break;
 
 					case OPCODE_MOVEM_TO_REGS:
+					{
+						/* Swap the operands, since the literal for the register list needs to come before the other operator. */
+						const Operand register_list = instruction.operands[1];
+						instruction.operands[1] = instruction.operands[0];
+						instruction.operands[0] = register_list;
+					}
+						/* Fallthrough */
 					case OPCODE_MOVEM_FROM_REGS:
 						machine_code = 0x4880;
 						machine_code |= (instruction.opcode.size == SIZE_LONGWORD) << 6;
 
 						if (instruction.opcode.type == OPCODE_MOVEM_TO_REGS)
-						{
 							machine_code |= 1 << 10;
-							machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
-						}
-						else
-						{
-							machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
-						}
+
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
 
 						break;
 
