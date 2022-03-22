@@ -3696,7 +3696,11 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			break;
 
 		case STATEMENT_TYPE_ENDR:
-			SemanticError(state, "This stray ENDR has no preceeding REPT.");
+			if (state->mode != MODE_REPT)
+				SemanticError(state, "This stray ENDR has no preceeding REPT.");
+			else
+				TerminateRept(state, output_file);
+
 			break;
 
 		case STATEMENT_TYPE_MACRO:
@@ -3704,7 +3708,11 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			break;
 
 		case STATEMENT_TYPE_ENDM:
-			SemanticError(state, "This stray ENDM has no preceeding MACRO.");
+			if (state->mode != MODE_MACRO)
+				SemanticError(state, "This stray ENDM has no preceeding MACRO.");
+			else
+				TerminateMacro(state);
+
 			break;
 
 		case STATEMENT_TYPE_EQU:
@@ -4208,10 +4216,8 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 		case MODE_REPT:
 			if (strcmp(keyword, "endr") == 0)
 			{
-				if (label != NULL)
-					SemanticError(state, "There cannot be a label on this type of statement.");
-
-				TerminateRept(state, output_file);
+				statement.type = STATEMENT_TYPE_ENDR;
+				ProcessStatement(state, output_file, &statement, label);
 			}
 			else
 			{
@@ -4223,10 +4229,8 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 		case MODE_MACRO:
 			if (strcmp(keyword, "endm") == 0)
 			{
-				if (label != NULL)
-					SemanticError(state, "There cannot be a label on this type of statement.");
-
-				TerminateMacro(state);
+				statement.type = STATEMENT_TYPE_ENDM;
+				ProcessStatement(state, output_file, &statement, label);
 			}
 			else
 			{
