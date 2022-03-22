@@ -3656,7 +3656,7 @@ static void ProcessIf(SemanticState *state, const Value *value)
 {
 	++state->current_if_level;
 
-	/* If one of the current if levels is false, then this if statement is null and void. */
+	/* If we are within a false conditional block, then this if statement is null and void. */
 	if (state->false_if_level == 0)
 	{
 		unsigned long resolved_value;
@@ -3667,7 +3667,7 @@ static void ProcessIf(SemanticState *state, const Value *value)
 			resolved_value = 1;
 		}
 
-		/* If this condition is false, then mark this as the false if level. */
+		/* If this condition is false, then mark this as the false if-level. */
 		if (resolved_value == 0)
 			state->false_if_level = state->current_if_level;
 	}
@@ -3790,6 +3790,8 @@ static void ProcessStatement(SemanticState *state, const Statement *statement, c
 			}
 			else
 			{
+				/* If this is the false if-level, then it isn't anymore. */
+				/* Likewise, if there is no false if-level, then there is now. */
 				if (state->false_if_level == state->current_if_level)
 					state->false_if_level = 0;
 				else if (state->false_if_level == 0)
@@ -3805,7 +3807,7 @@ static void ProcessStatement(SemanticState *state, const Statement *statement, c
 			}
 			else
 			{
-				/* If this is the false if level, then it isn't anymore. */
+				/* If this is the false if-level, then it isn't anymore. */
 				if (state->false_if_level == state->current_if_level)
 					state->false_if_level = 0;
 
