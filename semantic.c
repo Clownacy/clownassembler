@@ -3803,7 +3803,7 @@ static void ProcessStatement(SemanticState *state, const Statement *statement, c
 		case STATEMENT_TYPE_ENDC:
 			if (state->current_if_level == 0)
 			{
-				SemanticError(state, "This stray ENDC has no preceeding IF.");
+				SemanticError(state, "This stray ENDC/ENDIF has no preceeding IF.");
 			}
 			else
 			{
