@@ -3605,133 +3605,113 @@ static void ProcessIf(SemanticState *state, const Value *value)
 
 static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement, const char *label)
 {
-	if (state->false_if_level == 0 || statement->type == STATEMENT_TYPE_IF || statement->type == STATEMENT_TYPE_ELSE || statement->type == STATEMENT_TYPE_ENDC)
+	switch (statement->type)
 	{
-		switch (statement->type)
-		{
-			case STATEMENT_TYPE_EMPTY:
-			case STATEMENT_TYPE_INSTRUCTION:
-			case STATEMENT_TYPE_DC:
-			case STATEMENT_TYPE_DCB:
-			case STATEMENT_TYPE_INCLUDE:
-			case STATEMENT_TYPE_INCBIN:
-			case STATEMENT_TYPE_REPT:
-			case STATEMENT_TYPE_IF:
-			case STATEMENT_TYPE_EVEN:
-				if (label != NULL)
-					AddLabelToSymbolTable(state, label, state->program_counter);
+		case STATEMENT_TYPE_EMPTY:
+		case STATEMENT_TYPE_INSTRUCTION:
+		case STATEMENT_TYPE_DC:
+		case STATEMENT_TYPE_DCB:
+		case STATEMENT_TYPE_INCLUDE:
+		case STATEMENT_TYPE_INCBIN:
+		case STATEMENT_TYPE_REPT:
+		case STATEMENT_TYPE_IF:
+		case STATEMENT_TYPE_EVEN:
+			if (label != NULL)
+				AddLabelToSymbolTable(state, label, state->program_counter);
 
-				break;
+			break;
 
-			case STATEMENT_TYPE_ENDR:
-			case STATEMENT_TYPE_ENDM:
-			case STATEMENT_TYPE_ELSE:
-			case STATEMENT_TYPE_ENDC:
-				if (label != NULL)
-					SemanticError(state, "There cannot be a label on this type of statement.");
+		case STATEMENT_TYPE_ENDR:
+		case STATEMENT_TYPE_ENDM:
+		case STATEMENT_TYPE_ELSE:
+		case STATEMENT_TYPE_ENDC:
+			if (label != NULL)
+				SemanticError(state, "There cannot be a label on this type of statement.");
 
-				break;
+			break;
 
-			case STATEMENT_TYPE_MACRO:
-			case STATEMENT_TYPE_EQU:
-				if (label == NULL)
-				{
-					SemanticError(state, "This type of statement must have a label.");
-					return;
-				}
+		case STATEMENT_TYPE_MACRO:
+		case STATEMENT_TYPE_EQU:
+			if (label == NULL)
+			{
+				SemanticError(state, "This type of statement must have a label.");
+				return;
+			}
 
-				break;
-		}
+			break;
+	}
 
-		switch (statement->type)
-		{
-			case STATEMENT_TYPE_EMPTY:
-				break;
+	switch (statement->type)
+	{
+		case STATEMENT_TYPE_EMPTY:
+			break;
 
-			case STATEMENT_TYPE_INSTRUCTION:
-				ProcessInstruction(state, output_file, &statement->data.instruction);
-				break;
+		case STATEMENT_TYPE_INSTRUCTION:
+			ProcessInstruction(state, output_file, &statement->data.instruction);
+			break;
 
-			case STATEMENT_TYPE_DC:
-				ProcessDc(state, output_file, &statement->data.dc);
-				break;
+		case STATEMENT_TYPE_DC:
+			ProcessDc(state, output_file, &statement->data.dc);
+			break;
 
-			case STATEMENT_TYPE_DCB:
-				ProcessDcb(state, output_file, &statement->data.dcb);
-				break;
+		case STATEMENT_TYPE_DCB:
+			ProcessDcb(state, output_file, &statement->data.dcb);
+			break;
 
-			case STATEMENT_TYPE_INCLUDE:
-				ProcessInclude(state, output_file, &statement->data.include);
-				break;
+		case STATEMENT_TYPE_INCLUDE:
+			ProcessInclude(state, output_file, &statement->data.include);
+			break;
 
-			case STATEMENT_TYPE_INCBIN:
-				ProcessIncbin(state, output_file, &statement->data.incbin);
-				break;
+		case STATEMENT_TYPE_INCBIN:
+			ProcessIncbin(state, output_file, &statement->data.incbin);
+			break;
 
-			case STATEMENT_TYPE_REPT:
-				ProcessRept(state, &statement->data.rept);
-				break;
+		case STATEMENT_TYPE_REPT:
+			ProcessRept(state, &statement->data.rept);
+			break;
 
-			case STATEMENT_TYPE_ENDR:
-				SemanticError(state, "This stray ENDR has no preceeding REPT.");
-				break;
+		case STATEMENT_TYPE_ENDR:
+			SemanticError(state, "This stray ENDR has no preceeding REPT.");
+			break;
 
-			case STATEMENT_TYPE_MACRO:
-				ProcessMacro(state, &statement->data.macro, label);
-				break;
+		case STATEMENT_TYPE_MACRO:
+			ProcessMacro(state, &statement->data.macro, label);
+			break;
 
-			case STATEMENT_TYPE_ENDM:
-				SemanticError(state, "This stray ENDM has no preceeding MACRO.");
-				break;
+		case STATEMENT_TYPE_ENDM:
+			SemanticError(state, "This stray ENDM has no preceeding MACRO.");
+			break;
 
-			case STATEMENT_TYPE_EQU:
-				ProcessEqu(state, &statement->data.value, label);
-				break;
+		case STATEMENT_TYPE_EQU:
+			ProcessEqu(state, &statement->data.value, label);
+			break;
 
-			case STATEMENT_TYPE_IF:
-				ProcessIf(state, &statement->data.value);
-				break;
+		case STATEMENT_TYPE_IF:
+			ProcessIf(state, &statement->data.value);
+			break;
 
-			case STATEMENT_TYPE_ELSE:
-				if (state->current_if_level == 0)
-				{
-					SemanticError(state, "This stray ELSE has no preceeding IF.");
-				}
-				else
-				{
-					/* If there is no false if level, then there is now. */
-					/* Likewise, if this is the false if level, then it isn't anymore. */
-					if (state->false_if_level == 0)
-						state->false_if_level = state->current_if_level;
-					else if (state->false_if_level == state->current_if_level)
-						state->false_if_level = 0;
-				}
+		case STATEMENT_TYPE_ELSE:
+			if (state->current_if_level == 0)
+				SemanticError(state, "This stray ELSE has no preceeding IF.");
+			else
+				state->false_if_level = state->current_if_level;
 
-				break;
+			break;
 
-			case STATEMENT_TYPE_ENDC:
-				if (state->current_if_level == 0)
-				{
-					SemanticError(state, "This stray ENDC has no preceeding IF.");
-				}
-				else
-				{
-					/* If this is the false if level, then it isn't anymore. */
-					if (state->false_if_level == state->current_if_level)
-						state->false_if_level = 0;
+		case STATEMENT_TYPE_ENDC:
+			if (state->current_if_level == 0)
+				SemanticError(state, "This stray ENDC has no preceeding IF.");
+			else
+				--state->current_if_level;
 
-					--state->current_if_level;
-				}
+			break;
 
-				break;
+		case STATEMENT_TYPE_EVEN:
+			/* Pad to the nearest even address. */
+			if (state->program_counter & 1)
+				fputc(0, output_file);
 
-			case STATEMENT_TYPE_EVEN:
-				/* Pad to the nearest even address. */
-				if (state->program_counter & 1)
-					fputc(0, output_file);
-
-				break;
-		}
+			break;
 	}
 }
 
@@ -3740,6 +3720,8 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 	size_t label_length;
 	const char *source_line_pointer;
 	char *label;
+	size_t keyword_length;
+	char *keyword;
 
 	++state->location.line_number;
 
@@ -3799,32 +3781,24 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 
 	source_line_pointer += strspn(source_line_pointer, " \t");
 
+	/* Extract the keyword from the source line. */
+	keyword_length = strcspn(source_line_pointer, " \t.;");
+	keyword = MallocAndHandleError(state, keyword_length + 1);
+
+	if (keyword != NULL)
+	{
+		memcpy(keyword, source_line_pointer, keyword_length);
+		keyword[keyword_length] = '\0';
+	}
+
 	switch (state->mode)
 	{
 		case MODE_NORMAL:
 		{
-			const Dictionary_Entry *macro_dictionary_entry;
-			size_t keyword_length;
-			char *keyword;
+			/* Look up the keyword in the dictionary to see if it's a macro. */
+			const Dictionary_Entry* const macro_dictionary_entry = keyword != NULL ? Dictionary_LookUp(&state->dictionary, keyword) : NULL;
 
-			/* Extract the keyword from the source line, and look it up in the dictionary to see if it's a macro. */
-			keyword_length = strcspn(source_line_pointer, " \t.;");
-			keyword = MallocAndHandleError(state, keyword_length + 1);
-
-			if (keyword != NULL)
-			{
-				memcpy(keyword, source_line_pointer, keyword_length);
-				keyword[keyword_length] = '\0';
-
-				macro_dictionary_entry = Dictionary_LookUp(&state->dictionary, keyword);
-				free(keyword);
-			}
-			else
-			{
-				macro_dictionary_entry = NULL;
-			}
-
-			if (macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO)
+			if (state->false_if_level == 0 && macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO)
 			{
 				/* Macro invocation. */
 				const char *string_pointer = source_line_pointer + strcspn(source_line_pointer, " \t.;");
@@ -4060,7 +4034,20 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				if (!Dictionary_Remove(&state->dictionary, "narg"))
 					InternalError(state, "Could not remove symbol 'narg' from the dictionary.");
 			}
-			else
+			else if (state->false_if_level != 0 && strcmp(keyword, "else") == 0)
+			{
+				if (state->false_if_level == state->current_if_level)
+					state->false_if_level = 0;
+			}
+			else if (state->false_if_level != 0 && strcmp(keyword, "endc") == 0)
+			{
+				/* If this is the false if level, then it isn't anymore. */
+				if (state->false_if_level == state->current_if_level)
+					state->false_if_level = 0;
+
+				--state->current_if_level;
+			}
+			else if (state->false_if_level == 0 || strcmp(keyword, "if") == 0)
 			{
 				/* Normal assembly line. */
 				Statement statement;
@@ -4095,7 +4082,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 		}
 
 		case MODE_REPT:
-			if (strcmp(source_line_pointer, "endr") == 0)
+			if (strcmp(keyword, "endr") == 0)
 			{
 				if (label != NULL)
 					SemanticError(state, "There cannot be a label on this type of statement.");
@@ -4110,7 +4097,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 			break;
 
 		case MODE_MACRO:
-			if (strcmp(source_line_pointer, "endm") == 0)
+			if (strcmp(keyword, "endm") == 0)
 			{
 				if (label != NULL)
 					SemanticError(state, "There cannot be a label on this type of statement.");
@@ -4125,6 +4112,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 			break;
 	}
 
+	free(keyword);
 	free(label);
 }
 

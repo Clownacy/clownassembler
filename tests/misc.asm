@@ -386,8 +386,8 @@ TimesToNotRept = 1
 	endr
 
 	; Testing IF/ELSE/ENDC
-	if TimesToRept=2
-		if TimesToRept=1
+	if TimesToRept=1
+		if TimesToNotRept=2
 			dc.l	'NOPE'
 		endc
 
