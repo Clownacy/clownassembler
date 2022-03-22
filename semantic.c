@@ -3681,7 +3681,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 				break;
 
 			case STATEMENT_TYPE_ENDM:
-				SemanticError(state, "This stray ENDM with no preceeding MACRO.");
+				SemanticError(state, "This stray ENDM has no preceeding MACRO.");
 				break;
 
 			case STATEMENT_TYPE_EQU:
@@ -3695,7 +3695,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			case STATEMENT_TYPE_ELSE:
 				if (state->current_if_level == 0)
 				{
-					SemanticError(state, "This stray ELSE with no preceeding IF.");
+					SemanticError(state, "This stray ELSE has no preceeding IF.");
 				}
 				else
 				{
@@ -3712,7 +3712,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			case STATEMENT_TYPE_ENDC:
 				if (state->current_if_level == 0)
 				{
-					SemanticError(state, "This stray ENDC with no preceeding IF.");
+					SemanticError(state, "This stray ENDC has no preceeding IF.");
 				}
 				else
 				{
