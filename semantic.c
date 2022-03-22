@@ -2730,7 +2730,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 						if (value < 1 || value > 8)
 							SemanticError(state, "The value to add/subtract cannot be lower than 1 or higher than 8.");
 						else
-							machine_code |= (value - 1) << 9;
+							machine_code |= (value & 7) << 9;
 
 						/* Skip the immediate operand since that goes in the machine code instead. */
 						instruction.operands[0] = instruction.operands[1];
@@ -3199,10 +3199,11 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 								if (value > 8 || value < 1)
 									SemanticError(state, "The shift value must not be greater than 8 or lower than 1.");
 								else
-									machine_code |= (value - 1) << 9;
+									machine_code |= (value & 7) << 9;
 
 								machine_code |= identifier << 3;
 								machine_code |= instruction.operands[1].main_register << 0;
+								machine_code |= ConstructSizeBits(instruction.opcode.size);
 
 								/* Skip the immediate operand since that goes in the machine code instead. */
 								instruction.operands[0] = instruction.operands[1];
@@ -3223,6 +3224,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 								machine_code |= instruction.operands[0].main_register << 9;
 								machine_code |= 0x0020;
 								machine_code |= instruction.operands[1].main_register << 0;
+								machine_code |= ConstructSizeBits(instruction.opcode.size);
 								break;
 
 							case OPCODE_ASL_SINGLE:
