@@ -3158,6 +3158,10 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const In
 								machine_code |= identifier << 3;
 								machine_code |= instruction.operands[1].main_register << 0;
 
+								/* Skip the immediate operand since that goes in the machine code instead. */
+								instruction.operands[0] = instruction.operands[1];
+								instruction.operands[1].type = 0;
+
 								break;
 							}
 
