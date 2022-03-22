@@ -3828,6 +3828,12 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				char **parameters = MallocAndHandleError(state, sizeof(char*));
 				size_t total_parameters = 1;
 
+				if (label != NULL)
+				{
+					SetLastGlobalLabel(state, label);
+					AddLabelToSymbolTable(state, label, state->program_counter);
+				}
+
 				/* Extract and store the macro size specifier, if one exists. */
 				if (string_pointer[0] == '.')
 				{
