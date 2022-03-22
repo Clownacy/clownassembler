@@ -3344,6 +3344,8 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 								if (value >= 0x100 && value < 0xFFFFFF00)
 									SemanticError(state, "Byte-sized literals cannot be larger than $FF or smaller than -$100.");
 
+								value &= 0xFF;
+
 								break;
 
 							case SIZE_UNDEFINED:
@@ -3373,6 +3375,8 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 
 						if (operand->size == SIZE_BYTE || operand->size == SIZE_SHORT)
 							SemanticError(state, "Index registers cannot be byte-sized.");
+
+						value &= 0xFF;
 
 						value |= operand->index_register << 12;
 
