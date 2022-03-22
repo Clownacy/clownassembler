@@ -504,6 +504,7 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 %token TOKEN_DIRECTIVE_ELSE
 %token TOKEN_DIRECTIVE_ENDC
 %token TOKEN_DIRECTIVE_EVEN
+%token TOKEN_DIRECTIVE_INFORM
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -654,6 +655,16 @@ statement
 	| TOKEN_DIRECTIVE_EVEN
 	{
 		statement->type = STATEMENT_TYPE_EVEN;
+	}
+	| TOKEN_DIRECTIVE_INFORM value ',' TOKEN_STRING
+	{
+		/* TODO */
+		statement->type = STATEMENT_TYPE_EMPTY;
+	}
+	| TOKEN_DIRECTIVE_INFORM value ',' TOKEN_STRING ',' value_list
+	{
+		/* TODO */
+		statement->type = STATEMENT_TYPE_EMPTY;
 	}
 	;
 
