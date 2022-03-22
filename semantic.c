@@ -57,6 +57,7 @@ typedef struct SourceLineList
 typedef struct SemanticState
 {
 	cc_bool success;
+	FILE *output_file;
 	unsigned long program_counter;
 	FixUp *fix_up_list_head;
 	FixUp *fix_up_list_tail;
@@ -101,8 +102,8 @@ typedef struct Macro
 } Macro;
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
-static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_file);
-static void AssembleLine(SemanticState *state, FILE *output_file, const char *source_line);
+static void AssembleFile(SemanticState *state, FILE *input_file);
+static void AssembleLine(SemanticState *state, const char *source_line);
 
 /* Prevent errors when __attribute__ is not supported. */
 #ifndef __GNUC__
@@ -247,7 +248,7 @@ static Dictionary_Entry* CreateSymbol(SemanticState *state, const char *identifi
 	return dictionary_entry;
 }
 
-static void TerminateRept(SemanticState *state, FILE *output_file)
+static void TerminateRept(SemanticState *state)
 {
 	unsigned long countdown;
 	SourceLineListNode *source_line_list_node;
@@ -265,7 +266,7 @@ static void TerminateRept(SemanticState *state, FILE *output_file)
 
 		/* Process the REPT's nested statements. */
 		for (source_line_list_node = state->rept.source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-			AssembleLine(state, output_file, source_line_list_node->source_line);
+			AssembleLine(state, source_line_list_node->source_line);
 	}
 
 	/* Increment past the ENDR line number. */
@@ -1845,7 +1846,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 };
 
-static void ProcessInstruction(SemanticState *state, FILE *output_file, const StatementInstruction *original_instruction)
+static void ProcessInstruction(SemanticState *state, const StatementInstruction *original_instruction)
 {
 	/* Default to NOP in case errors occur later on and we can't get the correct machine code. */
 	unsigned int machine_code = 0x4E71;
@@ -3249,7 +3250,7 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const St
 
 	/* Output the machine code for the opcode. */
 	for (i = 2; i-- > 0; )
-		fputc((machine_code >> (8 * i)) & 0xFF, output_file);
+		fputc((machine_code >> (8 * i)) & 0xFF, state->output_file);
 
 	/* Output the data for the operands. */
 	for (i = 0; i < CC_COUNT_OF(instruction.operands); ++i)
@@ -3391,7 +3392,7 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const St
 				state->program_counter += bytes_to_write;
 
 				while (bytes_to_write-- > 0)
-					fputc((value >> (8 * bytes_to_write)) & 0xFF, output_file);
+					fputc((value >> (8 * bytes_to_write)) & 0xFF, state->output_file);
 
 				break;
 			}
@@ -3413,7 +3414,7 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const St
 				}
 
 				for (bytes_to_write = 2; bytes_to_write-- > 0; )
-					fputc((register_list >> (8 * bytes_to_write)) & 0xFF, output_file);
+					fputc((register_list >> (8 * bytes_to_write)) & 0xFF, state->output_file);
 
 				state->program_counter += 2;
 
@@ -3423,7 +3424,7 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const St
 	}
 }
 
-static void OutputDcValue(SemanticState *state, FILE *output_file, const Size size, unsigned long value)
+static void OutputDcValue(SemanticState *state, const Size size, unsigned long value)
 {
 	unsigned int bytes_to_write = 0;
 
@@ -3461,10 +3462,10 @@ static void OutputDcValue(SemanticState *state, FILE *output_file, const Size si
 	state->program_counter += bytes_to_write;
 
 	while (bytes_to_write-- != 0)
-		fputc((value >> (bytes_to_write * 8)) & 0xFF, output_file);
+		fputc((value >> (bytes_to_write * 8)) & 0xFF, state->output_file);
 }
 
-static void ProcessDc(SemanticState *state, FILE *output_file, const StatementDc *dc)
+static void ProcessDc(SemanticState *state, const StatementDc *dc)
 {
 	const ValueListNode *value_list_node;
 
@@ -3479,7 +3480,7 @@ static void ProcessDc(SemanticState *state, FILE *output_file, const StatementDc
 				if (!ResolveValue(state, &value_list_node->shared.value, &value))
 					value = 0;
 
-				OutputDcValue(state, output_file, dc->size, value);
+				OutputDcValue(state, dc->size, value);
 
 				break;
 			}
@@ -3489,7 +3490,7 @@ static void ProcessDc(SemanticState *state, FILE *output_file, const StatementDc
 				const char *character;
 
 				for (character = value_list_node->shared.string; *character != '\0'; ++character)
-					OutputDcValue(state, output_file, dc->size, *character);
+					OutputDcValue(state, dc->size, *character);
 
 				break;
 			}
@@ -3497,7 +3498,7 @@ static void ProcessDc(SemanticState *state, FILE *output_file, const StatementDc
 	}
 }
 
-static void ProcessDcb(SemanticState *state, FILE *output_file, const StatementDcb *dcb)
+static void ProcessDcb(SemanticState *state, const StatementDcb *dcb)
 {
 	unsigned long repetitions;
 
@@ -3514,11 +3515,11 @@ static void ProcessDcb(SemanticState *state, FILE *output_file, const StatementD
 			value = 0;
 
 		for (i = 0; i < repetitions; ++i)
-			OutputDcValue(state, output_file, dcb->size, value);	
+			OutputDcValue(state, dcb->size, value);	
 	}
 }
 
-static void ProcessInclude(SemanticState *state, FILE *output_file, const StatementInclude *include)
+static void ProcessInclude(SemanticState *state, const StatementInclude *include)
 {
 	FILE *input_file = fopen(include->path, "r");
 
@@ -3534,7 +3535,7 @@ static void ProcessInclude(SemanticState *state, FILE *output_file, const Statem
 		state->location.file_path = DuplicateStringAndHandleError(state, include->path);
 		state->location.line_number = 0;
 
-		AssembleFile(state, output_file, input_file);
+		AssembleFile(state, input_file);
 
 		free(state->location.file_path);
 		state->location = location;
@@ -3543,7 +3544,7 @@ static void ProcessInclude(SemanticState *state, FILE *output_file, const Statem
 	}
 }
 
-static void ProcessIncbin(SemanticState *state, FILE *output_file, const StatementIncbin *incbin)
+static void ProcessIncbin(SemanticState *state, const StatementIncbin *incbin)
 {
 	FILE *input_file = fopen(incbin->path, "rb");
 
@@ -3585,7 +3586,7 @@ static void ProcessIncbin(SemanticState *state, FILE *output_file, const Stateme
 					break;
 				}
 
-				fputc(character, output_file);
+				fputc(character, state->output_file);
 			}
 		}
 		else
@@ -3593,7 +3594,7 @@ static void ProcessIncbin(SemanticState *state, FILE *output_file, const Stateme
 			int character;
 
 			while ((character = fgetc(input_file)) != EOF)
-				fputc(character, output_file);
+				fputc(character, state->output_file);
 		}
 
 		fclose(input_file);
@@ -3649,7 +3650,7 @@ static void ProcessIf(SemanticState *state, const Value *value)
 	}
 }
 
-static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement, const char *label)
+static void ProcessStatement(SemanticState *state, const Statement *statement, const char *label)
 {
 	Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->shared.unsigned_integer = state->program_counter;
 
@@ -3708,23 +3709,23 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			break;
 
 		case STATEMENT_TYPE_INSTRUCTION:
-			ProcessInstruction(state, output_file, &statement->shared.instruction);
+			ProcessInstruction(state, &statement->shared.instruction);
 			break;
 
 		case STATEMENT_TYPE_DC:
-			ProcessDc(state, output_file, &statement->shared.dc);
+			ProcessDc(state, &statement->shared.dc);
 			break;
 
 		case STATEMENT_TYPE_DCB:
-			ProcessDcb(state, output_file, &statement->shared.dcb);
+			ProcessDcb(state, &statement->shared.dcb);
 			break;
 
 		case STATEMENT_TYPE_INCLUDE:
-			ProcessInclude(state, output_file, &statement->shared.include);
+			ProcessInclude(state, &statement->shared.include);
 			break;
 
 		case STATEMENT_TYPE_INCBIN:
-			ProcessIncbin(state, output_file, &statement->shared.incbin);
+			ProcessIncbin(state, &statement->shared.incbin);
 			break;
 
 		case STATEMENT_TYPE_REPT:
@@ -3735,7 +3736,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			if (state->mode != MODE_REPT)
 				SemanticError(state, "This stray ENDR has no preceeding REPT.");
 			else
-				TerminateRept(state, output_file);
+				TerminateRept(state);
 
 			break;
 
@@ -3793,7 +3794,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 		case STATEMENT_TYPE_EVEN:
 			/* Pad to the nearest even address. */
 			if (state->program_counter & 1)
-				fputc(0, output_file);
+				fputc(0, state->output_file);
 
 			break;
 
@@ -3807,7 +3808,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 	}
 }
 
-static void AssembleLine(SemanticState *state, FILE *output_file, const char *source_line)
+static void AssembleLine(SemanticState *state, const char *source_line)
 {
 	size_t label_length;
 	const char *source_line_pointer;
@@ -3896,19 +3897,19 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 					statement.type = STATEMENT_TYPE_IF;
 					statement.shared.value.type = VALUE_NUMBER;
 					statement.shared.value.shared.integer = 0;
-					ProcessStatement(state, output_file, &statement, label);
+					ProcessStatement(state, &statement, label);
 				}
 				else if (strcmp(keyword, "else") == 0) /* TODO - Case-insensitivity. */
 				{
 					/* TODO - Detect code after the keyword and error if any is found. */
 					statement.type = STATEMENT_TYPE_ELSE;
-					ProcessStatement(state, output_file, &statement, label);
+					ProcessStatement(state, &statement, label);
 				}
 				else if (strcmp(keyword, "endc") == 0 || strcmp(keyword, "endif") == 0) /* TODO - Case-insensitivity. */
 				{
 					/* TODO - Detect code after the keyword and error if any is found. */
 					statement.type = STATEMENT_TYPE_ENDC;
-					ProcessStatement(state, output_file, &statement, label);
+					ProcessStatement(state, &statement, label);
 				}
 				else
 				{
@@ -4143,7 +4144,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 							--state->location.line_number;
 
 							/* Send our expanded macro line to be assembled. */
-							AssembleLine(state, output_file, modified_line != NULL ? modified_line : source_line_list_node->source_line);
+							AssembleLine(state, modified_line != NULL ? modified_line : source_line_list_node->source_line);
 
 							/* The expanded line is done, so we can free it now. */
 							free(modified_line);
@@ -4173,7 +4174,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 
 					/* Back these up, before they get a chance to be modified by ProcessStatement. */
 					const unsigned long starting_program_counter = state->program_counter;
-					const long starting_output_position = ftell(output_file);
+					const long starting_output_position = ftell(state->output_file);
 
 					/* Parse the source line with Flex and Bison (Lex and Yacc). */
 					buffer = m68kasm__scan_string(source_line_pointer, state->flex_state);
@@ -4193,7 +4194,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 						case 0: /* No error. */
 							state->fix_up_needed = cc_false;
 
-							ProcessStatement(state, output_file, &statement, label);
+							ProcessStatement(state, &statement, label);
 
 							/* If the statement cannot currently be processed because of undefined symbols,
 							   add it to the fix-up list so we can try again later. */
@@ -4264,7 +4265,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
 				statement.type = STATEMENT_TYPE_ENDR;
-				ProcessStatement(state, output_file, &statement, label);
+				ProcessStatement(state, &statement, label);
 			}
 			else
 			{
@@ -4278,7 +4279,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
 				statement.type = STATEMENT_TYPE_ENDM;
-				ProcessStatement(state, output_file, &statement, label);
+				ProcessStatement(state, &statement, label);
 			}
 			else
 			{
@@ -4292,7 +4293,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 	free(label);
 }
 
-static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_file)
+static void AssembleFile(SemanticState *state, FILE *input_file)
 {
 	while (!state->end && fgets(state->line_buffer, sizeof(state->line_buffer), input_file) != NULL)
 	{
@@ -4318,7 +4319,7 @@ static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_fi
 			}
 		}
 
-		AssembleLine(state, output_file, state->line_buffer);
+		AssembleLine(state, state->line_buffer);
 	}
 
 	switch (state->mode)
@@ -4328,7 +4329,7 @@ static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_fi
 			break;
 
 		case MODE_REPT:
-			TerminateRept(state, output_file);
+			TerminateRept(state);
 
 			SemanticError(state, "REPT statement beginning at line %lu is missing its ENDR.", state->rept.line_number);
 			break;
@@ -4354,6 +4355,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 	Dictionary_Entry *symbol;
 
 	state.success = cc_true;
+	state.output_file = output_file;
 	state.program_counter = 0;
 	state.fix_up_list_head = NULL;
 	state.fix_up_list_tail = NULL;
@@ -4390,7 +4392,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 		#endif
 
 			/* Perform first pass, and create a list of fix-ups if needed. */
-			AssembleFile(&state, output_file, input_file);
+			AssembleFile(&state, input_file);
 
 			if (state.false_if_level != 0)
 				SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
@@ -4419,7 +4421,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 
 					/* Reset some state to how it was at the time the statement was first processed. */
 					state.program_counter = fix_up->program_counter;
-					fseek(output_file, fix_up->output_position , SEEK_SET);
+					fseek(state.output_file, fix_up->output_position , SEEK_SET);
 					state.last_global_label = DuplicateStringAndHandleError(&state, fix_up->last_global_label);
 					state.source_line = fix_up->source_line != NULL ? fix_up->source_line : "[No source line]";
 					state.location = fix_up->location;
@@ -4427,7 +4429,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 					state.fix_up_needed = cc_false;
 
 					/* Re-process statement. */
-					ProcessStatement(&state, output_file, &fix_up->statement, fix_up->label != NULL ? fix_up->label : NULL);
+					ProcessStatement(&state, &fix_up->statement, fix_up->label != NULL ? fix_up->label : NULL);
 
 					if (!state.fix_up_needed)
 					{
