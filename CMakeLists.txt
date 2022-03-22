@@ -36,4 +36,5 @@ add_test(NAME INSTURCTION_MOVE_TO_SR_INVALID_4 COMMAND clownassembler "${CMAKE_C
 set_property(TEST INSTURCTION_MOVE_TO_SR_INVALID_4 PROPERTY WILL_FAIL true)
 add_test(NAME INSTURCTION_MOVE_TO_SR_INVALID_5 COMMAND clownassembler "${CMAKE_CURRENT_SOURCE_DIR}/tests/instructions/MOVE_TO_SR/invalid/5.asm" "output.bin" "listing.asm")
 set_property(TEST INSTURCTION_MOVE_TO_SR_INVALID_5 PROPERTY WILL_FAIL true)
-add_test(NAME valid_instructions COMMAND clownassembler "${CMAKE_CURRENT_SOURCE_DIR}/tests/valid instructions.asm" "output.bin" "listing.asm")
+add_test(NAME valid_instructions_assemble COMMAND clownassembler "${CMAKE_CURRENT_SOURCE_DIR}/tests/valid instructions.asm" "output.bin" "listing.asm")
+add_test(NAME valid_instructions_compare COMMAND ${CMAKE_COMMAND} -E compare_files "${CMAKE_CURRENT_SOURCE_DIR}/tests/valid instructions.bin" "output.bin")
