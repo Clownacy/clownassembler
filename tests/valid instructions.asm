@@ -143,8 +143,6 @@
 	cmpi.b	#$FF,$7F(a0,d0.w)
 	cmpi.b	#$FF,($FFFFFFFF).w
 	cmpi.b	#$FF,($FFFFFFFF).l
-	cmpi.b	#$FF,*(pc)
-	cmpi.b	#$FF,*(pc,d0.w)
 	cmpi.w	#$FFFF,d0
 	cmpi.w	#$FFFF,(a0)
 	cmpi.w	#$FFFF,(a0)+
@@ -153,8 +151,6 @@
 	cmpi.w	#$FFFF,$7F(a0,d0.w)
 	cmpi.w	#$FFFF,($FFFFFFFF).w
 	cmpi.w	#$FFFF,($FFFFFFFF).l
-	cmpi.w	#$FFFF,*(pc)
-	cmpi.w	#$FFFF,*(pc,d0.w)
 	cmpi.l	#$FFFFFFFF,d0
 	cmpi.l	#$FFFFFFFF,(a0)
 	cmpi.l	#$FFFFFFFF,(a0)+
@@ -163,8 +159,6 @@
 	cmpi.l	#$FFFFFFFF,$7F(a0,d0.w)
 	cmpi.l	#$FFFFFFFF,($FFFFFFFF).w
 	cmpi.l	#$FFFFFFFF,($FFFFFFFF).l
-	cmpi.l	#$FFFFFFFF,*(pc)
-	cmpi.l	#$FFFFFFFF,*(pc,d0.w)
 
 	btst.l	d0,d0
 	btst.b	d0,(a0)
