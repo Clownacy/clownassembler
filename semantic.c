@@ -4005,17 +4005,11 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 								if (parameter_position == NULL)
 									break;
 
-								/* Don't bother inserting parameters that were not passed to the macro. */
-								if (parameter_index >= total_parameters)
+								/* Split the line in two, and insert the parameter between them. */
 								{
-									remaining_line = line_after_parameter;
-								}
-								else
-								{
-									/* Split the line in two, and insert the parameter between them. */
 									char *new_modified_line;
 
-									const char* const parameter = parameters[parameter_index] != NULL ? parameters[parameter_index] : ""; /* Just in case '\0' is used but no size was specified. */
+									const char* const parameter = (parameter_index < total_parameters && parameters[parameter_index] != NULL) ? parameters[parameter_index] : "";
 									const size_t first_half_length = parameter_position - modified_line;
 									const size_t parameter_length = strlen(parameter);
 									const size_t second_half_length = strlen(line_after_parameter);
