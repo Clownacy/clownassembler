@@ -71,6 +71,7 @@ typedef struct SemanticState
 	const char *source_line;
 	unsigned int current_if_level;
 	unsigned int false_if_level;
+	cc_bool end;
 	enum
 	{
 		MODE_NORMAL,
@@ -3620,6 +3621,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 		case STATEMENT_TYPE_REPT:
 		case STATEMENT_TYPE_IF:
 		case STATEMENT_TYPE_EVEN:
+		case STATEMENT_TYPE_END:
 			if (label != NULL && !state->doing_fix_up && !state->doing_final_pass)
 			{
 				SetLastGlobalLabel(state, label);
@@ -3749,6 +3751,10 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			if (state->program_counter & 1)
 				fputc(0, output_file);
 
+			break;
+
+		case STATEMENT_TYPE_END:
+			state->end = cc_true;
 			break;
 	}
 }
@@ -4240,7 +4246,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 
 static void AssembleFile(SemanticState *state, FILE *output_file, FILE *input_file)
 {
-	while (fgets(state->line_buffer, sizeof(state->line_buffer), input_file) != NULL)
+	while (!state->end && fgets(state->line_buffer, sizeof(state->line_buffer), input_file) != NULL)
 	{
 		const size_t newline_index = strcspn(state->line_buffer, "\r\n");
 		const char newline_character = state->line_buffer[newline_index];
@@ -4313,6 +4319,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 	state.current_if_level = 0;
 	state.false_if_level = 0;
 	state.mode = MODE_NORMAL;
+	state.end = cc_false;
 
 	Dictionary_Init(&state.dictionary);
 

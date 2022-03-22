@@ -324,7 +324,8 @@ typedef struct Statement
 		STATEMENT_TYPE_IF,
 		STATEMENT_TYPE_ELSE,
 		STATEMENT_TYPE_ENDC,
-		STATEMENT_TYPE_EVEN
+		STATEMENT_TYPE_EVEN,
+		STATEMENT_TYPE_END
 	} type;
 	union
 	{
@@ -505,6 +506,7 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 %token TOKEN_DIRECTIVE_ENDC
 %token TOKEN_DIRECTIVE_EVEN
 %token TOKEN_DIRECTIVE_INFORM
+%token TOKEN_DIRECTIVE_END
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -665,6 +667,10 @@ statement
 	{
 		/* TODO */
 		statement->type = STATEMENT_TYPE_EMPTY;
+	}
+	| TOKEN_DIRECTIVE_END
+	{
+		statement->type = STATEMENT_TYPE_END;
 	}
 	;
 

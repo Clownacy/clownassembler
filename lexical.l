@@ -186,6 +186,7 @@ endc            TOKEN(DIRECTIVE_ENDC)
 endif           TOKEN(DIRECTIVE_ENDC)
 even            TOKEN(DIRECTIVE_EVEN)
 inform          TOKEN(DIRECTIVE_INFORM)
+end             TOKEN(DIRECTIVE_END)
 "."             return yytext[0];
 ","             return yytext[0];
 "("             return yytext[0];
