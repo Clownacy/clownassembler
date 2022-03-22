@@ -3817,6 +3817,7 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				keyword[keyword_length] = '\0';
 
 				macro_dictionary_entry = Dictionary_LookUp(&state->dictionary, keyword);
+				free(keyword);
 			}
 			else
 			{
