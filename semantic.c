@@ -4217,6 +4217,9 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 
 			free(state.last_global_label);
 
+			if (state.false_if_level != 0)
+				SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
+
 			Dictionary_Filter(&state.dictionary, DeleteNonConstants, NULL);
 
 			/* Revert back to the initial state. */
@@ -4240,6 +4243,9 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, const char 
 			AssembleFile(&state, output_file, input_file);
 
 			free(state.last_global_label);
+
+			if (state.false_if_level != 0)
+				SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
 
 			if (m68kasm_lex_destroy(state.flex_state) != 0)
 				InternalError(&state, "m68kasm_lex_destroy failed.");
