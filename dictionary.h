@@ -11,7 +11,7 @@ typedef struct Dictionary_Entry
 		unsigned long unsigned_integer;
 		long signed_integer;
 		void *pointer;
-	} data; 
+	} shared; 
 } Dictionary_Entry;
 
 typedef struct Dictionary_BucketNode

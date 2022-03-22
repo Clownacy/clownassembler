@@ -313,7 +313,7 @@ static void TerminateMacro(SemanticState *state)
 			macro->source_line_list_head = state->macro.source_line_list.head;
 
 			symbol->type = SYMBOL_MACRO;
-			symbol->data.pointer = macro;
+			symbol->shared.pointer = macro;
 		}
 	}
 }
@@ -382,7 +382,7 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 			unsigned long left_value;
 			unsigned long right_value;
 
-			if (!ResolveValue(state, &value->data.values[0], &left_value) || !ResolveValue(state, &value->data.values[1], &right_value))
+			if (!ResolveValue(state, &value->shared.values[0], &left_value) || !ResolveValue(state, &value->shared.values[1], &right_value))
 			{
 				success = cc_false;
 			}
@@ -477,7 +477,7 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 		case VALUE_NEGATE:
 		case VALUE_BITWISE_NOT:
 		case VALUE_LOGICAL_NOT:
-			if (!ResolveValue(state, value->data.values, value_integer))
+			if (!ResolveValue(state, value->shared.values, value_integer))
 			{
 				success = cc_false;
 			}
@@ -509,18 +509,18 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 			break;
 
 		case VALUE_NUMBER:
-			*value_integer = value->data.integer;
+			*value_integer = value->shared.integer;
 			break;
 
 		case VALUE_IDENTIFIER:
 		{
 			char *expanded_identifier = NULL;
-			const char *identifier = value->data.identifier;
+			const char *identifier = value->shared.identifier;
 			Dictionary_Entry *dictionary_entry;
 
-			if (value->data.identifier[0] == '@')
+			if (value->shared.identifier[0] == '@')
 			{
-				expanded_identifier = ExpandLocalIdentifier(state, value->data.identifier);
+				expanded_identifier = ExpandLocalIdentifier(state, value->shared.identifier);
 
 				if (expanded_identifier != NULL)
 					identifier = expanded_identifier;
@@ -544,7 +544,7 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 			}
 			else
 			{
-				*value_integer = dictionary_entry->data.unsigned_integer;
+				*value_integer = dictionary_entry->shared.unsigned_integer;
 			}
 
 			free(expanded_identifier);
@@ -725,7 +725,7 @@ static void AddLabelToSymbolTable(SemanticState *state, const char *label, unsig
 	if (symbol != NULL)
 	{
 		symbol->type = SYMBOL_CONSTANT;
-		symbol->data.unsigned_integer = value;
+		symbol->shared.unsigned_integer = value;
 	}
 
 	free(expanded_identifier);
@@ -2740,7 +2740,7 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const St
 							if (offset > 0x7FFF)
 								SemanticError(state, "The destination is too far away: it must be less than $8000 bytes after the start of the instruction, but instead it was $%lX bytes away.", offset);
 
-							instruction.operands[0].literal.data.integer = offset;
+							instruction.operands[0].literal.shared.integer = offset;
 						}
 						else
 						{
@@ -2749,7 +2749,7 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const St
 							if (offset > 0x8000)
 								SemanticError(state, "The destination is too far away: it must be less than $8001 bytes before the start of the instruction, but instead it was $%lX bytes away.", offset);
 
-							instruction.operands[0].literal.data.integer = 0 - offset;
+							instruction.operands[0].literal.shared.integer = 0 - offset;
 						}
 
 						break;
@@ -2829,7 +2829,7 @@ static void ProcessInstruction(SemanticState *state, FILE *output_file, const St
 						{
 							instruction.operands[0].type = OPERAND_LITERAL;
 							instruction.operands[0].literal.type = VALUE_NUMBER;
-							instruction.operands[0].literal.data.integer = offset;
+							instruction.operands[0].literal.shared.integer = offset;
 						}
 
 						break;
@@ -3394,7 +3394,7 @@ static void OutputDcValue(SemanticState *state, FILE *output_file, const Size si
 	unsigned int bytes_to_write = 0;
 
 	/* Update the program counter symbol in between values, to keep it up to date. */
-	Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state->program_counter;
+	Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->shared.unsigned_integer = state->program_counter;
 
 	switch (size)
 	{
@@ -3617,7 +3617,7 @@ static void ProcessIf(SemanticState *state, const Value *value)
 
 static void ProcessStatement(SemanticState *state, FILE *output_file, const Statement *statement, const char *label)
 {
-	Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->data.unsigned_integer = state->program_counter;
+	Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->shared.unsigned_integer = state->program_counter;
 
 	switch (statement->type)
 	{
@@ -3659,7 +3659,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 
 				SetLastGlobalLabel(state, label);
 
-				if (ResolveValue(state, &statement->data.value, &resolved_value))
+				if (ResolveValue(state, &statement->shared.value, &resolved_value))
 					AddLabelToSymbolTable(state, label, resolved_value);
 			}
 
@@ -3672,27 +3672,27 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			break;
 
 		case STATEMENT_TYPE_INSTRUCTION:
-			ProcessInstruction(state, output_file, &statement->data.instruction);
+			ProcessInstruction(state, output_file, &statement->shared.instruction);
 			break;
 
 		case STATEMENT_TYPE_DC:
-			ProcessDc(state, output_file, &statement->data.dc);
+			ProcessDc(state, output_file, &statement->shared.dc);
 			break;
 
 		case STATEMENT_TYPE_DCB:
-			ProcessDcb(state, output_file, &statement->data.dcb);
+			ProcessDcb(state, output_file, &statement->shared.dcb);
 			break;
 
 		case STATEMENT_TYPE_INCLUDE:
-			ProcessInclude(state, output_file, &statement->data.include);
+			ProcessInclude(state, output_file, &statement->shared.include);
 			break;
 
 		case STATEMENT_TYPE_INCBIN:
-			ProcessIncbin(state, output_file, &statement->data.incbin);
+			ProcessIncbin(state, output_file, &statement->shared.incbin);
 			break;
 
 		case STATEMENT_TYPE_REPT:
-			ProcessRept(state, &statement->data.rept);
+			ProcessRept(state, &statement->shared.rept);
 			break;
 
 		case STATEMENT_TYPE_ENDR:
@@ -3704,7 +3704,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			break;
 
 		case STATEMENT_TYPE_MACRO:
-			ProcessMacro(state, &statement->data.macro, label);
+			ProcessMacro(state, &statement->shared.macro, label);
 			break;
 
 		case STATEMENT_TYPE_ENDM:
@@ -3720,7 +3720,7 @@ static void ProcessStatement(SemanticState *state, FILE *output_file, const Stat
 			break;
 
 		case STATEMENT_TYPE_IF:
-			ProcessIf(state, &statement->data.value);
+			ProcessIf(state, &statement->shared.value);
 			break;
 
 		case STATEMENT_TYPE_ELSE:
@@ -3850,8 +3850,8 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 				{
 					/* Create a false if statement. */
 					statement.type = STATEMENT_TYPE_IF;
-					statement.data.value.type = VALUE_NUMBER;
-					statement.data.value.data.integer = 0;
+					statement.shared.value.type = VALUE_NUMBER;
+					statement.shared.value.shared.integer = 0;
 					ProcessStatement(state, output_file, &statement, label);
 				}
 				else if (strcmp(keyword, "else") == 0) /* TODO - Case-insensitivity. */
@@ -3988,13 +3988,13 @@ static void AssembleLine(SemanticState *state, FILE *output_file, const char *so
 						if (symbol != NULL)
 						{
 							symbol->type = SYMBOL_CONSTANT;
-							symbol->data.unsigned_integer = total_parameters - 1;
+							symbol->shared.unsigned_integer = total_parameters - 1;
 						}
 					}
 
 					/* Finally, invoke the macro. */
 					{
-						const Macro *macro = macro_dictionary_entry->data.pointer;
+						const Macro *macro = macro_dictionary_entry->shared.pointer;
 						const SourceLineListNode *source_line_list_node;
 
 						/* Push a new location (this macro).*/

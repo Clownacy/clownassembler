@@ -199,7 +199,7 @@ typedef struct Value
 		unsigned long integer;
 		char *identifier;
 		struct Value *values;
-	} data;
+	} shared;
 } Value;
 
 typedef struct ValueListNode
@@ -336,7 +336,7 @@ typedef struct Statement
 		StatementRept rept;
 		StatementMacro macro;
 		Value value;
-	} data;
+	} shared;
 } Statement;
 
 typedef struct ListMetadata
@@ -563,53 +563,53 @@ statement
 	| instruction
 	{
 		statement->type = STATEMENT_TYPE_INSTRUCTION;
-		statement->data.instruction = $1;
+		statement->shared.instruction = $1;
 	}
 	| TOKEN_DIRECTIVE_DC '.' size value_list
 	{
 		statement->type = STATEMENT_TYPE_DC;
-		statement->data.dc.size = $3;
-		statement->data.dc.values = $4.head;
+		statement->shared.dc.size = $3;
+		statement->shared.dc.values = $4.head;
 	}
 	| TOKEN_DIRECTIVE_DCB '.' size value ',' value
 	{
 		statement->type = STATEMENT_TYPE_DCB;
-		statement->data.dcb.size = $3;
-		statement->data.dcb.repetitions = $4;
-		statement->data.dcb.value = $6;
+		statement->shared.dcb.size = $3;
+		statement->shared.dcb.repetitions = $4;
+		statement->shared.dcb.value = $6;
 	}
 	| TOKEN_DIRECTIVE_INCLUDE TOKEN_STRING
 	{
 		statement->type = STATEMENT_TYPE_INCLUDE;
-		statement->data.include.path = $2;
+		statement->shared.include.path = $2;
 	}
 	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
-		statement->data.incbin.path = $2;
-		statement->data.incbin.start.type = VALUE_NUMBER;
-		statement->data.incbin.start.data.integer = 0;
-		statement->data.incbin.has_length = cc_false;
+		statement->shared.incbin.path = $2;
+		statement->shared.incbin.start.type = VALUE_NUMBER;
+		statement->shared.incbin.start.shared.integer = 0;
+		statement->shared.incbin.has_length = cc_false;
 	}
 	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' value
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
-		statement->data.incbin.path = $2;
-		statement->data.incbin.start = $4;
-		statement->data.incbin.has_length = cc_false;
+		statement->shared.incbin.path = $2;
+		statement->shared.incbin.start = $4;
+		statement->shared.incbin.has_length = cc_false;
 	}
 	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' value ',' value
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
-		statement->data.incbin.path = $2;
-		statement->data.incbin.start = $4;
-		statement->data.incbin.has_length = cc_true;
-		statement->data.incbin.length = $6;
+		statement->shared.incbin.path = $2;
+		statement->shared.incbin.start = $4;
+		statement->shared.incbin.has_length = cc_true;
+		statement->shared.incbin.length = $6;
 	}
 	| TOKEN_DIRECTIVE_REPT value
 	{
 		statement->type = STATEMENT_TYPE_REPT;
-		statement->data.rept.total_repeats = $2;
+		statement->shared.rept.total_repeats = $2;
 	}
 	| TOKEN_DIRECTIVE_ENDR
 	{
@@ -618,12 +618,12 @@ statement
 	| TOKEN_DIRECTIVE_MACRO
 	{
 		statement->type = STATEMENT_TYPE_MACRO;
-		statement->data.macro.parameter_names = NULL;
+		statement->shared.macro.parameter_names = NULL;
 	}
 	| TOKEN_DIRECTIVE_MACRO identifier_list
 	{
 		statement->type = STATEMENT_TYPE_MACRO;
-		statement->data.macro.parameter_names = $2.head;
+		statement->shared.macro.parameter_names = $2.head;
 	}
 	| TOKEN_DIRECTIVE_ENDM
 	{
@@ -632,17 +632,17 @@ statement
 	| TOKEN_DIRECTIVE_EQU value
 	{
 		statement->type = STATEMENT_TYPE_EQU;
-		statement->data.value = $2;
+		statement->shared.value = $2;
 	}
 	| '=' value
 	{
 		statement->type = STATEMENT_TYPE_EQU;
-		statement->data.value = $2;
+		statement->shared.value = $2;
 	}
 	| TOKEN_DIRECTIVE_IF value
 	{
 		statement->type = STATEMENT_TYPE_IF;
-		statement->data.value = $2;
+		statement->shared.value = $2;
 	}
 	| TOKEN_DIRECTIVE_ELSE
 	{
@@ -1413,7 +1413,7 @@ operand
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = VALUE_NUMBER;
-		$$.literal.data.integer = 0;
+		$$.literal.shared.integer = 0;
 		$$.main_register = $2;
 		$$.index_register = $4 % 8;
 		$$.size = $6;
@@ -1433,7 +1433,7 @@ operand
 		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = VALUE_NUMBER;
-		$$.literal.data.integer = 0;
+		$$.literal.shared.integer = 0;
 		$$.main_register = $2;
 		$$.index_register = $4 % 8;
 		$$.size = SIZE_WORD;
@@ -1458,7 +1458,7 @@ operand
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = VALUE_NUMBER;
-		$$.literal.data.integer = 0;
+		$$.literal.shared.integer = 0;
 		$$.index_register = $4 % 8;
 		$$.size = $6;
 		$$.index_register_is_address_register = $4 / 8 != 0;
@@ -1476,7 +1476,7 @@ operand
 		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = VALUE_NUMBER;
-		$$.literal.data.integer = 0;
+		$$.literal.shared.integer = 0;
 		$$.index_register = $4 % 8;
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $4 / 8 != 0;
@@ -1812,17 +1812,17 @@ value11
 	: TOKEN_NUMBER
 	{
 		$$.type = VALUE_NUMBER;
-		$$.data.integer = $1;
+		$$.shared.integer = $1;
 	}
 	| TOKEN_IDENTIFIER
 	{
 		$$.type = VALUE_IDENTIFIER;
-		$$.data.identifier = $1;
+		$$.shared.identifier = $1;
 	}
 	| '*'
 	{
 		$$.type = VALUE_IDENTIFIER;
-		$$.data.identifier = ",,PROGRAM_COUNTER,,";
+		$$.shared.identifier = ",,PROGRAM_COUNTER,,";
 	}
 	| '(' value ')'
 	{
@@ -1838,18 +1838,18 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 
 	value->type = type;
 
-	value->data.values = malloc(sizeof(Value) * (right_value != NULL ? 2 : 1));
+	value->shared.values = malloc(sizeof(Value) * (right_value != NULL ? 2 : 1));
 
-	if (value->data.values == NULL)
+	if (value->shared.values == NULL)
 	{
 		success = cc_false;
 	}
 	else
 	{
-		value->data.values[0] = *left_value;
+		value->shared.values[0] = *left_value;
 
 		if (right_value != NULL)
-			value->data.values[1] = *right_value;
+			value->shared.values[1] = *right_value;
 	}
 
 	return success;
