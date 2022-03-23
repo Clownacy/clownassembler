@@ -14,7 +14,8 @@
 #define YY_NO_UNISTD_H
 #include "lexical.h"
 
-#define COMPARE_KEYWORD(keyword, comparand) StringsMatchCaseInsensitive(keyword, comparand, strlen(comparand))
+
+#define PROGRAM_COUNTER ",,PROGRAM_COUNTER,,"
 
 typedef enum SymbolType
 {
@@ -210,22 +211,25 @@ static void* MallocAndHandleError(SemanticState *state, size_t size)
 	return memory;
 }
 
-static cc_bool StringsMatchCaseInsensitive(const char *string1, const char *string2, size_t size)
+static int strncasecmp(const char *lhs, const char *rhs, size_t count)
 {
+	int delta;
 	size_t i;
 
-	for (i = 0; i < size; ++i)
-	{
-		const char string1_character = tolower(*string1++);
-		const char string2_character = tolower(*string2++);
+	delta = 0;
 
-		if (string1_character != string2_character)
-			return cc_false;
-		else if (string1_character == '\0' /*&& string2_character == '\0'*/)
-			return cc_true;
+	for (i = 0; i < count; ++i)
+	{
+		const int lhs_character = tolower((unsigned char)*lhs++);
+		const int rhs_character = tolower((unsigned char)*rhs++);
+
+		delta = lhs_character - rhs_character;
+
+		if (delta != 0 || (lhs_character == '\0' /*&& rhs_character == '\0'*/))
+			break;
 	}
 
-	return cc_true;
+	return delta;
 }
 
 static char* DuplicateString(const char *string)
@@ -256,7 +260,7 @@ static Dictionary_Entry* CreateSymbol(SemanticState *state, const char *identifi
 {
 	Dictionary_Entry *dictionary_entry;
 
-	if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
+	if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, strlen(identifier), &dictionary_entry))
 	{
 		OutOfMemoryError(state);
 		dictionary_entry = NULL;
@@ -563,7 +567,7 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 					identifier = expanded_identifier;
 			}
 
-			dictionary_entry = Dictionary_LookUp(&state->dictionary, identifier);
+			dictionary_entry = Dictionary_LookUp(&state->dictionary, identifier, strlen(identifier));
 
 			if (dictionary_entry == NULL || dictionary_entry->type == -1)
 			{
@@ -3469,7 +3473,7 @@ static void OutputDcValue(SemanticState *state, const Size size, unsigned long v
 	unsigned int bytes_to_write = 0;
 
 	/* Update the program counter symbol in between values, to keep it up to date. */
-	Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->shared.unsigned_integer = state->program_counter;
+	Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER, sizeof(PROGRAM_COUNTER) - 1)->shared.unsigned_integer = state->program_counter;
 
 	switch (size)
 	{
@@ -3696,7 +3700,7 @@ static void ProcessIf(SemanticState *state, const Value *value)
 
 static void ProcessStatement(SemanticState *state, const Statement *statement, const char *label)
 {
-	Dictionary_LookUp(&state->dictionary, ",,PROGRAM_COUNTER,,")->shared.unsigned_integer = state->program_counter;
+	Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER, sizeof(PROGRAM_COUNTER) - 1)->shared.unsigned_integer = state->program_counter;
 
 	switch (statement->type)
 	{
@@ -3863,7 +3867,6 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	const char *source_line_pointer;
 	char *label;
 	size_t keyword_length;
-	char *keyword;
 	Statement statement;
 
 	if (state->listing_file != NULL)
@@ -3926,16 +3929,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	}
 
 	source_line_pointer += strspn(source_line_pointer, " \t");
-
-	/* Extract the keyword from the source line. */
 	keyword_length = strcspn(source_line_pointer, " \t.;");
-	keyword = MallocAndHandleError(state, keyword_length + 1);
-
-	if (keyword != NULL)
-	{
-		memcpy(keyword, source_line_pointer, keyword_length);
-		keyword[keyword_length] = '\0';
-	}
 
 	switch (state->mode)
 	{
@@ -3943,35 +3937,38 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 		{
 			if (state->false_if_level != 0)
 			{
-				if (COMPARE_KEYWORD(keyword, "if"))
+				if (keyword_length != 0)
 				{
-					/* Create a false if statement. */
-					statement.type = STATEMENT_TYPE_IF;
-					statement.shared.value.type = VALUE_NUMBER;
-					statement.shared.value.shared.integer = 0;
-					ProcessStatement(state, &statement, label);
-				}
-				else if (COMPARE_KEYWORD(keyword, "else"))
-				{
-					/* TODO - Detect code after the keyword and error if any is found. */
-					statement.type = STATEMENT_TYPE_ELSE;
-					ProcessStatement(state, &statement, label);
-				}
-				else if (COMPARE_KEYWORD(keyword, "endc") || COMPARE_KEYWORD(keyword, "endif"))
-				{
-					/* TODO - Detect code after the keyword and error if any is found. */
-					statement.type = STATEMENT_TYPE_ENDC;
-					ProcessStatement(state, &statement, label);
-				}
-				else
-				{
-					/* Drop the line completely, since it's inside the false half of an if statement. */
+					if (strncasecmp(source_line_pointer, "if", keyword_length) == 0)
+					{
+						/* Create a false if statement. */
+						statement.type = STATEMENT_TYPE_IF;
+						statement.shared.value.type = VALUE_NUMBER;
+						statement.shared.value.shared.integer = 0;
+						ProcessStatement(state, &statement, label);
+					}
+					else if (strncasecmp(source_line_pointer, "else", keyword_length) == 0)
+					{
+						/* TODO - Detect code after the keyword and error if any is found. */
+						statement.type = STATEMENT_TYPE_ELSE;
+						ProcessStatement(state, &statement, label);
+					}
+					else if (strncasecmp(source_line_pointer, "endc", keyword_length) == 0 || strncasecmp(source_line_pointer, "endif", keyword_length) == 0)
+					{
+						/* TODO - Detect code after the keyword and error if any is found. */
+						statement.type = STATEMENT_TYPE_ENDC;
+						ProcessStatement(state, &statement, label);
+					}
+					else
+					{
+						/* Drop the line completely, since it's inside the false half of an if statement. */
+					}
 				}
 			}
 			else
 			{
 				/* Look up the keyword in the dictionary to see if it's a macro. */
-				const Dictionary_Entry* const macro_dictionary_entry = keyword != NULL ? Dictionary_LookUp(&state->dictionary, keyword) : NULL;
+				const Dictionary_Entry* const macro_dictionary_entry = Dictionary_LookUp(&state->dictionary, source_line_pointer, keyword_length);
 
 				if (macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO)
 				{
@@ -4215,7 +4212,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					}
 
 					/* Undefine the 'narg' symbol. */
-					if (!Dictionary_Remove(&state->dictionary, "narg"))
+					if (!Dictionary_Remove(&state->dictionary, "narg", sizeof("narg") - 1))
 						InternalError(state, "Could not remove symbol 'narg' from the dictionary.");
 				}
 				else
@@ -4313,7 +4310,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 		}
 
 		case MODE_REPT:
-			if (COMPARE_KEYWORD(keyword, "endr"))
+			if (keyword_length != 0 && strncasecmp(source_line_pointer, "endr", keyword_length) == 0)
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
 				statement.type = STATEMENT_TYPE_ENDR;
@@ -4327,7 +4324,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			break;
 
 		case MODE_MACRO:
-			if (COMPARE_KEYWORD(keyword, "endm"))
+			if (keyword_length != 0 && strncasecmp(source_line_pointer, "endm", keyword_length) == 0)
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
 				statement.type = STATEMENT_TYPE_ENDM;
@@ -4341,7 +4338,6 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			break;
 	}
 
-	free(keyword);
 	free(label);
 }
 
@@ -4394,11 +4390,11 @@ static void AssembleFile(SemanticState *state, FILE *input_file)
 	}
 }
 
-static cc_bool DictionaryFilterDeleteVariables(Dictionary_Entry *entry, const char *identifier, void *user_data)
+static cc_bool DictionaryFilterDeleteVariables(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data)
 {
 	(void)user_data;
 
-	return (entry->type != SYMBOL_VARIABLE || strcmp(identifier, ",,PROGRAM_COUNTER,,") == 0);
+	return (entry->type != SYMBOL_VARIABLE || (identifier_length == sizeof(PROGRAM_COUNTER) - 1 && memcmp(identifier, PROGRAM_COUNTER, identifier_length) == 0));
 }
 
 cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listing_file, const char *input_file_path, cc_bool debug)
@@ -4426,7 +4422,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 
 	Dictionary_Init(&state.dictionary);
 
-	symbol = CreateSymbol(&state, ",,PROGRAM_COUNTER,,");
+	symbol = CreateSymbol(&state, PROGRAM_COUNTER);
 
 	/* Create the dictionary entry for the program counter ahead of time. */
 	if (symbol != NULL)

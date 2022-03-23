@@ -8,26 +8,27 @@
 
 /* TODO - Destructors */
 
-static Dictionary_BucketNode** GetBucket(Dictionary_State *state, const char *identifier)
+static Dictionary_BucketNode** GetBucket(Dictionary_State *state, const char *identifier, size_t identifier_length)
 {
-	unsigned int hash, character;
+	unsigned int hash;
+	size_t i;
 
 	/* Hash the identifier, using djb2. */
 	/* http://www.cse.yorku.ca/~oz/hash.html */
 	hash = 5381;
 
-	while ((character = (unsigned int)*identifier++) != '\0')
-		hash = hash * 33 + character;
+	for (i = 0; i < identifier_length; ++i)
+		hash = hash * 33 + (unsigned int)*identifier++;
 
 	return &state->buckets[hash % CC_COUNT_OF(state->buckets)];
 }
 
-static Dictionary_BucketNode** FindEntry(Dictionary_State *state, const char *identifier)
+static Dictionary_BucketNode** FindEntry(Dictionary_State *state, const char *identifier, size_t identifier_length)
 {
 	Dictionary_BucketNode **node;
 
-	for (node = GetBucket(state, identifier); *node != NULL; node = &(*node)->next)
-		if (strcmp((*node)->identifier, identifier) == 0)
+	for (node = GetBucket(state, identifier, identifier_length); *node != NULL; node = &(*node)->next)
+		if ((*node)->identifier_length == identifier_length && memcmp((*node)->identifier, identifier, identifier_length) == 0)
 			break;
 
 	return node;
@@ -60,16 +61,15 @@ void Dictionary_Deinit(Dictionary_State *state)
 	}
 }
 
-cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const char *identifier, Dictionary_Entry **entry)
+cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const char *identifier, size_t identifier_length, Dictionary_Entry **entry)
 {
 	cc_bool success = cc_true;
 
-	Dictionary_BucketNode **node_pointer = FindEntry(state, identifier);
+	Dictionary_BucketNode **node_pointer = FindEntry(state, identifier, identifier_length);
 
 	if (*node_pointer == NULL)
 	{
-		const size_t identifier_size = strlen(identifier) + 1;
-		Dictionary_BucketNode *node = malloc(sizeof(Dictionary_BucketNode) + identifier_size);
+		Dictionary_BucketNode *node = malloc(sizeof(Dictionary_BucketNode) + identifier_length);
 
 		if (node == NULL)
 		{
@@ -81,7 +81,8 @@ cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const char
 			*node_pointer = node;
 
 			node->identifier = (char*)(node + 1);
-			memcpy(node->identifier, identifier, identifier_size);
+			memcpy(node->identifier, identifier, identifier_length);
+			node->identifier_length = identifier_length;
 			node->entry.type = -1;
 
 			if (entry != NULL)
@@ -97,11 +98,11 @@ cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const char
 	return success;
 }
 
-Dictionary_Entry* Dictionary_LookUp(Dictionary_State *state, const char *identifier)
+Dictionary_Entry* Dictionary_LookUp(Dictionary_State *state, const char *identifier, size_t identifier_length)
 {
 	Dictionary_Entry *entry;
 
-	Dictionary_BucketNode *node_pointer = *FindEntry(state, identifier);
+	Dictionary_BucketNode *node_pointer = *FindEntry(state, identifier, identifier_length);
 
 	if (node_pointer == NULL)
 		entry = NULL;
@@ -111,11 +112,11 @@ Dictionary_Entry* Dictionary_LookUp(Dictionary_State *state, const char *identif
 	return entry;
 }
 
-cc_bool Dictionary_Remove(Dictionary_State *state, const char *identifier)
+cc_bool Dictionary_Remove(Dictionary_State *state, const char *identifier, size_t identifier_length)
 {
 	cc_bool success = cc_true;
 
-	Dictionary_BucketNode **node_pointer = FindEntry(state, identifier);
+	Dictionary_BucketNode **node_pointer = FindEntry(state, identifier, identifier_length);
 
 	if (*node_pointer == NULL)
 	{
@@ -133,7 +134,7 @@ cc_bool Dictionary_Remove(Dictionary_State *state, const char *identifier)
 	return success;
 }
 
-void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dictionary_Entry *entry, const char *identifier, void *user_data), void *user_data)
+void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data), void *user_data)
 {
 	size_t i;
 
@@ -145,7 +146,7 @@ void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dicti
 		{
 			Dictionary_BucketNode *node = *node_pointer;
 
-			if (!filter_function(&node->entry, node->identifier, user_data))
+			if (!filter_function(&node->entry, node->identifier, node->identifier_length, user_data))
 			{
 				*node_pointer = node->next;
 				free(node);
