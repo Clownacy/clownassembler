@@ -14,7 +14,6 @@
 #define YY_NO_UNISTD_H
 #include "lexical.h"
 
-
 #define PROGRAM_COUNTER ",,PROGRAM_COUNTER,,"
 
 typedef enum SymbolType
@@ -115,42 +114,40 @@ static void AssembleLine(SemanticState *state, const char *source_line);
 #define  __attribute__(x)
 #endif
 
-static void ErrorMessageCommon(SemanticState *state, const char *message_type)
+static void ErrorMessageCommon(SemanticState *state)
 {
 	const Location *location;
-
-	fputs(message_type, stderr);
 
 	for (location = &state->location; location != NULL; location = location->previous)
 		fprintf(stderr, "\nOn line %lu of '%s'...", location->line_number, location->file_path);
 
-	fprintf(stderr, "\n%s\n", state->source_line);
+	fprintf(stderr, "\n%s\n\n", state->source_line);
 }
 
 __attribute__((format(printf, 2, 3))) static void SemanticWarning(SemanticState *state, const char *fmt, ...)
 {
 	va_list args;
 
-	ErrorMessageCommon(state, "Warning!");
+	fputs("Warning: ", stderr);
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
 	va_end(args);
 
-	fputs("\n\n", stderr);
+	ErrorMessageCommon(state);
 }
 
 __attribute__((format(printf, 2, 3))) static void SemanticError(SemanticState *state, const char *fmt, ...)
 {
 	va_list args;
 
-	ErrorMessageCommon(state, "Error!");
+	fputs("Error: ", stderr);
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
 	va_end(args);
 
-	fputs("\n\n", stderr);
+	ErrorMessageCommon(state);
 
 	state->success = cc_false;
 }
@@ -159,22 +156,22 @@ __attribute__((format(printf, 2, 3))) static void InternalError(SemanticState *s
 {
 	va_list args;
 
-	ErrorMessageCommon(state, "Internal error!");
+	fputs("Internal error: ", stderr);
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
 	va_end(args);
 
-	fputs("\n\n", stderr);
+	ErrorMessageCommon(state);
 
 	state->success = cc_false;
 }
 
 static void OutOfMemoryError(SemanticState *state)
 {
-	ErrorMessageCommon(state, "Out-of-memory error!");
+	fputs("Out-of-memory error.", stderr);
 
-	fputs("\n\n", stderr);
+	ErrorMessageCommon(state);
 
 	state->success = cc_false;
 }
@@ -185,9 +182,9 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message)
 
 	(void)statement;
 
-	ErrorMessageCommon(state, "Warning!");
+	fprintf(stderr, "Warning: %s", message);
 
-	fprintf(stderr, "%s\n\n", message);
+	ErrorMessageCommon(state);
 }
 
 void m68kasm_error(void *scanner, Statement *statement, const char *message)
@@ -196,9 +193,9 @@ void m68kasm_error(void *scanner, Statement *statement, const char *message)
 
 	(void)statement;
 
-	ErrorMessageCommon(state, "Error!");
+	fprintf(stderr, "Error: %s", message);
 
-	fprintf(stderr, "%s\n\n", message);
+	ErrorMessageCommon(state);
 }
 
 static void* MallocAndHandleError(SemanticState *state, size_t size)
