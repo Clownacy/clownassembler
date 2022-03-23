@@ -66,9 +66,6 @@ int main(int argc, char **argv)
 				case 'd':
 					debug = cc_true;
 					continue;
-
-				case '-':
-					continue;
 			}
 		}
 
