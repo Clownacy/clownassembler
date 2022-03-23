@@ -1,6 +1,7 @@
 #include "semantic.h"
 
 #include <assert.h>
+#include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,6 +13,8 @@
 #include "syntactic.h"
 #define YY_NO_UNISTD_H
 #include "lexical.h"
+
+#define COMPARE_KEYWORD(keyword, comparand) StringsMatchCaseInsensitive(keyword, comparand, strlen(comparand))
 
 typedef enum SymbolType
 {
@@ -205,6 +208,24 @@ static void* MallocAndHandleError(SemanticState *state, size_t size)
 		OutOfMemoryError(state);
 
 	return memory;
+}
+
+static cc_bool StringsMatchCaseInsensitive(const char *string1, const char *string2, size_t size)
+{
+	size_t i;
+
+	for (i = 0; i < size; ++i)
+	{
+		const char string1_character = tolower(*string1++);
+		const char string2_character = tolower(*string2++);
+
+		if (string1_character != string2_character)
+			return cc_false;
+		else if (string1_character == '\0' /*&& string2_character == '\0'*/)
+			return cc_true;
+	}
+
+	return cc_true;
 }
 
 static char* DuplicateString(const char *string)
@@ -3921,7 +3942,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 		{
 			if (state->false_if_level != 0)
 			{
-				if (strcmp(keyword, "if") == 0) /* TODO - Case-insensitivity. */
+				if (COMPARE_KEYWORD(keyword, "if"))
 				{
 					/* Create a false if statement. */
 					statement.type = STATEMENT_TYPE_IF;
@@ -3929,13 +3950,13 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					statement.shared.value.shared.integer = 0;
 					ProcessStatement(state, &statement, label);
 				}
-				else if (strcmp(keyword, "else") == 0) /* TODO - Case-insensitivity. */
+				else if (COMPARE_KEYWORD(keyword, "else"))
 				{
 					/* TODO - Detect code after the keyword and error if any is found. */
 					statement.type = STATEMENT_TYPE_ELSE;
 					ProcessStatement(state, &statement, label);
 				}
-				else if (strcmp(keyword, "endc") == 0 || strcmp(keyword, "endif") == 0) /* TODO - Case-insensitivity. */
+				else if (COMPARE_KEYWORD(keyword, "endc") || COMPARE_KEYWORD(keyword, "endif"))
 				{
 					/* TODO - Detect code after the keyword and error if any is found. */
 					statement.type = STATEMENT_TYPE_ENDC;
@@ -4291,7 +4312,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 		}
 
 		case MODE_REPT:
-			if (strcmp(keyword, "endr") == 0) /* TODO - Case-insensitivity. */
+			if (COMPARE_KEYWORD(keyword, "endr"))
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
 				statement.type = STATEMENT_TYPE_ENDR;
@@ -4305,7 +4326,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			break;
 
 		case MODE_MACRO:
-			if (strcmp(keyword, "endm") == 0) /* TODO - Case-insensitivity. */
+			if (COMPARE_KEYWORD(keyword, "endm"))
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
 				statement.type = STATEMENT_TYPE_ENDM;

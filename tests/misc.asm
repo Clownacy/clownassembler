@@ -352,9 +352,9 @@ TheGreatestMacro macro named_parameter_1, named_parameter_2
 	TheGreatestMacro.b (a0,d0.w),(a1,d1.l)
 	TheGreatestMacro.w #1000,(0).l,#$DEAD
 
-TheGreatestMacro2 macro opcode
+TheGreatestMacro2 MACRO opcode
 	opcode
-	endm
+	ENDM
 
 	TheGreatestMacro2 illegal
 
@@ -383,16 +383,20 @@ TimesToNotRept = 1
 	dc.l	'TWO2'
 	endr
 
-	; Testing IF/ELSE/ENDC
+	; Testing IF/ELSE/ENDC/ENDIF
 	if TimesToRept=1
 		if TimesToNotRept=2
 			dc.l	'NOPE'
-		endc
+		endif
 
 		dc.l	'TRUE'
 	else
 		dc.l	'FLSE'
 	endc
+
+	IF 0
+	ELSE
+	ENDIF
 
   ; More blank lines to test support for trailing blank statements
 
