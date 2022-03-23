@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "clowncommon.h"
 
@@ -12,41 +13,111 @@ int main(int argc, char **argv)
 {
 	int exit_code = EXIT_SUCCESS;
 
-	if (argc < 4)
+	const char *input_file_path;
+	const char *output_file_path;
+	const char *listing_file_path;
+	cc_bool debug;
+	int i;
+
+	input_file_path = NULL;
+	output_file_path = NULL;
+	listing_file_path = NULL;
+	debug = cc_false;
+
+	for (i = 1; i < argc; ++i)
 	{
-		ERROR("Input, output, and listing file paths must be passed as parameters");
+		if (argv[i][0] == '-')
+		{
+			switch (argv[i][1])
+			{
+				case 'i':
+					if (i < argc && argv[i + 1][0] != '-')
+					{
+						++i;
+						input_file_path = argv[i];
+					}
+
+					continue;
+
+				case 'o':
+					if (i < argc && argv[i + 1][0] != '-')
+					{
+						++i;
+						output_file_path = argv[i];
+					}
+
+					continue;
+
+				case 'l':
+					if (i < argc && argv[i + 1][0] != '-')
+					{
+						++i;
+						listing_file_path = argv[i];
+					}
+
+					continue;
+
+				case 'd':
+					debug = cc_true;
+					continue;
+
+				case '-':
+					continue;
+			}
+		}
+
+		fprintf(stderr, "Error: Unrecognised option '%s'.\n", argv[i]);
+		exit_code = EXIT_FAILURE;
+	}
+
+	if (output_file_path == NULL)
+	{
+		ERROR("Output file path must be specified with '-o'.");
 	}
 	else
 	{
-		FILE *input_file = fopen(argv[1], "r");
+		FILE *input_file;
+
+		if (input_file_path == NULL)
+			input_file = stdin;
+		else
+			input_file = fopen(input_file_path, "r");
 
 		if (input_file == NULL)
 		{
-			ERROR("Could not open input file");
+			ERROR("Could not open input file.");
 		}
 		else
 		{
-			FILE *output_file = fopen(argv[2], "wb");
+			FILE *output_file;
+
+			output_file = fopen(output_file_path, "wb");
 
 			if (output_file == NULL)
 			{
-				ERROR("Could not open output file");
+				ERROR("Could not open output file.");
 			}
 			else
 			{
-				FILE *listing_file = fopen(argv[3], "w");
+				FILE *listing_file;
 
-				if (listing_file == NULL)
+				if (listing_file_path == NULL)
 				{
-					ERROR("Could not open listing file");
+					listing_file = NULL;
 				}
 				else
 				{
-					if (!ClownAssembler_Assemble(input_file, output_file, listing_file, argv[1], argc > 4))
-						ERROR("Could not assemble");
+					listing_file = fopen(listing_file_path, "w");
 
-					fclose(listing_file);
+					if (listing_file == NULL)
+						ERROR("Could not open listing file.");
 				}
+
+				if (!ClownAssembler_Assemble(input_file, output_file, listing_file, input_file_path != NULL ? input_file_path : "STDIN", debug))
+					ERROR("Could not assemble.");
+
+				if (listing_file != NULL)
+					fclose(listing_file);
 
 				fclose(output_file);
 			}

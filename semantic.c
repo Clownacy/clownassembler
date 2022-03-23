@@ -3866,7 +3866,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	char *keyword;
 	Statement statement;
 
-	fprintf(state->listing_file, "%08lX : %s\n", state->program_counter, source_line);
+	if (state->listing_file != NULL)
+		fprintf(state->listing_file, "%08lX : %s\n", state->program_counter, source_line);
 
 	++state->location.line_number;
 
