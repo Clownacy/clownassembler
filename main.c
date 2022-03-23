@@ -13,6 +13,7 @@ int main(int argc, char **argv)
 {
 	int exit_code = EXIT_SUCCESS;
 
+	cc_bool print_usage;
 	const char *input_file_path;
 	const char *output_file_path;
 	const char *listing_file_path;
@@ -20,6 +21,7 @@ int main(int argc, char **argv)
 	cc_bool debug;
 	int i;
 
+	print_usage = cc_false;
 	input_file_path = NULL;
 	output_file_path = NULL;
 	listing_file_path = NULL;
@@ -32,6 +34,10 @@ int main(int argc, char **argv)
 		{
 			switch (argv[i][1])
 			{
+				case 'h':
+					print_usage = cc_true;
+					continue;
+
 				case 'i':
 					if (i < argc && argv[i + 1][0] != '-')
 					{
@@ -73,59 +79,75 @@ int main(int argc, char **argv)
 		exit_code = EXIT_FAILURE;
 	}
 
-	if (output_file_path == NULL)
+	if (argc < 2 || print_usage)
 	{
-		ERROR("Output file path must be specified with '-o'.");
+		fputs(
+			"clownassembler: an assembler for the Motorola 68000.\n"
+			"\n"
+			"Options:\n"
+			" -i [path] - Input file. If not specified, STDIN is used instead.\n"
+			" -o [path] - Output file.\n"
+			" -l [path] - Listing file. If not specified, no listing file is produced.\n"
+			" -c        - Enable case-insensitive mode.\n"
+			" -d        - Enable Bison's debug output.\n"
+			, stdout);
 	}
 	else
 	{
-		FILE *input_file;
-
-		if (input_file_path == NULL)
-			input_file = stdin;
-		else
-			input_file = fopen(input_file_path, "r");
-
-		if (input_file == NULL)
+		if (output_file_path == NULL)
 		{
-			ERROR("Could not open input file.");
+			ERROR("Output file path must be specified with '-o'.");
 		}
 		else
 		{
-			FILE *output_file;
+			FILE *input_file;
 
-			output_file = fopen(output_file_path, "wb");
+			if (input_file_path == NULL)
+				input_file = stdin;
+			else
+				input_file = fopen(input_file_path, "r");
 
-			if (output_file == NULL)
+			if (input_file == NULL)
 			{
-				ERROR("Could not open output file.");
+				ERROR("Could not open input file.");
 			}
 			else
 			{
-				FILE *listing_file;
+				FILE *output_file;
 
-				if (listing_file_path == NULL)
+				output_file = fopen(output_file_path, "wb");
+
+				if (output_file == NULL)
 				{
-					listing_file = NULL;
+					ERROR("Could not open output file.");
 				}
 				else
 				{
-					listing_file = fopen(listing_file_path, "w");
+					FILE *listing_file;
 
-					if (listing_file == NULL)
-						ERROR("Could not open listing file.");
+					if (listing_file_path == NULL)
+					{
+						listing_file = NULL;
+					}
+					else
+					{
+						listing_file = fopen(listing_file_path, "w");
+
+						if (listing_file == NULL)
+							ERROR("Could not open listing file.");
+					}
+
+					if (!ClownAssembler_Assemble(input_file, output_file, listing_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive))
+						ERROR("Could not assemble.");
+
+					if (listing_file != NULL)
+						fclose(listing_file);
+
+					fclose(output_file);
 				}
 
-				if (!ClownAssembler_Assemble(input_file, output_file, listing_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive))
-					ERROR("Could not assemble.");
-
-				if (listing_file != NULL)
-					fclose(listing_file);
-
-				fclose(output_file);
+				fclose(input_file);
 			}
-
-			fclose(input_file);
 		}
 	}
 
