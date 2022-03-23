@@ -4015,7 +4015,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 						do
 						{
-							const char* const parameter_start = source_line_pointer += strspn(source_line_pointer, " \t;");
+							const char* const parameter_start = source_line_pointer += strspn(source_line_pointer, " \t");
 
 							do
 							{
