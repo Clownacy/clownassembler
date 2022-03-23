@@ -28,9 +28,10 @@ typedef struct Dictionary_BucketNode
 typedef struct Dictionary_State
 {
 	Dictionary_BucketNode *buckets[0x100];
+	int (*compare_identifiers)(const void *lhs, const void *rhs, size_t count);
 } Dictionary_State;
 
-void Dictionary_Init(Dictionary_State *state);
+void Dictionary_Init(Dictionary_State *state, cc_bool case_insensitive);
 void Dictionary_Deinit(Dictionary_State *state);
 
 cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const char *identifier, size_t identifier_length, Dictionary_Entry **entry);

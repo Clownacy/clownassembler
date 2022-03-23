@@ -4397,7 +4397,7 @@ static cc_bool DictionaryFilterDeleteVariables(Dictionary_Entry *entry, const ch
 	return (entry->type != SYMBOL_VARIABLE || (identifier_length == sizeof(PROGRAM_COUNTER) - 1 && memcmp(identifier, PROGRAM_COUNTER, identifier_length) == 0));
 }
 
-cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listing_file, const char *input_file_path, cc_bool debug)
+cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listing_file, const char *input_file_path, cc_bool debug, cc_bool case_insensitive)
 {
 	SemanticState state;
 	Dictionary_Entry *symbol;
@@ -4420,7 +4420,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 	state.mode = MODE_NORMAL;
 	state.end = cc_false;
 
-	Dictionary_Init(&state.dictionary);
+	Dictionary_Init(&state.dictionary, case_insensitive);
 
 	symbol = CreateSymbol(&state, PROGRAM_COUNTER);
 

@@ -16,12 +16,14 @@ int main(int argc, char **argv)
 	const char *input_file_path;
 	const char *output_file_path;
 	const char *listing_file_path;
+	cc_bool case_insensitive;
 	cc_bool debug;
 	int i;
 
 	input_file_path = NULL;
 	output_file_path = NULL;
 	listing_file_path = NULL;
+	case_insensitive = cc_false;
 	debug = cc_false;
 
 	for (i = 1; i < argc; ++i)
@@ -55,6 +57,10 @@ int main(int argc, char **argv)
 						listing_file_path = argv[i];
 					}
 
+					continue;
+
+				case 'c':
+					case_insensitive = cc_true;
 					continue;
 
 				case 'd':
@@ -113,7 +119,7 @@ int main(int argc, char **argv)
 						ERROR("Could not open listing file.");
 				}
 
-				if (!ClownAssembler_Assemble(input_file, output_file, listing_file, input_file_path != NULL ? input_file_path : "STDIN", debug))
+				if (!ClownAssembler_Assemble(input_file, output_file, listing_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive))
 					ERROR("Could not assemble.");
 
 				if (listing_file != NULL)

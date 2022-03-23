@@ -1,5 +1,6 @@
 #include "dictionary.h"
 
+#include <ctype.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,6 +8,32 @@
 #include "clowncommon.h"
 
 /* TODO - Destructors */
+
+/* Like strcasecmp, but doesn't check for null characters. */
+static int memcasecmp(const void *lhs, const void *rhs, size_t count)
+{
+	const unsigned char *lhs_uc;
+	const unsigned char *rhs_uc;
+	int delta;
+	size_t i;
+
+	lhs_uc = lhs;
+	rhs_uc = rhs;
+	delta = 0;
+
+	for (i = 0; i < count; ++i)
+	{
+		const int lhs_character = tolower(*lhs_uc++);
+		const int rhs_character = tolower(*rhs_uc++);
+
+		delta = lhs_character - rhs_character;
+
+		if (delta != 0)
+			break;
+	}
+
+	return delta;
+}
 
 static Dictionary_BucketNode** GetBucket(Dictionary_State *state, const char *identifier, size_t identifier_length)
 {
@@ -18,7 +45,7 @@ static Dictionary_BucketNode** GetBucket(Dictionary_State *state, const char *id
 	hash = 5381;
 
 	for (i = 0; i < identifier_length; ++i)
-		hash = hash * 33 + (unsigned int)*identifier++;
+		hash = hash * 33 + tolower(*identifier++); /* Hash the identifier in lower-case form, so that case-insensitive mode works. */
 
 	return &state->buckets[hash % CC_COUNT_OF(state->buckets)];
 }
@@ -28,18 +55,20 @@ static Dictionary_BucketNode** FindEntry(Dictionary_State *state, const char *id
 	Dictionary_BucketNode **node;
 
 	for (node = GetBucket(state, identifier, identifier_length); *node != NULL; node = &(*node)->next)
-		if ((*node)->identifier_length == identifier_length && memcmp((*node)->identifier, identifier, identifier_length) == 0)
+		if ((*node)->identifier_length == identifier_length && state->compare_identifiers((*node)->identifier, identifier, identifier_length) == 0)
 			break;
 
 	return node;
 }
 
-void Dictionary_Init(Dictionary_State *state)
+void Dictionary_Init(Dictionary_State *state, cc_bool case_insensitive)
 {
 	size_t i;
 
 	for (i = 0; i < CC_COUNT_OF(state->buckets); ++i)
 		state->buckets[i] = NULL;
+
+	state->compare_identifiers = case_insensitive ? memcasecmp : memcmp;
 }
 
 void Dictionary_Deinit(Dictionary_State *state)
