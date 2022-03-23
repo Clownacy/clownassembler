@@ -4146,13 +4146,31 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 									/* Now find the identifier-based macro parameter placeholders. */
 									for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
 									{
-										const char *other_parameter_position = strstr(remaining_line, parameter_name->identifier);
+										const char* const other_parameter_position = strstr(remaining_line, parameter_name->identifier);
+										const char* const other_parameter_end = other_parameter_position + strlen(parameter_name->identifier);
 
-										if (parameter_position == NULL || (other_parameter_position != NULL && other_parameter_position < parameter_position))
+										/* Obviously bail if the identifier wasn't found. */
+										if (other_parameter_position != NULL)
 										{
-											parameter_index = i;
-											parameter_position = other_parameter_position;
-											line_after_parameter = parameter_position + strlen(parameter_name->identifier);
+											/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
+											/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
+											if (other_parameter_position == source_line_list_node->source_line
+											|| ((other_parameter_position[-1] < 'a' || other_parameter_position[-1] > 'z')
+											 && (other_parameter_position[-1] < 'A' || other_parameter_position[-1] > 'Z')
+											 && (other_parameter_position[-1] < '0' || other_parameter_position[-1] > '9')))
+											{
+												if ((other_parameter_end[0] < 'a' || other_parameter_end[0] > 'z')
+												 && (other_parameter_end[0] < 'A' || other_parameter_end[0] > 'Z')
+												 && (other_parameter_end[0] < '0' || other_parameter_end[0] > '9'))
+												{
+													if (parameter_position == NULL || other_parameter_position < parameter_position)
+													{
+														parameter_index = i;
+														parameter_position = other_parameter_position;
+														line_after_parameter = other_parameter_end;
+													}
+												}
+											}
 										}
 									}
 
