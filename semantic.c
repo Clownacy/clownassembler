@@ -4272,14 +4272,15 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 							ProcessStatement(state, &statement, label);
 
-							/* If the statement cannot currently be processed because of undefined symbols,
-							   add it to the fix-up list so we can try again later. */
 							if (!state->fix_up_needed)
 							{
+								/* We're done with this statement: delete it. */
 								DestroyStatement(&statement);
 							}
 							else
 							{
+								/* If the statement cannot currently be processed because of undefined symbols,
+								   add it to the fix-up list so we can try again later. */
 								FixUp *fix_up = MallocAndHandleError(state, sizeof(FixUp));
 
 								if (fix_up != NULL)
@@ -4472,6 +4473,8 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 		#if M68KASM_DEBUG
 			if (debug)
 				m68kasm_debug = 1;
+		#else
+			(void)debug;
 		#endif
 
 			/* Perform first pass, and create a list of fix-ups if needed. */
@@ -4521,6 +4524,8 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 
 						*fix_up_pointer = fix_up->next;
 
+						/* We're done with this statement: delete it. */
+						DestroyStatement(&fix_up->statement);
 						free(fix_up->last_global_label);
 						free(fix_up->source_line);
 						free(fix_up->label);
