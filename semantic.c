@@ -369,7 +369,7 @@ static char* ExpandLocalIdentifier(SemanticState *state, const char *identifier)
 	return expanded_identifier;
 }
 
-static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned long *value_integer)
+static cc_bool ResolveValue(SemanticState *state, Value *value, unsigned long *value_integer)
 {
 	cc_bool success = cc_true;
 
@@ -403,6 +403,9 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 			}
 			else
 			{
+				/* We're done with these; delete them. */
+				free(value->shared.values);
+
 				switch (value->type)
 				{
 					case VALUE_NUMBER:
@@ -503,6 +506,9 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 			}
 			else
 			{
+				/* We're done with this; delete it. */
+				free(value->shared.values);
+
 				switch (value->type)
 				{
 					case VALUE_NUMBER:
@@ -584,6 +590,9 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 			}
 			else
 			{
+				/* We're done with the identifier: delete it. */
+				free(value->shared.identifier);
+
 				*value_integer = dictionary_entry->shared.unsigned_integer;
 			}
 
@@ -595,6 +604,14 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 		case VALUE_PROGRAM_COUNTER:
 			*value_integer = Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER, sizeof(PROGRAM_COUNTER) - 1)->shared.unsigned_integer;
 			break;
+	}
+
+	/* Now that we have resolved the value, let's hardcode it here so that we don't ever have to calculate it again. */
+	/* This is especially useful for fix-ups, which may otherwise depend on identifiers that no longer exist at the time is value is resolved again. */
+	if (success)
+	{
+		value->type = VALUE_NUMBER;
+		value->shared.integer = *value_integer;
 	}
 
 	return success;
@@ -1874,18 +1891,26 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 };
 
-static void ProcessInstruction(SemanticState *state, const StatementInstruction *original_instruction)
+static void ProcessInstruction(SemanticState *state, StatementInstruction *instruction)
 {
-	/* Default to NOP in case errors occur later on and we can't get the correct machine code. */
-	unsigned int machine_code = 0x4E71;
-	unsigned int i;
+	unsigned int machine_code;
+	Size literal_operand_size;
+	Operand *operands_to_output[2];
+	Operand custom_operands[2];
 	const InstructionMetadata *instruction_metadata;
-	StatementInstruction instruction = *original_instruction;
+	unsigned int i;
+
+	/* Default to NOP in case errors occur later on and we can't get the correct machine code. */
+	machine_code = 0x4E71;
+
+	literal_operand_size = instruction->opcode.size;
+	operands_to_output[0] = &instruction->operands[0];
+	operands_to_output[1] = &instruction->operands[1];
 
 	state->program_counter += 2;
 
 	/* Some instructions are ambiguous, so figure them out fully here. */
-	switch (instruction.opcode.type)
+	switch (instruction->opcode.type)
 	{
 		case OPCODE_ORI:
 		case OPCODE_ANDI:
@@ -1905,132 +1930,132 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 		case OPCODE_AND_TO_REG:
 		case OPCODE_ADD_TO_REG:
 		case OPCODE_ADDX_DATA_REGS:
-			switch (instruction.opcode.type)
+			switch (instruction->opcode.type)
 			{
 				case OPCODE_ORI:
-					if (instruction.operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
-						instruction.opcode.type = OPCODE_ORI_TO_CCR;
-					else if (instruction.operands[1].type == OPERAND_STATUS_REGISTER)
-						instruction.opcode.type = OPCODE_ORI_TO_SR;
+					if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
+						instruction->opcode.type = OPCODE_ORI_TO_CCR;
+					else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
+						instruction->opcode.type = OPCODE_ORI_TO_SR;
 
 					break;
 
 				case OPCODE_ANDI:
-					if (instruction.operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
-						instruction.opcode.type = OPCODE_ANDI_TO_CCR;
-					else if (instruction.operands[1].type == OPERAND_STATUS_REGISTER)
-						instruction.opcode.type = OPCODE_ANDI_TO_SR;
+					if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
+						instruction->opcode.type = OPCODE_ANDI_TO_CCR;
+					else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
+						instruction->opcode.type = OPCODE_ANDI_TO_SR;
 
 					break;
 
 				case OPCODE_EORI:
-					if (instruction.operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
-						instruction.opcode.type = OPCODE_EORI_TO_CCR;
-					else if (instruction.operands[1].type == OPERAND_STATUS_REGISTER)
-						instruction.opcode.type = OPCODE_EORI_TO_SR;
+					if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
+						instruction->opcode.type = OPCODE_EORI_TO_CCR;
+					else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
+						instruction->opcode.type = OPCODE_EORI_TO_SR;
 
 					break;
 
 				case OPCODE_BTST_STATIC:
-					if (instruction.operands[0].type == OPERAND_DATA_REGISTER)
-						instruction.opcode.type = OPCODE_BTST_DYNAMIC;
+					if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+						instruction->opcode.type = OPCODE_BTST_DYNAMIC;
 
 					break;
 
 				case OPCODE_BCHG_STATIC:
-					if (instruction.operands[0].type == OPERAND_DATA_REGISTER)
-						instruction.opcode.type = OPCODE_BCHG_DYNAMIC;
+					if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+						instruction->opcode.type = OPCODE_BCHG_DYNAMIC;
 
 					break;
 
 				case OPCODE_BCLR_STATIC:
-					if (instruction.operands[0].type == OPERAND_DATA_REGISTER)
-						instruction.opcode.type = OPCODE_BCLR_DYNAMIC;
+					if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+						instruction->opcode.type = OPCODE_BCLR_DYNAMIC;
 
 					break;
 
 				case OPCODE_BSET_STATIC:
-					if (instruction.operands[0].type == OPERAND_DATA_REGISTER)
-						instruction.opcode.type = OPCODE_BSET_DYNAMIC;
+					if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+						instruction->opcode.type = OPCODE_BSET_DYNAMIC;
 
 					break;
 
 				case OPCODE_MOVEP_TO_REG:
-					if (instruction.operands[0].type == OPERAND_DATA_REGISTER)
-						instruction.opcode.type = OPCODE_MOVEP_FROM_REG;
+					if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+						instruction->opcode.type = OPCODE_MOVEP_FROM_REG;
 
 					break;
 
 				case OPCODE_MOVE:
-					if (instruction.operands[0].type == OPERAND_STATUS_REGISTER)
-						instruction.opcode.type = OPCODE_MOVE_FROM_SR;
-					else if (instruction.operands[1].type == OPERAND_STATUS_REGISTER)
-						instruction.opcode.type = OPCODE_MOVE_TO_SR;
-					else if (instruction.operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
-						instruction.opcode.type = OPCODE_MOVE_TO_CCR;
-					else if (instruction.operands[0].type == OPERAND_USER_STACK_POINTER_REGISTER)
-						instruction.opcode.type = OPCODE_MOVE_FROM_USP;
-					else if (instruction.operands[1].type == OPERAND_USER_STACK_POINTER_REGISTER)
-						instruction.opcode.type = OPCODE_MOVE_TO_USP;
-					else if (instruction.operands[1].type == OPERAND_ADDRESS_REGISTER)
+					if (instruction->operands[0].type == OPERAND_STATUS_REGISTER)
+						instruction->opcode.type = OPCODE_MOVE_FROM_SR;
+					else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
+						instruction->opcode.type = OPCODE_MOVE_TO_SR;
+					else if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
+						instruction->opcode.type = OPCODE_MOVE_TO_CCR;
+					else if (instruction->operands[0].type == OPERAND_USER_STACK_POINTER_REGISTER)
+						instruction->opcode.type = OPCODE_MOVE_FROM_USP;
+					else if (instruction->operands[1].type == OPERAND_USER_STACK_POINTER_REGISTER)
+						instruction->opcode.type = OPCODE_MOVE_TO_USP;
+					else if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
 					{
-						instruction.opcode.type = OPCODE_MOVEA; /* MOVEA mistyped as MOVE */
+						instruction->opcode.type = OPCODE_MOVEA; /* MOVEA mistyped as MOVE */
 						SemanticWarning(state, "MOVE should be MOVEA.");
 					}
 
 					break;
 
 				case OPCODE_MOVEM_TO_REGS:
-					if (instruction.operands[0].type == OPERAND_REGISTER_LIST)
-						instruction.opcode.type = OPCODE_MOVEM_FROM_REGS;
+					if (instruction->operands[0].type == OPERAND_REGISTER_LIST)
+						instruction->opcode.type = OPCODE_MOVEM_FROM_REGS;
 
 					break;
 
 				case OPCODE_SBCD_DATA_REGS:
-					if (instruction.operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-						instruction.opcode.type = OPCODE_SBCD_ADDRESS_REGS;
+					if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+						instruction->opcode.type = OPCODE_SBCD_ADDRESS_REGS;
 
 					break;
 
 				case OPCODE_OR_TO_REG:
-					if (instruction.operands[1].type != OPERAND_DATA_REGISTER)
-						instruction.opcode.type = OPCODE_OR_FROM_REG;
+					if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
+						instruction->opcode.type = OPCODE_OR_FROM_REG;
 
 					break;
 
 				case OPCODE_SUB_TO_REG:
-					if (instruction.operands[1].type != OPERAND_DATA_REGISTER)
-						instruction.opcode.type = OPCODE_SUB_FROM_REG;
+					if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
+						instruction->opcode.type = OPCODE_SUB_FROM_REG;
 
 					break;
 
 				case OPCODE_SUBX_DATA_REGS:
-					if (instruction.operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-						instruction.opcode.type = OPCODE_SUBX_ADDRESS_REGS;
+					if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+						instruction->opcode.type = OPCODE_SUBX_ADDRESS_REGS;
 
 					break;
 
 				case OPCODE_ABCD_DATA_REGS:
-					if (instruction.operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-						instruction.opcode.type = OPCODE_ABCD_ADDRESS_REGS;
+					if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+						instruction->opcode.type = OPCODE_ABCD_ADDRESS_REGS;
 
 					break;
 
 				case OPCODE_AND_TO_REG:
-					if (instruction.operands[1].type != OPERAND_DATA_REGISTER)
-						instruction.opcode.type = OPCODE_AND_FROM_REG;
+					if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
+						instruction->opcode.type = OPCODE_AND_FROM_REG;
 
 					break;
 
 				case OPCODE_ADD_TO_REG:
-					if (instruction.operands[1].type != OPERAND_DATA_REGISTER)
-						instruction.opcode.type = OPCODE_ADD_FROM_REG;
+					if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
+						instruction->opcode.type = OPCODE_ADD_FROM_REG;
 
 					break;
 
 				case OPCODE_ADDX_DATA_REGS:
-					if (instruction.operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-						instruction.opcode.type = OPCODE_ADDX_ADDRESS_REGS;
+					if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+						instruction->opcode.type = OPCODE_ADDX_ADDRESS_REGS;
 
 					break;
 
@@ -2048,42 +2073,42 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 		case OPCODE_ROXR_STATIC:
 		case OPCODE_ROL_STATIC:
 		case OPCODE_ROR_STATIC:
-			if (instruction.operands[1].type != 0)
+			if (instruction->operands[1].type != 0)
 			{
-				if (instruction.operands[0].type == OPERAND_DATA_REGISTER)
+				if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
 				{
-					switch (instruction.opcode.type)
+					switch (instruction->opcode.type)
 					{
 						case OPCODE_ASL_STATIC:
-							instruction.opcode.type = OPCODE_ASL_DYNAMIC;
+							instruction->opcode.type = OPCODE_ASL_DYNAMIC;
 							break;
 
 						case OPCODE_ASR_STATIC:
-							instruction.opcode.type = OPCODE_ASR_DYNAMIC;
+							instruction->opcode.type = OPCODE_ASR_DYNAMIC;
 							break;
 
 						case OPCODE_LSL_STATIC:
-							instruction.opcode.type = OPCODE_LSL_DYNAMIC;
+							instruction->opcode.type = OPCODE_LSL_DYNAMIC;
 							break;
 
 						case OPCODE_LSR_STATIC:
-							instruction.opcode.type = OPCODE_LSR_DYNAMIC;
+							instruction->opcode.type = OPCODE_LSR_DYNAMIC;
 							break;
 
 						case OPCODE_ROXL_STATIC:
-							instruction.opcode.type = OPCODE_ROXL_DYNAMIC;
+							instruction->opcode.type = OPCODE_ROXL_DYNAMIC;
 							break;
 
 						case OPCODE_ROXR_STATIC:
-							instruction.opcode.type = OPCODE_ROXR_DYNAMIC;
+							instruction->opcode.type = OPCODE_ROXR_DYNAMIC;
 							break;
 
 						case OPCODE_ROL_STATIC:
-							instruction.opcode.type = OPCODE_ROL_DYNAMIC;
+							instruction->opcode.type = OPCODE_ROL_DYNAMIC;
 							break;
 
 						case OPCODE_ROR_STATIC:
-							instruction.opcode.type = OPCODE_ROR_DYNAMIC;
+							instruction->opcode.type = OPCODE_ROR_DYNAMIC;
 							break;
 
 						default:
@@ -2093,38 +2118,38 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 			}
 			else
 			{
-				switch (instruction.opcode.type)
+				switch (instruction->opcode.type)
 				{
 					case OPCODE_ASL_STATIC:
-						instruction.opcode.type = OPCODE_ASL_SINGLE;
+						instruction->opcode.type = OPCODE_ASL_SINGLE;
 						break;
 
 					case OPCODE_ASR_STATIC:
-						instruction.opcode.type = OPCODE_ASR_SINGLE;
+						instruction->opcode.type = OPCODE_ASR_SINGLE;
 						break;
 
 					case OPCODE_LSL_STATIC:
-						instruction.opcode.type = OPCODE_LSL_SINGLE;
+						instruction->opcode.type = OPCODE_LSL_SINGLE;
 						break;
 
 					case OPCODE_LSR_STATIC:
-						instruction.opcode.type = OPCODE_LSR_SINGLE;
+						instruction->opcode.type = OPCODE_LSR_SINGLE;
 						break;
 
 					case OPCODE_ROXL_STATIC:
-						instruction.opcode.type = OPCODE_ROXL_SINGLE;
+						instruction->opcode.type = OPCODE_ROXL_SINGLE;
 						break;
 
 					case OPCODE_ROXR_STATIC:
-						instruction.opcode.type = OPCODE_ROXR_SINGLE;
+						instruction->opcode.type = OPCODE_ROXR_SINGLE;
 						break;
 
 					case OPCODE_ROL_STATIC:
-						instruction.opcode.type = OPCODE_ROL_SINGLE;
+						instruction->opcode.type = OPCODE_ROL_SINGLE;
 						break;
 
 					case OPCODE_ROR_STATIC:
-						instruction.opcode.type = OPCODE_ROR_SINGLE;
+						instruction->opcode.type = OPCODE_ROR_SINGLE;
 						break;
 
 					default:
@@ -2138,10 +2163,10 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 			break;
 	}
 
-	instruction_metadata = &instruction_metadata_all[instruction.opcode.type];
+	instruction_metadata = &instruction_metadata_all[instruction->opcode.type];
 
 	/* Check if the instruction is a valid size. */
-	if ((instruction.opcode.size & ~instruction_metadata->allowed_sizes) != 0)
+	if ((instruction->opcode.size & ~instruction_metadata->allowed_sizes) != 0)
 	{
 		const char *newline_byte, *newline_short, *newline_word, *newline_longword, *newline_undefined;
 		const char *opcode_byte, *opcode_short, *opcode_word, *opcode_longword, *opcode_undefined;
@@ -2194,7 +2219,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 		unsigned int total_operands_have;
 
 		/* If the size is undefined, and the instruction has only one valid size, then set the size to that. */
-		if (instruction.opcode.size == SIZE_UNDEFINED)
+		if (instruction->opcode.size == SIZE_UNDEFINED)
 		{
 			switch (instruction_metadata->allowed_sizes & ~SIZE_UNDEFINED)
 			{
@@ -2202,7 +2227,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 				case SIZE_SHORT:
 				case SIZE_WORD:
 				case SIZE_LONGWORD:
-					instruction.opcode.size = instruction_metadata->allowed_sizes & ~SIZE_UNDEFINED;
+					instruction->opcode.size = instruction_metadata->allowed_sizes & ~SIZE_UNDEFINED;
 					break;
 			}
 		}
@@ -2216,7 +2241,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 		/* Count operands that we have. */
 		total_operands_have = 0;
 
-		while (instruction.operands[total_operands_have].type != 0 && total_operands_have < CC_COUNT_OF(instruction.operands))
+		while (instruction->operands[total_operands_have].type != 0 && total_operands_have < CC_COUNT_OF(instruction->operands))
 			++total_operands_have;
 
 		if (total_operands_wanted != total_operands_have)
@@ -2229,11 +2254,11 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 			/* Check whether the operands are of the correct types. */
 			for (i = 0; i < total_operands_have && instruction_metadata->allowed_operands[i] != 0; ++i)
 			{
-				if ((instruction.operands[i].type & ~instruction_metadata->allowed_operands[i]) != 0)
+				if ((instruction->operands[i].type & ~instruction_metadata->allowed_operands[i]) != 0)
 				{
 					const char *operand_string = "[REDACTED]"; /* Dumb joke - this should never be seen. */
 
-					switch (instruction.operands[i].type)
+					switch (instruction->operands[i].type)
 					{
 						case OPERAND_DATA_REGISTER:
 							operand_string = "a data register";
@@ -2308,7 +2333,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 			if (good_operands)
 			{
 				/* Determine the machine code for the opcode and perform sanity-checking. */
-				switch (instruction.opcode.type)
+				switch (instruction->opcode.type)
 				{
 					case OPCODE_ORI_TO_CCR:
 						machine_code = 0x003C;
@@ -2320,8 +2345,8 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 
 					case OPCODE_ORI:
 						machine_code = 0x0000;
-						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
 						break;
 
 					case OPCODE_ANDI_TO_CCR:
@@ -2334,20 +2359,20 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 
 					case OPCODE_ANDI:
 						machine_code = 0x0200;
-						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
 						break;
 
 					case OPCODE_SUBI:
 						machine_code = 0x0400;
-						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
 						break;
 
 					case OPCODE_ADDI:
 						machine_code = 0x0600;
-						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
 						break;
 
 					case OPCODE_EORI_TO_CCR:
@@ -2360,14 +2385,14 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 
 					case OPCODE_EORI:
 						machine_code = 0x0A00;
-						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
 						break;
 
 					case OPCODE_CMPI:
 						machine_code = 0x0C00;
-						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
 						break;
 
 					case OPCODE_BTST_STATIC:
@@ -2378,7 +2403,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 					case OPCODE_BCHG_DYNAMIC:
 					case OPCODE_BCLR_DYNAMIC:
 					case OPCODE_BSET_DYNAMIC:
-						switch (instruction.opcode.type)
+						switch (instruction->opcode.type)
 						{
 							case OPCODE_BTST_STATIC:
 							case OPCODE_BCHG_STATIC:
@@ -2387,11 +2412,11 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 							{
 								unsigned long value;
 
-								if (!ResolveValue(state, &instruction.operands[0].literal, &value))
+								if (!ResolveValue(state, &instruction->operands[0].literal, &value))
 									value = 0;
 
 								/* Check whether the literal value will wrap or not, and warn the user if so. */
-								if (instruction.operands[1].type == OPERAND_DATA_REGISTER)
+								if (instruction->operands[1].type == OPERAND_DATA_REGISTER)
 								{
 									if (value >= 32)
 										SemanticWarning(state, "The bit index will be modulo 32.");
@@ -2411,14 +2436,14 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 							case OPCODE_BCHG_DYNAMIC:
 							case OPCODE_BCLR_DYNAMIC:
 							case OPCODE_BSET_DYNAMIC:
-								machine_code = 0x0100 | (instruction.operands[0].main_register << 9);
+								machine_code = 0x0100 | (instruction->operands[0].main_register << 9);
 								break;
 
 							default:
 								break;
 						}
 
-						switch (instruction.opcode.type)
+						switch (instruction->opcode.type)
 						{
 							case OPCODE_BTST_STATIC:
 							case OPCODE_BTST_DYNAMIC:
@@ -2445,21 +2470,21 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 						}
 
 						/* Check that the opcode size is suitable for the destination operand. */
-						if (instruction.operands[1].type == OPERAND_DATA_REGISTER)
+						if (instruction->operands[1].type == OPERAND_DATA_REGISTER)
 						{
-							if (instruction.opcode.size != SIZE_LONGWORD && instruction.opcode.size != SIZE_UNDEFINED)
+							if (instruction->opcode.size != SIZE_LONGWORD && instruction->opcode.size != SIZE_UNDEFINED)
 								SemanticError(state, "Instruction must be longword-sized when its destination operand is a data register.");
 						}
 						else
 						{
-							if (instruction.opcode.size != SIZE_BYTE && instruction.opcode.size != SIZE_SHORT && instruction.opcode.size != SIZE_UNDEFINED)
+							if (instruction->opcode.size != SIZE_BYTE && instruction->opcode.size != SIZE_SHORT && instruction->opcode.size != SIZE_UNDEFINED)
 								SemanticError(state, "Instruction must be byte-sized when its destination operand is memory.");
 						}
 
-						/* This is a bit of a hack, to prevent 'btst.l #0,d0' from outputting a longword-sized literal. */
-						instruction.opcode.size = SIZE_WORD;
+						/* Prevent 'btst.l #0,d0' from outputting a longword-sized literal. */
+						literal_operand_size = SIZE_WORD;
 
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
 
 						break;
 
@@ -2469,21 +2494,21 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 						unsigned int data_register = 0;
 						unsigned int address_register = 0;
 
-						if (instruction.operands[0].type == OPERAND_DATA_REGISTER)
+						if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
 						{
-							data_register = instruction.operands[0].main_register;
-							address_register = instruction.operands[1].main_register;
+							data_register = instruction->operands[0].main_register;
+							address_register = instruction->operands[1].main_register;
 						}
-						else if (instruction.operands[1].type == OPERAND_DATA_REGISTER)
+						else if (instruction->operands[1].type == OPERAND_DATA_REGISTER)
 						{
-							address_register = instruction.operands[0].main_register;
-							data_register = instruction.operands[1].main_register;
+							address_register = instruction->operands[0].main_register;
+							data_register = instruction->operands[1].main_register;
 						}
 
 						machine_code = 0x0108;
 						machine_code |= data_register << 9;
-						machine_code |= (instruction.operands[0].type == OPERAND_DATA_REGISTER) << 7;
-						machine_code |= (instruction.opcode.size == SIZE_LONGWORD) << 6;
+						machine_code |= (instruction->operands[0].type == OPERAND_DATA_REGISTER) << 7;
+						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
 						machine_code |= address_register;
 
 						break;
@@ -2491,10 +2516,10 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 
 					case OPCODE_MOVEA:
 					case OPCODE_MOVE:
-						if (instruction.operands[0].type == OPERAND_ADDRESS_REGISTER && instruction.opcode.size == SIZE_BYTE)
+						if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER && instruction->opcode.size == SIZE_BYTE)
 							SemanticError(state, "This instruction cannot be byte-sized when its source is an address register.");
 
-						switch (instruction.opcode.size)
+						switch (instruction->opcode.size)
 						{
 							case SIZE_BYTE:
 							case SIZE_SHORT:
@@ -2514,24 +2539,24 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 								break;
 						}
 
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
-						machine_code |= ToAlternateEffectiveAddressBits(ConstructEffectiveAddressBits(state, &instruction.operands[1]));
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
+						machine_code |= ToAlternateEffectiveAddressBits(ConstructEffectiveAddressBits(state, &instruction->operands[1]));
 
 						break;
 
 					case OPCODE_MOVE_FROM_SR:
 						machine_code = 0x40C0;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
 						break;
 
 					case OPCODE_MOVE_TO_CCR:
 						machine_code = 0x44C0;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
 						break;
 
 					case OPCODE_MOVE_TO_SR:
 						machine_code = 0x46C0;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
 						break;
 
 					case OPCODE_NEGX:
@@ -2539,7 +2564,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 					case OPCODE_NEG:
 					case OPCODE_NOT:
 					case OPCODE_TST:
-						switch (instruction.opcode.type)
+						switch (instruction->opcode.type)
 						{
 							case OPCODE_NEGX:
 								machine_code = 0x4000;
@@ -2565,30 +2590,30 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 								break;
 						}
 
-						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
 
 						break;
 
 					case OPCODE_EXT:
 						machine_code = 0x4880;
-						machine_code |= (instruction.opcode.size == SIZE_LONGWORD) << 6;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
+						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
 						break;
 
 					case OPCODE_NBCD:
 						machine_code = 0x4800;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
 						break;
 
 					case OPCODE_SWAP:
 						machine_code = 0x4840;
-						machine_code |= instruction.operands[0].main_register;
+						machine_code |= instruction->operands[0].main_register;
 						break;
 
 					case OPCODE_PEA:
 						machine_code = 0x4840;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
 						break;
 
 					case OPCODE_ILLEGAL:
@@ -2597,7 +2622,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 
 					case OPCODE_TAS:
 						machine_code = 0x4AC0;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
 						break;
 
 					case OPCODE_TRAP:
@@ -2606,7 +2631,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 
 						machine_code = 0x4E40;
 
-						if (!ResolveValue(state, &instruction.operands[0].literal, &value))
+						if (!ResolveValue(state, &instruction->operands[0].literal, &value))
 							value = 0;
 
 						if (value > 15)
@@ -2615,29 +2640,29 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 							machine_code |= value;
 
 						/* The operand is embedded directly into the machine code, so we don't need to output it separately. */
-						instruction.operands[0].type = 0;
+						operands_to_output[0] = NULL;
 
 						break;
 					}
 
 					case OPCODE_LINK:
 						machine_code = 0x4E50;
-						machine_code |= instruction.operands[0].main_register;
+						machine_code |= instruction->operands[0].main_register;
 						break;
 
 					case OPCODE_UNLK:
 						machine_code = 0x4E58;
-						machine_code |= instruction.operands[0].main_register;
+						machine_code |= instruction->operands[0].main_register;
 						break;
 
 					case OPCODE_MOVE_TO_USP:
 						machine_code = 0x4E60;
-						machine_code |= instruction.operands[0].main_register;
+						machine_code |= instruction->operands[0].main_register;
 						break;
 
 					case OPCODE_MOVE_FROM_USP:
 						machine_code = 0x4E68;
-						machine_code |= instruction.operands[1].main_register;
+						machine_code |= instruction->operands[1].main_register;
 						break;
 
 					case OPCODE_RESET:
@@ -2670,30 +2695,27 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 
 					case OPCODE_JSR:
 						machine_code = 0x4E80;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
 						break;
 
 					case OPCODE_JMP:
 						machine_code = 0x4EC0;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
 						break;
 
 					case OPCODE_MOVEM_TO_REGS:
-					{
 						/* Swap the operands, since the literal for the register list needs to come before the other operator. */
-						const Operand register_list = instruction.operands[1];
-						instruction.operands[1] = instruction.operands[0];
-						instruction.operands[0] = register_list;
-					}
+						operands_to_output[0] = &instruction->operands[1];
+						operands_to_output[1] = &instruction->operands[0];
 						/* Fallthrough */
 					case OPCODE_MOVEM_FROM_REGS:
 						machine_code = 0x4880;
-						machine_code |= (instruction.opcode.size == SIZE_LONGWORD) << 6;
+						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
 
-						if (instruction.opcode.type == OPCODE_MOVEM_TO_REGS)
+						if (instruction->opcode.type == OPCODE_MOVEM_TO_REGS)
 							machine_code |= 1 << 10;
 
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
+						machine_code |= ConstructEffectiveAddressBits(state, operands_to_output[1]);
 
 						break;
 
@@ -2703,7 +2725,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 					case OPCODE_DIVS:
 					case OPCODE_MULU:
 					case OPCODE_MULS:
-						switch (instruction.opcode.type)
+						switch (instruction->opcode.type)
 						{
 							case OPCODE_LEA:
 								machine_code = 0x41C0;
@@ -2733,8 +2755,8 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 								break;
 						}
 
-						machine_code |= instruction.operands[1].main_register << 9;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
+						machine_code |= instruction->operands[1].main_register << 9;
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
 
 						break;
 
@@ -2743,7 +2765,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 					{
 						unsigned long value;
 
-						switch (instruction.opcode.type)
+						switch (instruction->opcode.type)
 						{
 							case OPCODE_ADDQ:
 								machine_code = 0x5000;
@@ -2757,10 +2779,10 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 								break;
 						}
 
-						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
 
-						if (!ResolveValue(state, &instruction.operands[0].literal, &value))
+						if (!ResolveValue(state, &instruction->operands[0].literal, &value))
 							value = 1;
 
 						if (value < 1 || value > 8)
@@ -2769,16 +2791,15 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 							machine_code |= (value & 7) << 9;
 
 						/* Skip the immediate operand since that goes in the machine code instead. */
-						instruction.operands[0] = instruction.operands[1];
-						instruction.operands[1].type = 0;
+						operands_to_output[0] = NULL;
 
 						break;
 					}
 
 					case OPCODE_Scc:
 						machine_code = 0x50C0;
-						machine_code |= instruction.opcode.condition << 8;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
+						machine_code |= instruction->opcode.condition << 8;
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
 						break;
 
 					case OPCODE_DBcc:
@@ -2786,15 +2807,16 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 						unsigned long value;
 
 						machine_code = 0x50C8;
-						machine_code |= instruction.opcode.condition << 8;
-						machine_code |= instruction.operands[0].main_register;
+						machine_code |= instruction->opcode.condition << 8;
+						machine_code |= instruction->operands[0].main_register;
 
-						if (!ResolveValue(state, &instruction.operands[1].literal, &value))
+						if (!ResolveValue(state, &instruction->operands[1].literal, &value))
 							value = state->program_counter - 2;
 
-						instruction.operands[0].type = OPERAND_LITERAL;
-						instruction.operands[0].literal.type = VALUE_NUMBER;
-						instruction.operands[1].type = 0;
+						operands_to_output[0] = &custom_operands[0];
+						operands_to_output[1] = NULL;
+						custom_operands[0].type = OPERAND_LITERAL;
+						custom_operands[0].literal.type = VALUE_NUMBER;
 
 						if (value >= state->program_counter)
 						{
@@ -2803,7 +2825,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 							if (offset > 0x7FFF)
 								SemanticError(state, "The destination is too far away: it must be less than $8000 bytes after the start of the instruction, but instead it was $%lX bytes away.", offset);
 
-							instruction.operands[0].literal.shared.integer = offset;
+							custom_operands[0].literal.shared.integer = offset;
 						}
 						else
 						{
@@ -2812,7 +2834,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 							if (offset > 0x8000)
 								SemanticError(state, "The destination is too far away: it must be less than $8001 bytes before the start of the instruction, but instead it was $%lX bytes away.", offset);
 
-							instruction.operands[0].literal.shared.integer = 0 - offset;
+							custom_operands[0].literal.shared.integer = 0 - offset;
 						}
 
 						break;
@@ -2827,7 +2849,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 
 						machine_code = 0x6000;
 
-						switch (instruction.opcode.type)
+						switch (instruction->opcode.type)
 						{
 							case OPCODE_BRA:
 								machine_code |= 0x0000;
@@ -2838,21 +2860,21 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 								break;
 
 							case OPCODE_Bcc:
-								machine_code |= instruction.opcode.condition << 8;
+								machine_code |= instruction->opcode.condition << 8;
 								break;
 
 							default:
 								break;
 						}
 
-						if (!ResolveValue(state, &instruction.operands[0].literal, &value))
+						if (!ResolveValue(state, &instruction->operands[0].literal, &value))
 							value = state->program_counter - 2;
 
 						if (value >= state->program_counter)
 						{
 							offset = value - state->program_counter;
 
-							if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
+							if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
 							{
 								if (offset == 0)
 									SemanticError(state, "The destination cannot be 0 bytes away when using a short-sized branch.");
@@ -2869,7 +2891,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 						{
 							offset = state->program_counter - value;
 
-							if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
+							if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
 							{
 								if (offset > 0x80)
 									SemanticError(state, "The destination is too far away: it must be less than $81 bytes before the start of the instruction, but instead it was $%lX bytes away.", offset);
@@ -2883,18 +2905,19 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 							offset = 0 - offset;
 						}
 
-						if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
+						if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
 						{
 							machine_code |= offset & 0xFF;
 
 							/* The operand is embedded directly into the machine code, so we don't need to output it separately. */
-							instruction.operands[0].type = 0;
+							operands_to_output[0] = NULL;
 						}
 						else
 						{
-							instruction.operands[0].type = OPERAND_LITERAL;
-							instruction.operands[0].literal.type = VALUE_NUMBER;
-							instruction.operands[0].literal.shared.integer = offset;
+							operands_to_output[0] = &custom_operands[0];
+							custom_operands[0].type = OPERAND_LITERAL;
+							custom_operands[0].literal.type = VALUE_NUMBER;
+							custom_operands[0].literal.shared.integer = offset;
 						}
 
 						break;
@@ -2906,7 +2929,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 
 						machine_code = 0x7000;
 
-						if (!ResolveValue(state, &instruction.operands[0].literal, &value))
+						if (!ResolveValue(state, &instruction->operands[0].literal, &value))
 							value = 0;
 
 						if (value > 0x7F && value < 0xFFFFFF80)
@@ -2914,10 +2937,10 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 						else
 							machine_code |= value & 0xFF;
 
-						machine_code |= instruction.operands[1].main_register << 9;
+						machine_code |= instruction->operands[1].main_register << 9;
 
 						/* MOVEQ's operands are embedded directly into the machine code, so we don't need to output them separately. */
-						instruction.operands[0].type = 0;
+						operands_to_output[0] = NULL;
 
 						break;
 					}
@@ -2930,7 +2953,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 					case OPCODE_ABCD_ADDRESS_REGS:
 					case OPCODE_ADDX_DATA_REGS:
 					case OPCODE_ADDX_ADDRESS_REGS:
-						switch (instruction.opcode.type)
+						switch (instruction->opcode.type)
 						{
 							case OPCODE_SBCD_DATA_REGS:
 								machine_code = 0x8100;
@@ -2968,9 +2991,9 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 								break;
 						}
 
-						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= instruction.operands[0].main_register << 0;
-						machine_code |= instruction.operands[1].main_register << 9;
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= instruction->operands[0].main_register << 0;
+						machine_code |= instruction->operands[1].main_register << 9;
 
 						break;
 
@@ -2983,10 +3006,10 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 					case OPCODE_AND_FROM_REG:
 					case OPCODE_ADD_TO_REG:
 					case OPCODE_ADD_FROM_REG:
-						if (instruction.operands[1].type == OPERAND_ADDRESS_REGISTER && instruction.opcode.size == SIZE_BYTE)
+						if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER && instruction->opcode.size == SIZE_BYTE)
 							SemanticError(state, "This instruction cannot be byte-sized when its destination is an address register.");
 
-						switch (instruction.opcode.type)
+						switch (instruction->opcode.type)
 						{
 							case OPCODE_OR_TO_REG:
 								machine_code = 0x8000;
@@ -3028,17 +3051,17 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 								break;
 						}
 
-						machine_code |= ConstructSizeBits(instruction.opcode.size);
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
 
-						if (instruction.operands[1].type == OPERAND_DATA_REGISTER)
+						if (instruction->operands[1].type == OPERAND_DATA_REGISTER)
 						{
-							machine_code |= instruction.operands[1].main_register << 9;
-							machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
+							machine_code |= instruction->operands[1].main_register << 9;
+							machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
 						}
 						else
 						{
-							machine_code |= instruction.operands[0].main_register << 9;
-							machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
+							machine_code |= instruction->operands[0].main_register << 9;
+							machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
 						}
 
 						break;
@@ -3046,7 +3069,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 					case OPCODE_SUBA:
 					case OPCODE_CMPA:
 					case OPCODE_ADDA:
-						switch (instruction.opcode.type)
+						switch (instruction->opcode.type)
 						{
 							case OPCODE_SUBA:
 								machine_code = 0x90C0;
@@ -3064,53 +3087,53 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 								break;
 						}
 
-						machine_code |= (instruction.opcode.size == SIZE_LONGWORD) << 8;
-						machine_code |= instruction.operands[1].main_register << 9;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
+						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 8;
+						machine_code |= instruction->operands[1].main_register << 9;
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
 
 						break;
 
 					case OPCODE_EOR:
 						machine_code = 0xB100;
-						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= instruction.operands[0].main_register << 9;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= instruction->operands[0].main_register << 9;
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
 						break;
 
 					case OPCODE_CMPM:
 						machine_code = 0xB108;
-						machine_code |= ConstructSizeBits(instruction.opcode.size);
-						machine_code |= instruction.operands[0].main_register << 0;
-						machine_code |= instruction.operands[1].main_register << 9;
+						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= instruction->operands[0].main_register << 0;
+						machine_code |= instruction->operands[1].main_register << 9;
 
 						break;
 
 					case OPCODE_EXG:
 						machine_code = 0xC100;
 
-						if (instruction.operands[0].type == OPERAND_DATA_REGISTER && instruction.operands[1].type == OPERAND_DATA_REGISTER)
+						if (instruction->operands[0].type == OPERAND_DATA_REGISTER && instruction->operands[1].type == OPERAND_DATA_REGISTER)
 						{
 							machine_code |= 0x0040;
-							machine_code |= instruction.operands[0].main_register << 9;
-							machine_code |= instruction.operands[1].main_register << 0;
+							machine_code |= instruction->operands[0].main_register << 9;
+							machine_code |= instruction->operands[1].main_register << 0;
 						}
-						else if (instruction.operands[0].type == OPERAND_ADDRESS_REGISTER && instruction.operands[1].type == OPERAND_ADDRESS_REGISTER)
+						else if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER && instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
 						{
 							machine_code |= 0x0048;
-							machine_code |= instruction.operands[0].main_register << 9;
-							machine_code |= instruction.operands[1].main_register << 0;
+							machine_code |= instruction->operands[0].main_register << 9;
+							machine_code |= instruction->operands[1].main_register << 0;
 						}
-						else if (instruction.operands[0].type == OPERAND_DATA_REGISTER && instruction.operands[1].type == OPERAND_ADDRESS_REGISTER)
+						else if (instruction->operands[0].type == OPERAND_DATA_REGISTER && instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
 						{
 							machine_code |= 0x0088;
-							machine_code |= instruction.operands[0].main_register << 9;
-							machine_code |= instruction.operands[1].main_register << 0;
+							machine_code |= instruction->operands[0].main_register << 9;
+							machine_code |= instruction->operands[1].main_register << 0;
 						}
-						else if (instruction.operands[0].type == OPERAND_ADDRESS_REGISTER && instruction.operands[1].type == OPERAND_DATA_REGISTER)
+						else if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER && instruction->operands[1].type == OPERAND_DATA_REGISTER)
 						{
 							machine_code |= 0x0088;
-							machine_code |= instruction.operands[1].main_register << 9;
-							machine_code |= instruction.operands[0].main_register << 0;
+							machine_code |= instruction->operands[1].main_register << 9;
+							machine_code |= instruction->operands[0].main_register << 0;
 						}
 
 						break;
@@ -3142,7 +3165,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 					{
 						unsigned int identifier;
 
-						switch (instruction.opcode.type)
+						switch (instruction->opcode.type)
 						{
 							default:
 							case OPCODE_ASL_STATIC:
@@ -3184,7 +3207,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 
 						machine_code = 0xE000;
 
-						switch (instruction.opcode.type)
+						switch (instruction->opcode.type)
 						{
 							case OPCODE_ASR_STATIC:
 							case OPCODE_ASR_DYNAMIC:
@@ -3220,7 +3243,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 								break;
 						}
 
-						switch (instruction.opcode.type)
+						switch (instruction->opcode.type)
 						{
 							case OPCODE_ASL_STATIC:
 							case OPCODE_ASR_STATIC:
@@ -3233,7 +3256,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 							{
 								unsigned long value;
 
-								if (!ResolveValue(state, &instruction.operands[0].literal, &value))
+								if (!ResolveValue(state, &instruction->operands[0].literal, &value))
 									value = 0;
 
 								if (value > 8 || value < 1)
@@ -3242,12 +3265,11 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 									machine_code |= (value & 7) << 9;
 
 								machine_code |= identifier << 3;
-								machine_code |= instruction.operands[1].main_register << 0;
-								machine_code |= ConstructSizeBits(instruction.opcode.size);
+								machine_code |= instruction->operands[1].main_register << 0;
+								machine_code |= ConstructSizeBits(instruction->opcode.size);
 
 								/* Skip the immediate operand since that goes in the machine code instead. */
-								instruction.operands[0] = instruction.operands[1];
-								instruction.operands[1].type = 0;
+								operands_to_output[0] = NULL;
 
 								break;
 							}
@@ -3261,10 +3283,10 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 							case OPCODE_ROL_DYNAMIC:
 							case OPCODE_ROR_DYNAMIC:
 								machine_code |= identifier << 3;
-								machine_code |= instruction.operands[0].main_register << 9;
+								machine_code |= instruction->operands[0].main_register << 9;
 								machine_code |= 0x0020;
-								machine_code |= instruction.operands[1].main_register << 0;
-								machine_code |= ConstructSizeBits(instruction.opcode.size);
+								machine_code |= instruction->operands[1].main_register << 0;
+								machine_code |= ConstructSizeBits(instruction->opcode.size);
 								break;
 
 							case OPCODE_ASL_SINGLE:
@@ -3277,7 +3299,7 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 							case OPCODE_ROR_SINGLE:
 								machine_code |= identifier << 9;
 								machine_code |= 0x00C0;
-								machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
+								machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
 								break;
 
 							default:
@@ -3296,176 +3318,179 @@ static void ProcessInstruction(SemanticState *state, const StatementInstruction 
 		fputc((machine_code >> (8 * i)) & 0xFF, state->output_file);
 
 	/* Output the data for the operands. */
-	for (i = 0; i < CC_COUNT_OF(instruction.operands); ++i)
+	for (i = 0; i < CC_COUNT_OF(operands_to_output); ++i)
 	{
-		const Operand *operand = &instruction.operands[i];
+		Operand *operand = operands_to_output[i];
 
-		switch (operand->type)
+		if (operand != NULL)
 		{
-			case OPERAND_DATA_REGISTER:
-			case OPERAND_ADDRESS_REGISTER:
-			case OPERAND_ADDRESS_REGISTER_INDIRECT:
-			case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
-			case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
-			case OPERAND_STATUS_REGISTER:
-			case OPERAND_CONDITION_CODE_REGISTER:
-			case OPERAND_USER_STACK_POINTER_REGISTER:
-				break;
-
-			case OPERAND_ADDRESS:
-			case OPERAND_ADDRESS_ABSOLUTE:
-			case OPERAND_LITERAL:
-			case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
-			case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
-			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+			switch (operand->type)
 			{
-				unsigned int bytes_to_write = 2;
-				unsigned long value;
+				case OPERAND_DATA_REGISTER:
+				case OPERAND_ADDRESS_REGISTER:
+				case OPERAND_ADDRESS_REGISTER_INDIRECT:
+				case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
+				case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
+				case OPERAND_STATUS_REGISTER:
+				case OPERAND_CONDITION_CODE_REGISTER:
+				case OPERAND_USER_STACK_POINTER_REGISTER:
+					break;
 
-				if (!ResolveValue(state, &operand->literal, &value))
+				case OPERAND_ADDRESS:
+				case OPERAND_ADDRESS_ABSOLUTE:
+				case OPERAND_LITERAL:
+				case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
+				case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+				case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
+				case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 				{
-					if (operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT || operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER)
-						value = state->program_counter; /* Prevent out-of-range displacements later on. */
-					else
-						value = 0;
+					unsigned int bytes_to_write = 2;
+					unsigned long value;
+
+					if (!ResolveValue(state, &operand->literal, &value))
+					{
+						if (operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT || operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER)
+							value = state->program_counter; /* Prevent out-of-range displacements later on. */
+						else
+							value = 0;
+					}
+
+					switch (operand->type)
+					{
+						case OPERAND_DATA_REGISTER:
+						case OPERAND_ADDRESS_REGISTER:
+						case OPERAND_ADDRESS_REGISTER_INDIRECT:
+						case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
+						case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
+						case OPERAND_STATUS_REGISTER:
+						case OPERAND_CONDITION_CODE_REGISTER:
+						case OPERAND_USER_STACK_POINTER_REGISTER:
+						case OPERAND_REGISTER_LIST:
+							break;
+
+						case OPERAND_ADDRESS:
+						case OPERAND_ADDRESS_ABSOLUTE:
+							switch (operand->size)
+							{
+								case SIZE_BYTE:
+								case SIZE_SHORT:
+									SemanticError(state, "The address cannot be byte-sized.");
+									bytes_to_write = 2;
+									break;
+
+								case SIZE_WORD:
+									bytes_to_write = 2;
+
+									if (value >= 0x8000 && value < 0xFFFF8000)
+										SemanticError(state, "Word-sized addresses cannot be higher than $7FFF or lower than $FFFF8000.");
+
+									break;
+
+								case SIZE_UNDEFINED:
+								case SIZE_LONGWORD:
+									bytes_to_write = 4;
+									break;
+							}
+
+							break;
+
+						case OPERAND_LITERAL:
+							switch (literal_operand_size)
+							{
+								case SIZE_BYTE:
+								case SIZE_SHORT:
+									bytes_to_write = 2;
+
+									if (value >= 0x100 && value < 0xFFFFFF00)
+										SemanticError(state, "Byte-sized literals cannot be larger than $FF or smaller than -$100.");
+
+									value &= 0xFF;
+
+									break;
+
+								case SIZE_UNDEFINED:
+								case SIZE_WORD:
+									bytes_to_write = 2;
+
+									if (value >= 0x10000 && value < 0xFFFF0000)
+										SemanticError(state, "Word-sized literals cannot be larger than $FFFF or smaller than -$10000.");
+
+									break;
+
+								case SIZE_LONGWORD:
+									bytes_to_write = 4;
+									break;
+							}
+
+							break;
+
+						case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+							value -= state->program_counter;
+							/* Fallthrough */
+						case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+							bytes_to_write = 2;
+
+							if (value >= 0x80 && value < 0xFFFFFF80)
+								SemanticError(state, "Displacement values cannot be larger than $7F or smaller than -$80, but was $%lX.", value);
+
+							if (operand->size == SIZE_BYTE || operand->size == SIZE_SHORT)
+								SemanticError(state, "Index registers cannot be byte-sized.");
+
+							value &= 0xFF;
+
+							value |= operand->index_register << 12;
+
+							if (operand->size == SIZE_LONGWORD)
+								value |= 0x800;
+
+							if (operand->index_register_is_address_register)
+								value |= 0x8000;
+
+							break;
+
+						case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
+							value -= state->program_counter;
+							/* Fallthrough */
+						case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
+							bytes_to_write = 2;
+
+							if (value >= 0x8000 && value < 0xFFFF8000)
+								SemanticError(state, "Displacement values cannot be larger than $7FFF or smaller than -$8000, but was $%lX.", value);
+
+							break;
+					}
+
+					state->program_counter += bytes_to_write;
+
+					while (bytes_to_write-- > 0)
+						fputc((value >> (8 * bytes_to_write)) & 0xFF, state->output_file);
+
+					break;
 				}
 
-				switch (operand->type)
+				case OPERAND_REGISTER_LIST:
 				{
-					case OPERAND_DATA_REGISTER:
-					case OPERAND_ADDRESS_REGISTER:
-					case OPERAND_ADDRESS_REGISTER_INDIRECT:
-					case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
-					case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
-					case OPERAND_STATUS_REGISTER:
-					case OPERAND_CONDITION_CODE_REGISTER:
-					case OPERAND_USER_STACK_POINTER_REGISTER:
-					case OPERAND_REGISTER_LIST:
-						break;
+					unsigned int bytes_to_write;
+					unsigned int register_list = operand->main_register;
 
-					case OPERAND_ADDRESS:
-					case OPERAND_ADDRESS_ABSOLUTE:
-						switch (operand->size)
-						{
-							case SIZE_BYTE:
-							case SIZE_SHORT:
-								SemanticError(state, "The address cannot be byte-sized.");
-								bytes_to_write = 2;
-								break;
+					/* Ugly hack to reverse the register list when doing `movem.w/.l d0-a7,-(aN)` */
+					if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+					{
+						static unsigned int reverse_nibble[0x10] = {0x0, 0x8, 0x4, 0xC, 0x2, 0xA, 0x6, 0xE, 0x1, 0x9, 0x5, 0xD, 0x3, 0xB, 0x7, 0xF};
 
-							case SIZE_WORD:
-								bytes_to_write = 2;
+						register_list = reverse_nibble[(register_list >> (4 * 0)) & 0xF] << (4 * 3)
+							      | reverse_nibble[(register_list >> (4 * 1)) & 0xF] << (4 * 2)
+							      | reverse_nibble[(register_list >> (4 * 2)) & 0xF] << (4 * 1)
+							      | reverse_nibble[(register_list >> (4 * 3)) & 0xF] << (4 * 0);
+					}
 
-								if (value >= 0x8000 && value < 0xFFFF8000)
-									SemanticError(state, "Word-sized addresses cannot be higher than $7FFF or lower than $FFFF8000.");
+					for (bytes_to_write = 2; bytes_to_write-- > 0; )
+						fputc((register_list >> (8 * bytes_to_write)) & 0xFF, state->output_file);
 
-								break;
+					state->program_counter += 2;
 
-							case SIZE_UNDEFINED:
-							case SIZE_LONGWORD:
-								bytes_to_write = 4;
-								break;
-						}
-
-						break;
-
-					case OPERAND_LITERAL:
-						switch (instruction.opcode.size)
-						{
-							case SIZE_BYTE:
-							case SIZE_SHORT:
-								bytes_to_write = 2;
-
-								if (value >= 0x100 && value < 0xFFFFFF00)
-									SemanticError(state, "Byte-sized literals cannot be larger than $FF or smaller than -$100.");
-
-								value &= 0xFF;
-
-								break;
-
-							case SIZE_UNDEFINED:
-							case SIZE_WORD:
-								bytes_to_write = 2;
-
-								if (value >= 0x10000 && value < 0xFFFF0000)
-									SemanticError(state, "Word-sized literals cannot be larger than $FFFF or smaller than -$10000.");
-
-								break;
-
-							case SIZE_LONGWORD:
-								bytes_to_write = 4;
-								break;
-						}
-
-						break;
-
-					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-						value -= state->program_counter;
-						/* Fallthrough */
-					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-						bytes_to_write = 2;
-
-						if (value >= 0x80 && value < 0xFFFFFF80)
-							SemanticError(state, "Displacement values cannot be larger than $7F or smaller than -$80, but was $%lX.", value);
-
-						if (operand->size == SIZE_BYTE || operand->size == SIZE_SHORT)
-							SemanticError(state, "Index registers cannot be byte-sized.");
-
-						value &= 0xFF;
-
-						value |= operand->index_register << 12;
-
-						if (operand->size == SIZE_LONGWORD)
-							value |= 0x800;
-
-						if (operand->index_register_is_address_register)
-							value |= 0x8000;
-
-						break;
-
-					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
-						value -= state->program_counter;
-						/* Fallthrough */
-					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
-						bytes_to_write = 2;
-
-						if (value >= 0x8000 && value < 0xFFFF8000)
-							SemanticError(state, "Displacement values cannot be larger than $7FFF or smaller than -$8000, but was $%lX.", value);
-
-						break;
+					break;
 				}
-
-				state->program_counter += bytes_to_write;
-
-				while (bytes_to_write-- > 0)
-					fputc((value >> (8 * bytes_to_write)) & 0xFF, state->output_file);
-
-				break;
-			}
-
-			case OPERAND_REGISTER_LIST:
-			{
-				unsigned int bytes_to_write;
-				unsigned int register_list = operand->main_register;
-
-				/* Ugly hack to reverse the register list when doing `movem.w/.l d0-a7,-(aN)` */
-				if (instruction.operands[1].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-				{
-					static unsigned int reverse_nibble[0x10] = {0x0, 0x8, 0x4, 0xC, 0x2, 0xA, 0x6, 0xE, 0x1, 0x9, 0x5, 0xD, 0x3, 0xB, 0x7, 0xF};
-
-					register_list = reverse_nibble[(register_list >> (4 * 0)) & 0xF] << (4 * 3)
-						      | reverse_nibble[(register_list >> (4 * 1)) & 0xF] << (4 * 2)
-						      | reverse_nibble[(register_list >> (4 * 2)) & 0xF] << (4 * 1)
-						      | reverse_nibble[(register_list >> (4 * 3)) & 0xF] << (4 * 0);
-				}
-
-				for (bytes_to_write = 2; bytes_to_write-- > 0; )
-					fputc((register_list >> (8 * bytes_to_write)) & 0xFF, state->output_file);
-
-				state->program_counter += 2;
-
-				break;
 			}
 		}
 	}
@@ -3512,9 +3537,9 @@ static void OutputDcValue(SemanticState *state, const Size size, unsigned long v
 		fputc((value >> (bytes_to_write * 8)) & 0xFF, state->output_file);
 }
 
-static void ProcessDc(SemanticState *state, const StatementDc *dc)
+static void ProcessDc(SemanticState *state, StatementDc *dc)
 {
-	const ValueListNode *value_list_node;
+	ValueListNode *value_list_node;
 
 	for (value_list_node = dc->values; value_list_node != NULL; value_list_node = value_list_node->next)
 	{
@@ -3545,7 +3570,7 @@ static void ProcessDc(SemanticState *state, const StatementDc *dc)
 	}
 }
 
-static void ProcessDcb(SemanticState *state, const StatementDcb *dcb)
+static void ProcessDcb(SemanticState *state, StatementDcb *dcb)
 {
 	unsigned long repetitions;
 
@@ -3593,7 +3618,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 	}
 }
 
-static void ProcessIncbin(SemanticState *state, const StatementIncbin *incbin)
+static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 {
 	FILE *input_file = fopen(incbin->path, "rb");
 
@@ -3654,7 +3679,7 @@ static void ProcessIncbin(SemanticState *state, const StatementIncbin *incbin)
 	}
 }
 
-static void ProcessRept(SemanticState *state, const StatementRept *rept)
+static void ProcessRept(SemanticState *state, StatementRept *rept)
 {
 	state->mode = MODE_REPT;
 
@@ -3683,7 +3708,7 @@ static void ProcessMacro(SemanticState *state, StatementMacro *macro, const char
 	state->macro.source_line_list.tail = NULL;
 }
 
-static void ProcessIf(SemanticState *state, const Value *value)
+static void ProcessIf(SemanticState *state, Value *value)
 {
 	++state->current_if_level;
 
