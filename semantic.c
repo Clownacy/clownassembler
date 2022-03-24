@@ -1908,6 +1908,10 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 	operands_to_output[0] = &instruction->operands[0];
 	operands_to_output[1] = &instruction->operands[1];
 
+	/* Instructions on odd addresses cause exceptions on the 68k, so warn the user if they are produced. */
+	if (state->program_counter & 1)
+		SemanticWarning(state, "Instruction is at an odd address.");
+
 	state->program_counter += 2;
 
 	/* Some instructions are ambiguous, so figure them out fully here. */
