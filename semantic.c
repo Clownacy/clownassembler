@@ -2710,22 +2710,19 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 						if (instruction->opcode.type == OPCODE_MOVEM_TO_REGS)
 						{
-							machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
 							machine_code |= 1 << 10;
 
 							/* Place register list before the other operand. */
 							operands_to_output[0] = &instruction->operands[1];
 							operands_to_output[1] = &instruction->operands[0];
 						}
-						else /*if (instruction->opcode.type == OPCODE_MOVEM_FROM_REGS)*/
-						{
-							machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
-						}
+
+						machine_code |= ConstructEffectiveAddressBits(state, operands_to_output[1]);
 
 						if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
 						{
 							/* Reverse the register list. */
-							static unsigned int reverse_nibble[0x10] = {0x0, 0x8, 0x4, 0xC, 0x2, 0xA, 0x6, 0xE, 0x1, 0x9, 0x5, 0xD, 0x3, 0xB, 0x7, 0xF};
+							static const unsigned int reverse_nibble[0x10] = {0x0, 0x8, 0x4, 0xC, 0x2, 0xA, 0x6, 0xE, 0x1, 0x9, 0x5, 0xD, 0x3, 0xB, 0x7, 0xF};
 
 							custom_operands[0] = instruction->operands[0];
 							custom_operands[0].main_register = reverse_nibble[(custom_operands[0].main_register >> (4 * 0)) & 0xF] << (4 * 3)
