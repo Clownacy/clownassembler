@@ -3775,15 +3775,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			if (label == NULL)
 			{
 				SemanticError(state, "This type of statement must have a label.");
-			}
-			else if (statement->type == STATEMENT_TYPE_EQU)
-			{
-				unsigned long resolved_value;
-
-				SetLastGlobalLabel(state, label);
-
-				if (ResolveValue(state, &statement->shared.value, &resolved_value))
-					AddIdentifierToSymbolTable(state, label, resolved_value, SYMBOL_CONSTANT);
+				return;
 			}
 
 			break;
@@ -3839,8 +3831,16 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			break;
 
 		case STATEMENT_TYPE_EQU:
-			/* Doesn't do anything here: see above. */
+		{
+			unsigned long resolved_value;
+
+			SetLastGlobalLabel(state, label);
+
+			if (ResolveValue(state, &statement->shared.value, &resolved_value))
+				AddIdentifierToSymbolTable(state, label, resolved_value, SYMBOL_CONSTANT);
+
 			break;
+		}
 
 		case STATEMENT_TYPE_IF:
 			ProcessIf(state, &statement->shared.value);
