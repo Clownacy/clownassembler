@@ -17,6 +17,7 @@ int main(int argc, char **argv)
 	const char *input_file_path;
 	const char *output_file_path;
 	const char *listing_file_path;
+	const char *symbol_file_path;
 	cc_bool case_insensitive;
 	cc_bool debug;
 	int i;
@@ -25,6 +26,7 @@ int main(int argc, char **argv)
 	input_file_path = NULL;
 	output_file_path = NULL;
 	listing_file_path = NULL;
+	symbol_file_path = NULL;
 	case_insensitive = cc_false;
 	debug = cc_false;
 
@@ -65,6 +67,15 @@ int main(int argc, char **argv)
 
 					continue;
 
+				case 's':
+					if (i < argc && argv[i + 1][0] != '-')
+					{
+						++i;
+						symbol_file_path = argv[i];
+					}
+
+					continue;
+
 				case 'c':
 					case_insensitive = cc_true;
 					continue;
@@ -87,7 +98,8 @@ int main(int argc, char **argv)
 			"Options:\n"
 			" -i [path] - Input file. If not specified, STDIN is used instead.\n"
 			" -o [path] - Output file.\n"
-			" -l [path] - Listing file. If not specified, no listing file is produced.\n"
+			" -l [path] - Listing file. Optional.\n"
+			" -s [path] - asm68k-style symbol file. Optional.\n"
 			" -c        - Enable case-insensitive mode.\n"
 			" -d        - Enable Bison's debug output.\n"
 			, stdout);
@@ -124,6 +136,7 @@ int main(int argc, char **argv)
 				else
 				{
 					FILE *listing_file;
+					FILE *symbol_file;
 
 					if (listing_file_path == NULL)
 					{
@@ -137,7 +150,19 @@ int main(int argc, char **argv)
 							ERROR("Could not open listing file.");
 					}
 
-					if (!ClownAssembler_Assemble(input_file, output_file, listing_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive))
+					if (symbol_file_path == NULL)
+					{
+						symbol_file = NULL;
+					}
+					else
+					{
+						symbol_file = fopen(symbol_file_path, "wb");
+
+						if (symbol_file == NULL)
+							ERROR("Could not open symbol file.");
+					}
+
+					if (!ClownAssembler_Assemble(input_file, output_file, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive))
 						ERROR("Could not assemble.");
 
 					if (listing_file != NULL)

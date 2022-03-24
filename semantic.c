@@ -20,7 +20,8 @@ typedef enum SymbolType
 {
 	SYMBOL_CONSTANT,
 	SYMBOL_VARIABLE,
-	SYMBOL_MACRO
+	SYMBOL_MACRO,
+	SYMBOL_LABEL
 } SymbolType;
 
 typedef struct Location
@@ -583,10 +584,10 @@ static cc_bool ResolveValue(SemanticState *state, Value *value, unsigned long *v
 				else
 					state->fix_up_needed = cc_true;
 			}
-			else if (dictionary_entry->type != SYMBOL_CONSTANT && dictionary_entry->type != SYMBOL_VARIABLE)
+			else if (dictionary_entry->type != SYMBOL_LABEL && dictionary_entry->type != SYMBOL_CONSTANT && dictionary_entry->type != SYMBOL_VARIABLE)
 			{
 				success = cc_false;
-				SemanticError(state, "Symbol '%s' is not a constant or a variable.", identifier);
+				SemanticError(state, "Symbol '%s' is not a label, constant, or variable.", identifier);
 			}
 			else
 			{
@@ -773,7 +774,7 @@ static void SetLastGlobalLabel(SemanticState *state, const char *label)
 	}
 }
 
-static void AddLabelToSymbolTable(SemanticState *state, const char *label, unsigned long value)
+static void AddIdentifierToSymbolTable(SemanticState *state, const char *label, unsigned long value, SymbolType type)
 {
 	char *expanded_identifier;
 	const char *identifier;
@@ -796,7 +797,7 @@ static void AddLabelToSymbolTable(SemanticState *state, const char *label, unsig
 
 	if (symbol != NULL)
 	{
-		symbol->type = SYMBOL_CONSTANT;
+		symbol->type = type;
 		symbol->shared.unsigned_integer = value;
 	}
 
@@ -3755,7 +3756,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			if (label != NULL && !state->doing_fix_up && !state->doing_final_pass)
 			{
 				SetLastGlobalLabel(state, label);
-				AddLabelToSymbolTable(state, label, state->program_counter);
+				AddIdentifierToSymbolTable(state, label, state->program_counter, SYMBOL_LABEL);
 			}
 
 			break;
@@ -3782,7 +3783,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 				SetLastGlobalLabel(state, label);
 
 				if (ResolveValue(state, &statement->shared.value, &resolved_value))
-					AddLabelToSymbolTable(state, label, resolved_value);
+					AddIdentifierToSymbolTable(state, label, resolved_value, SYMBOL_CONSTANT);
 			}
 
 			break;
@@ -4020,7 +4021,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					if (label != NULL)
 					{
 						SetLastGlobalLabel(state, label);
-						AddLabelToSymbolTable(state, label, state->program_counter);
+						AddIdentifierToSymbolTable(state, label, state->program_counter, SYMBOL_LABEL);
 					}
 
 					/* Extract and store the macro size specifier, if one exists. */
@@ -4465,7 +4466,35 @@ static cc_bool DictionaryFilterDeleteVariables(Dictionary_Entry *entry, const ch
 	return (entry->type != SYMBOL_VARIABLE || (identifier_length == sizeof(PROGRAM_COUNTER) - 1 && memcmp(identifier, PROGRAM_COUNTER, identifier_length) == 0));
 }
 
-cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listing_file, const char *input_file_path, cc_bool debug, cc_bool case_insensitive)
+static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data)
+{
+	/* The symbol file only contains labels. */
+	/* Labels longer than 0xFF characters are silently ignored. */
+	/* Local labels are also silently ignored. */
+	if (entry->type == SYMBOL_LABEL && identifier_length < 0x100 && memchr(identifier, '@', identifier_length) == NULL)
+	{
+		unsigned int i;
+
+		FILE* const symbol_file = user_data;
+
+		/* Output the address of the label. */
+		for (i = 0; i < 4; ++i)
+			fputc((entry->shared.unsigned_integer >> (i * 8)) & 0xFF, symbol_file);
+
+		/* I have no idea what this means. */
+		fputc(2, symbol_file);
+
+		/* Output the length of the label. */
+		fputc(identifier_length, symbol_file);
+
+		/* Output the label itself. */
+		fwrite(identifier, 1, identifier_length, symbol_file);
+	}
+
+	return cc_true;
+}
+
+cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listing_file, FILE *symbol_file, const char *input_file_path, cc_bool debug, cc_bool case_insensitive)
 {
 	Location location;
 	SemanticState state;
@@ -4596,6 +4625,22 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 			}
 
 			free(state.last_global_label);
+
+			/* Produce asm68k symbol file, if requested. */
+			if (symbol_file != NULL)
+			{
+				/* Some kind of header. */
+				fputc('M', symbol_file);
+				fputc('N', symbol_file);
+				fputc('D', symbol_file);
+				fputc(1, symbol_file);
+				fputc(0, symbol_file);
+				fputc(0, symbol_file);
+				fputc(0, symbol_file);
+				fputc(0, symbol_file);
+
+				Dictionary_Filter(&state.dictionary, DictionaryFilterProduceSymbolFile, symbol_file);
+			}
 		}
 	}
 
