@@ -3579,12 +3579,11 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 		/* Backup file path and line number. */
 		Location location = state->location;
 		state->location.previous = &location;
-		state->location.file_path = DuplicateStringAndHandleError(state, include->path); /* TODO - I don't think this duplication is necessary. */
+		state->location.file_path = include->path;
 		state->location.line_number = 0;
 
 		AssembleFile(state, input_file);
 
-		free(state->location.file_path);
 		state->location = location;
 
 		fclose(input_file);
