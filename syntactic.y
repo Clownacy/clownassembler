@@ -372,6 +372,11 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message);
 void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
 static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *right_value);
+static void DestroyValue(Value *value);
+static void DestroyIdentifierListNode(IdentifierListNode *node);
+static void DestroyValueListNode(ValueListNode *node);
+static void DestroyOperand(Operand *operand);
+static void DestroyStatementInstruction(StatementInstruction *instruction);
 
 }
 
@@ -547,25 +552,19 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 %type<opcode> opcode
 %type<generic.integer> size
 %type<opcode> full_opcode
-%type<instruction> operand_list
 %type<operand> operand
 %type<generic.integer> register_list
 %type<generic.integer> register_span
 %type<generic.integer> data_or_address_register
 %type<list_metadata> value_list
 %type<list_metadata> identifier_list
-%type<value> value
-%type<value> value1
-%type<value> value2
-%type<value> value3
-%type<value> value4
-%type<value> value5
-%type<value> value6
-%type<value> value7
-%type<value> value8
-%type<value> value9
-%type<value> value10
-%type<value> value11
+%type<value> value value1 value2 value3 value4 value5 value6 value7 value8 value9 value10 value11
+
+%destructor { free($$); } TOKEN_IDENTIFIER TOKEN_STRING
+%destructor { DestroyOperand(&$$); } operand
+%destructor { DestroyValueListNode($$.head); } value_list
+%destructor { DestroyIdentifierListNode($$.head); } identifier_list
+%destructor { DestroyValue(&$$); } value value1 value2 value3 value4 value5 value6 value7 value8 value9 value10 value11
 
 %start statement
 
@@ -674,12 +673,17 @@ statement
 	}
 	| TOKEN_DIRECTIVE_INFORM value ',' TOKEN_STRING
 	{
+		(void)$2;
+
 		/* TODO - Severity level(?) */
 		statement->type = STATEMENT_TYPE_INFORM;
 		statement->shared.inform.message = $4;
 	}
 	| TOKEN_DIRECTIVE_INFORM value ',' TOKEN_STRING ',' value_list
 	{
+		(void)$2;
+		(void)$6;
+
 		/* TODO - Severity level(?) and parameters */
 		statement->type = STATEMENT_TYPE_INFORM;
 		statement->shared.inform.message = $4;
@@ -824,10 +828,17 @@ instruction
 		$$.operands[0].type = 0;
 		$$.operands[1].type = 0;
 	}
-	| full_opcode operand_list
+	| full_opcode operand
 	{
-		$$ = $2;
 		$$.opcode = $1;
+		$$.operands[0] = $2;
+		$$.operands[1].type = 0;
+	}
+	| full_opcode operand ',' operand
+	{
+		$$.opcode = $1;
+		$$.operands[0] = $2;
+		$$.operands[1] = $4;
 	}
 	;
 
@@ -1386,28 +1397,6 @@ size
 	}
 	;
 
-operand_list
-	: operand
-	{
-		$$.operands[0] = $1;
-		$$.operands[1].type = 0;
-	}
-	| operand_list ',' operand
-	{
-		$$ = $1;
-
-		if ($$.operands[1].type != 0)
-		{
-			m68kasm_error(scanner, statement, "Instructions can never have more than two operands.");
-			YYABORT;
-		}
-		else
-		{
-			$$.operands[1] = $3;
-		}
-	}
-	;
-
 	/* Indirect address register */
 operand
 	: '(' TOKEN_ADDRESS_REGISTER ')'
@@ -1949,38 +1938,39 @@ static void DestroyValueListNode(ValueListNode *node)
 	}
 }
 
+static void DestroyOperand(Operand *operand)
+{
+	switch (operand->type)
+	{
+		case OPERAND_DATA_REGISTER:
+		case OPERAND_ADDRESS_REGISTER:
+		case OPERAND_ADDRESS_REGISTER_INDIRECT:
+		case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
+		case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
+		case OPERAND_STATUS_REGISTER:
+		case OPERAND_CONDITION_CODE_REGISTER:
+		case OPERAND_USER_STACK_POINTER_REGISTER:
+		case OPERAND_REGISTER_LIST:
+			break;
+
+		case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
+		case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+		case OPERAND_ADDRESS:
+		case OPERAND_ADDRESS_ABSOLUTE:
+		case OPERAND_LITERAL:
+		case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
+		case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+			DestroyValue(&operand->literal);
+			break;
+	}
+}
+
 static void DestroyStatementInstruction(StatementInstruction *instruction)
 {
 	size_t i;
 
 	for (i = 0; i < CC_COUNT_OF(instruction->operands); ++i)
-	{
-		Operand* const operand = &instruction->operands[i];
-
-		switch (operand->type)
-		{
-			case OPERAND_DATA_REGISTER:
-			case OPERAND_ADDRESS_REGISTER:
-			case OPERAND_ADDRESS_REGISTER_INDIRECT:
-			case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
-			case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
-			case OPERAND_STATUS_REGISTER:
-			case OPERAND_CONDITION_CODE_REGISTER:
-			case OPERAND_USER_STACK_POINTER_REGISTER:
-			case OPERAND_REGISTER_LIST:
-				break;
-
-			case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
-			case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-			case OPERAND_ADDRESS:
-			case OPERAND_ADDRESS_ABSOLUTE:
-			case OPERAND_LITERAL:
-			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
-			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-				DestroyValue(&operand->literal);
-				break;
-		}
-	}
+		DestroyOperand(&instruction->operands[i]);
 }
 
 void DestroyStatement(Statement *statement)
