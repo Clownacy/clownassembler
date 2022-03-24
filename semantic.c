@@ -2704,16 +2704,37 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 						break;
 
 					case OPCODE_MOVEM_TO_REGS:
-						/* Swap the operands, since the literal for the register list needs to come before the other operator. */
-						operands_to_output[0] = &instruction->operands[1];
-						operands_to_output[1] = &instruction->operands[0];
-						/* Fallthrough */
 					case OPCODE_MOVEM_FROM_REGS:
 						machine_code = 0x4880;
 						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
 
 						if (instruction->opcode.type == OPCODE_MOVEM_TO_REGS)
+						{
+							machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
 							machine_code |= 1 << 10;
+
+							/* Place register list before the other operand. */
+							operands_to_output[0] = &instruction->operands[1];
+							operands_to_output[1] = &instruction->operands[0];
+						}
+						else /*if (instruction->opcode.type == OPCODE_MOVEM_FROM_REGS)*/
+						{
+							machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
+						}
+
+						if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+						{
+							/* Reverse the register list. */
+							static unsigned int reverse_nibble[0x10] = {0x0, 0x8, 0x4, 0xC, 0x2, 0xA, 0x6, 0xE, 0x1, 0x9, 0x5, 0xD, 0x3, 0xB, 0x7, 0xF};
+
+							custom_operands[0] = instruction->operands[0];
+							custom_operands[0].main_register = reverse_nibble[(custom_operands[0].main_register >> (4 * 0)) & 0xF] << (4 * 3)
+											 | reverse_nibble[(custom_operands[0].main_register >> (4 * 1)) & 0xF] << (4 * 2)
+											 | reverse_nibble[(custom_operands[0].main_register >> (4 * 2)) & 0xF] << (4 * 1)
+											 | reverse_nibble[(custom_operands[0].main_register >> (4 * 3)) & 0xF] << (4 * 0);
+
+							operands_to_output[0] = &custom_operands[0];
+						}
 
 						machine_code |= ConstructEffectiveAddressBits(state, operands_to_output[1]);
 
@@ -3471,21 +3492,9 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 				case OPERAND_REGISTER_LIST:
 				{
 					unsigned int bytes_to_write;
-					unsigned int register_list = operand->main_register;
-
-					/* Ugly hack to reverse the register list when doing `movem.w/.l d0-a7,-(aN)` */
-					if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-					{
-						static unsigned int reverse_nibble[0x10] = {0x0, 0x8, 0x4, 0xC, 0x2, 0xA, 0x6, 0xE, 0x1, 0x9, 0x5, 0xD, 0x3, 0xB, 0x7, 0xF};
-
-						register_list = reverse_nibble[(register_list >> (4 * 0)) & 0xF] << (4 * 3)
-							      | reverse_nibble[(register_list >> (4 * 1)) & 0xF] << (4 * 2)
-							      | reverse_nibble[(register_list >> (4 * 2)) & 0xF] << (4 * 1)
-							      | reverse_nibble[(register_list >> (4 * 3)) & 0xF] << (4 * 0);
-					}
 
 					for (bytes_to_write = 2; bytes_to_write-- > 0; )
-						fputc((register_list >> (8 * bytes_to_write)) & 0xFF, state->output_file);
+						fputc((operand->main_register >> (8 * bytes_to_write)) & 0xFF, state->output_file);
 
 					state->program_counter += 2;
 
