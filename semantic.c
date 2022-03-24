@@ -70,7 +70,7 @@ typedef struct SemanticState
 	cc_bool doing_final_pass;
 	Dictionary_State dictionary;
 	char *last_global_label;
-	Location location;
+	Location *location;
 	yyscan_t flex_state;
 	char line_buffer[1024];
 	const char *source_line;
@@ -118,7 +118,7 @@ static void ErrorMessageCommon(SemanticState *state)
 {
 	const Location *location;
 
-	for (location = &state->location; location != NULL; location = location->previous)
+	for (location = state->location; location != NULL; location = location->previous)
 		fprintf(stderr, "\nOn line %lu of '%s'...", location->line_number, location->file_path);
 
 	fprintf(stderr, "\n%s\n\n", state->source_line);
@@ -285,7 +285,7 @@ static void TerminateRept(SemanticState *state)
 	while (countdown-- != 0)
 	{
 		/* Rewind back to line number of the start of the REPT. */
-		state->location.line_number = state->rept.line_number;
+		state->location->line_number = state->rept.line_number;
 
 		/* Process the REPT's nested statements. */
 		for (source_line_list_node = state->rept.source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
@@ -293,7 +293,7 @@ static void TerminateRept(SemanticState *state)
 	}
 
 	/* Increment past the ENDR line number. */
-	++state->location.line_number;
+	++state->location->line_number;
 
 	/* Free the source line list. */
 	source_line_list_node = state->rept.source_line_list.head;
@@ -3576,15 +3576,18 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 	}
 	else
 	{
-		/* Backup file path and line number. */
-		Location location = state->location;
-		state->location.previous = &location;
-		state->location.file_path = include->path;
-		state->location.line_number = 0;
+		/* Add file path and line number to the location list. */
+		Location location;
+
+		location.file_path = include->path;
+		location.line_number = 0;
+
+		location.previous = state->location;
+		state->location = &location;
 
 		AssembleFile(state, input_file);
 
-		state->location = location;
+		state->location = state->location->previous;
 
 		fclose(input_file);
 	}
@@ -3661,7 +3664,7 @@ static void ProcessRept(SemanticState *state, const StatementRept *rept)
 		state->rept.total_repeats = 1;
 	}
 
-	state->rept.line_number = state->location.line_number;
+	state->rept.line_number = state->location->line_number;
 
 	state->rept.source_line_list.head = NULL;
 	state->rept.source_line_list.tail = NULL;
@@ -3672,7 +3675,7 @@ static void ProcessMacro(SemanticState *state, StatementMacro *macro, const char
 	state->mode = MODE_MACRO;
 
 	state->macro.name = DuplicateStringAndHandleError(state, label);
-	state->macro.line_number = state->location.line_number;
+	state->macro.line_number = state->location->line_number;
 	state->macro.parameter_names = macro->parameter_names;
 	macro->parameter_names = NULL;
 
@@ -3875,7 +3878,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	if (state->listing_file != NULL)
 		fprintf(state->listing_file, "%08lX : %s\n", state->program_counter, source_line);
 
-	++state->location.line_number;
+	++state->location->line_number;
 
 	state->source_line = source_line;
 	source_line_pointer = source_line;
@@ -4095,10 +4098,13 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 						const SourceLineListNode *source_line_list_node;
 
 						/* Push a new location (this macro).*/
-						Location location = state->location;
-						state->location.previous = &location;
-						state->location.file_path = macro->name;
-						state->location.line_number = 0;
+						Location location;
+
+						location.file_path = macro->name;
+						location.line_number = 0;
+
+						location.previous = state->location;
+						state->location = &location;
 
 						for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
 						{
@@ -4109,7 +4115,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 							state->source_line = source_line_list_node->source_line;
 
 							/* A bit of a cheat so that errors that occur before the call to AssembleLine still show the correct line number. */
-							++state->location.line_number;
+							++state->location->line_number;
 
 							/* Replace the parameter placeholders with their proper contents. */
 							remaining_line = modified_line = DuplicateStringAndHandleError(state, source_line_list_node->source_line);
@@ -4211,7 +4217,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 							}
 
 							/* Undo our hack from before. */
-							--state->location.line_number;
+							--state->location->line_number;
 
 							/* Send our expanded macro line to be assembled. */
 							AssembleLine(state, modified_line != NULL ? modified_line : source_line_list_node->source_line);
@@ -4221,7 +4227,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 						}
 
 						/* Pop location. */
-						state->location = location;
+						state->location = state->location->previous;
 					}
 
 					/* Free the parameter strings. */
@@ -4278,7 +4284,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 								if (fix_up != NULL)
 								{
-									const Location *source_location = &state->location;
+									const Location *source_location = state->location;
 									Location *destination_location = &fix_up->location;
 
 									/* Backup the statement. */
@@ -4424,8 +4430,13 @@ static cc_bool DictionaryFilterDeleteVariables(Dictionary_Entry *entry, const ch
 
 cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listing_file, const char *input_file_path, cc_bool debug, cc_bool case_insensitive)
 {
+	Location location;
 	SemanticState state;
 	Dictionary_Entry *symbol;
+
+	location.previous = NULL;
+	location.file_path = DuplicateStringAndHandleError(&state, input_file_path != NULL ? input_file_path : "[No path given]");
+	location.line_number = 0;
 
 	state.success = cc_true;
 	state.output_file = output_file;
@@ -4436,9 +4447,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 	state.doing_fix_up = cc_false;
 	state.doing_final_pass = cc_false;
 	state.last_global_label = NULL;
-	state.location.previous = NULL;
-	state.location.file_path = DuplicateStringAndHandleError(&state, input_file_path != NULL ? input_file_path : "[No path given]");
-	state.location.line_number = 0;
+	state.location = &location;
 	state.source_line = "[No source line]";
 	state.current_if_level = 0;
 	state.false_if_level = 0;
@@ -4498,7 +4507,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 					fseek(state.output_file, fix_up->output_position , SEEK_SET);
 					state.last_global_label = DuplicateStringAndHandleError(&state, fix_up->last_global_label);
 					state.source_line = fix_up->source_line != NULL ? fix_up->source_line : "[No source line]";
-					state.location = fix_up->location;
+					state.location = &fix_up->location;
 
 					state.fix_up_needed = cc_false;
 
@@ -4551,7 +4560,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 
 	Dictionary_Deinit(&state.dictionary);
 
-	free(state.location.file_path);
+	free(location.file_path);
 
 	return state.success;
 }
