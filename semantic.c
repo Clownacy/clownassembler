@@ -4283,7 +4283,12 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 								   add it to the fix-up list so we can try again later. */
 								FixUp *fix_up = MallocAndHandleError(state, sizeof(FixUp));
 
-								if (fix_up != NULL)
+								if (fix_up == NULL)
+								{
+									/* Might as well delete this, since there's no fix-up to take ownership of it. */
+									DestroyStatement(&statement);
+								}
+								else
 								{
 									const Location *source_location = state->location;
 									Location *destination_location = &fix_up->location;
