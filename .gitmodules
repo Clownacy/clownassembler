@@ -1,0 +1,3 @@
+[submodule "tests/s1disasm"]
+	path = tests/s1disasm
+	url = https://github.com/sonicretro/s1disasm
