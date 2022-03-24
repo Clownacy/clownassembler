@@ -407,6 +407,7 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 				{
 					case VALUE_NUMBER:
 					case VALUE_IDENTIFIER:
+					case VALUE_PROGRAM_COUNTER:
 					case VALUE_NEGATE:
 					case VALUE_BITWISE_NOT:
 					case VALUE_LOGICAL_NOT:
@@ -506,6 +507,7 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 				{
 					case VALUE_NUMBER:
 					case VALUE_IDENTIFIER:
+					case VALUE_PROGRAM_COUNTER:
 					case VALUE_SUBTRACT:
 					case VALUE_ADD:
 					case VALUE_MULTIPLY:
@@ -589,6 +591,10 @@ static cc_bool ResolveValue(SemanticState *state, const Value *value, unsigned l
 
 			break;
 		}
+
+		case VALUE_PROGRAM_COUNTER:
+			*value_integer = Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER, sizeof(PROGRAM_COUNTER) - 1)->shared.unsigned_integer;
+			break;
 	}
 
 	return success;
@@ -3573,7 +3579,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 		/* Backup file path and line number. */
 		Location location = state->location;
 		state->location.previous = &location;
-		state->location.file_path = DuplicateStringAndHandleError(state, include->path);
+		state->location.file_path = DuplicateStringAndHandleError(state, include->path); /* TODO - I don't think this duplication is necessary. */
 		state->location.line_number = 0;
 
 		AssembleFile(state, input_file);
@@ -3662,13 +3668,14 @@ static void ProcessRept(SemanticState *state, const StatementRept *rept)
 	state->rept.source_line_list.tail = NULL;
 }
 
-static void ProcessMacro(SemanticState *state, const StatementMacro *macro, const char *label)
+static void ProcessMacro(SemanticState *state, StatementMacro *macro, const char *label)
 {
 	state->mode = MODE_MACRO;
 
 	state->macro.name = DuplicateStringAndHandleError(state, label);
 	state->macro.line_number = state->location.line_number;
 	state->macro.parameter_names = macro->parameter_names;
+	macro->parameter_names = NULL;
 
 	state->macro.source_line_list.head = NULL;
 	state->macro.source_line_list.tail = NULL;
@@ -3695,7 +3702,7 @@ static void ProcessIf(SemanticState *state, const Value *value)
 	}
 }
 
-static void ProcessStatement(SemanticState *state, const Statement *statement, const char *label)
+static void ProcessStatement(SemanticState *state, Statement *statement, const char *label)
 {
 	Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER, sizeof(PROGRAM_COUNTER) - 1)->shared.unsigned_integer = state->program_counter;
 
@@ -4262,7 +4269,11 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 							/* If the statement cannot currently be processed because of undefined symbols,
 							   add it to the fix-up list so we can try again later. */
-							if (state->fix_up_needed)
+							if (!state->fix_up_needed)
+							{
+								DestroyStatement(&statement);
+							}
+							else
 							{
 								FixUp *fix_up = MallocAndHandleError(state, sizeof(FixUp));
 

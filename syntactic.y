@@ -188,7 +188,8 @@ typedef enum ValueType
 	VALUE_LEFT_SHIFT,
 	VALUE_RIGHT_SHIFT,
 	VALUE_NUMBER,
-	VALUE_IDENTIFIER
+	VALUE_IDENTIFIER,
+	VALUE_PROGRAM_COUNTER
 } ValueType;
 
 typedef struct Value
@@ -221,9 +222,9 @@ typedef struct ValueListNode
 
 typedef struct IdentifierListNode
 {
-	char *identifier;
-
 	struct IdentifierListNode *next;
+
+	char *identifier;
 } IdentifierListNode;
 
 typedef struct Opcode
@@ -352,6 +353,12 @@ typedef struct ListMetadata
 	void *head;
 	void *tail;
 } ListMetadata;
+
+}
+
+%code provides {
+
+void DestroyStatement(Statement *statement);
 
 }
 
@@ -1836,8 +1843,7 @@ value11
 	}
 	| '*'
 	{
-		$$.type = VALUE_IDENTIFIER;
-		$$.shared.identifier = ",,PROGRAM_COUNTER,,";
+		$$.type = VALUE_PROGRAM_COUNTER;
 	}
 	| '(' value ')'
 	{
@@ -1868,4 +1874,169 @@ static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *r
 	}
 
 	return success;
+}
+
+static void DestroyValue(Value *value)
+{
+	switch (value->type)
+	{
+		case VALUE_SUBTRACT:
+		case VALUE_ADD:
+		case VALUE_MULTIPLY:
+		case VALUE_DIVIDE:
+		case VALUE_MODULO:
+		case VALUE_LOGICAL_OR:
+		case VALUE_LOGICAL_AND:
+		case VALUE_ARITHMETIC_OR:
+		case VALUE_ARITHMETIC_XOR:
+		case VALUE_ARITHMETIC_AND:
+		case VALUE_EQUALITY:
+		case VALUE_INEQUALITY:
+		case VALUE_LESS_THAN:
+		case VALUE_LESS_OR_EQUAL:
+		case VALUE_MORE_THAN:
+		case VALUE_MORE_OR_EQUAL:
+		case VALUE_LEFT_SHIFT:
+		case VALUE_RIGHT_SHIFT:
+			DestroyValue(&value->shared.values[0]);
+			DestroyValue(&value->shared.values[1]);
+			free(value->shared.values);
+			break;
+
+		case VALUE_NEGATE:
+		case VALUE_BITWISE_NOT:
+		case VALUE_LOGICAL_NOT:
+			DestroyValue(&value->shared.values[0]);
+			free(value->shared.values);
+			break;
+
+		case VALUE_IDENTIFIER:
+			free(value->shared.identifier);
+			break;
+
+		case VALUE_NUMBER:
+		case VALUE_PROGRAM_COUNTER:
+			break;
+	}
+}
+
+static void DestroyIdentifierListNode(IdentifierListNode *node)
+{
+	if (node != NULL)
+	{
+		free(node->identifier);
+
+		DestroyIdentifierListNode(node->next);
+	}
+}
+
+static void DestroyValueListNode(ValueListNode *node)
+{
+	if (node != NULL)
+	{
+		switch (node->type)
+		{
+			case VALUE_LIST_NODE_TYPE_VALUE:
+				DestroyValue(&node->shared.value);
+				break;
+
+			case VALUE_LIST_NODE_TYPE_STRING:
+				free(node->shared.string);
+				break;
+		}
+
+		DestroyValueListNode(node->next);
+	}
+}
+
+static void DestroyStatementInstruction(StatementInstruction *instruction)
+{
+	size_t i;
+
+	for (i = 0; i < CC_COUNT_OF(instruction->operands); ++i)
+	{
+		Operand* const operand = &instruction->operands[i];
+
+		switch (operand->type)
+		{
+			case OPERAND_DATA_REGISTER:
+			case OPERAND_ADDRESS_REGISTER:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
+			case OPERAND_STATUS_REGISTER:
+			case OPERAND_CONDITION_CODE_REGISTER:
+			case OPERAND_USER_STACK_POINTER_REGISTER:
+			case OPERAND_REGISTER_LIST:
+				break;
+
+			case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+			case OPERAND_ADDRESS:
+			case OPERAND_ADDRESS_ABSOLUTE:
+			case OPERAND_LITERAL:
+			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
+			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+				DestroyValue(&operand->literal);
+				break;
+		}
+	}
+}
+
+void DestroyStatement(Statement *statement)
+{
+	switch (statement->type)
+	{
+		case STATEMENT_TYPE_EMPTY:
+		case STATEMENT_TYPE_ENDR:
+		case STATEMENT_TYPE_ENDM:
+		case STATEMENT_TYPE_ELSE:
+		case STATEMENT_TYPE_ENDC:
+		case STATEMENT_TYPE_EVEN:
+		case STATEMENT_TYPE_END:
+			break;
+
+		case STATEMENT_TYPE_INSTRUCTION:
+			DestroyStatementInstruction(&statement->shared.instruction);
+			break;
+
+		case STATEMENT_TYPE_DC:
+			DestroyValueListNode(statement->shared.dc.values);
+			break;
+
+		case STATEMENT_TYPE_DCB:
+			DestroyValue(&statement->shared.dcb.repetitions);
+			DestroyValue(&statement->shared.dcb.value);
+			break;
+
+		case STATEMENT_TYPE_INCLUDE:
+			free(statement->shared.include.path);
+			break;
+
+		case STATEMENT_TYPE_INCBIN:
+			free(statement->shared.incbin.path);
+			DestroyValue(&statement->shared.incbin.start);
+
+			if (statement->shared.incbin.has_length)
+				DestroyValue(&statement->shared.incbin.length);
+
+			break;
+
+		case STATEMENT_TYPE_REPT:
+			DestroyValue(&statement->shared.rept.total_repeats);
+			break;
+
+		case STATEMENT_TYPE_MACRO:
+			DestroyIdentifierListNode(statement->shared.macro.parameter_names);
+			break;
+
+		case STATEMENT_TYPE_EQU:
+		case STATEMENT_TYPE_IF:
+			DestroyValue(&statement->shared.value);
+			break;
+
+		case STATEMENT_TYPE_INFORM:
+			free(statement->shared.inform.message);
+			break;
+	}
 }
