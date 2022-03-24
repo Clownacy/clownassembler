@@ -4412,13 +4412,16 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 static void AssembleFile(SemanticState *state, FILE *input_file)
 {
-	while (!state->end && fgets(state->line_buffer, sizeof(state->line_buffer), input_file) != NULL)
+	char *line_buffer_write_pointer;
+
+	line_buffer_write_pointer = state->line_buffer;
+
+	while (!state->end && fgets(line_buffer_write_pointer, &state->line_buffer[sizeof(state->line_buffer)] - line_buffer_write_pointer, input_file) != NULL)
 	{
 		const size_t newline_index = strcspn(state->line_buffer, "\r\n");
 		const char newline_character = state->line_buffer[newline_index];
 
-		/* Remove newlines from the string, so they don't appear in the error message. */
-		state->line_buffer[newline_index] = '\0';
+		line_buffer_write_pointer = state->line_buffer;
 
 		/* If there is no newline, then we've either reached the end of the file,
 		   or the source line was too long to fit in the buffer. */
@@ -4435,6 +4438,17 @@ static void AssembleFile(SemanticState *state, FILE *input_file)
 					character = fgetc(input_file);
 			}
 		}
+		else if (newline_index != 0 && state->line_buffer[newline_index - 1] == '&')
+		{
+			/* An '&' at the end of a line is like a '\' at the end of a line in C. */
+
+			/* Go back and get another line. */
+			line_buffer_write_pointer = &state->line_buffer[newline_index - 1];
+			continue;
+		}
+
+		/* Remove newlines from the string, so they don't appear in the error message. */
+		state->line_buffer[newline_index] = '\0';
 
 		AssembleLine(state, state->line_buffer);
 	}

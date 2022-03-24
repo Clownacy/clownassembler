@@ -398,6 +398,12 @@ TimesToNotRept = 1
 	ELSE
 	ENDIF
 
+	; Testing multi-line statements
+	move.b &
+	d0 &
+	, &
+	d0
+
   ; More blank lines to test support for trailing blank statements
 
 
