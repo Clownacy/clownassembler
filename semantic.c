@@ -3753,6 +3753,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		case STATEMENT_TYPE_EVEN:
 		case STATEMENT_TYPE_INFORM:
 		case STATEMENT_TYPE_END:
+		case STATEMENT_TYPE_RS:
 			if (label != NULL && !state->doing_fix_up && !state->doing_final_pass)
 			{
 				SetLastGlobalLabel(state, label);
@@ -3765,6 +3766,8 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		case STATEMENT_TYPE_ENDM:
 		case STATEMENT_TYPE_ELSE:
 		case STATEMENT_TYPE_ENDC:
+		case STATEMENT_TYPE_RSSET:
+		case STATEMENT_TYPE_RSRESET:
 			if (label != NULL)
 				SemanticError(state, "There cannot be a label on this type of statement.");
 
@@ -3895,6 +3898,60 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 
 		case STATEMENT_TYPE_END:
 			state->end = cc_true;
+			break;
+
+		case STATEMENT_TYPE_RS:
+		{
+			unsigned long resolved_value;
+
+			if (!ResolveValue(state, &statement->shared.rs.value, &resolved_value))
+			{
+				SemanticError(state, "Value must be evaluable on the first pass.");
+			}
+			else
+			{
+				switch (statement->shared.rs.size)
+				{
+					case SIZE_BYTE:
+						state->program_counter += resolved_value * 1;
+						break;
+
+					case SIZE_SHORT:
+						state->program_counter += resolved_value * 1;
+						break;
+
+					case SIZE_WORD:
+						state->program_counter += resolved_value * 2;
+						break;
+
+					case SIZE_LONGWORD:
+						state->program_counter += resolved_value * 4;
+						break;
+
+					case SIZE_UNDEFINED:
+						/* Should never happen. */
+						assert(cc_false);
+						break;
+				}
+			}
+
+			break;
+		}
+
+		case STATEMENT_TYPE_RSSET:
+		{
+			unsigned long resolved_value;
+
+			if (!ResolveValue(state, &statement->shared.value, &resolved_value))
+				SemanticError(state, "Value must be evaluable on the first pass.");
+			else
+				state->program_counter = resolved_value;
+
+			break;
+		}
+
+		case STATEMENT_TYPE_RSRESET:
+			state->program_counter = 0;
 			break;
 	}
 }

@@ -332,7 +332,10 @@ typedef struct Statement
 		STATEMENT_TYPE_ENDC,
 		STATEMENT_TYPE_EVEN,
 		STATEMENT_TYPE_INFORM,
-		STATEMENT_TYPE_END
+		STATEMENT_TYPE_END,
+		STATEMENT_TYPE_RS,
+		STATEMENT_TYPE_RSSET,
+		STATEMENT_TYPE_RSRESET
 	} type;
 	union
 	{
@@ -344,6 +347,11 @@ typedef struct Statement
 		StatementRept rept;
 		StatementMacro macro;
 		StatementInform inform;
+		struct
+		{
+			Size size;
+			Value value;
+		} rs;
 		Value value;
 	} shared;
 } Statement;
@@ -526,6 +534,9 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_EVEN
 %token TOKEN_DIRECTIVE_INFORM
 %token TOKEN_DIRECTIVE_END
+%token TOKEN_DIRECTIVE_RS
+%token TOKEN_DIRECTIVE_RSSET
+%token TOKEN_DIRECTIVE_RSRESET
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -691,6 +702,21 @@ statement
 	| TOKEN_DIRECTIVE_END
 	{
 		statement->type = STATEMENT_TYPE_END;
+	}
+	| TOKEN_DIRECTIVE_RS '.' size value
+	{
+		statement->type = STATEMENT_TYPE_RS;
+		statement->shared.rs.size = $3;
+		statement->shared.rs.value = $4;
+	}
+	| TOKEN_DIRECTIVE_RSSET value
+	{
+		statement->type = STATEMENT_TYPE_RSSET;
+		statement->shared.value = $2;
+	}
+	| TOKEN_DIRECTIVE_RSRESET
+	{
+		statement->type = STATEMENT_TYPE_RSRESET;
 	}
 	;
 
@@ -1984,6 +2010,7 @@ void DestroyStatement(Statement *statement)
 		case STATEMENT_TYPE_ENDC:
 		case STATEMENT_TYPE_EVEN:
 		case STATEMENT_TYPE_END:
+		case STATEMENT_TYPE_RSRESET:
 			break;
 
 		case STATEMENT_TYPE_INSTRUCTION:
@@ -2022,11 +2049,16 @@ void DestroyStatement(Statement *statement)
 
 		case STATEMENT_TYPE_EQU:
 		case STATEMENT_TYPE_IF:
+		case STATEMENT_TYPE_RSSET:
 			DestroyValue(&statement->shared.value);
 			break;
 
 		case STATEMENT_TYPE_INFORM:
 			free(statement->shared.inform.message);
+			break;
+
+		case STATEMENT_TYPE_RS:
+			DestroyValue(&statement->shared.rs.value);
 			break;
 	}
 }

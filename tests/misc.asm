@@ -404,6 +404,19 @@ TimesToNotRept = 1
 	, &
 	d0
 
+	; Testing RS/RSSET/RSRESET
+		rsset $200
+Struct_A_A:	rs.w 1
+Struct_A_B:	rs.b 3
+Struct_A_C:	rs.b 3
+Struct_A_D:	rs.l 2
+
+		rsreset
+Struct_B_A:	rs.b 1
+Struct_B_B:	rs.b 2
+Struct_B_C:	rs.b 3
+Struct_B_D:	rs.b 4
+
   ; More blank lines to test support for trailing blank statements
 
 

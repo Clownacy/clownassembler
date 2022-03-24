@@ -187,6 +187,9 @@ endif           TOKEN(DIRECTIVE_ENDC)
 even            TOKEN(DIRECTIVE_EVEN)
 inform          TOKEN(DIRECTIVE_INFORM)
 end             TOKEN(DIRECTIVE_END)
+rs              TOKEN(DIRECTIVE_RS)
+rsset           TOKEN(DIRECTIVE_RSSET)
+rsreset         TOKEN(DIRECTIVE_RSRESET)
 "."             return yytext[0];
 ","             return yytext[0];
 "("             return yytext[0];
