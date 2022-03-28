@@ -423,7 +423,7 @@ Struct_B_D:	rs.b 4
 
 
 	; Testing variables
-variable set 0
+variable = 0
 	; The use of FutureLabel will cause this statement to become a fix-up.
 	; If variables aren't accounted for properly, then this statement will
 	; re-evaluate with 'variable' set to 1 instead of 0.

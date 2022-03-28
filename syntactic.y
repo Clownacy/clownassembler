@@ -671,7 +671,7 @@ statement
 	}
 	| '=' value
 	{
-		statement->type = STATEMENT_TYPE_EQU;
+		statement->type = STATEMENT_TYPE_SET;
 		statement->shared.value = $2;
 	}
 	| TOKEN_DIRECTIVE_IF value
