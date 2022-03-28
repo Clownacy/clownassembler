@@ -323,6 +323,7 @@ typedef struct Statement
 		STATEMENT_TYPE_ELSE,
 		STATEMENT_TYPE_ENDC,
 		STATEMENT_TYPE_EVEN,
+		STATEMENT_TYPE_CNOP,
 		STATEMENT_TYPE_INFORM,
 		STATEMENT_TYPE_END,
 		STATEMENT_TYPE_RS,
@@ -338,6 +339,11 @@ typedef struct Statement
 		StatementIncbin incbin;
 		StatementRept rept;
 		StatementMacro macro;
+		struct
+		{
+			Value offset;
+			Value size_boundary;
+		} cnop;
 		StatementInform inform;
 		struct
 		{
@@ -526,6 +532,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_ELSE
 %token TOKEN_DIRECTIVE_ENDC
 %token TOKEN_DIRECTIVE_EVEN
+%token TOKEN_DIRECTIVE_CNOP
 %token TOKEN_DIRECTIVE_INFORM
 %token TOKEN_DIRECTIVE_END
 %token TOKEN_DIRECTIVE_RS
@@ -681,6 +688,12 @@ statement
 	| TOKEN_DIRECTIVE_EVEN
 	{
 		statement->type = STATEMENT_TYPE_EVEN;
+	}
+	| TOKEN_DIRECTIVE_CNOP value ',' value
+	{
+		statement->type = STATEMENT_TYPE_CNOP;
+		statement->shared.cnop.offset = $2;
+		statement->shared.cnop.size_boundary = $4;
 	}
 	| TOKEN_DIRECTIVE_INFORM value ',' TOKEN_STRING
 	{
@@ -2033,6 +2046,11 @@ void DestroyStatement(Statement *statement)
 		case STATEMENT_TYPE_IF:
 		case STATEMENT_TYPE_RSSET:
 			DestroyValue(&statement->shared.value);
+			break;
+
+		case STATEMENT_TYPE_CNOP:
+			DestroyValue(&statement->shared.cnop.offset);
+			DestroyValue(&statement->shared.cnop.size_boundary);
 			break;
 
 		case STATEMENT_TYPE_INFORM:

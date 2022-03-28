@@ -3815,6 +3815,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		case STATEMENT_TYPE_REPT:
 		case STATEMENT_TYPE_IF:
 		case STATEMENT_TYPE_EVEN:
+		case STATEMENT_TYPE_CNOP:
 		case STATEMENT_TYPE_INFORM:
 		case STATEMENT_TYPE_END:
 		case STATEMENT_TYPE_RS:
@@ -3972,6 +3973,45 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			}
 
 			break;
+
+		case STATEMENT_TYPE_CNOP:
+		{
+			unsigned long offset;
+
+			if (!ResolveValue(state, &statement->shared.cnop.offset, &offset))
+			{
+				SemanticError(state, "Offset must be evaluable on the first pass.");
+			}
+			else
+			{
+				unsigned long size_boundary;
+
+				if (!ResolveValue(state, &statement->shared.cnop.size_boundary, &size_boundary))
+				{
+					SemanticError(state, "Size boundary must be evaluable on the first pass.");
+				}
+				else
+				{
+					unsigned long i;
+
+					/* Align to the size boundary. */
+					while (state->program_counter % size_boundary != 0)
+					{
+						++state->program_counter;
+						fputc(0, state->output_file);
+					}
+
+					/* Now pad to the desired offset. */
+					for (i = 0; i < offset; ++i)
+					{
+						fputc(0, state->output_file);
+						++state->program_counter;
+					}
+				}
+			}
+
+			break;
+		}
 
 		case STATEMENT_TYPE_INFORM:
 			SemanticWarning(state, "INFORM: '%s'", statement->shared.inform.message);
