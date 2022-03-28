@@ -293,7 +293,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 	return TOKEN_NUMBER;
 }
 
-[A-Za-z_][A-Za-z_0-9]* {
+[A-Za-z_][A-Za-z_0-9\?]* {
 	const size_t length = strlen(yytext);
 	yylval->generic.string = malloc(length + 1);
 	if (yylval->generic.string == NULL)
@@ -308,7 +308,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 	}
 }
 
-[@\.][A-Za-z_0-9]* {
+[@\.][A-Za-z_0-9\?]* {
 	const size_t length = strlen(yytext);
 	yylval->generic.string = malloc(length + 1);
 	if (yylval->generic.string == NULL)
