@@ -190,7 +190,8 @@ typedef enum ValueType
 	VALUE_NUMBER,
 	VALUE_IDENTIFIER,
 	VALUE_STRING,
-	VALUE_PROGRAM_COUNTER
+	VALUE_PROGRAM_COUNTER_OF_STATEMENT,
+	VALUE_PROGRAM_COUNTER_OF_VALUE
 } ValueType;
 
 typedef struct Value
@@ -1873,7 +1874,11 @@ value11
 	}
 	| '*'
 	{
-		$$.type = VALUE_PROGRAM_COUNTER;
+		$$.type = VALUE_PROGRAM_COUNTER_OF_STATEMENT;
+	}
+	| '@'
+	{
+		$$.type = VALUE_PROGRAM_COUNTER_OF_VALUE;
 	}
 	| '(' value ')'
 	{
@@ -1946,7 +1951,8 @@ static void DestroyValue(Value *value)
 			break;
 
 		case VALUE_NUMBER:
-		case VALUE_PROGRAM_COUNTER:
+		case VALUE_PROGRAM_COUNTER_OF_STATEMENT:
+		case VALUE_PROGRAM_COUNTER_OF_VALUE:
 			break;
 	}
 }

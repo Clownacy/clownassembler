@@ -326,6 +326,7 @@ Object:
 	bra.s	1*(**1) ; Amazingly, this actually works as intended
 
 	dc.l	*,*,*
+	dc.l	@,@,@
 
 	; Test operators
 	dc.b	1<<1, 4>>1, 3&2, 7^5, 0|2, 6%4, 1=1, 1==1, 1<>0, 1>0, 0<1, 1&&1, 1||1, 0+1, 2-1 , 1*1 , 1/1

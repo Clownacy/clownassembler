@@ -208,6 +208,7 @@ hexadecimal       {hexadecimal_digit}+
 "*"             return yytext[0];
 "/"             return yytext[0];
 "="             return yytext[0];
+"@"             return yytext[0];
 "&&"            TOKEN(LOGICAL_AND)
 "||"            TOKEN(LOGICAL_OR)
 "=="            TOKEN(EQUALITY)
@@ -314,7 +315,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 	}
 }
 
-[@\.][A-Za-z_0-9\?]* {
+[@\.][A-Za-z_0-9\?]+ {
 	const size_t length = strlen(yytext);
 	yylval->generic.string = malloc(length + 1);
 	if (yylval->generic.string == NULL)
