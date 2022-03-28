@@ -1383,14 +1383,14 @@ static const InstructionMetadata instruction_metadata_all[] = {
 				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER
 				| OPERAND_ADDRESS | OPERAND_ADDRESS_ABSOLUTE | OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT
 				| OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER,
-			OPERAND_REGISTER_LIST,
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER | OPERAND_REGISTER_LIST,
 		}
 	},
 	{	/* OPCODE_MOVEM_FROM_REGS */
 		"MOVEM",
 		SIZE_WORD | SIZE_LONGWORD,
 		{
-			OPERAND_REGISTER_LIST,
+			OPERAND_DATA_REGISTER | OPERAND_ADDRESS_REGISTER | OPERAND_REGISTER_LIST,
 			OPERAND_ADDRESS_REGISTER_INDIRECT | OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT
 				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT
 				| OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER
@@ -2080,7 +2080,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 					break;
 
 				case OPCODE_MOVEM_TO_REGS:
-					if (instruction->operands[0].type == OPERAND_REGISTER_LIST)
+					if (instruction->operands[0].type == OPERAND_DATA_REGISTER || instruction->operands[0].type == OPERAND_ADDRESS_REGISTER || instruction->operands[0].type == OPERAND_REGISTER_LIST)
 						instruction->opcode.type = OPCODE_MOVEM_FROM_REGS;
 
 					break;
@@ -2793,18 +2793,30 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 						machine_code |= ConstructEffectiveAddressBits(state, operands_to_output[1]);
 
-						if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+						custom_operands[0] = *operands_to_output[0];
+						operands_to_output[0] = &custom_operands[0];
+
+						/* Convert lone registers to register_lists. */
+						if (custom_operands[0].type == OPERAND_DATA_REGISTER)
+						{
+							custom_operands[0].type = OPERAND_REGISTER_LIST;
+							custom_operands[0].main_register = 1 << (0 + custom_operands[0].main_register);
+						}
+						else if (custom_operands[0].type == OPERAND_ADDRESS_REGISTER)
+						{
+							custom_operands[0].type = OPERAND_REGISTER_LIST;
+							custom_operands[0].main_register = 1 << (8 + custom_operands[0].main_register);
+						}
+
+						if (operands_to_output[1]->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
 						{
 							/* Reverse the register list. */
 							static const unsigned int reverse_nibble[0x10] = {0x0, 0x8, 0x4, 0xC, 0x2, 0xA, 0x6, 0xE, 0x1, 0x9, 0x5, 0xD, 0x3, 0xB, 0x7, 0xF};
 
-							custom_operands[0] = instruction->operands[0];
 							custom_operands[0].main_register = reverse_nibble[(custom_operands[0].main_register >> (4 * 0)) & 0xF] << (4 * 3)
 											 | reverse_nibble[(custom_operands[0].main_register >> (4 * 1)) & 0xF] << (4 * 2)
 											 | reverse_nibble[(custom_operands[0].main_register >> (4 * 2)) & 0xF] << (4 * 1)
 											 | reverse_nibble[(custom_operands[0].main_register >> (4 * 3)) & 0xF] << (4 * 0);
-
-							operands_to_output[0] = &custom_operands[0];
 						}
 
 						machine_code |= ConstructEffectiveAddressBits(state, operands_to_output[1]);

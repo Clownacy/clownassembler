@@ -138,6 +138,7 @@ DummyDummyDummy:
 	movem.w	a1/d0-d2/d4-a1/d3,-(sp)
 	movem.w	(sp)+,a1/d0-d2/d4-a1/d3
 	movem.w	d0-a7,-(sp)
+	movem.w d0,-(sp)
 
 	lea	10(a0),a0
 
