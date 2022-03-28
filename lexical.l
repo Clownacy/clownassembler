@@ -31,19 +31,16 @@ void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
 %}
 
-whitespace        [ \t]+
 binary_digit      [0-1]
 decimal_digit     [0-9]
 hexadecimal_digit [0-9a-fA-F]
-identifier        [A-Za-z_][A-Za-z_0-9]*
-local_identifier  [@\.][A-Za-z_0-9]*
 binary            {binary_digit}+
 decimal           {decimal_digit}+
 hexadecimal       {hexadecimal_digit}+
 
 %%
 
-{whitespace}    ; /* Ignore whitespace */
+[ \t]+          ; /* Ignore whitespace */
 [;\r\n]         yyterminate(); ; /* Terminate at comment or newline */
 ori             TOKEN(OPCODE_ORI)
 andi            TOKEN(OPCODE_ANDI)
@@ -294,7 +291,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 	return TOKEN_NUMBER;
 }
 
-{identifier} {
+[A-Za-z_][A-Za-z_0-9]* {
 	const size_t length = strlen(yytext);
 	yylval->generic.string = malloc(length + 1);
 	if (yylval->generic.string == NULL)
@@ -309,7 +306,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 	}
 }
 
-{local_identifier} {
+[@\.][A-Za-z_0-9]* {
 	const size_t length = strlen(yytext);
 	yylval->generic.string = malloc(length + 1);
 	if (yylval->generic.string == NULL)
