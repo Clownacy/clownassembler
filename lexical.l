@@ -216,8 +216,44 @@ ccr             TOKEN(CONDITION_CODE_REGISTER)
 sp              yylval->generic.integer = 7; return TOKEN_ADDRESS_REGISTER;
 usp             TOKEN(USER_STACK_POINTER_REGISTER)
 pc              TOKEN(PROGRAM_COUNTER)
-[Dd]{decimal}   yylval->generic.integer = yytext[1] - '0'; return TOKEN_DATA_REGISTER;
-[Aa]{decimal}   yylval->generic.integer = yytext[1] - '0'; return TOKEN_ADDRESS_REGISTER;
+
+[Dd]{decimal} {
+	char *string_end;
+	yylval->generic.integer = strtoul(yytext + 1, &string_end, 10);
+
+	if (string_end[0] != '\0')
+	{
+		m68kasm_error(yyscanner, NULL, "This decimal number is invalid and cannot be parsed.");
+		return M68KASM_error;
+	}
+
+	if (yylval->generic.integer > 7)
+	{
+		m68kasm_error(yyscanner, NULL, "The only valid data registers are d0 to d7.");
+		return M68KASM_error;
+	}
+
+	return TOKEN_DATA_REGISTER;
+}
+
+[Aa]{decimal} {
+	char *string_end;
+	yylval->generic.integer = strtoul(yytext + 1, &string_end, 10);
+
+	if (string_end[0] != '\0')
+	{
+		m68kasm_error(yyscanner, NULL, "This decimal number is invalid and cannot be parsed.");
+		return M68KASM_error;
+	}
+
+	if (yylval->generic.integer > 7)
+	{
+		m68kasm_error(yyscanner, NULL, "The only valid address registers are a0 to a7.");
+		return M68KASM_error;
+	}
+
+	return TOKEN_ADDRESS_REGISTER;
+}
 
 {decimal} {
 	char *string_end;
