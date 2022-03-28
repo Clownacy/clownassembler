@@ -362,9 +362,11 @@ TheGreatestMacro2 MACRO opcode
 	TheGreatestMacro2 illegal
 
 	; Testing character literals
-	dc.b	'S','E','G','A'
-	dc.w	'SE','GA'
-	dc.l	'SEGA'
+	dc.b	'S',"E",'G',"A"
+	dc.w	'SE',"GA"
+	dc.l	'SEGA',"AGES"
+	dc.b	"This is a dc.b holding way more than a single byte."
+	even
 
 	; Testing binclude/incbin
 	binclude "binary.bin"

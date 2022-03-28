@@ -189,6 +189,7 @@ typedef enum ValueType
 	VALUE_RIGHT_SHIFT,
 	VALUE_NUMBER,
 	VALUE_IDENTIFIER,
+	VALUE_STRING,
 	VALUE_PROGRAM_COUNTER
 } ValueType;
 
@@ -198,7 +199,7 @@ typedef struct Value
 	union
 	{
 		unsigned long integer;
-		char *identifier;
+		char *string;
 		struct Value *values;
 	} shared;
 } Value;
@@ -207,17 +208,7 @@ typedef struct ValueListNode
 {
 	struct ValueListNode *next;
 
-	enum
-	{
-		VALUE_LIST_NODE_TYPE_VALUE,
-		VALUE_LIST_NODE_TYPE_STRING
-	} type;
-
-	union
-	{
-		Value value;
-		char *string;
-	} shared;
+	Value value;
 } ValueListNode;
 
 typedef struct IdentifierListNode
@@ -740,8 +731,7 @@ value_list
 		}
 		else
 		{
-			node->type = VALUE_LIST_NODE_TYPE_VALUE;
-			node->shared.value = $1;
+			node->value = $1;
 			node->next = NULL;
 		}
 
@@ -759,49 +749,7 @@ value_list
 		}
 		else
 		{
-			node->type = VALUE_LIST_NODE_TYPE_VALUE;
-			node->shared.value = $3;
-			node->next = NULL;
-
-			if ($$.head == NULL)
-				$$.head = node;
-			else
-				((ValueListNode*)$$.tail)->next = node;
-
-			$$.tail = node;
-		}
-	}
-	| TOKEN_STRING
-	{
-		ValueListNode *node = malloc(sizeof(ValueListNode));
-
-		if (node == NULL)
-		{
-			YYNOMEM;
-		}
-		else
-		{
-			node->type = VALUE_LIST_NODE_TYPE_STRING;
-			node->shared.string = $1;
-			node->next = NULL;
-		}
-
-		$$.head = $$.tail = node;
-	}
-	| value_list ',' TOKEN_STRING
-	{
-		ValueListNode *node = malloc(sizeof(ValueListNode));
-
-		$$ = $1;
-
-		if (node == NULL)
-		{
-			YYNOMEM;
-		}
-		else
-		{
-			node->type = VALUE_LIST_NODE_TYPE_STRING;
-			node->shared.string = $3;
+			node->value = $3;
 			node->next = NULL;
 
 			if ($$.head == NULL)
@@ -1867,31 +1815,36 @@ value11
 	| TOKEN_IDENTIFIER
 	{
 		$$.type = VALUE_IDENTIFIER;
-		$$.shared.identifier = $1;
+		$$.shared.string = $1;
 	}
 	| TOKEN_LOCAL_IDENTIFIER
 	{
 		$$.type = VALUE_IDENTIFIER;
-		$$.shared.identifier = $1;
+		$$.shared.string = $1;
 	}
 	| TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER
 	{
 		const size_t identifier_length = strlen($1);
 		const size_t local_identifier_length = strlen($2 + 1);
 
-		$$.shared.identifier = malloc(identifier_length + 1 + local_identifier_length + 1);
+		$$.shared.string = malloc(identifier_length + 1 + local_identifier_length + 1);
 
-		if ($$.shared.identifier == NULL)
+		if ($$.shared.string == NULL)
 		{
 			YYNOMEM;
 		}
 		else
 		{
 			$$.type = VALUE_IDENTIFIER;
-			memcpy(&$$.shared.identifier[0], $1, identifier_length);
-			$$.shared.identifier[identifier_length] = '@';
-			memcpy(&$$.shared.identifier[identifier_length + 1], $2 + 1, local_identifier_length + 1);
+			memcpy(&$$.shared.string[0], $1, identifier_length);
+			$$.shared.string[identifier_length] = '@';
+			memcpy(&$$.shared.string[identifier_length + 1], $2 + 1, local_identifier_length + 1);
 		}
+	}
+	| TOKEN_STRING
+	{
+		$$.type = VALUE_STRING;
+		$$.shared.string = $1;
 	}
 	| '*'
 	{
@@ -1963,7 +1916,8 @@ static void DestroyValue(Value *value)
 			break;
 
 		case VALUE_IDENTIFIER:
-			free(value->shared.identifier);
+		case VALUE_STRING:
+			free(value->shared.string);
 			break;
 
 		case VALUE_NUMBER:
@@ -1986,17 +1940,7 @@ static void DestroyValueListNode(ValueListNode *node)
 {
 	if (node != NULL)
 	{
-		switch (node->type)
-		{
-			case VALUE_LIST_NODE_TYPE_VALUE:
-				DestroyValue(&node->shared.value);
-				break;
-
-			case VALUE_LIST_NODE_TYPE_STRING:
-				free(node->shared.string);
-				break;
-		}
-
+		DestroyValue(&node->value);
 		DestroyValueListNode(node->next);
 	}
 }

@@ -422,6 +422,7 @@ static cc_bool ResolveValue(SemanticState *state, Value *value, unsigned long *v
 				{
 					case VALUE_NUMBER:
 					case VALUE_IDENTIFIER:
+					case VALUE_STRING:
 					case VALUE_PROGRAM_COUNTER:
 					case VALUE_NEGATE:
 					case VALUE_BITWISE_NOT:
@@ -525,6 +526,7 @@ static cc_bool ResolveValue(SemanticState *state, Value *value, unsigned long *v
 				{
 					case VALUE_NUMBER:
 					case VALUE_IDENTIFIER:
+					case VALUE_STRING:
 					case VALUE_PROGRAM_COUNTER:
 					case VALUE_SUBTRACT:
 					case VALUE_ADD:
@@ -573,12 +575,12 @@ static cc_bool ResolveValue(SemanticState *state, Value *value, unsigned long *v
 		case VALUE_IDENTIFIER:
 		{
 			char *expanded_identifier = NULL;
-			const char *identifier = value->shared.identifier;
+			const char *identifier = value->shared.string;
 			Dictionary_Entry *dictionary_entry;
 
-			if (value->shared.identifier[0] == '@' || value->shared.identifier[0] == '.')
+			if (value->shared.string[0] == '@' || value->shared.string[0] == '.')
 			{
-				expanded_identifier = ExpandLocalIdentifier(state, value->shared.identifier + 1);
+				expanded_identifier = ExpandLocalIdentifier(state, value->shared.string + 1);
 
 				if (expanded_identifier != NULL)
 					identifier = expanded_identifier;
@@ -602,13 +604,41 @@ static cc_bool ResolveValue(SemanticState *state, Value *value, unsigned long *v
 			}
 			else
 			{
-				/* We're done with the identifier: delete it. */
-				free(value->shared.identifier);
+				/* We're done with the string: delete it. */
+				free(value->shared.string);
 
 				*value_integer = dictionary_entry->shared.unsigned_integer;
 			}
 
 			free(expanded_identifier);
+
+			break;
+		}
+
+		case VALUE_STRING:
+		{
+			const size_t length = strlen(value->shared.string);
+
+			if (length > 4)
+			{
+				success = cc_false;
+				SemanticError(state, "Character literals cannot be more than 4 characters long.");
+			}
+			else
+			{
+				size_t i;
+
+				*value_integer = 0;
+
+				for (i = 0; i < length; ++i)
+				{
+					*value_integer <<= 8;
+					*value_integer |= value->shared.string[i];
+				}
+
+				/* We're done with the string: delete it. */
+				free(value->shared.string);
+			}
 
 			break;
 		}
@@ -3592,29 +3622,21 @@ static void ProcessDc(SemanticState *state, StatementDc *dc)
 
 	for (value_list_node = dc->values; value_list_node != NULL; value_list_node = value_list_node->next)
 	{
-		switch (value_list_node->type)
+		if (value_list_node->value.type == VALUE_STRING && (dc->size == SIZE_BYTE || dc->size == SIZE_SHORT))
 		{
-			case VALUE_LIST_NODE_TYPE_VALUE:
-			{
-				unsigned long value;
+			const char *character;
 
-				if (!ResolveValue(state, &value_list_node->shared.value, &value))
-					value = 0;
+			for (character = value_list_node->value.shared.string; *character != '\0'; ++character)
+				OutputDcValue(state, dc->size, *character);
+		}
+		else
+		{
+			unsigned long value;
 
-				OutputDcValue(state, dc->size, value);
+			if (!ResolveValue(state, &value_list_node->value, &value))
+				value = 0;
 
-				break;
-			}
-
-			case VALUE_LIST_NODE_TYPE_STRING:
-			{
-				const char *character;
-
-				for (character = value_list_node->shared.string; *character != '\0'; ++character)
-					OutputDcValue(state, dc->size, *character);
-
-				break;
-			}
+			OutputDcValue(state, dc->size, value);
 		}
 	}
 }
