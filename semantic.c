@@ -793,6 +793,7 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const char *label, 
 
 	expanded_identifier = NULL;
 	identifier = label;
+	symbol = NULL;
 
 	if (label[0] == '@' || label[0] == '.')
 	{
@@ -804,18 +805,41 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const char *label, 
 	}
 
 	/* Now add it to the symbol table. */
-	if (type == SYMBOL_VARIABLE)
-		symbol = LookupSymbol(state, identifier);
-	else
-		symbol = CreateSymbol(state, identifier);
+	switch (type)
+	{
+		case SYMBOL_VARIABLE:
+			symbol = LookupSymbol(state, identifier);
+
+			if (symbol != NULL && symbol->type != -1 && symbol->type != SYMBOL_VARIABLE)
+				SemanticError(state, "Symbol redefined as a different type.");
+
+			break;
+
+		case SYMBOL_CONSTANT:
+			symbol = LookupSymbol(state, identifier);
+
+			if (symbol != NULL && symbol->type == SYMBOL_CONSTANT && symbol->shared.unsigned_integer != value)
+				SemanticError(state, "Constant cannot be redefined to a different value.");
+
+			break;
+
+		case SYMBOL_LABEL:
+			symbol = CreateSymbol(state, identifier);
+			break;
+
+		case SYMBOL_MACRO:
+			/* This should not happen. */
+			assert(cc_false);
+			break;
+	}
+
+	free(expanded_identifier);
 
 	if (symbol != NULL)
 	{
 		symbol->type = type;
 		symbol->shared.unsigned_integer = value;
 	}
-
-	free(expanded_identifier);
 }
 
 typedef struct InstructionMetadata
