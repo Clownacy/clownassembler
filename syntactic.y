@@ -374,6 +374,7 @@ void DestroyStatement(Statement *statement);
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 int m68kasm_lex(M68KASM_STYPE *yylval_param, void *yyscanner);
 void m68kasm_warning(void *scanner, Statement *statement, const char *message);
@@ -545,6 +546,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token<generic.integer> TOKEN_ADDRESS_REGISTER
 %token<generic.integer> TOKEN_NUMBER
 %token<generic.string> TOKEN_IDENTIFIER
+%token<generic.string> TOKEN_LOCAL_IDENTIFIER
 %token<generic.string> TOKEN_STRING
 %token TOKEN_STATUS_REGISTER
 %token TOKEN_CONDITION_CODE_REGISTER
@@ -571,7 +573,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %type<list_metadata> identifier_list
 %type<value> value value1 value2 value3 value4 value5 value6 value7 value8 value9 value10 value11
 
-%destructor { free($$); } TOKEN_IDENTIFIER TOKEN_STRING
+%destructor { free($$); } TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER TOKEN_STRING
 %destructor { DestroyOperand(&$$); } operand
 %destructor { DestroyValueListNode($$.head); } value_list
 %destructor { DestroyIdentifierListNode($$.head); } identifier_list
@@ -591,18 +593,18 @@ statement
 		statement->type = STATEMENT_TYPE_INSTRUCTION;
 		statement->shared.instruction = $1;
 	}
-	| TOKEN_DIRECTIVE_DC '.' size value_list
+	| TOKEN_DIRECTIVE_DC size value_list
 	{
 		statement->type = STATEMENT_TYPE_DC;
-		statement->shared.dc.size = $3;
-		statement->shared.dc.values = $4.head;
+		statement->shared.dc.size = $2;
+		statement->shared.dc.values = $3.head;
 	}
-	| TOKEN_DIRECTIVE_DCB '.' size value ',' value
+	| TOKEN_DIRECTIVE_DCB size value ',' value
 	{
 		statement->type = STATEMENT_TYPE_DCB;
-		statement->shared.dcb.size = $3;
-		statement->shared.dcb.repetitions = $4;
-		statement->shared.dcb.value = $6;
+		statement->shared.dcb.size = $2;
+		statement->shared.dcb.repetitions = $3;
+		statement->shared.dcb.value = $5;
 	}
 	| TOKEN_DIRECTIVE_INCLUDE TOKEN_STRING
 	{
@@ -703,11 +705,11 @@ statement
 	{
 		statement->type = STATEMENT_TYPE_END;
 	}
-	| TOKEN_DIRECTIVE_RS '.' size value
+	| TOKEN_DIRECTIVE_RS size value
 	{
 		statement->type = STATEMENT_TYPE_RS;
-		statement->shared.rs.size = $3;
-		statement->shared.rs.value = $4;
+		statement->shared.rs.size = $2;
+		statement->shared.rs.value = $3;
 	}
 	| TOKEN_DIRECTIVE_RSSET value
 	{
@@ -880,10 +882,10 @@ full_opcode
 		$$.size = SIZE_UNDEFINED;
 		m68kasm_warning(scanner, statement, "Opcode has a dot but no size; either remove the dot or add an explicit size.");
 	}
-	| opcode '.' size
+	| opcode size
 	{
 		$$ = $1;
-		$$.size = $3;
+		$$.size = $2;
 	}
 	;
 
@@ -1446,23 +1448,23 @@ operand
 		$$.literal = $1;
 		$$.main_register = $3;
 	}
-	| '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register '.' size ')'
+	| '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register size ')'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = VALUE_NUMBER;
 		$$.literal.shared.integer = 0;
 		$$.main_register = $2;
 		$$.index_register = $4 % 8;
-		$$.size = $6;
+		$$.size = $5;
 		$$.index_register_is_address_register = $4 / 8 != 0;
 	}
-	| value '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register '.' size ')'
+	| value '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register size ')'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
 		$$.main_register = $3;
 		$$.index_register = $5 % 8;
-		$$.size = $7;
+		$$.size = $6;
 		$$.index_register_is_address_register = $5 / 8 !=0;
 	}
 	| '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'
@@ -1491,21 +1493,21 @@ operand
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		$$.literal = $1;
 	}
-	| '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register '.' size ')'
+	| '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register size ')'
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = VALUE_NUMBER;
 		$$.literal.shared.integer = 0;
 		$$.index_register = $4 % 8;
-		$$.size = $6;
+		$$.size = $5;
 		$$.index_register_is_address_register = $4 / 8 != 0;
 	}
-	| value '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register '.' size ')'
+	| value '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register size ')'
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
 		$$.index_register = $5 % 8;
-		$$.size = $7;
+		$$.size = $6;
 		$$.index_register_is_address_register = $5 / 8 != 0;
 	}
 	| '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'
@@ -1563,11 +1565,11 @@ operand
 		$$.literal = $1;
 		$$.size = SIZE_UNDEFINED;
 	}
-	| '(' value ')' '.' size
+	| '(' value ')' size
 	{
 		$$.type = OPERAND_ADDRESS_ABSOLUTE;
 		$$.literal = $2;
-		$$.size = $5;
+		$$.size = $4;
 	}
 	/* Register list */
 	| register_list
@@ -1855,6 +1857,30 @@ value11
 	{
 		$$.type = VALUE_IDENTIFIER;
 		$$.shared.identifier = $1;
+	}
+	| TOKEN_LOCAL_IDENTIFIER
+	{
+		$$.type = VALUE_IDENTIFIER;
+		$$.shared.identifier = $1;
+	}
+	| TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER
+	{
+		const size_t identifier_length = strlen($1);
+		const size_t local_identifier_length = strlen($2 + 1);
+
+		$$.shared.identifier = malloc(identifier_length + 1 + local_identifier_length + 1);
+
+		if ($$.shared.identifier == NULL)
+		{
+			YYNOMEM;
+		}
+		else
+		{
+			$$.type = VALUE_IDENTIFIER;
+			memcpy(&$$.shared.identifier[0], $1, identifier_length);
+			$$.shared.identifier[identifier_length] = '@';
+			memcpy(&$$.shared.identifier[identifier_length + 1], $2 + 1, local_identifier_length + 1);
+		}
 	}
 	| '*'
 	{

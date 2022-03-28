@@ -359,12 +359,13 @@ static char* ExpandLocalIdentifier(SemanticState *state, const char *identifier)
 	const char *last_global_label = state->last_global_label != NULL ? state->last_global_label : "";
 	const size_t prefix_length = strlen(last_global_label);
 	const size_t suffix_length = strlen(identifier);
-	char *expanded_identifier = MallocAndHandleError(state, prefix_length + suffix_length + 1);
+	char *expanded_identifier = MallocAndHandleError(state, prefix_length + 1 + suffix_length + 1);
 
 	if (expanded_identifier != NULL)
 	{
-		memcpy(expanded_identifier, last_global_label, prefix_length);
-		memcpy(expanded_identifier + prefix_length, identifier, suffix_length + 1);
+		memcpy(&expanded_identifier[0], last_global_label, prefix_length);
+		expanded_identifier[prefix_length] = '@';
+		memcpy(&expanded_identifier[prefix_length + 1], identifier, suffix_length + 1);
 	}
 
 	return expanded_identifier;
@@ -565,9 +566,9 @@ static cc_bool ResolveValue(SemanticState *state, Value *value, unsigned long *v
 			const char *identifier = value->shared.identifier;
 			Dictionary_Entry *dictionary_entry;
 
-			if (value->shared.identifier[0] == '@')
+			if (value->shared.identifier[0] == '@' || value->shared.identifier[0] == '.')
 			{
-				expanded_identifier = ExpandLocalIdentifier(state, value->shared.identifier);
+				expanded_identifier = ExpandLocalIdentifier(state, value->shared.identifier + 1);
 
 				if (expanded_identifier != NULL)
 					identifier = expanded_identifier;
@@ -766,7 +767,7 @@ static unsigned int ToAlternateEffectiveAddressBits(unsigned int bits)
 
 static void SetLastGlobalLabel(SemanticState *state, const char *label)
 {
-	if (label[0] != '@')
+	if (label[0] != '@' && label[0] != '.')
 	{
 		/* This is a global label - cache it for later. */
 		free(state->last_global_label);
@@ -783,10 +784,10 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const char *label, 
 	expanded_identifier = NULL;
 	identifier = label;
 
-	if (label[0] == '@')
+	if (label[0] == '@' || label[0] == '.')
 	{
 		/* This is a local label - prefix it with the previous global label. */
-		expanded_identifier = ExpandLocalIdentifier(state, label);
+		expanded_identifier = ExpandLocalIdentifier(state, label + 1);
 
 		if (expanded_identifier != NULL)
 			identifier = expanded_identifier;
@@ -4546,7 +4547,7 @@ static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const 
 	/* The symbol file only contains labels. */
 	/* Labels longer than 0xFF characters are silently ignored. */
 	/* Local labels are also silently ignored. */
-	if (entry->type == SYMBOL_LABEL && identifier_length < 0x100 && memchr(identifier, '@', identifier_length) == NULL)
+	if (entry->type == SYMBOL_LABEL && identifier_length < 0x100 && memchr(identifier, '@', identifier_length) == NULL && memchr(identifier, '.', identifier_length) == NULL)
 	{
 		unsigned int i;
 

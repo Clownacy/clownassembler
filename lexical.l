@@ -32,12 +32,11 @@ void m68kasm_error(void *scanner, Statement *statement, const char *message);
 %}
 
 whitespace        [ \t]+
-letter            [A-Za-z]
 binary_digit      [0-1]
 decimal_digit     [0-9]
 hexadecimal_digit [0-9a-fA-F]
-identifier_character_nondigit {letter}|_|@
-identifier        {identifier_character_nondigit}({identifier_character_nondigit}|{decimal_digit})*
+identifier        [A-Za-z_][A-Za-z_0-9]*
+local_identifier  [@\.][A-Za-z_0-9]*
 binary            {binary_digit}+
 decimal           {decimal_digit}+
 hexadecimal       {hexadecimal_digit}+
@@ -194,10 +193,10 @@ rsreset         TOKEN(DIRECTIVE_RSRESET)
 ","             return yytext[0];
 "("             return yytext[0];
 ")"             return yytext[0];
-"b"             TOKEN(SIZE_BYTE)
-"s"             TOKEN(SIZE_SHORT)
-"w"             TOKEN(SIZE_WORD)
-"l"             TOKEN(SIZE_LONGWORD)
+".b"            TOKEN(SIZE_BYTE)
+".s"            TOKEN(SIZE_SHORT)
+".w"            TOKEN(SIZE_WORD)
+".l"            TOKEN(SIZE_LONGWORD)
 "$"             return yytext[0];
 "+"             return yytext[0];
 "-"             return yytext[0];
@@ -271,6 +270,21 @@ pc              TOKEN(PROGRAM_COUNTER)
 	{
 		memcpy(yylval->generic.string, yytext, length + 1);
 		return TOKEN_IDENTIFIER;
+	}
+}
+
+{local_identifier} {
+	const size_t length = strlen(yytext);
+	yylval->generic.string = malloc(length + 1);
+	if (yylval->generic.string == NULL)
+	{
+		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
+		return M68KASM_error;
+	}
+	else
+	{
+		memcpy(yylval->generic.string, yytext, length + 1);
+		return TOKEN_LOCAL_IDENTIFIER;
 	}
 }
 
