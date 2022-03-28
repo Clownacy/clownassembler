@@ -421,6 +421,18 @@ Struct_B_B:	rs.b 2
 Struct_B_C:	rs.b 3
 Struct_B_D:	rs.b 4
 
+
+	; Testing variables
+variable set 0
+	; The use of FutureLabel will cause this statement to become a fix-up.
+	; If variables aren't accounted for properly, then this statement will
+	; re-evaluate with 'variable' set to 1 instead of 0.
+	dc.b	variable+(FutureLabel-FutureLabel) ; Should evaluate to 0
+variable set 1
+	dc.b	variable ; Should evaluate to 1
+
+FutureLabel:
+
   ; More blank lines to test support for trailing blank statements
 
 

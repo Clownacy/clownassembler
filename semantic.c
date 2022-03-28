@@ -254,7 +254,7 @@ static char* DuplicateStringAndHandleError(SemanticState *state, const char *str
 	return duplicated_string;
 }
 
-static Dictionary_Entry* CreateSymbol(SemanticState *state, const char *identifier)
+static Dictionary_Entry* LookupSymbol(SemanticState *state, const char *identifier)
 {
 	Dictionary_Entry *dictionary_entry;
 
@@ -263,7 +263,17 @@ static Dictionary_Entry* CreateSymbol(SemanticState *state, const char *identifi
 		OutOfMemoryError(state);
 		dictionary_entry = NULL;
 	}
-	else if (dictionary_entry->type != -1)
+
+	return dictionary_entry;
+}
+
+static Dictionary_Entry* CreateSymbol(SemanticState *state, const char *identifier)
+{
+	Dictionary_Entry *dictionary_entry;
+
+	dictionary_entry = LookupSymbol(state, identifier);
+
+	if (dictionary_entry != NULL && dictionary_entry->type != -1)
 	{
 		SemanticError(state, "Symbol '%s' cannot be redefined.", identifier);
 		dictionary_entry = NULL;
@@ -794,7 +804,10 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const char *label, 
 	}
 
 	/* Now add it to the symbol table. */
-	symbol = CreateSymbol(state, identifier);
+	if (type == SYMBOL_VARIABLE)
+		symbol = LookupSymbol(state, identifier);
+	else
+		symbol = CreateSymbol(state, identifier);
 
 	if (symbol != NULL)
 	{
@@ -3780,6 +3793,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 
 		case STATEMENT_TYPE_MACRO:
 		case STATEMENT_TYPE_EQU:
+		case STATEMENT_TYPE_SET:
 			if (label == NULL)
 			{
 				SemanticError(state, "This type of statement must have a label.");
@@ -3846,6 +3860,22 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 
 			if (ResolveValue(state, &statement->shared.value, &resolved_value))
 				AddIdentifierToSymbolTable(state, label, resolved_value, SYMBOL_CONSTANT);
+
+			break;
+		}
+
+		case STATEMENT_TYPE_SET:
+		{
+			unsigned long resolved_value;
+
+			SetLastGlobalLabel(state, label);
+
+			if (ResolveValue(state, &statement->shared.value, &resolved_value))
+				AddIdentifierToSymbolTable(state, label, resolved_value, SYMBOL_VARIABLE);
+
+			/* Variable assignments should always go in the fix-up list, so that fix-ups
+			   that use variables have the variables set to the correct value. */
+			state->fix_up_needed = cc_true;
 
 			break;
 		}

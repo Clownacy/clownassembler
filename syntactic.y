@@ -327,6 +327,7 @@ typedef struct Statement
 		STATEMENT_TYPE_MACRO,
 		STATEMENT_TYPE_ENDM,
 		STATEMENT_TYPE_EQU,
+		STATEMENT_TYPE_SET,
 		STATEMENT_TYPE_IF,
 		STATEMENT_TYPE_ELSE,
 		STATEMENT_TYPE_ENDC,
@@ -529,6 +530,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_INCLUDE
 %token TOKEN_DIRECTIVE_INCBIN
 %token TOKEN_DIRECTIVE_EQU
+%token TOKEN_DIRECTIVE_SET
 %token TOKEN_DIRECTIVE_IF
 %token TOKEN_DIRECTIVE_ELSE
 %token TOKEN_DIRECTIVE_ENDC
@@ -660,6 +662,11 @@ statement
 	| TOKEN_DIRECTIVE_EQU value
 	{
 		statement->type = STATEMENT_TYPE_EQU;
+		statement->shared.value = $2;
+	}
+	| TOKEN_DIRECTIVE_SET value
+	{
+		statement->type = STATEMENT_TYPE_SET;
 		statement->shared.value = $2;
 	}
 	| '=' value
@@ -2074,6 +2081,7 @@ void DestroyStatement(Statement *statement)
 			break;
 
 		case STATEMENT_TYPE_EQU:
+		case STATEMENT_TYPE_SET:
 		case STATEMENT_TYPE_IF:
 		case STATEMENT_TYPE_RSSET:
 			DestroyValue(&statement->shared.value);
