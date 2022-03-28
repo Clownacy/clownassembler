@@ -301,6 +301,7 @@ CoolFunction_Exit:
 	dc.b	0,1,2,3,4,5
 	dc.w	0,1,2,3,4,5
 	dc.l	0,1,2,3,4,5
+	even
 
 Object:
 	moveq	#0,d0
@@ -326,6 +327,7 @@ Object:
 
 	; Test operators
 	dc.b	1<<1, 4>>1, 3&2, 7^5, 0|2, 6%4, 1=1, 1==1, 1<>0, 1>0, 0<1, 1&&1, 1||1, 0+1, 2-1 , 1*1 , 1/1
+	even
 
 	; Testing REPT
 Delta:	rept 8
@@ -374,6 +376,7 @@ TheGreatestMacro2 MACRO opcode
 	dcb.b	4,$11
 	dcb.w	4,$22
 	dcb.l	4,$44
+	even
 
 	; Testing EQU
 TimesToRept equ 2
