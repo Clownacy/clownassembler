@@ -96,6 +96,7 @@ typedef struct SemanticState
 		unsigned long line_number;
 		IdentifierListNode *parameter_names;
 		SourceLineList source_line_list;
+		cc_bool is_short;
 	} macro;
 } SemanticState;
 
@@ -3766,7 +3767,7 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 	state->rept.source_line_list.tail = NULL;
 }
 
-static void ProcessMacro(SemanticState *state, StatementMacro *macro, const char *label)
+static void ProcessMacro(SemanticState *state, StatementMacro *macro, const char *label, cc_bool is_short)
 {
 	state->mode = MODE_MACRO;
 
@@ -3774,6 +3775,7 @@ static void ProcessMacro(SemanticState *state, StatementMacro *macro, const char
 	state->macro.line_number = state->location->line_number;
 	state->macro.parameter_names = macro->parameter_names;
 	macro->parameter_names = NULL;
+	state->macro.is_short = is_short;
 
 	state->macro.source_line_list.head = NULL;
 	state->macro.source_line_list.tail = NULL;
@@ -3839,6 +3841,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			break;
 
 		case STATEMENT_TYPE_MACRO:
+		case STATEMENT_TYPE_MACROS:
 		case STATEMENT_TYPE_EQU:
 		case STATEMENT_TYPE_SET:
 			if (label == NULL)
@@ -3888,7 +3891,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			break;
 
 		case STATEMENT_TYPE_MACRO:
-			ProcessMacro(state, &statement->shared.macro, label);
+			ProcessMacro(state, &statement->shared.macro, label, cc_false);
+			break;
+
+		case STATEMENT_TYPE_MACROS:
+			ProcessMacro(state, &statement->shared.macro, label, cc_true);
 			break;
 
 		case STATEMENT_TYPE_ENDM:
@@ -4587,10 +4594,35 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 				/* TODO - Detect code after the keyword and error if any is found. */
 				statement.type = STATEMENT_TYPE_ENDM;
 				ProcessStatement(state, &statement, label);
+
+				if (state->macro.is_short)
+					SemanticError(state, "Short macros shouldn't use ENDM.");
 			}
 			else
 			{
-				AddToSourceLineList(state, &state->macro.source_line_list, source_line);
+				if (state->macro.is_short)
+				{
+					const char first_nonwhitespace_character = source_line[strspn(source_line, " \t")];
+
+					if (label != NULL)
+						SemanticError(state, "Short macros shouldn't create labels.");
+
+					if (first_nonwhitespace_character == '\0' || first_nonwhitespace_character == ';')
+					{
+						/* This line is an empty statement: ignore it. */
+					}
+					else
+					{
+						/* Short macros automatically terminate after one statement. */
+						state->mode = MODE_NORMAL;
+
+						AddToSourceLineList(state, &state->macro.source_line_list, source_line);
+					}
+				}
+				else
+				{
+					AddToSourceLineList(state, &state->macro.source_line_list, source_line);
+				}
 			}
 
 			break;

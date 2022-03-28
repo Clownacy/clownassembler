@@ -316,6 +316,7 @@ typedef struct Statement
 		STATEMENT_TYPE_REPT,
 		STATEMENT_TYPE_ENDR,
 		STATEMENT_TYPE_MACRO,
+		STATEMENT_TYPE_MACROS,
 		STATEMENT_TYPE_ENDM,
 		STATEMENT_TYPE_EQU,
 		STATEMENT_TYPE_SET,
@@ -523,6 +524,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_REPT
 %token TOKEN_DIRECTIVE_ENDR
 %token TOKEN_DIRECTIVE_MACRO
+%token TOKEN_DIRECTIVE_MACROS
 %token TOKEN_DIRECTIVE_ENDM
 %token TOKEN_DIRECTIVE_INCLUDE
 %token TOKEN_DIRECTIVE_INCBIN
@@ -651,6 +653,16 @@ statement
 	| TOKEN_DIRECTIVE_MACRO identifier_list
 	{
 		statement->type = STATEMENT_TYPE_MACRO;
+		statement->shared.macro.parameter_names = $2.head;
+	}
+	| TOKEN_DIRECTIVE_MACROS
+	{
+		statement->type = STATEMENT_TYPE_MACROS;
+		statement->shared.macro.parameter_names = NULL;
+	}
+	| TOKEN_DIRECTIVE_MACROS identifier_list
+	{
+		statement->type = STATEMENT_TYPE_MACROS;
 		statement->shared.macro.parameter_names = $2.head;
 	}
 	| TOKEN_DIRECTIVE_ENDM
@@ -2038,6 +2050,7 @@ void DestroyStatement(Statement *statement)
 			break;
 
 		case STATEMENT_TYPE_MACRO:
+		case STATEMENT_TYPE_MACROS:
 			DestroyIdentifierListNode(statement->shared.macro.parameter_names);
 			break;
 
