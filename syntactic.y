@@ -1837,6 +1837,10 @@ value10
 	{
 		$$ = $1;
 	}
+	| '+' value10
+	{
+		$$ = $2;
+	}
 	| '-' value10
 	{
 		if (!DoValue(&$$, VALUE_NEGATE, &$2, NULL))
