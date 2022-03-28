@@ -4303,8 +4303,11 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 									/* Now find the identifier-based macro parameter placeholders. */
 									for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
 									{
-										const char* const other_parameter_position = strstr(remaining_line, parameter_name->identifier);
-										const char* const other_parameter_end = other_parameter_position + strlen(parameter_name->identifier);
+										const char *other_parameter_position;
+										const char *other_parameter_end;
+
+										other_parameter_position = strstr(remaining_line, parameter_name->identifier);
+										other_parameter_end = other_parameter_position + strlen(parameter_name->identifier);
 
 										/* Obviously bail if the identifier wasn't found. */
 										if (other_parameter_position != NULL)
@@ -4320,6 +4323,14 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 												 && (other_parameter_end[0] < 'A' || other_parameter_end[0] > 'Z')
 												 && (other_parameter_end[0] < '0' || other_parameter_end[0] > '9'))
 												{
+													/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
+													/* asm68k allows backslashes before and after the parameter to separate them from surrounding characters. */
+													if (other_parameter_position != source_line_list_node->source_line && other_parameter_position[-1] == '\\')
+														--other_parameter_position;
+
+													if (other_parameter_end[0] == '\\')
+														++other_parameter_end;
+
 													if (parameter_position == NULL || other_parameter_position < parameter_position)
 													{
 														parameter_index = i;
