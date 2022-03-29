@@ -396,6 +396,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 		char *string;
 	} generic;
 	Opcode opcode;
+	Size size;
 	Operand operand;
 	StatementInstruction instruction;
 	Statement statement;
@@ -566,7 +567,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 
 %type<instruction> instruction
 %type<opcode> opcode
-%type<generic.unsigned_long> size /* TODO - Make this use its own type. */
+%type<size> size
 %type<opcode> full_opcode
 %type<operand> operand
 %type<generic.unsigned_long> register_list
