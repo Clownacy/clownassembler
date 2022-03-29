@@ -1736,12 +1736,12 @@ expression4
 	}
 	| expression4 TOKEN_LOGICAL_AND expression5
 	{
-		if (!DoExpression(&$$, EXPRESSION_BITWISE_AND, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_LOGICAL_AND, &$1, &$3))
 			YYNOMEM;
 	}
 	| expression4 TOKEN_LOGICAL_OR expression5
 	{
-		if (!DoExpression(&$$, EXPRESSION_BITWISE_OR, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_LOGICAL_OR, &$1, &$3))
 			YYNOMEM;
 	}
 	;
