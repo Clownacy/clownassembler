@@ -300,7 +300,7 @@ static void TerminateRept(SemanticState *state)
 
 	while (countdown-- != 0)
 	{
-		/* Rewind back to line number of the start of the REPT. */
+		/* Rewind back to the line number of the start of the REPT. */
 		state->location->line_number = state->shared.rept.line_number;
 
 		/* Process the REPT's nested statements. */
@@ -327,15 +327,15 @@ static void TerminateRept(SemanticState *state)
 
 static void TerminateMacro(SemanticState *state)
 {
-	Dictionary_Entry *symbol;
+	Dictionary_Entry* const symbol = CreateSymbol(state, state->shared.macro.name);
 
+	/* Exit macro mode. */
 	state->mode = MODE_NORMAL;
 
-	symbol = CreateSymbol(state, state->shared.macro.name);
-
+	/* Add the macro to the symbol table. */
 	if (symbol != NULL)
 	{
-		Macro *macro = MallocAndHandleError(state, sizeof(Macro));
+		Macro* const macro = MallocAndHandleError(state, sizeof(Macro));
 
 		if (macro != NULL)
 		{
@@ -351,7 +351,7 @@ static void TerminateMacro(SemanticState *state)
 
 static void AddToSourceLineList(SemanticState *state, SourceLineList *source_line_list, const char *source_line)
 {
-	SourceLineListNode *source_line_list_node = MallocAndHandleError(state, sizeof(SourceLineListNode));
+	SourceLineListNode* const source_line_list_node = MallocAndHandleError(state, sizeof(SourceLineListNode));
 
 	if (source_line_list_node != NULL)
 	{
@@ -685,6 +685,7 @@ static unsigned int ConstructSizeBits(Size size)
 			return 0x0080;
 
 		case SIZE_UNDEFINED:
+			assert(cc_false);
 			break;
 	}
 
@@ -2476,6 +2477,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
+								assert(cc_false);
 								break;
 						}
 
@@ -2502,6 +2504,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
+								assert(cc_false);
 								break;
 						}
 
@@ -2527,15 +2530,15 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 					case OPCODE_MOVEP_TO_REG:
 					case OPCODE_MOVEP_FROM_REG:
 					{
-						unsigned int data_register = 0;
-						unsigned int address_register = 0;
+						unsigned int data_register;
+						unsigned int address_register;
 
 						if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
 						{
 							data_register = instruction->operands[0].main_register;
 							address_register = instruction->operands[1].main_register;
 						}
-						else if (instruction->operands[1].type == OPERAND_DATA_REGISTER)
+						else /*if (instruction->operands[1].type == OPERAND_DATA_REGISTER)*/
 						{
 							address_register = instruction->operands[0].main_register;
 							data_register = instruction->operands[1].main_register;
@@ -2572,6 +2575,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 							case SIZE_UNDEFINED:
 								/* Should never happen. */
+								assert(cc_false);
 								break;
 						}
 
@@ -2623,6 +2627,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
+								assert(cc_false);
 								break;
 						}
 
@@ -2831,19 +2836,10 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 					{
 						unsigned long value;
 
-						switch (instruction->opcode.type)
-						{
-							case OPCODE_ADDQ:
-								machine_code = 0x5000;
-								break;
-
-							case OPCODE_SUBQ:
-								machine_code = 0x5100;
-								break;
-
-							default:
-								break;
-						}
+						if (instruction->opcode.type == OPCODE_ADDQ)
+							machine_code = 0x5000;
+						else /*if (instruction->opcode.type == OPCODE_SUBQ)*/
+							machine_code = 0x5100;
 
 						machine_code |= ConstructSizeBits(instruction->opcode.size);
 						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
@@ -2853,8 +2849,8 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 						if (value < 1 || value > 8)
 							SemanticError(state, "The value to add/subtract cannot be lower than 1 or higher than 8.");
-						else
-							machine_code |= (value & 7) << 9;
+
+						machine_code |= (value & 7) << 9;
 
 						/* Skip the immediate operand since that goes in the machine code instead. */
 						operands_to_output[0] = NULL;
@@ -2876,14 +2872,17 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 						machine_code |= instruction->opcode.condition << 8;
 						machine_code |= instruction->operands[0].main_register;
 
+						/* Obtain the destination address. */
 						if (!ResolveExpression(state, &instruction->operands[1].literal, &value))
 							value = state->program_counter - 2;
 
+						/* Construct a custom operand to hold the destination offset. */
 						operands_to_output[0] = &custom_operands[0];
 						operands_to_output[1] = NULL;
 						custom_operands[0].type = OPERAND_LITERAL;
 						custom_operands[0].literal.type = EXPRESSION_NUMBER;
 
+						/* Calculate the destination offset. */
 						if (value >= state->program_counter)
 						{
 							const unsigned long offset = value - state->program_counter;
@@ -2930,12 +2929,15 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
+								assert(cc_false);
 								break;
 						}
 
+						/* Obtain the destination address. */
 						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
 							value = state->program_counter - 2;
 
+						/* Calculate the destination offset. */
 						if (value >= state->program_counter)
 						{
 							offset = value - state->program_counter;
@@ -2943,7 +2945,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
 							{
 								if (offset == 0)
-									SemanticError(state, "The destination cannot be 0 bytes away when using a short-sized branch.");
+									SemanticError(state, "The destination cannot be 0 bytes away when using a short-sized branch: use a word-sized branch instead.");
 								else if (offset > 0x7F)
 									SemanticError(state, "The destination is too far away: it must be less than $80 bytes after the start of the instruction, but instead it was $%lX bytes away.", offset);
 							}
@@ -2980,6 +2982,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 						}
 						else
 						{
+							/* Construct a custom operand to hold the destination offset. */
 							operands_to_output[0] = &custom_operands[0];
 							custom_operands[0].type = OPERAND_LITERAL;
 							custom_operands[0].literal.type = EXPRESSION_NUMBER;
@@ -2995,18 +2998,20 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 						machine_code = 0x7000;
 
+						/* Obtain the value to be moved. */
 						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
 							value = 0;
 
 						if (value > 0x7F && value < 0xFFFFFF80)
 							SemanticError(state, "Value is too large: it must be between -$80 and $7F, or $FFFFFF80 and $FFFFFFFF.");
-						else
-							machine_code |= value & 0xFF;
+
+						machine_code |= value & 0xFF;
 
 						machine_code |= instruction->operands[1].main_register << 9;
 
 						/* MOVEQ's operands are embedded directly into the machine code, so we don't need to output them separately. */
 						operands_to_output[0] = NULL;
+						operands_to_output[1] = NULL;
 
 						break;
 					}
@@ -3054,6 +3059,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
+								assert(cc_false);
 								break;
 						}
 
@@ -3114,6 +3120,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
+								assert(cc_false);
 								break;
 						}
 
@@ -3150,6 +3157,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
+								assert(cc_false);
 								break;
 						}
 
@@ -3195,7 +3203,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							machine_code |= instruction->operands[0].main_register << 9;
 							machine_code |= instruction->operands[1].main_register << 0;
 						}
-						else if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER && instruction->operands[1].type == OPERAND_DATA_REGISTER)
+						else /*if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER && instruction->operands[1].type == OPERAND_DATA_REGISTER)*/
 						{
 							machine_code |= 0x0088;
 							machine_code |= instruction->operands[1].main_register << 9;
@@ -3204,6 +3212,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 						break;
 
+					/* TODO - Split these opcode: this code is a bloody mess. */
 					case OPCODE_ASL_STATIC:
 					case OPCODE_ASR_STATIC:
 					case OPCODE_LSL_STATIC:
@@ -3229,11 +3238,10 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 					case OPCODE_ROL_SINGLE:
 					case OPCODE_ROR_SINGLE:
 					{
-						unsigned int identifier;
+						unsigned int identifier = 0;
 
 						switch (instruction->opcode.type)
 						{
-							default:
 							case OPCODE_ASL_STATIC:
 							case OPCODE_ASR_STATIC:
 							case OPCODE_ASL_DYNAMIC:
@@ -3268,6 +3276,10 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							case OPCODE_ROL_SINGLE:
 							case OPCODE_ROR_SINGLE:
 								identifier = 3;
+								break;
+
+							default:
+								assert(cc_false);
 								break;
 						}
 
@@ -3306,6 +3318,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
+								assert(cc_false);
 								break;
 						}
 
@@ -3327,8 +3340,8 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 								if (value > 8 || value < 1)
 									SemanticError(state, "The shift value must not be greater than 8 or lower than 1.");
-								else
-									machine_code |= (value & 7) << 9;
+
+								machine_code |= (value & 7) << 9;
 
 								machine_code |= identifier << 3;
 								machine_code |= instruction->operands[1].main_register << 0;
@@ -3369,6 +3382,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
+								assert(cc_false);
 								break;
 						}
 
@@ -3386,7 +3400,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 	/* Output the data for the operands. */
 	for (i = 0; i < CC_COUNT_OF(operands_to_output); ++i)
 	{
-		Operand *operand = operands_to_output[i];
+		Operand* const operand = operands_to_output[i];
 
 		if (operand != NULL)
 		{
@@ -3491,6 +3505,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							break;
 
 						case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+							/* Turn the address into a displacement. */
 							value -= state->program_counter;
 							/* Fallthrough */
 						case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
@@ -3538,10 +3553,10 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 				{
 					unsigned int bytes_to_write;
 
+					state->program_counter += 2;
+
 					for (bytes_to_write = 2; bytes_to_write-- > 0; )
 						fputc((operand->main_register >> (8 * bytes_to_write)) & 0xFF, state->output_file);
-
-					state->program_counter += 2;
 
 					break;
 				}
@@ -3579,6 +3594,7 @@ static void OutputDcValue(SemanticState *state, const Size size, unsigned long v
 
 		case SIZE_UNDEFINED:
 			/* Should never occur. */
+			assert(cc_false);
 			break;
 	}
 
@@ -3596,6 +3612,8 @@ static void ProcessDc(SemanticState *state, StatementDc *dc)
 	{
 		if (expression_list_node->expression.type == EXPRESSION_STRING && (dc->size == SIZE_BYTE || dc->size == SIZE_SHORT))
 		{
+			/* If this is a 'dc.b', and the value is a raw string, then output each character as a single byte. */
+			/* This allows 'dc.b' to be used to embed strings into the output. */
 			const char *character;
 
 			for (character = expression_list_node->expression.shared.string; *character != '\0'; ++character)
@@ -3727,6 +3745,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 
 static void ProcessRept(SemanticState *state, StatementRept *rept)
 {
+	/* Enter REPT mode. */
 	state->mode = MODE_REPT;
 
 	if (!ResolveExpression(state, &rept->repetitions, &state->shared.rept.repetitions))
@@ -3743,6 +3762,7 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 
 static void ProcessMacro(SemanticState *state, StatementMacro *macro, const char *label, cc_bool is_short)
 {
+	/* Enter MACRO mode. */
 	state->mode = MODE_MACRO;
 
 	state->shared.macro.name = DuplicateStringAndHandleError(state, label);
@@ -3759,7 +3779,7 @@ static void ProcessIf(SemanticState *state, Expression *expression)
 {
 	++state->current_if_level;
 
-	/* If we are within a false conditional block, then this if statement is null and void. */
+	/* If we are within a false conditional block, then this if-statement is null and void. */
 	if (state->false_if_level == 0)
 	{
 		unsigned long value;
@@ -3778,6 +3798,7 @@ static void ProcessIf(SemanticState *state, Expression *expression)
 
 static void ProcessStatement(SemanticState *state, Statement *statement, const char *label)
 {
+	/* Update both copies of the program counter. */
 	Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_STATEMENT, sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1)->shared.unsigned_long = state->program_counter;
 	Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_long = state->program_counter;
 
@@ -3796,8 +3817,9 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		case STATEMENT_TYPE_INFORM:
 		case STATEMENT_TYPE_END:
 		case STATEMENT_TYPE_RS:
-			if (label != NULL && !state->doing_fix_up && !state->doing_final_pass)
+			if (label != NULL && !state->doing_fix_up)
 			{
+				/* Handle the label here, instead of passing it onto a later function. */
 				SetLastGlobalLabel(state, label);
 				AddIdentifierToSymbolTable(state, label, state->program_counter, SYMBOL_LABEL);
 			}
@@ -3822,6 +3844,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			if (label == NULL)
 			{
 				SemanticError(state, "This type of statement must have a label.");
+				/* Bail, to avoid null pointer dereferences. */
 				return;
 			}
 
@@ -3858,6 +3881,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			break;
 
 		case STATEMENT_TYPE_ENDR:
+			/* Exit REPT mode. */
 			if (state->mode != MODE_REPT)
 				SemanticError(state, "This stray ENDR has no preceeding REPT.");
 			else
@@ -3874,6 +3898,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			break;
 
 		case STATEMENT_TYPE_ENDM:
+			/* Exit MACRO mode. */
 			if (state->mode != MODE_MACRO)
 				SemanticError(state, "This stray ENDM has no preceeding MACRO.");
 			else
@@ -3885,6 +3910,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		{
 			unsigned long value;
 
+			/* TODO - asm68k option D. */
 			SetLastGlobalLabel(state, label);
 
 			if (ResolveExpression(state, &statement->shared.expression, &value))
@@ -3897,6 +3923,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		{
 			unsigned long value;
 
+			/* TODO - asm68k option D. */
 			SetLastGlobalLabel(state, label);
 
 			if (ResolveExpression(state, &statement->shared.expression, &value))
@@ -3996,6 +4023,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		}
 
 		case STATEMENT_TYPE_INFORM:
+			/* TODO - Everything... */
 			SemanticWarning(state, "INFORM: '%s'", statement->shared.inform.message);
 			break;
 
@@ -4043,6 +4071,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 
 		case STATEMENT_TYPE_RSSET:
 		{
+			/* Set program counter to value. */
 			unsigned long value;
 
 			if (!ResolveExpression(state, &statement->shared.expression, &value))
@@ -4054,6 +4083,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		}
 
 		case STATEMENT_TYPE_RSRESET:
+			/* Set program counter to 0. */
 			state->program_counter = 0;
 			break;
 	}
@@ -4064,9 +4094,11 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	size_t label_length;
 	const char *source_line_pointer;
 	char *label;
-	size_t keyword_length;
+	size_t directive_length;
 	Statement statement;
 
+	/* Output line to listing file. */
+	/* TODO - Machine code. */
 	if (state->listing_file != NULL)
 		fprintf(state->listing_file, "%08lX : %s\n", state->program_counter, source_line);
 
@@ -4081,6 +4113,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	state->source_line = source_line;
 	source_line_pointer = source_line;
 
+	/* Determine the length of the label. */
 	label_length = strspn(source_line_pointer, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_.@");
 
 	if (label_length != 0)
@@ -4092,6 +4125,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 		/* Maybe the label has some whitespace before it: check again. */
 		source_line_pointer += strspn(source_line_pointer, " \t");
 
+		/* Determine the length of the label again. */
 		label_length = strspn(source_line_pointer, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_.@");
 
 		if (label_length != 0)
@@ -4100,7 +4134,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			   To figure it out, we have to rely on the label having a ':' after it. */
 			if (source_line_pointer[label_length] == ':')
 			{
-				/* We've found the label */
+				/* We've found the label. */
 			}
 			else
 			{
@@ -4117,7 +4151,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	}
 	else
 	{
-		/* This line has a label. Duplicate it for later. */
+		/* This line has a label; duplicate it for later. */
 		label = MallocAndHandleError(state, label_length + 1);
 
 		if (label != NULL)
@@ -4133,32 +4167,37 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			++source_line_pointer;
 	}
 
+	/* Skip the whitespace between the label and the directive. */
 	source_line_pointer += strspn(source_line_pointer, " \t");
-	keyword_length = strspn(source_line_pointer, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_");
+
+	/* Determine the length of the directive. */
+	directive_length = strspn(source_line_pointer, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_");
 
 	switch (state->mode)
 	{
 		case MODE_NORMAL:
 		{
+			/* If we are in the false part of an if-statement, then manually parse the source code until we encounter an IF, ELSEIF, ELSE, ENDC, or ENDIF. */
 			if (state->false_if_level != 0)
 			{
-				if (keyword_length != 0)
+				if (directive_length != 0)
 				{
-					if (strncasecmp(source_line_pointer, "if", keyword_length) == 0)
+					if (strncasecmp(source_line_pointer, "if", directive_length) == 0)
 					{
-						/* Create a false if statement. */
+						/* If-statements that are nested within the false part of another if-statement
+						   are themselves false, so create a false if-statement here and process it. */
 						statement.type = STATEMENT_TYPE_IF;
 						statement.shared.expression.type = EXPRESSION_NUMBER;
 						statement.shared.expression.shared.unsigned_long = 0;
 						ProcessStatement(state, &statement, label);
 					}
-					else if (strncasecmp(source_line_pointer, "else", keyword_length) == 0)
+					else if (strncasecmp(source_line_pointer, "else", directive_length) == 0)
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
 						statement.type = STATEMENT_TYPE_ELSE;
 						ProcessStatement(state, &statement, label);
 					}
-					else if (strncasecmp(source_line_pointer, "endc", keyword_length) == 0 || strncasecmp(source_line_pointer, "endif", keyword_length) == 0)
+					else if (strncasecmp(source_line_pointer, "endc", directive_length) == 0 || strncasecmp(source_line_pointer, "endif", directive_length) == 0)
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
 						statement.type = STATEMENT_TYPE_ENDC;
@@ -4166,22 +4205,24 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					}
 					else
 					{
-						/* Drop the line completely, since it's inside the false half of an if statement. */
+						/* Drop the line completely, since it's inside the false half of an if statement and should be ignored. */
 					}
 				}
 			}
 			else
 			{
-				/* Look up the keyword in the dictionary to see if it's a macro. */
-				const Dictionary_Entry* const macro_dictionary_entry = Dictionary_LookUp(&state->dictionary, source_line_pointer, keyword_length);
+				/* This is either a directive, or a macro. */
+
+				/* Look up the directive in the dictionary to see if it's actually a macro. */
+				const Dictionary_Entry* const macro_dictionary_entry = Dictionary_LookUp(&state->dictionary, source_line_pointer, directive_length);
 
 				if (macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO)
 				{
-					/* Macro invocation. */
+					/* This is a macro invocation. */
 					char **parameters;
 					size_t total_parameters;
 
-					source_line_pointer += strcspn(source_line_pointer, " \t.;");
+					source_line_pointer += strspn(source_line_pointer, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_");
 					parameters = MallocAndHandleError(state, sizeof(char*));
 					total_parameters = 1;
 
@@ -4196,9 +4237,10 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					{
 						size_t size_length;
 
+						/* Skip the '.' character. */
 						++source_line_pointer;
 
-						size_length = strcspn(source_line_pointer, " \t;");
+						size_length = strspn(source_line_pointer, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_");
 						parameters[0] = MallocAndHandleError(state, size_length + 1);
 
 						if (parameters[0] != NULL)
@@ -4207,6 +4249,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 							parameters[0][size_length] = '\0';
 						}
 
+						/* Advance past the size specifier. */
 						source_line_pointer += size_length;
 					}
 					else
@@ -4226,6 +4269,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 							{
 								character = *source_line_pointer++;
 
+								/* If commas appear between parentheses, then we shouldn't separate on them. */
+								/* To do this, manually skip characters until we find a closing parenthesis. */
 								if (character == '(')
 								{
 									unsigned int parameter_depth = 1;
@@ -4243,6 +4288,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 									}
 								}
 
+								/* If we encounter a comma, a comment, or the end of the line, then split this off as a macro parameter. */
 								if (character == ',' || character == ';' || character == '\0')
 								{
 									const size_t parameter_string_length = source_line_pointer - parameter_start - 1;
@@ -4279,6 +4325,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					}
 
 					/* Define the 'narg' symbol, which represents how many parameters (arguments) have been passed to the macro. */
+					/* TODO - This doesn't agree with nested macros: switch to string substitution for this instead. */
 					{
 						Dictionary_Entry *symbol;
 
@@ -4305,6 +4352,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 						location.previous = state->location;
 						state->location = &location;
 
+						/* Iterate over each line of the macro, performing parameter substitution and then sending it to be processed. */
 						for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
 						{
 							const char *remaining_line;
@@ -4456,7 +4504,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 				}
 				else
 				{
-					/* Normal assembly line. */
+					/* This is a normal assembly line. */
 					YY_BUFFER_STATE buffer;
 					int parse_result;
 
@@ -4558,7 +4606,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 		}
 
 		case MODE_REPT:
-			if (keyword_length != 0 && strncasecmp(source_line_pointer, "endr", keyword_length) == 0)
+			/* If this line is an 'ENDR' directive, then exit REPT mode. Otherwise, add the line to the REPT. */
+			if (directive_length != 0 && strncasecmp(source_line_pointer, "endr", directive_length) == 0)
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
 				statement.type = STATEMENT_TYPE_ENDR;
@@ -4572,7 +4621,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			break;
 
 		case MODE_MACRO:
-			if (keyword_length != 0 && strncasecmp(source_line_pointer, "endm", keyword_length) == 0)
+			/* If this line is an 'ENDM' directive, then exit macro mode. Otherwise, add the line to the macro. */
+			if (directive_length != 0 && strncasecmp(source_line_pointer, "endm", directive_length) == 0)
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
 				statement.type = STATEMENT_TYPE_ENDM;
@@ -4585,6 +4635,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			{
 				if (state->shared.macro.is_short)
 				{
+					/* Short macros automatically terminate after one statement. */
 					const char first_nonwhitespace_character = source_line[strspn(source_line, " \t")];
 
 					if (label != NULL)
@@ -4597,8 +4648,6 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					else
 					{
 						AddToSourceLineList(state, &state->shared.macro.source_line_list, source_line);
-
-						/* Short macros automatically terminate after one statement. */
 						TerminateMacro(state);
 					}
 				}
@@ -4620,6 +4669,7 @@ static void AssembleFile(SemanticState *state, FILE *input_file)
 
 	line_buffer_write_pointer = state->line_buffer;
 
+	/* Read lines one at a time, feeding them to the 'AssembleLine' function. */
 	while (!state->end && fgets(line_buffer_write_pointer, &state->line_buffer[sizeof(state->line_buffer)] - line_buffer_write_pointer, input_file) != NULL)
 	{
 		const size_t newline_index = strcspn(state->line_buffer, "\r\n");
@@ -4651,12 +4701,13 @@ static void AssembleFile(SemanticState *state, FILE *input_file)
 			continue;
 		}
 
-		/* Remove newlines from the string, so they don't appear in the error message. */
+		/* Remove newlines from the string, so that they don't appear in the error message. */
 		state->line_buffer[newline_index] = '\0';
 
 		AssembleLine(state, state->line_buffer);
 	}
 
+	/* If we're not in normal mode when a file ends, then something is wrong. */
 	switch (state->mode)
 	{
 		case MODE_NORMAL:
@@ -4664,12 +4715,14 @@ static void AssembleFile(SemanticState *state, FILE *input_file)
 			break;
 
 		case MODE_REPT:
+			/* Terminate the REPT to hopefully avoid future complications. */
 			TerminateRept(state);
 
 			SemanticError(state, "REPT statement beginning at line %lu is missing its ENDR.", state->shared.rept.line_number);
 			break;
 
 		case MODE_MACRO:
+			/* Terminate the macro to hopefully avoid future complications. */
 			TerminateMacro(state);
 
 			SemanticError(state, "MACRO statement beginning at line %lu is missing its ENDM.", state->shared.macro.line_number);
@@ -4720,10 +4773,12 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 	SemanticState state;
 	Dictionary_Entry *symbol;
 
+	/* Initialise the base location. */
 	location.previous = NULL;
 	location.file_path = DuplicateStringAndHandleError(&state, input_file_path != NULL ? input_file_path : "[No path given]");
 	location.line_number = 0;
 
+	/* Initialise the state. */
 	state.success = cc_true;
 	state.output_file = output_file;
 	state.listing_file = listing_file;
