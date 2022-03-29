@@ -396,9 +396,9 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 		case EXPRESSION_MODULO:
 		case EXPRESSION_LOGICAL_OR:
 		case EXPRESSION_LOGICAL_AND:
-		case EXPRESSION_ARITHMETIC_OR:
-		case EXPRESSION_ARITHMETIC_XOR:
-		case EXPRESSION_ARITHMETIC_AND:
+		case EXPRESSION_BITWISE_OR:
+		case EXPRESSION_BITWISE_XOR:
+		case EXPRESSION_BITWISE_AND:
 		case EXPRESSION_EQUALITY:
 		case EXPRESSION_INEQUALITY:
 		case EXPRESSION_LESS_THAN:
@@ -454,47 +454,47 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 						break;
 
 					case EXPRESSION_LOGICAL_OR:
-						*value = left_value || right_value;
+						*value = left_value != 0 || right_value != 0 ? -1 : 0;
 						break;
 
 					case EXPRESSION_LOGICAL_AND:
-						*value = left_value && right_value;
+						*value = left_value != 0 && right_value != 0 ? -1 : 0;
 						break;
 
-					case EXPRESSION_ARITHMETIC_OR:
+					case EXPRESSION_BITWISE_OR:
 						*value = left_value | right_value;
 						break;
 
-					case EXPRESSION_ARITHMETIC_XOR:
+					case EXPRESSION_BITWISE_XOR:
 						*value = left_value ^ right_value;
 						break;
 
-					case EXPRESSION_ARITHMETIC_AND:
+					case EXPRESSION_BITWISE_AND:
 						*value = left_value & right_value;
 						break;
 
 					case EXPRESSION_EQUALITY:
-						*value = left_value == right_value;
+						*value = left_value == right_value ? -1 : 0;
 						break;
 
 					case EXPRESSION_INEQUALITY:
-						*value = left_value != right_value;
+						*value = left_value != right_value ? -1 : 0;
 						break;
 
 					case EXPRESSION_LESS_THAN:
-						*value = left_value < right_value;
+						*value = left_value < right_value ? -1 : 0;
 						break;
 
 					case EXPRESSION_LESS_OR_EQUAL:
-						*value = left_value <= right_value;
+						*value = left_value <= right_value ? -1 : 0;
 						break;
 
 					case EXPRESSION_MORE_THAN:
-						*value = left_value > right_value;
+						*value = left_value > right_value ? -1 : 0;
 						break;
 
 					case EXPRESSION_MORE_OR_EQUAL:
-						*value = left_value >= right_value;
+						*value = left_value >= right_value ? -1 : 0;
 						break;
 
 					case EXPRESSION_LEFT_SHIFT:
@@ -539,9 +539,9 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 					case EXPRESSION_MODULO:
 					case EXPRESSION_LOGICAL_OR:
 					case EXPRESSION_LOGICAL_AND:
-					case EXPRESSION_ARITHMETIC_OR:
-					case EXPRESSION_ARITHMETIC_XOR:
-					case EXPRESSION_ARITHMETIC_AND:
+					case EXPRESSION_BITWISE_OR:
+					case EXPRESSION_BITWISE_XOR:
+					case EXPRESSION_BITWISE_AND:
 					case EXPRESSION_EQUALITY:
 					case EXPRESSION_INEQUALITY:
 					case EXPRESSION_LESS_THAN:
@@ -562,7 +562,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 						break;
 
 					case EXPRESSION_LOGICAL_NOT:
-						*value = !*value;
+						*value = *value == 0 ? -1 : 0;
 						break;
 				}
 

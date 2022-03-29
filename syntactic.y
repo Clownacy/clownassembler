@@ -172,13 +172,13 @@ typedef enum ExpressionType
 	EXPRESSION_DIVIDE,
 	EXPRESSION_MODULO,
 	EXPRESSION_NEGATE,
-	EXPRESSION_BITWISE_NOT,
 	EXPRESSION_LOGICAL_NOT,
 	EXPRESSION_LOGICAL_OR,
 	EXPRESSION_LOGICAL_AND,
-	EXPRESSION_ARITHMETIC_OR,
-	EXPRESSION_ARITHMETIC_XOR,
-	EXPRESSION_ARITHMETIC_AND,
+	EXPRESSION_BITWISE_NOT,
+	EXPRESSION_BITWISE_OR,
+	EXPRESSION_BITWISE_XOR,
+	EXPRESSION_BITWISE_AND,
 	EXPRESSION_EQUALITY,
 	EXPRESSION_INEQUALITY,
 	EXPRESSION_LESS_THAN,
@@ -574,13 +574,13 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %type<generic.integer> data_or_address_register
 %type<list_metadata> expression_list
 %type<list_metadata> identifier_list
-%type<expression> expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 expression9 expression10 expression11
+%type<expression> expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8
 
 %destructor { free($$); } TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER TOKEN_STRING
 %destructor { DestroyOperand(&$$); } operand
 %destructor { DestroyExpressionListNode($$.head); } expression_list
 %destructor { DestroyIdentifierListNode($$.head); } identifier_list
-%destructor { DestroyExpression(&$$); } expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 expression9 expression10 expression11
+%destructor { DestroyExpression(&$$); } expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8
 
 %start statement
 
@@ -1646,9 +1646,19 @@ expression
 	{
 		$$ = $1;
 	}
-	| expression TOKEN_LOGICAL_OR expression1
+	| expression '=' expression1
 	{
-		if (!DoExpression(&$$, EXPRESSION_LOGICAL_OR, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_EQUALITY, &$1, &$3))
+			YYNOMEM;
+	}
+	| expression TOKEN_EQUALITY expression1
+	{
+		if (!DoExpression(&$$, EXPRESSION_EQUALITY, &$1, &$3))
+			YYNOMEM;
+	}
+	| expression TOKEN_INEQUALITY expression1
+	{
+		if (!DoExpression(&$$, EXPRESSION_INEQUALITY, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -1658,9 +1668,24 @@ expression1
 	{
 		$$ = $1;
 	}
-	| expression1 TOKEN_LOGICAL_AND expression2
+	| expression1 '<' expression2
 	{
-		if (!DoExpression(&$$, EXPRESSION_LOGICAL_AND, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_LESS_THAN, &$1, &$3))
+			YYNOMEM;
+	}
+	| expression1 TOKEN_LESS_OR_EQUAL expression2
+	{
+		if (!DoExpression(&$$, EXPRESSION_LESS_OR_EQUAL, &$1, &$3))
+			YYNOMEM;
+	}
+	| expression1 '>' expression2
+	{
+		if (!DoExpression(&$$, EXPRESSION_MORE_THAN, &$1, &$3))
+			YYNOMEM;
+	}
+	| expression1 TOKEN_MORE_OR_EQUAL expression2
+	{
+		if (!DoExpression(&$$, EXPRESSION_MORE_OR_EQUAL, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -1670,9 +1695,14 @@ expression2
 	{
 		$$ = $1;
 	}
-	| expression2 '|' expression3
+	| expression2 '+' expression3
 	{
-		if (!DoExpression(&$$, EXPRESSION_ARITHMETIC_OR, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_ADD, &$1, &$3))
+			YYNOMEM;
+	}
+	| expression2 '-' expression3
+	{
+		if (!DoExpression(&$$, EXPRESSION_SUBTRACT, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -1682,9 +1712,19 @@ expression3
 	{
 		$$ = $1;
 	}
-	| expression3 '^' expression4
+	| expression3 '*' expression4
 	{
-		if (!DoExpression(&$$, EXPRESSION_ARITHMETIC_XOR, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_MULTIPLY, &$1, &$3))
+			YYNOMEM;
+	}
+	| expression3 '/' expression4
+	{
+		if (!DoExpression(&$$, EXPRESSION_DIVIDE, &$1, &$3))
+			YYNOMEM;
+	}
+	| expression3 '%' expression4
+	{
+		if (!DoExpression(&$$, EXPRESSION_MODULO, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -1694,9 +1734,14 @@ expression4
 	{
 		$$ = $1;
 	}
-	| expression4 '&' expression5
+	| expression4 TOKEN_LOGICAL_AND expression5
 	{
-		if (!DoExpression(&$$, EXPRESSION_ARITHMETIC_AND, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_BITWISE_AND, &$1, &$3))
+			YYNOMEM;
+	}
+	| expression4 TOKEN_LOGICAL_OR expression5
+	{
+		if (!DoExpression(&$$, EXPRESSION_BITWISE_OR, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -1706,19 +1751,24 @@ expression5
 	{
 		$$ = $1;
 	}
-	| expression5 '=' expression6
+	| expression5 '&' expression6
 	{
-		if (!DoExpression(&$$, EXPRESSION_EQUALITY, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_BITWISE_AND, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression5 TOKEN_EQUALITY expression6
+	| expression5 '!' expression6
 	{
-		if (!DoExpression(&$$, EXPRESSION_EQUALITY, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_BITWISE_OR, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression5 TOKEN_INEQUALITY expression6
+	| expression5 '|' expression6
 	{
-		if (!DoExpression(&$$, EXPRESSION_INEQUALITY, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_BITWISE_OR, &$1, &$3))
+			YYNOMEM;
+	}
+	| expression5 '^' expression6
+	{
+		if (!DoExpression(&$$, EXPRESSION_BITWISE_XOR, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -1728,24 +1778,14 @@ expression6
 	{
 		$$ = $1;
 	}
-	| expression6 '<' expression7
+	| expression6 TOKEN_LEFT_SHIFT expression7
 	{
-		if (!DoExpression(&$$, EXPRESSION_LESS_THAN, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_LEFT_SHIFT, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression6 TOKEN_LESS_OR_EQUAL expression7
+	| expression6 TOKEN_RIGHT_SHIFT expression7
 	{
-		if (!DoExpression(&$$, EXPRESSION_LESS_OR_EQUAL, &$1, &$3))
-			YYNOMEM;
-	}
-	| expression6 '>' expression7
-	{
-		if (!DoExpression(&$$, EXPRESSION_MORE_THAN, &$1, &$3))
-			YYNOMEM;
-	}
-	| expression6 TOKEN_MORE_OR_EQUAL expression7
-	{
-		if (!DoExpression(&$$, EXPRESSION_MORE_OR_EQUAL, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_RIGHT_SHIFT, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -1755,84 +1795,28 @@ expression7
 	{
 		$$ = $1;
 	}
-	| expression7 TOKEN_LEFT_SHIFT expression8
-	{
-		if (!DoExpression(&$$, EXPRESSION_LEFT_SHIFT, &$1, &$3))
-			YYNOMEM;
-	}
-	| expression7 TOKEN_RIGHT_SHIFT expression8
-	{
-		if (!DoExpression(&$$, EXPRESSION_RIGHT_SHIFT, &$1, &$3))
-			YYNOMEM;
-	}
-	;
-
-expression8
-	: expression9
-	{
-		$$ = $1;
-	}
-	| expression8 '+' expression9
-	{
-		if (!DoExpression(&$$, EXPRESSION_ADD, &$1, &$3))
-			YYNOMEM;
-	}
-	| expression8 '-' expression9
-	{
-		if (!DoExpression(&$$, EXPRESSION_SUBTRACT, &$1, &$3))
-			YYNOMEM;
-	}
-	;
-
-expression9
-	: expression10
-	{
-		$$ = $1;
-	}
-	| expression9 '*' expression10
-	{
-		if (!DoExpression(&$$, EXPRESSION_MULTIPLY, &$1, &$3))
-			YYNOMEM;
-	}
-	| expression9 '/' expression10
-	{
-		if (!DoExpression(&$$, EXPRESSION_DIVIDE, &$1, &$3))
-			YYNOMEM;
-	}
-	| expression9 '%' expression10
-	{
-		if (!DoExpression(&$$, EXPRESSION_MODULO, &$1, &$3))
-			YYNOMEM;
-	}
-	;
-
-expression10
-	: expression11
-	{
-		$$ = $1;
-	}
-	| '+' expression10
+	| '+' expression7
 	{
 		$$ = $2;
 	}
-	| '-' expression10
+	| '-' expression7
 	{
 		if (!DoExpression(&$$, EXPRESSION_NEGATE, &$2, NULL))
 			YYNOMEM;
 	}
-	| '~' expression10
+	| '~' expression7
 	{
 		if (!DoExpression(&$$, EXPRESSION_BITWISE_NOT, &$2, NULL))
 			YYNOMEM;
 	}
-	| '!' expression10
+	| '!' expression7
 	{
 		if (!DoExpression(&$$, EXPRESSION_LOGICAL_NOT, &$2, NULL))
 			YYNOMEM;
 	}
 	;
 
-expression11
+expression8
 	: TOKEN_NUMBER
 	{
 		$$.type = EXPRESSION_NUMBER;
@@ -1922,9 +1906,9 @@ static void DestroyExpression(Expression *expression)
 		case EXPRESSION_MODULO:
 		case EXPRESSION_LOGICAL_OR:
 		case EXPRESSION_LOGICAL_AND:
-		case EXPRESSION_ARITHMETIC_OR:
-		case EXPRESSION_ARITHMETIC_XOR:
-		case EXPRESSION_ARITHMETIC_AND:
+		case EXPRESSION_BITWISE_OR:
+		case EXPRESSION_BITWISE_XOR:
+		case EXPRESSION_BITWISE_AND:
 		case EXPRESSION_EQUALITY:
 		case EXPRESSION_INEQUALITY:
 		case EXPRESSION_LESS_THAN:
