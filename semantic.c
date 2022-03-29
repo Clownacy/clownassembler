@@ -125,9 +125,9 @@ static void ErrorMessageCommon(SemanticState *state)
 	const Location *location;
 
 	for (location = state->location; location != NULL; location = location->previous)
-		fprintf(stderr, "\nOn line %lu of '%s'...", location->line_number, location->file_path);
+		fprintf(stderr, "\nOn line %lu of '%s'...", location->line_number, location->file_path != NULL ? location->file_path : "[No path given]");
 
-	fprintf(stderr, "\n%s\n\n", state->source_line);
+	fprintf(stderr, "\n%s\n\n", state->source_line != NULL ? state->source_line : "[No source line]");
 }
 
 __attribute__((format(printf, 2, 3))) static void SemanticWarning(SemanticState *state, const char *fmt, ...)
@@ -251,10 +251,19 @@ static char* DuplicateString(const char *string)
 
 static char* DuplicateStringAndHandleError(SemanticState *state, const char *string)
 {
-	char *duplicated_string = DuplicateString(string);
+	char *duplicated_string;
 
-	if (duplicated_string == NULL)
-		OutOfMemoryError(state);
+	if (string == NULL)
+	{
+		duplicated_string = NULL;
+	}
+	else
+	{
+		duplicated_string = DuplicateString(string);
+
+		if (duplicated_string == NULL)
+			OutOfMemoryError(state);
+	}
 
 	return duplicated_string;
 }
@@ -318,7 +327,6 @@ static void TerminateRept(SemanticState *state)
 	{
 		SourceLineListNode *next_source_line_list_node = source_line_list_node->next;
 
-		free(source_line_list_node->source_line);
 		free(source_line_list_node);
 
 		source_line_list_node = next_source_line_list_node;
@@ -327,31 +335,35 @@ static void TerminateRept(SemanticState *state)
 
 static void TerminateMacro(SemanticState *state)
 {
-	Dictionary_Entry* const symbol = CreateSymbol(state, state->shared.macro.name);
-
 	/* Exit macro mode. */
 	state->mode = MODE_NORMAL;
 
-	/* Add the macro to the symbol table. */
-	if (symbol != NULL)
+	if (state->shared.macro.name != NULL)
 	{
-		Macro* const macro = MallocAndHandleError(state, sizeof(Macro));
+		Dictionary_Entry* const symbol = CreateSymbol(state, state->shared.macro.name);
 
-		if (macro != NULL)
+		/* Add the macro to the symbol table. */
+		if (symbol != NULL)
 		{
-			macro->name = state->shared.macro.name;
-			macro->parameter_names = state->shared.macro.parameter_names;
-			macro->source_line_list_head = state->shared.macro.source_line_list.head;
+			Macro* const macro = MallocAndHandleError(state, sizeof(Macro));
 
-			symbol->type = SYMBOL_MACRO;
-			symbol->shared.pointer = macro;
+			if (macro != NULL)
+			{
+				macro->name = state->shared.macro.name;
+				macro->parameter_names = state->shared.macro.parameter_names;
+				macro->source_line_list_head = state->shared.macro.source_line_list.head;
+
+				symbol->type = SYMBOL_MACRO;
+				symbol->shared.pointer = macro;
+			}
 		}
 	}
 }
 
 static void AddToSourceLineList(SemanticState *state, SourceLineList *source_line_list, const char *source_line)
 {
-	SourceLineListNode* const source_line_list_node = MallocAndHandleError(state, sizeof(SourceLineListNode));
+	const size_t source_line_length = strlen(source_line);
+	SourceLineListNode* const source_line_list_node = MallocAndHandleError(state, sizeof(SourceLineListNode) + source_line_length + 1);
 
 	if (source_line_list_node != NULL)
 	{
@@ -365,22 +377,32 @@ static void AddToSourceLineList(SemanticState *state, SourceLineList *source_lin
 
 		/* Initialise the list node. */
 		source_line_list_node->next = NULL;
-		source_line_list_node->source_line = DuplicateStringAndHandleError(state, source_line);
+		source_line_list_node->source_line = (char*)(source_line_list_node + 1);
+		memcpy(source_line_list_node->source_line, source_line, source_line_length + 1);
 	}
 }
 
 static char* ExpandLocalIdentifier(SemanticState *state, const char *identifier)
 {
-	const char *last_global_label = state->last_global_label != NULL ? state->last_global_label : "";
-	const size_t prefix_length = strlen(last_global_label);
-	const size_t suffix_length = strlen(identifier);
-	char *expanded_identifier = MallocAndHandleError(state, prefix_length + 1 + suffix_length + 1);
+	char *expanded_identifier;
 
-	if (expanded_identifier != NULL)
+	if (state->last_global_label == NULL)
 	{
-		memcpy(&expanded_identifier[0], last_global_label, prefix_length);
-		expanded_identifier[prefix_length] = '@';
-		memcpy(&expanded_identifier[prefix_length + 1], identifier, suffix_length + 1);
+		expanded_identifier = DuplicateStringAndHandleError(state, identifier);
+	}
+	else
+	{
+		const size_t prefix_length = strlen(state->last_global_label);
+		const size_t suffix_length = strlen(identifier);
+
+		expanded_identifier = MallocAndHandleError(state, prefix_length + 1 + suffix_length + 1);
+
+		if (expanded_identifier != NULL)
+		{
+			memcpy(&expanded_identifier[0], state->last_global_label, prefix_length);
+			expanded_identifier[prefix_length] = '@';
+			memcpy(&expanded_identifier[prefix_length + 1], identifier, suffix_length + 1);
+		}
 	}
 
 	return expanded_identifier;
@@ -4558,9 +4580,9 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 									/* Backup some state. */
 									fix_up->program_counter = starting_program_counter;
 									fix_up->output_position = starting_output_position;
-									fix_up->last_global_label = state->last_global_label != NULL ? DuplicateStringAndHandleError(state, state->last_global_label) : NULL;
+									fix_up->last_global_label = DuplicateStringAndHandleError(state, state->last_global_label);
 									fix_up->source_line = DuplicateStringAndHandleError(state, source_line);
-									fix_up->label = label != NULL ? DuplicateStringAndHandleError(state, label) : NULL;
+									fix_up->label = DuplicateStringAndHandleError(state, label);
 
 									/* Clone the location. */
 									*destination_location = *source_location;
@@ -4774,7 +4796,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 
 	/* Initialise the base location. */
 	location.previous = NULL;
-	location.file_path = DuplicateStringAndHandleError(&state, input_file_path != NULL ? input_file_path : "[No path given]");
+	location.file_path = NULL;
 	location.line_number = 0;
 
 	/* Initialise the state. */
@@ -4788,11 +4810,14 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 	state.doing_final_pass = cc_false;
 	state.last_global_label = NULL;
 	state.location = &location;
-	state.source_line = "[No source line]";
+	state.source_line = NULL;
 	state.current_if_level = 0;
 	state.false_if_level = 0;
 	state.mode = MODE_NORMAL;
 	state.end = cc_false;
+
+	/* Set the location path (note that we're taking care to not do this before the state is fully initialised). */
+	location.file_path = DuplicateStringAndHandleError(&state, input_file_path);
 
 	Dictionary_Init(&state.dictionary, case_insensitive);
 
@@ -4854,14 +4879,14 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 						/* Reset some state to how it was at the time the statement was first processed. */
 						state.program_counter = fix_up->program_counter;
 						fseek(state.output_file, fix_up->output_position, SEEK_SET);
-						state.last_global_label = fix_up->last_global_label != NULL ? DuplicateStringAndHandleError(&state, fix_up->last_global_label) : NULL;
-						state.source_line = fix_up->source_line != NULL ? fix_up->source_line : "[No source line]";
+						state.last_global_label = DuplicateStringAndHandleError(&state, fix_up->last_global_label);
+						state.source_line = fix_up->source_line;
 						state.location = &fix_up->location;
 
 						state.fix_up_needed = cc_false;
 
 						/* Re-process statement. */
-						ProcessStatement(&state, &fix_up->statement, fix_up->label != NULL ? fix_up->label : NULL);
+						ProcessStatement(&state, &fix_up->statement, fix_up->label);
 
 						/* If this fix-up has been fixed, we're done with it, so we can delete it. */
 						/* Alternatively, just delete the fix-ups if this is the final pass, since they won't be needed anymore. */
