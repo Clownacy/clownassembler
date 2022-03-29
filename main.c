@@ -20,6 +20,7 @@ int main(int argc, char **argv)
 	const char *symbol_file_path;
 	cc_bool case_insensitive;
 	cc_bool debug;
+	cc_bool equ_set_descope_local_labels;
 	int i;
 
 	print_usage = cc_false;
@@ -80,8 +81,12 @@ int main(int argc, char **argv)
 					case_insensitive = cc_true;
 					continue;
 
-				case 'd':
+				case 'b':
 					debug = cc_true;
+					continue;
+
+				case 'd':
+					equ_set_descope_local_labels = cc_true;
 					continue;
 			}
 		}
@@ -101,7 +106,8 @@ int main(int argc, char **argv)
 			" -l [path] - Listing file. Optional.\n"
 			" -s [path] - asm68k-style symbol file. Optional.\n"
 			" -c        - Enable case-insensitive mode.\n"
-			" -d        - Enable Bison's debug output.\n"
+			" -b        - Enable Bison's debug output.\n"
+			" -d        - Allow EQU/SET to descope local labels.\n"
 			, stdout);
 	}
 	else
@@ -162,7 +168,7 @@ int main(int argc, char **argv)
 							ERROR("Could not open symbol file.");
 					}
 
-					if (!ClownAssembler_Assemble(input_file, output_file, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive))
+					if (!ClownAssembler_Assemble(input_file, output_file, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive, equ_set_descope_local_labels))
 						ERROR("Could not assemble.");
 
 					if (listing_file != NULL)

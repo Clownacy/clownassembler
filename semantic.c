@@ -64,6 +64,7 @@ typedef struct SemanticState
 	cc_bool success;
 	FILE *output_file;
 	FILE *listing_file;
+	cc_bool equ_set_descope_local_labels;
 	unsigned long program_counter;
 	FixUp *fix_up_list_head;
 	FixUp *fix_up_list_tail;
@@ -3936,8 +3937,8 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		{
 			unsigned long value;
 
-			/* TODO - asm68k option D. */
-			SetLastGlobalLabel(state, label);
+			if (state->equ_set_descope_local_labels)
+				SetLastGlobalLabel(state, label);
 
 			if (ResolveExpression(state, &statement->shared.expression, &value))
 				AddIdentifierToSymbolTable(state, label, value, SYMBOL_CONSTANT);
@@ -3949,8 +3950,8 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		{
 			unsigned long value;
 
-			/* TODO - asm68k option D. */
-			SetLastGlobalLabel(state, label);
+			if (state->equ_set_descope_local_labels)
+				SetLastGlobalLabel(state, label);
 
 			if (ResolveExpression(state, &statement->shared.expression, &value))
 				AddIdentifierToSymbolTable(state, label, value, SYMBOL_VARIABLE);
@@ -4834,7 +4835,7 @@ static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const 
 	return cc_true;
 }
 
-cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listing_file, FILE *symbol_file, const char *input_file_path, cc_bool debug, cc_bool case_insensitive)
+cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listing_file, FILE *symbol_file, const char *input_file_path, cc_bool debug, cc_bool case_insensitive, cc_bool equ_set_descope_local_labels)
 {
 	Location location;
 	SemanticState state;
@@ -4849,6 +4850,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 	state.success = cc_true;
 	state.output_file = output_file;
 	state.listing_file = listing_file;
+	state.equ_set_descope_local_labels = equ_set_descope_local_labels;
 	state.program_counter = 0;
 	state.fix_up_list_head = NULL;
 	state.fix_up_list_tail = NULL;
