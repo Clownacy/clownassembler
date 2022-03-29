@@ -4847,7 +4847,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 
 						/* Reset some state to how it was at the time the statement was first processed. */
 						state.program_counter = fix_up->program_counter;
-						fseek(state.output_file, fix_up->output_position , SEEK_SET);
+						fseek(state.output_file, fix_up->output_position, SEEK_SET);
 						state.last_global_label = fix_up->last_global_label != NULL ? DuplicateStringAndHandleError(&state, fix_up->last_global_label) : NULL;
 						state.source_line = fix_up->source_line != NULL ? fix_up->source_line : "[No source line]";
 						state.location = &fix_up->location;
