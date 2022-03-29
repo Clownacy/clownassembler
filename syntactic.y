@@ -1734,11 +1734,13 @@ expression4
 	{
 		$$ = $1;
 	}
+	/* This is an assembler extension: asm68k doesn't support this. */
 	| expression4 TOKEN_LOGICAL_AND expression5
 	{
 		if (!DoExpression(&$$, EXPRESSION_LOGICAL_AND, &$1, &$3))
 			YYNOMEM;
 	}
+	/* This is an assembler extension: asm68k doesn't support this. */
 	| expression4 TOKEN_LOGICAL_OR expression5
 	{
 		if (!DoExpression(&$$, EXPRESSION_LOGICAL_OR, &$1, &$3))
@@ -1809,6 +1811,7 @@ expression7
 		if (!DoExpression(&$$, EXPRESSION_BITWISE_NOT, &$2, NULL))
 			YYNOMEM;
 	}
+	/* This is an assembler extension: asm68k doesn't support this. */
 	| '!' expression7
 	{
 		if (!DoExpression(&$$, EXPRESSION_LOGICAL_NOT, &$2, NULL))
