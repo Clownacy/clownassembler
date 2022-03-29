@@ -4633,10 +4633,10 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					}
 					else
 					{
-						/* Short macros automatically terminate after one statement. */
-						state->mode = MODE_NORMAL;
-
 						AddToSourceLineList(state, &state->macro.source_line_list, source_line);
+
+						/* Short macros automatically terminate after one statement. */
+						TerminateMacro(state);
 					}
 				}
 				else
