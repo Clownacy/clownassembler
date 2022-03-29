@@ -788,25 +788,6 @@ static unsigned int ConstructEffectiveAddressBits(SemanticState *state, const Op
 	return (m << 3) | (xn << 0);
 }
 
-/*
-static cc_bool OperandIsUnusual(const Operand *operand)
-{
-	switch (operand->type)
-	{
-		case OPERAND_DATA_REGISTER:
-		case OPERAND_ADDRESS_REGISTER:
-		case OPERAND_ADDRESS:
-		case OPERAND_ADDRESS_ABSOLUTE:
-		case OPERAND_LITERAL:
-			return cc_false;
-
-		case OPERAND_STATUS_REGISTER:
-		case OPERAND_CONDITION_CODE_REGISTER:
-		case OPERAND_USER_STACK_POINTER_REGISTER:
-			return cc_true;
-	}
-}
-*/
 static unsigned int ToAlternateEffectiveAddressBits(unsigned int bits)
 {
 	const unsigned int m = (bits >> 3) & 7;
@@ -848,18 +829,16 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const char *label, 
 	switch (type)
 	{
 		case SYMBOL_VARIABLE:
-			symbol = LookupSymbol(state, identifier);
-
-			if (symbol != NULL && symbol->type != -1 && symbol->type != SYMBOL_VARIABLE)
-				SemanticError(state, "Symbol redefined as a different type.");
-
-			break;
-
 		case SYMBOL_CONSTANT:
 			symbol = LookupSymbol(state, identifier);
 
-			if (symbol != NULL && symbol->type == SYMBOL_CONSTANT && symbol->shared.unsigned_long != value)
-				SemanticError(state, "Constant cannot be redefined to a different value.");
+			if (symbol != NULL)
+			{
+				if (symbol->type != -1 && (SymbolType)symbol->type != type)
+					SemanticError(state, "Symbol redefined as a different type.");
+				else if (type == SYMBOL_CONSTANT && symbol->type == SYMBOL_CONSTANT && symbol->shared.unsigned_long != value)
+					SemanticError(state, "Constant cannot be redefined to a different value.");
+			}
 
 			break;
 
