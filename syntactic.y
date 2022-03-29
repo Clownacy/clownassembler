@@ -382,8 +382,8 @@ void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
 static cc_bool DoExpression(Expression *expression, ExpressionType type, Expression *left_expression, Expression *right_expression);
 static void DestroyExpression(Expression *expressions);
-static void DestroyIdentifierListNode(IdentifierListNode *node);
-static void DestroyExpressionListNode(ExpressionListNode *node);
+static void DestroyIdentifierList(IdentifierListNode *node);
+static void DestroyExpressionList(ExpressionListNode *node);
 static void DestroyOperand(Operand *operand);
 static void DestroyStatementInstruction(StatementInstruction *instruction);
 
@@ -576,8 +576,8 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 
 %destructor { free($$); } TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER TOKEN_STRING
 %destructor { DestroyOperand(&$$); } operand
-%destructor { DestroyExpressionListNode($$.head); } expression_list
-%destructor { DestroyIdentifierListNode($$.head); } identifier_list
+%destructor { DestroyExpressionList($$.head); } expression_list
+%destructor { DestroyIdentifierList($$.head); } identifier_list
 %destructor { DestroyExpression(&$$); } expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8
 
 %start statement
@@ -770,7 +770,7 @@ expression_list
 
 		if (node == NULL)
 		{
-			DestroyExpressionListNode($1.head);
+			DestroyExpressionList($1.head);
 			DestroyExpression(&$3);
 			YYNOMEM;
 		}
@@ -815,7 +815,7 @@ identifier_list
 
 		if (node == NULL)
 		{
-			DestroyIdentifierListNode($1.head);
+			DestroyIdentifierList($1.head);
 			free(&$3);
 			YYNOMEM;
 		}
@@ -1954,23 +1954,31 @@ static void DestroyExpression(Expression *expression)
 	}
 }
 
-static void DestroyIdentifierListNode(IdentifierListNode *node)
+static void DestroyIdentifierList(IdentifierListNode *node)
 {
-	/* TODO - Make this a while loop. */
-	if (node != NULL)
+	while (node != NULL)
 	{
+		IdentifierListNode* const next_node = node->next;
+
 		free(node->identifier);
 
-		DestroyIdentifierListNode(node->next);
+		free(node);
+
+		node = next_node;
 	}
 }
 
-static void DestroyExpressionListNode(ExpressionListNode *node)
+static void DestroyExpressionList(ExpressionListNode *node)
 {
-	if (node != NULL)
+	while (node != NULL)
 	{
+		ExpressionListNode* const next_node = node->next;
+
 		DestroyExpression(&node->expression);
-		DestroyExpressionListNode(node->next);
+
+		free(node);
+
+		node = next_node;
 	}
 }
 
@@ -2028,7 +2036,7 @@ void DestroyStatement(Statement *statement)
 			break;
 
 		case STATEMENT_TYPE_DC:
-			DestroyExpressionListNode(statement->shared.dc.values);
+			DestroyExpressionList(statement->shared.dc.values);
 			break;
 
 		case STATEMENT_TYPE_DCB:
@@ -2055,7 +2063,7 @@ void DestroyStatement(Statement *statement)
 
 		case STATEMENT_TYPE_MACRO:
 		case STATEMENT_TYPE_MACROS:
-			DestroyIdentifierListNode(statement->shared.macro.parameter_names);
+			DestroyIdentifierList(statement->shared.macro.parameter_names);
 			break;
 
 		case STATEMENT_TYPE_EQU:
