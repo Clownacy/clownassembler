@@ -414,14 +414,14 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			unsigned long left_value;
 			unsigned long right_value;
 
-			if (!ResolveExpression(state, &expression->shared.expressions[0], &left_value) || !ResolveExpression(state, &expression->shared.expressions[1], &right_value))
+			if (!ResolveExpression(state, &expression->shared.subexpressions[0], &left_value) || !ResolveExpression(state, &expression->shared.subexpressions[1], &right_value))
 			{
 				success = cc_false;
 			}
 			else
 			{
 				/* We're done with these; delete them. */
-				free(expression->shared.expressions);
+				free(expression->shared.subexpressions);
 
 				switch (expression->type)
 				{
@@ -519,14 +519,14 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 		case EXPRESSION_NEGATE:
 		case EXPRESSION_BITWISE_NOT:
 		case EXPRESSION_LOGICAL_NOT:
-			if (!ResolveExpression(state, expression->shared.expressions, value))
+			if (!ResolveExpression(state, expression->shared.subexpressions, value))
 			{
 				success = cc_false;
 			}
 			else
 			{
 				/* We're done with this; delete it. */
-				free(expression->shared.expressions);
+				free(expression->shared.subexpressions);
 
 				switch (expression->type)
 				{

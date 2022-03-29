@@ -201,7 +201,7 @@ typedef struct Expression
 	{
 		unsigned long unsigned_long;
 		char *string;
-		struct Expression *expressions;
+		struct Expression *subexpressions;
 	} shared;
 } Expression;
 
@@ -1886,9 +1886,9 @@ static cc_bool DoExpression(Expression *expression, ExpressionType type, Express
 
 	expression->type = type;
 
-	expression->shared.expressions = malloc(sizeof(Expression) * (right_expression != NULL ? 2 : 1));
+	expression->shared.subexpressions = malloc(sizeof(Expression) * (right_expression != NULL ? 2 : 1));
 
-	if (expression->shared.expressions == NULL)
+	if (expression->shared.subexpressions == NULL)
 	{
 		DestroyExpression(left_expression);
 
@@ -1899,10 +1899,10 @@ static cc_bool DoExpression(Expression *expression, ExpressionType type, Express
 	}
 	else
 	{
-		expression->shared.expressions[0] = *left_expression;
+		expression->shared.subexpressions[0] = *left_expression;
 
 		if (right_expression != NULL)
-			expression->shared.expressions[1] = *right_expression;
+			expression->shared.subexpressions[1] = *right_expression;
 	}
 
 	return success;
@@ -1930,16 +1930,16 @@ static void DestroyExpression(Expression *expression)
 		case EXPRESSION_MORE_OR_EQUAL:
 		case EXPRESSION_LEFT_SHIFT:
 		case EXPRESSION_RIGHT_SHIFT:
-			DestroyExpression(&expression->shared.expressions[0]);
-			DestroyExpression(&expression->shared.expressions[1]);
-			free(expression->shared.expressions);
+			DestroyExpression(&expression->shared.subexpressions[0]);
+			DestroyExpression(&expression->shared.subexpressions[1]);
+			free(expression->shared.subexpressions);
 			break;
 
 		case EXPRESSION_NEGATE:
 		case EXPRESSION_BITWISE_NOT:
 		case EXPRESSION_LOGICAL_NOT:
-			DestroyExpression(&expression->shared.expressions[0]);
-			free(expression->shared.expressions);
+			DestroyExpression(&expression->shared.subexpressions[0]);
+			free(expression->shared.subexpressions);
 			break;
 
 		case EXPRESSION_IDENTIFIER:
