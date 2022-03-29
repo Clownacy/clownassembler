@@ -685,8 +685,7 @@ static unsigned int ConstructSizeBits(Size size)
 			return 0x0080;
 
 		case SIZE_UNDEFINED:
-			assert(cc_false);
-			return 0x0000;
+			break;
 	}
 
 	assert(cc_false);
