@@ -322,6 +322,7 @@ typedef struct Statement
 		STATEMENT_TYPE_EQU,
 		STATEMENT_TYPE_SET,
 		STATEMENT_TYPE_IF,
+		STATEMENT_TYPE_ELSEIF,
 		STATEMENT_TYPE_ELSE,
 		STATEMENT_TYPE_ENDC,
 		STATEMENT_TYPE_EVEN,
@@ -530,6 +531,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_EQU
 %token TOKEN_DIRECTIVE_SET
 %token TOKEN_DIRECTIVE_IF
+%token TOKEN_DIRECTIVE_ELSEIF
 %token TOKEN_DIRECTIVE_ELSE
 %token TOKEN_DIRECTIVE_ENDC
 %token TOKEN_DIRECTIVE_EVEN
@@ -687,6 +689,15 @@ statement
 	{
 		statement->type = STATEMENT_TYPE_IF;
 		statement->shared.expression = $2;
+	}
+	| TOKEN_DIRECTIVE_ELSEIF expression
+	{
+		statement->type = STATEMENT_TYPE_ELSEIF;
+		statement->shared.expression = $2;
+	}
+	| TOKEN_DIRECTIVE_ELSEIF
+	{
+		statement->type = STATEMENT_TYPE_ELSE;
 	}
 	| TOKEN_DIRECTIVE_ELSE
 	{
@@ -2069,6 +2080,7 @@ void DestroyStatement(Statement *statement)
 		case STATEMENT_TYPE_EQU:
 		case STATEMENT_TYPE_SET:
 		case STATEMENT_TYPE_IF:
+		case STATEMENT_TYPE_ELSEIF:
 		case STATEMENT_TYPE_RSSET:
 			DestroyExpression(&statement->shared.expression);
 			break;

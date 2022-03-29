@@ -385,21 +385,23 @@ TheGreatestMacro2 MACRO opcode
 
 	; Testing EQU
 TimesToRept equ 2
-TimesToNotRept = 1
+TimesToNotRept equ 1
 
 	rept TimesToRept
 	dc.l	'TWO2'
 	endr
 
-	; Testing IF/ELSE/ENDC/ENDIF
+	; Testing IF/ELSEIF/ELSE/ENDC/ENDIF
 	if TimesToRept=1
 		if TimesToNotRept=2
 			dc.l	'NOPE'
 		endif
 
+		dc.l	'FLS1'
+	elseif TimesToNotRept=1
 		dc.l	'TRUE'
 	else
-		dc.l	'FLSE'
+		dc.l	'FLS2'
 	endc
 
 	IF 0

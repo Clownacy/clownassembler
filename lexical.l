@@ -173,6 +173,7 @@ hexadecimal       {hexadecimal_digit}+
 <INITIAL>equ             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EQU;
 <INITIAL>set             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SET;
 <INITIAL>if              BEGIN(OPERANDS); return TOKEN_DIRECTIVE_IF;
+<INITIAL>elseif          BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ELSEIF;
 <INITIAL>else            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ELSE;
 <INITIAL>endc            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDC;
 <INITIAL>endif           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDC;

@@ -3853,6 +3853,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 
 		case STATEMENT_TYPE_ENDR:
 		case STATEMENT_TYPE_ENDM:
+		case STATEMENT_TYPE_ELSEIF:
 		case STATEMENT_TYPE_ELSE:
 		case STATEMENT_TYPE_ENDC:
 		case STATEMENT_TYPE_RSSET:
@@ -3959,6 +3960,34 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 
 		case STATEMENT_TYPE_IF:
 			ProcessIf(state, &statement->shared.expression);
+			break;
+
+		case STATEMENT_TYPE_ELSEIF:
+			if (state->current_if_level == 0)
+			{
+				SemanticError(state, "This stray ELSEIF has no preceeding IF.");
+			}
+			else
+			{
+				/* Now THIS is a hack! */
+
+				/* Do an 'ELSE'. */
+				statement->type = STATEMENT_TYPE_ELSE;
+				ProcessStatement(state, statement, NULL);
+
+				/* Lower the level, since the 'IF' statement will increment it and we don't want that. */
+				--state->current_if_level;
+
+				/* Do an 'IF'. */
+				statement->type = STATEMENT_TYPE_IF;
+				ProcessStatement(state, statement, NULL);
+
+				/* Put this back to how it was... */
+				statement->type = STATEMENT_TYPE_ELSEIF;
+
+				/* Tada: that's how you do an 'ELSEIF'! */
+			}
+
 			break;
 
 		case STATEMENT_TYPE_ELSE:
@@ -4110,13 +4139,113 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 	}
 }
 
+static void ParseLine(SemanticState *state, const char *source_line, const char *label, const char *directive_and_operands)
+{
+	/* This is a normal assembly line. */
+	YY_BUFFER_STATE buffer;
+	int parse_result;
+	Statement statement;
+
+	/* Back these up, before they get a chance to be modified by ProcessStatement. */
+	const unsigned long starting_program_counter = state->program_counter;
+	const long starting_output_position = ftell(state->output_file);
+
+	/* Parse the source line with Flex and Bison (Lex and Yacc). */
+	buffer = m68kasm__scan_string(directive_and_operands, state->flex_state);
+	parse_result = m68kasm_parse(state->flex_state, &statement);
+	m68kasm__delete_buffer(buffer, state->flex_state);
+
+	switch (parse_result)
+	{
+		case 2: /* Out of memory. */
+			OutOfMemoryError(state);
+			break;
+
+		case 1: /* Parsing error. */
+			/* An error message will have already been printed, so we don't need to do one here. */
+			break;
+
+		case 0: /* No error. */
+			state->fix_up_needed = cc_false;
+
+			ProcessStatement(state, &statement, label);
+
+			if (!state->fix_up_needed)
+			{
+				/* We're done with this statement: delete it. */
+				DestroyStatement(&statement);
+			}
+			else
+			{
+				/* If the statement cannot currently be processed because of undefined symbols,
+				   add it to the fix-up list so we can try again later. */
+				FixUp *fix_up = MallocAndHandleError(state, sizeof(FixUp));
+
+				if (fix_up == NULL)
+				{
+					/* Might as well delete this, since there's no fix-up to take ownership of it. */
+					DestroyStatement(&statement);
+				}
+				else
+				{
+					const Location *source_location = state->location;
+					Location *destination_location = &fix_up->location;
+
+					/* Backup the statement. */
+					fix_up->statement = statement;
+
+					/* Backup some state. */
+					fix_up->program_counter = starting_program_counter;
+					fix_up->output_position = starting_output_position;
+					fix_up->last_global_label = DuplicateStringAndHandleError(state, state->last_global_label);
+					fix_up->source_line = DuplicateStringAndHandleError(state, source_line);
+					fix_up->label = DuplicateStringAndHandleError(state, label);
+
+					/* Clone the location. */
+					*destination_location = *source_location;
+					destination_location->file_path = DuplicateStringAndHandleError(state, source_location->file_path);
+
+					for (source_location = source_location->previous; source_location != NULL; source_location = source_location->previous)
+					{
+						destination_location->previous = MallocAndHandleError(state, sizeof(Location));
+
+						if (destination_location->previous == NULL)
+						{
+							break;
+						}
+						else
+						{
+							destination_location = destination_location->previous;
+							*destination_location = *source_location;
+							destination_location->file_path = DuplicateStringAndHandleError(state, source_location->file_path);
+						}
+					}
+
+					/* Add the new fix-up to the list. */
+					if (state->fix_up_list_head == NULL)
+						state->fix_up_list_head = fix_up;
+					else
+						state->fix_up_list_tail->next = fix_up;
+
+					state->fix_up_list_tail = fix_up;
+
+					fix_up->next = NULL;
+				}
+
+				state->fix_up_needed = cc_false;
+			}
+
+			break;
+	}
+
+}
+
 static void AssembleLine(SemanticState *state, const char *source_line)
 {
 	size_t label_length;
 	const char *source_line_pointer;
 	char *label;
 	size_t directive_length;
-	Statement statement;
 
 	/* Output line to listing file. */
 	/* TODO - Machine code. */
@@ -4203,6 +4332,9 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			{
 				if (directive_length != 0)
 				{
+					Statement statement;
+
+					/* TODO - Detect code after the keyword and error if any is found. */
 					if (strncmpci(source_line_pointer, "if", directive_length) == 0)
 					{
 						/* If-statements that are nested within the false part of another if-statement
@@ -4212,17 +4344,27 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 						statement.shared.expression.shared.unsigned_long = 0;
 						ProcessStatement(state, &statement, label);
 					}
-					else if (strncmpci(source_line_pointer, "else", directive_length) == 0)
+					else if (strncmpci(source_line_pointer, "elseif", directive_length) == 0)
 					{
-						/* TODO - Detect code after the keyword and error if any is found. */
-						statement.type = STATEMENT_TYPE_ELSE;
-						ProcessStatement(state, &statement, label);
+						if (state->false_if_level != state->current_if_level)
+						{
+							/* This 'ELSEIF' belongs to a nested if-statement, so create a fake version and ignore it. */
+							statement.type = STATEMENT_TYPE_ELSEIF;
+							statement.shared.expression.type = EXPRESSION_NUMBER;
+							statement.shared.expression.shared.unsigned_long = 0;
+							ProcessStatement(state, &statement, label);
+						}
+						else
+						{
+							/* This 'ELSEIF' belongs to the current if-statement: process it properly. */
+							ParseLine(state, source_line, label, source_line_pointer);
+						}
 					}
-					else if (strncmpci(source_line_pointer, "endc", directive_length) == 0 || strncmpci(source_line_pointer, "endif", directive_length) == 0)
+					else if (strncmpci(source_line_pointer, "else"  , directive_length) == 0
+					      || strncmpci(source_line_pointer, "endc"  , directive_length) == 0
+					      || strncmpci(source_line_pointer, "endif" , directive_length) == 0)
 					{
-						/* TODO - Detect code after the keyword and error if any is found. */
-						statement.type = STATEMENT_TYPE_ENDC;
-						ProcessStatement(state, &statement, label);
+						ParseLine(state, source_line, label, source_line_pointer);
 					}
 					else
 					{
@@ -4525,101 +4667,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 				}
 				else
 				{
-					/* This is a normal assembly line. */
-					YY_BUFFER_STATE buffer;
-					int parse_result;
-
-					/* Back these up, before they get a chance to be modified by ProcessStatement. */
-					const unsigned long starting_program_counter = state->program_counter;
-					const long starting_output_position = ftell(state->output_file);
-
-					/* Parse the source line with Flex and Bison (Lex and Yacc). */
-					buffer = m68kasm__scan_string(source_line_pointer, state->flex_state);
-					parse_result = m68kasm_parse(state->flex_state, &statement);
-					m68kasm__delete_buffer(buffer, state->flex_state);
-
-					switch (parse_result)
-					{
-						case 2: /* Out of memory. */
-							OutOfMemoryError(state);
-							break;
-
-						case 1: /* Parsing error. */
-							/* An error message will have already been printed, so we don't need to do one here. */
-							break;
-
-						case 0: /* No error. */
-							state->fix_up_needed = cc_false;
-
-							ProcessStatement(state, &statement, label);
-
-							if (!state->fix_up_needed)
-							{
-								/* We're done with this statement: delete it. */
-								DestroyStatement(&statement);
-							}
-							else
-							{
-								/* If the statement cannot currently be processed because of undefined symbols,
-								   add it to the fix-up list so we can try again later. */
-								FixUp *fix_up = MallocAndHandleError(state, sizeof(FixUp));
-
-								if (fix_up == NULL)
-								{
-									/* Might as well delete this, since there's no fix-up to take ownership of it. */
-									DestroyStatement(&statement);
-								}
-								else
-								{
-									const Location *source_location = state->location;
-									Location *destination_location = &fix_up->location;
-
-									/* Backup the statement. */
-									fix_up->statement = statement;
-
-									/* Backup some state. */
-									fix_up->program_counter = starting_program_counter;
-									fix_up->output_position = starting_output_position;
-									fix_up->last_global_label = DuplicateStringAndHandleError(state, state->last_global_label);
-									fix_up->source_line = DuplicateStringAndHandleError(state, source_line);
-									fix_up->label = DuplicateStringAndHandleError(state, label);
-
-									/* Clone the location. */
-									*destination_location = *source_location;
-									destination_location->file_path = DuplicateStringAndHandleError(state, source_location->file_path);
-
-									for (source_location = source_location->previous; source_location != NULL; source_location = source_location->previous)
-									{
-										destination_location->previous = MallocAndHandleError(state, sizeof(Location));
-
-										if (destination_location->previous == NULL)
-										{
-											break;
-										}
-										else
-										{
-											destination_location = destination_location->previous;
-											*destination_location = *source_location;
-											destination_location->file_path = DuplicateStringAndHandleError(state, source_location->file_path);
-										}
-									}
-
-									/* Add the new fix-up to the list. */
-									if (state->fix_up_list_head == NULL)
-										state->fix_up_list_head = fix_up;
-									else
-										state->fix_up_list_tail->next = fix_up;
-
-									state->fix_up_list_tail = fix_up;
-
-									fix_up->next = NULL;
-								}
-
-								state->fix_up_needed = cc_false;
-							}
-
-							break;
-					}
+					ParseLine(state, source_line, label, source_line_pointer);
 				}
 			}
 
@@ -4631,8 +4679,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			if (directive_length != 0 && strncmpci(source_line_pointer, "endr", directive_length) == 0)
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
-				statement.type = STATEMENT_TYPE_ENDR;
-				ProcessStatement(state, &statement, label);
+				ParseLine(state, source_line, label, source_line_pointer);
 			}
 			else
 			{
@@ -4646,8 +4693,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			if (directive_length != 0 && strncmpci(source_line_pointer, "endm", directive_length) == 0)
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
-				statement.type = STATEMENT_TYPE_ENDM;
-				ProcessStatement(state, &statement, label);
+				ParseLine(state, source_line, label, source_line_pointer);
 
 				if (state->shared.macro.is_short)
 					SemanticError(state, "Short macros shouldn't use ENDM.");
