@@ -4857,9 +4857,10 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 						/* Re-process statement. */
 						ProcessStatement(&state, &fix_up->statement, fix_up->label != NULL ? fix_up->label : NULL);
 
-						if (!state.fix_up_needed)
+						/* If this fix-up has been fixed, we're done with it, so we can delete it. */
+						/* Alternatively, just delete the fix-ups if this is the final pass, since they won't be needed anymore. */
+						if (!state.fix_up_needed || state.doing_final_pass)
 						{
-							/* This fix-up has been fixed, so we're done with it; now delete it. */
 							Location *location;
 
 							*fix_up_pointer = fix_up->next;
