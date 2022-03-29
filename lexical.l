@@ -212,6 +212,7 @@ hexadecimal       {hexadecimal_digit}+
 "&&"            TOKEN(LOGICAL_AND)
 "||"            TOKEN(LOGICAL_OR)
 "=="            TOKEN(EQUALITY)
+"!="            TOKEN(INEQUALITY)
 "<>"            TOKEN(INEQUALITY)
 "<="            TOKEN(LESS_OR_EQUAL)
 ">="            TOKEN(MORE_OR_EQUAL)
