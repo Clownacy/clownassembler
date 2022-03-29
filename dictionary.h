@@ -10,8 +10,8 @@ typedef struct Dictionary_Entry
 	int type;
 	union
 	{
-		unsigned long unsigned_integer;
-		long signed_integer;
+		unsigned long unsigned_long;
+		long signed_long;
 		void *pointer;
 	} shared; 
 } Dictionary_Entry;

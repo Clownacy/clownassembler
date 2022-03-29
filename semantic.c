@@ -611,7 +611,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 				/* We're done with the string: delete it. */
 				free(expression->shared.string);
 
-				*value = dictionary_entry->shared.unsigned_integer;
+				*value = dictionary_entry->shared.unsigned_long;
 			}
 
 			free(expanded_identifier);
@@ -648,11 +648,11 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 		}
 
 		case EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT:
-			*value = Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_STATEMENT, sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1)->shared.unsigned_integer;
+			*value = Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_STATEMENT, sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1)->shared.unsigned_long;
 			break;
 
 		case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
-			*value = Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_integer;
+			*value = Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_long;
 			break;
 	}
 
@@ -856,7 +856,7 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const char *label, 
 		case SYMBOL_CONSTANT:
 			symbol = LookupSymbol(state, identifier);
 
-			if (symbol != NULL && symbol->type == SYMBOL_CONSTANT && symbol->shared.unsigned_integer != value)
+			if (symbol != NULL && symbol->type == SYMBOL_CONSTANT && symbol->shared.unsigned_long != value)
 				SemanticError(state, "Constant cannot be redefined to a different value.");
 
 			break;
@@ -876,7 +876,7 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const char *label, 
 	if (symbol != NULL)
 	{
 		symbol->type = type;
-		symbol->shared.unsigned_integer = value;
+		symbol->shared.unsigned_long = value;
 	}
 }
 
@@ -3651,7 +3651,7 @@ static void ProcessDc(SemanticState *state, StatementDc *dc)
 			unsigned long value;
 
 			/* Update the program counter symbol in between values, to keep it up to date. */
-			Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_integer = state->program_counter;
+			Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_long = state->program_counter;
 
 			if (!ResolveExpression(state, &expression_list_node->expression, &value))
 				value = 0;
@@ -3823,8 +3823,8 @@ static void ProcessIf(SemanticState *state, Expression *expression)
 
 static void ProcessStatement(SemanticState *state, Statement *statement, const char *label)
 {
-	Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_STATEMENT, sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1)->shared.unsigned_integer = state->program_counter;
-	Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_integer = state->program_counter;
+	Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_STATEMENT, sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1)->shared.unsigned_long = state->program_counter;
+	Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_long = state->program_counter;
 
 	switch (statement->type)
 	{
@@ -4332,7 +4332,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 						if (symbol != NULL)
 						{
 							symbol->type = SYMBOL_CONSTANT;
-							symbol->shared.unsigned_integer = total_parameters - 1;
+							symbol->shared.unsigned_long = total_parameters - 1;
 						}
 					}
 
@@ -4744,7 +4744,7 @@ static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const 
 
 		/* Output the address of the label. */
 		for (i = 0; i < 4; ++i)
-			fputc((entry->shared.unsigned_integer >> (i * 8)) & 0xFF, symbol_file);
+			fputc((entry->shared.unsigned_long >> (i * 8)) & 0xFF, symbol_file);
 
 		/* I have no idea what this means. */
 		fputc(2, symbol_file);
