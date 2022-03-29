@@ -751,6 +751,7 @@ expression_list
 
 		if (node == NULL)
 		{
+			DestroyExpression(&$1);
 			YYNOMEM;
 		}
 		else
@@ -769,6 +770,8 @@ expression_list
 
 		if (node == NULL)
 		{
+			DestroyExpressionListNode($1.head);
+			DestroyExpression(&$3);
 			YYNOMEM;
 		}
 		else
@@ -793,6 +796,7 @@ identifier_list
 
 		if (node == NULL)
 		{
+			free($1);
 			YYNOMEM;
 		}
 		else
@@ -811,6 +815,8 @@ identifier_list
 
 		if (node == NULL)
 		{
+			DestroyIdentifierListNode($1.head);
+			free(&$3);
 			YYNOMEM;
 		}
 		else
@@ -1841,6 +1847,8 @@ expression8
 
 		if ($$.shared.string == NULL)
 		{
+			free($1);
+			free($2);
 			YYNOMEM;
 		}
 		else
@@ -1882,6 +1890,11 @@ static cc_bool DoExpression(Expression *expression, ExpressionType type, Express
 
 	if (expression->shared.expressions == NULL)
 	{
+		DestroyExpression(left_expression);
+
+		if (right_expression != NULL)
+			DestroyExpression(right_expression);
+
 		success = cc_false;
 	}
 	else
@@ -1943,6 +1956,7 @@ static void DestroyExpression(Expression *expression)
 
 static void DestroyIdentifierListNode(IdentifierListNode *node)
 {
+	/* TODO - Make this a while loop. */
 	if (node != NULL)
 	{
 		free(node->identifier);
