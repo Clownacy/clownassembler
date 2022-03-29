@@ -214,7 +214,7 @@ static void* MallocAndHandleError(SemanticState *state, size_t size)
 	return memory;
 }
 
-static int strncasecmp(const char *lhs, const char *rhs, size_t count)
+static int strncmpci(const char *lhs, const char *rhs, size_t count)
 {
 	int delta;
 	size_t i;
@@ -4181,7 +4181,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			{
 				if (directive_length != 0)
 				{
-					if (strncasecmp(source_line_pointer, "if", directive_length) == 0)
+					if (strncmpci(source_line_pointer, "if", directive_length) == 0)
 					{
 						/* If-statements that are nested within the false part of another if-statement
 						   are themselves false, so create a false if-statement here and process it. */
@@ -4190,13 +4190,13 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 						statement.shared.expression.shared.unsigned_long = 0;
 						ProcessStatement(state, &statement, label);
 					}
-					else if (strncasecmp(source_line_pointer, "else", directive_length) == 0)
+					else if (strncmpci(source_line_pointer, "else", directive_length) == 0)
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
 						statement.type = STATEMENT_TYPE_ELSE;
 						ProcessStatement(state, &statement, label);
 					}
-					else if (strncasecmp(source_line_pointer, "endc", directive_length) == 0 || strncasecmp(source_line_pointer, "endif", directive_length) == 0)
+					else if (strncmpci(source_line_pointer, "endc", directive_length) == 0 || strncmpci(source_line_pointer, "endif", directive_length) == 0)
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
 						statement.type = STATEMENT_TYPE_ENDC;
@@ -4606,7 +4606,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 		case MODE_REPT:
 			/* If this line is an 'ENDR' directive, then exit REPT mode. Otherwise, add the line to the REPT. */
-			if (directive_length != 0 && strncasecmp(source_line_pointer, "endr", directive_length) == 0)
+			if (directive_length != 0 && strncmpci(source_line_pointer, "endr", directive_length) == 0)
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
 				statement.type = STATEMENT_TYPE_ENDR;
@@ -4621,7 +4621,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 		case MODE_MACRO:
 			/* If this line is an 'ENDM' directive, then exit macro mode. Otherwise, add the line to the macro. */
-			if (directive_length != 0 && strncasecmp(source_line_pointer, "endm", directive_length) == 0)
+			if (directive_length != 0 && strncmpci(source_line_pointer, "endm", directive_length) == 0)
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
 				statement.type = STATEMENT_TYPE_ENDM;
