@@ -291,7 +291,7 @@ typedef struct StatementIncbin
 
 typedef struct StatementRept
 {
-	Expression total_repeats; /* TODO - Rename to 'repetitions. */
+	Expression repetitions;
 } StatementRept;
 
 typedef struct StatementMacro
@@ -640,7 +640,7 @@ statement
 	| TOKEN_DIRECTIVE_REPT expression
 	{
 		statement->type = STATEMENT_TYPE_REPT;
-		statement->shared.rept.total_repeats = $2;
+		statement->shared.rept.repetitions = $2;
 	}
 	| TOKEN_DIRECTIVE_ENDR
 	{
@@ -2038,7 +2038,7 @@ void DestroyStatement(Statement *statement)
 			break;
 
 		case STATEMENT_TYPE_REPT:
-			DestroyExpression(&statement->shared.rept.total_repeats);
+			DestroyExpression(&statement->shared.rept.repetitions);
 			break;
 
 		case STATEMENT_TYPE_MACRO:

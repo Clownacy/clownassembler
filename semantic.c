@@ -87,7 +87,7 @@ typedef struct SemanticState
 	} mode;
 	struct
 	{
-		unsigned long total_repeats;
+		unsigned long repetitions;
 		unsigned long line_number;
 		SourceLineList source_line_list;
 	} rept;
@@ -293,7 +293,7 @@ static void TerminateRept(SemanticState *state)
 	state->mode = MODE_NORMAL;
 
 	/* Repeat the statements as many times as requested. */
-	countdown = state->rept.total_repeats;
+	countdown = state->rept.repetitions;
 
 	while (countdown-- != 0)
 	{
@@ -3774,10 +3774,10 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 {
 	state->mode = MODE_REPT;
 
-	if (!ResolveExpression(state, &rept->total_repeats, &state->rept.total_repeats))
+	if (!ResolveExpression(state, &rept->repetitions, &state->rept.repetitions))
 	{
 		SemanticError(state, "Repetition value must be evaluable on the first pass.");
-		state->rept.total_repeats = 1;
+		state->rept.repetitions = 1;
 	}
 
 	state->rept.line_number = state->location->line_number;
