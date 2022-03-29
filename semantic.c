@@ -4117,6 +4117,12 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 	++state->location->line_number;
 
+	if (source_line[0] == '*')
+	{
+		/* This whole line is a comment. */
+		return;
+	}
+
 	state->source_line = source_line;
 	source_line_pointer = source_line;
 
