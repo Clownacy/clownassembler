@@ -4126,7 +4126,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	state->source_line = source_line;
 	source_line_pointer = source_line;
 
-	label_length = strcspn(source_line_pointer, " \t:;");
+	label_length = strspn(source_line_pointer, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_.@");
 
 	if (label_length != 0)
 	{
@@ -4137,7 +4137,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 		/* Maybe the label has some whitespace before it: check again. */
 		source_line_pointer += strspn(source_line_pointer, " \t");
 
-		label_length = strcspn(source_line_pointer, " \t:;");
+		label_length = strspn(source_line_pointer, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_.@");
 
 		if (label_length != 0)
 		{
@@ -4162,7 +4162,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	}
 	else
 	{
-		/* This line has a label. */
+		/* This line has a label. Duplicate it for later. */
 		label = MallocAndHandleError(state, label_length + 1);
 
 		if (label != NULL)
@@ -4173,12 +4173,13 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 		source_line_pointer += label_length;
 
+		/* Skip past the colon at the end, if one exists. */
 		if (source_line_pointer[0] == ':')
 			++source_line_pointer;
 	}
 
 	source_line_pointer += strspn(source_line_pointer, " \t");
-	keyword_length = strcspn(source_line_pointer, " \t.;");
+	keyword_length = strspn(source_line_pointer, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_");
 
 	switch (state->mode)
 	{
