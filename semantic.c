@@ -2268,7 +2268,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 		{
 			newline_undefined = "\n";
 			opcode_undefined = instruction_metadata->name;
-			size_undefined = "";
+			size_undefined = " (no size)";
 		}
 
 		SemanticError(state, "Instruction cannot be this size: allowed sizes are...%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", newline_byte, opcode_byte, size_byte, newline_short, opcode_short, size_short, newline_word, opcode_word, size_word, newline_longword, opcode_longword, size_longword, newline_undefined, opcode_undefined, size_undefined);
