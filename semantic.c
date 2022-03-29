@@ -85,20 +85,23 @@ typedef struct SemanticState
 		MODE_REPT,
 		MODE_MACRO
 	} mode;
-	struct
+	union
 	{
-		unsigned long repetitions;
-		unsigned long line_number;
-		SourceLineList source_line_list;
-	} rept;
-	struct
-	{
-		char *name;
-		unsigned long line_number;
-		IdentifierListNode *parameter_names;
-		SourceLineList source_line_list;
-		cc_bool is_short;
-	} macro;
+		struct
+		{
+			unsigned long repetitions;
+			unsigned long line_number;
+			SourceLineList source_line_list;
+		} rept;
+		struct
+		{
+			char *name;
+			unsigned long line_number;
+			IdentifierListNode *parameter_names;
+			SourceLineList source_line_list;
+			cc_bool is_short;
+		} macro;
+	} shared;
 } SemanticState;
 
 typedef struct Macro
@@ -293,15 +296,15 @@ static void TerminateRept(SemanticState *state)
 	state->mode = MODE_NORMAL;
 
 	/* Repeat the statements as many times as requested. */
-	countdown = state->rept.repetitions;
+	countdown = state->shared.rept.repetitions;
 
 	while (countdown-- != 0)
 	{
 		/* Rewind back to line number of the start of the REPT. */
-		state->location->line_number = state->rept.line_number;
+		state->location->line_number = state->shared.rept.line_number;
 
 		/* Process the REPT's nested statements. */
-		for (source_line_list_node = state->rept.source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
+		for (source_line_list_node = state->shared.rept.source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
 			AssembleLine(state, source_line_list_node->source_line);
 	}
 
@@ -309,7 +312,7 @@ static void TerminateRept(SemanticState *state)
 	++state->location->line_number;
 
 	/* Free the source line list. */
-	source_line_list_node = state->rept.source_line_list.head;
+	source_line_list_node = state->shared.rept.source_line_list.head;
 
 	while (source_line_list_node != NULL)
 	{
@@ -328,7 +331,7 @@ static void TerminateMacro(SemanticState *state)
 
 	state->mode = MODE_NORMAL;
 
-	symbol = CreateSymbol(state, state->macro.name);
+	symbol = CreateSymbol(state, state->shared.macro.name);
 
 	if (symbol != NULL)
 	{
@@ -336,9 +339,9 @@ static void TerminateMacro(SemanticState *state)
 
 		if (macro != NULL)
 		{
-			macro->name = state->macro.name;
-			macro->parameter_names = state->macro.parameter_names;
-			macro->source_line_list_head = state->macro.source_line_list.head;
+			macro->name = state->shared.macro.name;
+			macro->parameter_names = state->shared.macro.parameter_names;
+			macro->source_line_list_head = state->shared.macro.source_line_list.head;
 
 			symbol->type = SYMBOL_MACRO;
 			symbol->shared.pointer = macro;
@@ -3774,30 +3777,30 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 {
 	state->mode = MODE_REPT;
 
-	if (!ResolveExpression(state, &rept->repetitions, &state->rept.repetitions))
+	if (!ResolveExpression(state, &rept->repetitions, &state->shared.rept.repetitions))
 	{
 		SemanticError(state, "Repetition value must be evaluable on the first pass.");
-		state->rept.repetitions = 1;
+		state->shared.rept.repetitions = 1;
 	}
 
-	state->rept.line_number = state->location->line_number;
+	state->shared.rept.line_number = state->location->line_number;
 
-	state->rept.source_line_list.head = NULL;
-	state->rept.source_line_list.tail = NULL;
+	state->shared.rept.source_line_list.head = NULL;
+	state->shared.rept.source_line_list.tail = NULL;
 }
 
 static void ProcessMacro(SemanticState *state, StatementMacro *macro, const char *label, cc_bool is_short)
 {
 	state->mode = MODE_MACRO;
 
-	state->macro.name = DuplicateStringAndHandleError(state, label);
-	state->macro.line_number = state->location->line_number;
-	state->macro.parameter_names = macro->parameter_names;
+	state->shared.macro.name = DuplicateStringAndHandleError(state, label);
+	state->shared.macro.line_number = state->location->line_number;
+	state->shared.macro.parameter_names = macro->parameter_names;
 	macro->parameter_names = NULL;
-	state->macro.is_short = is_short;
+	state->shared.macro.is_short = is_short;
 
-	state->macro.source_line_list.head = NULL;
-	state->macro.source_line_list.tail = NULL;
+	state->shared.macro.source_line_list.head = NULL;
+	state->shared.macro.source_line_list.tail = NULL;
 }
 
 static void ProcessIf(SemanticState *state, Expression *expression)
@@ -4611,7 +4614,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			}
 			else
 			{
-				AddToSourceLineList(state, &state->rept.source_line_list, source_line);
+				AddToSourceLineList(state, &state->shared.rept.source_line_list, source_line);
 			}
 
 			break;
@@ -4623,12 +4626,12 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 				statement.type = STATEMENT_TYPE_ENDM;
 				ProcessStatement(state, &statement, label);
 
-				if (state->macro.is_short)
+				if (state->shared.macro.is_short)
 					SemanticError(state, "Short macros shouldn't use ENDM.");
 			}
 			else
 			{
-				if (state->macro.is_short)
+				if (state->shared.macro.is_short)
 				{
 					const char first_nonwhitespace_character = source_line[strspn(source_line, " \t")];
 
@@ -4641,7 +4644,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					}
 					else
 					{
-						AddToSourceLineList(state, &state->macro.source_line_list, source_line);
+						AddToSourceLineList(state, &state->shared.macro.source_line_list, source_line);
 
 						/* Short macros automatically terminate after one statement. */
 						TerminateMacro(state);
@@ -4649,7 +4652,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 				}
 				else
 				{
-					AddToSourceLineList(state, &state->macro.source_line_list, source_line);
+					AddToSourceLineList(state, &state->shared.macro.source_line_list, source_line);
 				}
 			}
 
@@ -4711,13 +4714,13 @@ static void AssembleFile(SemanticState *state, FILE *input_file)
 		case MODE_REPT:
 			TerminateRept(state);
 
-			SemanticError(state, "REPT statement beginning at line %lu is missing its ENDR.", state->rept.line_number);
+			SemanticError(state, "REPT statement beginning at line %lu is missing its ENDR.", state->shared.rept.line_number);
 			break;
 
 		case MODE_MACRO:
 			TerminateMacro(state);
 
-			SemanticError(state, "MACRO statement beginning at line %lu is missing its ENDM.", state->macro.line_number);
+			SemanticError(state, "MACRO statement beginning at line %lu is missing its ENDM.", state->shared.macro.line_number);
 			break;
 	}
 }
