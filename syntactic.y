@@ -1640,7 +1640,6 @@ number
 	| '$' TOKEN_NUMBER
 	;
 */
-/* TODO - asm68k expressions. */
 expression
 	: expression1
 	{
