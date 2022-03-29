@@ -12,27 +12,11 @@
 
 #include "syntactic.h"
 
-#ifdef PRINT
-#include <stdio.h>
-#define TOKEN(x) fputs("Token: TOKEN_" #x "\n", stdout);
-#define CHARACTER_TOKEN(x) fprintf(stdout, "Token: TOKEN_" #x ", character: %c\n", yytext[1]);
-#define NUMBER_TOKEN(x) fprintf(stdout, "Token: TOKEN_" #x ", number: %s\n", yytext);
-#define REAL_NUMBER_TOKEN(x) fprintf(stdout, "Token: TOKEN_" #x ", number: %s\n", yytext);
-#define IDENTIFIER_TOKEN(x) fputs("Token: TOKEN_" #x "\n", stdout);
-#else
-#define TOKEN(x) return TOKEN_ ## x;
-#define CHARACTER_TOKEN(x) yylval.iVal = yytext[1]; return TOKEN_ ## x;
-#define NUMBER_TOKEN(x) yylval.iVal = strtol(yytext, NULL, 10); return TOKEN_ ## x;
-#define REAL_NUMBER_TOKEN(x) strncpy(yylval.fVal, yytext, REALLENGTH - 1); yylval.fVal[REALLENGTH - 1] = '\0'; return TOKEN_ ## x;
-#define IDENTIFIER_TOKEN(x) yylval.iVal = installId(yytext); return TOKEN_ ## x;
-#endif
-
-#define OPCODE_TOKEN(x) BEGIN(OPERANDS); return TOKEN_ ## x;
-
 void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
 %}
 
+/* Regular expression. */
 binary_digit      [0-1]
 decimal_digit     [0-9]
 hexadecimal_digit [0-9a-fA-F]
@@ -44,164 +28,173 @@ hexadecimal       {hexadecimal_digit}+
 
 %%
 
-[ \t]+          ; /* Ignore whitespace */
+ /* Ignore whitespace */
+[ \t]+          ;
+
+ /* Terminate at comment or newline. When terminating, revert to initial state. */
 <<EOF>>         |
-[;\r\n]         BEGIN(INITIAL); yyterminate(); /* Terminate at comment or newline */
-<INITIAL>ori             OPCODE_TOKEN(OPCODE_ORI)
-<INITIAL>andi            OPCODE_TOKEN(OPCODE_ANDI)
-<INITIAL>subi            OPCODE_TOKEN(OPCODE_SUBI)
-<INITIAL>addi            OPCODE_TOKEN(OPCODE_ADDI)
-<INITIAL>eori            OPCODE_TOKEN(OPCODE_EORI)
-<INITIAL>cmpi            OPCODE_TOKEN(OPCODE_CMPI)
-<INITIAL>btst            OPCODE_TOKEN(OPCODE_BTST)
-<INITIAL>bchg            OPCODE_TOKEN(OPCODE_BCHG)
-<INITIAL>bclr            OPCODE_TOKEN(OPCODE_BCLR)
-<INITIAL>bset            OPCODE_TOKEN(OPCODE_BSET)
-<INITIAL>movep           OPCODE_TOKEN(OPCODE_MOVEP)
-<INITIAL>movea           OPCODE_TOKEN(OPCODE_MOVEA)
-<INITIAL>move            OPCODE_TOKEN(OPCODE_MOVE)
-<INITIAL>negx            OPCODE_TOKEN(OPCODE_NEGX)
-<INITIAL>clr             OPCODE_TOKEN(OPCODE_CLR)
-<INITIAL>neg             OPCODE_TOKEN(OPCODE_NEG)
-<INITIAL>not             OPCODE_TOKEN(OPCODE_NOT)
-<INITIAL>ext             OPCODE_TOKEN(OPCODE_EXT)
-<INITIAL>nbcd            OPCODE_TOKEN(OPCODE_NBCD)
-<INITIAL>swap            OPCODE_TOKEN(OPCODE_SWAP)
-<INITIAL>pea             OPCODE_TOKEN(OPCODE_PEA)
-<INITIAL>illegal         OPCODE_TOKEN(OPCODE_ILLEGAL)
-<INITIAL>tas             OPCODE_TOKEN(OPCODE_TAS)
-<INITIAL>tst             OPCODE_TOKEN(OPCODE_TST)
-<INITIAL>trap            OPCODE_TOKEN(OPCODE_TRAP)
-<INITIAL>link            OPCODE_TOKEN(OPCODE_LINK)
-<INITIAL>unlk            OPCODE_TOKEN(OPCODE_UNLK)
-<INITIAL>reset           OPCODE_TOKEN(OPCODE_RESET)
-<INITIAL>nop             OPCODE_TOKEN(OPCODE_NOP)
-<INITIAL>stop            OPCODE_TOKEN(OPCODE_STOP)
-<INITIAL>rte             OPCODE_TOKEN(OPCODE_RTE)
-<INITIAL>rts             OPCODE_TOKEN(OPCODE_RTS)
-<INITIAL>trapv           OPCODE_TOKEN(OPCODE_TRAPV)
-<INITIAL>rtr             OPCODE_TOKEN(OPCODE_RTR)
-<INITIAL>jsr             OPCODE_TOKEN(OPCODE_JSR)
-<INITIAL>jmp             OPCODE_TOKEN(OPCODE_JMP)
-<INITIAL>movem           OPCODE_TOKEN(OPCODE_MOVEM)
-<INITIAL>lea             OPCODE_TOKEN(OPCODE_LEA)
-<INITIAL>chk             OPCODE_TOKEN(OPCODE_CHK)
-<INITIAL>addq            OPCODE_TOKEN(OPCODE_ADDQ)
-<INITIAL>subq            OPCODE_TOKEN(OPCODE_SUBQ)
-<INITIAL>st              OPCODE_TOKEN(OPCODE_ST)
-<INITIAL>sf              OPCODE_TOKEN(OPCODE_SF)
-<INITIAL>shi             OPCODE_TOKEN(OPCODE_SHI)
-<INITIAL>sls             OPCODE_TOKEN(OPCODE_SLS)
-<INITIAL>scc             OPCODE_TOKEN(OPCODE_SCC)
-<INITIAL>scs             OPCODE_TOKEN(OPCODE_SCS)
-<INITIAL>sne             OPCODE_TOKEN(OPCODE_SNE)
-<INITIAL>seq             OPCODE_TOKEN(OPCODE_SEQ)
-<INITIAL>svc             OPCODE_TOKEN(OPCODE_SVC)
-<INITIAL>svs             OPCODE_TOKEN(OPCODE_SVS)
-<INITIAL>spl             OPCODE_TOKEN(OPCODE_SPL)
-<INITIAL>smi             OPCODE_TOKEN(OPCODE_SMI)
-<INITIAL>sge             OPCODE_TOKEN(OPCODE_SGE)
-<INITIAL>slt             OPCODE_TOKEN(OPCODE_SLT)
-<INITIAL>sgt             OPCODE_TOKEN(OPCODE_SGT)
-<INITIAL>sle             OPCODE_TOKEN(OPCODE_SLE)
-<INITIAL>shs             OPCODE_TOKEN(OPCODE_SCC)
-<INITIAL>slo             OPCODE_TOKEN(OPCODE_SCS)
-<INITIAL>dbt             OPCODE_TOKEN(OPCODE_DBT)
-<INITIAL>dbf             OPCODE_TOKEN(OPCODE_DBF)
-<INITIAL>dbhi            OPCODE_TOKEN(OPCODE_DBHI)
-<INITIAL>dbls            OPCODE_TOKEN(OPCODE_DBLS)
-<INITIAL>dbcc            OPCODE_TOKEN(OPCODE_DBCC)
-<INITIAL>dbcs            OPCODE_TOKEN(OPCODE_DBCS)
-<INITIAL>dbne            OPCODE_TOKEN(OPCODE_DBNE)
-<INITIAL>dbeq            OPCODE_TOKEN(OPCODE_DBEQ)
-<INITIAL>dbvc            OPCODE_TOKEN(OPCODE_DBVC)
-<INITIAL>dbvs            OPCODE_TOKEN(OPCODE_DBVS)
-<INITIAL>dbpl            OPCODE_TOKEN(OPCODE_DBPL)
-<INITIAL>dbmi            OPCODE_TOKEN(OPCODE_DBMI)
-<INITIAL>dbge            OPCODE_TOKEN(OPCODE_DBGE)
-<INITIAL>dblt            OPCODE_TOKEN(OPCODE_DBLT)
-<INITIAL>dbgt            OPCODE_TOKEN(OPCODE_DBGT)
-<INITIAL>dble            OPCODE_TOKEN(OPCODE_DBLE)
-<INITIAL>dbhs            OPCODE_TOKEN(OPCODE_DBCC)
-<INITIAL>dblo            OPCODE_TOKEN(OPCODE_DBCS)
-<INITIAL>dbra            OPCODE_TOKEN(OPCODE_DBF)
-<INITIAL>bra             OPCODE_TOKEN(OPCODE_BRA)
-<INITIAL>bsr             OPCODE_TOKEN(OPCODE_BSR)
-<INITIAL>bhi             OPCODE_TOKEN(OPCODE_BHI)
-<INITIAL>bls             OPCODE_TOKEN(OPCODE_BLS)
-<INITIAL>bcc             OPCODE_TOKEN(OPCODE_BCC)
-<INITIAL>bcs             OPCODE_TOKEN(OPCODE_BCS)
-<INITIAL>bne             OPCODE_TOKEN(OPCODE_BNE)
-<INITIAL>beq             OPCODE_TOKEN(OPCODE_BEQ)
-<INITIAL>bvc             OPCODE_TOKEN(OPCODE_BVC)
-<INITIAL>bvs             OPCODE_TOKEN(OPCODE_BVS)
-<INITIAL>bpl             OPCODE_TOKEN(OPCODE_BPL)
-<INITIAL>bmi             OPCODE_TOKEN(OPCODE_BMI)
-<INITIAL>bge             OPCODE_TOKEN(OPCODE_BGE)
-<INITIAL>blt             OPCODE_TOKEN(OPCODE_BLT)
-<INITIAL>bgt             OPCODE_TOKEN(OPCODE_BGT)
-<INITIAL>ble             OPCODE_TOKEN(OPCODE_BLE)
-<INITIAL>bhs             OPCODE_TOKEN(OPCODE_BCC)
-<INITIAL>blo             OPCODE_TOKEN(OPCODE_BCS)
-<INITIAL>moveq           OPCODE_TOKEN(OPCODE_MOVEQ)
-<INITIAL>divu            OPCODE_TOKEN(OPCODE_DIVU)
-<INITIAL>divs            OPCODE_TOKEN(OPCODE_DIVS)
-<INITIAL>sbcd            OPCODE_TOKEN(OPCODE_SBCD)
-<INITIAL>or              OPCODE_TOKEN(OPCODE_OR)
-<INITIAL>sub             OPCODE_TOKEN(OPCODE_SUB)
-<INITIAL>subx            OPCODE_TOKEN(OPCODE_SUBX)
-<INITIAL>suba            OPCODE_TOKEN(OPCODE_SUBA)
-<INITIAL>eor             OPCODE_TOKEN(OPCODE_EOR)
-<INITIAL>cmpm            OPCODE_TOKEN(OPCODE_CMPM)
-<INITIAL>cmp             OPCODE_TOKEN(OPCODE_CMP)
-<INITIAL>cmpa            OPCODE_TOKEN(OPCODE_CMPA)
-<INITIAL>mulu            OPCODE_TOKEN(OPCODE_MULU)
-<INITIAL>muls            OPCODE_TOKEN(OPCODE_MULS)
-<INITIAL>abcd            OPCODE_TOKEN(OPCODE_ABCD)
-<INITIAL>exg             OPCODE_TOKEN(OPCODE_EXG)
-<INITIAL>and             OPCODE_TOKEN(OPCODE_AND)
-<INITIAL>add             OPCODE_TOKEN(OPCODE_ADD)
-<INITIAL>addx            OPCODE_TOKEN(OPCODE_ADDX)
-<INITIAL>adda            OPCODE_TOKEN(OPCODE_ADDA)
-<INITIAL>asl             OPCODE_TOKEN(OPCODE_ASL)
-<INITIAL>asr             OPCODE_TOKEN(OPCODE_ASR)
-<INITIAL>lsl             OPCODE_TOKEN(OPCODE_LSL)
-<INITIAL>lsr             OPCODE_TOKEN(OPCODE_LSR)
-<INITIAL>roxl            OPCODE_TOKEN(OPCODE_ROXL)
-<INITIAL>roxr            OPCODE_TOKEN(OPCODE_ROXR)
-<INITIAL>rol             OPCODE_TOKEN(OPCODE_ROL)
-<INITIAL>ror             OPCODE_TOKEN(OPCODE_ROR)
-<INITIAL>dc              OPCODE_TOKEN(DIRECTIVE_DC)
-<INITIAL>dcb             OPCODE_TOKEN(DIRECTIVE_DCB)
-<INITIAL>rept            OPCODE_TOKEN(DIRECTIVE_REPT)
-<INITIAL>endr            OPCODE_TOKEN(DIRECTIVE_ENDR)
-<INITIAL>macro           OPCODE_TOKEN(DIRECTIVE_MACRO)
-<INITIAL>macros          OPCODE_TOKEN(DIRECTIVE_MACROS)
-<INITIAL>endm            OPCODE_TOKEN(DIRECTIVE_ENDM)
-<INITIAL>include         BEGIN(PATH); TOKEN(DIRECTIVE_INCLUDE)
-<INITIAL>incbin          |
-<INITIAL>binclude        BEGIN(PATH); TOKEN(DIRECTIVE_INCBIN)
-<INITIAL>equ             OPCODE_TOKEN(DIRECTIVE_EQU)
-<INITIAL>set             OPCODE_TOKEN(DIRECTIVE_SET)
-<INITIAL>if              OPCODE_TOKEN(DIRECTIVE_IF)
-<INITIAL>else            OPCODE_TOKEN(DIRECTIVE_ELSE)
-<INITIAL>endc            OPCODE_TOKEN(DIRECTIVE_ENDC)
-<INITIAL>endif           OPCODE_TOKEN(DIRECTIVE_ENDC)
-<INITIAL>even            OPCODE_TOKEN(DIRECTIVE_EVEN)
-<INITIAL>cnop            OPCODE_TOKEN(DIRECTIVE_CNOP)
-<INITIAL>inform          OPCODE_TOKEN(DIRECTIVE_INFORM)
-<INITIAL>end             OPCODE_TOKEN(DIRECTIVE_END)
-<INITIAL>rs              OPCODE_TOKEN(DIRECTIVE_RS)
-<INITIAL>rsset           OPCODE_TOKEN(DIRECTIVE_RSSET)
-<INITIAL>rsreset         OPCODE_TOKEN(DIRECTIVE_RSRESET)
+[;\r\n]         BEGIN(INITIAL); yyterminate();
+
+ /* Directives. */
+<INITIAL>ori             BEGIN(OPERANDS); return TOKEN_OPCODE_ORI;
+<INITIAL>andi            BEGIN(OPERANDS); return TOKEN_OPCODE_ANDI;
+<INITIAL>subi            BEGIN(OPERANDS); return TOKEN_OPCODE_SUBI;
+<INITIAL>addi            BEGIN(OPERANDS); return TOKEN_OPCODE_ADDI;
+<INITIAL>eori            BEGIN(OPERANDS); return TOKEN_OPCODE_EORI;
+<INITIAL>cmpi            BEGIN(OPERANDS); return TOKEN_OPCODE_CMPI;
+<INITIAL>btst            BEGIN(OPERANDS); return TOKEN_OPCODE_BTST;
+<INITIAL>bchg            BEGIN(OPERANDS); return TOKEN_OPCODE_BCHG;
+<INITIAL>bclr            BEGIN(OPERANDS); return TOKEN_OPCODE_BCLR;
+<INITIAL>bset            BEGIN(OPERANDS); return TOKEN_OPCODE_BSET;
+<INITIAL>movep           BEGIN(OPERANDS); return TOKEN_OPCODE_MOVEP;
+<INITIAL>movea           BEGIN(OPERANDS); return TOKEN_OPCODE_MOVEA;
+<INITIAL>move            BEGIN(OPERANDS); return TOKEN_OPCODE_MOVE;
+<INITIAL>negx            BEGIN(OPERANDS); return TOKEN_OPCODE_NEGX;
+<INITIAL>clr             BEGIN(OPERANDS); return TOKEN_OPCODE_CLR;
+<INITIAL>neg             BEGIN(OPERANDS); return TOKEN_OPCODE_NEG;
+<INITIAL>not             BEGIN(OPERANDS); return TOKEN_OPCODE_NOT;
+<INITIAL>ext             BEGIN(OPERANDS); return TOKEN_OPCODE_EXT;
+<INITIAL>nbcd            BEGIN(OPERANDS); return TOKEN_OPCODE_NBCD;
+<INITIAL>swap            BEGIN(OPERANDS); return TOKEN_OPCODE_SWAP;
+<INITIAL>pea             BEGIN(OPERANDS); return TOKEN_OPCODE_PEA;
+<INITIAL>illegal         BEGIN(OPERANDS); return TOKEN_OPCODE_ILLEGAL;
+<INITIAL>tas             BEGIN(OPERANDS); return TOKEN_OPCODE_TAS;
+<INITIAL>tst             BEGIN(OPERANDS); return TOKEN_OPCODE_TST;
+<INITIAL>trap            BEGIN(OPERANDS); return TOKEN_OPCODE_TRAP;
+<INITIAL>link            BEGIN(OPERANDS); return TOKEN_OPCODE_LINK;
+<INITIAL>unlk            BEGIN(OPERANDS); return TOKEN_OPCODE_UNLK;
+<INITIAL>reset           BEGIN(OPERANDS); return TOKEN_OPCODE_RESET;
+<INITIAL>nop             BEGIN(OPERANDS); return TOKEN_OPCODE_NOP;
+<INITIAL>stop            BEGIN(OPERANDS); return TOKEN_OPCODE_STOP;
+<INITIAL>rte             BEGIN(OPERANDS); return TOKEN_OPCODE_RTE;
+<INITIAL>rts             BEGIN(OPERANDS); return TOKEN_OPCODE_RTS;
+<INITIAL>trapv           BEGIN(OPERANDS); return TOKEN_OPCODE_TRAPV;
+<INITIAL>rtr             BEGIN(OPERANDS); return TOKEN_OPCODE_RTR;
+<INITIAL>jsr             BEGIN(OPERANDS); return TOKEN_OPCODE_JSR;
+<INITIAL>jmp             BEGIN(OPERANDS); return TOKEN_OPCODE_JMP;
+<INITIAL>movem           BEGIN(OPERANDS); return TOKEN_OPCODE_MOVEM;
+<INITIAL>lea             BEGIN(OPERANDS); return TOKEN_OPCODE_LEA;
+<INITIAL>chk             BEGIN(OPERANDS); return TOKEN_OPCODE_CHK;
+<INITIAL>addq            BEGIN(OPERANDS); return TOKEN_OPCODE_ADDQ;
+<INITIAL>subq            BEGIN(OPERANDS); return TOKEN_OPCODE_SUBQ;
+<INITIAL>st              BEGIN(OPERANDS); return TOKEN_OPCODE_ST;
+<INITIAL>sf              BEGIN(OPERANDS); return TOKEN_OPCODE_SF;
+<INITIAL>shi             BEGIN(OPERANDS); return TOKEN_OPCODE_SHI;
+<INITIAL>sls             BEGIN(OPERANDS); return TOKEN_OPCODE_SLS;
+<INITIAL>scc             BEGIN(OPERANDS); return TOKEN_OPCODE_SCC;
+<INITIAL>scs             BEGIN(OPERANDS); return TOKEN_OPCODE_SCS;
+<INITIAL>sne             BEGIN(OPERANDS); return TOKEN_OPCODE_SNE;
+<INITIAL>seq             BEGIN(OPERANDS); return TOKEN_OPCODE_SEQ;
+<INITIAL>svc             BEGIN(OPERANDS); return TOKEN_OPCODE_SVC;
+<INITIAL>svs             BEGIN(OPERANDS); return TOKEN_OPCODE_SVS;
+<INITIAL>spl             BEGIN(OPERANDS); return TOKEN_OPCODE_SPL;
+<INITIAL>smi             BEGIN(OPERANDS); return TOKEN_OPCODE_SMI;
+<INITIAL>sge             BEGIN(OPERANDS); return TOKEN_OPCODE_SGE;
+<INITIAL>slt             BEGIN(OPERANDS); return TOKEN_OPCODE_SLT;
+<INITIAL>sgt             BEGIN(OPERANDS); return TOKEN_OPCODE_SGT;
+<INITIAL>sle             BEGIN(OPERANDS); return TOKEN_OPCODE_SLE;
+<INITIAL>shs             BEGIN(OPERANDS); return TOKEN_OPCODE_SCC;
+<INITIAL>slo             BEGIN(OPERANDS); return TOKEN_OPCODE_SCS;
+<INITIAL>dbt             BEGIN(OPERANDS); return TOKEN_OPCODE_DBT;
+<INITIAL>dbf             BEGIN(OPERANDS); return TOKEN_OPCODE_DBF;
+<INITIAL>dbhi            BEGIN(OPERANDS); return TOKEN_OPCODE_DBHI;
+<INITIAL>dbls            BEGIN(OPERANDS); return TOKEN_OPCODE_DBLS;
+<INITIAL>dbcc            BEGIN(OPERANDS); return TOKEN_OPCODE_DBCC;
+<INITIAL>dbcs            BEGIN(OPERANDS); return TOKEN_OPCODE_DBCS;
+<INITIAL>dbne            BEGIN(OPERANDS); return TOKEN_OPCODE_DBNE;
+<INITIAL>dbeq            BEGIN(OPERANDS); return TOKEN_OPCODE_DBEQ;
+<INITIAL>dbvc            BEGIN(OPERANDS); return TOKEN_OPCODE_DBVC;
+<INITIAL>dbvs            BEGIN(OPERANDS); return TOKEN_OPCODE_DBVS;
+<INITIAL>dbpl            BEGIN(OPERANDS); return TOKEN_OPCODE_DBPL;
+<INITIAL>dbmi            BEGIN(OPERANDS); return TOKEN_OPCODE_DBMI;
+<INITIAL>dbge            BEGIN(OPERANDS); return TOKEN_OPCODE_DBGE;
+<INITIAL>dblt            BEGIN(OPERANDS); return TOKEN_OPCODE_DBLT;
+<INITIAL>dbgt            BEGIN(OPERANDS); return TOKEN_OPCODE_DBGT;
+<INITIAL>dble            BEGIN(OPERANDS); return TOKEN_OPCODE_DBLE;
+<INITIAL>dbhs            BEGIN(OPERANDS); return TOKEN_OPCODE_DBCC;
+<INITIAL>dblo            BEGIN(OPERANDS); return TOKEN_OPCODE_DBCS;
+<INITIAL>dbra            BEGIN(OPERANDS); return TOKEN_OPCODE_DBF;
+<INITIAL>bra             BEGIN(OPERANDS); return TOKEN_OPCODE_BRA;
+<INITIAL>bsr             BEGIN(OPERANDS); return TOKEN_OPCODE_BSR;
+<INITIAL>bhi             BEGIN(OPERANDS); return TOKEN_OPCODE_BHI;
+<INITIAL>bls             BEGIN(OPERANDS); return TOKEN_OPCODE_BLS;
+<INITIAL>bcc             BEGIN(OPERANDS); return TOKEN_OPCODE_BCC;
+<INITIAL>bcs             BEGIN(OPERANDS); return TOKEN_OPCODE_BCS;
+<INITIAL>bne             BEGIN(OPERANDS); return TOKEN_OPCODE_BNE;
+<INITIAL>beq             BEGIN(OPERANDS); return TOKEN_OPCODE_BEQ;
+<INITIAL>bvc             BEGIN(OPERANDS); return TOKEN_OPCODE_BVC;
+<INITIAL>bvs             BEGIN(OPERANDS); return TOKEN_OPCODE_BVS;
+<INITIAL>bpl             BEGIN(OPERANDS); return TOKEN_OPCODE_BPL;
+<INITIAL>bmi             BEGIN(OPERANDS); return TOKEN_OPCODE_BMI;
+<INITIAL>bge             BEGIN(OPERANDS); return TOKEN_OPCODE_BGE;
+<INITIAL>blt             BEGIN(OPERANDS); return TOKEN_OPCODE_BLT;
+<INITIAL>bgt             BEGIN(OPERANDS); return TOKEN_OPCODE_BGT;
+<INITIAL>ble             BEGIN(OPERANDS); return TOKEN_OPCODE_BLE;
+<INITIAL>bhs             BEGIN(OPERANDS); return TOKEN_OPCODE_BCC;
+<INITIAL>blo             BEGIN(OPERANDS); return TOKEN_OPCODE_BCS;
+<INITIAL>moveq           BEGIN(OPERANDS); return TOKEN_OPCODE_MOVEQ;
+<INITIAL>divu            BEGIN(OPERANDS); return TOKEN_OPCODE_DIVU;
+<INITIAL>divs            BEGIN(OPERANDS); return TOKEN_OPCODE_DIVS;
+<INITIAL>sbcd            BEGIN(OPERANDS); return TOKEN_OPCODE_SBCD;
+<INITIAL>or              BEGIN(OPERANDS); return TOKEN_OPCODE_OR;
+<INITIAL>sub             BEGIN(OPERANDS); return TOKEN_OPCODE_SUB;
+<INITIAL>subx            BEGIN(OPERANDS); return TOKEN_OPCODE_SUBX;
+<INITIAL>suba            BEGIN(OPERANDS); return TOKEN_OPCODE_SUBA;
+<INITIAL>eor             BEGIN(OPERANDS); return TOKEN_OPCODE_EOR;
+<INITIAL>cmpm            BEGIN(OPERANDS); return TOKEN_OPCODE_CMPM;
+<INITIAL>cmp             BEGIN(OPERANDS); return TOKEN_OPCODE_CMP;
+<INITIAL>cmpa            BEGIN(OPERANDS); return TOKEN_OPCODE_CMPA;
+<INITIAL>mulu            BEGIN(OPERANDS); return TOKEN_OPCODE_MULU;
+<INITIAL>muls            BEGIN(OPERANDS); return TOKEN_OPCODE_MULS;
+<INITIAL>abcd            BEGIN(OPERANDS); return TOKEN_OPCODE_ABCD;
+<INITIAL>exg             BEGIN(OPERANDS); return TOKEN_OPCODE_EXG;
+<INITIAL>and             BEGIN(OPERANDS); return TOKEN_OPCODE_AND;
+<INITIAL>add             BEGIN(OPERANDS); return TOKEN_OPCODE_ADD;
+<INITIAL>addx            BEGIN(OPERANDS); return TOKEN_OPCODE_ADDX;
+<INITIAL>adda            BEGIN(OPERANDS); return TOKEN_OPCODE_ADDA;
+<INITIAL>asl             BEGIN(OPERANDS); return TOKEN_OPCODE_ASL;
+<INITIAL>asr             BEGIN(OPERANDS); return TOKEN_OPCODE_ASR;
+<INITIAL>lsl             BEGIN(OPERANDS); return TOKEN_OPCODE_LSL;
+<INITIAL>lsr             BEGIN(OPERANDS); return TOKEN_OPCODE_LSR;
+<INITIAL>roxl            BEGIN(OPERANDS); return TOKEN_OPCODE_ROXL;
+<INITIAL>roxr            BEGIN(OPERANDS); return TOKEN_OPCODE_ROXR;
+<INITIAL>rol             BEGIN(OPERANDS); return TOKEN_OPCODE_ROL;
+<INITIAL>ror             BEGIN(OPERANDS); return TOKEN_OPCODE_ROR;
+<INITIAL>dc              BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DC;
+<INITIAL>dcb             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DCB;
+<INITIAL>rept            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_REPT;
+<INITIAL>endr            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDR;
+<INITIAL>macro           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MACRO;
+<INITIAL>macros          BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MACROS;
+<INITIAL>endm            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDM;
+<INITIAL>include         BEGIN(PATH); return TOKEN_DIRECTIVE_INCLUDE;
+<INITIAL>incbin          BEGIN(PATH); return TOKEN_DIRECTIVE_INCBIN;
+<INITIAL>binclude        BEGIN(PATH); return TOKEN_DIRECTIVE_INCBIN;
+<INITIAL>equ             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EQU;
+<INITIAL>set             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SET;
+<INITIAL>if              BEGIN(OPERANDS); return TOKEN_DIRECTIVE_IF;
+<INITIAL>else            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ELSE;
+<INITIAL>endc            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDC;
+<INITIAL>endif           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDC;
+<INITIAL>even            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EVEN;
+<INITIAL>cnop            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_CNOP;
+<INITIAL>inform          BEGIN(OPERANDS); return TOKEN_DIRECTIVE_INFORM;
+<INITIAL>end             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_END;
+<INITIAL>rs              BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RS;
+<INITIAL>rsset           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RSSET;
+<INITIAL>rsreset         BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RSRESET;
+
+ /* Sizes. */
+".b"            return TOKEN_SIZE_BYTE;
+".s"            return TOKEN_SIZE_SHORT;
+".w"            return TOKEN_SIZE_WORD;
+".l"            return TOKEN_SIZE_LONGWORD;
+
+ /* Misc. symbols. */
 "."             return yytext[0];
 ","             return yytext[0];
 "("             return yytext[0];
 ")"             return yytext[0];
-".b"            TOKEN(SIZE_BYTE)
-".s"            TOKEN(SIZE_SHORT)
-".w"            TOKEN(SIZE_WORD)
-".l"            TOKEN(SIZE_LONGWORD)
 "$"             return yytext[0];
 "+"             return yytext[0];
 "-"             return yytext[0];
@@ -209,21 +202,26 @@ hexadecimal       {hexadecimal_digit}+
 "/"             return yytext[0];
 "="             return yytext[0];
 "@"             return yytext[0];
-"&&"            TOKEN(LOGICAL_AND)
-"||"            TOKEN(LOGICAL_OR)
-"=="            TOKEN(EQUALITY)   /* An assembler extension, for programmers that are familiar with C. */
-"!="            TOKEN(INEQUALITY) /* An assembler extension, for programmers that are familiar with C. */
-"<>"            TOKEN(INEQUALITY)
-"<="            TOKEN(LESS_OR_EQUAL)
-">="            TOKEN(MORE_OR_EQUAL)
-"<<"            TOKEN(LEFT_SHIFT)
-">>"            TOKEN(RIGHT_SHIFT)
-sr              TOKEN(STATUS_REGISTER)
-ccr             TOKEN(CONDITION_CODE_REGISTER)
-sp              yylval->unsigned_long = 7; return TOKEN_ADDRESS_REGISTER;
-usp             TOKEN(USER_STACK_POINTER_REGISTER)
-pc              TOKEN(PROGRAM_COUNTER)
 
+ /* Operators. */
+"&&"            return TOKEN_LOGICAL_AND;
+"||"            return TOKEN_LOGICAL_OR;
+"=="            return TOKEN_EQUALITY;   /* An assembler extension, for programmers that are familiar with C. */
+"!="            return TOKEN_INEQUALITY; /* An assembler extension, for programmers that are familiar with C. */
+"<>"            return TOKEN_INEQUALITY;
+"<="            return TOKEN_LESS_OR_EQUAL;
+">="            return TOKEN_MORE_OR_EQUAL;
+"<<"            return TOKEN_LEFT_SHIFT;
+">>"            return TOKEN_RIGHT_SHIFT;
+
+ /* Operands. */
+sr              return TOKEN_STATUS_REGISTER;
+ccr             return TOKEN_CONDITION_CODE_REGISTER;
+sp              yylval->unsigned_long = 7; return TOKEN_ADDRESS_REGISTER;
+usp             return TOKEN_USER_STACK_POINTER_REGISTER;
+pc              return TOKEN_PROGRAM_COUNTER;
+
+ /* Data register. */
 [Dd]{decimal} {
 	char *string_end;
 	yylval->unsigned_long = strtoul(yytext + 1, &string_end, 10);
@@ -243,6 +241,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 	return TOKEN_DATA_REGISTER;
 }
 
+ /* Address register. */
 [Aa]{decimal} {
 	char *string_end;
 	yylval->unsigned_long = strtoul(yytext + 1, &string_end, 10);
@@ -262,6 +261,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 	return TOKEN_ADDRESS_REGISTER;
 }
 
+ /* Decimal number. */
 {decimal} {
 	char *string_end;
 	yylval->unsigned_long = strtoul(yytext, &string_end, 10);
@@ -275,6 +275,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 	return TOKEN_NUMBER;
 }
 
+ /* Hexaecimal number. */
 \${hexadecimal} {
 	char *string_end;
 	yylval->unsigned_long = strtoul(yytext + 1, &string_end, 16);
@@ -288,6 +289,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 	return TOKEN_NUMBER;
 }
 
+ /* Binary number. */
 \%{binary} {
 	char *string_end;
 	yylval->unsigned_long = strtoul(yytext + 1, &string_end, 2);
@@ -301,6 +303,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 	return TOKEN_NUMBER;
 }
 
+ /* String. */
 \"[^\"]+\" |
 \'[^\']+\' {
 	const size_t length = strlen(yytext) - 2;
@@ -318,6 +321,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 	}
 }
 
+ /* File path (like a string, but it doesn't need to be wrapped in quotation marks). */
 <PATH>[^, \t;]([^,;]*[^, \t;])? {
 	const size_t length = strlen(yytext);
 
@@ -337,6 +341,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 	}
 }
 
+ /* Identifier. */
 [A-Za-z_][A-Za-z_0-9\?]* {
 	const size_t length = strlen(yytext);
 	yylval->string = malloc(length + 1);
@@ -352,6 +357,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 	}
 }
 
+ /* Local label. */
 [@\.][A-Za-z_0-9\?]+ {
 	const size_t length = strlen(yytext);
 	yylval->string = malloc(length + 1);
@@ -367,6 +373,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 	}
 }
 
-.               return yytext[0]; /* Make Bison signal a syntax error for unrecognised symbols */
+ /* Make Bison signal a syntax error for unrecognised symbols */
+.               return yytext[0];
 
 %%
