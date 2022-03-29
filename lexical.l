@@ -40,7 +40,7 @@ binary            {binary_digit}+
 decimal           {decimal_digit}+
 hexadecimal       {hexadecimal_digit}+
 
-%s OPERANDS
+%s OPERANDS PATH
 
 %%
 
@@ -178,9 +178,9 @@ hexadecimal       {hexadecimal_digit}+
 <INITIAL>macro           OPCODE_TOKEN(DIRECTIVE_MACRO)
 <INITIAL>macros          OPCODE_TOKEN(DIRECTIVE_MACROS)
 <INITIAL>endm            OPCODE_TOKEN(DIRECTIVE_ENDM)
-<INITIAL>include         OPCODE_TOKEN(DIRECTIVE_INCLUDE)
-<INITIAL>incbin          OPCODE_TOKEN(DIRECTIVE_INCBIN)
-<INITIAL>binclude        OPCODE_TOKEN(DIRECTIVE_INCBIN)
+<INITIAL>include         BEGIN(PATH); TOKEN(DIRECTIVE_INCLUDE)
+<INITIAL>incbin          |
+<INITIAL>binclude        BEGIN(PATH); TOKEN(DIRECTIVE_INCBIN)
 <INITIAL>equ             OPCODE_TOKEN(DIRECTIVE_EQU)
 <INITIAL>set             OPCODE_TOKEN(DIRECTIVE_SET)
 <INITIAL>if              OPCODE_TOKEN(DIRECTIVE_IF)
@@ -301,6 +301,42 @@ pc              TOKEN(PROGRAM_COUNTER)
 	return TOKEN_NUMBER;
 }
 
+\"[^\"]+\" |
+\'[^\']+\' {
+	const size_t length = strlen(yytext) - 2;
+	yylval->string = malloc(length + 1);
+	if (yylval->string == NULL)
+	{
+		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
+		return M68KASM_error;
+	}
+	else
+	{
+		memcpy(yylval->string, yytext + 1, length);
+		yylval->string[length] = '\0';
+		return TOKEN_STRING;
+	}
+}
+
+<PATH>[^, \t;]([^,;]*[^, \t;])? {
+	const size_t length = strlen(yytext);
+
+	BEGIN(OPERANDS);
+
+	yylval->string = malloc(length + 1);
+
+	if (yylval->string == NULL)
+	{
+		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
+		return M68KASM_error;
+	}
+	else
+	{
+		memcpy(yylval->string, yytext, length + 1);
+		return TOKEN_STRING;
+	}
+}
+
 [A-Za-z_][A-Za-z_0-9\?]* {
 	const size_t length = strlen(yytext);
 	yylval->string = malloc(length + 1);
@@ -328,23 +364,6 @@ pc              TOKEN(PROGRAM_COUNTER)
 	{
 		memcpy(yylval->string, yytext, length + 1);
 		return TOKEN_LOCAL_IDENTIFIER;
-	}
-}
-
-\"[^\"]+\" |
-\'[^\']+\' {
-	const size_t length = strlen(yytext) - 2;
-	yylval->string = malloc(length + 1);
-	if (yylval->string == NULL)
-	{
-		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return M68KASM_error;
-	}
-	else
-	{
-		memcpy(yylval->string, yytext + 1, length);
-		yylval->string[length] = '\0';
-		return TOKEN_STRING;
 	}
 }
 
