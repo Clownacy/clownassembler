@@ -392,7 +392,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %union {
 	struct
 	{
-		unsigned long integer;
+		unsigned long unsigned_long;
 		char *string;
 	} generic;
 	Opcode opcode;
@@ -545,9 +545,9 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
 %token TOKEN_SIZE_LONGWORD
-%token<generic.integer> TOKEN_DATA_REGISTER
-%token<generic.integer> TOKEN_ADDRESS_REGISTER
-%token<generic.integer> TOKEN_NUMBER
+%token<generic.unsigned_long> TOKEN_DATA_REGISTER
+%token<generic.unsigned_long> TOKEN_ADDRESS_REGISTER
+%token<generic.unsigned_long> TOKEN_NUMBER
 %token<generic.string> TOKEN_IDENTIFIER
 %token<generic.string> TOKEN_LOCAL_IDENTIFIER
 %token<generic.string> TOKEN_STRING
@@ -566,12 +566,12 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 
 %type<instruction> instruction
 %type<opcode> opcode
-%type<generic.integer> size
+%type<generic.unsigned_long> size /* TODO - Make this use its own type. */
 %type<opcode> full_opcode
 %type<operand> operand
-%type<generic.integer> register_list
-%type<generic.integer> register_span
-%type<generic.integer> data_or_address_register
+%type<generic.unsigned_long> register_list
+%type<generic.unsigned_long> register_span
+%type<generic.unsigned_long> data_or_address_register
 %type<list_metadata> expression_list
 %type<list_metadata> identifier_list
 %type<expression> expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8
