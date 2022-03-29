@@ -414,11 +414,14 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			unsigned long left_value;
 			unsigned long right_value;
 
-			if (!ResolveExpression(state, &expression->shared.subexpressions[0], &left_value) || !ResolveExpression(state, &expression->shared.subexpressions[1], &right_value))
-			{
+			/* Resolve both of these separately so that they are each properly hardcoded (C short-circuiting could cause the second call to never occur). */
+			if (!ResolveExpression(state, &expression->shared.subexpressions[0], &left_value))
 				success = cc_false;
-			}
-			else
+
+			if (!ResolveExpression(state, &expression->shared.subexpressions[1], &right_value))
+				success = cc_false;
+
+			if (success)
 			{
 				/* We're done with these; delete them. */
 				free(expression->shared.subexpressions);
@@ -3928,10 +3931,6 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 
 			if (ResolveExpression(state, &statement->shared.expression, &value))
 				AddIdentifierToSymbolTable(state, label, value, SYMBOL_VARIABLE);
-
-			/* Variable assignments should always go in the fix-up list, so that fix-ups
-			   that use variables have the variables set to the correct value. */
-			state->fix_up_needed = cc_true;
 
 			break;
 		}
