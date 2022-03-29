@@ -211,8 +211,8 @@ hexadecimal       {hexadecimal_digit}+
 "@"             return yytext[0];
 "&&"            TOKEN(LOGICAL_AND)
 "||"            TOKEN(LOGICAL_OR)
-"=="            TOKEN(EQUALITY)
-"!="            TOKEN(INEQUALITY)
+"=="            TOKEN(EQUALITY)   /* An assembler extension, for programmers that are familiar with C. */
+"!="            TOKEN(INEQUALITY) /* An assembler extension, for programmers that are familiar with C. */
 "<>"            TOKEN(INEQUALITY)
 "<="            TOKEN(LESS_OR_EQUAL)
 ">="            TOKEN(MORE_OR_EQUAL)
