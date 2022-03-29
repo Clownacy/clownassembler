@@ -220,13 +220,13 @@ hexadecimal       {hexadecimal_digit}+
 ">>"            TOKEN(RIGHT_SHIFT)
 sr              TOKEN(STATUS_REGISTER)
 ccr             TOKEN(CONDITION_CODE_REGISTER)
-sp              yylval->generic.unsigned_long = 7; return TOKEN_ADDRESS_REGISTER;
+sp              yylval->unsigned_long = 7; return TOKEN_ADDRESS_REGISTER;
 usp             TOKEN(USER_STACK_POINTER_REGISTER)
 pc              TOKEN(PROGRAM_COUNTER)
 
 [Dd]{decimal} {
 	char *string_end;
-	yylval->generic.unsigned_long = strtoul(yytext + 1, &string_end, 10);
+	yylval->unsigned_long = strtoul(yytext + 1, &string_end, 10);
 
 	if (string_end[0] != '\0')
 	{
@@ -234,7 +234,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 		return M68KASM_error;
 	}
 
-	if (yylval->generic.unsigned_long > 7)
+	if (yylval->unsigned_long > 7)
 	{
 		m68kasm_error(yyscanner, NULL, "The only valid data registers are d0 to d7.");
 		return M68KASM_error;
@@ -245,7 +245,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
 [Aa]{decimal} {
 	char *string_end;
-	yylval->generic.unsigned_long = strtoul(yytext + 1, &string_end, 10);
+	yylval->unsigned_long = strtoul(yytext + 1, &string_end, 10);
 
 	if (string_end[0] != '\0')
 	{
@@ -253,7 +253,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 		return M68KASM_error;
 	}
 
-	if (yylval->generic.unsigned_long > 7)
+	if (yylval->unsigned_long > 7)
 	{
 		m68kasm_error(yyscanner, NULL, "The only valid address registers are a0 to a7.");
 		return M68KASM_error;
@@ -264,7 +264,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
 {decimal} {
 	char *string_end;
-	yylval->generic.unsigned_long = strtoul(yytext, &string_end, 10);
+	yylval->unsigned_long = strtoul(yytext, &string_end, 10);
 
 	if (string_end[0] != '\0')
 	{
@@ -277,7 +277,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
 \${hexadecimal} {
 	char *string_end;
-	yylval->generic.unsigned_long = strtoul(yytext + 1, &string_end, 16);
+	yylval->unsigned_long = strtoul(yytext + 1, &string_end, 16);
 
 	if (string_end[0] != '\0')
 	{
@@ -290,7 +290,7 @@ pc              TOKEN(PROGRAM_COUNTER)
 
 \%{binary} {
 	char *string_end;
-	yylval->generic.unsigned_long = strtoul(yytext + 1, &string_end, 2);
+	yylval->unsigned_long = strtoul(yytext + 1, &string_end, 2);
 
 	if (string_end[0] != '\0')
 	{
@@ -303,30 +303,30 @@ pc              TOKEN(PROGRAM_COUNTER)
 
 [A-Za-z_][A-Za-z_0-9\?]* {
 	const size_t length = strlen(yytext);
-	yylval->generic.string = malloc(length + 1);
-	if (yylval->generic.string == NULL)
+	yylval->string = malloc(length + 1);
+	if (yylval->string == NULL)
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
 		return M68KASM_error;
 	}
 	else
 	{
-		memcpy(yylval->generic.string, yytext, length + 1);
+		memcpy(yylval->string, yytext, length + 1);
 		return TOKEN_IDENTIFIER;
 	}
 }
 
 [@\.][A-Za-z_0-9\?]+ {
 	const size_t length = strlen(yytext);
-	yylval->generic.string = malloc(length + 1);
-	if (yylval->generic.string == NULL)
+	yylval->string = malloc(length + 1);
+	if (yylval->string == NULL)
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
 		return M68KASM_error;
 	}
 	else
 	{
-		memcpy(yylval->generic.string, yytext, length + 1);
+		memcpy(yylval->string, yytext, length + 1);
 		return TOKEN_LOCAL_IDENTIFIER;
 	}
 }
@@ -334,16 +334,16 @@ pc              TOKEN(PROGRAM_COUNTER)
 \"[^\"]+\" |
 \'[^\']+\' {
 	const size_t length = strlen(yytext) - 2;
-	yylval->generic.string = malloc(length + 1);
-	if (yylval->generic.string == NULL)
+	yylval->string = malloc(length + 1);
+	if (yylval->string == NULL)
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
 		return M68KASM_error;
 	}
 	else
 	{
-		memcpy(yylval->generic.string, yytext + 1, length);
-		yylval->generic.string[length] = '\0';
+		memcpy(yylval->string, yytext + 1, length);
+		yylval->string[length] = '\0';
 		return TOKEN_STRING;
 	}
 }

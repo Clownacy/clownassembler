@@ -390,11 +390,8 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 }
 
 %union {
-	struct
-	{
-		unsigned long unsigned_long;
-		char *string;
-	} generic;
+	unsigned long unsigned_long;
+	char *string;
 	Opcode opcode;
 	Size size;
 	Operand operand;
@@ -546,12 +543,12 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
 %token TOKEN_SIZE_LONGWORD
-%token<generic.unsigned_long> TOKEN_DATA_REGISTER
-%token<generic.unsigned_long> TOKEN_ADDRESS_REGISTER
-%token<generic.unsigned_long> TOKEN_NUMBER
-%token<generic.string> TOKEN_IDENTIFIER
-%token<generic.string> TOKEN_LOCAL_IDENTIFIER
-%token<generic.string> TOKEN_STRING
+%token<unsigned_long> TOKEN_DATA_REGISTER
+%token<unsigned_long> TOKEN_ADDRESS_REGISTER
+%token<unsigned_long> TOKEN_NUMBER
+%token<string> TOKEN_IDENTIFIER
+%token<string> TOKEN_LOCAL_IDENTIFIER
+%token<string> TOKEN_STRING
 %token TOKEN_STATUS_REGISTER
 %token TOKEN_CONDITION_CODE_REGISTER
 %token TOKEN_USER_STACK_POINTER_REGISTER
@@ -570,9 +567,9 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %type<size> size
 %type<opcode> full_opcode
 %type<operand> operand
-%type<generic.unsigned_long> register_list
-%type<generic.unsigned_long> register_span
-%type<generic.unsigned_long> data_or_address_register
+%type<unsigned_long> register_list
+%type<unsigned_long> register_span
+%type<unsigned_long> data_or_address_register
 %type<list_metadata> expression_list
 %type<list_metadata> identifier_list
 %type<expression> expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8
