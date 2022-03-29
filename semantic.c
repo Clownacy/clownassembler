@@ -4552,7 +4552,6 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 									/* Backup the statement. */
 									fix_up->statement = statement;
-									/* TODO - Free statement. */
 
 									/* Backup some state. */
 									fix_up->program_counter = starting_program_counter;
