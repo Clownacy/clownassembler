@@ -4422,10 +4422,12 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 													/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
 													/* asm68k allows backslashes before and after the parameter to separate them from surrounding characters. */
 													if (other_parameter_position != source_line_list_node->source_line && other_parameter_position[-1] == '\\')
+													{
 														--other_parameter_position;
 
-													if (other_parameter_end[0] == '\\')
-														++other_parameter_end;
+														if (other_parameter_end[0] == '\\')
+															++other_parameter_end;
+													}
 
 													if (parameter_position == NULL || other_parameter_position < parameter_position)
 													{
