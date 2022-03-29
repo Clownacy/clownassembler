@@ -1975,155 +1975,129 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 	switch (instruction->opcode.type)
 	{
 		case OPCODE_ORI:
+			if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
+				instruction->opcode.type = OPCODE_ORI_TO_CCR;
+			else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
+				instruction->opcode.type = OPCODE_ORI_TO_SR;
+
+			break;
+
 		case OPCODE_ANDI:
+			if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
+				instruction->opcode.type = OPCODE_ANDI_TO_CCR;
+			else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
+				instruction->opcode.type = OPCODE_ANDI_TO_SR;
+
+			break;
+
 		case OPCODE_EORI:
+			if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
+				instruction->opcode.type = OPCODE_EORI_TO_CCR;
+			else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
+				instruction->opcode.type = OPCODE_EORI_TO_SR;
+
+			break;
+
 		case OPCODE_BTST_STATIC:
+			if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+				instruction->opcode.type = OPCODE_BTST_DYNAMIC;
+
+			break;
+
 		case OPCODE_BCHG_STATIC:
+			if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+				instruction->opcode.type = OPCODE_BCHG_DYNAMIC;
+
+			break;
+
 		case OPCODE_BCLR_STATIC:
+			if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+				instruction->opcode.type = OPCODE_BCLR_DYNAMIC;
+
+			break;
+
 		case OPCODE_BSET_STATIC:
+			if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+				instruction->opcode.type = OPCODE_BSET_DYNAMIC;
+
+			break;
+
 		case OPCODE_MOVEP_TO_REG:
+			if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+				instruction->opcode.type = OPCODE_MOVEP_FROM_REG;
+
+			break;
+
 		case OPCODE_MOVE:
-		case OPCODE_MOVEM_TO_REGS:
-		case OPCODE_SBCD_DATA_REGS:
-		case OPCODE_OR_TO_REG:
-		case OPCODE_SUB_TO_REG:
-		case OPCODE_SUBX_DATA_REGS:
-		case OPCODE_ABCD_DATA_REGS:
-		case OPCODE_AND_TO_REG:
-		case OPCODE_ADD_TO_REG:
-		case OPCODE_ADDX_DATA_REGS:
-			switch (instruction->opcode.type)
+			if (instruction->operands[0].type == OPERAND_STATUS_REGISTER)
+				instruction->opcode.type = OPCODE_MOVE_FROM_SR;
+			else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
+				instruction->opcode.type = OPCODE_MOVE_TO_SR;
+			else if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
+				instruction->opcode.type = OPCODE_MOVE_TO_CCR;
+			else if (instruction->operands[0].type == OPERAND_USER_STACK_POINTER_REGISTER)
+				instruction->opcode.type = OPCODE_MOVE_FROM_USP;
+			else if (instruction->operands[1].type == OPERAND_USER_STACK_POINTER_REGISTER)
+				instruction->opcode.type = OPCODE_MOVE_TO_USP;
+			else if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
 			{
-				case OPCODE_ORI:
-					if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
-						instruction->opcode.type = OPCODE_ORI_TO_CCR;
-					else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
-						instruction->opcode.type = OPCODE_ORI_TO_SR;
-
-					break;
-
-				case OPCODE_ANDI:
-					if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
-						instruction->opcode.type = OPCODE_ANDI_TO_CCR;
-					else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
-						instruction->opcode.type = OPCODE_ANDI_TO_SR;
-
-					break;
-
-				case OPCODE_EORI:
-					if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
-						instruction->opcode.type = OPCODE_EORI_TO_CCR;
-					else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
-						instruction->opcode.type = OPCODE_EORI_TO_SR;
-
-					break;
-
-				case OPCODE_BTST_STATIC:
-					if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
-						instruction->opcode.type = OPCODE_BTST_DYNAMIC;
-
-					break;
-
-				case OPCODE_BCHG_STATIC:
-					if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
-						instruction->opcode.type = OPCODE_BCHG_DYNAMIC;
-
-					break;
-
-				case OPCODE_BCLR_STATIC:
-					if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
-						instruction->opcode.type = OPCODE_BCLR_DYNAMIC;
-
-					break;
-
-				case OPCODE_BSET_STATIC:
-					if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
-						instruction->opcode.type = OPCODE_BSET_DYNAMIC;
-
-					break;
-
-				case OPCODE_MOVEP_TO_REG:
-					if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
-						instruction->opcode.type = OPCODE_MOVEP_FROM_REG;
-
-					break;
-
-				case OPCODE_MOVE:
-					if (instruction->operands[0].type == OPERAND_STATUS_REGISTER)
-						instruction->opcode.type = OPCODE_MOVE_FROM_SR;
-					else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
-						instruction->opcode.type = OPCODE_MOVE_TO_SR;
-					else if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
-						instruction->opcode.type = OPCODE_MOVE_TO_CCR;
-					else if (instruction->operands[0].type == OPERAND_USER_STACK_POINTER_REGISTER)
-						instruction->opcode.type = OPCODE_MOVE_FROM_USP;
-					else if (instruction->operands[1].type == OPERAND_USER_STACK_POINTER_REGISTER)
-						instruction->opcode.type = OPCODE_MOVE_TO_USP;
-					else if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
-					{
-						instruction->opcode.type = OPCODE_MOVEA; /* MOVEA mistyped as MOVE */
-						SemanticWarning(state, "MOVE should be MOVEA.");
-					}
-
-					break;
-
-				case OPCODE_MOVEM_TO_REGS:
-					if (instruction->operands[0].type == OPERAND_DATA_REGISTER || instruction->operands[0].type == OPERAND_ADDRESS_REGISTER || instruction->operands[0].type == OPERAND_REGISTER_LIST)
-						instruction->opcode.type = OPCODE_MOVEM_FROM_REGS;
-
-					break;
-
-				case OPCODE_SBCD_DATA_REGS:
-					if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-						instruction->opcode.type = OPCODE_SBCD_ADDRESS_REGS;
-
-					break;
-
-				case OPCODE_OR_TO_REG:
-					if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
-						instruction->opcode.type = OPCODE_OR_FROM_REG;
-
-					break;
-
-				case OPCODE_SUB_TO_REG:
-					if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
-						instruction->opcode.type = OPCODE_SUB_FROM_REG;
-
-					break;
-
-				case OPCODE_SUBX_DATA_REGS:
-					if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-						instruction->opcode.type = OPCODE_SUBX_ADDRESS_REGS;
-
-					break;
-
-				case OPCODE_ABCD_DATA_REGS:
-					if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-						instruction->opcode.type = OPCODE_ABCD_ADDRESS_REGS;
-
-					break;
-
-				case OPCODE_AND_TO_REG:
-					if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
-						instruction->opcode.type = OPCODE_AND_FROM_REG;
-
-					break;
-
-				case OPCODE_ADD_TO_REG:
-					if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
-						instruction->opcode.type = OPCODE_ADD_FROM_REG;
-
-					break;
-
-				case OPCODE_ADDX_DATA_REGS:
-					if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-						instruction->opcode.type = OPCODE_ADDX_ADDRESS_REGS;
-
-					break;
-
-				default:
-					break;
+				instruction->opcode.type = OPCODE_MOVEA; /* MOVEA mistyped as MOVE */
+				SemanticWarning(state, "MOVE should be MOVEA.");
 			}
+
+			break;
+
+		case OPCODE_MOVEM_TO_REGS:
+			if (instruction->operands[0].type == OPERAND_DATA_REGISTER || instruction->operands[0].type == OPERAND_ADDRESS_REGISTER || instruction->operands[0].type == OPERAND_REGISTER_LIST)
+				instruction->opcode.type = OPCODE_MOVEM_FROM_REGS;
+
+			break;
+
+		case OPCODE_SBCD_DATA_REGS:
+			if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+				instruction->opcode.type = OPCODE_SBCD_ADDRESS_REGS;
+
+			break;
+
+		case OPCODE_OR_TO_REG:
+			if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
+				instruction->opcode.type = OPCODE_OR_FROM_REG;
+
+			break;
+
+		case OPCODE_SUB_TO_REG:
+			if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
+				instruction->opcode.type = OPCODE_SUB_FROM_REG;
+
+			break;
+
+		case OPCODE_SUBX_DATA_REGS:
+			if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+				instruction->opcode.type = OPCODE_SUBX_ADDRESS_REGS;
+
+			break;
+
+		case OPCODE_ABCD_DATA_REGS:
+			if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+				instruction->opcode.type = OPCODE_ABCD_ADDRESS_REGS;
+
+			break;
+
+		case OPCODE_AND_TO_REG:
+			if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
+				instruction->opcode.type = OPCODE_AND_FROM_REG;
+
+			break;
+
+		case OPCODE_ADD_TO_REG:
+			if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
+				instruction->opcode.type = OPCODE_ADD_FROM_REG;
+
+			break;
+
+		case OPCODE_ADDX_DATA_REGS:
+			if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+				instruction->opcode.type = OPCODE_ADDX_ADDRESS_REGS;
 
 			break;
 
