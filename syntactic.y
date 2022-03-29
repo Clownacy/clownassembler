@@ -518,27 +518,27 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_OPCODE_ROXR
 %token TOKEN_OPCODE_ROL
 %token TOKEN_OPCODE_ROR
-%token TOKEN_DIRECTIVE_DC
-%token TOKEN_DIRECTIVE_DCB
-%token TOKEN_DIRECTIVE_REPT
-%token TOKEN_DIRECTIVE_ENDR
-%token TOKEN_DIRECTIVE_MACRO
-%token TOKEN_DIRECTIVE_MACROS
-%token TOKEN_DIRECTIVE_ENDM
-%token TOKEN_DIRECTIVE_INCLUDE
-%token TOKEN_DIRECTIVE_INCBIN
-%token TOKEN_DIRECTIVE_EQU
-%token TOKEN_DIRECTIVE_SET
-%token TOKEN_DIRECTIVE_IF
-%token TOKEN_DIRECTIVE_ELSE
-%token TOKEN_DIRECTIVE_ENDC
-%token TOKEN_DIRECTIVE_EVEN
-%token TOKEN_DIRECTIVE_CNOP
-%token TOKEN_DIRECTIVE_INFORM
-%token TOKEN_DIRECTIVE_END
-%token TOKEN_DIRECTIVE_RS
-%token TOKEN_DIRECTIVE_RSSET
-%token TOKEN_DIRECTIVE_RSRESET
+%token TOKEN_PSEUDO_OPCODE_DC
+%token TOKEN_PSEUDO_OPCODE_DCB
+%token TOKEN_PSEUDO_OPCODE_REPT
+%token TOKEN_PSEUDO_OPCODE_ENDR
+%token TOKEN_PSEUDO_OPCODE_MACRO
+%token TOKEN_PSEUDO_OPCODE_MACROS
+%token TOKEN_PSEUDO_OPCODE_ENDM
+%token TOKEN_PSEUDO_OPCODE_INCLUDE
+%token TOKEN_PSEUDO_OPCODE_INCBIN
+%token TOKEN_PSEUDO_OPCODE_EQU
+%token TOKEN_PSEUDO_OPCODE_SET
+%token TOKEN_PSEUDO_OPCODE_IF
+%token TOKEN_PSEUDO_OPCODE_ELSE
+%token TOKEN_PSEUDO_OPCODE_ENDC
+%token TOKEN_PSEUDO_OPCODE_EVEN
+%token TOKEN_PSEUDO_OPCODE_CNOP
+%token TOKEN_PSEUDO_OPCODE_INFORM
+%token TOKEN_PSEUDO_OPCODE_END
+%token TOKEN_PSEUDO_OPCODE_RS
+%token TOKEN_PSEUDO_OPCODE_RSSET
+%token TOKEN_PSEUDO_OPCODE_RSRESET
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -594,25 +594,25 @@ statement
 		statement->type = STATEMENT_TYPE_INSTRUCTION;
 		statement->shared.instruction = $1;
 	}
-	| TOKEN_DIRECTIVE_DC size expression_list
+	| TOKEN_PSEUDO_OPCODE_DC size expression_list
 	{
 		statement->type = STATEMENT_TYPE_DC;
 		statement->shared.dc.size = $2;
 		statement->shared.dc.values = $3.head;
 	}
-	| TOKEN_DIRECTIVE_DCB size expression ',' expression
+	| TOKEN_PSEUDO_OPCODE_DCB size expression ',' expression
 	{
 		statement->type = STATEMENT_TYPE_DCB;
 		statement->shared.dcb.size = $2;
 		statement->shared.dcb.repetitions = $3;
 		statement->shared.dcb.value = $5;
 	}
-	| TOKEN_DIRECTIVE_INCLUDE TOKEN_STRING
+	| TOKEN_PSEUDO_OPCODE_INCLUDE TOKEN_STRING
 	{
 		statement->type = STATEMENT_TYPE_INCLUDE;
 		statement->shared.include.path = $2;
 	}
-	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING
+	| TOKEN_PSEUDO_OPCODE_INCBIN TOKEN_STRING
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = $2;
@@ -620,14 +620,14 @@ statement
 		statement->shared.incbin.start.shared.unsigned_long = 0;
 		statement->shared.incbin.has_length = cc_false;
 	}
-	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' expression
+	| TOKEN_PSEUDO_OPCODE_INCBIN TOKEN_STRING ',' expression
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = $2;
 		statement->shared.incbin.start = $4;
 		statement->shared.incbin.has_length = cc_false;
 	}
-	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' expression ',' expression
+	| TOKEN_PSEUDO_OPCODE_INCBIN TOKEN_STRING ',' expression ',' expression
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = $2;
@@ -635,45 +635,45 @@ statement
 		statement->shared.incbin.has_length = cc_true;
 		statement->shared.incbin.length = $6;
 	}
-	| TOKEN_DIRECTIVE_REPT expression
+	| TOKEN_PSEUDO_OPCODE_REPT expression
 	{
 		statement->type = STATEMENT_TYPE_REPT;
 		statement->shared.rept.repetitions = $2;
 	}
-	| TOKEN_DIRECTIVE_ENDR
+	| TOKEN_PSEUDO_OPCODE_ENDR
 	{
 		statement->type = STATEMENT_TYPE_ENDR;
 	}
-	| TOKEN_DIRECTIVE_MACRO
+	| TOKEN_PSEUDO_OPCODE_MACRO
 	{
 		statement->type = STATEMENT_TYPE_MACRO;
 		statement->shared.macro.parameter_names = NULL;
 	}
-	| TOKEN_DIRECTIVE_MACRO identifier_list
+	| TOKEN_PSEUDO_OPCODE_MACRO identifier_list
 	{
 		statement->type = STATEMENT_TYPE_MACRO;
 		statement->shared.macro.parameter_names = $2.head;
 	}
-	| TOKEN_DIRECTIVE_MACROS
+	| TOKEN_PSEUDO_OPCODE_MACROS
 	{
 		statement->type = STATEMENT_TYPE_MACROS;
 		statement->shared.macro.parameter_names = NULL;
 	}
-	| TOKEN_DIRECTIVE_MACROS identifier_list
+	| TOKEN_PSEUDO_OPCODE_MACROS identifier_list
 	{
 		statement->type = STATEMENT_TYPE_MACROS;
 		statement->shared.macro.parameter_names = $2.head;
 	}
-	| TOKEN_DIRECTIVE_ENDM
+	| TOKEN_PSEUDO_OPCODE_ENDM
 	{
 		statement->type = STATEMENT_TYPE_ENDM;
 	}
-	| TOKEN_DIRECTIVE_EQU expression
+	| TOKEN_PSEUDO_OPCODE_EQU expression
 	{
 		statement->type = STATEMENT_TYPE_EQU;
 		statement->shared.expression = $2;
 	}
-	| TOKEN_DIRECTIVE_SET expression
+	| TOKEN_PSEUDO_OPCODE_SET expression
 	{
 		statement->type = STATEMENT_TYPE_SET;
 		statement->shared.expression = $2;
@@ -683,30 +683,30 @@ statement
 		statement->type = STATEMENT_TYPE_SET;
 		statement->shared.expression = $2;
 	}
-	| TOKEN_DIRECTIVE_IF expression
+	| TOKEN_PSEUDO_OPCODE_IF expression
 	{
 		statement->type = STATEMENT_TYPE_IF;
 		statement->shared.expression = $2;
 	}
-	| TOKEN_DIRECTIVE_ELSE
+	| TOKEN_PSEUDO_OPCODE_ELSE
 	{
 		statement->type = STATEMENT_TYPE_ELSE;
 	}
-	| TOKEN_DIRECTIVE_ENDC
+	| TOKEN_PSEUDO_OPCODE_ENDC
 	{
 		statement->type = STATEMENT_TYPE_ENDC;
 	}
-	| TOKEN_DIRECTIVE_EVEN
+	| TOKEN_PSEUDO_OPCODE_EVEN
 	{
 		statement->type = STATEMENT_TYPE_EVEN;
 	}
-	| TOKEN_DIRECTIVE_CNOP expression ',' expression
+	| TOKEN_PSEUDO_OPCODE_CNOP expression ',' expression
 	{
 		statement->type = STATEMENT_TYPE_CNOP;
 		statement->shared.cnop.offset = $2;
 		statement->shared.cnop.size_boundary = $4;
 	}
-	| TOKEN_DIRECTIVE_INFORM expression ',' TOKEN_STRING
+	| TOKEN_PSEUDO_OPCODE_INFORM expression ',' TOKEN_STRING
 	{
 		(void)$2;
 
@@ -714,7 +714,7 @@ statement
 		statement->type = STATEMENT_TYPE_INFORM;
 		statement->shared.inform.message = $4;
 	}
-	| TOKEN_DIRECTIVE_INFORM expression ',' TOKEN_STRING ',' expression_list
+	| TOKEN_PSEUDO_OPCODE_INFORM expression ',' TOKEN_STRING ',' expression_list
 	{
 		(void)$2;
 		(void)$6;
@@ -723,22 +723,22 @@ statement
 		statement->type = STATEMENT_TYPE_INFORM;
 		statement->shared.inform.message = $4;
 	}
-	| TOKEN_DIRECTIVE_END
+	| TOKEN_PSEUDO_OPCODE_END
 	{
 		statement->type = STATEMENT_TYPE_END;
 	}
-	| TOKEN_DIRECTIVE_RS size expression
+	| TOKEN_PSEUDO_OPCODE_RS size expression
 	{
 		statement->type = STATEMENT_TYPE_RS;
 		statement->shared.rs.size = $2;
 		statement->shared.rs.length = $3;
 	}
-	| TOKEN_DIRECTIVE_RSSET expression
+	| TOKEN_PSEUDO_OPCODE_RSSET expression
 	{
 		statement->type = STATEMENT_TYPE_RSSET;
 		statement->shared.expression = $2;
 	}
-	| TOKEN_DIRECTIVE_RSRESET
+	| TOKEN_PSEUDO_OPCODE_RSRESET
 	{
 		statement->type = STATEMENT_TYPE_RSRESET;
 	}
