@@ -401,144 +401,144 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 	Expression expression;
 }
 
-%token TOKEN_OPCODE_ORI
-%token TOKEN_OPCODE_ANDI
-%token TOKEN_OPCODE_SUBI
-%token TOKEN_OPCODE_ADDI
-%token TOKEN_OPCODE_EORI
-%token TOKEN_OPCODE_CMPI
-%token TOKEN_OPCODE_BTST
-%token TOKEN_OPCODE_BCHG
-%token TOKEN_OPCODE_BCLR
-%token TOKEN_OPCODE_BSET
-%token TOKEN_OPCODE_MOVEP
-%token TOKEN_OPCODE_MOVEA
-%token TOKEN_OPCODE_MOVE
-%token TOKEN_OPCODE_NEGX
-%token TOKEN_OPCODE_CLR
-%token TOKEN_OPCODE_NEG
-%token TOKEN_OPCODE_NOT
-%token TOKEN_OPCODE_EXT
-%token TOKEN_OPCODE_NBCD
-%token TOKEN_OPCODE_SWAP
-%token TOKEN_OPCODE_PEA
-%token TOKEN_OPCODE_ILLEGAL
-%token TOKEN_OPCODE_TAS
-%token TOKEN_OPCODE_TST
-%token TOKEN_OPCODE_TRAP
-%token TOKEN_OPCODE_LINK
-%token TOKEN_OPCODE_UNLK
-%token TOKEN_OPCODE_RESET
-%token TOKEN_OPCODE_NOP
-%token TOKEN_OPCODE_STOP
-%token TOKEN_OPCODE_RTE
-%token TOKEN_OPCODE_RTS
-%token TOKEN_OPCODE_TRAPV
-%token TOKEN_OPCODE_RTR
-%token TOKEN_OPCODE_JSR
-%token TOKEN_OPCODE_JMP
-%token TOKEN_OPCODE_MOVEM
-%token TOKEN_OPCODE_LEA
-%token TOKEN_OPCODE_CHK
-%token TOKEN_OPCODE_ADDQ
-%token TOKEN_OPCODE_SUBQ
-%token TOKEN_OPCODE_ST
-%token TOKEN_OPCODE_SF
-%token TOKEN_OPCODE_SHI
-%token TOKEN_OPCODE_SLS
-%token TOKEN_OPCODE_SCC
-%token TOKEN_OPCODE_SCS
-%token TOKEN_OPCODE_SNE
-%token TOKEN_OPCODE_SEQ
-%token TOKEN_OPCODE_SVC
-%token TOKEN_OPCODE_SVS
-%token TOKEN_OPCODE_SPL
-%token TOKEN_OPCODE_SMI
-%token TOKEN_OPCODE_SGE
-%token TOKEN_OPCODE_SLT
-%token TOKEN_OPCODE_SGT
-%token TOKEN_OPCODE_SLE
-%token TOKEN_OPCODE_DBT
-%token TOKEN_OPCODE_DBF
-%token TOKEN_OPCODE_DBHI
-%token TOKEN_OPCODE_DBLS
-%token TOKEN_OPCODE_DBCC
-%token TOKEN_OPCODE_DBCS
-%token TOKEN_OPCODE_DBNE
-%token TOKEN_OPCODE_DBEQ
-%token TOKEN_OPCODE_DBVC
-%token TOKEN_OPCODE_DBVS
-%token TOKEN_OPCODE_DBPL
-%token TOKEN_OPCODE_DBMI
-%token TOKEN_OPCODE_DBGE
-%token TOKEN_OPCODE_DBLT
-%token TOKEN_OPCODE_DBGT
-%token TOKEN_OPCODE_DBLE
-%token TOKEN_OPCODE_BRA
-%token TOKEN_OPCODE_BSR
-%token TOKEN_OPCODE_BHI
-%token TOKEN_OPCODE_BLS
-%token TOKEN_OPCODE_BCC
-%token TOKEN_OPCODE_BCS
-%token TOKEN_OPCODE_BNE
-%token TOKEN_OPCODE_BEQ
-%token TOKEN_OPCODE_BVC
-%token TOKEN_OPCODE_BVS
-%token TOKEN_OPCODE_BPL
-%token TOKEN_OPCODE_BMI
-%token TOKEN_OPCODE_BGE
-%token TOKEN_OPCODE_BLT
-%token TOKEN_OPCODE_BGT
-%token TOKEN_OPCODE_BLE
-%token TOKEN_OPCODE_MOVEQ
-%token TOKEN_OPCODE_DIVU
-%token TOKEN_OPCODE_DIVS
-%token TOKEN_OPCODE_SBCD
-%token TOKEN_OPCODE_OR
-%token TOKEN_OPCODE_SUB
-%token TOKEN_OPCODE_SUBX
-%token TOKEN_OPCODE_SUBA
-%token TOKEN_OPCODE_EOR
-%token TOKEN_OPCODE_CMPM
-%token TOKEN_OPCODE_CMP
-%token TOKEN_OPCODE_CMPA
-%token TOKEN_OPCODE_MULU
-%token TOKEN_OPCODE_MULS
-%token TOKEN_OPCODE_ABCD
-%token TOKEN_OPCODE_EXG
-%token TOKEN_OPCODE_AND
-%token TOKEN_OPCODE_ADD
-%token TOKEN_OPCODE_ADDX
-%token TOKEN_OPCODE_ADDA
-%token TOKEN_OPCODE_ASL
-%token TOKEN_OPCODE_ASR
-%token TOKEN_OPCODE_LSL
-%token TOKEN_OPCODE_LSR
-%token TOKEN_OPCODE_ROXL
-%token TOKEN_OPCODE_ROXR
-%token TOKEN_OPCODE_ROL
-%token TOKEN_OPCODE_ROR
-%token TOKEN_PSEUDO_OPCODE_DC
-%token TOKEN_PSEUDO_OPCODE_DCB
-%token TOKEN_PSEUDO_OPCODE_REPT
-%token TOKEN_PSEUDO_OPCODE_ENDR
-%token TOKEN_PSEUDO_OPCODE_MACRO
-%token TOKEN_PSEUDO_OPCODE_MACROS
-%token TOKEN_PSEUDO_OPCODE_ENDM
-%token TOKEN_PSEUDO_OPCODE_INCLUDE
-%token TOKEN_PSEUDO_OPCODE_INCBIN
-%token TOKEN_PSEUDO_OPCODE_EQU
-%token TOKEN_PSEUDO_OPCODE_SET
-%token TOKEN_PSEUDO_OPCODE_IF
-%token TOKEN_PSEUDO_OPCODE_ELSE
-%token TOKEN_PSEUDO_OPCODE_ENDC
-%token TOKEN_PSEUDO_OPCODE_EVEN
-%token TOKEN_PSEUDO_OPCODE_CNOP
-%token TOKEN_PSEUDO_OPCODE_INFORM
-%token TOKEN_PSEUDO_OPCODE_END
-%token TOKEN_PSEUDO_OPCODE_RS
-%token TOKEN_PSEUDO_OPCODE_RSSET
-%token TOKEN_PSEUDO_OPCODE_RSRESET
+%token TOKEN_DIRECTIVE_ORI
+%token TOKEN_DIRECTIVE_ANDI
+%token TOKEN_DIRECTIVE_SUBI
+%token TOKEN_DIRECTIVE_ADDI
+%token TOKEN_DIRECTIVE_EORI
+%token TOKEN_DIRECTIVE_CMPI
+%token TOKEN_DIRECTIVE_BTST
+%token TOKEN_DIRECTIVE_BCHG
+%token TOKEN_DIRECTIVE_BCLR
+%token TOKEN_DIRECTIVE_BSET
+%token TOKEN_DIRECTIVE_MOVEP
+%token TOKEN_DIRECTIVE_MOVEA
+%token TOKEN_DIRECTIVE_MOVE
+%token TOKEN_DIRECTIVE_NEGX
+%token TOKEN_DIRECTIVE_CLR
+%token TOKEN_DIRECTIVE_NEG
+%token TOKEN_DIRECTIVE_NOT
+%token TOKEN_DIRECTIVE_EXT
+%token TOKEN_DIRECTIVE_NBCD
+%token TOKEN_DIRECTIVE_SWAP
+%token TOKEN_DIRECTIVE_PEA
+%token TOKEN_DIRECTIVE_ILLEGAL
+%token TOKEN_DIRECTIVE_TAS
+%token TOKEN_DIRECTIVE_TST
+%token TOKEN_DIRECTIVE_TRAP
+%token TOKEN_DIRECTIVE_LINK
+%token TOKEN_DIRECTIVE_UNLK
+%token TOKEN_DIRECTIVE_RESET
+%token TOKEN_DIRECTIVE_NOP
+%token TOKEN_DIRECTIVE_STOP
+%token TOKEN_DIRECTIVE_RTE
+%token TOKEN_DIRECTIVE_RTS
+%token TOKEN_DIRECTIVE_TRAPV
+%token TOKEN_DIRECTIVE_RTR
+%token TOKEN_DIRECTIVE_JSR
+%token TOKEN_DIRECTIVE_JMP
+%token TOKEN_DIRECTIVE_MOVEM
+%token TOKEN_DIRECTIVE_LEA
+%token TOKEN_DIRECTIVE_CHK
+%token TOKEN_DIRECTIVE_ADDQ
+%token TOKEN_DIRECTIVE_SUBQ
+%token TOKEN_DIRECTIVE_ST
+%token TOKEN_DIRECTIVE_SF
+%token TOKEN_DIRECTIVE_SHI
+%token TOKEN_DIRECTIVE_SLS
+%token TOKEN_DIRECTIVE_SCC
+%token TOKEN_DIRECTIVE_SCS
+%token TOKEN_DIRECTIVE_SNE
+%token TOKEN_DIRECTIVE_SEQ
+%token TOKEN_DIRECTIVE_SVC
+%token TOKEN_DIRECTIVE_SVS
+%token TOKEN_DIRECTIVE_SPL
+%token TOKEN_DIRECTIVE_SMI
+%token TOKEN_DIRECTIVE_SGE
+%token TOKEN_DIRECTIVE_SLT
+%token TOKEN_DIRECTIVE_SGT
+%token TOKEN_DIRECTIVE_SLE
+%token TOKEN_DIRECTIVE_DBT
+%token TOKEN_DIRECTIVE_DBF
+%token TOKEN_DIRECTIVE_DBHI
+%token TOKEN_DIRECTIVE_DBLS
+%token TOKEN_DIRECTIVE_DBCC
+%token TOKEN_DIRECTIVE_DBCS
+%token TOKEN_DIRECTIVE_DBNE
+%token TOKEN_DIRECTIVE_DBEQ
+%token TOKEN_DIRECTIVE_DBVC
+%token TOKEN_DIRECTIVE_DBVS
+%token TOKEN_DIRECTIVE_DBPL
+%token TOKEN_DIRECTIVE_DBMI
+%token TOKEN_DIRECTIVE_DBGE
+%token TOKEN_DIRECTIVE_DBLT
+%token TOKEN_DIRECTIVE_DBGT
+%token TOKEN_DIRECTIVE_DBLE
+%token TOKEN_DIRECTIVE_BRA
+%token TOKEN_DIRECTIVE_BSR
+%token TOKEN_DIRECTIVE_BHI
+%token TOKEN_DIRECTIVE_BLS
+%token TOKEN_DIRECTIVE_BCC
+%token TOKEN_DIRECTIVE_BCS
+%token TOKEN_DIRECTIVE_BNE
+%token TOKEN_DIRECTIVE_BEQ
+%token TOKEN_DIRECTIVE_BVC
+%token TOKEN_DIRECTIVE_BVS
+%token TOKEN_DIRECTIVE_BPL
+%token TOKEN_DIRECTIVE_BMI
+%token TOKEN_DIRECTIVE_BGE
+%token TOKEN_DIRECTIVE_BLT
+%token TOKEN_DIRECTIVE_BGT
+%token TOKEN_DIRECTIVE_BLE
+%token TOKEN_DIRECTIVE_MOVEQ
+%token TOKEN_DIRECTIVE_DIVU
+%token TOKEN_DIRECTIVE_DIVS
+%token TOKEN_DIRECTIVE_SBCD
+%token TOKEN_DIRECTIVE_OR
+%token TOKEN_DIRECTIVE_SUB
+%token TOKEN_DIRECTIVE_SUBX
+%token TOKEN_DIRECTIVE_SUBA
+%token TOKEN_DIRECTIVE_EOR
+%token TOKEN_DIRECTIVE_CMPM
+%token TOKEN_DIRECTIVE_CMP
+%token TOKEN_DIRECTIVE_CMPA
+%token TOKEN_DIRECTIVE_MULU
+%token TOKEN_DIRECTIVE_MULS
+%token TOKEN_DIRECTIVE_ABCD
+%token TOKEN_DIRECTIVE_EXG
+%token TOKEN_DIRECTIVE_AND
+%token TOKEN_DIRECTIVE_ADD
+%token TOKEN_DIRECTIVE_ADDX
+%token TOKEN_DIRECTIVE_ADDA
+%token TOKEN_DIRECTIVE_ASL
+%token TOKEN_DIRECTIVE_ASR
+%token TOKEN_DIRECTIVE_LSL
+%token TOKEN_DIRECTIVE_LSR
+%token TOKEN_DIRECTIVE_ROXL
+%token TOKEN_DIRECTIVE_ROXR
+%token TOKEN_DIRECTIVE_ROL
+%token TOKEN_DIRECTIVE_ROR
+%token TOKEN_DIRECTIVE_DC
+%token TOKEN_DIRECTIVE_DCB
+%token TOKEN_DIRECTIVE_REPT
+%token TOKEN_DIRECTIVE_ENDR
+%token TOKEN_DIRECTIVE_MACRO
+%token TOKEN_DIRECTIVE_MACROS
+%token TOKEN_DIRECTIVE_ENDM
+%token TOKEN_DIRECTIVE_INCLUDE
+%token TOKEN_DIRECTIVE_INCBIN
+%token TOKEN_DIRECTIVE_EQU
+%token TOKEN_DIRECTIVE_SET
+%token TOKEN_DIRECTIVE_IF
+%token TOKEN_DIRECTIVE_ELSE
+%token TOKEN_DIRECTIVE_ENDC
+%token TOKEN_DIRECTIVE_EVEN
+%token TOKEN_DIRECTIVE_CNOP
+%token TOKEN_DIRECTIVE_INFORM
+%token TOKEN_DIRECTIVE_END
+%token TOKEN_DIRECTIVE_RS
+%token TOKEN_DIRECTIVE_RSSET
+%token TOKEN_DIRECTIVE_RSRESET
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -594,25 +594,25 @@ statement
 		statement->type = STATEMENT_TYPE_INSTRUCTION;
 		statement->shared.instruction = $1;
 	}
-	| TOKEN_PSEUDO_OPCODE_DC size expression_list
+	| TOKEN_DIRECTIVE_DC size expression_list
 	{
 		statement->type = STATEMENT_TYPE_DC;
 		statement->shared.dc.size = $2;
 		statement->shared.dc.values = $3.head;
 	}
-	| TOKEN_PSEUDO_OPCODE_DCB size expression ',' expression
+	| TOKEN_DIRECTIVE_DCB size expression ',' expression
 	{
 		statement->type = STATEMENT_TYPE_DCB;
 		statement->shared.dcb.size = $2;
 		statement->shared.dcb.repetitions = $3;
 		statement->shared.dcb.value = $5;
 	}
-	| TOKEN_PSEUDO_OPCODE_INCLUDE TOKEN_STRING
+	| TOKEN_DIRECTIVE_INCLUDE TOKEN_STRING
 	{
 		statement->type = STATEMENT_TYPE_INCLUDE;
 		statement->shared.include.path = $2;
 	}
-	| TOKEN_PSEUDO_OPCODE_INCBIN TOKEN_STRING
+	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = $2;
@@ -620,14 +620,14 @@ statement
 		statement->shared.incbin.start.shared.unsigned_long = 0;
 		statement->shared.incbin.has_length = cc_false;
 	}
-	| TOKEN_PSEUDO_OPCODE_INCBIN TOKEN_STRING ',' expression
+	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' expression
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = $2;
 		statement->shared.incbin.start = $4;
 		statement->shared.incbin.has_length = cc_false;
 	}
-	| TOKEN_PSEUDO_OPCODE_INCBIN TOKEN_STRING ',' expression ',' expression
+	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' expression ',' expression
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = $2;
@@ -635,45 +635,45 @@ statement
 		statement->shared.incbin.has_length = cc_true;
 		statement->shared.incbin.length = $6;
 	}
-	| TOKEN_PSEUDO_OPCODE_REPT expression
+	| TOKEN_DIRECTIVE_REPT expression
 	{
 		statement->type = STATEMENT_TYPE_REPT;
 		statement->shared.rept.repetitions = $2;
 	}
-	| TOKEN_PSEUDO_OPCODE_ENDR
+	| TOKEN_DIRECTIVE_ENDR
 	{
 		statement->type = STATEMENT_TYPE_ENDR;
 	}
-	| TOKEN_PSEUDO_OPCODE_MACRO
+	| TOKEN_DIRECTIVE_MACRO
 	{
 		statement->type = STATEMENT_TYPE_MACRO;
 		statement->shared.macro.parameter_names = NULL;
 	}
-	| TOKEN_PSEUDO_OPCODE_MACRO identifier_list
+	| TOKEN_DIRECTIVE_MACRO identifier_list
 	{
 		statement->type = STATEMENT_TYPE_MACRO;
 		statement->shared.macro.parameter_names = $2.head;
 	}
-	| TOKEN_PSEUDO_OPCODE_MACROS
+	| TOKEN_DIRECTIVE_MACROS
 	{
 		statement->type = STATEMENT_TYPE_MACROS;
 		statement->shared.macro.parameter_names = NULL;
 	}
-	| TOKEN_PSEUDO_OPCODE_MACROS identifier_list
+	| TOKEN_DIRECTIVE_MACROS identifier_list
 	{
 		statement->type = STATEMENT_TYPE_MACROS;
 		statement->shared.macro.parameter_names = $2.head;
 	}
-	| TOKEN_PSEUDO_OPCODE_ENDM
+	| TOKEN_DIRECTIVE_ENDM
 	{
 		statement->type = STATEMENT_TYPE_ENDM;
 	}
-	| TOKEN_PSEUDO_OPCODE_EQU expression
+	| TOKEN_DIRECTIVE_EQU expression
 	{
 		statement->type = STATEMENT_TYPE_EQU;
 		statement->shared.expression = $2;
 	}
-	| TOKEN_PSEUDO_OPCODE_SET expression
+	| TOKEN_DIRECTIVE_SET expression
 	{
 		statement->type = STATEMENT_TYPE_SET;
 		statement->shared.expression = $2;
@@ -683,30 +683,30 @@ statement
 		statement->type = STATEMENT_TYPE_SET;
 		statement->shared.expression = $2;
 	}
-	| TOKEN_PSEUDO_OPCODE_IF expression
+	| TOKEN_DIRECTIVE_IF expression
 	{
 		statement->type = STATEMENT_TYPE_IF;
 		statement->shared.expression = $2;
 	}
-	| TOKEN_PSEUDO_OPCODE_ELSE
+	| TOKEN_DIRECTIVE_ELSE
 	{
 		statement->type = STATEMENT_TYPE_ELSE;
 	}
-	| TOKEN_PSEUDO_OPCODE_ENDC
+	| TOKEN_DIRECTIVE_ENDC
 	{
 		statement->type = STATEMENT_TYPE_ENDC;
 	}
-	| TOKEN_PSEUDO_OPCODE_EVEN
+	| TOKEN_DIRECTIVE_EVEN
 	{
 		statement->type = STATEMENT_TYPE_EVEN;
 	}
-	| TOKEN_PSEUDO_OPCODE_CNOP expression ',' expression
+	| TOKEN_DIRECTIVE_CNOP expression ',' expression
 	{
 		statement->type = STATEMENT_TYPE_CNOP;
 		statement->shared.cnop.offset = $2;
 		statement->shared.cnop.size_boundary = $4;
 	}
-	| TOKEN_PSEUDO_OPCODE_INFORM expression ',' TOKEN_STRING
+	| TOKEN_DIRECTIVE_INFORM expression ',' TOKEN_STRING
 	{
 		(void)$2;
 
@@ -714,7 +714,7 @@ statement
 		statement->type = STATEMENT_TYPE_INFORM;
 		statement->shared.inform.message = $4;
 	}
-	| TOKEN_PSEUDO_OPCODE_INFORM expression ',' TOKEN_STRING ',' expression_list
+	| TOKEN_DIRECTIVE_INFORM expression ',' TOKEN_STRING ',' expression_list
 	{
 		(void)$2;
 		(void)$6;
@@ -723,22 +723,22 @@ statement
 		statement->type = STATEMENT_TYPE_INFORM;
 		statement->shared.inform.message = $4;
 	}
-	| TOKEN_PSEUDO_OPCODE_END
+	| TOKEN_DIRECTIVE_END
 	{
 		statement->type = STATEMENT_TYPE_END;
 	}
-	| TOKEN_PSEUDO_OPCODE_RS size expression
+	| TOKEN_DIRECTIVE_RS size expression
 	{
 		statement->type = STATEMENT_TYPE_RS;
 		statement->shared.rs.size = $2;
 		statement->shared.rs.length = $3;
 	}
-	| TOKEN_PSEUDO_OPCODE_RSSET expression
+	| TOKEN_DIRECTIVE_RSSET expression
 	{
 		statement->type = STATEMENT_TYPE_RSSET;
 		statement->shared.expression = $2;
 	}
-	| TOKEN_PSEUDO_OPCODE_RSRESET
+	| TOKEN_DIRECTIVE_RSRESET
 	{
 		statement->type = STATEMENT_TYPE_RSRESET;
 	}
@@ -875,517 +875,517 @@ full_opcode
 	;
 
 opcode
-	: TOKEN_OPCODE_ORI
+	: TOKEN_DIRECTIVE_ORI
 	{
 		$$.type = OPCODE_ORI;
 	}
-	| TOKEN_OPCODE_ANDI
+	| TOKEN_DIRECTIVE_ANDI
 	{
 		$$.type = OPCODE_ANDI;
 	}
-	| TOKEN_OPCODE_SUBI
+	| TOKEN_DIRECTIVE_SUBI
 	{
 		$$.type = OPCODE_SUBI;
 	}
-	| TOKEN_OPCODE_ADDI
+	| TOKEN_DIRECTIVE_ADDI
 	{
 		$$.type = OPCODE_ADDI;
 	}
-	| TOKEN_OPCODE_EORI
+	| TOKEN_DIRECTIVE_EORI
 	{
 		$$.type = OPCODE_EORI;
 	}
-	| TOKEN_OPCODE_CMPI
+	| TOKEN_DIRECTIVE_CMPI
 	{
 		$$.type = OPCODE_CMPI;
 	}
-	| TOKEN_OPCODE_BTST
+	| TOKEN_DIRECTIVE_BTST
 	{
 		$$.type = OPCODE_BTST_STATIC;
 	}
-	| TOKEN_OPCODE_BCHG
+	| TOKEN_DIRECTIVE_BCHG
 	{
 		$$.type = OPCODE_BCHG_STATIC;
 	}
-	| TOKEN_OPCODE_BCLR
+	| TOKEN_DIRECTIVE_BCLR
 	{
 		$$.type = OPCODE_BCLR_STATIC;
 	}
-	| TOKEN_OPCODE_BSET
+	| TOKEN_DIRECTIVE_BSET
 	{
 		$$.type = OPCODE_BSET_STATIC;
 	}
-	| TOKEN_OPCODE_MOVEP
+	| TOKEN_DIRECTIVE_MOVEP
 	{
 		$$.type = OPCODE_MOVEP_TO_REG;
 	}
-	| TOKEN_OPCODE_MOVEA
+	| TOKEN_DIRECTIVE_MOVEA
 	{
 		$$.type = OPCODE_MOVEA;
 	}
-	| TOKEN_OPCODE_MOVE
+	| TOKEN_DIRECTIVE_MOVE
 	{
 		$$.type = OPCODE_MOVE;
 	}
-	| TOKEN_OPCODE_NEGX
+	| TOKEN_DIRECTIVE_NEGX
 	{
 		$$.type = OPCODE_NEGX;
 	}
-	| TOKEN_OPCODE_CLR
+	| TOKEN_DIRECTIVE_CLR
 	{
 		$$.type = OPCODE_CLR;
 	}
-	| TOKEN_OPCODE_NEG
+	| TOKEN_DIRECTIVE_NEG
 	{
 		$$.type = OPCODE_NEG;
 	}
-	| TOKEN_OPCODE_NOT
+	| TOKEN_DIRECTIVE_NOT
 	{
 		$$.type = OPCODE_NOT;
 	}
-	| TOKEN_OPCODE_EXT
+	| TOKEN_DIRECTIVE_EXT
 	{
 		$$.type = OPCODE_EXT;
 	}
-	| TOKEN_OPCODE_NBCD
+	| TOKEN_DIRECTIVE_NBCD
 	{
 		$$.type = OPCODE_NBCD;
 	}
-	| TOKEN_OPCODE_SWAP
+	| TOKEN_DIRECTIVE_SWAP
 	{
 		$$.type = OPCODE_SWAP;
 	}
-	| TOKEN_OPCODE_PEA
+	| TOKEN_DIRECTIVE_PEA
 	{
 		$$.type = OPCODE_PEA;
 	}
-	| TOKEN_OPCODE_ILLEGAL
+	| TOKEN_DIRECTIVE_ILLEGAL
 	{
 		$$.type = OPCODE_ILLEGAL;
 	}
-	| TOKEN_OPCODE_TAS
+	| TOKEN_DIRECTIVE_TAS
 	{
 		$$.type = OPCODE_TAS;
 	}
-	| TOKEN_OPCODE_TST
+	| TOKEN_DIRECTIVE_TST
 	{
 		$$.type = OPCODE_TST;
 	}
-	| TOKEN_OPCODE_TRAP
+	| TOKEN_DIRECTIVE_TRAP
 	{
 		$$.type = OPCODE_TRAP;
 	}
-	| TOKEN_OPCODE_LINK
+	| TOKEN_DIRECTIVE_LINK
 	{
 		$$.type = OPCODE_LINK;
 	}
-	| TOKEN_OPCODE_UNLK
+	| TOKEN_DIRECTIVE_UNLK
 	{
 		$$.type = OPCODE_UNLK;
 	}
-	| TOKEN_OPCODE_RESET
+	| TOKEN_DIRECTIVE_RESET
 	{
 		$$.type = OPCODE_RESET;
 	}
-	| TOKEN_OPCODE_NOP
+	| TOKEN_DIRECTIVE_NOP
 	{
 		$$.type = OPCODE_NOP;
 	}
-	| TOKEN_OPCODE_STOP
+	| TOKEN_DIRECTIVE_STOP
 	{
 		$$.type = OPCODE_STOP;
 	}
-	| TOKEN_OPCODE_RTE
+	| TOKEN_DIRECTIVE_RTE
 	{
 		$$.type = OPCODE_RTE;
 	}
-	| TOKEN_OPCODE_RTS
+	| TOKEN_DIRECTIVE_RTS
 	{
 		$$.type = OPCODE_RTS;
 	}
-	| TOKEN_OPCODE_TRAPV
+	| TOKEN_DIRECTIVE_TRAPV
 	{
 		$$.type = OPCODE_TRAPV;
 	}
-	| TOKEN_OPCODE_RTR
+	| TOKEN_DIRECTIVE_RTR
 	{
 		$$.type = OPCODE_RTR;
 	}
-	| TOKEN_OPCODE_JSR
+	| TOKEN_DIRECTIVE_JSR
 	{
 		$$.type = OPCODE_JSR;
 	}
-	| TOKEN_OPCODE_JMP
+	| TOKEN_DIRECTIVE_JMP
 	{
 		$$.type = OPCODE_JMP;
 	}
-	| TOKEN_OPCODE_MOVEM
+	| TOKEN_DIRECTIVE_MOVEM
 	{
 		$$.type = OPCODE_MOVEM_TO_REGS;
 	}
-	| TOKEN_OPCODE_LEA
+	| TOKEN_DIRECTIVE_LEA
 	{
 		$$.type = OPCODE_LEA;
 	}
-	| TOKEN_OPCODE_CHK
+	| TOKEN_DIRECTIVE_CHK
 	{
 		$$.type = OPCODE_CHK;
 	}
-	| TOKEN_OPCODE_ADDQ
+	| TOKEN_DIRECTIVE_ADDQ
 	{
 		$$.type = OPCODE_ADDQ;
 	}
-	| TOKEN_OPCODE_SUBQ
+	| TOKEN_DIRECTIVE_SUBQ
 	{
 		$$.type = OPCODE_SUBQ;
 	}
-	| TOKEN_OPCODE_ST
+	| TOKEN_DIRECTIVE_ST
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_TRUE;
 	}
-	| TOKEN_OPCODE_SF
+	| TOKEN_DIRECTIVE_SF
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_FALSE;
 	}
-	| TOKEN_OPCODE_SHI
+	| TOKEN_DIRECTIVE_SHI
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_HIGHER;
 	}
-	| TOKEN_OPCODE_SLS
+	| TOKEN_DIRECTIVE_SLS
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_LOWER_OR_SAME;
 	}
-	| TOKEN_OPCODE_SCC
+	| TOKEN_DIRECTIVE_SCC
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_CARRY_CLEAR;
 	}
-	| TOKEN_OPCODE_SCS
+	| TOKEN_DIRECTIVE_SCS
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_CARRY_SET;
 	}
-	| TOKEN_OPCODE_SNE
+	| TOKEN_DIRECTIVE_SNE
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_NOT_EQUAL;
 	}
-	| TOKEN_OPCODE_SEQ
+	| TOKEN_DIRECTIVE_SEQ
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_EQUAL;
 	}
-	| TOKEN_OPCODE_SVC
+	| TOKEN_DIRECTIVE_SVC
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_OVERFLOW_CLEAR;
 	}
-	| TOKEN_OPCODE_SVS
+	| TOKEN_DIRECTIVE_SVS
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_OVERFLOW_SET;
 	}
-	| TOKEN_OPCODE_SPL
+	| TOKEN_DIRECTIVE_SPL
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_PLUS;
 	}
-	| TOKEN_OPCODE_SMI
+	| TOKEN_DIRECTIVE_SMI
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_MINUS;
 	}
-	| TOKEN_OPCODE_SGE
+	| TOKEN_DIRECTIVE_SGE
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_GREATER_OR_EQUAL;
 	}
-	| TOKEN_OPCODE_SLT
+	| TOKEN_DIRECTIVE_SLT
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_LESS_THAN;
 	}
-	| TOKEN_OPCODE_SGT
+	| TOKEN_DIRECTIVE_SGT
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_GREATER_THAN;
 	}
-	| TOKEN_OPCODE_SLE
+	| TOKEN_DIRECTIVE_SLE
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_LESS_OR_EQUAL;
 	}
-	| TOKEN_OPCODE_DBT
+	| TOKEN_DIRECTIVE_DBT
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_TRUE;
 	}
-	| TOKEN_OPCODE_DBF
+	| TOKEN_DIRECTIVE_DBF
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_FALSE;
 	}
-	| TOKEN_OPCODE_DBHI
+	| TOKEN_DIRECTIVE_DBHI
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_HIGHER;
 	}
-	| TOKEN_OPCODE_DBLS
+	| TOKEN_DIRECTIVE_DBLS
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_LOWER_OR_SAME;
 	}
-	| TOKEN_OPCODE_DBCC
+	| TOKEN_DIRECTIVE_DBCC
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_CARRY_CLEAR;
 	}
-	| TOKEN_OPCODE_DBCS
+	| TOKEN_DIRECTIVE_DBCS
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_CARRY_SET;
 	}
-	| TOKEN_OPCODE_DBNE
+	| TOKEN_DIRECTIVE_DBNE
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_NOT_EQUAL;
 	}
-	| TOKEN_OPCODE_DBEQ
+	| TOKEN_DIRECTIVE_DBEQ
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_EQUAL;
 	}
-	| TOKEN_OPCODE_DBVC
+	| TOKEN_DIRECTIVE_DBVC
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_OVERFLOW_CLEAR;
 	}
-	| TOKEN_OPCODE_DBVS
+	| TOKEN_DIRECTIVE_DBVS
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_OVERFLOW_SET;
 	}
-	| TOKEN_OPCODE_DBPL
+	| TOKEN_DIRECTIVE_DBPL
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_PLUS;
 	}
-	| TOKEN_OPCODE_DBMI
+	| TOKEN_DIRECTIVE_DBMI
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_MINUS;
 	}
-	| TOKEN_OPCODE_DBGE
+	| TOKEN_DIRECTIVE_DBGE
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_GREATER_OR_EQUAL;
 	}
-	| TOKEN_OPCODE_DBLT
+	| TOKEN_DIRECTIVE_DBLT
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_LESS_THAN;
 	}
-	| TOKEN_OPCODE_DBGT
+	| TOKEN_DIRECTIVE_DBGT
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_GREATER_THAN;
 	}
-	| TOKEN_OPCODE_DBLE
+	| TOKEN_DIRECTIVE_DBLE
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_LESS_OR_EQUAL;
 	}
-	| TOKEN_OPCODE_BRA
+	| TOKEN_DIRECTIVE_BRA
 	{
 		$$.type = OPCODE_BRA;
 	}
-	| TOKEN_OPCODE_BSR
+	| TOKEN_DIRECTIVE_BSR
 	{
 		$$.type = OPCODE_BSR;
 	}
-	| TOKEN_OPCODE_BHI
+	| TOKEN_DIRECTIVE_BHI
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_HIGHER;
 	}
-	| TOKEN_OPCODE_BLS
+	| TOKEN_DIRECTIVE_BLS
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_LOWER_OR_SAME;
 	}
-	| TOKEN_OPCODE_BCC
+	| TOKEN_DIRECTIVE_BCC
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_CARRY_CLEAR;
 	}
-	| TOKEN_OPCODE_BCS
+	| TOKEN_DIRECTIVE_BCS
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_CARRY_SET;
 	}
-	| TOKEN_OPCODE_BNE
+	| TOKEN_DIRECTIVE_BNE
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_NOT_EQUAL;
 	}
-	| TOKEN_OPCODE_BEQ
+	| TOKEN_DIRECTIVE_BEQ
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_EQUAL;
 	}
-	| TOKEN_OPCODE_BVC
+	| TOKEN_DIRECTIVE_BVC
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_OVERFLOW_CLEAR;
 	}
-	| TOKEN_OPCODE_BVS
+	| TOKEN_DIRECTIVE_BVS
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_OVERFLOW_SET;
 	}
-	| TOKEN_OPCODE_BPL
+	| TOKEN_DIRECTIVE_BPL
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_PLUS;
 	}
-	| TOKEN_OPCODE_BMI
+	| TOKEN_DIRECTIVE_BMI
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_MINUS;
 	}
-	| TOKEN_OPCODE_BGE
+	| TOKEN_DIRECTIVE_BGE
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_GREATER_OR_EQUAL;
 	}
-	| TOKEN_OPCODE_BLT
+	| TOKEN_DIRECTIVE_BLT
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_LESS_THAN;
 	}
-	| TOKEN_OPCODE_BGT
+	| TOKEN_DIRECTIVE_BGT
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_GREATER_THAN;
 	}
-	| TOKEN_OPCODE_BLE
+	| TOKEN_DIRECTIVE_BLE
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_LESS_OR_EQUAL;
 	}
-	| TOKEN_OPCODE_MOVEQ
+	| TOKEN_DIRECTIVE_MOVEQ
 	{
 		$$.type = OPCODE_MOVEQ;
 	}
-	| TOKEN_OPCODE_DIVU
+	| TOKEN_DIRECTIVE_DIVU
 	{
 		$$.type = OPCODE_DIVU;
 	}
-	| TOKEN_OPCODE_DIVS
+	| TOKEN_DIRECTIVE_DIVS
 	{
 		$$.type = OPCODE_DIVS;
 	}
-	| TOKEN_OPCODE_SBCD
+	| TOKEN_DIRECTIVE_SBCD
 	{
 		$$.type = OPCODE_SBCD_DATA_REGS;
 	}
-	| TOKEN_OPCODE_OR
+	| TOKEN_DIRECTIVE_OR
 	{
 		$$.type = OPCODE_OR_TO_REG;
 	}
-	| TOKEN_OPCODE_SUB
+	| TOKEN_DIRECTIVE_SUB
 	{
 		$$.type = OPCODE_SUB_TO_REG;
 	}
-	| TOKEN_OPCODE_SUBX
+	| TOKEN_DIRECTIVE_SUBX
 	{
 		$$.type = OPCODE_SUBX_DATA_REGS;
 	}
-	| TOKEN_OPCODE_SUBA
+	| TOKEN_DIRECTIVE_SUBA
 	{
 		$$.type = OPCODE_SUBA;
 	}
-	| TOKEN_OPCODE_EOR
+	| TOKEN_DIRECTIVE_EOR
 	{
 		$$.type = OPCODE_EOR;
 	}
-	| TOKEN_OPCODE_CMPM
+	| TOKEN_DIRECTIVE_CMPM
 	{
 		$$.type = OPCODE_CMPM;
 	}
-	| TOKEN_OPCODE_CMP
+	| TOKEN_DIRECTIVE_CMP
 	{
 		$$.type = OPCODE_CMP;
 	}
-	| TOKEN_OPCODE_CMPA
+	| TOKEN_DIRECTIVE_CMPA
 	{
 		$$.type = OPCODE_CMPA;
 	}
-	| TOKEN_OPCODE_MULU
+	| TOKEN_DIRECTIVE_MULU
 	{
 		$$.type = OPCODE_MULU;
 	}
-	| TOKEN_OPCODE_MULS
+	| TOKEN_DIRECTIVE_MULS
 	{
 		$$.type = OPCODE_MULS;
 	}
-	| TOKEN_OPCODE_ABCD
+	| TOKEN_DIRECTIVE_ABCD
 	{
 		$$.type = OPCODE_ABCD_DATA_REGS;
 	}
-	| TOKEN_OPCODE_EXG
+	| TOKEN_DIRECTIVE_EXG
 	{
 		$$.type = OPCODE_EXG;
 	}
-	| TOKEN_OPCODE_AND
+	| TOKEN_DIRECTIVE_AND
 	{
 		$$.type = OPCODE_AND_TO_REG;
 	}
-	| TOKEN_OPCODE_ADD
+	| TOKEN_DIRECTIVE_ADD
 	{
 		$$.type = OPCODE_ADD_TO_REG;
 	}
-	| TOKEN_OPCODE_ADDX
+	| TOKEN_DIRECTIVE_ADDX
 	{
 		$$.type = OPCODE_ADDX_DATA_REGS;
 	}
-	| TOKEN_OPCODE_ADDA
+	| TOKEN_DIRECTIVE_ADDA
 	{
 		$$.type = OPCODE_ADDA;
 	}
-	| TOKEN_OPCODE_ASL
+	| TOKEN_DIRECTIVE_ASL
 	{
 		$$.type = OPCODE_ASL_STATIC;
 	}
-	| TOKEN_OPCODE_ASR
+	| TOKEN_DIRECTIVE_ASR
 	{
 		$$.type = OPCODE_ASR_STATIC;
 	}
-	| TOKEN_OPCODE_LSL
+	| TOKEN_DIRECTIVE_LSL
 	{
 		$$.type = OPCODE_LSL_STATIC;
 	}
-	| TOKEN_OPCODE_LSR
+	| TOKEN_DIRECTIVE_LSR
 	{
 		$$.type = OPCODE_LSR_STATIC;
 	}
-	| TOKEN_OPCODE_ROXL
+	| TOKEN_DIRECTIVE_ROXL
 	{
 		$$.type = OPCODE_ROXL_STATIC;
 	}
-	| TOKEN_OPCODE_ROXR
+	| TOKEN_DIRECTIVE_ROXR
 	{
 		$$.type = OPCODE_ROXR_STATIC;
 	}
-	| TOKEN_OPCODE_ROL
+	| TOKEN_DIRECTIVE_ROL
 	{
 		$$.type = OPCODE_ROL_STATIC;
 	}
-	| TOKEN_OPCODE_ROR
+	| TOKEN_DIRECTIVE_ROR
 	{
 		$$.type = OPCODE_ROR_STATIC;
 	}
