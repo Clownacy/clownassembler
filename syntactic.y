@@ -164,53 +164,53 @@ typedef enum OpCodeType
 	OPCODE_ROR_SINGLE
 } OpcodeType;
 
-typedef enum ValueType
+typedef enum ExpressionType
 {
-	VALUE_SUBTRACT,
-	VALUE_ADD,
-	VALUE_MULTIPLY,
-	VALUE_DIVIDE,
-	VALUE_MODULO,
-	VALUE_NEGATE,
-	VALUE_BITWISE_NOT,
-	VALUE_LOGICAL_NOT,
-	VALUE_LOGICAL_OR,
-	VALUE_LOGICAL_AND,
-	VALUE_ARITHMETIC_OR,
-	VALUE_ARITHMETIC_XOR,
-	VALUE_ARITHMETIC_AND,
-	VALUE_EQUALITY,
-	VALUE_INEQUALITY,
-	VALUE_LESS_THAN,
-	VALUE_LESS_OR_EQUAL,
-	VALUE_MORE_THAN,
-	VALUE_MORE_OR_EQUAL,
-	VALUE_LEFT_SHIFT,
-	VALUE_RIGHT_SHIFT,
-	VALUE_NUMBER,
-	VALUE_IDENTIFIER,
-	VALUE_STRING,
-	VALUE_PROGRAM_COUNTER_OF_STATEMENT,
-	VALUE_PROGRAM_COUNTER_OF_VALUE
-} ValueType;
+	EXPRESSION_SUBTRACT,
+	EXPRESSION_ADD,
+	EXPRESSION_MULTIPLY,
+	EXPRESSION_DIVIDE,
+	EXPRESSION_MODULO,
+	EXPRESSION_NEGATE,
+	EXPRESSION_BITWISE_NOT,
+	EXPRESSION_LOGICAL_NOT,
+	EXPRESSION_LOGICAL_OR,
+	EXPRESSION_LOGICAL_AND,
+	EXPRESSION_ARITHMETIC_OR,
+	EXPRESSION_ARITHMETIC_XOR,
+	EXPRESSION_ARITHMETIC_AND,
+	EXPRESSION_EQUALITY,
+	EXPRESSION_INEQUALITY,
+	EXPRESSION_LESS_THAN,
+	EXPRESSION_LESS_OR_EQUAL,
+	EXPRESSION_MORE_THAN,
+	EXPRESSION_MORE_OR_EQUAL,
+	EXPRESSION_LEFT_SHIFT,
+	EXPRESSION_RIGHT_SHIFT,
+	EXPRESSION_NUMBER,
+	EXPRESSION_IDENTIFIER,
+	EXPRESSION_STRING,
+	EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT,
+	EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION
+} ExpressionType;
 
-typedef struct Value
+typedef struct Expression
 {
-	ValueType type;
+	ExpressionType type;
 	union
 	{
-		unsigned long integer;
+		unsigned long integer; /* TODO - Rename to 'unsigned long'. */
 		char *string;
-		struct Value *values;
+		struct Expression *expressions;
 	} shared;
-} Value;
+} Expression;
 
-typedef struct ValueListNode
+typedef struct ExpressionListNode
 {
-	struct ValueListNode *next;
+	struct ExpressionListNode *next;
 
-	Value value;
-} ValueListNode;
+	Expression expression;
+} ExpressionListNode;
 
 typedef struct IdentifierListNode
 {
@@ -253,7 +253,7 @@ typedef struct Operand
 	unsigned int main_register;
 	unsigned int index_register;
 	Size size;
-	Value literal;
+	Expression literal;
 	cc_bool index_register_is_address_register;
 } Operand;
 
@@ -266,14 +266,14 @@ typedef struct StatementInstruction
 typedef struct StatementDc
 {
 	Size size;
-	ValueListNode *values;
+	ExpressionListNode *values;
 } StatementDc;
 
 typedef struct StatementDcb
 {
 	Size size;
-	Value repetitions;
-	Value value;
+	Expression repetitions;
+	Expression value;
 } StatementDcb;
 
 typedef struct StatementInclude
@@ -284,14 +284,14 @@ typedef struct StatementInclude
 typedef struct StatementIncbin
 {
 	char *path;
-	Value start;
+	Expression start;
 	cc_bool has_length;
-	Value length;
+	Expression length;
 } StatementIncbin;
 
 typedef struct StatementRept
 {
-	Value total_repeats;
+	Expression total_repeats; /* TODO - Rename to 'repetitions. */
 } StatementRept;
 
 typedef struct StatementMacro
@@ -343,16 +343,16 @@ typedef struct Statement
 		StatementMacro macro;
 		struct
 		{
-			Value offset;
-			Value size_boundary;
+			Expression offset;
+			Expression size_boundary;
 		} cnop;
 		StatementInform inform;
 		struct
 		{
 			Size size;
-			Value value;
+			Expression length;
 		} rs;
-		Value value;
+		Expression expression;
 	} shared;
 } Statement;
 
@@ -380,10 +380,10 @@ int m68kasm_lex(M68KASM_STYPE *yylval_param, void *yyscanner);
 void m68kasm_warning(void *scanner, Statement *statement, const char *message);
 void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
-static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *right_value);
-static void DestroyValue(Value *value);
+static cc_bool DoExpression(Expression *expression, ExpressionType type, Expression *left_expression, Expression *right_expression);
+static void DestroyExpression(Expression *expressions);
 static void DestroyIdentifierListNode(IdentifierListNode *node);
-static void DestroyValueListNode(ValueListNode *node);
+static void DestroyExpressionListNode(ExpressionListNode *node);
 static void DestroyOperand(Operand *operand);
 static void DestroyStatementInstruction(StatementInstruction *instruction);
 
@@ -400,7 +400,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 	StatementInstruction instruction;
 	Statement statement;
 	ListMetadata list_metadata;
-	Value value;
+	Expression expression;
 }
 
 %token TOKEN_OPCODE_ORI
@@ -572,15 +572,15 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %type<generic.integer> register_list
 %type<generic.integer> register_span
 %type<generic.integer> data_or_address_register
-%type<list_metadata> value_list
+%type<list_metadata> expression_list
 %type<list_metadata> identifier_list
-%type<value> value value1 value2 value3 value4 value5 value6 value7 value8 value9 value10 value11
+%type<expression> expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 expression9 expression10 expression11
 
 %destructor { free($$); } TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER TOKEN_STRING
 %destructor { DestroyOperand(&$$); } operand
-%destructor { DestroyValueListNode($$.head); } value_list
+%destructor { DestroyExpressionListNode($$.head); } expression_list
 %destructor { DestroyIdentifierListNode($$.head); } identifier_list
-%destructor { DestroyValue(&$$); } value value1 value2 value3 value4 value5 value6 value7 value8 value9 value10 value11
+%destructor { DestroyExpression(&$$); } expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 expression9 expression10 expression11
 
 %start statement
 
@@ -596,13 +596,13 @@ statement
 		statement->type = STATEMENT_TYPE_INSTRUCTION;
 		statement->shared.instruction = $1;
 	}
-	| TOKEN_DIRECTIVE_DC size value_list
+	| TOKEN_DIRECTIVE_DC size expression_list
 	{
 		statement->type = STATEMENT_TYPE_DC;
 		statement->shared.dc.size = $2;
 		statement->shared.dc.values = $3.head;
 	}
-	| TOKEN_DIRECTIVE_DCB size value ',' value
+	| TOKEN_DIRECTIVE_DCB size expression ',' expression
 	{
 		statement->type = STATEMENT_TYPE_DCB;
 		statement->shared.dcb.size = $2;
@@ -618,18 +618,18 @@ statement
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = $2;
-		statement->shared.incbin.start.type = VALUE_NUMBER;
+		statement->shared.incbin.start.type = EXPRESSION_NUMBER;
 		statement->shared.incbin.start.shared.integer = 0;
 		statement->shared.incbin.has_length = cc_false;
 	}
-	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' value
+	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' expression
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = $2;
 		statement->shared.incbin.start = $4;
 		statement->shared.incbin.has_length = cc_false;
 	}
-	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' value ',' value
+	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' expression ',' expression
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = $2;
@@ -637,7 +637,7 @@ statement
 		statement->shared.incbin.has_length = cc_true;
 		statement->shared.incbin.length = $6;
 	}
-	| TOKEN_DIRECTIVE_REPT value
+	| TOKEN_DIRECTIVE_REPT expression
 	{
 		statement->type = STATEMENT_TYPE_REPT;
 		statement->shared.rept.total_repeats = $2;
@@ -670,25 +670,25 @@ statement
 	{
 		statement->type = STATEMENT_TYPE_ENDM;
 	}
-	| TOKEN_DIRECTIVE_EQU value
+	| TOKEN_DIRECTIVE_EQU expression
 	{
 		statement->type = STATEMENT_TYPE_EQU;
-		statement->shared.value = $2;
+		statement->shared.expression = $2;
 	}
-	| TOKEN_DIRECTIVE_SET value
+	| TOKEN_DIRECTIVE_SET expression
 	{
 		statement->type = STATEMENT_TYPE_SET;
-		statement->shared.value = $2;
+		statement->shared.expression = $2;
 	}
-	| '=' value
+	| '=' expression
 	{
 		statement->type = STATEMENT_TYPE_SET;
-		statement->shared.value = $2;
+		statement->shared.expression = $2;
 	}
-	| TOKEN_DIRECTIVE_IF value
+	| TOKEN_DIRECTIVE_IF expression
 	{
 		statement->type = STATEMENT_TYPE_IF;
-		statement->shared.value = $2;
+		statement->shared.expression = $2;
 	}
 	| TOKEN_DIRECTIVE_ELSE
 	{
@@ -702,13 +702,13 @@ statement
 	{
 		statement->type = STATEMENT_TYPE_EVEN;
 	}
-	| TOKEN_DIRECTIVE_CNOP value ',' value
+	| TOKEN_DIRECTIVE_CNOP expression ',' expression
 	{
 		statement->type = STATEMENT_TYPE_CNOP;
 		statement->shared.cnop.offset = $2;
 		statement->shared.cnop.size_boundary = $4;
 	}
-	| TOKEN_DIRECTIVE_INFORM value ',' TOKEN_STRING
+	| TOKEN_DIRECTIVE_INFORM expression ',' TOKEN_STRING
 	{
 		(void)$2;
 
@@ -716,7 +716,7 @@ statement
 		statement->type = STATEMENT_TYPE_INFORM;
 		statement->shared.inform.message = $4;
 	}
-	| TOKEN_DIRECTIVE_INFORM value ',' TOKEN_STRING ',' value_list
+	| TOKEN_DIRECTIVE_INFORM expression ',' TOKEN_STRING ',' expression_list
 	{
 		(void)$2;
 		(void)$6;
@@ -729,16 +729,16 @@ statement
 	{
 		statement->type = STATEMENT_TYPE_END;
 	}
-	| TOKEN_DIRECTIVE_RS size value
+	| TOKEN_DIRECTIVE_RS size expression
 	{
 		statement->type = STATEMENT_TYPE_RS;
 		statement->shared.rs.size = $2;
-		statement->shared.rs.value = $3;
+		statement->shared.rs.length = $3;
 	}
-	| TOKEN_DIRECTIVE_RSSET value
+	| TOKEN_DIRECTIVE_RSSET expression
 	{
 		statement->type = STATEMENT_TYPE_RSSET;
-		statement->shared.value = $2;
+		statement->shared.expression = $2;
 	}
 	| TOKEN_DIRECTIVE_RSRESET
 	{
@@ -746,10 +746,10 @@ statement
 	}
 	;
 
-value_list
-	: value
+expression_list
+	: expression
 	{
-		ValueListNode *node = malloc(sizeof(ValueListNode));
+		ExpressionListNode *node = malloc(sizeof(ExpressionListNode));
 
 		if (node == NULL)
 		{
@@ -757,15 +757,15 @@ value_list
 		}
 		else
 		{
-			node->value = $1;
+			node->expression = $1;
 			node->next = NULL;
 		}
 
 		$$.head = $$.tail = node;
 	}
-	| value_list ',' value
+	| expression_list ',' expression
 	{
-		ValueListNode *node = malloc(sizeof(ValueListNode));
+		ExpressionListNode *node = malloc(sizeof(ExpressionListNode));
 
 		$$ = $1;
 
@@ -775,13 +775,13 @@ value_list
 		}
 		else
 		{
-			node->value = $3;
+			node->expression = $3;
 			node->next = NULL;
 
 			if ($$.head == NULL)
 				$$.head = node;
 			else
-				((ValueListNode*)$$.tail)->next = node;
+				((ExpressionListNode*)$$.tail)->next = node;
 
 			$$.tail = node;
 		}
@@ -1423,7 +1423,7 @@ operand
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT;
 		$$.main_register = $3;
 	}
-	| value '(' TOKEN_ADDRESS_REGISTER ')'
+	| expression '(' TOKEN_ADDRESS_REGISTER ')'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
 		$$.literal = $1;
@@ -1432,14 +1432,14 @@ operand
 	| '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register size ')'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-		$$.literal.type = VALUE_NUMBER;
+		$$.literal.type = EXPRESSION_NUMBER;
 		$$.literal.shared.integer = 0;
 		$$.main_register = $2;
 		$$.index_register = $4 % 8;
 		$$.size = $5;
 		$$.index_register_is_address_register = $4 / 8 != 0;
 	}
-	| value '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register size ')'
+	| expression '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register size ')'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
@@ -1452,14 +1452,14 @@ operand
 	{
 		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-		$$.literal.type = VALUE_NUMBER;
+		$$.literal.type = EXPRESSION_NUMBER;
 		$$.literal.shared.integer = 0;
 		$$.main_register = $2;
 		$$.index_register = $4 % 8;
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $4 / 8 != 0;
 	}
-	| value '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'
+	| expression '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'
 	{
 		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -1469,7 +1469,7 @@ operand
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $5 / 8 !=0;
 	}
-	| value '(' TOKEN_PROGRAM_COUNTER ')'
+	| expression '(' TOKEN_PROGRAM_COUNTER ')'
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		$$.literal = $1;
@@ -1477,13 +1477,13 @@ operand
 	| '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register size ')'
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-		$$.literal.type = VALUE_NUMBER;
+		$$.literal.type = EXPRESSION_NUMBER;
 		$$.literal.shared.integer = 0;
 		$$.index_register = $4 % 8;
 		$$.size = $5;
 		$$.index_register_is_address_register = $4 / 8 != 0;
 	}
-	| value '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register size ')'
+	| expression '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register size ')'
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
@@ -1495,13 +1495,13 @@ operand
 	{
 		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-		$$.literal.type = VALUE_NUMBER;
+		$$.literal.type = EXPRESSION_NUMBER;
 		$$.literal.shared.integer = 0;
 		$$.index_register = $4 % 8;
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $4 / 8 != 0;
 	}
-	| value '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'
+	| expression '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'
 	{
 		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -1511,7 +1511,7 @@ operand
 		$$.index_register_is_address_register = $5 / 8 != 0;
 	}
 	/* Literal */
-	| '#' value
+	| '#' expression
 	{
 		$$.type = OPERAND_LITERAL;
 		$$.literal = $2;
@@ -1540,13 +1540,13 @@ operand
 		$$.type = OPERAND_USER_STACK_POINTER_REGISTER;
 	}
 	/* Addresses */
-	| value
+	| expression
 	{
 		$$.type = OPERAND_ADDRESS;
 		$$.literal = $1;
 		$$.size = SIZE_UNDEFINED;
 	}
-	| '(' value ')' size
+	| '(' expression ')' size
 	{
 		$$.type = OPERAND_ADDRESS_ABSOLUTE;
 		$$.literal = $2;
@@ -1640,212 +1640,212 @@ number
 	| '$' TOKEN_NUMBER
 	;
 */
-
-value
-	: value1
+/* TODO - asm68k expressions. */
+expression
+	: expression1
 	{
 		$$ = $1;
 	}
-	| value TOKEN_LOGICAL_OR value1
+	| expression TOKEN_LOGICAL_OR expression1
 	{
-		if (!DoValue(&$$, VALUE_LOGICAL_OR, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_LOGICAL_OR, &$1, &$3))
 			YYNOMEM;
 	}
 	;
 
-value1
-	: value2
+expression1
+	: expression2
 	{
 		$$ = $1;
 	}
-	| value1 TOKEN_LOGICAL_AND value2
+	| expression1 TOKEN_LOGICAL_AND expression2
 	{
-		if (!DoValue(&$$, VALUE_LOGICAL_AND, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_LOGICAL_AND, &$1, &$3))
 			YYNOMEM;
 	}
 	;
 
-value2
-	: value3
+expression2
+	: expression3
 	{
 		$$ = $1;
 	}
-	| value2 '|' value3
+	| expression2 '|' expression3
 	{
-		if (!DoValue(&$$, VALUE_ARITHMETIC_OR, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_ARITHMETIC_OR, &$1, &$3))
 			YYNOMEM;
 	}
 	;
 
-value3
-	: value4
+expression3
+	: expression4
 	{
 		$$ = $1;
 	}
-	| value3 '^' value4
+	| expression3 '^' expression4
 	{
-		if (!DoValue(&$$, VALUE_ARITHMETIC_XOR, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_ARITHMETIC_XOR, &$1, &$3))
 			YYNOMEM;
 	}
 	;
 
-value4
-	: value5
+expression4
+	: expression5
 	{
 		$$ = $1;
 	}
-	| value4 '&' value5
+	| expression4 '&' expression5
 	{
-		if (!DoValue(&$$, VALUE_ARITHMETIC_AND, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_ARITHMETIC_AND, &$1, &$3))
 			YYNOMEM;
 	}
 	;
 
-value5
-	: value6
+expression5
+	: expression6
 	{
 		$$ = $1;
 	}
-	| value5 '=' value6
+	| expression5 '=' expression6
 	{
-		if (!DoValue(&$$, VALUE_EQUALITY, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_EQUALITY, &$1, &$3))
 			YYNOMEM;
 	}
-	| value5 TOKEN_EQUALITY value6
+	| expression5 TOKEN_EQUALITY expression6
 	{
-		if (!DoValue(&$$, VALUE_EQUALITY, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_EQUALITY, &$1, &$3))
 			YYNOMEM;
 	}
-	| value5 TOKEN_INEQUALITY value6
+	| expression5 TOKEN_INEQUALITY expression6
 	{
-		if (!DoValue(&$$, VALUE_INEQUALITY, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_INEQUALITY, &$1, &$3))
 			YYNOMEM;
 	}
 	;
 
-value6
-	: value7
+expression6
+	: expression7
 	{
 		$$ = $1;
 	}
-	| value6 '<' value7
+	| expression6 '<' expression7
 	{
-		if (!DoValue(&$$, VALUE_LESS_THAN, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_LESS_THAN, &$1, &$3))
 			YYNOMEM;
 	}
-	| value6 TOKEN_LESS_OR_EQUAL value7
+	| expression6 TOKEN_LESS_OR_EQUAL expression7
 	{
-		if (!DoValue(&$$, VALUE_LESS_OR_EQUAL, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_LESS_OR_EQUAL, &$1, &$3))
 			YYNOMEM;
 	}
-	| value6 '>' value7
+	| expression6 '>' expression7
 	{
-		if (!DoValue(&$$, VALUE_MORE_THAN, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_MORE_THAN, &$1, &$3))
 			YYNOMEM;
 	}
-	| value6 TOKEN_MORE_OR_EQUAL value7
+	| expression6 TOKEN_MORE_OR_EQUAL expression7
 	{
-		if (!DoValue(&$$, VALUE_MORE_OR_EQUAL, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_MORE_OR_EQUAL, &$1, &$3))
 			YYNOMEM;
 	}
 	;
 
-value7
-	: value8
+expression7
+	: expression8
 	{
 		$$ = $1;
 	}
-	| value7 TOKEN_LEFT_SHIFT value8
+	| expression7 TOKEN_LEFT_SHIFT expression8
 	{
-		if (!DoValue(&$$, VALUE_LEFT_SHIFT, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_LEFT_SHIFT, &$1, &$3))
 			YYNOMEM;
 	}
-	| value7 TOKEN_RIGHT_SHIFT value8
+	| expression7 TOKEN_RIGHT_SHIFT expression8
 	{
-		if (!DoValue(&$$, VALUE_RIGHT_SHIFT, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_RIGHT_SHIFT, &$1, &$3))
 			YYNOMEM;
 	}
 	;
 
-value8
-	: value9
+expression8
+	: expression9
 	{
 		$$ = $1;
 	}
-	| value8 '+' value9
+	| expression8 '+' expression9
 	{
-		if (!DoValue(&$$, VALUE_ADD, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_ADD, &$1, &$3))
 			YYNOMEM;
 	}
-	| value8 '-' value9
+	| expression8 '-' expression9
 	{
-		if (!DoValue(&$$, VALUE_SUBTRACT, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_SUBTRACT, &$1, &$3))
 			YYNOMEM;
 	}
 	;
 
-value9
-	: value10
+expression9
+	: expression10
 	{
 		$$ = $1;
 	}
-	| value9 '*' value10
+	| expression9 '*' expression10
 	{
-		if (!DoValue(&$$, VALUE_MULTIPLY, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_MULTIPLY, &$1, &$3))
 			YYNOMEM;
 	}
-	| value9 '/' value10
+	| expression9 '/' expression10
 	{
-		if (!DoValue(&$$, VALUE_DIVIDE, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_DIVIDE, &$1, &$3))
 			YYNOMEM;
 	}
-	| value9 '%' value10
+	| expression9 '%' expression10
 	{
-		if (!DoValue(&$$, VALUE_MODULO, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_MODULO, &$1, &$3))
 			YYNOMEM;
 	}
 	;
 
-value10
-	: value11
+expression10
+	: expression11
 	{
 		$$ = $1;
 	}
-	| '+' value10
+	| '+' expression10
 	{
 		$$ = $2;
 	}
-	| '-' value10
+	| '-' expression10
 	{
-		if (!DoValue(&$$, VALUE_NEGATE, &$2, NULL))
+		if (!DoExpression(&$$, EXPRESSION_NEGATE, &$2, NULL))
 			YYNOMEM;
 	}
-	| '~' value10
+	| '~' expression10
 	{
-		if (!DoValue(&$$, VALUE_BITWISE_NOT, &$2, NULL))
+		if (!DoExpression(&$$, EXPRESSION_BITWISE_NOT, &$2, NULL))
 			YYNOMEM;
 	}
-	| '!' value10
+	| '!' expression10
 	{
-		if (!DoValue(&$$, VALUE_LOGICAL_NOT, &$2, NULL))
+		if (!DoExpression(&$$, EXPRESSION_LOGICAL_NOT, &$2, NULL))
 			YYNOMEM;
 	}
 	;
 
-value11
+expression11
 	: TOKEN_NUMBER
 	{
-		$$.type = VALUE_NUMBER;
+		$$.type = EXPRESSION_NUMBER;
 		$$.shared.integer = $1;
 	}
 	| TOKEN_IDENTIFIER
 	{
-		$$.type = VALUE_IDENTIFIER;
+		$$.type = EXPRESSION_IDENTIFIER;
 		$$.shared.string = $1;
 	}
 	| TOKEN_LOCAL_IDENTIFIER
 	{
-		$$.type = VALUE_IDENTIFIER;
+		$$.type = EXPRESSION_IDENTIFIER;
 		$$.shared.string = $1;
 	}
 	| TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER
@@ -1861,7 +1861,7 @@ value11
 		}
 		else
 		{
-			$$.type = VALUE_IDENTIFIER;
+			$$.type = EXPRESSION_IDENTIFIER;
 			memcpy(&$$.shared.string[0], $1, identifier_length);
 			$$.shared.string[identifier_length] = '@';
 			memcpy(&$$.shared.string[identifier_length + 1], $2 + 1, local_identifier_length + 1);
@@ -1869,18 +1869,18 @@ value11
 	}
 	| TOKEN_STRING
 	{
-		$$.type = VALUE_STRING;
+		$$.type = EXPRESSION_STRING;
 		$$.shared.string = $1;
 	}
 	| '*'
 	{
-		$$.type = VALUE_PROGRAM_COUNTER_OF_STATEMENT;
+		$$.type = EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT;
 	}
 	| '@'
 	{
-		$$.type = VALUE_PROGRAM_COUNTER_OF_VALUE;
+		$$.type = EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION;
 	}
-	| '(' value ')'
+	| '(' expression ')'
 	{
 		$$ = $2;
 	}
@@ -1888,71 +1888,71 @@ value11
 
 %%
 
-static cc_bool DoValue(Value *value, ValueType type, Value *left_value, Value *right_value)
+static cc_bool DoExpression(Expression *expression, ExpressionType type, Expression *left_expression, Expression *right_expression)
 {
 	cc_bool success = cc_true;
 
-	value->type = type;
+	expression->type = type;
 
-	value->shared.values = malloc(sizeof(Value) * (right_value != NULL ? 2 : 1));
+	expression->shared.expressions = malloc(sizeof(Expression) * (right_expression != NULL ? 2 : 1));
 
-	if (value->shared.values == NULL)
+	if (expression->shared.expressions == NULL)
 	{
 		success = cc_false;
 	}
 	else
 	{
-		value->shared.values[0] = *left_value;
+		expression->shared.expressions[0] = *left_expression;
 
-		if (right_value != NULL)
-			value->shared.values[1] = *right_value;
+		if (right_expression != NULL)
+			expression->shared.expressions[1] = *right_expression;
 	}
 
 	return success;
 }
 
-static void DestroyValue(Value *value)
+static void DestroyExpression(Expression *expression)
 {
-	switch (value->type)
+	switch (expression->type)
 	{
-		case VALUE_SUBTRACT:
-		case VALUE_ADD:
-		case VALUE_MULTIPLY:
-		case VALUE_DIVIDE:
-		case VALUE_MODULO:
-		case VALUE_LOGICAL_OR:
-		case VALUE_LOGICAL_AND:
-		case VALUE_ARITHMETIC_OR:
-		case VALUE_ARITHMETIC_XOR:
-		case VALUE_ARITHMETIC_AND:
-		case VALUE_EQUALITY:
-		case VALUE_INEQUALITY:
-		case VALUE_LESS_THAN:
-		case VALUE_LESS_OR_EQUAL:
-		case VALUE_MORE_THAN:
-		case VALUE_MORE_OR_EQUAL:
-		case VALUE_LEFT_SHIFT:
-		case VALUE_RIGHT_SHIFT:
-			DestroyValue(&value->shared.values[0]);
-			DestroyValue(&value->shared.values[1]);
-			free(value->shared.values);
+		case EXPRESSION_SUBTRACT:
+		case EXPRESSION_ADD:
+		case EXPRESSION_MULTIPLY:
+		case EXPRESSION_DIVIDE:
+		case EXPRESSION_MODULO:
+		case EXPRESSION_LOGICAL_OR:
+		case EXPRESSION_LOGICAL_AND:
+		case EXPRESSION_ARITHMETIC_OR:
+		case EXPRESSION_ARITHMETIC_XOR:
+		case EXPRESSION_ARITHMETIC_AND:
+		case EXPRESSION_EQUALITY:
+		case EXPRESSION_INEQUALITY:
+		case EXPRESSION_LESS_THAN:
+		case EXPRESSION_LESS_OR_EQUAL:
+		case EXPRESSION_MORE_THAN:
+		case EXPRESSION_MORE_OR_EQUAL:
+		case EXPRESSION_LEFT_SHIFT:
+		case EXPRESSION_RIGHT_SHIFT:
+			DestroyExpression(&expression->shared.expressions[0]);
+			DestroyExpression(&expression->shared.expressions[1]);
+			free(expression->shared.expressions);
 			break;
 
-		case VALUE_NEGATE:
-		case VALUE_BITWISE_NOT:
-		case VALUE_LOGICAL_NOT:
-			DestroyValue(&value->shared.values[0]);
-			free(value->shared.values);
+		case EXPRESSION_NEGATE:
+		case EXPRESSION_BITWISE_NOT:
+		case EXPRESSION_LOGICAL_NOT:
+			DestroyExpression(&expression->shared.expressions[0]);
+			free(expression->shared.expressions);
 			break;
 
-		case VALUE_IDENTIFIER:
-		case VALUE_STRING:
-			free(value->shared.string);
+		case EXPRESSION_IDENTIFIER:
+		case EXPRESSION_STRING:
+			free(expression->shared.string);
 			break;
 
-		case VALUE_NUMBER:
-		case VALUE_PROGRAM_COUNTER_OF_STATEMENT:
-		case VALUE_PROGRAM_COUNTER_OF_VALUE:
+		case EXPRESSION_NUMBER:
+		case EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT:
+		case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
 			break;
 	}
 }
@@ -1967,12 +1967,12 @@ static void DestroyIdentifierListNode(IdentifierListNode *node)
 	}
 }
 
-static void DestroyValueListNode(ValueListNode *node)
+static void DestroyExpressionListNode(ExpressionListNode *node)
 {
 	if (node != NULL)
 	{
-		DestroyValue(&node->value);
-		DestroyValueListNode(node->next);
+		DestroyExpression(&node->expression);
+		DestroyExpressionListNode(node->next);
 	}
 }
 
@@ -1998,7 +1998,7 @@ static void DestroyOperand(Operand *operand)
 		case OPERAND_LITERAL:
 		case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
 		case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-			DestroyValue(&operand->literal);
+			DestroyExpression(&operand->literal);
 			break;
 	}
 }
@@ -2030,12 +2030,12 @@ void DestroyStatement(Statement *statement)
 			break;
 
 		case STATEMENT_TYPE_DC:
-			DestroyValueListNode(statement->shared.dc.values);
+			DestroyExpressionListNode(statement->shared.dc.values);
 			break;
 
 		case STATEMENT_TYPE_DCB:
-			DestroyValue(&statement->shared.dcb.repetitions);
-			DestroyValue(&statement->shared.dcb.value);
+			DestroyExpression(&statement->shared.dcb.repetitions);
+			DestroyExpression(&statement->shared.dcb.value);
 			break;
 
 		case STATEMENT_TYPE_INCLUDE:
@@ -2044,15 +2044,15 @@ void DestroyStatement(Statement *statement)
 
 		case STATEMENT_TYPE_INCBIN:
 			free(statement->shared.incbin.path);
-			DestroyValue(&statement->shared.incbin.start);
+			DestroyExpression(&statement->shared.incbin.start);
 
 			if (statement->shared.incbin.has_length)
-				DestroyValue(&statement->shared.incbin.length);
+				DestroyExpression(&statement->shared.incbin.length);
 
 			break;
 
 		case STATEMENT_TYPE_REPT:
-			DestroyValue(&statement->shared.rept.total_repeats);
+			DestroyExpression(&statement->shared.rept.total_repeats);
 			break;
 
 		case STATEMENT_TYPE_MACRO:
@@ -2064,12 +2064,12 @@ void DestroyStatement(Statement *statement)
 		case STATEMENT_TYPE_SET:
 		case STATEMENT_TYPE_IF:
 		case STATEMENT_TYPE_RSSET:
-			DestroyValue(&statement->shared.value);
+			DestroyExpression(&statement->shared.expression);
 			break;
 
 		case STATEMENT_TYPE_CNOP:
-			DestroyValue(&statement->shared.cnop.offset);
-			DestroyValue(&statement->shared.cnop.size_boundary);
+			DestroyExpression(&statement->shared.cnop.offset);
+			DestroyExpression(&statement->shared.cnop.size_boundary);
 			break;
 
 		case STATEMENT_TYPE_INFORM:
@@ -2077,7 +2077,7 @@ void DestroyStatement(Statement *statement)
 			break;
 
 		case STATEMENT_TYPE_RS:
-			DestroyValue(&statement->shared.rs.value);
+			DestroyExpression(&statement->shared.rs.length);
 			break;
 	}
 }

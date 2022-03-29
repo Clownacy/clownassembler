@@ -15,7 +15,7 @@
 #include "lexical.h"
 
 #define PROGRAM_COUNTER_OF_STATEMENT ",PROGRAM_COUNTER_OF_STATEMENT"
-#define PROGRAM_COUNTER_OF_VALUE ",PROGRAM_COUNTER_OF_VALUE"
+#define PROGRAM_COUNTER_OF_EXPRESSION ",PROGRAM_COUNTER_OF_EXPRESSION"
 
 typedef enum SymbolType
 {
@@ -383,208 +383,208 @@ static char* ExpandLocalIdentifier(SemanticState *state, const char *identifier)
 	return expanded_identifier;
 }
 
-static cc_bool ResolveValue(SemanticState *state, Value *value, unsigned long *value_integer)
+static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value)
 {
 	cc_bool success = cc_true;
 
-	switch (value->type)
+	switch (expression->type)
 	{
-		case VALUE_SUBTRACT:
-		case VALUE_ADD:
-		case VALUE_MULTIPLY:
-		case VALUE_DIVIDE:
-		case VALUE_MODULO:
-		case VALUE_LOGICAL_OR:
-		case VALUE_LOGICAL_AND:
-		case VALUE_ARITHMETIC_OR:
-		case VALUE_ARITHMETIC_XOR:
-		case VALUE_ARITHMETIC_AND:
-		case VALUE_EQUALITY:
-		case VALUE_INEQUALITY:
-		case VALUE_LESS_THAN:
-		case VALUE_LESS_OR_EQUAL:
-		case VALUE_MORE_THAN:
-		case VALUE_MORE_OR_EQUAL:
-		case VALUE_LEFT_SHIFT:
-		case VALUE_RIGHT_SHIFT:
+		case EXPRESSION_SUBTRACT:
+		case EXPRESSION_ADD:
+		case EXPRESSION_MULTIPLY:
+		case EXPRESSION_DIVIDE:
+		case EXPRESSION_MODULO:
+		case EXPRESSION_LOGICAL_OR:
+		case EXPRESSION_LOGICAL_AND:
+		case EXPRESSION_ARITHMETIC_OR:
+		case EXPRESSION_ARITHMETIC_XOR:
+		case EXPRESSION_ARITHMETIC_AND:
+		case EXPRESSION_EQUALITY:
+		case EXPRESSION_INEQUALITY:
+		case EXPRESSION_LESS_THAN:
+		case EXPRESSION_LESS_OR_EQUAL:
+		case EXPRESSION_MORE_THAN:
+		case EXPRESSION_MORE_OR_EQUAL:
+		case EXPRESSION_LEFT_SHIFT:
+		case EXPRESSION_RIGHT_SHIFT:
 		{
 			unsigned long left_value;
 			unsigned long right_value;
 
-			if (!ResolveValue(state, &value->shared.values[0], &left_value) || !ResolveValue(state, &value->shared.values[1], &right_value))
+			if (!ResolveExpression(state, &expression->shared.expressions[0], &left_value) || !ResolveExpression(state, &expression->shared.expressions[1], &right_value))
 			{
 				success = cc_false;
 			}
 			else
 			{
 				/* We're done with these; delete them. */
-				free(value->shared.values);
+				free(expression->shared.expressions);
 
-				switch (value->type)
+				switch (expression->type)
 				{
-					case VALUE_NUMBER:
-					case VALUE_IDENTIFIER:
-					case VALUE_STRING:
-					case VALUE_PROGRAM_COUNTER_OF_STATEMENT:
-					case VALUE_PROGRAM_COUNTER_OF_VALUE:
-					case VALUE_NEGATE:
-					case VALUE_BITWISE_NOT:
-					case VALUE_LOGICAL_NOT:
+					case EXPRESSION_NUMBER:
+					case EXPRESSION_IDENTIFIER:
+					case EXPRESSION_STRING:
+					case EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT:
+					case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
+					case EXPRESSION_NEGATE:
+					case EXPRESSION_BITWISE_NOT:
+					case EXPRESSION_LOGICAL_NOT:
 						/* This code should never be ran. */
 						break;
 
-					case VALUE_SUBTRACT:
-						*value_integer = left_value - right_value;
+					case EXPRESSION_SUBTRACT:
+						*value = left_value - right_value;
 						break;
 
-					case VALUE_ADD:
-						*value_integer = left_value + right_value;
+					case EXPRESSION_ADD:
+						*value = left_value + right_value;
 						break;
 
-					case VALUE_MULTIPLY:
-						*value_integer = left_value * right_value;
+					case EXPRESSION_MULTIPLY:
+						*value = left_value * right_value;
 						break;
 
-					case VALUE_DIVIDE:
-						*value_integer = left_value / right_value;
+					case EXPRESSION_DIVIDE:
+						*value = left_value / right_value;
 						break;
 
-					case VALUE_MODULO:
-						*value_integer = left_value % right_value;
+					case EXPRESSION_MODULO:
+						*value = left_value % right_value;
 						break;
 
-					case VALUE_LOGICAL_OR:
-						*value_integer = left_value || right_value;
+					case EXPRESSION_LOGICAL_OR:
+						*value = left_value || right_value;
 						break;
 
-					case VALUE_LOGICAL_AND:
-						*value_integer = left_value && right_value;
+					case EXPRESSION_LOGICAL_AND:
+						*value = left_value && right_value;
 						break;
 
-					case VALUE_ARITHMETIC_OR:
-						*value_integer = left_value | right_value;
+					case EXPRESSION_ARITHMETIC_OR:
+						*value = left_value | right_value;
 						break;
 
-					case VALUE_ARITHMETIC_XOR:
-						*value_integer = left_value ^ right_value;
+					case EXPRESSION_ARITHMETIC_XOR:
+						*value = left_value ^ right_value;
 						break;
 
-					case VALUE_ARITHMETIC_AND:
-						*value_integer = left_value & right_value;
+					case EXPRESSION_ARITHMETIC_AND:
+						*value = left_value & right_value;
 						break;
 
-					case VALUE_EQUALITY:
-						*value_integer = left_value == right_value;
+					case EXPRESSION_EQUALITY:
+						*value = left_value == right_value;
 						break;
 
-					case VALUE_INEQUALITY:
-						*value_integer = left_value != right_value;
+					case EXPRESSION_INEQUALITY:
+						*value = left_value != right_value;
 						break;
 
-					case VALUE_LESS_THAN:
-						*value_integer = left_value < right_value;
+					case EXPRESSION_LESS_THAN:
+						*value = left_value < right_value;
 						break;
 
-					case VALUE_LESS_OR_EQUAL:
-						*value_integer = left_value <= right_value;
+					case EXPRESSION_LESS_OR_EQUAL:
+						*value = left_value <= right_value;
 						break;
 
-					case VALUE_MORE_THAN:
-						*value_integer = left_value > right_value;
+					case EXPRESSION_MORE_THAN:
+						*value = left_value > right_value;
 						break;
 
-					case VALUE_MORE_OR_EQUAL:
-						*value_integer = left_value >= right_value;
+					case EXPRESSION_MORE_OR_EQUAL:
+						*value = left_value >= right_value;
 						break;
 
-					case VALUE_LEFT_SHIFT:
-						*value_integer = left_value << right_value;
+					case EXPRESSION_LEFT_SHIFT:
+						*value = left_value << right_value;
 						break;
 
-					case VALUE_RIGHT_SHIFT:
-						*value_integer = left_value >> right_value;
+					case EXPRESSION_RIGHT_SHIFT:
+						*value = left_value >> right_value;
 						break;
 				}
 
 				/* Prevent 'bleeding' out of the 68k's 32-bit range. */
-				*value_integer &= 0xFFFFFFFF;
+				*value &= 0xFFFFFFFF;
 			}
 
 			break;
 		}
 
-		case VALUE_NEGATE:
-		case VALUE_BITWISE_NOT:
-		case VALUE_LOGICAL_NOT:
-			if (!ResolveValue(state, value->shared.values, value_integer))
+		case EXPRESSION_NEGATE:
+		case EXPRESSION_BITWISE_NOT:
+		case EXPRESSION_LOGICAL_NOT:
+			if (!ResolveExpression(state, expression->shared.expressions, value))
 			{
 				success = cc_false;
 			}
 			else
 			{
 				/* We're done with this; delete it. */
-				free(value->shared.values);
+				free(expression->shared.expressions);
 
-				switch (value->type)
+				switch (expression->type)
 				{
-					case VALUE_NUMBER:
-					case VALUE_IDENTIFIER:
-					case VALUE_STRING:
-					case VALUE_PROGRAM_COUNTER_OF_STATEMENT:
-					case VALUE_PROGRAM_COUNTER_OF_VALUE:
-					case VALUE_SUBTRACT:
-					case VALUE_ADD:
-					case VALUE_MULTIPLY:
-					case VALUE_DIVIDE:
-					case VALUE_MODULO:
-					case VALUE_LOGICAL_OR:
-					case VALUE_LOGICAL_AND:
-					case VALUE_ARITHMETIC_OR:
-					case VALUE_ARITHMETIC_XOR:
-					case VALUE_ARITHMETIC_AND:
-					case VALUE_EQUALITY:
-					case VALUE_INEQUALITY:
-					case VALUE_LESS_THAN:
-					case VALUE_LESS_OR_EQUAL:
-					case VALUE_MORE_THAN:
-					case VALUE_MORE_OR_EQUAL:
-					case VALUE_LEFT_SHIFT:
-					case VALUE_RIGHT_SHIFT:
+					case EXPRESSION_NUMBER:
+					case EXPRESSION_IDENTIFIER:
+					case EXPRESSION_STRING:
+					case EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT:
+					case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
+					case EXPRESSION_SUBTRACT:
+					case EXPRESSION_ADD:
+					case EXPRESSION_MULTIPLY:
+					case EXPRESSION_DIVIDE:
+					case EXPRESSION_MODULO:
+					case EXPRESSION_LOGICAL_OR:
+					case EXPRESSION_LOGICAL_AND:
+					case EXPRESSION_ARITHMETIC_OR:
+					case EXPRESSION_ARITHMETIC_XOR:
+					case EXPRESSION_ARITHMETIC_AND:
+					case EXPRESSION_EQUALITY:
+					case EXPRESSION_INEQUALITY:
+					case EXPRESSION_LESS_THAN:
+					case EXPRESSION_LESS_OR_EQUAL:
+					case EXPRESSION_MORE_THAN:
+					case EXPRESSION_MORE_OR_EQUAL:
+					case EXPRESSION_LEFT_SHIFT:
+					case EXPRESSION_RIGHT_SHIFT:
 						/* This code should never be ran. */
 						break;
 
-					case VALUE_NEGATE:
-						*value_integer = 0 - *value_integer;
+					case EXPRESSION_NEGATE:
+						*value = 0 - *value;
 						break;
 
-					case VALUE_BITWISE_NOT:
-						*value_integer = ~*value_integer;
+					case EXPRESSION_BITWISE_NOT:
+						*value = ~*value;
 						break;
 
-					case VALUE_LOGICAL_NOT:
-						*value_integer = !*value_integer;
+					case EXPRESSION_LOGICAL_NOT:
+						*value = !*value;
 						break;
 				}
 
 				/* Prevent 'bleeding' out of the 68k's 32-bit range. */
-				*value_integer &= 0xFFFFFFFF;
+				*value &= 0xFFFFFFFF;
 			}
 
 			break;
 
-		case VALUE_NUMBER:
-			*value_integer = value->shared.integer;
+		case EXPRESSION_NUMBER:
+			*value = expression->shared.integer;
 			break;
 
-		case VALUE_IDENTIFIER:
+		case EXPRESSION_IDENTIFIER:
 		{
 			char *expanded_identifier = NULL;
-			const char *identifier = value->shared.string;
+			const char *identifier = expression->shared.string;
 			Dictionary_Entry *dictionary_entry;
 
-			if (value->shared.string[0] == '@' || value->shared.string[0] == '.')
+			if (expression->shared.string[0] == '@' || expression->shared.string[0] == '.')
 			{
-				expanded_identifier = ExpandLocalIdentifier(state, value->shared.string + 1);
+				expanded_identifier = ExpandLocalIdentifier(state, expression->shared.string + 1);
 
 				if (expanded_identifier != NULL)
 					identifier = expanded_identifier;
@@ -609,9 +609,9 @@ static cc_bool ResolveValue(SemanticState *state, Value *value, unsigned long *v
 			else
 			{
 				/* We're done with the string: delete it. */
-				free(value->shared.string);
+				free(expression->shared.string);
 
-				*value_integer = dictionary_entry->shared.unsigned_integer;
+				*value = dictionary_entry->shared.unsigned_integer;
 			}
 
 			free(expanded_identifier);
@@ -619,9 +619,9 @@ static cc_bool ResolveValue(SemanticState *state, Value *value, unsigned long *v
 			break;
 		}
 
-		case VALUE_STRING:
+		case EXPRESSION_STRING:
 		{
-			const size_t length = strlen(value->shared.string);
+			const size_t length = strlen(expression->shared.string);
 
 			if (length > 4)
 			{
@@ -632,27 +632,27 @@ static cc_bool ResolveValue(SemanticState *state, Value *value, unsigned long *v
 			{
 				size_t i;
 
-				*value_integer = 0;
+				*value = 0;
 
 				for (i = 0; i < length; ++i)
 				{
-					*value_integer <<= 8;
-					*value_integer |= value->shared.string[i];
+					*value <<= 8;
+					*value |= expression->shared.string[i];
 				}
 
 				/* We're done with the string: delete it. */
-				free(value->shared.string);
+				free(expression->shared.string);
 			}
 
 			break;
 		}
 
-		case VALUE_PROGRAM_COUNTER_OF_STATEMENT:
-			*value_integer = Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_STATEMENT, sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1)->shared.unsigned_integer;
+		case EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT:
+			*value = Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_STATEMENT, sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1)->shared.unsigned_integer;
 			break;
 
-		case VALUE_PROGRAM_COUNTER_OF_VALUE:
-			*value_integer = Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_VALUE, sizeof(PROGRAM_COUNTER_OF_VALUE) - 1)->shared.unsigned_integer;
+		case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
+			*value = Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_integer;
 			break;
 	}
 
@@ -660,8 +660,8 @@ static cc_bool ResolveValue(SemanticState *state, Value *value, unsigned long *v
 	/* This is especially useful for fix-ups, which may otherwise depend on identifiers that no longer exist at the time is value is resolved again. */
 	if (success)
 	{
-		value->type = VALUE_NUMBER;
-		value->shared.integer = *value_integer;
+		expression->type = EXPRESSION_NUMBER;
+		expression->shared.integer = *value;
 	}
 
 	return success;
@@ -2493,7 +2493,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							{
 								unsigned long value;
 
-								if (!ResolveValue(state, &instruction->operands[0].literal, &value))
+								if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
 									value = 0;
 
 								/* Check whether the literal value will wrap or not, and warn the user if so. */
@@ -2712,7 +2712,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 						machine_code = 0x4E40;
 
-						if (!ResolveValue(state, &instruction->operands[0].literal, &value))
+						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
 							value = 0;
 
 						if (value > 15)
@@ -2893,7 +2893,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 						machine_code |= ConstructSizeBits(instruction->opcode.size);
 						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
 
-						if (!ResolveValue(state, &instruction->operands[0].literal, &value))
+						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
 							value = 1;
 
 						if (value < 1 || value > 8)
@@ -2921,13 +2921,13 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 						machine_code |= instruction->opcode.condition << 8;
 						machine_code |= instruction->operands[0].main_register;
 
-						if (!ResolveValue(state, &instruction->operands[1].literal, &value))
+						if (!ResolveExpression(state, &instruction->operands[1].literal, &value))
 							value = state->program_counter - 2;
 
 						operands_to_output[0] = &custom_operands[0];
 						operands_to_output[1] = NULL;
 						custom_operands[0].type = OPERAND_LITERAL;
-						custom_operands[0].literal.type = VALUE_NUMBER;
+						custom_operands[0].literal.type = EXPRESSION_NUMBER;
 
 						if (value >= state->program_counter)
 						{
@@ -2978,7 +2978,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 						}
 
-						if (!ResolveValue(state, &instruction->operands[0].literal, &value))
+						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
 							value = state->program_counter - 2;
 
 						if (value >= state->program_counter)
@@ -3027,7 +3027,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 						{
 							operands_to_output[0] = &custom_operands[0];
 							custom_operands[0].type = OPERAND_LITERAL;
-							custom_operands[0].literal.type = VALUE_NUMBER;
+							custom_operands[0].literal.type = EXPRESSION_NUMBER;
 							custom_operands[0].literal.shared.integer = offset;
 						}
 
@@ -3040,7 +3040,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 						machine_code = 0x7000;
 
-						if (!ResolveValue(state, &instruction->operands[0].literal, &value))
+						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
 							value = 0;
 
 						if (value > 0x7F && value < 0xFFFFFF80)
@@ -3367,7 +3367,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							{
 								unsigned long value;
 
-								if (!ResolveValue(state, &instruction->operands[0].literal, &value))
+								if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
 									value = 0;
 
 								if (value > 8 || value < 1)
@@ -3458,7 +3458,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 					unsigned int bytes_to_write = 2;
 					unsigned long value;
 
-					if (!ResolveValue(state, &operand->literal, &value))
+					if (!ResolveExpression(state, &operand->literal, &value))
 					{
 						if (operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT || operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER)
 							value = state->program_counter; /* Prevent out-of-range displacements later on. */
@@ -3635,15 +3635,15 @@ static void OutputDcValue(SemanticState *state, const Size size, unsigned long v
 
 static void ProcessDc(SemanticState *state, StatementDc *dc)
 {
-	ValueListNode *value_list_node;
+	ExpressionListNode *expression_list_node;
 
-	for (value_list_node = dc->values; value_list_node != NULL; value_list_node = value_list_node->next)
+	for (expression_list_node = dc->values; expression_list_node != NULL; expression_list_node = expression_list_node->next)
 	{
-		if (value_list_node->value.type == VALUE_STRING && (dc->size == SIZE_BYTE || dc->size == SIZE_SHORT))
+		if (expression_list_node->expression.type == EXPRESSION_STRING && (dc->size == SIZE_BYTE || dc->size == SIZE_SHORT))
 		{
 			const char *character;
 
-			for (character = value_list_node->value.shared.string; *character != '\0'; ++character)
+			for (character = expression_list_node->expression.shared.string; *character != '\0'; ++character)
 				OutputDcValue(state, dc->size, *character);
 		}
 		else
@@ -3651,9 +3651,9 @@ static void ProcessDc(SemanticState *state, StatementDc *dc)
 			unsigned long value;
 
 			/* Update the program counter symbol in between values, to keep it up to date. */
-			Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_VALUE, sizeof(PROGRAM_COUNTER_OF_VALUE) - 1)->shared.unsigned_integer = state->program_counter;
+			Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_integer = state->program_counter;
 
-			if (!ResolveValue(state, &value_list_node->value, &value))
+			if (!ResolveExpression(state, &expression_list_node->expression, &value))
 				value = 0;
 
 			OutputDcValue(state, dc->size, value);
@@ -3665,7 +3665,7 @@ static void ProcessDcb(SemanticState *state, StatementDcb *dcb)
 {
 	unsigned long repetitions;
 
-	if (!ResolveValue(state, &dcb->repetitions, &repetitions))
+	if (!ResolveExpression(state, &dcb->repetitions, &repetitions))
 	{
 		SemanticError(state, "Repetition value must be evaluable on first pass.");
 	}
@@ -3674,7 +3674,7 @@ static void ProcessDcb(SemanticState *state, StatementDcb *dcb)
 		unsigned long value;
 		unsigned long i;
 
-		if (!ResolveValue(state, &dcb->value, &value))
+		if (!ResolveExpression(state, &dcb->value, &value))
 			value = 0;
 
 		for (i = 0; i < repetitions; ++i)
@@ -3721,7 +3721,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 	{
 		unsigned long value;
 
-		if (!ResolveValue(state, &incbin->start, &value))
+		if (!ResolveExpression(state, &incbin->start, &value))
 		{
 			SemanticError(state, "Start value must be evaluable on the first pass.");
 			value = 0;
@@ -3735,7 +3735,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 			unsigned long length;
 			unsigned long i;
 
-			if (!ResolveValue(state, &incbin->length, &length))
+			if (!ResolveExpression(state, &incbin->length, &length))
 			{
 				SemanticError(state, "Length value must be evaluable on the first pass.");
 				length = 0;
@@ -3774,7 +3774,7 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 {
 	state->mode = MODE_REPT;
 
-	if (!ResolveValue(state, &rept->total_repeats, &state->rept.total_repeats))
+	if (!ResolveExpression(state, &rept->total_repeats, &state->rept.total_repeats))
 	{
 		SemanticError(state, "Repetition value must be evaluable on the first pass.");
 		state->rept.total_repeats = 1;
@@ -3800,23 +3800,23 @@ static void ProcessMacro(SemanticState *state, StatementMacro *macro, const char
 	state->macro.source_line_list.tail = NULL;
 }
 
-static void ProcessIf(SemanticState *state, Value *value)
+static void ProcessIf(SemanticState *state, Expression *expression)
 {
 	++state->current_if_level;
 
 	/* If we are within a false conditional block, then this if statement is null and void. */
 	if (state->false_if_level == 0)
 	{
-		unsigned long resolved_value;
+		unsigned long value;
 
-		if (!ResolveValue(state, value, &resolved_value))
+		if (!ResolveExpression(state, expression, &value))
 		{
 			SemanticError(state, "Condition must be evaluable on the first pass.");
-			resolved_value = 1;
+			value = 1;
 		}
 
 		/* If this condition is false, then mark this as the false if-level. */
-		if (resolved_value == 0)
+		if (value == 0)
 			state->false_if_level = state->current_if_level;
 	}
 }
@@ -3824,7 +3824,7 @@ static void ProcessIf(SemanticState *state, Value *value)
 static void ProcessStatement(SemanticState *state, Statement *statement, const char *label)
 {
 	Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_STATEMENT, sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1)->shared.unsigned_integer = state->program_counter;
-	Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_VALUE, sizeof(PROGRAM_COUNTER_OF_VALUE) - 1)->shared.unsigned_integer = state->program_counter;
+	Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_integer = state->program_counter;
 
 	switch (statement->type)
 	{
@@ -3928,24 +3928,24 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 
 		case STATEMENT_TYPE_EQU:
 		{
-			unsigned long resolved_value;
+			unsigned long value;
 
 			SetLastGlobalLabel(state, label);
 
-			if (ResolveValue(state, &statement->shared.value, &resolved_value))
-				AddIdentifierToSymbolTable(state, label, resolved_value, SYMBOL_CONSTANT);
+			if (ResolveExpression(state, &statement->shared.expression, &value))
+				AddIdentifierToSymbolTable(state, label, value, SYMBOL_CONSTANT);
 
 			break;
 		}
 
 		case STATEMENT_TYPE_SET:
 		{
-			unsigned long resolved_value;
+			unsigned long value;
 
 			SetLastGlobalLabel(state, label);
 
-			if (ResolveValue(state, &statement->shared.value, &resolved_value))
-				AddIdentifierToSymbolTable(state, label, resolved_value, SYMBOL_VARIABLE);
+			if (ResolveExpression(state, &statement->shared.expression, &value))
+				AddIdentifierToSymbolTable(state, label, value, SYMBOL_VARIABLE);
 
 			/* Variable assignments should always go in the fix-up list, so that fix-ups
 			   that use variables have the variables set to the correct value. */
@@ -3955,7 +3955,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		}
 
 		case STATEMENT_TYPE_IF:
-			ProcessIf(state, &statement->shared.value);
+			ProcessIf(state, &statement->shared.expression);
 			break;
 
 		case STATEMENT_TYPE_ELSE:
@@ -4005,7 +4005,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		{
 			unsigned long offset;
 
-			if (!ResolveValue(state, &statement->shared.cnop.offset, &offset))
+			if (!ResolveExpression(state, &statement->shared.cnop.offset, &offset))
 			{
 				SemanticError(state, "Offset must be evaluable on the first pass.");
 			}
@@ -4013,7 +4013,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			{
 				unsigned long size_boundary;
 
-				if (!ResolveValue(state, &statement->shared.cnop.size_boundary, &size_boundary))
+				if (!ResolveExpression(state, &statement->shared.cnop.size_boundary, &size_boundary))
 				{
 					SemanticError(state, "Size boundary must be evaluable on the first pass.");
 				}
@@ -4050,30 +4050,30 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 
 		case STATEMENT_TYPE_RS:
 		{
-			unsigned long resolved_value;
+			unsigned long length;
 
-			if (!ResolveValue(state, &statement->shared.rs.value, &resolved_value))
+			if (!ResolveExpression(state, &statement->shared.rs.length, &length))
 			{
-				SemanticError(state, "Value must be evaluable on the first pass.");
+				SemanticError(state, "Length must be evaluable on the first pass.");
 			}
 			else
 			{
 				switch (statement->shared.rs.size)
 				{
 					case SIZE_BYTE:
-						state->program_counter += resolved_value * 1;
+						state->program_counter += length * 1;
 						break;
 
 					case SIZE_SHORT:
-						state->program_counter += resolved_value * 1;
+						state->program_counter += length * 1;
 						break;
 
 					case SIZE_WORD:
-						state->program_counter += resolved_value * 2;
+						state->program_counter += length * 2;
 						break;
 
 					case SIZE_LONGWORD:
-						state->program_counter += resolved_value * 4;
+						state->program_counter += length * 4;
 						break;
 
 					case SIZE_UNDEFINED:
@@ -4088,12 +4088,12 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 
 		case STATEMENT_TYPE_RSSET:
 		{
-			unsigned long resolved_value;
+			unsigned long value;
 
-			if (!ResolveValue(state, &statement->shared.value, &resolved_value))
+			if (!ResolveExpression(state, &statement->shared.expression, &value))
 				SemanticError(state, "Value must be evaluable on the first pass.");
 			else
-				state->program_counter = resolved_value;
+				state->program_counter = value;
 
 			break;
 		}
@@ -4193,8 +4193,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					{
 						/* Create a false if statement. */
 						statement.type = STATEMENT_TYPE_IF;
-						statement.shared.value.type = VALUE_NUMBER;
-						statement.shared.value.shared.integer = 0;
+						statement.shared.expression.type = EXPRESSION_NUMBER;
+						statement.shared.expression.shared.integer = 0;
 						ProcessStatement(state, &statement, label);
 					}
 					else if (strncasecmp(source_line_pointer, "else", keyword_length) == 0)
@@ -4729,7 +4729,7 @@ static cc_bool DictionaryFilterDeleteVariables(Dictionary_Entry *entry, const ch
 
 	return (entry->type != SYMBOL_VARIABLE
 	    || (identifier_length == sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1 && memcmp(identifier, PROGRAM_COUNTER_OF_STATEMENT, identifier_length) == 0)
-	    || (identifier_length == sizeof(PROGRAM_COUNTER_OF_VALUE) - 1 && memcmp(identifier, PROGRAM_COUNTER_OF_VALUE, identifier_length) == 0));
+	    || (identifier_length == sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1 && memcmp(identifier, PROGRAM_COUNTER_OF_EXPRESSION, identifier_length) == 0));
 }
 
 static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data)
@@ -4795,7 +4795,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 	{
 		symbol->type = SYMBOL_VARIABLE;
 
-		symbol = CreateSymbol(&state, PROGRAM_COUNTER_OF_VALUE);
+		symbol = CreateSymbol(&state, PROGRAM_COUNTER_OF_EXPRESSION);
 
 		/* Create the dictionary entry for the program counter ahead of time. */
 		if (symbol != NULL)
