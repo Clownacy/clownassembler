@@ -573,7 +573,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			break;
 
 		case EXPRESSION_NUMBER:
-			*value = expression->shared.integer;
+			*value = expression->shared.unsigned_long;
 			break;
 
 		case EXPRESSION_IDENTIFIER:
@@ -661,7 +661,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 	if (success)
 	{
 		expression->type = EXPRESSION_NUMBER;
-		expression->shared.integer = *value;
+		expression->shared.unsigned_long = *value;
 	}
 
 	return success;
@@ -2936,7 +2936,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							if (offset > 0x7FFF)
 								SemanticError(state, "The destination is too far away: it must be less than $8000 bytes after the start of the instruction, but instead it was $%lX bytes away.", offset);
 
-							custom_operands[0].literal.shared.integer = offset;
+							custom_operands[0].literal.shared.unsigned_long = offset;
 						}
 						else
 						{
@@ -2945,7 +2945,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							if (offset > 0x8000)
 								SemanticError(state, "The destination is too far away: it must be less than $8001 bytes before the start of the instruction, but instead it was $%lX bytes away.", offset);
 
-							custom_operands[0].literal.shared.integer = 0 - offset;
+							custom_operands[0].literal.shared.unsigned_long = 0 - offset;
 						}
 
 						break;
@@ -3028,7 +3028,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							operands_to_output[0] = &custom_operands[0];
 							custom_operands[0].type = OPERAND_LITERAL;
 							custom_operands[0].literal.type = EXPRESSION_NUMBER;
-							custom_operands[0].literal.shared.integer = offset;
+							custom_operands[0].literal.shared.unsigned_long = offset;
 						}
 
 						break;
@@ -4194,7 +4194,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 						/* Create a false if statement. */
 						statement.type = STATEMENT_TYPE_IF;
 						statement.shared.expression.type = EXPRESSION_NUMBER;
-						statement.shared.expression.shared.integer = 0;
+						statement.shared.expression.shared.unsigned_long = 0;
 						ProcessStatement(state, &statement, label);
 					}
 					else if (strncasecmp(source_line_pointer, "else", keyword_length) == 0)

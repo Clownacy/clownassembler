@@ -199,7 +199,7 @@ typedef struct Expression
 	ExpressionType type;
 	union
 	{
-		unsigned long integer; /* TODO - Rename to 'unsigned long'. */
+		unsigned long unsigned_long;
 		char *string;
 		struct Expression *expressions;
 	} shared;
@@ -619,7 +619,7 @@ statement
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = $2;
 		statement->shared.incbin.start.type = EXPRESSION_NUMBER;
-		statement->shared.incbin.start.shared.integer = 0;
+		statement->shared.incbin.start.shared.unsigned_long = 0;
 		statement->shared.incbin.has_length = cc_false;
 	}
 	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' expression
@@ -1433,7 +1433,7 @@ operand
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = EXPRESSION_NUMBER;
-		$$.literal.shared.integer = 0;
+		$$.literal.shared.unsigned_long = 0;
 		$$.main_register = $2;
 		$$.index_register = $4 % 8;
 		$$.size = $5;
@@ -1453,7 +1453,7 @@ operand
 		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = EXPRESSION_NUMBER;
-		$$.literal.shared.integer = 0;
+		$$.literal.shared.unsigned_long = 0;
 		$$.main_register = $2;
 		$$.index_register = $4 % 8;
 		$$.size = SIZE_WORD;
@@ -1478,7 +1478,7 @@ operand
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = EXPRESSION_NUMBER;
-		$$.literal.shared.integer = 0;
+		$$.literal.shared.unsigned_long = 0;
 		$$.index_register = $4 % 8;
 		$$.size = $5;
 		$$.index_register_is_address_register = $4 / 8 != 0;
@@ -1496,7 +1496,7 @@ operand
 		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = EXPRESSION_NUMBER;
-		$$.literal.shared.integer = 0;
+		$$.literal.shared.unsigned_long = 0;
 		$$.index_register = $4 % 8;
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $4 / 8 != 0;
@@ -1822,7 +1822,7 @@ expression8
 	: TOKEN_NUMBER
 	{
 		$$.type = EXPRESSION_NUMBER;
-		$$.shared.integer = $1;
+		$$.shared.unsigned_long = $1;
 	}
 	| TOKEN_IDENTIFIER
 	{
