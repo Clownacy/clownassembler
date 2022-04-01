@@ -442,6 +442,11 @@ FutureLabel:
 
 	; Testing strlen
 	dc.b	strlen("Four")
+i set 0
+	while i<strlen("DRR" 	)
+	dc.b i
+i set i+1
+	endw
 
   ; More blank lines to test support for trailing blank statements
 

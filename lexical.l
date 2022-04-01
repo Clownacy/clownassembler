@@ -177,6 +177,8 @@ hexadecimal       {hexadecimal_digit}+
 <INITIAL>else            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ELSE;
 <INITIAL>endc            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDC;
 <INITIAL>endif           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDC;
+<INITIAL>while           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_WHILE;
+<INITIAL>endw            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDW;
 <INITIAL>even            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EVEN;
 <INITIAL>cnop            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_CNOP;
 <INITIAL>inform          BEGIN(OPERANDS); return TOKEN_DIRECTIVE_INFORM;

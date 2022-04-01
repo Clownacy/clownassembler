@@ -84,7 +84,8 @@ typedef struct SemanticState
 	{
 		MODE_NORMAL,
 		MODE_REPT,
-		MODE_MACRO
+		MODE_MACRO,
+		MODE_WHILE
 	} mode;
 	union
 	{
@@ -102,6 +103,12 @@ typedef struct SemanticState
 			SourceLineList source_line_list;
 			cc_bool is_short;
 		} macro;
+		struct
+		{
+			Expression expression;
+			unsigned long line_number;
+			SourceLineList source_line_list;
+		} while_statement;
 	} shared;
 } SemanticState;
 
@@ -297,70 +304,6 @@ static Dictionary_Entry* CreateSymbol(SemanticState *state, const char *identifi
 	return dictionary_entry;
 }
 
-static void TerminateRept(SemanticState *state)
-{
-	unsigned long countdown;
-	SourceLineListNode *source_line_list_node;
-
-	/* Exit ENDR mode before we recurse into the REPT's nested statements. */
-	state->mode = MODE_NORMAL;
-
-	/* Repeat the statements as many times as requested. */
-	countdown = state->shared.rept.repetitions;
-
-	while (countdown-- != 0)
-	{
-		/* Rewind back to the line number of the start of the REPT. */
-		state->location->line_number = state->shared.rept.line_number;
-
-		/* Process the REPT's nested statements. */
-		for (source_line_list_node = state->shared.rept.source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-			AssembleLine(state, source_line_list_node->source_line);
-	}
-
-	/* Increment past the ENDR line number. */
-	++state->location->line_number;
-
-	/* Free the source line list. */
-	source_line_list_node = state->shared.rept.source_line_list.head;
-
-	while (source_line_list_node != NULL)
-	{
-		SourceLineListNode *next_source_line_list_node = source_line_list_node->next;
-
-		free(source_line_list_node);
-
-		source_line_list_node = next_source_line_list_node;
-	}
-}
-
-static void TerminateMacro(SemanticState *state)
-{
-	/* Exit macro mode. */
-	state->mode = MODE_NORMAL;
-
-	if (state->shared.macro.name != NULL)
-	{
-		Dictionary_Entry* const symbol = CreateSymbol(state, state->shared.macro.name);
-
-		/* Add the macro to the symbol table. */
-		if (symbol != NULL)
-		{
-			Macro* const macro = MallocAndHandleError(state, sizeof(Macro));
-
-			if (macro != NULL)
-			{
-				macro->name = state->shared.macro.name;
-				macro->parameter_names = state->shared.macro.parameter_names;
-				macro->source_line_list_head = state->shared.macro.source_line_list.head;
-
-				symbol->type = SYMBOL_MACRO;
-				symbol->shared.pointer = macro;
-			}
-		}
-	}
-}
-
 static void AddToSourceLineList(SemanticState *state, SourceLineList *source_line_list, const char *source_line)
 {
 	const size_t source_line_length = strlen(source_line);
@@ -380,6 +323,22 @@ static void AddToSourceLineList(SemanticState *state, SourceLineList *source_lin
 		source_line_list_node->next = NULL;
 		source_line_list_node->source_line = (char*)(source_line_list_node + 1);
 		memcpy(source_line_list_node->source_line, source_line, source_line_length + 1);
+	}
+}
+
+static void FreeSourceLineList(SourceLineListNode *source_line_list_head)
+{
+	SourceLineListNode *source_line_list_node;
+
+	source_line_list_node = source_line_list_head;
+
+	while (source_line_list_node != NULL)
+	{
+		SourceLineListNode *next_source_line_list_node = source_line_list_node->next;
+
+		free(source_line_list_node);
+
+		source_line_list_node = next_source_line_list_node;
 	}
 }
 
@@ -409,7 +368,7 @@ static char* ExpandLocalIdentifier(SemanticState *state, const char *identifier)
 	return expanded_identifier;
 }
 
-static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value)
+static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, cc_bool fold)
 {
 	cc_bool success = cc_true;
 
@@ -438,17 +397,14 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			unsigned long right_value;
 
 			/* Resolve both of these separately so that they are each properly hardcoded (C short-circuiting could cause the second call to never occur). */
-			if (!ResolveExpression(state, &expression->shared.subexpressions[0], &left_value))
+			if (!ResolveExpression(state, &expression->shared.subexpressions[0], &left_value, fold))
 				success = cc_false;
 
-			if (!ResolveExpression(state, &expression->shared.subexpressions[1], &right_value))
+			if (!ResolveExpression(state, &expression->shared.subexpressions[1], &right_value, fold))
 				success = cc_false;
 
 			if (success)
 			{
-				/* We're done with these; delete them. */
-				free(expression->shared.subexpressions);
-
 				switch (expression->type)
 				{
 					case EXPRESSION_NUMBER:
@@ -546,15 +502,12 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 		case EXPRESSION_NEGATE:
 		case EXPRESSION_BITWISE_NOT:
 		case EXPRESSION_LOGICAL_NOT:
-			if (!ResolveExpression(state, expression->shared.subexpressions, value))
+			if (!ResolveExpression(state, expression->shared.subexpressions, value, fold))
 			{
 				success = cc_false;
 			}
 			else
 			{
-				/* We're done with this; delete it. */
-				free(expression->shared.subexpressions);
-
 				switch (expression->type)
 				{
 					case EXPRESSION_NUMBER:
@@ -639,9 +592,6 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			}
 			else
 			{
-				/* We're done with the string: delete it. */
-				free(expression->shared.string);
-
 				*value = dictionary_entry->shared.unsigned_long;
 			}
 
@@ -670,9 +620,6 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 					*value <<= 8;
 					*value |= expression->shared.string[i];
 				}
-
-				/* We're done with the string: delete it. */
-				free(expression->shared.string);
 			}
 
 			break;
@@ -688,19 +635,149 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 
 		case EXPRESSION_STRLEN:
 			*value = strlen(expression->shared.string);
-			free(expression->shared.string);
 			break;
 	}
 
 	/* Now that we have resolved the value, let's hardcode it here so that we don't ever have to calculate it again. */
 	/* This is especially useful for fix-ups, which may otherwise depend on identifiers that no longer exist at the time is value is resolved again. */
-	if (success)
+	if (success && fold)
 	{
+		switch (expression->type)
+		{
+			case EXPRESSION_SUBTRACT:
+			case EXPRESSION_ADD:
+			case EXPRESSION_MULTIPLY:
+			case EXPRESSION_DIVIDE:
+			case EXPRESSION_MODULO:
+			case EXPRESSION_LOGICAL_OR:
+			case EXPRESSION_LOGICAL_AND:
+			case EXPRESSION_BITWISE_OR:
+			case EXPRESSION_BITWISE_XOR:
+			case EXPRESSION_BITWISE_AND:
+			case EXPRESSION_EQUALITY:
+			case EXPRESSION_INEQUALITY:
+			case EXPRESSION_LESS_THAN:
+			case EXPRESSION_LESS_OR_EQUAL:
+			case EXPRESSION_MORE_THAN:
+			case EXPRESSION_MORE_OR_EQUAL:
+			case EXPRESSION_LEFT_SHIFT:
+			case EXPRESSION_RIGHT_SHIFT:
+			case EXPRESSION_NEGATE:
+			case EXPRESSION_BITWISE_NOT:
+			case EXPRESSION_LOGICAL_NOT:
+				free(expression->shared.subexpressions);
+				break;
+
+			case EXPRESSION_IDENTIFIER:
+			case EXPRESSION_STRING:
+			case EXPRESSION_STRLEN:
+				free(expression->shared.string);
+				break;
+
+			case EXPRESSION_NUMBER:
+			case EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT:
+			case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
+				break;
+		}
+
 		expression->type = EXPRESSION_NUMBER;
 		expression->shared.unsigned_long = *value;
 	}
 
 	return success;
+}
+
+static void TerminateRept(SemanticState *state)
+{
+	unsigned long countdown;
+	SourceLineListNode *source_line_list_node;
+
+	/* Exit REPT mode before we recurse into the REPT's nested statements. */
+	state->mode = MODE_NORMAL;
+
+	/* Repeat the statements as many times as requested. */
+	countdown = state->shared.rept.repetitions;
+	/* TODO - Nested REPTs! Put the 'state->shared.rept' stuff in local variables! */
+
+	while (countdown-- != 0)
+	{
+		/* Rewind back to the line number of the start of the REPT. */
+		state->location->line_number = state->shared.rept.line_number;
+
+		/* Process the REPT's nested statements. */
+		for (source_line_list_node = state->shared.rept.source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
+			AssembleLine(state, source_line_list_node->source_line);
+	}
+
+	/* Increment past the ENDR line number. */
+	++state->location->line_number;
+
+	FreeSourceLineList(state->shared.rept.source_line_list.head);
+}
+
+static void TerminateMacro(SemanticState *state)
+{
+	/* Exit macro mode. */
+	state->mode = MODE_NORMAL;
+
+	if (state->shared.macro.name != NULL)
+	{
+		Dictionary_Entry* const symbol = CreateSymbol(state, state->shared.macro.name);
+
+		/* Add the macro to the symbol table. */
+		if (symbol != NULL)
+		{
+			Macro* const macro = MallocAndHandleError(state, sizeof(Macro));
+
+			if (macro != NULL)
+			{
+				macro->name = state->shared.macro.name;
+				macro->parameter_names = state->shared.macro.parameter_names;
+				macro->source_line_list_head = state->shared.macro.source_line_list.head;
+
+				symbol->type = SYMBOL_MACRO;
+				symbol->shared.pointer = macro;
+			}
+		}
+	}
+}
+
+static void TerminateWhile(SemanticState *state)
+{
+	/* Back-up some state into local variables, in case a nested WHILE statement clobbers it. */
+	Expression expression = state->shared.while_statement.expression;
+	const unsigned long starting_line_number = state->shared.while_statement.line_number;
+	SourceLineListNode* const source_line_list_head = state->shared.while_statement.source_line_list.head;
+
+	/* Exit WHILE mode before we recurse into the WHILE's nested statements. */
+	state->mode = MODE_NORMAL;
+
+	for (;;)
+	{
+		unsigned long value;
+		SourceLineListNode *source_line_list_node;
+
+		if (!ResolveExpression(state, &expression, &value, cc_false))
+		{
+			SemanticError(state, "Expression must be evaluable on the first pass.");
+			break;
+		}
+
+		if (value == 0)
+			break;
+
+		/* Rewind back to the line number of the start of the REPT. */
+		state->location->line_number = starting_line_number;
+
+		/* Process the WHILE's nested statements. */
+		for (source_line_list_node = source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
+			AssembleLine(state, source_line_list_node->source_line);
+	}
+
+	/* Increment past the ENDW line number. */
+	++state->location->line_number;
+
+	FreeSourceLineList(source_line_list_head);
 }
 
 static unsigned int ConstructSizeBits(Size size)
@@ -2482,7 +2559,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							{
 								unsigned long value;
 
-								if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
+								if (!ResolveExpression(state, &instruction->operands[0].literal, &value, cc_true))
 									value = 0;
 
 								/* Check whether the literal value will wrap or not, and warn the user if so. */
@@ -2705,7 +2782,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 						machine_code = 0x4E40;
 
-						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
+						if (!ResolveExpression(state, &instruction->operands[0].literal, &value, cc_true))
 							value = 0;
 
 						if (value > 15)
@@ -2877,7 +2954,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 						machine_code |= ConstructSizeBits(instruction->opcode.size);
 						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
 
-						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
+						if (!ResolveExpression(state, &instruction->operands[0].literal, &value, cc_true))
 							value = 1;
 
 						if (value < 1 || value > 8)
@@ -2906,7 +2983,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 						machine_code |= instruction->operands[0].main_register;
 
 						/* Obtain the destination address. */
-						if (!ResolveExpression(state, &instruction->operands[1].literal, &value))
+						if (!ResolveExpression(state, &instruction->operands[1].literal, &value, cc_true))
 							value = state->program_counter - 2;
 
 						/* Construct a custom operand to hold the destination offset. */
@@ -2967,7 +3044,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 						}
 
 						/* Obtain the destination address. */
-						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
+						if (!ResolveExpression(state, &instruction->operands[0].literal, &value, cc_true))
 							value = state->program_counter - 2;
 
 						/* Calculate the destination offset. */
@@ -3032,7 +3109,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 						machine_code = 0x7000;
 
 						/* Obtain the value to be moved. */
-						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
+						if (!ResolveExpression(state, &instruction->operands[0].literal, &value, cc_true))
 							value = 0;
 
 						if (value > 0x7F && value < 0xFFFFFF80)
@@ -3368,7 +3445,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							{
 								unsigned long value;
 
-								if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
+								if (!ResolveExpression(state, &instruction->operands[0].literal, &value, cc_true))
 									value = 0;
 
 								if (value > 8 || value < 1)
@@ -3460,7 +3537,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 					unsigned int bytes_to_write = 2;
 					unsigned long value;
 
-					if (!ResolveExpression(state, &operand->literal, &value))
+					if (!ResolveExpression(state, &operand->literal, &value, cc_true))
 					{
 						if (operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT || operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER)
 							value = state->program_counter; /* Prevent out-of-range displacements later on. */
@@ -3659,7 +3736,7 @@ static void ProcessDc(SemanticState *state, StatementDc *dc)
 			/* Update the program counter symbol in between values, to keep it up to date. */
 			Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_long = state->program_counter;
 
-			if (!ResolveExpression(state, &expression_list_node->expression, &value))
+			if (!ResolveExpression(state, &expression_list_node->expression, &value, cc_true))
 				value = 0;
 
 			OutputDcValue(state, dc->size, value);
@@ -3671,7 +3748,7 @@ static void ProcessDcb(SemanticState *state, StatementDcb *dcb)
 {
 	unsigned long repetitions;
 
-	if (!ResolveExpression(state, &dcb->repetitions, &repetitions))
+	if (!ResolveExpression(state, &dcb->repetitions, &repetitions, cc_true))
 	{
 		SemanticError(state, "Repetition value must be evaluable on first pass.");
 	}
@@ -3680,7 +3757,7 @@ static void ProcessDcb(SemanticState *state, StatementDcb *dcb)
 		unsigned long value;
 		unsigned long i;
 
-		if (!ResolveExpression(state, &dcb->value, &value))
+		if (!ResolveExpression(state, &dcb->value, &value, cc_true))
 			value = 0;
 
 		for (i = 0; i < repetitions; ++i)
@@ -3727,7 +3804,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 	{
 		unsigned long value;
 
-		if (!ResolveExpression(state, &incbin->start, &value))
+		if (!ResolveExpression(state, &incbin->start, &value, cc_true))
 		{
 			SemanticError(state, "Start value must be evaluable on the first pass.");
 			value = 0;
@@ -3741,7 +3818,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 			unsigned long length;
 			unsigned long i;
 
-			if (!ResolveExpression(state, &incbin->length, &length))
+			if (!ResolveExpression(state, &incbin->length, &length, cc_true))
 			{
 				SemanticError(state, "Length value must be evaluable on the first pass.");
 				length = 0;
@@ -3781,7 +3858,7 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 	/* Enter REPT mode. */
 	state->mode = MODE_REPT;
 
-	if (!ResolveExpression(state, &rept->repetitions, &state->shared.rept.repetitions))
+	if (!ResolveExpression(state, &rept->repetitions, &state->shared.rept.repetitions, cc_true))
 	{
 		SemanticError(state, "Repetition value must be evaluable on the first pass.");
 		state->shared.rept.repetitions = 1;
@@ -3817,7 +3894,7 @@ static void ProcessIf(SemanticState *state, Expression *expression)
 	{
 		unsigned long value;
 
-		if (!ResolveExpression(state, expression, &value))
+		if (!ResolveExpression(state, expression, &value, cc_true))
 		{
 			SemanticError(state, "Condition must be evaluable on the first pass.");
 			value = 1;
@@ -3845,6 +3922,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		case STATEMENT_TYPE_INCBIN:
 		case STATEMENT_TYPE_REPT:
 		case STATEMENT_TYPE_IF:
+		case STATEMENT_TYPE_WHILE:
 		case STATEMENT_TYPE_EVEN:
 		case STATEMENT_TYPE_CNOP:
 		case STATEMENT_TYPE_INFORM:
@@ -3864,6 +3942,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		case STATEMENT_TYPE_ELSEIF:
 		case STATEMENT_TYPE_ELSE:
 		case STATEMENT_TYPE_ENDC:
+		case STATEMENT_TYPE_ENDW:
 		case STATEMENT_TYPE_RSSET:
 		case STATEMENT_TYPE_RSRESET:
 			if (label != NULL)
@@ -3947,7 +4026,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			if (state->equ_set_descope_local_labels)
 				SetLastGlobalLabel(state, label);
 
-			if (ResolveExpression(state, &statement->shared.expression, &value))
+			if (ResolveExpression(state, &statement->shared.expression, &value, cc_true))
 				AddIdentifierToSymbolTable(state, label, value, SYMBOL_CONSTANT);
 
 			break;
@@ -3960,7 +4039,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			if (state->equ_set_descope_local_labels)
 				SetLastGlobalLabel(state, label);
 
-			if (ResolveExpression(state, &statement->shared.expression, &value))
+			if (ResolveExpression(state, &statement->shared.expression, &value, cc_true))
 				AddIdentifierToSymbolTable(state, label, value, SYMBOL_VARIABLE);
 
 			break;
@@ -4031,6 +4110,28 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 
 			break;
 
+		case STATEMENT_TYPE_WHILE:
+			/* Enter WHILE mode. */
+			state->mode = MODE_WHILE;
+
+			state->shared.while_statement.expression = statement->shared.expression;
+
+			state->shared.while_statement.line_number = state->location->line_number;
+
+			state->shared.while_statement.source_line_list.head = NULL;
+			state->shared.while_statement.source_line_list.tail = NULL;
+
+			break;
+
+		case STATEMENT_TYPE_ENDW:
+			/* Exit WHILE mode. */
+			if (state->mode != MODE_WHILE)
+				SemanticError(state, "This stray ENDW has no preceeding WHILE.");
+			else
+				TerminateWhile(state);
+
+			break;
+
 		case STATEMENT_TYPE_EVEN:
 			/* Pad to the nearest even address. */
 			if (state->program_counter & 1)
@@ -4045,7 +4146,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		{
 			unsigned long offset;
 
-			if (!ResolveExpression(state, &statement->shared.cnop.offset, &offset))
+			if (!ResolveExpression(state, &statement->shared.cnop.offset, &offset, cc_true))
 			{
 				SemanticError(state, "Offset must be evaluable on the first pass.");
 			}
@@ -4053,7 +4154,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			{
 				unsigned long size_boundary;
 
-				if (!ResolveExpression(state, &statement->shared.cnop.size_boundary, &size_boundary))
+				if (!ResolveExpression(state, &statement->shared.cnop.size_boundary, &size_boundary, cc_true))
 				{
 					SemanticError(state, "Size boundary must be evaluable on the first pass.");
 				}
@@ -4093,7 +4194,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		{
 			unsigned long length;
 
-			if (!ResolveExpression(state, &statement->shared.rs.length, &length))
+			if (!ResolveExpression(state, &statement->shared.rs.length, &length, cc_true))
 			{
 				SemanticError(state, "Length must be evaluable on the first pass.");
 			}
@@ -4132,7 +4233,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			/* Set program counter to value. */
 			unsigned long value;
 
-			if (!ResolveExpression(state, &statement->shared.expression, &value))
+			if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
 				SemanticError(state, "Value must be evaluable on the first pass.");
 			else
 				state->program_counter = value;
@@ -4733,6 +4834,16 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			}
 
 			break;
+
+		case MODE_WHILE:
+			/* If this line is an 'ENDW' directive, then exit 'WHILE' mode. Otherwise, add the line to the 'WHILE'. */
+			if (directive_length != 0 && strncmpci(source_line_pointer, "endw", directive_length) == 0)
+				/* TODO - Detect code after the keyword and error if any is found. */
+				ParseLine(state, source_line, label, source_line_pointer);
+			else
+				AddToSourceLineList(state, &state->shared.while_statement.source_line_list, source_line);
+
+			break;
 	}
 
 	free(label);
@@ -4801,6 +4912,13 @@ static void AssembleFile(SemanticState *state, FILE *input_file)
 			TerminateMacro(state);
 
 			SemanticError(state, "MACRO statement beginning at line %lu is missing its ENDM.", state->shared.macro.line_number);
+			break;
+
+		case MODE_WHILE:
+			/* Terminate the while-statement to hopefully avoid future complications. */
+			TerminateWhile(state);
+
+			SemanticError(state, "WHILE statement beginning at line %lu is missing its ENDW.", state->shared.while_statement.line_number);
 			break;
 	}
 }

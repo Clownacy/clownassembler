@@ -326,6 +326,8 @@ typedef struct Statement
 		STATEMENT_TYPE_ELSEIF,
 		STATEMENT_TYPE_ELSE,
 		STATEMENT_TYPE_ENDC,
+		STATEMENT_TYPE_WHILE,
+		STATEMENT_TYPE_ENDW,
 		STATEMENT_TYPE_EVEN,
 		STATEMENT_TYPE_CNOP,
 		STATEMENT_TYPE_INFORM,
@@ -368,6 +370,7 @@ typedef struct ListMetadata
 
 %code provides {
 
+void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
 
 }
@@ -383,7 +386,6 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message);
 void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
 static cc_bool DoExpression(Expression *expression, ExpressionType type, Expression *left_expression, Expression *right_expression);
-static void DestroyExpression(Expression *expressions);
 static void DestroyIdentifierList(IdentifierListNode *node);
 static void DestroyExpressionList(ExpressionListNode *node);
 static void DestroyOperand(Operand *operand);
@@ -535,6 +537,8 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_ELSEIF
 %token TOKEN_DIRECTIVE_ELSE
 %token TOKEN_DIRECTIVE_ENDC
+%token TOKEN_DIRECTIVE_WHILE
+%token TOKEN_DIRECTIVE_ENDW
 %token TOKEN_DIRECTIVE_EVEN
 %token TOKEN_DIRECTIVE_CNOP
 %token TOKEN_DIRECTIVE_INFORM
@@ -708,6 +712,15 @@ statement
 	| TOKEN_DIRECTIVE_ENDC
 	{
 		statement->type = STATEMENT_TYPE_ENDC;
+	}
+	| TOKEN_DIRECTIVE_WHILE expression
+	{
+		statement->type = STATEMENT_TYPE_WHILE;
+		statement->shared.expression = $2;
+	}
+	| TOKEN_DIRECTIVE_ENDW
+	{
+		statement->type = STATEMENT_TYPE_ENDW;
 	}
 	| TOKEN_DIRECTIVE_EVEN
 	{
@@ -1926,7 +1939,7 @@ static cc_bool DoExpression(Expression *expression, ExpressionType type, Express
 	return success;
 }
 
-static void DestroyExpression(Expression *expression)
+void DestroyExpression(Expression *expression)
 {
 	switch (expression->type)
 	{
@@ -2045,6 +2058,7 @@ void DestroyStatement(Statement *statement)
 		case STATEMENT_TYPE_ENDM:
 		case STATEMENT_TYPE_ELSE:
 		case STATEMENT_TYPE_ENDC:
+		case STATEMENT_TYPE_ENDW:
 		case STATEMENT_TYPE_EVEN:
 		case STATEMENT_TYPE_END:
 		case STATEMENT_TYPE_RSRESET:
@@ -2089,6 +2103,7 @@ void DestroyStatement(Statement *statement)
 		case STATEMENT_TYPE_SET:
 		case STATEMENT_TYPE_IF:
 		case STATEMENT_TYPE_ELSEIF:
+		case STATEMENT_TYPE_WHILE:
 		case STATEMENT_TYPE_RSSET:
 			DestroyExpression(&statement->shared.expression);
 			break;
