@@ -456,6 +456,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 					case EXPRESSION_STRING:
 					case EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT:
 					case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
+					case EXPRESSION_STRLEN:
 					case EXPRESSION_NEGATE:
 					case EXPRESSION_BITWISE_NOT:
 					case EXPRESSION_LOGICAL_NOT:
@@ -561,6 +562,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 					case EXPRESSION_STRING:
 					case EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT:
 					case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
+					case EXPRESSION_STRLEN:
 					case EXPRESSION_SUBTRACT:
 					case EXPRESSION_ADD:
 					case EXPRESSION_MULTIPLY:
@@ -682,6 +684,11 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 
 		case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
 			*value = Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_long;
+			break;
+
+		case EXPRESSION_STRLEN:
+			*value = strlen(expression->shared.string);
+			free(expression->shared.string);
 			break;
 	}
 

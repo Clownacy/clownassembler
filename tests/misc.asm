@@ -439,6 +439,10 @@ variable set 1
 
 FutureLabel:
 
+
+	; Testing strlen
+	dc.b	strlen("Four")
+
   ; More blank lines to test support for trailing blank statements
 
 

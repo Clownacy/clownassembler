@@ -222,6 +222,9 @@ sp              yylval->unsigned_long = 7; return TOKEN_ADDRESS_REGISTER;
 usp             return TOKEN_USER_STACK_POINTER_REGISTER;
 pc              return TOKEN_PROGRAM_COUNTER;
 
+ /* Functions. */
+strlen          return TOKEN_STRLEN;
+
  /* Data register. */
 [Dd]{decimal} {
 	char *string_end;
