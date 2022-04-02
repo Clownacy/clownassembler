@@ -212,6 +212,7 @@ hexadecimal       {hexadecimal_digit}+
 "=="            return TOKEN_EQUALITY;   /* An assembler extension, for programmers that are familiar with C. */
 "!="            return TOKEN_INEQUALITY; /* An assembler extension, for programmers that are familiar with C. */
 "<>"            return TOKEN_INEQUALITY;
+"><"            return TOKEN_INEQUALITY;
 "<="            return TOKEN_LESS_OR_EQUAL;
 ">="            return TOKEN_MORE_OR_EQUAL;
 "<<"            return TOKEN_LEFT_SHIFT;
