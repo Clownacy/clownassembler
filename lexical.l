@@ -288,7 +288,7 @@ strlen          return TOKEN_STRLEN;
 
 	if (string_end[0] != '\0')
 	{
-		m68kasm_error(yyscanner, NULL, "This hexacdecimal number is invalid and cannot be parsed.");
+		m68kasm_error(yyscanner, NULL, "This hexadecimal number is invalid and cannot be parsed.");
 		return M68KASM_error;
 	}
 
@@ -316,7 +316,7 @@ strlen          return TOKEN_STRLEN;
 
 	if (string_end[1] != '\0')
 	{
-		m68kasm_error(yyscanner, NULL, "This hexacdecimal number is invalid and cannot be parsed.");
+		m68kasm_error(yyscanner, NULL, "This hexadecimal number is invalid and cannot be parsed.");
 		return M68KASM_error;
 	}
 
@@ -344,7 +344,7 @@ strlen          return TOKEN_STRLEN;
 
 	if (string_end[0] != '\0')
 	{
-		m68kasm_error(yyscanner, NULL, "This hexacdecimal number is invalid and cannot be parsed.");
+		m68kasm_error(yyscanner, NULL, "This hexadecimal number is invalid and cannot be parsed.");
 		return M68KASM_error;
 	}
 
