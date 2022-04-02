@@ -106,6 +106,7 @@ typedef struct SemanticState
 		struct
 		{
 			Expression expression;
+			char *source_line;
 			unsigned long line_number;
 			SourceLineList source_line_list;
 		} while_statement;
@@ -744,10 +745,14 @@ static void TerminateMacro(SemanticState *state)
 
 static void TerminateWhile(SemanticState *state)
 {
+	Expression expression;
+
 	/* Back-up some state into local variables, in case a nested WHILE statement clobbers it. */
-	Expression expression = state->shared.while_statement.expression;
+	char* const source_line = state->shared.while_statement.source_line;
 	const unsigned long starting_line_number = state->shared.while_statement.line_number;
 	SourceLineListNode* const source_line_list_head = state->shared.while_statement.source_line_list.head;
+
+	expression = state->shared.while_statement.expression;
 
 	/* Exit WHILE mode before we recurse into the WHILE's nested statements. */
 	state->mode = MODE_NORMAL;
@@ -756,6 +761,8 @@ static void TerminateWhile(SemanticState *state)
 	{
 		unsigned long value;
 		SourceLineListNode *source_line_list_node;
+
+		state->source_line = source_line;
 
 		if (!ResolveExpression(state, &expression, &value, cc_false))
 		{
@@ -774,9 +781,12 @@ static void TerminateWhile(SemanticState *state)
 			AssembleLine(state, source_line_list_node->source_line);
 	}
 
+	DestroyExpression(&expression);
+
 	/* Increment past the ENDW line number. */
 	++state->location->line_number;
 
+	free(source_line);
 	FreeSourceLineList(source_line_list_head);
 }
 
@@ -4115,11 +4125,16 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			state->mode = MODE_WHILE;
 
 			state->shared.while_statement.expression = statement->shared.expression;
+			state->shared.while_statement.source_line = DuplicateStringAndHandleError(state, state->source_line);
 
 			state->shared.while_statement.line_number = state->location->line_number;
 
 			state->shared.while_statement.source_line_list.head = NULL;
 			state->shared.while_statement.source_line_list.tail = NULL;
+
+			/* Dummy-out the statement's expression, since the state now owns it, and we don't
+			   want its sub-expressions to be automatically freed when the statement is freed. */
+			statement->shared.expression.type = EXPRESSION_NUMBER;
 
 			break;
 
