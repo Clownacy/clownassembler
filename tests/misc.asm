@@ -448,6 +448,22 @@ i set 0
 i set i+1
 	endw
 
+	; Testing numerical notations
+
+	dc.b	16
+
+	; 68k
+	dc.b	$10
+	dc.b	%10000
+
+	; Z80
+	dc.b	10h
+	dc.b	10000b
+
+	; C
+	dc.b	0x10
+	dc.b	0b10000
+
   ; More blank lines to test support for trailing blank statements
 
 
