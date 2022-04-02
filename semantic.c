@@ -691,7 +691,10 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 static void TerminateRept(SemanticState *state)
 {
 	unsigned long countdown;
-	SourceLineListNode *source_line_list_node;
+
+	/* Back-up some state into local variables, in case a nested REPT statement clobbers it. */
+	unsigned long starting_line_number = state->shared.rept.line_number;
+	SourceLineListNode* const source_line_list_head = state->shared.rept.source_line_list.head;
 
 	/* Exit REPT mode before we recurse into the REPT's nested statements. */
 	state->mode = MODE_NORMAL;
@@ -702,18 +705,20 @@ static void TerminateRept(SemanticState *state)
 
 	while (countdown-- != 0)
 	{
+		SourceLineListNode *source_line_list_node;
+
 		/* Rewind back to the line number of the start of the REPT. */
-		state->location->line_number = state->shared.rept.line_number;
+		state->location->line_number = starting_line_number;
 
 		/* Process the REPT's nested statements. */
-		for (source_line_list_node = state->shared.rept.source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
+		for (source_line_list_node = source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
 			AssembleLine(state, source_line_list_node->source_line);
 	}
 
 	/* Increment past the ENDR line number. */
 	++state->location->line_number;
 
-	FreeSourceLineList(state->shared.rept.source_line_list.head);
+	FreeSourceLineList(source_line_list_head);
 }
 
 static void TerminateMacro(SemanticState *state)
