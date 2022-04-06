@@ -81,7 +81,7 @@ static SearchResult SearchBucket(Dictionary_State *state, Dictionary_Bucket *buc
 			else if (identifier_length > node->identifier_length)
 				comparison_result = 1;
 			else /*if (identifier_length == node->identifier_length)*/
-				comparison_result = state->compare_identifiers(identifier, node->identifier, identifier_length);
+				comparison_result = state->compare_identifiers(identifier, &node->identifier, identifier_length);
 
 			if (comparison_result < 0)
 			{
@@ -244,7 +244,7 @@ cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const char
 	}
 	else
 	{
-		Dictionary_Node *new_node = malloc(sizeof(Dictionary_Node) + identifier_length);
+		Dictionary_Node *new_node = malloc(sizeof(Dictionary_Node) - 1 + identifier_length);
 
 		if (new_node == NULL)
 		{
@@ -258,10 +258,10 @@ cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const char
 			new_node->left_child = NULL;
 			new_node->right_child = NULL;
 
-			new_node->identifier = (char*)(new_node + 1);
-			memcpy(new_node->identifier, identifier, identifier_length);
-			new_node->identifier_length = identifier_length;
 			new_node->entry.type = -1;
+
+			new_node->identifier_length = identifier_length;
+			memcpy(&new_node->identifier, identifier, identifier_length);
 
 			if (search_result == SEARCH_RESULT_BUCKET_EMPTY)
 			{
@@ -339,7 +339,7 @@ void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dicti
 		{
 			Dictionary_Node* const next_node = node->next;
 
-			if (!filter_function(&node->entry, node->identifier, node->identifier_length, user_data))
+			if (!filter_function(&node->entry, &node->identifier, node->identifier_length, user_data))
 				RemoveNodeFromBucket(bucket, node);
 
 			node = next_node;

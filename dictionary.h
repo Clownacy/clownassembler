@@ -25,9 +25,10 @@ typedef struct Dictionary_Node
 	struct Dictionary_Node *left_child;
 	struct Dictionary_Node *right_child;
 
-	char *identifier;
-	size_t identifier_length;
 	Dictionary_Entry entry;
+
+	size_t identifier_length;
+	char identifier; /* Actually a C89 flexible array member that *shouldn't* be undefined behaviour. */
 } Dictionary_Node;
 
 typedef struct Dictionary_Bucket
