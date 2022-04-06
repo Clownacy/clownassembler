@@ -204,11 +204,10 @@ void Dictionary_Init(Dictionary_State *state, cc_bool case_insensitive)
 
 	state->compare_identifiers = case_insensitive ? memcasecmp : memcmp;
 }
-#include <stdio.h>
+
 void Dictionary_Deinit(Dictionary_State *state)
 {
 	size_t i;
-	unsigned int total_thing = 0;
 
 	for (i = 0; i < CC_COUNT_OF(state->hash_table); ++i)
 	{
@@ -221,11 +220,8 @@ void Dictionary_Deinit(Dictionary_State *state)
 			free(node);
 
 			node = next_node;
-			++total_thing;
 		}
 	}
-
-	fprintf(stderr, "Deinited %u nodes\n", total_thing);
 }
 
 cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const char *identifier, size_t identifier_length, Dictionary_Entry **entry_pointer)
@@ -329,11 +325,9 @@ cc_bool Dictionary_Remove(Dictionary_State *state, const char *identifier, size_
 	return success;
 }
 
-#include <stdio.h>
 void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data), void *user_data)
 {
 	size_t i;
-	unsigned int total_nodes = 0;
 
 	for (i = 0; i < CC_COUNT_OF(state->hash_table); ++i)
 	{
@@ -351,8 +345,6 @@ void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dicti
 				RemoveNodeFromBucket(bucket, node);
 
 			node = next_node;
-			++total_nodes;
 		}
 	}
-	fprintf(stderr, "Filtered %u nodes.\n", total_nodes);
 }
