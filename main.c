@@ -30,6 +30,7 @@ int main(int argc, char **argv)
 	symbol_file_path = NULL;
 	case_insensitive = cc_false;
 	debug = cc_false;
+	equ_set_descope_local_labels = cc_false;
 
 	for (i = 1; i < argc; ++i)
 	{
