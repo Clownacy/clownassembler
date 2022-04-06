@@ -207,15 +207,17 @@ void Dictionary_Init(Dictionary_State *state, cc_bool case_insensitive)
 
 void Dictionary_Deinit(Dictionary_State *state)
 {
-	size_t i;
+	Dictionary_Bucket *bucket;
 
-	for (i = 0; i < CC_COUNT_OF(state->hash_table); ++i)
+	for (bucket = &state->hash_table[0]; bucket < &state->hash_table[CC_COUNT_OF(state->hash_table)]; ++bucket)
 	{
-		Dictionary_Node *node = state->hash_table[i].linked_list;
+		Dictionary_Node *node;
+
+		node = bucket->linked_list;
 
 		while (node != NULL)
 		{
-			Dictionary_Node *next_node = node->next;
+			Dictionary_Node* const next_node = node->next;
 
 			free(node);
 
@@ -327,13 +329,11 @@ cc_bool Dictionary_Remove(Dictionary_State *state, const char *identifier, size_
 
 void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data), void *user_data)
 {
-	size_t i;
+	Dictionary_Bucket *bucket;
 
-	for (i = 0; i < CC_COUNT_OF(state->hash_table); ++i)
+	for (bucket = &state->hash_table[0]; bucket < &state->hash_table[CC_COUNT_OF(state->hash_table)]; ++bucket)
 	{
 		Dictionary_Node *node;
-
-		Dictionary_Bucket* const bucket = &state->hash_table[i];
 
 		node = bucket->linked_list;
 
