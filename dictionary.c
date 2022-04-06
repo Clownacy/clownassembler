@@ -239,11 +239,13 @@ cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const char
 
 	if (search_result == SEARCH_RESULT_FOUND)
 	{
+		/* The node was found: return it. */
 		if (entry_pointer != NULL)
 			*entry_pointer = &found_node->entry;
 	}
 	else
 	{
+		/* The node was not found: create it instead. */
 		Dictionary_Node *new_node = malloc(sizeof(Dictionary_Node) - 1 + identifier_length);
 
 		if (new_node == NULL)
@@ -252,19 +254,25 @@ cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const char
 		}
 		else
 		{
-			new_node->next = NULL;
-			new_node->previous = NULL;
+			/* Initialise binary search tree pointers. */
 			new_node->parent = NULL;
 			new_node->left_child = NULL;
 			new_node->right_child = NULL;
 
+			/* Initialise linked-list pointers. */
+			new_node->next = NULL;
+			new_node->previous = NULL;
+
+			/* Mark the dictionary entry as unused. */
 			new_node->entry.type = -1;
 
+			/* Copy the identifier. */
 			new_node->identifier_length = identifier_length;
 			memcpy(&new_node->identifier, identifier, identifier_length);
 
 			if (search_result == SEARCH_RESULT_BUCKET_EMPTY)
 			{
+				/* Add the node to the root of the tree if it is empty. */
 				bucket->binary_search_tree = new_node;
 			}
 			else
@@ -273,9 +281,9 @@ cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const char
 				new_node->parent = found_node;
 
 				if (search_result == SEARCH_RESULT_NOT_FOUND_WOULD_BE_LEFT_CHILD)
-					found_node->left_child = new_node;
+					new_node->parent->left_child = new_node;
 				else /*if (search_result == SEARCH_RESULT_NOT_FOUND_WOULD_BE_RIGHT_CHILD)*/
-					found_node->right_child = new_node;
+					new_node->parent->right_child = new_node;
 			}
 
 			/* Insert node at start of current bucket's linked list. */
