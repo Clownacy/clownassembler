@@ -1,7 +1,6 @@
 #include "semantic.h"
 
 #include <assert.h>
-#include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +9,7 @@
 #include "clowncommon.h"
 
 #include "dictionary.h"
+#include "strcmpci.h"
 #include "syntactic.h"
 #define YY_NO_UNISTD_H
 #include "lexical.h"
@@ -221,27 +221,6 @@ static void* MallocAndHandleError(SemanticState *state, size_t size)
 		OutOfMemoryError(state);
 
 	return memory;
-}
-
-static int strncmpci(const char *lhs, const char *rhs, size_t count)
-{
-	int delta;
-	size_t i;
-
-	delta = 0;
-
-	for (i = 0; i < count; ++i)
-	{
-		const int lhs_character = tolower((unsigned char)*lhs++);
-		const int rhs_character = tolower((unsigned char)*rhs++);
-
-		delta = lhs_character - rhs_character;
-
-		if (delta != 0 || (lhs_character == '\0' /*&& rhs_character == '\0'*/))
-			break;
-	}
-
-	return delta;
 }
 
 static char* DuplicateString(const char *string)

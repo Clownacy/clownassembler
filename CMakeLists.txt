@@ -3,18 +3,40 @@ cmake_minimum_required(VERSION 3.20)
 project(clownassembler LANGUAGES C)
 
 add_executable(clownassembler
-	"main.c"
+	"frontend_custom.c"
 	"dictionary.c"
 	"dictionary.h"
 	"lexical.c"
 	"lexical.h"
 	"semantic.c"
 	"semantic.h"
+	"strcmpci.c"
+	"strcmpci.h"
 	"syntactic.c"
 	"syntactic.h"
 )
 
 set_target_properties(clownassembler PROPERTIES
+	C_STANDARD 90
+	C_STANDARD_REQUIRED YES
+	C_EXTENSIONS OFF
+)
+
+add_executable(clownassembler_asm68k
+	"frontend_asm68k.c"
+	"dictionary.c"
+	"dictionary.h"
+	"lexical.c"
+	"lexical.h"
+	"semantic.c"
+	"semantic.h"
+	"strcmpci.c"
+	"strcmpci.h"
+	"syntactic.c"
+	"syntactic.h"
+)
+
+set_target_properties(clownassembler_asm68k PROPERTIES
 	C_STANDARD 90
 	C_STANDARD_REQUIRED YES
 	C_EXTENSIONS OFF
