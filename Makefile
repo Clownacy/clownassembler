@@ -13,6 +13,8 @@ lexical.c lexical.h: lexical.l syntactic.h
 syntactic.c syntactic.h: syntactic.y
 	$(YACC) --output=syntactic.c --header=syntactic.h --debug $<
 
+assemblers: clownassembler clownassembler_asm68k
+
 clownassembler_asm68k: frontend_asm68k.c dictionary.c lexical.c semantic.c strcmpci.c syntactic.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
 
