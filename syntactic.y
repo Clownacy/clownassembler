@@ -1898,8 +1898,10 @@ expression8
 		{
 			$$.type = EXPRESSION_IDENTIFIER;
 			memcpy(&$$.shared.string[0], $1, identifier_length);
+			free($1);
 			$$.shared.string[identifier_length] = '@';
 			memcpy(&$$.shared.string[identifier_length + 1], $2 + 1, local_identifier_length + 1);
+			free($2);
 		}
 	}
 	| TOKEN_STRING

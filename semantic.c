@@ -4812,6 +4812,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 						for (i = 0; i < total_parameters; ++i)
 							free(parameters[i]);
+
+						free(parameters);
 					}
 
 					/* Undefine the 'narg' symbol. */
