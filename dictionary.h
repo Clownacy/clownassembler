@@ -22,6 +22,8 @@
 
 #include "clowncommon.h"
 
+#define TOTAL_HASH_TABLE_ENTRIES 0x1000
+
 typedef struct Dictionary_Entry
 {
 	int type;
@@ -56,11 +58,11 @@ typedef struct Dictionary_Bucket
 
 typedef struct Dictionary_State
 {
-	Dictionary_Bucket hash_table[0x100];
+	Dictionary_Bucket *hash_table;
 	int (*compare_identifiers)(const void *lhs, const void *rhs, size_t count);
 } Dictionary_State;
 
-void Dictionary_Init(Dictionary_State *state, cc_bool case_insensitive);
+cc_bool Dictionary_Init(Dictionary_State *state, cc_bool case_insensitive);
 void Dictionary_Deinit(Dictionary_State *state);
 
 cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const char *identifier, size_t identifier_length, Dictionary_Entry **entry_pointer);

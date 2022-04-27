@@ -72,7 +72,7 @@ static Dictionary_Bucket* GetBucket(Dictionary_State *state, const char *identif
 	for (i = 0; i < identifier_length; ++i)
 		hash = hash * 33 + tolower(*identifier++); /* Hash the identifier in lower-case form, so that case-insensitive mode works. */
 
-	return &state->hash_table[hash % CC_COUNT_OF(state->hash_table)];
+	return &state->hash_table[hash % TOTAL_HASH_TABLE_ENTRIES];
 }
 
 static SearchResult SearchBucket(Dictionary_State *state, Dictionary_Bucket *bucket, const char *identifier, size_t identifier_length, Dictionary_Node **node_pointer)
@@ -209,24 +209,37 @@ static void RemoveNodeFromBucket(Dictionary_Bucket *bucket, Dictionary_Node *nod
 	free(node);
 }
 
-void Dictionary_Init(Dictionary_State *state, cc_bool case_insensitive)
+cc_bool Dictionary_Init(Dictionary_State *state, cc_bool case_insensitive)
 {
-	size_t i;
+	cc_bool success = cc_true;
 
-	for (i = 0; i < CC_COUNT_OF(state->hash_table); ++i)
+	state->hash_table = malloc(TOTAL_HASH_TABLE_ENTRIES * sizeof(*state->hash_table));
+
+	if (state->hash_table == NULL)
 	{
-		state->hash_table[i].binary_search_tree = NULL;
-		state->hash_table[i].linked_list = NULL;
+		success = cc_false;
+	}
+	else
+	{
+		size_t i;
+
+		for (i = 0; i < TOTAL_HASH_TABLE_ENTRIES; ++i)
+		{
+			state->hash_table[i].binary_search_tree = NULL;
+			state->hash_table[i].linked_list = NULL;
+		}
+
+		state->compare_identifiers = case_insensitive ? memcasecmp : memcmp;
 	}
 
-	state->compare_identifiers = case_insensitive ? memcasecmp : memcmp;
+	return success;
 }
 
 void Dictionary_Deinit(Dictionary_State *state)
 {
 	Dictionary_Bucket *bucket;
 
-	for (bucket = &state->hash_table[0]; bucket < &state->hash_table[CC_COUNT_OF(state->hash_table)]; ++bucket)
+	for (bucket = &state->hash_table[0]; bucket < &state->hash_table[TOTAL_HASH_TABLE_ENTRIES]; ++bucket)
 	{
 		Dictionary_Node *node;
 
@@ -241,6 +254,8 @@ void Dictionary_Deinit(Dictionary_State *state)
 			node = next_node;
 		}
 	}
+
+	free(state->hash_table);
 }
 
 cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const char *identifier, size_t identifier_length, Dictionary_Entry **entry_pointer)
@@ -348,7 +363,7 @@ void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dicti
 {
 	Dictionary_Bucket *bucket;
 
-	for (bucket = &state->hash_table[0]; bucket < &state->hash_table[CC_COUNT_OF(state->hash_table)]; ++bucket)
+	for (bucket = &state->hash_table[0]; bucket < &state->hash_table[TOTAL_HASH_TABLE_ENTRIES]; ++bucket)
 	{
 		Dictionary_Node *node;
 
