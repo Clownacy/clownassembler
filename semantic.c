@@ -2427,7 +2427,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 		/* Count operands that we have. */
 		total_operands_have = 0;
 
-		while (instruction->operands[total_operands_have].type != 0 && total_operands_have < CC_COUNT_OF(instruction->operands))
+		while (total_operands_have < CC_COUNT_OF(instruction->operands) && instruction->operands[total_operands_have].type != 0)
 			++total_operands_have;
 
 		if (total_operands_wanted != total_operands_have)
