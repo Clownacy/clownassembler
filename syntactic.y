@@ -1692,19 +1692,16 @@ expression
 	{
 		$$ = $1;
 	}
-	| expression '=' expression1
+	/* This is an assembler extension: asm68k doesn't support this. */
+	| expression TOKEN_LOGICAL_AND expression1
 	{
-		if (!DoExpression(&$$, EXPRESSION_EQUALITY, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_LOGICAL_AND, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression TOKEN_EQUALITY expression1
+	/* This is an assembler extension: asm68k doesn't support this. */
+	| expression TOKEN_LOGICAL_OR expression1
 	{
-		if (!DoExpression(&$$, EXPRESSION_EQUALITY, &$1, &$3))
-			YYNOMEM;
-	}
-	| expression TOKEN_INEQUALITY expression1
-	{
-		if (!DoExpression(&$$, EXPRESSION_INEQUALITY, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_LOGICAL_OR, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -1714,24 +1711,19 @@ expression1
 	{
 		$$ = $1;
 	}
-	| expression1 '<' expression2
+	| expression1 '=' expression2
 	{
-		if (!DoExpression(&$$, EXPRESSION_LESS_THAN, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_EQUALITY, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression1 TOKEN_LESS_OR_EQUAL expression2
+	| expression1 TOKEN_EQUALITY expression2
 	{
-		if (!DoExpression(&$$, EXPRESSION_LESS_OR_EQUAL, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_EQUALITY, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression1 '>' expression2
+	| expression1 TOKEN_INEQUALITY expression2
 	{
-		if (!DoExpression(&$$, EXPRESSION_MORE_THAN, &$1, &$3))
-			YYNOMEM;
-	}
-	| expression1 TOKEN_MORE_OR_EQUAL expression2
-	{
-		if (!DoExpression(&$$, EXPRESSION_MORE_OR_EQUAL, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_INEQUALITY, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -1741,14 +1733,24 @@ expression2
 	{
 		$$ = $1;
 	}
-	| expression2 '+' expression3
+	| expression2 '<' expression3
 	{
-		if (!DoExpression(&$$, EXPRESSION_ADD, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_LESS_THAN, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression2 '-' expression3
+	| expression2 TOKEN_LESS_OR_EQUAL expression3
 	{
-		if (!DoExpression(&$$, EXPRESSION_SUBTRACT, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_LESS_OR_EQUAL, &$1, &$3))
+			YYNOMEM;
+	}
+	| expression2 '>' expression3
+	{
+		if (!DoExpression(&$$, EXPRESSION_MORE_THAN, &$1, &$3))
+			YYNOMEM;
+	}
+	| expression2 TOKEN_MORE_OR_EQUAL expression3
+	{
+		if (!DoExpression(&$$, EXPRESSION_MORE_OR_EQUAL, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -1758,19 +1760,14 @@ expression3
 	{
 		$$ = $1;
 	}
-	| expression3 '*' expression4
+	| expression3 '+' expression4
 	{
-		if (!DoExpression(&$$, EXPRESSION_MULTIPLY, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_ADD, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression3 '/' expression4
+	| expression3 '-' expression4
 	{
-		if (!DoExpression(&$$, EXPRESSION_DIVIDE, &$1, &$3))
-			YYNOMEM;
-	}
-	| expression3 '%' expression4
-	{
-		if (!DoExpression(&$$, EXPRESSION_MODULO, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_SUBTRACT, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -1780,16 +1777,19 @@ expression4
 	{
 		$$ = $1;
 	}
-	/* This is an assembler extension: asm68k doesn't support this. */
-	| expression4 TOKEN_LOGICAL_AND expression5
+	| expression4 '*' expression5
 	{
-		if (!DoExpression(&$$, EXPRESSION_LOGICAL_AND, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_MULTIPLY, &$1, &$3))
 			YYNOMEM;
 	}
-	/* This is an assembler extension: asm68k doesn't support this. */
-	| expression4 TOKEN_LOGICAL_OR expression5
+	| expression4 '/' expression5
 	{
-		if (!DoExpression(&$$, EXPRESSION_LOGICAL_OR, &$1, &$3))
+		if (!DoExpression(&$$, EXPRESSION_DIVIDE, &$1, &$3))
+			YYNOMEM;
+	}
+	| expression4 '%' expression5
+	{
+		if (!DoExpression(&$$, EXPRESSION_MODULO, &$1, &$3))
 			YYNOMEM;
 	}
 	;
