@@ -2421,7 +2421,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 		/* Count operands that we want. */
 		total_operands_wanted = 0;
 
-		while (instruction_metadata->allowed_operands[total_operands_wanted] != 0 && total_operands_wanted < CC_COUNT_OF(instruction_metadata->allowed_operands))
+		while (total_operands_wanted < CC_COUNT_OF(instruction_metadata->allowed_operands) && instruction_metadata->allowed_operands[total_operands_wanted] != 0)
 			++total_operands_wanted;
 
 		/* Count operands that we have. */
