@@ -273,6 +273,33 @@ static char* DuplicateStringAndHandleError(SemanticState *state, const char *str
 	return duplicated_string;
 }
 
+static FILE* fopen_backslash(const char *path, const char *mode)
+{
+	FILE *file;
+
+	char* const path_copy = DuplicateString(path);
+
+	if (path_copy == NULL)
+	{
+		file = NULL;
+	}
+	else
+	{
+		char *backslash;
+
+		backslash = path_copy;
+
+		while ((backslash = strchr(backslash, '\\')) != NULL)
+			*backslash++ = '/';
+
+		file = fopen(path_copy, mode);
+
+		free(path_copy);
+	}
+
+	return file;
+}
+
 static Dictionary_Entry* LookupSymbol(SemanticState *state, const char *identifier)
 {
 	Dictionary_Entry *dictionary_entry;
@@ -3779,7 +3806,7 @@ static void ProcessDcb(SemanticState *state, StatementDcb *dcb)
 
 static void ProcessInclude(SemanticState *state, const StatementInclude *include)
 {
-	FILE *input_file = fopen(include->path, "r");
+	FILE* const input_file = fopen_backslash(include->path, "r");
 
 	if (input_file == NULL)
 	{
@@ -3806,7 +3833,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 
 static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 {
-	FILE *input_file = fopen(incbin->path, "rb");
+	FILE* const input_file = fopen_backslash(incbin->path, "rb");
 
 	if (input_file == NULL)
 	{
