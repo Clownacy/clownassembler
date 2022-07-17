@@ -176,25 +176,22 @@ static void RemoveNodeFromBucket(Dictionary_Bucket *bucket, Dictionary_Node *nod
 		*binary_search_tree_pointer = successor;
 		successor->parent = node->parent;
 	}
-	else
+	else if (node->left_child != NULL)
 	{
-		if (node->left_child != NULL)
-		{
-			/* Replace the node with its left child. */
-			*binary_search_tree_pointer = node->left_child;
-			node->left_child->parent = node->parent;
-		}
-		else if (node->right_child != NULL)
-		{
-			/* Replace the node with its right child. */
-			*binary_search_tree_pointer = node->right_child;
-			node->right_child->parent = node->parent;
-		}
-		else /*if (node->left_child == NULL && node->right_child == NULL)*/
-		{
-			/* Destroy the node. */
-			*binary_search_tree_pointer = NULL;
-		}
+		/* Replace the node with its left child. */
+		*binary_search_tree_pointer = node->left_child;
+		node->left_child->parent = node->parent;
+	}
+	else if (node->right_child != NULL)
+	{
+		/* Replace the node with its right child. */
+		*binary_search_tree_pointer = node->right_child;
+		node->right_child->parent = node->parent;
+	}
+	else /*if (node->left_child == NULL && node->right_child == NULL)*/
+	{
+		/* Destroy the node. */
+		*binary_search_tree_pointer = NULL;
 	}
 
 	/* Remove node from linked-list. */
