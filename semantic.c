@@ -141,9 +141,12 @@ typedef struct Macro
 static void AssembleFile(SemanticState *state, FILE *input_file);
 static void AssembleLine(SemanticState *state, const char *source_line);
 
-/* Prevent errors when __attribute__ is not supported. */
-#ifndef __GNUC__
-#define  __attribute__(x)
+/* Prevent errors when '__attribute__((format(printf, X, X)))' is not supported. */
+/* GCC 3.2 is the earliest version of GCC of which I can find proof of supporting this. */
+#if defined(__GNUC__) && defined(__GNUC_MINOR__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 2))
+#define ATTRIBUTE_PRINTF(a, b) __attribute__((format(printf, a, b)))
+#else
+#define ATTRIBUTE_PRINTF(a, b)
 #endif
 
 static void ErrorMessageCommon(SemanticState *state)
@@ -156,7 +159,7 @@ static void ErrorMessageCommon(SemanticState *state)
 	fprintf(stderr, "\n%s\n\n", state->source_line != NULL ? state->source_line : "[No source line]");
 }
 
-__attribute__((format(printf, 2, 3))) static void SemanticWarning(SemanticState *state, const char *fmt, ...)
+ATTRIBUTE_PRINTF(2, 3) static void SemanticWarning(SemanticState *state, const char *fmt, ...)
 {
 	va_list args;
 
@@ -169,7 +172,7 @@ __attribute__((format(printf, 2, 3))) static void SemanticWarning(SemanticState 
 	ErrorMessageCommon(state);
 }
 
-__attribute__((format(printf, 2, 3))) static void SemanticError(SemanticState *state, const char *fmt, ...)
+ATTRIBUTE_PRINTF(2, 3) static void SemanticError(SemanticState *state, const char *fmt, ...)
 {
 	va_list args;
 
@@ -184,7 +187,7 @@ __attribute__((format(printf, 2, 3))) static void SemanticError(SemanticState *s
 	state->success = cc_false;
 }
 
-__attribute__((format(printf, 2, 3))) static void InternalError(SemanticState *state, const char *fmt, ...)
+ATTRIBUTE_PRINTF(2, 3) static void InternalError(SemanticState *state, const char *fmt, ...)
 {
 	va_list args;
 
