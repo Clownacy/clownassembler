@@ -118,7 +118,7 @@ typedef struct SemanticState
 		{
 			char *name;
 			unsigned long line_number;
-			IdentifierListNode *parameter_names;
+			IdentifierList parameter_names;
 			SourceLineList source_line_list;
 			cc_bool is_short;
 		} macro;
@@ -767,7 +767,7 @@ static void TerminateMacro(SemanticState *state)
 			if (macro != NULL)
 			{
 				macro->name = state->shared.macro.name;
-				macro->parameter_names = state->shared.macro.parameter_names;
+				macro->parameter_names = state->shared.macro.parameter_names.head;
 				macro->source_line_list_head = state->shared.macro.source_line_list.head;
 
 				symbol->type = SYMBOL_MACRO;
@@ -3775,7 +3775,7 @@ static void ProcessDc(SemanticState *state, StatementDc *dc)
 {
 	ExpressionListNode *expression_list_node;
 
-	for (expression_list_node = dc->values; expression_list_node != NULL; expression_list_node = expression_list_node->next)
+	for (expression_list_node = dc->values.head; expression_list_node != NULL; expression_list_node = expression_list_node->next)
 	{
 		if (expression_list_node->expression.type == EXPRESSION_STRING && (dc->size == SIZE_BYTE || dc->size == SIZE_SHORT))
 		{
@@ -3935,7 +3935,8 @@ static void ProcessMacro(SemanticState *state, StatementMacro *macro, const char
 	state->shared.macro.name = DuplicateStringAndHandleError(state, label);
 	state->shared.macro.line_number = state->location->line_number;
 	state->shared.macro.parameter_names = macro->parameter_names;
-	macro->parameter_names = NULL;
+	macro->parameter_names.head = NULL;
+	macro->parameter_names.tail = NULL;
 	state->shared.macro.is_short = is_short;
 
 	state->shared.macro.source_line_list.head = NULL;

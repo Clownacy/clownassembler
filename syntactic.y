@@ -33,6 +33,13 @@
 
 #define YYSTYPE M68KASM_STYPE
 
+#define CREATE_LIST_TYPE(TYPE)\
+typedef struct TYPE\
+{\
+	TYPE##Node *head;\
+	TYPE##Node *tail;\
+} TYPE
+
 typedef enum Size
 {
 	SIZE_BYTE      = 1 << 0,
@@ -230,12 +237,16 @@ typedef struct ExpressionListNode
 	Expression expression;
 } ExpressionListNode;
 
+CREATE_LIST_TYPE(ExpressionList);
+
 typedef struct IdentifierListNode
 {
 	struct IdentifierListNode *next;
 
 	char *identifier;
 } IdentifierListNode;
+
+CREATE_LIST_TYPE(IdentifierList);
 
 typedef struct Opcode
 {
@@ -285,7 +296,7 @@ typedef struct StatementInstruction
 typedef struct StatementDc
 {
 	Size size;
-	ExpressionListNode *values;
+	ExpressionList values;
 } StatementDc;
 
 typedef struct StatementDcb
@@ -315,7 +326,7 @@ typedef struct StatementRept
 
 typedef struct StatementMacro
 {
-	IdentifierListNode *parameter_names;
+	IdentifierList parameter_names;
 } StatementMacro;
 
 typedef struct StatementInform
@@ -380,12 +391,6 @@ typedef struct Statement
 	} shared;
 } Statement;
 
-typedef struct ListMetadata
-{
-	void *head;
-	void *tail;
-} ListMetadata;
-
 }
 
 %code provides {
@@ -407,8 +412,8 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message);
 void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
 static cc_bool DoExpression(Expression *expression, ExpressionType type, Expression *left_expression, Expression *right_expression);
-static void DestroyIdentifierList(IdentifierListNode *node);
-static void DestroyExpressionList(ExpressionListNode *node);
+static void DestroyIdentifierList(IdentifierList *list);
+static void DestroyExpressionList(ExpressionList *list);
 static void DestroyOperand(Operand *operand);
 static void DestroyStatementInstruction(StatementInstruction *instruction);
 
@@ -422,7 +427,8 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 	Operand operand;
 	StatementInstruction instruction;
 	Statement statement;
-	ListMetadata list_metadata;
+	ExpressionList expression_list;
+	IdentifierList identifier_list;
 	Expression expression;
 }
 
@@ -599,14 +605,14 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %type<unsigned_long> register_list
 %type<unsigned_long> register_span
 %type<unsigned_long> data_or_address_register
-%type<list_metadata> expression_list
-%type<list_metadata> identifier_list
+%type<expression_list> expression_list
+%type<identifier_list> identifier_list
 %type<expression> expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8
 
 %destructor { free($$); } TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER TOKEN_STRING
 %destructor { DestroyOperand(&$$); } operand
-%destructor { DestroyExpressionList($$.head); } expression_list
-%destructor { DestroyIdentifierList($$.head); } identifier_list
+%destructor { DestroyExpressionList(&$$); } expression_list
+%destructor { DestroyIdentifierList(&$$); } identifier_list
 %destructor { DestroyExpression(&$$); } expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8
 
 %start statement
@@ -627,7 +633,7 @@ statement
 	{
 		statement->type = STATEMENT_TYPE_DC;
 		statement->shared.dc.size = $2;
-		statement->shared.dc.values = $3.head;
+		statement->shared.dc.values = $3;
 	}
 	| TOKEN_DIRECTIVE_DCB size expression ',' expression
 	{
@@ -676,22 +682,24 @@ statement
 	| TOKEN_DIRECTIVE_MACRO
 	{
 		statement->type = STATEMENT_TYPE_MACRO;
-		statement->shared.macro.parameter_names = NULL;
+		statement->shared.macro.parameter_names.head = NULL;
+		statement->shared.macro.parameter_names.tail = NULL;
 	}
 	| TOKEN_DIRECTIVE_MACRO identifier_list
 	{
 		statement->type = STATEMENT_TYPE_MACRO;
-		statement->shared.macro.parameter_names = $2.head;
+		statement->shared.macro.parameter_names = $2;
 	}
 	| TOKEN_DIRECTIVE_MACROS
 	{
 		statement->type = STATEMENT_TYPE_MACROS;
-		statement->shared.macro.parameter_names = NULL;
+		statement->shared.macro.parameter_names.head = NULL;
+		statement->shared.macro.parameter_names.tail = NULL;
 	}
 	| TOKEN_DIRECTIVE_MACROS identifier_list
 	{
 		statement->type = STATEMENT_TYPE_MACROS;
-		statement->shared.macro.parameter_names = $2.head;
+		statement->shared.macro.parameter_names = $2;
 	}
 	| TOKEN_DIRECTIVE_ENDM
 	{
@@ -817,7 +825,7 @@ expression_list
 
 		if (node == NULL)
 		{
-			DestroyExpressionList($1.head);
+			DestroyExpressionList(&$1);
 			DestroyExpression(&$3);
 			YYNOMEM;
 		}
@@ -862,7 +870,7 @@ identifier_list
 
 		if (node == NULL)
 		{
-			DestroyIdentifierList($1.head);
+			DestroyIdentifierList(&$1);
 			free(&$3);
 			YYNOMEM;
 		}
@@ -2009,8 +2017,10 @@ void DestroyExpression(Expression *expression)
 	}
 }
 
-static void DestroyIdentifierList(IdentifierListNode *node)
+static void DestroyIdentifierList(IdentifierList *list)
 {
+	IdentifierListNode *node = list->head;
+
 	while (node != NULL)
 	{
 		IdentifierListNode* const next_node = node->next;
@@ -2023,8 +2033,10 @@ static void DestroyIdentifierList(IdentifierListNode *node)
 	}
 }
 
-static void DestroyExpressionList(ExpressionListNode *node)
+static void DestroyExpressionList(ExpressionList *list)
 {
+	ExpressionListNode *node = list->head;
+
 	while (node != NULL)
 	{
 		ExpressionListNode* const next_node = node->next;
@@ -2093,7 +2105,7 @@ void DestroyStatement(Statement *statement)
 			break;
 
 		case STATEMENT_TYPE_DC:
-			DestroyExpressionList(statement->shared.dc.values);
+			DestroyExpressionList(&statement->shared.dc.values);
 			break;
 
 		case STATEMENT_TYPE_DCB:
@@ -2120,7 +2132,7 @@ void DestroyStatement(Statement *statement)
 
 		case STATEMENT_TYPE_MACRO:
 		case STATEMENT_TYPE_MACROS:
-			DestroyIdentifierList(statement->shared.macro.parameter_names);
+			DestroyIdentifierList(&statement->shared.macro.parameter_names);
 			break;
 
 		case STATEMENT_TYPE_EQU:
