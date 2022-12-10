@@ -2,9 +2,9 @@ LEX = flex
 YACC = bison
 
 ifneq ($(RELEASE),)
- CFLAGS = -ansi -Wno-long-long -O2 -DNDEBUG -Wall -Wextra -pedantic
+ CFLAGS = -ansi -Wno-long-long -Wall -Wextra -pedantic -O2 -DNDEBUG
 else
- CFLAGS = -ansi -Wno-long-long -ggdb3 -Og -Wall -Wextra -pedantic -fwrapv
+ CFLAGS = -ansi -Wno-long-long -Wall -Wextra -pedantic -ggdb3 -Og -fwrapv -Wshift-overflow=2
  YFLAGS = --debug
 endif
 
