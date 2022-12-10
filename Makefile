@@ -1,7 +1,12 @@
 LEX = flex
 YACC = bison
 
-CFLAGS = -ggdb3 -Og -Wall -Wextra -pedantic -fwrapv -ansi -Wno-long-long
+ifneq ($(RELEASE),)
+ CFLAGS = -ansi -Wno-long-long -O2 -DNDEBUG -Wall -Wextra -pedantic
+else
+ CFLAGS = -ansi -Wno-long-long -ggdb3 -Og -Wall -Wextra -pedantic -fwrapv
+ YFLAGS = --debug
+endif
 
 all: generators
 
@@ -11,7 +16,7 @@ lexical.c lexical.h: lexical.l syntactic.h
 	$(LEX) --outfile=lexical.c --header-file=lexical.h $<
 
 syntactic.c syntactic.h: syntactic.y
-	$(YACC) --output=syntactic.c --header=syntactic.h --debug $<
+	$(YACC) --output=syntactic.c --header=syntactic.h $(YFLAGS) $<
 
 assemblers: clownassembler clownassembler_asm68k
 
