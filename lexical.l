@@ -387,7 +387,7 @@ strlen          return TOKEN_STRLEN;
 \"[^\"]+\" |
 \'[^\']+\' {
 	const size_t length = strlen(yytext) - 2;
-	yylval->string = malloc(length + 1);
+	yylval->string = (char*)malloc(length + 1);
 	if (yylval->string == NULL)
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
@@ -407,7 +407,7 @@ strlen          return TOKEN_STRLEN;
 
 	BEGIN(OPERANDS);
 
-	yylval->string = malloc(length + 1);
+	yylval->string = (char*)malloc(length + 1);
 
 	if (yylval->string == NULL)
 	{
@@ -424,7 +424,7 @@ strlen          return TOKEN_STRLEN;
  /* Identifier. */
 [A-Za-z_][A-Za-z_0-9\?]* {
 	const size_t length = strlen(yytext);
-	yylval->string = malloc(length + 1);
+	yylval->string = (char*)malloc(length + 1);
 	if (yylval->string == NULL)
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
@@ -440,7 +440,7 @@ strlen          return TOKEN_STRLEN;
  /* Local label. */
 [@\.][A-Za-z_0-9\?]+ {
 	const size_t length = strlen(yytext);
-	yylval->string = malloc(length + 1);
+	yylval->string = (char*)malloc(length + 1);
 	if (yylval->string == NULL)
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");

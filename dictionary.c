@@ -42,8 +42,8 @@ static int memcasecmp(const void *lhs, const void *rhs, size_t count)
 	int delta;
 	size_t i;
 
-	lhs_uc = lhs;
-	rhs_uc = rhs;
+	lhs_uc = (const unsigned char*)lhs;
+	rhs_uc = (const unsigned char*)rhs;
 	delta = 0;
 
 	for (i = 0; i < count; ++i)
@@ -210,7 +210,7 @@ cc_bool Dictionary_Init(Dictionary_State *state, cc_bool case_insensitive)
 {
 	cc_bool success = cc_true;
 
-	state->hash_table = malloc(TOTAL_HASH_TABLE_ENTRIES * sizeof(*state->hash_table));
+	state->hash_table = (Dictionary_Bucket*)malloc(TOTAL_HASH_TABLE_ENTRIES * sizeof(*state->hash_table));
 
 	if (state->hash_table == NULL)
 	{
@@ -273,7 +273,7 @@ cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const char
 	else
 	{
 		/* The node was not found: create it instead. */
-		Dictionary_Node *new_node = malloc(sizeof(Dictionary_Node) - 1 + identifier_length);
+		Dictionary_Node *new_node = (Dictionary_Node*)malloc(sizeof(Dictionary_Node) - 1 + identifier_length);
 
 		if (new_node == NULL)
 		{

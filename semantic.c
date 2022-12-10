@@ -76,6 +76,14 @@ typedef struct SourceLineList
 	SourceLineListNode *tail;
 } SourceLineList;
 
+typedef enum Mode
+{
+	MODE_NORMAL,
+	MODE_REPT,
+	MODE_MACRO,
+	MODE_WHILE
+} Mode;
+
 typedef struct SemanticState
 {
 	cc_bool success;
@@ -97,13 +105,7 @@ typedef struct SemanticState
 	unsigned int current_if_level;
 	unsigned int false_if_level;
 	cc_bool end;
-	enum
-	{
-		MODE_NORMAL,
-		MODE_REPT,
-		MODE_MACRO,
-		MODE_WHILE
-	} mode;
+	Mode mode;
 	union
 	{
 		struct
@@ -213,7 +215,7 @@ static void OutOfMemoryError(SemanticState *state)
 
 void m68kasm_warning(void *scanner, Statement *statement, const char *message)
 {
-	SemanticState *state = m68kasm_get_extra(scanner);
+	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
 
 	(void)statement;
 
@@ -224,7 +226,7 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message)
 
 void m68kasm_error(void *scanner, Statement *statement, const char *message)
 {
-	SemanticState *state = m68kasm_get_extra(scanner);
+	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
 
 	(void)statement;
 
@@ -249,7 +251,7 @@ static char* DuplicateString(const char *string)
 
 	const size_t string_size = strlen(string) + 1;
 
-	duplicated_string = malloc(string_size);
+	duplicated_string = (char*)malloc(string_size);
 
 	if (duplicated_string != NULL)
 		memcpy(duplicated_string, string, string_size);
@@ -334,7 +336,7 @@ static Dictionary_Entry* CreateSymbol(SemanticState *state, const char *identifi
 static void AddToSourceLineList(SemanticState *state, SourceLineList *source_line_list, const char *source_line)
 {
 	const size_t source_line_length = strlen(source_line);
-	SourceLineListNode* const source_line_list_node = MallocAndHandleError(state, sizeof(SourceLineListNode) + source_line_length + 1);
+	SourceLineListNode* const source_line_list_node = (SourceLineListNode*)MallocAndHandleError(state, sizeof(SourceLineListNode) + source_line_length + 1);
 
 	if (source_line_list_node != NULL)
 	{
@@ -382,7 +384,7 @@ static char* ExpandLocalIdentifier(SemanticState *state, const char *identifier)
 		const size_t prefix_length = strlen(state->last_global_label);
 		const size_t suffix_length = strlen(identifier);
 
-		expanded_identifier = MallocAndHandleError(state, prefix_length + 1 + suffix_length + 1);
+		expanded_identifier = (char*)MallocAndHandleError(state, prefix_length + 1 + suffix_length + 1);
 
 		if (expanded_identifier != NULL)
 		{
@@ -760,7 +762,7 @@ static void TerminateMacro(SemanticState *state)
 		/* Add the macro to the symbol table. */
 		if (symbol != NULL)
 		{
-			Macro* const macro = MallocAndHandleError(state, sizeof(Macro));
+			Macro* const macro = (Macro*)MallocAndHandleError(state, sizeof(Macro));
 
 			if (macro != NULL)
 			{
@@ -855,6 +857,10 @@ static unsigned int ConstructEffectiveAddressBits(SemanticState *state, const Op
 
 	switch (operand->type)
 	{
+		case OPERAND_NONE:
+			assert(cc_false);
+			break;
+
 		case OPERAND_DATA_REGISTER:
 			m = 0; /* 000 */
 			xn = operand->main_register;
@@ -1018,9 +1024,9 @@ typedef struct InstructionMetadata
 {
 	const char *name;
 
-	Size allowed_sizes;
+	unsigned int allowed_sizes;
 
-	OperandType allowed_operands[2];
+	unsigned int allowed_operands[2];
 } InstructionMetadata;
 
 /* The order of this array absolutely must match the order of the OperandType enum! */
@@ -2416,7 +2422,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 				case SIZE_SHORT:
 				case SIZE_WORD:
 				case SIZE_LONGWORD:
-					instruction->opcode.size = instruction_metadata->allowed_sizes & ~SIZE_UNDEFINED;
+					instruction->opcode.size = (Size)(instruction_metadata->allowed_sizes & ~SIZE_UNDEFINED);
 					break;
 			}
 		}
@@ -2449,6 +2455,10 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 					switch (instruction->operands[i].type)
 					{
+						case OPERAND_NONE:
+							assert(cc_false);
+							break;
+
 						case OPERAND_DATA_REGISTER:
 							operand_string = "a data register";
 							break;
@@ -3558,6 +3568,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 		{
 			switch (operand->type)
 			{
+				case OPERAND_NONE:
 				case OPERAND_DATA_REGISTER:
 				case OPERAND_ADDRESS_REGISTER:
 				case OPERAND_ADDRESS_REGISTER_INDIRECT:
@@ -3589,6 +3600,10 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 					switch (operand->type)
 					{
+						case OPERAND_NONE:
+							assert(cc_false);
+							break;
+
 						case OPERAND_DATA_REGISTER:
 						case OPERAND_ADDRESS_REGISTER:
 						case OPERAND_ADDRESS_REGISTER_INDIRECT:
@@ -4335,7 +4350,7 @@ static void ParseLine(SemanticState *state, const char *source_line, const char 
 			{
 				/* If the statement cannot currently be processed because of undefined symbols,
 				   add it to the fix-up list so we can try again later. */
-				FixUp *fix_up = MallocAndHandleError(state, sizeof(FixUp));
+				FixUp *fix_up = (FixUp*)MallocAndHandleError(state, sizeof(FixUp));
 
 				if (fix_up == NULL)
 				{
@@ -4363,7 +4378,7 @@ static void ParseLine(SemanticState *state, const char *source_line, const char 
 
 					for (source_location = source_location->previous; source_location != NULL; source_location = source_location->previous)
 					{
-						destination_location->previous = MallocAndHandleError(state, sizeof(Location));
+						destination_location->previous = (Location*)MallocAndHandleError(state, sizeof(Location));
 
 						if (destination_location->previous == NULL)
 						{
@@ -4458,7 +4473,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	else
 	{
 		/* This line has a label; duplicate it for later. */
-		label = MallocAndHandleError(state, label_length + 1);
+		label = (char*)MallocAndHandleError(state, label_length + 1);
 
 		if (label != NULL)
 		{
@@ -4542,7 +4557,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					size_t total_parameters;
 
 					source_line_pointer += strspn(source_line_pointer, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_");
-					parameters = MallocAndHandleError(state, sizeof(char*));
+					parameters = (char**)MallocAndHandleError(state, sizeof(char*));
 					total_parameters = 1;
 
 					if (label != NULL)
@@ -4560,7 +4575,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 						++source_line_pointer;
 
 						size_length = strspn(source_line_pointer, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_");
-						parameters[0] = MallocAndHandleError(state, size_length + 1);
+						parameters[0] = (char*)MallocAndHandleError(state, size_length + 1);
 
 						if (parameters[0] != NULL)
 						{
@@ -4616,14 +4631,14 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 									{
 										char *parameter_string;
 
-										parameter_string = MallocAndHandleError(state, parameter_string_length + 1);
+										parameter_string = (char*)MallocAndHandleError(state, parameter_string_length + 1);
 
 										if (parameter_string != NULL)
 										{
 											memcpy(parameter_string, parameter_start, parameter_string_length);
 											parameter_string[parameter_string_length] = '\0';
 
-											parameters = realloc(parameters, sizeof(char*) * (total_parameters + 1));
+											parameters = (char**)realloc(parameters, sizeof(char*) * (total_parameters + 1));
 
 											if (parameters == NULL)
 											{
@@ -4659,7 +4674,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 					/* Finally, invoke the macro. */
 					{
-						const Macro *macro = macro_dictionary_entry->shared.pointer;
+						const Macro *macro = (const Macro*)macro_dictionary_entry->shared.pointer;
 						const SourceLineListNode *source_line_list_node;
 
 						/* Push a new location (this macro).*/
@@ -4775,7 +4790,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										const size_t parameter_length = strlen(parameter);
 										const size_t second_half_length = strlen(line_after_parameter);
 
-										new_modified_line = MallocAndHandleError(state, first_half_length + parameter_length + second_half_length + 1);
+										new_modified_line = (char*)MallocAndHandleError(state, first_half_length + parameter_length + second_half_length + 1);
 
 										if (new_modified_line != NULL)
 										{
@@ -4990,7 +5005,7 @@ static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const 
 	{
 		unsigned int i;
 
-		FILE* const symbol_file = user_data;
+		FILE* const symbol_file = (FILE*)user_data;
 
 		/* Output the address of the label. */
 		for (i = 0; i < 4; ++i)

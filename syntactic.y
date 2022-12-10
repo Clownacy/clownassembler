@@ -246,6 +246,7 @@ typedef struct Opcode
 
 typedef enum OperandType
 {
+	OPERAND_NONE                                                           = 0,
 	OPERAND_DATA_REGISTER                                                  = 1 << 0,
 	OPERAND_ADDRESS_REGISTER                                               = 1 << 1,
 	OPERAND_ADDRESS_REGISTER_INDIRECT                                      = 1 << 2,
@@ -322,37 +323,39 @@ typedef struct StatementInform
 	char *message;
 } StatementInform;
 
+typedef enum StatementType
+{
+	STATEMENT_TYPE_EMPTY,
+	STATEMENT_TYPE_INSTRUCTION,
+	STATEMENT_TYPE_DC,
+	STATEMENT_TYPE_DCB,
+	STATEMENT_TYPE_INCLUDE,
+	STATEMENT_TYPE_INCBIN,
+	STATEMENT_TYPE_REPT,
+	STATEMENT_TYPE_ENDR,
+	STATEMENT_TYPE_MACRO,
+	STATEMENT_TYPE_MACROS,
+	STATEMENT_TYPE_ENDM,
+	STATEMENT_TYPE_EQU,
+	STATEMENT_TYPE_SET,
+	STATEMENT_TYPE_IF,
+	STATEMENT_TYPE_ELSEIF,
+	STATEMENT_TYPE_ELSE,
+	STATEMENT_TYPE_ENDC,
+	STATEMENT_TYPE_WHILE,
+	STATEMENT_TYPE_ENDW,
+	STATEMENT_TYPE_EVEN,
+	STATEMENT_TYPE_CNOP,
+	STATEMENT_TYPE_INFORM,
+	STATEMENT_TYPE_END,
+	STATEMENT_TYPE_RS,
+	STATEMENT_TYPE_RSSET,
+	STATEMENT_TYPE_RSRESET
+} StatementType;
+
 typedef struct Statement
 {
-	enum
-	{
-		STATEMENT_TYPE_EMPTY,
-		STATEMENT_TYPE_INSTRUCTION,
-		STATEMENT_TYPE_DC,
-		STATEMENT_TYPE_DCB,
-		STATEMENT_TYPE_INCLUDE,
-		STATEMENT_TYPE_INCBIN,
-		STATEMENT_TYPE_REPT,
-		STATEMENT_TYPE_ENDR,
-		STATEMENT_TYPE_MACRO,
-		STATEMENT_TYPE_MACROS,
-		STATEMENT_TYPE_ENDM,
-		STATEMENT_TYPE_EQU,
-		STATEMENT_TYPE_SET,
-		STATEMENT_TYPE_IF,
-		STATEMENT_TYPE_ELSEIF,
-		STATEMENT_TYPE_ELSE,
-		STATEMENT_TYPE_ENDC,
-		STATEMENT_TYPE_WHILE,
-		STATEMENT_TYPE_ENDW,
-		STATEMENT_TYPE_EVEN,
-		STATEMENT_TYPE_CNOP,
-		STATEMENT_TYPE_INFORM,
-		STATEMENT_TYPE_END,
-		STATEMENT_TYPE_RS,
-		STATEMENT_TYPE_RSSET,
-		STATEMENT_TYPE_RSRESET
-	} type;
+	StatementType type;
 	union
 	{
 		StatementInstruction instruction;
@@ -394,6 +397,7 @@ void DestroyStatement(Statement *statement);
 
 %code {
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -790,7 +794,7 @@ statement
 expression_list
 	: expression
 	{
-		ExpressionListNode *node = malloc(sizeof(ExpressionListNode));
+		ExpressionListNode *node = (ExpressionListNode*)malloc(sizeof(ExpressionListNode));
 
 		if (node == NULL)
 		{
@@ -807,7 +811,7 @@ expression_list
 	}
 	| expression_list ',' expression
 	{
-		ExpressionListNode *node = malloc(sizeof(ExpressionListNode));
+		ExpressionListNode *node = (ExpressionListNode*)malloc(sizeof(ExpressionListNode));
 
 		$$ = $1;
 
@@ -835,7 +839,7 @@ expression_list
 identifier_list
 	: TOKEN_IDENTIFIER
 	{
-		IdentifierListNode *node = malloc(sizeof(IdentifierListNode));
+		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
 
 		if (node == NULL)
 		{
@@ -852,7 +856,7 @@ identifier_list
 	}
 	| identifier_list ',' TOKEN_IDENTIFIER
 	{
-		IdentifierListNode *node = malloc(sizeof(IdentifierListNode));
+		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
 
 		$$ = $1;
 
@@ -881,14 +885,14 @@ instruction
 	: full_opcode
 	{
 		$$.opcode = $1;
-		$$.operands[0].type = 0;
-		$$.operands[1].type = 0;
+		$$.operands[0].type = OPERAND_NONE;
+		$$.operands[1].type = OPERAND_NONE;
 	}
 	| full_opcode operand
 	{
 		$$.opcode = $1;
 		$$.operands[0] = $2;
-		$$.operands[1].type = 0;
+		$$.operands[1].type = OPERAND_NONE;
 	}
 	| full_opcode operand ',' operand
 	{
@@ -1886,7 +1890,7 @@ expression8
 		const size_t identifier_length = strlen($1);
 		const size_t local_identifier_length = strlen($2 + 1);
 
-		$$.shared.string = malloc(identifier_length + 1 + local_identifier_length + 1);
+		$$.shared.string = (char*)malloc(identifier_length + 1 + local_identifier_length + 1);
 
 		if ($$.shared.string == NULL)
 		{
@@ -1936,7 +1940,7 @@ static cc_bool DoExpression(Expression *expression, ExpressionType type, Express
 
 	expression->type = type;
 
-	expression->shared.subexpressions = malloc(sizeof(Expression) * (right_expression != NULL ? 2 : 1));
+	expression->shared.subexpressions = (Expression*)malloc(sizeof(Expression) * (right_expression != NULL ? 2 : 1));
 
 	if (expression->shared.subexpressions == NULL)
 	{
@@ -2037,6 +2041,7 @@ static void DestroyOperand(Operand *operand)
 {
 	switch (operand->type)
 	{
+		case OPERAND_NONE:
 		case OPERAND_DATA_REGISTER:
 		case OPERAND_ADDRESS_REGISTER:
 		case OPERAND_ADDRESS_REGISTER_INDIRECT:

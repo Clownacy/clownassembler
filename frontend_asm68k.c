@@ -304,7 +304,7 @@ int main(int argc, char **argv)
 			for (j = i; j < argc; ++j)
 				combined_arguments_size += strlen(argv[j]);
 
-			combined_arguments = malloc(combined_arguments_size);
+			combined_arguments = (char*)malloc(combined_arguments_size);
 
 			if (combined_arguments == NULL)
 			{
