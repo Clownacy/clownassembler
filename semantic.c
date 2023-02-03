@@ -105,6 +105,7 @@ typedef struct SemanticState
 	unsigned int current_if_level;
 	unsigned int false_if_level;
 	cc_bool end;
+	unsigned int listing_counter;
 	Mode mode;
 	union
 	{
@@ -303,6 +304,36 @@ static FILE* fopen_backslash(const char *path, const char *mode)
 	}
 
 	return file;
+}
+
+/* TODO: Duplicate this and use function pointers. */
+static void OutputByte(SemanticState *state, unsigned int byte)
+{
+	/* Write to listing file. */
+	if (!state->doing_fix_up)
+	{
+		/* We can only write up to 10 bytes. */
+		if (state->listing_counter <= 10)
+		{
+			if (state->listing_counter == 10)
+			{
+				/* After the last byte, we output a '+' to signal there's more. */
+				fputc('+', state->listing_file);
+			}
+			else
+			{
+				if (state->listing_counter % 2 == 0)
+					fputc(' ', state->listing_file);
+
+				fprintf(state->listing_file, "%02X", byte);
+			}
+
+			++state->listing_counter;
+		}
+	}
+
+	/* Write to listing file. */
+	fputc(byte, state->output_file);
 }
 
 static Dictionary_Entry* LookupSymbol(SemanticState *state, const char *identifier)
@@ -3557,7 +3588,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 	/* Output the machine code for the opcode. */
 	for (i = 2; i-- > 0; )
-		fputc((machine_code >> (8 * i)) & 0xFF, state->output_file);
+		OutputByte(state, (machine_code >> (8 * i)) & 0xFF);
 
 	/* Output the data for the operands. */
 	for (i = 0; i < CC_COUNT_OF(operands_to_output); ++i)
@@ -3711,7 +3742,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 					state->program_counter += bytes_to_write;
 
 					while (bytes_to_write-- > 0)
-						fputc((value >> (8 * bytes_to_write)) & 0xFF, state->output_file);
+						OutputByte(state, (value >> (8 * bytes_to_write)) & 0xFF);
 
 					break;
 				}
@@ -3723,7 +3754,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 					state->program_counter += 2;
 
 					for (bytes_to_write = 2; bytes_to_write-- > 0; )
-						fputc((operand->main_register >> (8 * bytes_to_write)) & 0xFF, state->output_file);
+						OutputByte(state, (operand->main_register >> (8 * bytes_to_write)) & 0xFF);
 
 					break;
 				}
@@ -3768,7 +3799,7 @@ static void OutputDcValue(SemanticState *state, const Size size, unsigned long v
 	state->program_counter += bytes_to_write;
 
 	while (bytes_to_write-- != 0)
-		fputc((value >> (bytes_to_write * 8)) & 0xFF, state->output_file);
+		OutputByte(state, (value >> (bytes_to_write * 8)) & 0xFF);
 }
 
 static void ProcessDc(SemanticState *state, StatementDc *dc)
@@ -4200,7 +4231,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			if (state->program_counter & 1)
 			{
 				++state->program_counter;
-				fputc(0, state->output_file);
+				OutputByte(state, 0);
 			}
 
 			break;
@@ -4229,13 +4260,13 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 					while (state->program_counter % size_boundary != 0)
 					{
 						++state->program_counter;
-						fputc(0, state->output_file);
+						OutputByte(state, 0);
 					}
 
 					/* Now pad to the desired offset. */
 					for (i = 0; i < offset; ++i)
 					{
-						fputc(0, state->output_file);
+						OutputByte(state, 0);
 						++state->program_counter;
 					}
 				}
@@ -4420,9 +4451,11 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	size_t directive_length;
 
 	/* Output line to listing file. */
-	/* TODO - Machine code. */
 	if (state->listing_file != NULL)
-		fprintf(state->listing_file, "%08lX : %s\n", state->program_counter, source_line);
+	{
+		state->listing_counter = 0;
+		fprintf(state->listing_file, "%08lX", state->program_counter);
+	}
 
 	++state->location->line_number;
 
@@ -4435,8 +4468,19 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	state->source_line = source_line;
 	source_line_pointer = source_line;
 
+	/* Despite the fact that we're using Flex and Bison to parse the
+	   language for us, we unfortunately have to do quite a bit of
+	   parsing manually because of inconsistent whitespace sensitivity
+	   (label recognision) and manipulation of the input string
+	   (macro expansion). */
+
+#define DIRECTIVE_OR_MACRO_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_"
+#define LABEL_CHARS DIRECTIVE_OR_MACRO_CHARS ".@"
+
+	/* Let's begin by parsing the label (if there is one). */
+
 	/* Determine the length of the label. */
-	label_length = strspn(source_line_pointer, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_.@");
+	label_length = strspn(source_line_pointer, LABEL_CHARS);
 
 	if (label_length != 0)
 	{
@@ -4445,10 +4489,12 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	else
 	{
 		/* Maybe the label has some whitespace before it: check again. */
+
+		/* Skip whitespace. */
 		source_line_pointer += strspn(source_line_pointer, " \t");
 
 		/* Determine the length of the label again. */
-		label_length = strspn(source_line_pointer, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_.@");
+		label_length = strspn(source_line_pointer, LABEL_CHARS);
 
 		if (label_length != 0)
 		{
@@ -4482,6 +4528,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			label[label_length] = '\0';
 		}
 
+		/* Advance past the label in the source string. */
 		source_line_pointer += label_length;
 
 		/* Skip past the colon at the end, if one exists. */
@@ -4492,14 +4539,22 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	/* Skip the whitespace between the label and the directive. */
 	source_line_pointer += strspn(source_line_pointer, " \t");
 
+	/* Next let's process the directive. If it's an if-statement or a macro
+	   invocation, then we'll need to handle it manually. If not, then we
+	   can pass it to Flex and Bison. */
+
 	/* Determine the length of the directive. */
-	directive_length = strspn(source_line_pointer, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_");
+	directive_length = strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
 
 	switch (state->mode)
 	{
 		case MODE_NORMAL:
 		{
-			/* If we are in the false part of an if-statement, then manually parse the source code until we encounter an IF, ELSEIF, ELSE, ENDC, or ENDIF. */
+			/* If we are in the false part of an if-statement, then manually parse the
+			   source code until we encounter an IF, ELSEIF, ELSE, ENDC, or ENDIF.
+			   The reason for this is that the false part of an if-statement may contain
+			   invalid code and we do not want it to cause errors.
+			   This can get pretty complicated because we need to account for nesting. */
 			if (state->false_if_level != 0)
 			{
 				if (directive_length != 0)
@@ -4536,6 +4591,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					      || strncmpci(source_line_pointer, "endc"  , directive_length) == 0
 					      || strncmpci(source_line_pointer, "endif" , directive_length) == 0)
 					{
+						/* These can be processed normally too. */
 						ParseLine(state, source_line, label, source_line_pointer);
 					}
 					else
@@ -4551,13 +4607,18 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 				/* Look up the directive in the dictionary to see if it's actually a macro. */
 				const Dictionary_Entry* const macro_dictionary_entry = Dictionary_LookUp(&state->dictionary, source_line_pointer, directive_length);
 
-				if (macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO)
+				if (macro_dictionary_entry == NULL || macro_dictionary_entry->type != SYMBOL_MACRO)
+				{
+					/* This is not a macro invocation: it's just a regular line that can be assembled as-is. */
+					ParseLine(state, source_line, label, source_line_pointer);
+				}
+				else
 				{
 					/* This is a macro invocation. */
 					char **parameters;
 					size_t total_parameters;
 
-					source_line_pointer += strspn(source_line_pointer, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_");
+					source_line_pointer += strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
 					parameters = (char**)MallocAndHandleError(state, sizeof(char*));
 					total_parameters = 1;
 
@@ -4575,7 +4636,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 						/* Skip the '.' character. */
 						++source_line_pointer;
 
-						size_length = strspn(source_line_pointer, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_");
+						size_length = strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
 						parameters[0] = (char*)MallocAndHandleError(state, size_length + 1);
 
 						if (parameters[0] != NULL)
@@ -4839,10 +4900,6 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					if (!Dictionary_Remove(&state->dictionary, "narg", sizeof("narg") - 1))
 						InternalError(state, "Could not remove symbol 'narg' from the dictionary.");
 				}
-				else
-				{
-					ParseLine(state, source_line, label, source_line_pointer);
-				}
 			}
 
 			break;
@@ -4912,6 +4969,16 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	}
 
 	free(label);
+
+	if (state->listing_file != NULL)
+	{
+		unsigned int i;
+
+		for (i = state->listing_counter * 2 + state->listing_counter / 2; i < 28; ++i)
+			fputc(' ', state->listing_file);
+
+		fprintf(state->listing_file, "%s\n", source_line);
+	}
 }
 
 static void AssembleFile(SemanticState *state, FILE *input_file)
@@ -4930,6 +4997,7 @@ static void AssembleFile(SemanticState *state, FILE *input_file)
 
 		/* If there is no newline, then we've either reached the end of the file,
 		   or the source line was too long to fit in the buffer. */
+		/* TODO: Is there no way to remove this limit? */
 		if (newline_character == '\0')
 		{
 			int character = fgetc(input_file);
@@ -4945,7 +5013,8 @@ static void AssembleFile(SemanticState *state, FILE *input_file)
 		}
 		else if (newline_index != 0 && state->line_buffer[newline_index - 1] == '&')
 		{
-			/* An '&' at the end of a line is like a '\' at the end of a line in C. */
+			/* An '&' at the end of a line is like a '\' at the end of a line in C:
+			   it signals that the current line is continued on the next line. */
 
 			/* Go back and get another line. */
 			line_buffer_write_pointer = &state->line_buffer[newline_index - 1];
@@ -5031,7 +5100,9 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 	SemanticState state;
 	Dictionary_Entry *symbol;
 
-	/* Initialise the base location. */
+	/* For error messages, we want to maintain a list of filenames and line
+	   numbers that describe the location and nesting of the erroneous
+	   line. This is the first entry in that list. */
 	location.previous = NULL;
 	location.file_path = NULL;
 	location.line_number = 0;
@@ -5054,35 +5125,41 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 	state.mode = MODE_NORMAL;
 	state.end = cc_false;
 
-	/* Set the location path (note that we're taking care to not do this before the state is fully initialised). */
+	/* Set the location path (note that we're taking care to not do this
+	   before the state is fully initialised, as the error handler requires
+	   valid state). */
 	location.file_path = DuplicateStringAndHandleError(&state, input_file_path);
 
+	/* Create the symbol table dictionary. */
 	if (!Dictionary_Init(&state.dictionary, case_insensitive))
 	{
 		OutOfMemoryError(&state);
 	}
 	else
 	{
+		/* Create the dictionary entry for the program counter ahead of time.
+		   Bizarrely, depending on the context, the program counter can be one
+		   of two values, so we need to maintain two separate copies of it. */
 		symbol = CreateSymbol(&state, PROGRAM_COUNTER_OF_STATEMENT);
 
-		/* Create the dictionary entry for the program counter ahead of time. */
 		if (symbol != NULL)
 		{
 			symbol->type = SYMBOL_VARIABLE;
 
 			symbol = CreateSymbol(&state, PROGRAM_COUNTER_OF_EXPRESSION);
 
-			/* Create the dictionary entry for the program counter ahead of time. */
 			if (symbol != NULL)
 			{
 				symbol->type = SYMBOL_VARIABLE;
 
+				/* Initialise the lexer. */
 				if (m68kasm_lex_init_extra(&state, &state.flex_state) != 0)
 				{
 					InternalError(&state, "m68kasm_lex_init failed.");
 				}
 				else
 				{
+					/* Enable Bison debugging if available and requested by the user. */
 				#if M68KASM_DEBUG
 					if (debug)
 						m68kasm_debug = 1;
@@ -5090,19 +5167,23 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 					(void)debug;
 				#endif
 
-					/* Perform first pass, and create a list of fix-ups if needed. */
+					/* Perform first pass of assembly, creating a list of fix-ups. */
 					AssembleFile(&state, input_file);
 
-					if (state.current_if_level != 0)
-						SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
-
+					/* Destroy the lexer, as we no longer need it. */
 					if (m68kasm_lex_destroy(state.flex_state) != 0)
 						InternalError(&state, "m68kasm_lex_destroy failed.");
 
-					/* Filter variables out from the symbol table, (variables cannot be used before they are declared, since their values are position-dependent). */
+					/* Perform some sanity checks to make sure we're not somehow in an invalid state. */
+					if (state.current_if_level != 0)
+						SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
+
+					/* We're about to process the fix-ups, but first we need to remove all variables
+					   from the symbol table so that they're not able to be used before they are declared. */
 					Dictionary_Filter(&state.dictionary, DictionaryFilterDeleteVariables, NULL);
 
-					/* Process the fix-ups, reassembling instructions and reprocessing directives that could not be done in the first pass. */
+					/* Process the fix-ups: reassemble instructions and reprocess
+					   directives that could not be completed in the first pass. */
 					state.doing_fix_up = cc_true;
 
 					for (;;)
@@ -5130,8 +5211,9 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 							/* Re-process statement. */
 							ProcessStatement(&state, &fix_up->statement, fix_up->label);
 
-							/* If this fix-up has been fixed, we're done with it, so we can delete it. */
-							/* Alternatively, just delete the fix-ups if this is the final pass, since they won't be needed anymore. */
+							/* If this fix-up has been fixed, then we are done with it and free to delete it.
+							   Alternatively, if this is the final pass, then just delete the fix-ups anyway
+							   since they won't be needed anymore. */
 							if (!state.fix_up_needed || state.doing_final_pass)
 							{
 								Location *location;
@@ -5144,6 +5226,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 								free(fix_up->source_line);
 								free(fix_up->label);
 
+								/* Pop one location from the list. */
 								location = fix_up->location.previous;
 
 								while (location != NULL)
@@ -5168,7 +5251,8 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 						if (state.doing_final_pass)
 							break;
 
-						/* If no more fix-ups can be fixed, then do one final pass to print errors. */
+						/* If no more fix-ups can be fixed, then something has gone wrong
+						   and we should do one final pass to print error messages. */
 						if (!a_fix_up_has_been_fixed)
 							state.doing_final_pass = cc_true;
 					}
