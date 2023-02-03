@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.18.4)
 
 project(clownassembler LANGUAGES C)
 
-add_executable(clownassembler
-	"frontend_custom.c"
+# Core
+add_library(clownassembler_core STATIC
 	"dictionary.c"
 	"dictionary.h"
 	"lexical.c"
@@ -15,6 +15,19 @@ add_executable(clownassembler
 	"syntactic.c"
 	"syntactic.h"
 )
+
+set_target_properties(clownassembler_core PROPERTIES
+	C_STANDARD 90
+	C_STANDARD_REQUIRED YES
+	C_EXTENSIONS OFF
+)
+
+# Custom frontend
+add_executable(clownassembler
+	"frontend_custom.c"
+)
+
+target_link_libraries(clownassembler clownassembler_core)
 
 set_target_properties(clownassembler PROPERTIES
 	C_STANDARD 90
@@ -22,19 +35,12 @@ set_target_properties(clownassembler PROPERTIES
 	C_EXTENSIONS OFF
 )
 
+# asm68k frontend
 add_executable(clownassembler_asm68k
 	"frontend_asm68k.c"
-	"dictionary.c"
-	"dictionary.h"
-	"lexical.c"
-	"lexical.h"
-	"semantic.c"
-	"semantic.h"
-	"strcmpci.c"
-	"strcmpci.h"
-	"syntactic.c"
-	"syntactic.h"
 )
+
+target_link_libraries(clownassembler_asm68k clownassembler_core)
 
 set_target_properties(clownassembler_asm68k PROPERTIES
 	C_STANDARD 90
@@ -42,6 +48,7 @@ set_target_properties(clownassembler_asm68k PROPERTIES
 	C_EXTENSIONS OFF
 )
 
+# Tests
 enable_testing()
 
 # Misc. test
