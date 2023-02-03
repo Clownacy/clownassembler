@@ -76,3 +76,11 @@ set_property(TEST sonic_1_assemble PROPERTY WORKING_DIRECTORY "${CMAKE_CURRENT_S
 # Test that the Sonic 1 disassembly produces the correct machine code.
 add_test(NAME sonic_1_compare COMMAND ${CMAKE_COMMAND} -E compare_files "s1rev01.bin" "s1built.bin")
 set_property(TEST sonic_1_compare PROPERTY WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/s1disasm")
+
+# Test that the 68 Katy's BASIC environment assembles.
+add_test(NAME 68_katy_basic_assemble COMMAND clownassembler -i "Basic68s3.52.x68" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
+set_property(TEST 68_katy_basic_assemble PROPERTY WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/68-katy-basic")
+
+# Test that the 68 Katy's BASIC environment produces the correct machine code.
+add_test(NAME 68_katy_basic_compare COMMAND ${CMAKE_COMMAND} -E compare_files "basic.bin" "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
+set_property(TEST 68_katy_basic_compare PROPERTY WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/68-katy-basic")
