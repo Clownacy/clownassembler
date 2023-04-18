@@ -22,8 +22,6 @@
 
 #include "clowncommon.h"
 
-#include "syntactic.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
