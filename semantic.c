@@ -306,6 +306,49 @@ static FILE* fopen_backslash(const char *path, const char *mode)
 	return file;
 }
 
+static cc_bool FindMacroParameter(const char* const remaining_line, const char* const identifier, const char** const other_parameter_position_out, const char** const other_parameter_end_out)
+{
+	const char *other_parameter_position;
+	const char *other_parameter_end;
+
+	other_parameter_position = strstr(remaining_line, identifier);
+	other_parameter_end = other_parameter_position + strlen(identifier);
+
+	/* Obviously bail if the identifier wasn't found. */
+	if (other_parameter_position != NULL)
+	{
+		/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
+		/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
+		if (other_parameter_position == remaining_line
+		|| ((other_parameter_position[-1] < 'a' || other_parameter_position[-1] > 'z')
+		 && (other_parameter_position[-1] < 'A' || other_parameter_position[-1] > 'Z')
+		 && (other_parameter_position[-1] < '0' || other_parameter_position[-1] > '9')))
+		{
+			if ((other_parameter_end[0] < 'a' || other_parameter_end[0] > 'z')
+			 && (other_parameter_end[0] < 'A' || other_parameter_end[0] > 'Z')
+			 && (other_parameter_end[0] < '0' || other_parameter_end[0] > '9'))
+			{
+				/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
+				/* asm68k allows backslashes before and after the parameter to separate them from surrounding characters. */
+				if (other_parameter_position != remaining_line && other_parameter_position[-1] == '\\')
+				{
+					--other_parameter_position;
+
+					if (other_parameter_end[0] == '\\')
+						++other_parameter_end;
+				}
+
+				*other_parameter_position_out = other_parameter_position;
+				*other_parameter_end_out = other_parameter_end;
+
+				return cc_true;
+			}
+		}
+	}
+
+	return cc_false;
+}
+
 /* TODO: Duplicate this and use function pointers. */
 static void OutputByte(SemanticState *state, unsigned int byte)
 {
@@ -4617,6 +4660,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					/* This is a macro invocation. */
 					char **parameters;
 					size_t total_parameters;
+					char *narg_string;
 
 					source_line_pointer += strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
 					parameters = (char**)MallocAndHandleError(state, sizeof(char*));
@@ -4720,18 +4764,23 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 						} while (character != ';' && character != '\0');
 					}
 
-					/* Define the 'narg' symbol, which represents how many parameters (arguments) have been passed to the macro. */
-					/* TODO - This doesn't agree with nested macros: switch to string substitution for this instead. */
+					/* Stringify the number of parameters for the 'narg' placeholder. */
 					{
-						Dictionary_Entry *symbol;
+						size_t string_length, value;
 
-						symbol = CreateSymbol(state, "narg");
-
-						if (symbol != NULL)
+						string_length = 1;
+						value = total_parameters - 1;
+						
+						while (value > 9)
 						{
-							symbol->type = SYMBOL_CONSTANT;
-							symbol->shared.unsigned_long = total_parameters - 1;
+							value /= 10;
+							++string_length;
 						}
+
+						narg_string = (char*)MallocAndHandleError(state, string_length + 1);
+
+						if (narg_string != NULL)
+							sprintf(narg_string, "%d", total_parameters - 1);
 					}
 
 					/* Finally, invoke the macro. */
@@ -4772,10 +4821,14 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 									unsigned long parameter_index;
 									const IdentifierListNode *parameter_name;
 									unsigned long i;
+									const char *other_parameter_position;
+									const char *other_parameter_end;
+									const char *substitute;
 
 									/* Search for the earliest macro parameter placeholder in the line, storing its location in 'parameter_position'. */
 
 									/* Silence bogus(?) 'variable may be used uninitialised' compiler warnings. */
+									/* TODO: Are these really bogus? */
 									line_after_parameter = NULL;
 									parameter_index = 0;
 
@@ -4798,44 +4851,28 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 									/* Now find the identifier-based macro parameter placeholders. */
 									for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
 									{
-										const char *other_parameter_position;
-										const char *other_parameter_end;
-
-										other_parameter_position = strstr(remaining_line, parameter_name->identifier);
-										other_parameter_end = other_parameter_position + strlen(parameter_name->identifier);
-
-										/* Obviously bail if the identifier wasn't found. */
-										if (other_parameter_position != NULL)
+										if (FindMacroParameter(remaining_line, parameter_name->identifier, &other_parameter_position, &other_parameter_end))
 										{
-											/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
-											/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
-											if (other_parameter_position == source_line_list_node->source_line
-											|| ((other_parameter_position[-1] < 'a' || other_parameter_position[-1] > 'z')
-											 && (other_parameter_position[-1] < 'A' || other_parameter_position[-1] > 'Z')
-											 && (other_parameter_position[-1] < '0' || other_parameter_position[-1] > '9')))
+											if (parameter_position == NULL || other_parameter_position < parameter_position)
 											{
-												if ((other_parameter_end[0] < 'a' || other_parameter_end[0] > 'z')
-												 && (other_parameter_end[0] < 'A' || other_parameter_end[0] > 'Z')
-												 && (other_parameter_end[0] < '0' || other_parameter_end[0] > '9'))
-												{
-													/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
-													/* asm68k allows backslashes before and after the parameter to separate them from surrounding characters. */
-													if (other_parameter_position != source_line_list_node->source_line && other_parameter_position[-1] == '\\')
-													{
-														--other_parameter_position;
-
-														if (other_parameter_end[0] == '\\')
-															++other_parameter_end;
-													}
-
-													if (parameter_position == NULL || other_parameter_position < parameter_position)
-													{
-														parameter_index = i;
-														parameter_position = other_parameter_position;
-														line_after_parameter = other_parameter_end;
-													}
-												}
+												parameter_index = i;
+												parameter_position = other_parameter_position;
+												line_after_parameter = other_parameter_end;
 											}
+										}
+									}
+
+									if (parameter_position != NULL)
+										substitute = (parameter_index < total_parameters && parameters[parameter_index] != NULL) ? parameters[parameter_index] : "";
+
+									/* Find the 'narg' placeholder, which represents how many parameters (arguments) have been passed to the macro. */
+									if (FindMacroParameter(remaining_line, "narg", &other_parameter_position, &other_parameter_end))
+									{
+										if (parameter_position == NULL || other_parameter_position < parameter_position)
+										{
+											substitute = narg_string == NULL ? "1" : narg_string;
+											parameter_position = other_parameter_position;
+											line_after_parameter = other_parameter_end;
 										}
 									}
 
@@ -4847,7 +4884,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 									{
 										char *new_modified_line;
 
-										const char* const parameter = (parameter_index < total_parameters && parameters[parameter_index] != NULL) ? parameters[parameter_index] : "";
+										const char* const parameter = substitute; /* TODO: Redundant line. */
 										const size_t first_half_length = parameter_position - modified_line;
 										const size_t parameter_length = strlen(parameter);
 										const size_t second_half_length = strlen(line_after_parameter);
@@ -4896,9 +4933,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 						free(parameters);
 					}
 
-					/* Undefine the 'narg' symbol. */
-					if (!Dictionary_Remove(&state->dictionary, "narg", sizeof("narg") - 1))
-						InternalError(state, "Could not remove symbol 'narg' from the dictionary.");
+					/* Free the 'narg' value string. */
+					free(narg_string);
 				}
 			}
 
