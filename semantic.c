@@ -926,6 +926,7 @@ static unsigned int ConstructEffectiveAddressBits(SemanticState *state, const Op
 	unsigned int m, xn;
 
 	/* Shut up 'variable may be used uninitialised' compiler warnings. */
+	/* TODO: Use a default case instead. */
 	m = 0;
 	xn = 0;
 
@@ -4659,7 +4660,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 				{
 					/* This is a macro invocation. */
 					char **parameters;
-					size_t total_parameters;
+					unsigned int total_parameters;
 					char *narg_string;
 
 					source_line_pointer += strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
@@ -4766,7 +4767,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 					/* Stringify the number of parameters for the 'narg' placeholder. */
 					{
-						size_t string_length, value;
+						unsigned int string_length, value;
 
 						string_length = 1;
 						value = total_parameters - 1;
@@ -4780,7 +4781,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 						narg_string = (char*)MallocAndHandleError(state, string_length + 1);
 
 						if (narg_string != NULL)
-							sprintf(narg_string, "%d", total_parameters - 1);
+							sprintf(narg_string, "%u", total_parameters - 1);
 					}
 
 					/* Finally, invoke the macro. */
