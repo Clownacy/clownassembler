@@ -19,16 +19,14 @@ http://antime.kapsi.fi/sega/files/SATMAN.pdf
 This assembler is written in portable ANSI C (a.k.a. C89), and so should be
 able to be built with virtually any C compiler.
 
-Before the assembler can be compiled, the lexer and parser must be generated.
-Install Flex, Bison, and Make, and then run `make` in this directory to
-generate them.
-
-Once that is done, the assembler can be built with `make assemblers`.
-Alternatively, the assembler can be built using CMake.
+To build with Make, run `make assemblers` in this directory. Alternatively,
+the assembler can be built using CMake.
 
 Two copies of the assembler will be produced: `clownassembler` and
 `clownassembler_asm68k`. The latter provides the same command line interface as
 SN 68k, while the former provides a custom, simpler, interface.
+
+To regenerate the lexer and parser, install Flex and Bison and then run `make`.
 
 
 ## Licensing
