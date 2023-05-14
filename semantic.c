@@ -925,11 +925,6 @@ static unsigned int ConstructEffectiveAddressBits(SemanticState *state, const Op
 {
 	unsigned int m, xn;
 
-	/* Shut up 'variable may be used uninitialised' compiler warnings. */
-	/* TODO: Use a default case instead. */
-	m = 0;
-	xn = 0;
-
 	switch (operand->type)
 	{
 		case OPERAND_NONE:
@@ -2483,8 +2478,6 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 	}
 	else
 	{
-		cc_bool good_operands = cc_true;
-
 		unsigned int total_operands_wanted;
 		unsigned int total_operands_have;
 
@@ -2517,16 +2510,17 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 		if (total_operands_wanted != total_operands_have)
 		{
 			SemanticError(state, "Instruction has %u operands, but it should have %u.", total_operands_have, total_operands_wanted);
-			good_operands = cc_false;
 		}
 		else
 		{
+			cc_bool good_operands = cc_true;
+
 			/* Check whether the operands are of the correct types. */
 			for (i = 0; i < total_operands_have && instruction_metadata->allowed_operands[i] != 0; ++i)
 			{
 				if ((instruction->operands[i].type & ~instruction_metadata->allowed_operands[i]) != 0)
 				{
-					const char *operand_string = "[REDACTED]"; /* Dumb joke - this should never be seen. */
+					const char *operand_string;
 
 					switch (instruction->operands[i].type)
 					{
@@ -4742,17 +4736,21 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 										if (parameter_string != NULL)
 										{
+											char **new_parameters;
+
 											memcpy(parameter_string, parameter_start, parameter_string_length);
 											parameter_string[parameter_string_length] = '\0';
 
-											parameters = (char**)realloc(parameters, sizeof(char*) * (total_parameters + 1));
+											new_parameters = (char**)realloc(parameters, sizeof(char*) * (total_parameters + 1));
 
-											if (parameters == NULL)
+											if (new_parameters == NULL)
 											{
+												free(parameter_string);
 												OutOfMemoryError(state);
 											}
 											else
 											{
+												parameters = new_parameters;
 												parameters[total_parameters] = parameter_string;
 												++total_parameters;
 											}
