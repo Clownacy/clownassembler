@@ -5025,8 +5025,33 @@ static void AssembleFile(SemanticState *state, FILE *input_file)
 	/* Read lines one at a time, feeding them to the 'AssembleLine' function. */
 	while (!state->end && fgets(line_buffer_write_pointer, &state->line_buffer[sizeof(state->line_buffer)] - line_buffer_write_pointer, input_file) != NULL)
 	{
-		const size_t newline_index = strcspn(state->line_buffer, "\r\n");
-		const char newline_character = state->line_buffer[newline_index];
+		size_t newline_index;
+		char newline_character;
+
+		{
+			char quote_character = '\0';
+			for (newline_index = 0; ; ++newline_index)
+			{
+				const char character = state->line_buffer[newline_index];
+
+				if (character == '\0' || character == '\r' || character == '\n')
+					break;
+
+				if (quote_character == '\0')
+				{
+					if (character == '"' || character == '\'')
+						quote_character = character;
+					else if (character == ';')
+						break;
+				}
+				else if (character == quote_character)
+				{
+					quote_character = '\0';
+				}
+			}
+		}
+
+		newline_character = state->line_buffer[newline_index];
 
 		line_buffer_write_pointer = state->line_buffer;
 
