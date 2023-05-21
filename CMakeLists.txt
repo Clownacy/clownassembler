@@ -91,3 +91,8 @@ set_property(TEST 68_katy_basic_assemble PROPERTY WORKING_DIRECTORY "${CMAKE_CUR
 # Test that the 68 Katy's BASIC environment produces the correct machine code.
 add_test(NAME 68_katy_basic_compare COMMAND ${CMAKE_COMMAND} -E compare_files "basic.bin" "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
 set_property(TEST 68_katy_basic_compare PROPERTY WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/68-katy-basic")
+
+# Test that the Sonic Spinball disassembly assembles.
+add_test(NAME sonic_spinball_assemble COMMAND clownassembler -i "spinball.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/sbbuilt.bin")
+set_property(TEST sonic_spinball_assemble PROPERTY WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/spindisasm")
+
