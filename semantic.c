@@ -5028,6 +5028,10 @@ static void AssembleFile(SemanticState *state, FILE *input_file)
 		size_t newline_index;
 		char newline_character;
 
+		/* Find the end of the line. We terminate on '\0', '\r', '\n', and ';'.
+		   Note that terminating at ';' prevents a trailing '&' from being recognised
+		   and causing a line to be continued on the next line.
+		   This is needed for compatibility with S.N. 68k (asm68k). */
 		{
 			char quote_character = '\0';
 			for (newline_index = 0; ; ++newline_index)
