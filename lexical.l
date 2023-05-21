@@ -245,46 +245,6 @@ pc              return TOKEN_PROGRAM_COUNTER;
  /* Functions. */
 strlen          return TOKEN_STRLEN;
 
- /* Data register. */
-[Dd]{decimal} {
-	char *string_end;
-	yylval->unsigned_long = strtoul(yytext + 1, &string_end, 10);
-
-	if (string_end[0] != '\0')
-	{
-		m68kasm_error(yyscanner, NULL, "This decimal number is invalid and cannot be parsed.");
-		return M68KASM_error;
-	}
-
-	if (yylval->unsigned_long > 7)
-	{
-		m68kasm_error(yyscanner, NULL, "The only valid data registers are d0 to d7.");
-		return M68KASM_error;
-	}
-
-	return TOKEN_DATA_REGISTER;
-}
-
- /* Address register. */
-[Aa]{decimal} {
-	char *string_end;
-	yylval->unsigned_long = strtoul(yytext + 1, &string_end, 10);
-
-	if (string_end[0] != '\0')
-	{
-		m68kasm_error(yyscanner, NULL, "This decimal number is invalid and cannot be parsed.");
-		return M68KASM_error;
-	}
-
-	if (yylval->unsigned_long > 7)
-	{
-		m68kasm_error(yyscanner, NULL, "The only valid address registers are a0 to a7.");
-		return M68KASM_error;
-	}
-
-	return TOKEN_ADDRESS_REGISTER;
-}
-
  /* Decimal number. */
 {decimal} {
 	char *string_end;
@@ -421,19 +381,29 @@ strlen          return TOKEN_STRLEN;
 	}
 }
 
- /* Identifier. */
+ /* Identifier, data register, or address register. */
 [A-Za-z_][A-Za-z_0-9\?]* {
-	const size_t length = strlen(yytext);
-	yylval->string = (char*)malloc(length + 1);
-	if (yylval->string == NULL)
+	if (yytext[2] == '\0' && (yytext[0] == 'd' || yytext[0] == 'D' || yytext[0] == 'a' || yytext[0] == 'A') && yytext[1] >= '0' && yytext[1] <= '7')
 	{
-		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return M68KASM_error;
+		/* Data register or address register. */
+		yylval->unsigned_long = yytext[1] - '0';
+		return yytext[0] == 'd' || yytext[0] == 'D' ? TOKEN_DATA_REGISTER : TOKEN_ADDRESS_REGISTER;
 	}
 	else
 	{
-		memcpy(yylval->string, yytext, length + 1);
-		return TOKEN_IDENTIFIER;
+		/* Identifier. */
+		const size_t length = strlen(yytext);
+		yylval->string = (char*)malloc(length + 1);
+		if (yylval->string == NULL)
+		{
+			m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
+			return M68KASM_error;
+		}
+		else
+		{
+			memcpy(yylval->string, yytext, length + 1);
+			return TOKEN_IDENTIFIER;
+		}
 	}
 }
 
