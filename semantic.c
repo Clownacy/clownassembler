@@ -4404,6 +4404,7 @@ static void ParseLine(SemanticState *state, const char *source_line, const char 
 
 		case 1: /* Parsing error. */
 			/* An error message will have already been printed, so we don't need to do one here. */
+			state->success = cc_false;
 			break;
 
 		case 0: /* No error. */
