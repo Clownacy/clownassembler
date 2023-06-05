@@ -33,7 +33,7 @@
 void m68kasm_warning(void *scanner, Statement *statement, const char *message);
 void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
-static cc_bool ParseNumber(unsigned long* const value, void* const scanner, const char* const string_start, const int base)
+static cc_bool ParseNumber(unsigned long* const value, void* const scanner, const char* const string_start, const int base, const char terminating_character)
 {
 	char *string_end;
 
@@ -46,7 +46,7 @@ static cc_bool ParseNumber(unsigned long* const value, void* const scanner, cons
 		return cc_false;
 	}
 
-	if (string_end[0] != '\0')
+	if (string_end[0] != terminating_character)
 	{
 		m68kasm_error(scanner, NULL, "This number is invalid and cannot be parsed.");
 		return cc_false;
@@ -271,7 +271,7 @@ strlen          return TOKEN_STRLEN;
 
  /* Decimal number. */
 {decimal} {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, 10))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, 10, '\0'))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -279,7 +279,7 @@ strlen          return TOKEN_STRLEN;
 
  /* Hexadecimal number (68k). */
 \${hexadecimal} {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, 16))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, 16, '\0'))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -287,7 +287,7 @@ strlen          return TOKEN_STRLEN;
 
  /* Binary number (68k). */
 \%{binary} {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, 2))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, 2, '\0'))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -295,7 +295,7 @@ strlen          return TOKEN_STRLEN;
 
  /* Hexadecimal number (Z80). */
 [0-9]{hexadecimal}?h {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, 16))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, 16, 'h'))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -303,7 +303,7 @@ strlen          return TOKEN_STRLEN;
 
  /* Binary number (Z80). */
 {binary}b {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, 2))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, 2, 'b'))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -311,7 +311,7 @@ strlen          return TOKEN_STRLEN;
 
  /* Hexadecimal number (C). */
 0x{hexadecimal} {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, 16))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, 16, '\0'))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -319,7 +319,7 @@ strlen          return TOKEN_STRLEN;
 
  /* Binary number (GNU C). */
 0b{binary} {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, 2))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, 2, '\0'))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
