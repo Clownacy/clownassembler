@@ -4,3 +4,6 @@
 [submodule "tests/spindisasm"]
 	path = tests/spindisasm
 	url = https://github.com/sonicretro/spindisasm
+[submodule "tests/Sonic-2-Aug-21st-Disassembly"]
+	path = tests/Sonic-2-Aug-21st-Disassembly
+	url = https://github.com/Clownacy/Sonic-2-Aug-21st-Disassembly

@@ -89,3 +89,9 @@ add_test(NAME 68_katy_basic_compare COMMAND ${CMAKE_COMMAND} -E compare_files "b
 
 # Test that the Sonic Spinball disassembly assembles.
 add_test(NAME sonic_spinball_assemble COMMAND clownassembler -i "spinball.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/sbbuilt.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/spindisasm")
+
+# Test that the Sonic 2 August 21st disassembly assembles.
+add_test(NAME sonic_2_august_21st_assemble COMMAND clownassembler -i "sonic2alpha.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/sonic2alpha.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/Sonic-2-Aug-21st-Disassembly")
+
+# Test that the Sonic 2 August 21st disassembly produces the correct machine code.
+add_test(NAME sonic_2_august_21st_compare COMMAND ${CMAKE_COMMAND} -E compare_files "sonic2alpha.bin" "${CMAKE_CURRENT_BINARY_DIR}/sonic2alpha.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/Sonic-2-Aug-21st-Disassembly")
