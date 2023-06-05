@@ -24,12 +24,36 @@
 
 %{
 
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "syntactic.h"
 
+void m68kasm_warning(void *scanner, Statement *statement, const char *message);
 void m68kasm_error(void *scanner, Statement *statement, const char *message);
+
+static cc_bool ParseNumber(unsigned long* const value, void* const scanner, const char* const string_start, const int base)
+{
+	char *string_end;
+
+	errno = 0;
+	*value = strtoul(string_start, &string_end, base);
+	if (errno == ERANGE)
+	{
+		/*m68kasm_warning(scanner, NULL, ".");*/
+		m68kasm_error(scanner, NULL, "This number is too large.");
+		return cc_false;
+	}
+
+	if (string_end[0] != '\0')
+	{
+		m68kasm_error(scanner, NULL, "This number is invalid and cannot be parsed.");
+		return cc_false;
+	}
+
+	return cc_true;
+}
 
 %}
 
@@ -247,98 +271,56 @@ strlen          return TOKEN_STRLEN;
 
  /* Decimal number. */
 {decimal} {
-	char *string_end;
-	yylval->unsigned_long = strtoul(yytext, &string_end, 10);
-
-	if (string_end[0] != '\0')
-	{
-		m68kasm_error(yyscanner, NULL, "This decimal number is invalid and cannot be parsed.");
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, 10))
 		return M68KASM_error;
-	}
 
 	return TOKEN_NUMBER;
 }
 
  /* Hexadecimal number (68k). */
 \${hexadecimal} {
-	char *string_end;
-	yylval->unsigned_long = strtoul(yytext + 1, &string_end, 16);
-
-	if (string_end[0] != '\0')
-	{
-		m68kasm_error(yyscanner, NULL, "This hexadecimal number is invalid and cannot be parsed.");
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, 16))
 		return M68KASM_error;
-	}
 
 	return TOKEN_NUMBER;
 }
 
  /* Binary number (68k). */
 \%{binary} {
-	char *string_end;
-	yylval->unsigned_long = strtoul(yytext + 1, &string_end, 2);
-
-	if (string_end[0] != '\0')
-	{
-		m68kasm_error(yyscanner, NULL, "This binary number is invalid and cannot be parsed.");
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, 2))
 		return M68KASM_error;
-	}
 
 	return TOKEN_NUMBER;
 }
 
  /* Hexadecimal number (Z80). */
 [0-9]{hexadecimal}?h {
-	char *string_end;
-	yylval->unsigned_long = strtoul(yytext, &string_end, 16);
-
-	if (string_end[1] != '\0')
-	{
-		m68kasm_error(yyscanner, NULL, "This hexadecimal number is invalid and cannot be parsed.");
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, 16))
 		return M68KASM_error;
-	}
 
 	return TOKEN_NUMBER;
 }
 
  /* Binary number (Z80). */
 {binary}b {
-	char *string_end;
-	yylval->unsigned_long = strtoul(yytext, &string_end, 2);
-
-	if (string_end[1] != '\0')
-	{
-		m68kasm_error(yyscanner, NULL, "This binary number is invalid and cannot be parsed.");
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, 2))
 		return M68KASM_error;
-	}
 
 	return TOKEN_NUMBER;
 }
 
  /* Hexadecimal number (C). */
 0x{hexadecimal} {
-	char *string_end;
-	yylval->unsigned_long = strtoul(yytext + 2, &string_end, 16);
-
-	if (string_end[0] != '\0')
-	{
-		m68kasm_error(yyscanner, NULL, "This hexadecimal number is invalid and cannot be parsed.");
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, 16))
 		return M68KASM_error;
-	}
 
 	return TOKEN_NUMBER;
 }
 
  /* Binary number (GNU C). */
 0b{binary} {
-	char *string_end;
-	yylval->unsigned_long = strtoul(yytext + 2, &string_end, 2);
-
-	if (string_end[0] != '\0')
-	{
-		m68kasm_error(yyscanner, NULL, "This binary number is invalid and cannot be parsed.");
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, 2))
 		return M68KASM_error;
-	}
 
 	return TOKEN_NUMBER;
 }
