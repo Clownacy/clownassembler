@@ -295,7 +295,7 @@ strlen          return TOKEN_STRLEN;
 
  /* Hexadecimal number (Z80). */
 [0-9]{hexadecimal}?h {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, 16, 'h'))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, 16, yytext[strlen(yytext) - 1]))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -303,7 +303,7 @@ strlen          return TOKEN_STRLEN;
 
  /* Binary number (Z80). */
 {binary}b {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, 2, 'b'))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, 2, yytext[strlen(yytext) - 1]))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;

@@ -2445,7 +2445,7 @@ case 187:
 YY_RULE_SETUP
 #line 298 "lexical.l"
 {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, 16, 'h'))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, 16, yytext[strlen(yytext) - 1]))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -2456,7 +2456,7 @@ case 188:
 YY_RULE_SETUP
 #line 306 "lexical.l"
 {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, 2, 'b'))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, 2, yytext[strlen(yytext) - 1]))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;

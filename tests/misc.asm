@@ -459,10 +459,14 @@ i set i+1
 	; Z80
 	dc.b	10h
 	dc.b	10000b
+	dc.b	10H
+	dc.b	10000B
 
 	; C
 	dc.b	0x10
 	dc.b	0b10000
+	dc.b	0X10
+	dc.b	0B10000
 
   ; More blank lines to test support for trailing blank statements
 
