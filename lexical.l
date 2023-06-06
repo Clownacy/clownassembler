@@ -24,7 +24,6 @@
 
 %{
 
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -33,17 +32,54 @@
 void m68kasm_warning(void *scanner, Statement *statement, const char *message);
 void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
-static cc_bool ParseNumber(unsigned long* const value, void* const scanner, const char* const string_start, const int base, const char terminating_character)
+static cc_bool CharacterToInteger(unsigned int* const value, const unsigned int character)
 {
-	char *string_end;
-
-	errno = 0;
-	*value = strtoul(string_start, &string_end, base);
-	if (errno == ERANGE)
-	{
-		/*m68kasm_warning(scanner, NULL, ".");*/
-		m68kasm_error(scanner, NULL, "This number is too large.");
+	if (character >= '0' && character <= '9')
+		*value = 0x0 + (character - '0');
+	else if (character >= 'A' && character <= 'Z')
+		*value = 0xA + (character - 'A');
+	else if (character >= 'a' && character <= 'z')
+		*value = 0xA + (character - 'a');
+	else
 		return cc_false;
+
+	return cc_true;
+}
+
+/* Like `strtoul`, except this one returns a truncated value when parsing a number that is too large. */
+static cc_bool StringTo32BitInteger(unsigned long* const value, const char* const string_start, const char** const string_end, const unsigned long base)
+{
+	cc_bool success = cc_true;
+	const unsigned long limit = 0xFFFFFFFF / base;
+	const char* string_pointer;
+
+	*value = 0;
+
+	for (string_pointer = string_start; ; ++string_pointer)
+	{
+		unsigned int digit;
+		if (!CharacterToInteger(&digit, *string_pointer) || digit >= base)
+			break;
+
+		if (*value > limit)
+			success = cc_false;
+
+		*value *= base;
+		*value += digit;
+	}
+
+	*string_end = string_pointer;
+	return success;
+}
+
+static cc_bool ParseNumber(unsigned long* const value, void* const scanner, const char* const string_start, const unsigned long base, const char terminating_character)
+{
+	const char *string_end;
+
+	if (!StringTo32BitInteger(value, string_start, &string_end, base))
+	{
+		/* S.N. 68k silently truncates values that are too large. This is relied upon by old versions of the Sonic 2 August 21st prototype disassembly. */
+		m68kasm_warning(scanner, NULL, "This number is too large and will be truncated.");
 	}
 
 	if (string_end[0] != terminating_character)

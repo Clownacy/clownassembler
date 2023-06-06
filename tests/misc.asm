@@ -468,6 +468,9 @@ i set i+1
 	dc.b	0X10
 	dc.b	0B10000
 
+	; Test integer truncation: should result in '0x76543210'.
+	move.l	#$FEDCBA9876543210,d0
+
   ; More blank lines to test support for trailing blank statements
 
 
