@@ -1169,12 +1169,12 @@ static cc_bool ParseNumber(unsigned long* const value, void* const scanner, cons
 	if (!StringTo32BitInteger(value, string_start, &string_end, base))
 	{
 		/* S.N. 68k silently truncates values that are too large. This is relied upon by old versions of the Sonic 2 August 21st prototype disassembly. */
-		m68kasm_warning(scanner, NULL, "This number is too large and will be truncated.");
+		m68kasm_warning(scanner, NULL, "Number is too large and will be truncated.");
 	}
 
 	if (string_end != string_start + string_length)
 	{
-		m68kasm_error(scanner, NULL, "This number is invalid and cannot be parsed.");
+		m68kasm_error(scanner, NULL, "Number is invalid and cannot be parsed.");
 		return cc_false;
 	}
 
