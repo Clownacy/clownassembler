@@ -353,7 +353,7 @@ static cc_bool FindMacroParameter(const char* const remaining_line, const char* 
 static void OutputByte(SemanticState *state, unsigned int byte)
 {
 	/* Write to listing file. */
-	if (!state->doing_fix_up)
+	if (!state->doing_fix_up && state->listing_file != NULL)
 	{
 		/* We can only write up to 10 bytes. */
 		if (state->listing_counter <= 10)
@@ -375,7 +375,7 @@ static void OutputByte(SemanticState *state, unsigned int byte)
 		}
 	}
 
-	/* Write to listing file. */
+	/* Write to output file. */
 	fputc(byte, state->output_file);
 }
 
