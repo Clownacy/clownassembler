@@ -700,11 +700,11 @@ statement
 		statement->shared.macro.uses_label = cc_false;
 		statement->shared.macro.parameter_names = $2;
 	}
-	| TOKEN_DIRECTIVE_MACRO '*' identifier_list
+	| TOKEN_DIRECTIVE_MACRO '*' ',' identifier_list
 	{
 		statement->type = STATEMENT_TYPE_MACRO;
 		statement->shared.macro.uses_label = cc_true;
-		statement->shared.macro.parameter_names = $3;
+		statement->shared.macro.parameter_names = $4;
 	}
 	| TOKEN_DIRECTIVE_MACROS
 	{
