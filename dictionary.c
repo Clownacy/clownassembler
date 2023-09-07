@@ -148,29 +148,29 @@ static void RemoveNodeFromBucket(Dictionary_Bucket *bucket, Dictionary_Node *nod
 	if (node->left_child != NULL && node->right_child != NULL)
 	{
 		/* Find successor. */
-		Dictionary_Node *successor_parent;
+		Dictionary_Node **successor_pointer;
 		Dictionary_Node *successor;
 
-		successor_parent = node;
+		successor_pointer = &node->right_child;
 
-		while (successor_parent->left_child->left_child != NULL)
-			successor_parent = successor_parent->left_child;
+		while ((*successor_pointer)->left_child != NULL)
+			successor_pointer = &(*successor_pointer)->left_child;
 
-		successor = successor_parent->left_child;
+		successor = *successor_pointer;
 
 		/* Replace the successor with its own right child. */
-		successor_parent->left_child = successor->right_child;
-		successor_parent->left_child->parent = successor_parent;
+		*successor_pointer = successor->right_child;
+		if (successor->right_child != NULL)
+			successor->right_child->parent = successor->parent;
 
 		/* Give the successor the node's children. */
 		successor->left_child = node->left_child;
-		successor->left_child->parent = successor;
+		if (node->left_child != NULL)
+			node->left_child->parent = successor;
 
-		if (node->right_child != successor)
-		{
-			successor->right_child = node->right_child;
-			successor->right_child->parent = successor;
-		}
+		successor->right_child = node->right_child;
+		if (node->right_child != NULL)
+			node->right_child->parent = successor;
 
 		/* Replace the node with its successor. */
 		*binary_search_tree_pointer = successor;
