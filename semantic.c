@@ -104,6 +104,7 @@ typedef struct SemanticState
 	const char *source_line;
 	unsigned int current_if_level;
 	unsigned int false_if_level;
+	cc_bool true_already_found;
 	cc_bool end;
 	unsigned int listing_counter;
 	Mode mode;
@@ -4004,23 +4005,21 @@ static void ProcessMacro(SemanticState *state, StatementMacro *macro, const char
 
 static void ProcessIf(SemanticState *state, Expression *expression)
 {
+	unsigned long value;
+
 	++state->current_if_level;
 
-	/* If we are within a false conditional block, then this if-statement is null and void. */
-	if (state->false_if_level == 0)
+	if (!ResolveExpression(state, expression, &value, cc_true))
 	{
-		unsigned long value;
-
-		if (!ResolveExpression(state, expression, &value, cc_true))
-		{
-			SemanticError(state, "Condition must be evaluable on the first pass.");
-			value = 1;
-		}
-
-		/* If this condition is false, then mark this as the false if-level. */
-		if (value == 0)
-			state->false_if_level = state->current_if_level;
+		SemanticError(state, "Condition must be evaluable on the first pass.");
+		value = 1;
 	}
+
+	/* If this condition is false, then mark this as the false if-level. */
+	if (value == 0)
+		state->false_if_level = state->current_if_level;
+
+	state->true_already_found = value != 0;
 }
 
 static void ProcessStatement(SemanticState *state, Statement *statement, const char *label)
@@ -4173,23 +4172,22 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			}
 			else
 			{
-				/* Now THIS is a hack! */
+				if (state->false_if_level == state->current_if_level || state->false_if_level == 0)
+				{
+					unsigned long value;
 
-				/* Do an 'ELSE'. */
-				statement->type = STATEMENT_TYPE_ELSE;
-				ProcessStatement(state, statement, NULL);
+					if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
+					{
+						SemanticError(state, "Condition must be evaluable on the first pass.");
+						value = 1;
+					}
 
-				/* Lower the level, since the 'IF' statement will increment it and we don't want that. */
-				--state->current_if_level;
-
-				/* Do an 'IF'. */
-				statement->type = STATEMENT_TYPE_IF;
-				ProcessStatement(state, statement, NULL);
-
-				/* Put this back to how it was... */
-				statement->type = STATEMENT_TYPE_ELSEIF;
-
-				/* Tada: that's how you do an 'ELSEIF'! */
+					/* If this condition is false, then mark this as the false if-level. */
+					if (state->true_already_found || value == 0)
+						state->false_if_level = state->current_if_level;
+					else
+						state->false_if_level = 0;
+				}
 			}
 
 			break;
@@ -4201,12 +4199,22 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			}
 			else
 			{
-				/* If this is the false if-level, then it isn't anymore. */
-				/* Likewise, if there is no false if-level, then there is now. */
-				if (state->false_if_level == state->current_if_level)
-					state->false_if_level = 0;
-				else if (state->false_if_level == 0)
-					state->false_if_level = state->current_if_level;
+				if (state->false_if_level == state->current_if_level || state->false_if_level == 0)
+				{
+					if (state->true_already_found)
+					{
+						state->false_if_level = state->current_if_level;
+					}
+					else
+					{
+						/* If this is the false if-level, then it isn't anymore. */
+						/* Likewise, if there is no false if-level, then there is now. */
+						if (state->false_if_level == state->current_if_level)
+							state->false_if_level = 0;
+						else /*if (state->false_if_level == 0)*/
+							state->false_if_level = state->current_if_level;
+					}
+				}
 			}
 
 			break;
@@ -4218,9 +4226,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			}
 			else
 			{
-				/* If this is the false if-level, then it isn't anymore. */
-				if (state->false_if_level == state->current_if_level)
+				if (state->false_if_level == state->current_if_level || state->false_if_level == 0)
+				{
+					state->true_already_found = cc_true;
 					state->false_if_level = 0;
+				}
 
 				--state->current_if_level;
 			}
@@ -4589,28 +4599,10 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					{
 						/* If-statements that are nested within the false part of another if-statement
 						   are themselves false, so create a false if-statement here and process it. */
-						statement.type = STATEMENT_TYPE_IF;
-						statement.shared.expression.type = EXPRESSION_NUMBER;
-						statement.shared.expression.shared.unsigned_long = 0;
-						ProcessStatement(state, &statement, label);
+						++state->current_if_level;
 					}
-					else if (strncmpci(source_line_pointer, "elseif", directive_length) == 0)
-					{
-						if (state->false_if_level != state->current_if_level)
-						{
-							/* This 'ELSEIF' belongs to a nested if-statement, so create a fake version and ignore it. */
-							statement.type = STATEMENT_TYPE_ELSEIF;
-							statement.shared.expression.type = EXPRESSION_NUMBER;
-							statement.shared.expression.shared.unsigned_long = 0;
-							ProcessStatement(state, &statement, label);
-						}
-						else
-						{
-							/* This 'ELSEIF' belongs to the current if-statement: process it properly. */
-							ParseLine(state, source_line, label, source_line_pointer);
-						}
-					}
-					else if (strncmpci(source_line_pointer, "else"  , directive_length) == 0
+					else if (strncmpci(source_line_pointer, "elseif", directive_length) == 0
+					      || strncmpci(source_line_pointer, "else"  , directive_length) == 0
 					      || strncmpci(source_line_pointer, "endc"  , directive_length) == 0
 					      || strncmpci(source_line_pointer, "endif" , directive_length) == 0)
 					{
@@ -5173,6 +5165,7 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 	state.source_line = NULL;
 	state.current_if_level = 0;
 	state.false_if_level = 0;
+	state.true_already_found = cc_false;
 	state.mode = MODE_NORMAL;
 	state.end = cc_false;
 

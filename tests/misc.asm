@@ -408,6 +408,48 @@ TimesToNotRept equ 1
 	ELSE
 	ENDIF
 
+	if 1
+		dc.l 'GOOD'
+	else
+		dc.l 'OHNO'
+	endif
+
+	if 1
+		dc.l 'GOOD'
+	elseif 2
+		dc.l 'BAD1'
+	else
+		dc.l 'BAD2'
+	endif
+
+	if 1
+		dc.l 'GOOD'
+	elseif 0
+		dc.l 'BAD1'
+	else
+		dc.l 'BAD2'
+	endif
+
+	if 1
+		dc.l 'GOOD'
+	else
+		if 0
+			dc.l 'BAD1'
+		else
+			dc.l 'BAD2'
+		endif
+	endif
+
+	if 1
+		if 0
+			dc.l 'BAD1'
+		else
+			dc.l 'GOOD'
+		endif
+	else
+		dc.l 'BAD2'
+	endif
+
 	; Testing multi-line statements
 	move.b &
 	d0 &
