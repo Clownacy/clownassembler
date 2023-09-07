@@ -4292,17 +4292,19 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 				}
 				else
 				{
-					unsigned long i;
+					unsigned long target;
 
-					/* Align to the size boundary. */
-					while (state->program_counter % size_boundary != 0)
-					{
-						++state->program_counter;
-						OutputByte(state, 0);
-					}
+					const unsigned long position_within_boundary = state->program_counter % size_boundary;
 
-					/* Now pad to the desired offset. */
-					for (i = 0; i < offset; ++i)
+					target = state->program_counter - position_within_boundary + offset;
+
+					if (position_within_boundary > offset)
+						target += size_boundary;
+
+					printf("FROM %lX TO %lX\n", state->program_counter, target);
+
+					/* Pad to the desired offset. */
+					while (state->program_counter != target)
 					{
 						OutputByte(state, 0);
 						++state->program_counter;
