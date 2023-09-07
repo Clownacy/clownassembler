@@ -121,7 +121,7 @@ typedef struct SemanticState
 			unsigned long line_number;
 			IdentifierList parameter_names;
 			SourceLineList source_line_list;
-			cc_bool is_short;
+			cc_bool is_short, uses_label;
 		} macro;
 		struct
 		{
@@ -135,6 +135,7 @@ typedef struct SemanticState
 
 typedef struct Macro
 {
+	cc_bool uses_label;
 	char *name;
 	IdentifierListNode *parameter_names;
 	SourceLineListNode *source_line_list_head;
@@ -827,6 +828,7 @@ static void TerminateMacro(SemanticState *state)
 
 			if (macro != NULL)
 			{
+				macro->uses_label = state->shared.macro.uses_label;
 				macro->name = state->shared.macro.name;
 				macro->parameter_names = state->shared.macro.parameter_names.head;
 				macro->source_line_list_head = state->shared.macro.source_line_list.head;
@@ -3994,6 +3996,7 @@ static void ProcessMacro(SemanticState *state, StatementMacro *macro, const char
 	macro->parameter_names.head = NULL;
 	macro->parameter_names.tail = NULL;
 	state->shared.macro.is_short = is_short;
+	state->shared.macro.uses_label = macro->uses_label;
 
 	state->shared.macro.source_line_list.head = NULL;
 	state->shared.macro.source_line_list.tail = NULL;
@@ -4639,6 +4642,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					unsigned int total_parameters;
 					char *narg_string;
 
+					const Macro *macro = (const Macro*)macro_dictionary_entry->shared.pointer;
+
 					source_line_pointer += strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
 					parameters = (char**)MallocAndHandleError(state, sizeof(char*));
 					total_parameters = 1;
@@ -4646,7 +4651,9 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					if (label != NULL)
 					{
 						SetLastGlobalLabel(state, label);
-						AddIdentifierToSymbolTable(state, label, state->program_counter, SYMBOL_LABEL);
+
+						if (!macro->uses_label)
+							AddIdentifierToSymbolTable(state, label, state->program_counter, SYMBOL_LABEL);
 					}
 
 					/* Extract and store the macro size specifier, if one exists. */
@@ -4681,6 +4688,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 								character = *source_line_pointer++;
 
 								/* If commas appear between parentheses, then we shouldn't separate on them. */
+								/* This is because of the possibility of code such as '(a0,d0.w)' being passed as a parameter. */
 								/* To do this, manually skip characters until we find a closing parenthesis. */
 								if (character == '(')
 								{
@@ -4753,7 +4761,6 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 					/* Finally, invoke the macro. */
 					{
-						const Macro *macro = (const Macro*)macro_dictionary_entry->shared.pointer;
 						const SourceLineListNode *source_line_list_node;
 
 						/* Push a new location (this macro).*/
@@ -4784,68 +4791,79 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 							{
 								for (;;)
 								{
-									const char *parameter_position;
-									const char *line_after_parameter;
+									const char *earliest_parameter_start;
+									const char *earliest_parameter_end;
 									unsigned long parameter_index;
 									const IdentifierListNode *parameter_name;
 									unsigned long i;
-									const char *other_parameter_position;
-									const char *other_parameter_end;
+									const char *found_parameter_start;
+									const char *found_parameter_end;
 									const char *substitute;
 
-									/* Search for the earliest macro parameter placeholder in the line, storing its location in 'parameter_position'. */
+									/* Search for the earliest macro parameter placeholder in the line, storing its location in 'earliest_parameter_start'. */
 
 									/* Silence bogus(?) 'variable may be used uninitialised' compiler warnings. */
 									/* TODO: Are these really bogus? */
-									line_after_parameter = NULL;
+									earliest_parameter_end = NULL;
 									parameter_index = 0;
 
 									/* Find numerical macro parameter placeholder. */
-									parameter_position = strchr(remaining_line, '\\');
+									earliest_parameter_start = strchr(remaining_line, '\\');
 
-									if (parameter_position != NULL)
+									if (earliest_parameter_start != NULL)
 									{
 										char *end;
 
 										/* Obtain numerical index of the parameter. */
-										parameter_index = strtoul(parameter_position + 1, &end, 10);
-										line_after_parameter = end;
+										parameter_index = strtoul(earliest_parameter_start + 1, &end, 10);
+										earliest_parameter_end = end;
 
 										/* Check if conversion failed. */
-										if (end == parameter_position + 1)
-											parameter_position = NULL;
+										if (end == earliest_parameter_start + 1)
+											earliest_parameter_start = NULL;
 									}
 
 									/* Now find the identifier-based macro parameter placeholders. */
 									for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
 									{
-										if (FindMacroParameter(remaining_line, parameter_name->identifier, &other_parameter_position, &other_parameter_end))
+										if (FindMacroParameter(remaining_line, parameter_name->identifier, &found_parameter_start, &found_parameter_end))
 										{
-											if (parameter_position == NULL || other_parameter_position < parameter_position)
+											if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
 											{
 												parameter_index = i;
-												parameter_position = other_parameter_position;
-												line_after_parameter = other_parameter_end;
+												earliest_parameter_start = found_parameter_start;
+												earliest_parameter_end = found_parameter_end;
 											}
 										}
 									}
 
-									if (parameter_position != NULL)
+									if (earliest_parameter_start != NULL)
 										substitute = (parameter_index < total_parameters && parameters[parameter_index] != NULL) ? parameters[parameter_index] : "";
 
 									/* Find the 'narg' placeholder, which represents how many parameters (arguments) have been passed to the macro. */
-									if (FindMacroParameter(remaining_line, "narg", &other_parameter_position, &other_parameter_end))
+									if (FindMacroParameter(remaining_line, "narg", &found_parameter_start, &found_parameter_end))
 									{
-										if (parameter_position == NULL || other_parameter_position < parameter_position)
+										if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
 										{
 											substitute = narg_string == NULL ? "1" : narg_string;
-											parameter_position = other_parameter_position;
-											line_after_parameter = other_parameter_end;
+											earliest_parameter_start = found_parameter_start;
+											earliest_parameter_end = found_parameter_end;
+										}
+									}
+
+									/* Find the '\*' placeholder, which represents the label before the macro. */
+									if (FindMacroParameter(remaining_line, "\\*", &found_parameter_start, &found_parameter_end))
+									{
+										if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
+										{
+											substitute = label;
+											earliest_parameter_start = found_parameter_start;
+											earliest_parameter_end = found_parameter_end;
 										}
 									}
 
 									/* If no placeholders can be found, then we are done here. */
-									if (parameter_position == NULL)
+									if (earliest_parameter_start == NULL)
 										break;
 
 									/* Split the line in two, and insert the parameter between them. */
@@ -4853,9 +4871,9 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										char *new_modified_line;
 
 										const char* const parameter = substitute; /* TODO: Redundant line. */
-										const size_t first_half_length = parameter_position - modified_line;
+										const size_t first_half_length = earliest_parameter_start - modified_line;
 										const size_t parameter_length = strlen(parameter);
-										const size_t second_half_length = strlen(line_after_parameter);
+										const size_t second_half_length = strlen(earliest_parameter_end);
 
 										new_modified_line = (char*)MallocAndHandleError(state, first_half_length + parameter_length + second_half_length + 1);
 
@@ -4863,7 +4881,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										{
 											memcpy(new_modified_line, modified_line, first_half_length);
 											memcpy(new_modified_line + first_half_length, parameter, parameter_length);
-											memcpy(new_modified_line + first_half_length + parameter_length, line_after_parameter, second_half_length);
+											memcpy(new_modified_line + first_half_length + parameter_length, earliest_parameter_end, second_half_length);
 											new_modified_line[first_half_length + parameter_length + second_half_length] = '\0';
 
 											/* Continue our search from after the inserted parameter. */

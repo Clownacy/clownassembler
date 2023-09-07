@@ -353,6 +353,7 @@ typedef struct StatementRept
 
 typedef struct StatementMacro
 {
+	cc_bool uses_label;
 	IdentifierList parameter_names;
 } StatementMacro;
 
@@ -419,7 +420,7 @@ typedef struct Statement
 } Statement;
 
 
-#line 423 "syntactic.h"
+#line 424 "syntactic.h"
 
 /* Token kinds.  */
 #ifndef M68KASM_TOKENTYPE
@@ -602,7 +603,7 @@ typedef struct Statement
 #if ! defined M68KASM_STYPE && ! defined M68KASM_STYPE_IS_DECLARED
 union M68KASM_STYPE
 {
-#line 422 "syntactic.y"
+#line 423 "syntactic.y"
 
 	unsigned long unsigned_long;
 	char *string;
@@ -615,7 +616,7 @@ union M68KASM_STYPE
 	IdentifierList identifier_list;
 	Expression expression;
 
-#line 619 "syntactic.h"
+#line 620 "syntactic.h"
 
 };
 typedef union M68KASM_STYPE M68KASM_STYPE;
@@ -629,13 +630,13 @@ typedef union M68KASM_STYPE M68KASM_STYPE;
 int m68kasm_parse (void *scanner, Statement *statement);
 
 /* "%code provides" blocks.  */
-#line 396 "syntactic.y"
+#line 397 "syntactic.y"
 
 
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
 
 
-#line 640 "syntactic.h"
+#line 641 "syntactic.h"
 
 #endif /* !YY_M68KASM_SYNTACTIC_H_INCLUDED  */

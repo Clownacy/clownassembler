@@ -472,8 +472,18 @@ i set i+1
 	; Test integer truncation: should result in '0x76543210'.
 	move.l	#$FEDCBA9876543210,d0
 
+	; Test '\*' macro.
+StarTest macro *
+\* = *
+\*_wowza = *
+	endm
+
+Test_a: StarTest
+	dc.w	0
+Test_b: StarTest
+	dc.w Test_b_wowza - Test_a_wowza
+	dc.w Test_b - Test_a
+
   ; More blank lines to test support for trailing blank statements
-
-
 
 
