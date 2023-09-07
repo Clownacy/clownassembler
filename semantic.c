@@ -4301,8 +4301,6 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 					if (position_within_boundary > offset)
 						target += size_boundary;
 
-					printf("FROM %lX TO %lX\n", state->program_counter, target);
-
 					/* Pad to the desired offset. */
 					while (state->program_counter != target)
 					{
@@ -4594,8 +4592,6 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			{
 				if (directive_length != 0)
 				{
-					Statement statement;
-
 					/* TODO - Detect code after the keyword and error if any is found. */
 					if (strncmpci(source_line_pointer, "if", directive_length) == 0)
 					{
