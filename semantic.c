@@ -236,6 +236,8 @@ void m68kasm_error(void *scanner, Statement *statement, const char *message)
 	fprintf(stderr, "Error: %s", message);
 
 	ErrorMessageCommon(state);
+
+	state->success = cc_false;
 }
 
 static void* MallocAndHandleError(SemanticState *state, size_t size)
