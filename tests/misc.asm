@@ -526,6 +526,23 @@ Test_b: StarTest
 	dc.w Test_b_wowza - Test_a_wowza
 	dc.w Test_b - Test_a
 
+
+	; Test '\@' macro.
+AtTest macro value
+	moveq	#4-1,d1
+loop\@:
+	moveq	#0,d0
+	tst.w	value
+	beq.s	skipper\@
+	moveq	#1,d0
+skipper\@:
+	dbf	d1,loop\@
+	endm
+
+	AtTest d2
+	AtTest (a2)
+	AtTest (0).w
+
   ; More blank lines to test support for trailing blank statements
 
 

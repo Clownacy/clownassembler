@@ -140,6 +140,7 @@ typedef struct Macro
 	char *name;
 	IdentifierListNode *parameter_names;
 	SourceLineListNode *source_line_list_head;
+	unsigned int current_invocation;
 } Macro;
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
@@ -266,6 +267,45 @@ static char* DuplicateStringWithLength(SemanticState *state, const char *string,
 static char* DuplicateString(SemanticState *state, const char *string)
 {
 	return DuplicateStringWithLength(state, string, strlen(string));
+}
+
+static unsigned int GetIntegerStringLength(unsigned int integer)
+{
+	unsigned int string_length;
+
+	string_length = 1;
+
+	while (integer > 9)
+	{
+		integer /= 10;
+		++string_length;
+	}
+
+	return string_length;
+}
+
+static char* IntegerToString(SemanticState *state, const unsigned int integer)
+{
+	char* const integer_string = (char*)MallocAndHandleError(state, GetIntegerStringLength(integer) + 1);
+
+	if (integer_string != NULL)
+		sprintf(integer_string, "%u", integer);
+
+	return integer_string;
+}
+
+static char* ComputeUniqueMacroSuffix(SemanticState *state, Macro* const macro)
+{
+	const unsigned int integer_string_length = GetIntegerStringLength(macro->current_invocation);
+	const unsigned int suffix_string_length = 1 + CC_MAX(3, integer_string_length);
+	char* const suffix = (char*)MallocAndHandleError(state, suffix_string_length + 1);
+
+	if (suffix != NULL)
+		sprintf(suffix, "_%03u", macro->current_invocation);
+
+	++macro->current_invocation;
+
+	return suffix;
 }
 
 static FILE* fopen_backslash(SemanticState *state, const char *path, const char *mode)
@@ -833,6 +873,7 @@ static void TerminateMacro(SemanticState *state)
 				macro->name = state->shared.macro.name;
 				macro->parameter_names = state->shared.macro.parameter_names.head;
 				macro->source_line_list_head = state->shared.macro.source_line_list.head;
+				macro->current_invocation = 0;
 
 				symbol->type = SYMBOL_MACRO;
 				symbol->shared.pointer = macro;
@@ -4632,7 +4673,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					unsigned int total_parameters;
 					char *narg_string;
 
-					const Macro *macro = (const Macro*)macro_dictionary_entry->shared.pointer;
+					Macro *macro = (Macro*)macro_dictionary_entry->shared.pointer;
+					char* const unique_suffix = ComputeUniqueMacroSuffix(state, macro);
 
 					source_line_pointer += strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
 					parameters = (char**)MallocAndHandleError(state, sizeof(char*));
@@ -4731,23 +4773,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					}
 
 					/* Stringify the number of parameters for the 'narg' placeholder. */
-					{
-						unsigned int string_length, value;
-
-						string_length = 1;
-						value = total_parameters - 1;
-						
-						while (value > 9)
-						{
-							value /= 10;
-							++string_length;
-						}
-
-						narg_string = (char*)MallocAndHandleError(state, string_length + 1);
-
-						if (narg_string != NULL)
-							sprintf(narg_string, "%u", total_parameters - 1);
-					}
+					narg_string = IntegerToString(state, total_parameters - 1);
 
 					/* Finally, invoke the macro. */
 					{
@@ -4783,7 +4809,6 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 								{
 									const char *earliest_parameter_start;
 									const char *earliest_parameter_end;
-									unsigned long parameter_index;
 									const IdentifierListNode *parameter_name;
 									unsigned long i;
 									const char *found_parameter_start;
@@ -4795,22 +4820,36 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 									/* Silence bogus(?) 'variable may be used uninitialised' compiler warnings. */
 									/* TODO: Are these really bogus? */
 									earliest_parameter_end = NULL;
-									parameter_index = 0;
 
 									/* Find numerical macro parameter placeholder. */
 									earliest_parameter_start = strchr(remaining_line, '\\');
 
 									if (earliest_parameter_start != NULL)
 									{
-										char *end;
+										earliest_parameter_end = earliest_parameter_start + 2;
 
-										/* Obtain numerical index of the parameter. */
-										parameter_index = strtoul(earliest_parameter_start + 1, &end, 10);
-										earliest_parameter_end = end;
+										if (earliest_parameter_start[1] == '*')
+										{
+											substitute = label;
+										}
+										else if (earliest_parameter_start[1] == '@')
+										{
+											substitute = unique_suffix;
+										}
+										else
+										{
+											char *end;
 
-										/* Check if conversion failed. */
-										if (end == earliest_parameter_start + 1)
-											earliest_parameter_start = NULL;
+											/* Obtain numerical index of the parameter. */
+											const unsigned long parameter_index = strtoul(earliest_parameter_start + 1, &end, 10);
+											earliest_parameter_end = end;
+
+											/* Check if conversion failed. */
+											if (end == earliest_parameter_start + 1)
+												earliest_parameter_start = NULL;
+											else
+												substitute = (parameter_index < total_parameters && parameters[parameter_index] != NULL) ? parameters[parameter_index] : "";
+										}
 									}
 
 									/* Now find the identifier-based macro parameter placeholders. */
@@ -4820,33 +4859,19 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										{
 											if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
 											{
-												parameter_index = i;
+												substitute = (i < total_parameters && parameters[i] != NULL) ? parameters[i] : "";
 												earliest_parameter_start = found_parameter_start;
 												earliest_parameter_end = found_parameter_end;
 											}
 										}
 									}
 
-									if (earliest_parameter_start != NULL)
-										substitute = (parameter_index < total_parameters && parameters[parameter_index] != NULL) ? parameters[parameter_index] : "";
-
 									/* Find the 'narg' placeholder, which represents how many parameters (arguments) have been passed to the macro. */
 									if (FindMacroParameter(remaining_line, "narg", &found_parameter_start, &found_parameter_end))
 									{
 										if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
 										{
-											substitute = narg_string == NULL ? "1" : narg_string;
-											earliest_parameter_start = found_parameter_start;
-											earliest_parameter_end = found_parameter_end;
-										}
-									}
-
-									/* Find the '\*' placeholder, which represents the label before the macro. */
-									if (FindMacroParameter(remaining_line, "\\*", &found_parameter_start, &found_parameter_end))
-									{
-										if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
-										{
-											substitute = label;
+											substitute = narg_string;
 											earliest_parameter_start = found_parameter_start;
 											earliest_parameter_end = found_parameter_end;
 										}
@@ -4860,7 +4885,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 									{
 										char *new_modified_line;
 
-										const char* const parameter = substitute; /* TODO: Redundant line. */
+										const char* const parameter = substitute == NULL ? "" : substitute;
 										const size_t first_half_length = earliest_parameter_start - modified_line;
 										const size_t parameter_length = strlen(parameter);
 										const size_t second_half_length = strlen(earliest_parameter_end);
@@ -4909,8 +4934,9 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 						free(parameters);
 					}
 
-					/* Free the 'narg' value string. */
+					/* Free other stuff. */
 					free(narg_string);
+					free(unique_suffix);
 				}
 			}
 
