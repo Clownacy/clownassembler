@@ -269,13 +269,13 @@ static char* DuplicateString(SemanticState *state, const char *string)
 	return DuplicateStringWithLength(state, string, strlen(string));
 }
 
-static unsigned int GetIntegerStringLength(unsigned int integer)
+static unsigned int GetDecimalIntegerStringLength(unsigned int integer)
 {
 	unsigned int string_length;
 
 	string_length = 1;
 
-	while (integer > 9)
+	while (integer >= 10)
 	{
 		integer /= 10;
 		++string_length;
@@ -284,9 +284,24 @@ static unsigned int GetIntegerStringLength(unsigned int integer)
 	return string_length;
 }
 
-static char* IntegerToString(SemanticState *state, const unsigned int integer)
+static unsigned int GetHexadecimalIntegerStringLength(unsigned int integer)
 {
-	char* const integer_string = (char*)MallocAndHandleError(state, GetIntegerStringLength(integer) + 1);
+	unsigned int string_length;
+
+	string_length = 1;
+
+	while (integer >= 0x10)
+	{
+		integer /= 0x10;
+		++string_length;
+	}
+
+	return string_length;
+}
+
+static char* DecimalIntegerToString(SemanticState *state, const unsigned int integer)
+{
+	char* const integer_string = (char*)MallocAndHandleError(state, GetDecimalIntegerStringLength(integer) + 1);
 
 	if (integer_string != NULL)
 		sprintf(integer_string, "%u", integer);
@@ -294,9 +309,19 @@ static char* IntegerToString(SemanticState *state, const unsigned int integer)
 	return integer_string;
 }
 
+static char* HexadecimalIntegerToString(SemanticState *state, const unsigned int integer)
+{
+	char* const integer_string = (char*)MallocAndHandleError(state, GetHexadecimalIntegerStringLength(integer) + 1);
+
+	if (integer_string != NULL)
+		sprintf(integer_string, "%X", integer);
+
+	return integer_string;
+}
+
 static char* ComputeUniqueMacroSuffix(SemanticState *state, Macro* const macro)
 {
-	const unsigned int integer_string_length = GetIntegerStringLength(macro->current_invocation);
+	const unsigned int integer_string_length = GetDecimalIntegerStringLength(macro->current_invocation);
 	const unsigned int suffix_string_length = 1 + CC_MAX(3, integer_string_length);
 	char* const suffix = (char*)MallocAndHandleError(state, suffix_string_length + 1);
 
@@ -4795,7 +4820,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					}
 
 					/* Stringify the number of parameters for the 'narg' placeholder. */
-					narg_string = IntegerToString(state, total_parameters - 1);
+					narg_string = DecimalIntegerToString(state, total_parameters - 1);
 
 					/* Finally, invoke the macro. */
 					{
@@ -4858,7 +4883,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										{
 											substitute = unique_suffix;
 										}
-										else if (earliest_parameter_start[1] == '#')
+										else if (earliest_parameter_start[1] == '#' || earliest_parameter_start[1] == '$')
 										{
 											unsigned long value;
 
@@ -4875,7 +4900,10 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 											if (!GetSymbolInteger(state, identifier, identifier_length, cc_true, &value))
 												value = 0;
 
-											symbol_value_string = IntegerToString(state, value);
+											if (earliest_parameter_start[1] == '#')
+												symbol_value_string = DecimalIntegerToString(state, value);
+											else /*if (earliest_parameter_start[1] == '$')*/
+												symbol_value_string = HexadecimalIntegerToString(state, value);
 
 											substitute = symbol_value_string;
 										}

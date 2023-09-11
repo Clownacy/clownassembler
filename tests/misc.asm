@@ -544,15 +544,27 @@ skipper\@:
 
 	; Test '\#' macro.
 TellMe macro
-	dc.b "variable is \#variable\h"
+	dc.b "variable is \#variable"
 	endm
 
-variable set 1
+variable set 10
 	TellMe
-variable set 2
+variable set 11
 	TellMe
-variable set 3
+variable set 12
 	TellMe
+
+	; Test '\$' macro.
+TellMeHex macro
+	dc.b "variable is 0\$variable\h"
+	endm
+
+variable set 10
+	TellMeHex
+variable set 11
+	TellMeHex
+variable set 12
+	TellMeHex
 
   ; More blank lines to test support for trailing blank statements
 
