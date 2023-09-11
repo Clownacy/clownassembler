@@ -526,7 +526,6 @@ Test_b: StarTest
 	dc.w Test_b_wowza - Test_a_wowza
 	dc.w Test_b - Test_a
 
-
 	; Test '\@' macro.
 AtTest macro value
 	moveq	#4-1,d1
@@ -542,6 +541,18 @@ skipper\@:
 	AtTest d2
 	AtTest (a2)
 	AtTest (0).w
+
+	; Test '\#' macro.
+TellMe macro
+	dc.b "variable is \#variable\h"
+	endm
+
+variable set 1
+	TellMe
+variable set 2
+	TellMe
+variable set 3
+	TellMe
 
   ; More blank lines to test support for trailing blank statements
 

@@ -408,24 +408,90 @@ static void OutputByte(SemanticState *state, unsigned int byte)
 	fputc(byte, state->output_file);
 }
 
-static Dictionary_Entry* LookupSymbol(SemanticState *state, const char *identifier)
+static char* ExpandIdentifier(SemanticState *state, const char* const identifier, const size_t identifier_length, size_t* const expanded_identifier_length)
+{
+	char *expanded_identifier = NULL;
+
+	if (identifier[0] == '@' || identifier[0] == '.')
+	{
+		if (state->last_global_label == NULL)
+		{
+			expanded_identifier = DuplicateStringWithLength(state, identifier + 1, identifier_length - 1);
+
+			if (expanded_identifier_length != NULL)
+				*expanded_identifier_length = identifier_length - 1;
+		}
+		else
+		{
+			const size_t prefix_length = strlen(state->last_global_label);
+			const size_t suffix_length = identifier_length - 1;
+			expanded_identifier = (char*)MallocAndHandleError(state, prefix_length + 1 + suffix_length + 1);
+
+			if (expanded_identifier != NULL)
+			{
+				memcpy(&expanded_identifier[0], state->last_global_label, prefix_length);
+				expanded_identifier[prefix_length] = '@';
+				memcpy(&expanded_identifier[prefix_length + 1], &identifier[1], suffix_length);
+				expanded_identifier[prefix_length + 1 + suffix_length] = '\0';
+
+				if (expanded_identifier_length != NULL)
+					*expanded_identifier_length = prefix_length + 1 + suffix_length;
+			}
+		}
+	}
+
+	return expanded_identifier;
+}
+
+static Dictionary_Entry* LookupSymbol(SemanticState *state, const char *identifier, size_t identifier_length)
 {
 	Dictionary_Entry *dictionary_entry;
+	size_t expanded_identifier_length;
 
-	if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, strlen(identifier), &dictionary_entry))
+	char* const expanded_identifier = ExpandIdentifier(state, identifier, identifier_length, &expanded_identifier_length);
+
+	if (expanded_identifier != NULL)
+	{
+		identifier = expanded_identifier;
+		identifier_length = expanded_identifier_length;
+	}
+
+	dictionary_entry = Dictionary_LookUp(&state->dictionary, identifier, identifier_length);
+
+	free(expanded_identifier);
+
+	return dictionary_entry;
+}
+
+static Dictionary_Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, const char *identifier, size_t identifier_length)
+{
+	Dictionary_Entry *dictionary_entry;
+	size_t expanded_identifier_length;
+
+	char* const expanded_identifier = ExpandIdentifier(state, identifier, identifier_length, &expanded_identifier_length);
+
+	if (expanded_identifier != NULL)
+	{
+		identifier = expanded_identifier;
+		identifier_length = expanded_identifier_length;
+	}
+
+	if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, identifier_length, &dictionary_entry))
 	{
 		OutOfMemoryError(state);
 		dictionary_entry = NULL;
 	}
 
+	free(expanded_identifier);
+
 	return dictionary_entry;
 }
 
-static Dictionary_Entry* CreateSymbol(SemanticState *state, const char *identifier)
+static Dictionary_Entry* CreateSymbol(SemanticState *state, const char *identifier, const size_t identifier_length)
 {
 	Dictionary_Entry *dictionary_entry;
 
-	dictionary_entry = LookupSymbol(state, identifier);
+	dictionary_entry = LookupSymbolAndCreateIfNotExist(state, identifier, identifier_length);
 
 	if (dictionary_entry != NULL && dictionary_entry->type != -1)
 	{
@@ -434,6 +500,36 @@ static Dictionary_Entry* CreateSymbol(SemanticState *state, const char *identifi
 	}
 
 	return dictionary_entry;
+}
+
+static cc_bool GetSymbolInteger(SemanticState *state, const char *identifier, const size_t identifier_length, const cc_bool must_evaluate_on_first_pass, unsigned long* const value)
+{
+	cc_bool success = cc_false;
+
+	Dictionary_Entry *dictionary_entry;
+
+	dictionary_entry = LookupSymbol(state, identifier, identifier_length);
+
+	if (dictionary_entry == NULL || dictionary_entry->type == -1)
+	{
+		if (must_evaluate_on_first_pass)
+			SemanticError(state, "Symbol '%s' must be evaluable on first pass.", identifier);
+		else if (state->doing_final_pass)
+			SemanticError(state, "Symbol '%s' does not exist.", identifier);
+		else
+			state->fix_up_needed = cc_true;
+	}
+	else if (dictionary_entry->type != SYMBOL_LABEL && dictionary_entry->type != SYMBOL_CONSTANT && dictionary_entry->type != SYMBOL_VARIABLE)
+	{
+		SemanticError(state, "Symbol '%s' is not a label, constant, or variable.", identifier);
+	}
+	else
+	{
+		success = cc_true;
+		*value = dictionary_entry->shared.unsigned_long;
+	}
+
+	return success;
 }
 
 static void AddToSourceLineList(SemanticState *state, SourceLineList *source_line_list, const char *source_line)
@@ -472,32 +568,6 @@ static void FreeSourceLineList(SourceLineListNode *source_line_list_head)
 
 		source_line_list_node = next_source_line_list_node;
 	}
-}
-
-static char* ExpandLocalIdentifier(SemanticState *state, const char *identifier)
-{
-	char *expanded_identifier;
-
-	if (state->last_global_label == NULL)
-	{
-		expanded_identifier = DuplicateString(state, identifier);
-	}
-	else
-	{
-		const size_t prefix_length = strlen(state->last_global_label);
-		const size_t suffix_length = strlen(identifier);
-
-		expanded_identifier = (char*)MallocAndHandleError(state, prefix_length + 1 + suffix_length + 1);
-
-		if (expanded_identifier != NULL)
-		{
-			memcpy(&expanded_identifier[0], state->last_global_label, prefix_length);
-			expanded_identifier[prefix_length] = '@';
-			memcpy(&expanded_identifier[prefix_length + 1], identifier, suffix_length + 1);
-		}
-	}
-
-	return expanded_identifier;
 }
 
 static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, cc_bool fold)
@@ -694,44 +764,10 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			break;
 
 		case EXPRESSION_IDENTIFIER:
-		{
-			char *expanded_identifier = NULL;
-			const char *identifier = expression->shared.string;
-			Dictionary_Entry *dictionary_entry;
-
-			if (expression->shared.string[0] == '@' || expression->shared.string[0] == '.')
-			{
-				expanded_identifier = ExpandLocalIdentifier(state, expression->shared.string + 1);
-
-				if (expanded_identifier != NULL)
-					identifier = expanded_identifier;
-			}
-
-			dictionary_entry = Dictionary_LookUp(&state->dictionary, identifier, strlen(identifier));
-
-			if (dictionary_entry == NULL || dictionary_entry->type == -1)
-			{
+			if (!GetSymbolInteger(state, expression->shared.string, strlen(expression->shared.string), cc_false, value))
 				success = cc_false;
-
-				if (state->doing_final_pass)
-					SemanticError(state, "Symbol '%s' does not exist.", identifier);
-				else
-					state->fix_up_needed = cc_true;
-			}
-			else if (dictionary_entry->type != SYMBOL_LABEL && dictionary_entry->type != SYMBOL_CONSTANT && dictionary_entry->type != SYMBOL_VARIABLE)
-			{
-				success = cc_false;
-				SemanticError(state, "Symbol '%s' is not a label, constant, or variable.", identifier);
-			}
-			else
-			{
-				*value = dictionary_entry->shared.unsigned_long;
-			}
-
-			free(expanded_identifier);
 
 			break;
-		}
 
 		case EXPRESSION_STRING:
 		{
@@ -759,11 +795,11 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 		}
 
 		case EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT:
-			*value = Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_STATEMENT, sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1)->shared.unsigned_long;
+			*value = LookupSymbol(state, PROGRAM_COUNTER_OF_STATEMENT, sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1)->shared.unsigned_long;
 			break;
 
 		case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
-			*value = Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_long;
+			*value = LookupSymbol(state, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_long;
 			break;
 
 		case EXPRESSION_STRLEN:
@@ -860,7 +896,7 @@ static void TerminateMacro(SemanticState *state)
 
 	if (state->shared.macro.name != NULL)
 	{
-		Dictionary_Entry* const symbol = CreateSymbol(state, state->shared.macro.name);
+		Dictionary_Entry* const symbol = CreateSymbol(state, state->shared.macro.name, strlen(state->shared.macro.name));
 
 		/* Add the macro to the symbol table. */
 		if (symbol != NULL)
@@ -1068,29 +1104,16 @@ static void SetLastGlobalLabel(SemanticState *state, const char *label)
 
 static void AddIdentifierToSymbolTable(SemanticState *state, const char *label, unsigned long value, SymbolType type)
 {
-	char *expanded_identifier;
-	const char *identifier;
 	Dictionary_Entry *symbol;
 
-	expanded_identifier = NULL;
-	identifier = label;
 	symbol = NULL;
-
-	if (label[0] == '@' || label[0] == '.')
-	{
-		/* This is a local label - prefix it with the previous global label. */
-		expanded_identifier = ExpandLocalIdentifier(state, label + 1);
-
-		if (expanded_identifier != NULL)
-			identifier = expanded_identifier;
-	}
 
 	/* Now add it to the symbol table. */
 	switch (type)
 	{
 		case SYMBOL_VARIABLE:
 		case SYMBOL_CONSTANT:
-			symbol = LookupSymbol(state, identifier);
+			symbol = LookupSymbolAndCreateIfNotExist(state, label, strlen(label));
 
 			if (symbol != NULL)
 			{
@@ -1103,7 +1126,7 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const char *label, 
 			break;
 
 		case SYMBOL_LABEL:
-			symbol = CreateSymbol(state, identifier);
+			symbol = CreateSymbol(state, label, strlen(label));
 			break;
 
 		case SYMBOL_MACRO:
@@ -1111,8 +1134,6 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const char *label, 
 			assert(cc_false);
 			break;
 	}
-
-	free(expanded_identifier);
 
 	if (symbol != NULL)
 	{
@@ -3891,7 +3912,7 @@ static void ProcessDc(SemanticState *state, StatementDc *dc)
 			unsigned long value;
 
 			/* Update the program counter symbol in between values, to keep it up to date. */
-			Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_long = state->program_counter;
+			LookupSymbol(state, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_long = state->program_counter;
 
 			if (!ResolveExpression(state, &expression_list_node->expression, &value, cc_true))
 				value = 0;
@@ -4066,8 +4087,8 @@ static void ProcessIf(SemanticState *state, Expression *expression)
 static void ProcessStatement(SemanticState *state, Statement *statement, const char *label)
 {
 	/* Update both copies of the program counter. */
-	Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_STATEMENT, sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1)->shared.unsigned_long = state->program_counter;
-	Dictionary_LookUp(&state->dictionary, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_long = state->program_counter;
+	LookupSymbol(state, PROGRAM_COUNTER_OF_STATEMENT, sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1)->shared.unsigned_long = state->program_counter;
+	LookupSymbol(state, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1)->shared.unsigned_long = state->program_counter;
 
 	switch (statement->type)
 	{
@@ -4659,7 +4680,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 				/* This is either a directive, or a macro. */
 
 				/* Look up the directive in the dictionary to see if it's actually a macro. */
-				const Dictionary_Entry* const macro_dictionary_entry = Dictionary_LookUp(&state->dictionary, source_line_pointer, directive_length);
+				const Dictionary_Entry* const macro_dictionary_entry = LookupSymbol(state, source_line_pointer, directive_length);
 
 				if (macro_dictionary_entry == NULL || macro_dictionary_entry->type != SYMBOL_MACRO)
 				{
@@ -4671,7 +4692,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					/* This is a macro invocation. */
 					char **parameters;
 					unsigned int total_parameters;
-					char *narg_string;
+					char *narg_string, *symbol_value_string;
 
 					Macro *macro = (Macro*)macro_dictionary_entry->shared.pointer;
 					char* const unique_suffix = ComputeUniqueMacroSuffix(state, macro);
@@ -4679,6 +4700,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					source_line_pointer += strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
 					parameters = (char**)MallocAndHandleError(state, sizeof(char*));
 					total_parameters = 1;
+					symbol_value_string = NULL;
 
 					if (label != NULL)
 					{
@@ -4836,6 +4858,27 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										{
 											substitute = unique_suffix;
 										}
+										else if (earliest_parameter_start[1] == '#')
+										{
+											unsigned long value;
+
+											const char* const identifier = earliest_parameter_start + 2;
+											const size_t identifier_length = strspn(identifier, DIRECTIVE_OR_MACRO_CHARS);
+
+											earliest_parameter_end = identifier + identifier_length;
+											/* Absorb trailing backslash. */
+											if (identifier[identifier_length] == '\\')
+												++earliest_parameter_end;
+
+											free(symbol_value_string);
+
+											if (!GetSymbolInteger(state, identifier, identifier_length, cc_true, &value))
+												value = 0;
+
+											symbol_value_string = IntegerToString(state, value);
+
+											substitute = symbol_value_string;
+										}
 										else
 										{
 											char *end;
@@ -4937,6 +4980,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					/* Free other stuff. */
 					free(narg_string);
 					free(unique_suffix);
+					free(symbol_value_string);
 				}
 			}
 
@@ -5208,13 +5252,13 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 		/* Create the dictionary entry for the program counter ahead of time.
 		   Bizarrely, depending on the context, the program counter can be one
 		   of two values, so we need to maintain two separate copies of it. */
-		symbol = CreateSymbol(&state, PROGRAM_COUNTER_OF_STATEMENT);
+		symbol = CreateSymbol(&state, PROGRAM_COUNTER_OF_STATEMENT, sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1);
 
 		if (symbol != NULL)
 		{
 			symbol->type = SYMBOL_VARIABLE;
 
-			symbol = CreateSymbol(&state, PROGRAM_COUNTER_OF_EXPRESSION);
+			symbol = CreateSymbol(&state, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1);
 
 			if (symbol != NULL)
 			{
