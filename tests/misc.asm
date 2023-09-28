@@ -475,6 +475,8 @@ Struct_C_B:	rs.b 2
 Struct_C_C:	rs.b 3
 Struct_C_D:	rs.b 4
 
+Struct_C_Size EQU __RS
+	dc.w	Struct_C_Size
 
 	; Testing variables
 variable = 0
