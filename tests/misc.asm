@@ -469,6 +469,12 @@ Struct_B_B:	rs.b 2
 Struct_B_C:	rs.b 3
 Struct_B_D:	rs.b 4
 
+		rsreset $100
+Struct_C_A:	rs.b 1
+Struct_C_B:	rs.b 2
+Struct_C_C:	rs.b 3
+Struct_C_D:	rs.b 4
+
 
 	; Testing variables
 variable = 0

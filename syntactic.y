@@ -813,6 +813,13 @@ statement
 		statement->type = STATEMENT_TYPE_RSSET;
 		statement->shared.expression = $2;
 	}
+	| TOKEN_DIRECTIVE_RSRESET expression
+	{
+		/* As mentioned in S.N. 68k's manual, this odd hack
+		   is necessary for compatibility with other assemblers. */
+		statement->type = STATEMENT_TYPE_RSSET;
+		statement->shared.expression = $2;
+	}
 	| TOKEN_DIRECTIVE_RSRESET
 	{
 		statement->type = STATEMENT_TYPE_RSRESET;
