@@ -389,7 +389,9 @@ typedef enum StatementType
 	STATEMENT_TYPE_END,
 	STATEMENT_TYPE_RS,
 	STATEMENT_TYPE_RSSET,
-	STATEMENT_TYPE_RSRESET
+	STATEMENT_TYPE_RSRESET,
+	STATEMENT_TYPE_OBJ,
+	STATEMENT_TYPE_OBJEND
 } StatementType;
 
 typedef struct Statement
@@ -420,7 +422,7 @@ typedef struct Statement
 } Statement;
 
 
-#line 424 "syntactic.h"
+#line 426 "syntactic.h"
 
 /* Token kinds.  */
 #ifndef M68KASM_TOKENTYPE
@@ -572,29 +574,31 @@ typedef struct Statement
     TOKEN_DIRECTIVE_RS = 396,      /* TOKEN_DIRECTIVE_RS  */
     TOKEN_DIRECTIVE_RSSET = 397,   /* TOKEN_DIRECTIVE_RSSET  */
     TOKEN_DIRECTIVE_RSRESET = 398, /* TOKEN_DIRECTIVE_RSRESET  */
-    TOKEN_SIZE_BYTE = 399,         /* TOKEN_SIZE_BYTE  */
-    TOKEN_SIZE_SHORT = 400,        /* TOKEN_SIZE_SHORT  */
-    TOKEN_SIZE_WORD = 401,         /* TOKEN_SIZE_WORD  */
-    TOKEN_SIZE_LONGWORD = 402,     /* TOKEN_SIZE_LONGWORD  */
-    TOKEN_DATA_REGISTER = 403,     /* TOKEN_DATA_REGISTER  */
-    TOKEN_ADDRESS_REGISTER = 404,  /* TOKEN_ADDRESS_REGISTER  */
-    TOKEN_NUMBER = 405,            /* TOKEN_NUMBER  */
-    TOKEN_IDENTIFIER = 406,        /* TOKEN_IDENTIFIER  */
-    TOKEN_LOCAL_IDENTIFIER = 407,  /* TOKEN_LOCAL_IDENTIFIER  */
-    TOKEN_STRING = 408,            /* TOKEN_STRING  */
-    TOKEN_STATUS_REGISTER = 409,   /* TOKEN_STATUS_REGISTER  */
-    TOKEN_CONDITION_CODE_REGISTER = 410, /* TOKEN_CONDITION_CODE_REGISTER  */
-    TOKEN_USER_STACK_POINTER_REGISTER = 411, /* TOKEN_USER_STACK_POINTER_REGISTER  */
-    TOKEN_PROGRAM_COUNTER = 412,   /* TOKEN_PROGRAM_COUNTER  */
-    TOKEN_LOGICAL_AND = 413,       /* TOKEN_LOGICAL_AND  */
-    TOKEN_LOGICAL_OR = 414,        /* TOKEN_LOGICAL_OR  */
-    TOKEN_EQUALITY = 415,          /* TOKEN_EQUALITY  */
-    TOKEN_INEQUALITY = 416,        /* TOKEN_INEQUALITY  */
-    TOKEN_LESS_OR_EQUAL = 417,     /* TOKEN_LESS_OR_EQUAL  */
-    TOKEN_MORE_OR_EQUAL = 418,     /* TOKEN_MORE_OR_EQUAL  */
-    TOKEN_LEFT_SHIFT = 419,        /* TOKEN_LEFT_SHIFT  */
-    TOKEN_RIGHT_SHIFT = 420,       /* TOKEN_RIGHT_SHIFT  */
-    TOKEN_STRLEN = 421             /* TOKEN_STRLEN  */
+    TOKEN_DIRECTIVE_OBJ = 399,     /* TOKEN_DIRECTIVE_OBJ  */
+    TOKEN_DIRECTIVE_OBJEND = 400,  /* TOKEN_DIRECTIVE_OBJEND  */
+    TOKEN_SIZE_BYTE = 401,         /* TOKEN_SIZE_BYTE  */
+    TOKEN_SIZE_SHORT = 402,        /* TOKEN_SIZE_SHORT  */
+    TOKEN_SIZE_WORD = 403,         /* TOKEN_SIZE_WORD  */
+    TOKEN_SIZE_LONGWORD = 404,     /* TOKEN_SIZE_LONGWORD  */
+    TOKEN_DATA_REGISTER = 405,     /* TOKEN_DATA_REGISTER  */
+    TOKEN_ADDRESS_REGISTER = 406,  /* TOKEN_ADDRESS_REGISTER  */
+    TOKEN_NUMBER = 407,            /* TOKEN_NUMBER  */
+    TOKEN_IDENTIFIER = 408,        /* TOKEN_IDENTIFIER  */
+    TOKEN_LOCAL_IDENTIFIER = 409,  /* TOKEN_LOCAL_IDENTIFIER  */
+    TOKEN_STRING = 410,            /* TOKEN_STRING  */
+    TOKEN_STATUS_REGISTER = 411,   /* TOKEN_STATUS_REGISTER  */
+    TOKEN_CONDITION_CODE_REGISTER = 412, /* TOKEN_CONDITION_CODE_REGISTER  */
+    TOKEN_USER_STACK_POINTER_REGISTER = 413, /* TOKEN_USER_STACK_POINTER_REGISTER  */
+    TOKEN_PROGRAM_COUNTER = 414,   /* TOKEN_PROGRAM_COUNTER  */
+    TOKEN_LOGICAL_AND = 415,       /* TOKEN_LOGICAL_AND  */
+    TOKEN_LOGICAL_OR = 416,        /* TOKEN_LOGICAL_OR  */
+    TOKEN_EQUALITY = 417,          /* TOKEN_EQUALITY  */
+    TOKEN_INEQUALITY = 418,        /* TOKEN_INEQUALITY  */
+    TOKEN_LESS_OR_EQUAL = 419,     /* TOKEN_LESS_OR_EQUAL  */
+    TOKEN_MORE_OR_EQUAL = 420,     /* TOKEN_MORE_OR_EQUAL  */
+    TOKEN_LEFT_SHIFT = 421,        /* TOKEN_LEFT_SHIFT  */
+    TOKEN_RIGHT_SHIFT = 422,       /* TOKEN_RIGHT_SHIFT  */
+    TOKEN_STRLEN = 423             /* TOKEN_STRLEN  */
   };
   typedef enum m68kasm_tokentype m68kasm_token_kind_t;
 #endif
@@ -603,7 +607,7 @@ typedef struct Statement
 #if ! defined M68KASM_STYPE && ! defined M68KASM_STYPE_IS_DECLARED
 union M68KASM_STYPE
 {
-#line 423 "syntactic.y"
+#line 425 "syntactic.y"
 
 	unsigned long unsigned_long;
 	char *string;
@@ -616,7 +620,7 @@ union M68KASM_STYPE
 	IdentifierList identifier_list;
 	Expression expression;
 
-#line 620 "syntactic.h"
+#line 624 "syntactic.h"
 
 };
 typedef union M68KASM_STYPE M68KASM_STYPE;
@@ -630,13 +634,13 @@ typedef union M68KASM_STYPE M68KASM_STYPE;
 int m68kasm_parse (void *scanner, Statement *statement);
 
 /* "%code provides" blocks.  */
-#line 397 "syntactic.y"
+#line 399 "syntactic.y"
 
 
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
 
 
-#line 641 "syntactic.h"
+#line 645 "syntactic.h"
 
 #endif /* !YY_M68KASM_SYNTACTIC_H_INCLUDED  */

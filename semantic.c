@@ -91,6 +91,8 @@ typedef struct SemanticState
 	FILE *listing_file;
 	cc_bool equ_set_descope_local_labels;
 	unsigned long program_counter;
+	cc_bool obj_active;
+	unsigned long obj_delta;
 	FixUp *fix_up_list_head;
 	FixUp *fix_up_list_tail;
 	cc_bool fix_up_needed;
@@ -4148,6 +4150,8 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		case STATEMENT_TYPE_ENDW:
 		case STATEMENT_TYPE_RSSET:
 		case STATEMENT_TYPE_RSRESET:
+		case STATEMENT_TYPE_OBJ:
+		case STATEMENT_TYPE_OBJEND:
 			if (label != NULL)
 				SemanticError(state, "There cannot be a label on this type of statement.");
 
@@ -4463,6 +4467,40 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		case STATEMENT_TYPE_RSRESET:
 			/* Set program counter to 0. */
 			state->program_counter = 0;
+			break;
+
+		case STATEMENT_TYPE_OBJ:
+			if (state->obj_active)
+			{
+				SemanticError(state, "OBJ statements cannot be nested.");
+			}
+			else
+			{
+				/* Set program counter to value. */
+				unsigned long value;
+
+				if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
+					SemanticError(state, "Value must be evaluable on the first pass.");
+				else
+					state->obj_delta = value - state->program_counter;
+
+				state->obj_active = cc_true;
+				state->program_counter += state->obj_delta;
+			}
+
+			break;
+
+		case STATEMENT_TYPE_OBJEND:
+			if (!state->obj_active)
+			{
+				SemanticError(state, "This stray OBJEND has no preceeding OBJ.");
+			}
+			else
+			{
+				state->program_counter -= state->obj_delta;
+				state->obj_active = cc_false;
+			}
+
 			break;
 	}
 }
@@ -5252,6 +5290,8 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 	state.listing_file = listing_file;
 	state.equ_set_descope_local_labels = equ_set_descope_local_labels;
 	state.program_counter = 0;
+	state.obj_active = cc_false;
+	state.obj_delta = 0;
 	state.fix_up_list_head = NULL;
 	state.fix_up_list_tail = NULL;
 	state.doing_fix_up = cc_false;
@@ -5317,6 +5357,8 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 					/* Perform some sanity checks to make sure we're not somehow in an invalid state. */
 					if (state.current_if_level != 0)
 						SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
+					if (state.obj_active)
+						SemanticError(&state, "An OBJ statement somewhere is missing its OBJEND.");
 
 					/* We're about to process the fix-ups, but first we need to remove all variables
 					   from the symbol table so that they're not able to be used before they are declared. */

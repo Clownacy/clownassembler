@@ -565,6 +565,18 @@ variable set 11
 	TellMeHex
 variable set 12
 	TellMeHex
+	even
+
+	dc.l	*
+	dc.l	*
+
+	obj $200
+	dc.l	*
+	dc.l	*
+	objend
+
+	dc.l	*
+	dc.l	*
 
   ; More blank lines to test support for trailing blank statements
 

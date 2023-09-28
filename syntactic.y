@@ -362,7 +362,9 @@ typedef enum StatementType
 	STATEMENT_TYPE_END,
 	STATEMENT_TYPE_RS,
 	STATEMENT_TYPE_RSSET,
-	STATEMENT_TYPE_RSRESET
+	STATEMENT_TYPE_RSRESET,
+	STATEMENT_TYPE_OBJ,
+	STATEMENT_TYPE_OBJEND
 } StatementType;
 
 typedef struct Statement
@@ -574,6 +576,8 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_RS
 %token TOKEN_DIRECTIVE_RSSET
 %token TOKEN_DIRECTIVE_RSRESET
+%token TOKEN_DIRECTIVE_OBJ
+%token TOKEN_DIRECTIVE_OBJEND
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -812,6 +816,15 @@ statement
 	| TOKEN_DIRECTIVE_RSRESET
 	{
 		statement->type = STATEMENT_TYPE_RSRESET;
+	}
+	| TOKEN_DIRECTIVE_OBJ expression
+	{
+		statement->type = STATEMENT_TYPE_OBJ;
+		statement->shared.expression = $2;
+	}
+	| TOKEN_DIRECTIVE_OBJEND
+	{
+		statement->type = STATEMENT_TYPE_OBJEND;
 	}
 	;
 
@@ -2114,6 +2127,7 @@ void DestroyStatement(Statement *statement)
 		case STATEMENT_TYPE_EVEN:
 		case STATEMENT_TYPE_END:
 		case STATEMENT_TYPE_RSRESET:
+		case STATEMENT_TYPE_OBJEND:
 			break;
 
 		case STATEMENT_TYPE_INSTRUCTION:
@@ -2157,6 +2171,7 @@ void DestroyStatement(Statement *statement)
 		case STATEMENT_TYPE_ELSEIF:
 		case STATEMENT_TYPE_WHILE:
 		case STATEMENT_TYPE_RSSET:
+		case STATEMENT_TYPE_OBJ:
 			DestroyExpression(&statement->shared.expression);
 			break;
 
