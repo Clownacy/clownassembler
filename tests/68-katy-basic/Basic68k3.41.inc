@@ -6,7 +6,7 @@
 ram_strt	rs.l	$100			; allow 1K for the stack, this should be plenty
 						; for any BASIC program that doesn't do something
 						; silly, it could even be much less.
-ram_base
+ram_base	rs.b	0
 LAB_WARM	rs.w	1			; BASIC warm start entry point
 Wrmjpv	rs.l	1			; BASIC warm start jump vector
 
@@ -107,11 +107,11 @@ Cvaral	rs.l	1			; current var address
 Lvarpl	rs.l	1			; variable pointer for LET and FOR/NEXT
 
 des_sk_e	rs.l	6			; descriptor stack end address
-des_sk					; descriptor stack start address
+des_sk		rs.b	0			; descriptor stack start address
 						; use a4 for the descriptor pointer
 		rs.w	1			
 Ibuffs	rs.l	$40			; start of input buffer
-Ibuffe
+Ibuffe	rs.b	0
 						; end of input buffer
 
 FAC1_m	rs.l	1			; FAC1 mantissa1
@@ -195,7 +195,7 @@ file_id	rs.l	1			; load/save file ID
 
 		rs.w	1			; dummy even value and zero pad byte
 
-prg_strt
+prg_strt	rs.b	0
 
 	;ORG	*
 
