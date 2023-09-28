@@ -575,6 +575,7 @@ variable set 12
 	TellMeHex
 	even
 
+	; Test obj
 	dc.l	*
 	dc.l	*
 
@@ -585,6 +586,11 @@ variable set 12
 
 	dc.l	*
 	dc.l	*
+
+	; Test org
+	dc.b "watch me skip 4 bytes"
+	org *+4
+	dc.b "wow"
 
   ; More blank lines to test support for trailing blank statements
 

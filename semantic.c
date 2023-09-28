@@ -4151,6 +4151,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		case STATEMENT_TYPE_RSRESET:
 		case STATEMENT_TYPE_OBJ:
 		case STATEMENT_TYPE_OBJEND:
+		case STATEMENT_TYPE_ORG:
 			if (label != NULL)
 				SemanticError(state, "There cannot be a label on this type of statement.");
 
@@ -4485,7 +4486,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			}
 			else
 			{
-				/* Set program counter to value. */
+				/* Set '__RS' to value. */
 				unsigned long value;
 
 				if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
@@ -4511,6 +4512,24 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			}
 
 			break;
+
+		case STATEMENT_TYPE_ORG:
+		{
+			/* Set '__RS' to value. */
+			unsigned long value;
+
+			if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
+			{
+				SemanticError(state, "Value must be evaluable on the first pass.");
+			}
+			else
+			{
+				fseek(state->output_file, value, SEEK_SET);
+				state->program_counter = value;
+			}
+
+			break;
+		}
 	}
 }
 

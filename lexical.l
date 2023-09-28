@@ -265,6 +265,7 @@ hexadecimal       {hexadecimal_digit}+
 <INITIAL>rsreset         BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RSRESET;
 <INITIAL>obj             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_OBJ;
 <INITIAL>objend          BEGIN(OPERANDS); return TOKEN_DIRECTIVE_OBJEND;
+<INITIAL>org             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ORG;
 
  /* Sizes. */
 ".b"            return TOKEN_SIZE_BYTE;
