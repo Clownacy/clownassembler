@@ -592,6 +592,20 @@ variable set 12
 	org *+4
 	dc.b "wow"
 
+	; Test an edge involving a combination of obj and org
+LetsGetWacky:
+	obj LetsGetWacky+1
+	org LetsGetWacky
+	if *<>LetsGetWacky
+		inform 2,"Wrong ORG address"
+	endif
+	dc.l *
+	objend
+	if *<>LetsGetWacky+3
+		inform 2,"Wrong OBJEND address"
+	endif
+	dc.l *
+
   ; More blank lines to test support for trailing blank statements
 
 

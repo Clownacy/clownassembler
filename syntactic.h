@@ -359,6 +359,7 @@ typedef struct StatementMacro
 
 typedef struct StatementInform
 {
+	Expression severity;
 	char *message;
 } StatementInform;
 
@@ -423,7 +424,7 @@ typedef struct Statement
 } Statement;
 
 
-#line 427 "syntactic.h"
+#line 428 "syntactic.h"
 
 /* Token kinds.  */
 #ifndef M68KASM_TOKENTYPE
@@ -571,36 +572,37 @@ typedef struct Statement
     TOKEN_DIRECTIVE_EVEN = 392,    /* TOKEN_DIRECTIVE_EVEN  */
     TOKEN_DIRECTIVE_CNOP = 393,    /* TOKEN_DIRECTIVE_CNOP  */
     TOKEN_DIRECTIVE_INFORM = 394,  /* TOKEN_DIRECTIVE_INFORM  */
-    TOKEN_DIRECTIVE_END = 395,     /* TOKEN_DIRECTIVE_END  */
-    TOKEN_DIRECTIVE_RS = 396,      /* TOKEN_DIRECTIVE_RS  */
-    TOKEN_DIRECTIVE_RSSET = 397,   /* TOKEN_DIRECTIVE_RSSET  */
-    TOKEN_DIRECTIVE_RSRESET = 398, /* TOKEN_DIRECTIVE_RSRESET  */
-    TOKEN_DIRECTIVE_OBJ = 399,     /* TOKEN_DIRECTIVE_OBJ  */
-    TOKEN_DIRECTIVE_OBJEND = 400,  /* TOKEN_DIRECTIVE_OBJEND  */
-    TOKEN_DIRECTIVE_ORG = 401,     /* TOKEN_DIRECTIVE_ORG  */
-    TOKEN_SIZE_BYTE = 402,         /* TOKEN_SIZE_BYTE  */
-    TOKEN_SIZE_SHORT = 403,        /* TOKEN_SIZE_SHORT  */
-    TOKEN_SIZE_WORD = 404,         /* TOKEN_SIZE_WORD  */
-    TOKEN_SIZE_LONGWORD = 405,     /* TOKEN_SIZE_LONGWORD  */
-    TOKEN_DATA_REGISTER = 406,     /* TOKEN_DATA_REGISTER  */
-    TOKEN_ADDRESS_REGISTER = 407,  /* TOKEN_ADDRESS_REGISTER  */
-    TOKEN_NUMBER = 408,            /* TOKEN_NUMBER  */
-    TOKEN_IDENTIFIER = 409,        /* TOKEN_IDENTIFIER  */
-    TOKEN_LOCAL_IDENTIFIER = 410,  /* TOKEN_LOCAL_IDENTIFIER  */
-    TOKEN_STRING = 411,            /* TOKEN_STRING  */
-    TOKEN_STATUS_REGISTER = 412,   /* TOKEN_STATUS_REGISTER  */
-    TOKEN_CONDITION_CODE_REGISTER = 413, /* TOKEN_CONDITION_CODE_REGISTER  */
-    TOKEN_USER_STACK_POINTER_REGISTER = 414, /* TOKEN_USER_STACK_POINTER_REGISTER  */
-    TOKEN_PROGRAM_COUNTER = 415,   /* TOKEN_PROGRAM_COUNTER  */
-    TOKEN_LOGICAL_AND = 416,       /* TOKEN_LOGICAL_AND  */
-    TOKEN_LOGICAL_OR = 417,        /* TOKEN_LOGICAL_OR  */
-    TOKEN_EQUALITY = 418,          /* TOKEN_EQUALITY  */
-    TOKEN_INEQUALITY = 419,        /* TOKEN_INEQUALITY  */
-    TOKEN_LESS_OR_EQUAL = 420,     /* TOKEN_LESS_OR_EQUAL  */
-    TOKEN_MORE_OR_EQUAL = 421,     /* TOKEN_MORE_OR_EQUAL  */
-    TOKEN_LEFT_SHIFT = 422,        /* TOKEN_LEFT_SHIFT  */
-    TOKEN_RIGHT_SHIFT = 423,       /* TOKEN_RIGHT_SHIFT  */
-    TOKEN_STRLEN = 424             /* TOKEN_STRLEN  */
+    TOKEN_DIRECTIVE_FAIL = 395,    /* TOKEN_DIRECTIVE_FAIL  */
+    TOKEN_DIRECTIVE_END = 396,     /* TOKEN_DIRECTIVE_END  */
+    TOKEN_DIRECTIVE_RS = 397,      /* TOKEN_DIRECTIVE_RS  */
+    TOKEN_DIRECTIVE_RSSET = 398,   /* TOKEN_DIRECTIVE_RSSET  */
+    TOKEN_DIRECTIVE_RSRESET = 399, /* TOKEN_DIRECTIVE_RSRESET  */
+    TOKEN_DIRECTIVE_OBJ = 400,     /* TOKEN_DIRECTIVE_OBJ  */
+    TOKEN_DIRECTIVE_OBJEND = 401,  /* TOKEN_DIRECTIVE_OBJEND  */
+    TOKEN_DIRECTIVE_ORG = 402,     /* TOKEN_DIRECTIVE_ORG  */
+    TOKEN_SIZE_BYTE = 403,         /* TOKEN_SIZE_BYTE  */
+    TOKEN_SIZE_SHORT = 404,        /* TOKEN_SIZE_SHORT  */
+    TOKEN_SIZE_WORD = 405,         /* TOKEN_SIZE_WORD  */
+    TOKEN_SIZE_LONGWORD = 406,     /* TOKEN_SIZE_LONGWORD  */
+    TOKEN_DATA_REGISTER = 407,     /* TOKEN_DATA_REGISTER  */
+    TOKEN_ADDRESS_REGISTER = 408,  /* TOKEN_ADDRESS_REGISTER  */
+    TOKEN_NUMBER = 409,            /* TOKEN_NUMBER  */
+    TOKEN_IDENTIFIER = 410,        /* TOKEN_IDENTIFIER  */
+    TOKEN_LOCAL_IDENTIFIER = 411,  /* TOKEN_LOCAL_IDENTIFIER  */
+    TOKEN_STRING = 412,            /* TOKEN_STRING  */
+    TOKEN_STATUS_REGISTER = 413,   /* TOKEN_STATUS_REGISTER  */
+    TOKEN_CONDITION_CODE_REGISTER = 414, /* TOKEN_CONDITION_CODE_REGISTER  */
+    TOKEN_USER_STACK_POINTER_REGISTER = 415, /* TOKEN_USER_STACK_POINTER_REGISTER  */
+    TOKEN_PROGRAM_COUNTER = 416,   /* TOKEN_PROGRAM_COUNTER  */
+    TOKEN_LOGICAL_AND = 417,       /* TOKEN_LOGICAL_AND  */
+    TOKEN_LOGICAL_OR = 418,        /* TOKEN_LOGICAL_OR  */
+    TOKEN_EQUALITY = 419,          /* TOKEN_EQUALITY  */
+    TOKEN_INEQUALITY = 420,        /* TOKEN_INEQUALITY  */
+    TOKEN_LESS_OR_EQUAL = 421,     /* TOKEN_LESS_OR_EQUAL  */
+    TOKEN_MORE_OR_EQUAL = 422,     /* TOKEN_MORE_OR_EQUAL  */
+    TOKEN_LEFT_SHIFT = 423,        /* TOKEN_LEFT_SHIFT  */
+    TOKEN_RIGHT_SHIFT = 424,       /* TOKEN_RIGHT_SHIFT  */
+    TOKEN_STRLEN = 425             /* TOKEN_STRLEN  */
   };
   typedef enum m68kasm_tokentype m68kasm_token_kind_t;
 #endif
@@ -609,7 +611,7 @@ typedef struct Statement
 #if ! defined M68KASM_STYPE && ! defined M68KASM_STYPE_IS_DECLARED
 union M68KASM_STYPE
 {
-#line 426 "syntactic.y"
+#line 427 "syntactic.y"
 
 	unsigned long unsigned_long;
 	char *string;
@@ -622,7 +624,7 @@ union M68KASM_STYPE
 	IdentifierList identifier_list;
 	Expression expression;
 
-#line 626 "syntactic.h"
+#line 628 "syntactic.h"
 
 };
 typedef union M68KASM_STYPE M68KASM_STYPE;
@@ -636,13 +638,13 @@ typedef union M68KASM_STYPE M68KASM_STYPE;
 int m68kasm_parse (void *scanner, Statement *statement);
 
 /* "%code provides" blocks.  */
-#line 400 "syntactic.y"
+#line 401 "syntactic.y"
 
 
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
 
 
-#line 647 "syntactic.h"
+#line 649 "syntactic.h"
 
 #endif /* !YY_M68KASM_SYNTACTIC_H_INCLUDED  */

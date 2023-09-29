@@ -4409,9 +4409,44 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		}
 
 		case STATEMENT_TYPE_INFORM:
-			/* TODO - Everything... */
-			SemanticWarning(state, "INFORM: '%s'", statement->shared.inform.message);
+		{
+			unsigned long severity;
+
+			if (statement->shared.inform.message == NULL)
+			{
+				/* Actually a 'FAIL'. */
+				/* TODO: Halt assembly. */
+				SemanticError(state, "Assembly Failed");
+			}
+			else
+			{
+				/* Definitely an 'INFORM'... */
+				if (!ResolveExpression(state, &statement->shared.inform.severity, &severity, cc_true))
+				{
+					SemanticError(state, "Severity must be evaluable on the first pass.");
+					severity = 0;
+				}
+
+				/* TODO - Everything... */
+				switch (severity)
+				{
+					case 0:
+						fprintf(stderr, "INFORM: '%s'\n", statement->shared.inform.message);
+						break;
+
+					case 1:
+						SemanticWarning(state, "INFORM: '%s'", statement->shared.inform.message);
+						break;
+
+					case 2:
+					case 3: /* TODO: Halt assembly. */
+						SemanticError(state, "INFORM: '%s'", statement->shared.inform.message);
+						break;
+				}
+			}
+
 			break;
+		}
 
 		case STATEMENT_TYPE_END:
 			state->end = cc_true;

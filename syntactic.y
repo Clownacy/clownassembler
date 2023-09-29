@@ -332,6 +332,7 @@ typedef struct StatementMacro
 
 typedef struct StatementInform
 {
+	Expression severity;
 	char *message;
 } StatementInform;
 
@@ -573,6 +574,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_EVEN
 %token TOKEN_DIRECTIVE_CNOP
 %token TOKEN_DIRECTIVE_INFORM
+%token TOKEN_DIRECTIVE_FAIL
 %token TOKEN_DIRECTIVE_END
 %token TOKEN_DIRECTIVE_RS
 %token TOKEN_DIRECTIVE_RSSET
@@ -785,20 +787,23 @@ statement
 	}
 	| TOKEN_DIRECTIVE_INFORM expression ',' TOKEN_STRING
 	{
-		(void)$2;
-
-		/* TODO - Severity level(?) */
 		statement->type = STATEMENT_TYPE_INFORM;
+		statement->shared.inform.severity = $2;
 		statement->shared.inform.message = $4;
 	}
 	| TOKEN_DIRECTIVE_INFORM expression ',' TOKEN_STRING ',' expression_list
 	{
-		(void)$2;
 		(void)$6;
 
-		/* TODO - Severity level(?) and parameters */
+		/* TODO - parameters */
 		statement->type = STATEMENT_TYPE_INFORM;
+		statement->shared.inform.severity = $2;
 		statement->shared.inform.message = $4;
+	}
+	| TOKEN_DIRECTIVE_FAIL
+	{
+		statement->type = STATEMENT_TYPE_INFORM;
+		statement->shared.inform.message = NULL;
 	}
 	| TOKEN_DIRECTIVE_END
 	{
