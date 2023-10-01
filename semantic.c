@@ -4677,13 +4677,6 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	char *label;
 	size_t directive_length;
 
-	/* Output line to listing file. */
-	if (state->listing_file != NULL)
-	{
-		state->listing_counter = 0;
-		fprintf(state->listing_file, "%08lX", state->program_counter);
-	}
-
 	++state->location->line_number;
 
 	if (source_line[0] == '*')
@@ -5180,16 +5173,6 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	}
 
 	free(label);
-
-	if (state->listing_file != NULL)
-	{
-		unsigned int i;
-
-		for (i = state->listing_counter * 2 + state->listing_counter / 2; i < 28; ++i)
-			fputc(' ', state->listing_file);
-
-		fprintf(state->listing_file, "%s\n", source_line);
-	}
 }
 
 static void AssembleFile(SemanticState *state, FILE *input_file)
@@ -5264,7 +5247,25 @@ static void AssembleFile(SemanticState *state, FILE *input_file)
 		/* Remove newlines from the string, so that they don't appear in the error message. */
 		state->line_buffer[newline_index] = '\0';
 
+		/* Output program counter to listing file. */
+		if (state->listing_file != NULL)
+		{
+			state->listing_counter = 0;
+			fprintf(state->listing_file, "%08lX", state->program_counter);
+		}
+
 		AssembleLine(state, state->line_buffer);
+
+		/* Output line to listing file. */
+		if (state->listing_file != NULL)
+		{
+			unsigned int i;
+
+			for (i = state->listing_counter * 2 + state->listing_counter / 2; i < 28; ++i)
+				fputc(' ', state->listing_file);
+
+			fprintf(state->listing_file, "%s\n", state->line_buffer);
+		}
 	}
 
 	/* If we're not in normal mode when a file ends, then something is wrong. */
