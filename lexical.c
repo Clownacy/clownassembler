@@ -2547,7 +2547,12 @@ YY_RULE_SETUP
 #line 370 "lexical.l"
 {
 	const size_t length = strlen(yytext) - 2;
+
+	/* Escape PATH mode so that the following arguments use the correct rules. */
+	BEGIN(OPERANDS);
+
 	yylval->string = (char*)malloc(length + 1);
+
 	if (yylval->string == NULL)
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
@@ -2565,10 +2570,11 @@ YY_RULE_SETUP
 case 196:
 /* rule 196 can match eol */
 YY_RULE_SETUP
-#line 387 "lexical.l"
+#line 392 "lexical.l"
 {
 	const size_t length = strlen(yytext);
 
+	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
 	yylval->string = (char*)malloc(length + 1);
@@ -2588,7 +2594,7 @@ YY_RULE_SETUP
 /* Identifier, data register, or address register. */
 case 197:
 YY_RULE_SETUP
-#line 407 "lexical.l"
+#line 413 "lexical.l"
 {
 	if (yytext[2] == '\0' && (yytext[0] == 'd' || yytext[0] == 'D' || yytext[0] == 'a' || yytext[0] == 'A') && yytext[1] >= '0' && yytext[1] <= '7')
 	{
@@ -2617,7 +2623,7 @@ YY_RULE_SETUP
 /* Local label. */
 case 198:
 YY_RULE_SETUP
-#line 433 "lexical.l"
+#line 439 "lexical.l"
 {
 	const size_t length = strlen(yytext);
 	yylval->string = (char*)malloc(length + 1);
@@ -2636,15 +2642,15 @@ YY_RULE_SETUP
 /* Make Bison signal a syntax error for unrecognised symbols */
 case 199:
 YY_RULE_SETUP
-#line 449 "lexical.l"
+#line 455 "lexical.l"
 return yytext[0];
 	YY_BREAK
 case 200:
 YY_RULE_SETUP
-#line 451 "lexical.l"
+#line 457 "lexical.l"
 ECHO;
 	YY_BREAK
-#line 2647 "lexical.c"
+#line 2653 "lexical.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -3786,6 +3792,6 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 451 "lexical.l"
+#line 457 "lexical.l"
 
 

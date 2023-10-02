@@ -368,7 +368,12 @@ strlen          return TOKEN_STRLEN;
 \"[^\"]+\" |
 \'[^\']+\' {
 	const size_t length = strlen(yytext) - 2;
+
+	/* Escape PATH mode so that the following arguments use the correct rules. */
+	BEGIN(OPERANDS);
+
 	yylval->string = (char*)malloc(length + 1);
+
 	if (yylval->string == NULL)
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
@@ -386,6 +391,7 @@ strlen          return TOKEN_STRLEN;
 <PATH>[^, \t;]([^,;]*[^, \t;])? {
 	const size_t length = strlen(yytext);
 
+	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
 	yylval->string = (char*)malloc(length + 1);
