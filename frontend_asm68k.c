@@ -24,6 +24,48 @@
 #include "semantic.h"
 #include "strcmpci.h"
 
+static int total_arguments;
+static char **arguments;
+
+static void DefinitionCallback(void *internal, void* const user_data, void (* const add_definition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value))
+{
+	int i;
+
+	(void)user_data;
+
+	for (i = 1; i < total_arguments; ++i)
+	{
+		if (arguments[i][0] == '/' && tolower(arguments[i][1]) == 'e')
+		{
+			const char* const identifier = arguments[i + 1];
+			const size_t identifier_length = strcspn(identifier, "=");
+
+			unsigned long value;
+			char *str_end;
+
+			if (identifier[identifier_length] != '=')
+			{
+				value = 0; /* Exactly what asm68k does... */
+			}
+			else
+			{
+				/* SN 68k (asm68k) supports XX, 0xXX, and $XX. */
+				if (identifier[identifier_length + 1] == '$')
+					value = strtoul(&identifier[identifier_length + 1 + 1], &str_end, 0x10);
+				else
+					value = strtoul(&identifier[identifier_length + 1], &str_end, 0);
+
+				if (str_end < strchr(identifier, '\0'))
+					fprintf(stderr, "Error: Value of argument '/e %s' is invalid.\n", arguments[i + 1]);
+			}
+
+			add_definition(internal, identifier, identifier_length, value);
+
+			++i; /* Skip argument. */
+		}
+	}
+}
+
 int main(int argc, char **argv)
 {
 	int exit_code = EXIT_SUCCESS;
@@ -47,6 +89,9 @@ int main(int argc, char **argv)
 		OUTPUT_S_RECORD
 	} output_mode;
 
+	total_arguments = argc;
+	arguments = argv;
+
 	combined_arguments = NULL;
 
 	case_insensitive = cc_true;
@@ -65,6 +110,10 @@ int main(int argc, char **argv)
 			switch (tolower(argv[i][1]))
 			{
 				case 'e':
+					/* We'll deal with this later, in DefinitionCallback. */
+					++i;
+					break;
+
 				case 'j':
 					/* Skip argument. */
 					++i;
@@ -404,7 +453,7 @@ int main(int argc, char **argv)
 	/* If we've gotten this far without any errors, then finally run the assembler. */
 	if (exit_code != EXIT_FAILURE)
 	{
-		if (!ClownAssembler_Assemble(source_file, object_file, listing_file, symbol_file, source_file_path, cc_false, case_insensitive, equ_set_descope_local_labels))
+		if (!ClownAssembler_Assemble(source_file, object_file, listing_file, symbol_file, source_file_path, cc_false, case_insensitive, equ_set_descope_local_labels, DefinitionCallback, NULL))
 		{
 			fprintf(stderr, "Error: Failed to assemble.\n");
 			exit_code = EXIT_FAILURE;

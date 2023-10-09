@@ -26,6 +26,44 @@
 
 #define ERROR(message) do { fputs("Error: " message "\n", stderr); exit_code = EXIT_FAILURE;} while (0)
 
+static int total_arguments;
+static char **arguments;
+
+static void DefinitionCallback(void *internal, void* const user_data, void (* const add_definition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value))
+{
+	int i;
+
+	(void)user_data;
+
+	for (i = 1; i < total_arguments; ++i)
+	{
+		if (arguments[i][0] == '-' && arguments[i][1] == 'e')
+		{
+			const char* const identifier = arguments[i + 1];
+			const size_t identifier_length = strcspn(identifier, "=");
+
+			unsigned long value;
+			char *str_end;
+
+			if (identifier[identifier_length] != '=')
+			{
+				value = 0; /* Exactly what asm68k does... */
+			}
+			else
+			{
+				value = strtoul(&identifier[identifier_length + 1], &str_end, 0);
+
+				if (str_end < strchr(identifier, '\0'))
+					fprintf(stderr, "Error: Value of argument '-e %s' is invalid.\n", arguments[i + 1]);
+			}
+
+			add_definition(internal, identifier, identifier_length, value);
+
+			++i; /* Skip argument. */
+		}
+	}
+}
+
 int main(int argc, char **argv)
 {
 	int exit_code = EXIT_SUCCESS;
@@ -39,6 +77,9 @@ int main(int argc, char **argv)
 	cc_bool debug;
 	cc_bool equ_set_descope_local_labels;
 	int i;
+
+	total_arguments = argc;
+	arguments = argv;
 
 	print_usage = cc_false;
 	input_file_path = NULL;
@@ -106,6 +147,13 @@ int main(int argc, char **argv)
 				case 'd':
 					equ_set_descope_local_labels = cc_true;
 					continue;
+
+				case 'e':
+					/* We'll deal with this later, in DefinitionCallback. */
+					if (i < argc && argv[i + 1][0] != '-')
+						++i;
+
+					continue;
 			}
 		}
 
@@ -126,6 +174,7 @@ int main(int argc, char **argv)
 			" -c        - Enable case-insensitive mode.\n"
 			" -b        - Enable Bison's debug output.\n"
 			" -d        - Allow EQU/SET to descope local labels.\n"
+			" -e X=Y    - Defines symbol X to value Y.\n"
 			, stdout);
 	}
 	else
@@ -186,7 +235,7 @@ int main(int argc, char **argv)
 							ERROR("Could not open symbol file.");
 					}
 
-					if (!ClownAssembler_Assemble(input_file, output_file, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive, equ_set_descope_local_labels))
+					if (!ClownAssembler_Assemble(input_file, output_file, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive, equ_set_descope_local_labels, DefinitionCallback, NULL))
 						ERROR("Could not assemble.");
 
 					if (listing_file != NULL)

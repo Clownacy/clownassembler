@@ -5343,11 +5343,32 @@ static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const 
 	return cc_true;
 }
 
-cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listing_file, FILE *symbol_file, const char *input_file_path, cc_bool debug, cc_bool case_insensitive, cc_bool equ_set_descope_local_labels)
+static cc_bool InitialiseBuiltInVariable(SemanticState* const state, const char* const identifier, const size_t identifier_length)
+{
+	Dictionary_Entry* const symbol = CreateSymbol(state, identifier, identifier_length);
+
+	if (symbol != NULL)
+		symbol->type = SYMBOL_VARIABLE;
+
+	return symbol != NULL;
+}
+
+static void AddDefinition(void* const internal, const char* const identifier, const size_t identifier_length, const unsigned long value)
+{
+	SemanticState* const state = (SemanticState*)internal;
+	Dictionary_Entry* const symbol = CreateSymbol(state, identifier, identifier_length);
+
+	if (symbol != NULL)
+	{
+		symbol->type = SYMBOL_CONSTANT;
+		symbol->shared.unsigned_long = value;
+	}
+}
+
+cc_bool ClownAssembler_Assemble(FILE* const input_file, FILE* const output_file, FILE* const listing_file, FILE* const symbol_file, const char* const input_file_path, const cc_bool debug, const cc_bool case_insensitive, const cc_bool equ_set_descope_local_labels, void (* const definition_callback)(void *internal, void *user_data, void (*add_definition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value)), const void* const user_data)
 {
 	Location location;
 	SemanticState state;
-	Dictionary_Entry *symbol;
 
 	/* For error messages, we want to maintain a list of filenames and line
 	   numbers that describe the location and nesting of the erroneous
@@ -5389,153 +5410,141 @@ cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listi
 	}
 	else
 	{
+#define INITIALISE_BUILT_IN_VARIABLE(identifier) InitialiseBuiltInVariable(&state, identifier, sizeof(identifier) - 1)
 		/* Create the dictionary entry for the program counter ahead of time.
 		   Bizarrely, depending on the context, the program counter can be one
 		   of two values, so we need to maintain two separate copies of it. */
-		symbol = CreateSymbol(&state, PROGRAM_COUNTER_OF_STATEMENT, sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1);
-
-		if (symbol != NULL)
+		if (INITIALISE_BUILT_IN_VARIABLE(PROGRAM_COUNTER_OF_STATEMENT)
+		 && INITIALISE_BUILT_IN_VARIABLE(PROGRAM_COUNTER_OF_EXPRESSION)
+		 /* Create the secret '__RS' symbol too. */
+		 && INITIALISE_BUILT_IN_VARIABLE("__RS"))
 		{
-			symbol->type = SYMBOL_VARIABLE;
+			if (definition_callback != NULL)
+				definition_callback(&state, (void*)user_data, AddDefinition);
 
-			symbol = CreateSymbol(&state, PROGRAM_COUNTER_OF_EXPRESSION, sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1);
-
-			if (symbol != NULL)
+			/* Initialise the lexer. */
+			if (m68kasm_lex_init_extra(&state, &state.flex_state) != 0)
 			{
-				symbol->type = SYMBOL_VARIABLE;
+				InternalError(&state, "m68kasm_lex_init failed.");
+			}
+			else
+			{
+				/* Enable Bison debugging if available and requested by the user. */
+			#if M68KASM_DEBUG
+				if (debug)
+					m68kasm_debug = 1;
+			#else
+				(void)debug;
+			#endif
 
-				/* Create the secret '__RS' symbol too. */
-				symbol = CreateSymbol(&state, "__RS", sizeof("__RS") - 1);
+				/* Perform first pass of assembly, creating a list of fix-ups. */
+				AssembleFile(&state, input_file);
 
-				if (symbol != NULL)
+				/* Destroy the lexer, as we no longer need it. */
+				if (m68kasm_lex_destroy(state.flex_state) != 0)
+					InternalError(&state, "m68kasm_lex_destroy failed.");
+
+				/* Perform some sanity checks to make sure we're not somehow in an invalid state. */
+				if (state.current_if_level != 0)
+					SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
+				if (state.obj_active)
+					SemanticError(&state, "An OBJ statement somewhere is missing its OBJEND.");
+
+				/* We're about to process the fix-ups, but first we need to remove all variables
+				   from the symbol table so that they're not able to be used before they are declared. */
+				Dictionary_Filter(&state.dictionary, DictionaryFilterDeleteVariables, NULL);
+
+				/* Process the fix-ups: reassemble instructions and reprocess
+				   directives that could not be completed in the first pass. */
+				state.doing_fix_up = cc_true;
+
+				for (;;)
 				{
-					symbol->type = SYMBOL_VARIABLE;
+					cc_bool a_fix_up_has_been_fixed;
+					FixUp **fix_up_pointer;
 
-					/* Initialise the lexer. */
-					if (m68kasm_lex_init_extra(&state, &state.flex_state) != 0)
+					a_fix_up_has_been_fixed = cc_false;
+
+					fix_up_pointer = &state.fix_up_list_head;
+
+					while (*fix_up_pointer != NULL)
 					{
-						InternalError(&state, "m68kasm_lex_init failed.");
-					}
-					else
-					{
-						/* Enable Bison debugging if available and requested by the user. */
-					#if M68KASM_DEBUG
-						if (debug)
-							m68kasm_debug = 1;
-					#else
-						(void)debug;
-					#endif
+						FixUp *fix_up = *fix_up_pointer;
 
-						/* Perform first pass of assembly, creating a list of fix-ups. */
-						AssembleFile(&state, input_file);
+						/* Reset some state to how it was at the time the statement was first processed. */
+						state.program_counter = fix_up->program_counter;
+						fseek(state.output_file, fix_up->output_position, SEEK_SET);
+						state.last_global_label = fix_up->last_global_label == NULL ? NULL : DuplicateString(&state, fix_up->last_global_label);
+						state.source_line = fix_up->source_line;
+						state.location = &fix_up->location;
 
-						/* Destroy the lexer, as we no longer need it. */
-						if (m68kasm_lex_destroy(state.flex_state) != 0)
-							InternalError(&state, "m68kasm_lex_destroy failed.");
+						state.fix_up_needed = cc_false;
 
-						/* Perform some sanity checks to make sure we're not somehow in an invalid state. */
-						if (state.current_if_level != 0)
-							SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
-						if (state.obj_active)
-							SemanticError(&state, "An OBJ statement somewhere is missing its OBJEND.");
+						/* Re-process statement. */
+						ProcessStatement(&state, &fix_up->statement, fix_up->label);
 
-						/* We're about to process the fix-ups, but first we need to remove all variables
-						   from the symbol table so that they're not able to be used before they are declared. */
-						Dictionary_Filter(&state.dictionary, DictionaryFilterDeleteVariables, NULL);
-
-						/* Process the fix-ups: reassemble instructions and reprocess
-						   directives that could not be completed in the first pass. */
-						state.doing_fix_up = cc_true;
-
-						for (;;)
+						/* If this fix-up has been fixed, then we are done with it and free to delete it.
+						   Alternatively, if this is the final pass, then just delete the fix-ups anyway
+						   since they won't be needed anymore. */
+						if (!state.fix_up_needed || state.doing_final_pass)
 						{
-							cc_bool a_fix_up_has_been_fixed;
-							FixUp **fix_up_pointer;
+							Location *location;
 
-							a_fix_up_has_been_fixed = cc_false;
+							*fix_up_pointer = fix_up->next;
 
-							fix_up_pointer = &state.fix_up_list_head;
+							/* We're done with this statement: delete it. */
+							DestroyStatement(&fix_up->statement);
+							free(fix_up->last_global_label);
+							free(fix_up->source_line);
+							free(fix_up->label);
 
-							while (*fix_up_pointer != NULL)
+							/* Pop one location from the list. */
+							location = fix_up->location.previous;
+
+							while (location != NULL)
 							{
-								FixUp *fix_up = *fix_up_pointer;
-
-								/* Reset some state to how it was at the time the statement was first processed. */
-								state.program_counter = fix_up->program_counter;
-								fseek(state.output_file, fix_up->output_position, SEEK_SET);
-								state.last_global_label = fix_up->last_global_label == NULL ? NULL : DuplicateString(&state, fix_up->last_global_label);
-								state.source_line = fix_up->source_line;
-								state.location = &fix_up->location;
-
-								state.fix_up_needed = cc_false;
-
-								/* Re-process statement. */
-								ProcessStatement(&state, &fix_up->statement, fix_up->label);
-
-								/* If this fix-up has been fixed, then we are done with it and free to delete it.
-								   Alternatively, if this is the final pass, then just delete the fix-ups anyway
-								   since they won't be needed anymore. */
-								if (!state.fix_up_needed || state.doing_final_pass)
-								{
-									Location *location;
-
-									*fix_up_pointer = fix_up->next;
-
-									/* We're done with this statement: delete it. */
-									DestroyStatement(&fix_up->statement);
-									free(fix_up->last_global_label);
-									free(fix_up->source_line);
-									free(fix_up->label);
-
-									/* Pop one location from the list. */
-									location = fix_up->location.previous;
-
-									while (location != NULL)
-									{
-										Location *previous_location = location->previous;
-										free(location->file_path);
-										free(location);
-										location = previous_location;
-									}
-
-									free(fix_up);
-
-									a_fix_up_has_been_fixed = cc_true;
-								}
-								else
-								{
-									fix_up_pointer = &fix_up->next;
-								}
+								Location *previous_location = location->previous;
+								free(location->file_path);
+								free(location);
+								location = previous_location;
 							}
 
-							/* Once the final pass has ended, we can exit this infinite loop. */
-							if (state.doing_final_pass)
-								break;
+							free(fix_up);
 
-							/* If no more fix-ups can be fixed, then something has gone wrong
-							   and we should do one final pass to print error messages. */
-							if (!a_fix_up_has_been_fixed)
-								state.doing_final_pass = cc_true;
+							a_fix_up_has_been_fixed = cc_true;
 						}
-
-						free(state.last_global_label);
-
-						/* Produce asm68k symbol file, if requested. */
-						if (symbol_file != NULL)
+						else
 						{
-							/* Some kind of header. */
-							fputc('M', symbol_file);
-							fputc('N', symbol_file);
-							fputc('D', symbol_file);
-							fputc(1, symbol_file);
-							fputc(0, symbol_file);
-							fputc(0, symbol_file);
-							fputc(0, symbol_file);
-							fputc(0, symbol_file);
-
-							Dictionary_Filter(&state.dictionary, DictionaryFilterProduceSymbolFile, symbol_file);
+							fix_up_pointer = &fix_up->next;
 						}
 					}
+
+					/* Once the final pass has ended, we can exit this infinite loop. */
+					if (state.doing_final_pass)
+						break;
+
+					/* If no more fix-ups can be fixed, then something has gone wrong
+					   and we should do one final pass to print error messages. */
+					if (!a_fix_up_has_been_fixed)
+						state.doing_final_pass = cc_true;
+				}
+
+				free(state.last_global_label);
+
+				/* Produce asm68k symbol file, if requested. */
+				if (symbol_file != NULL)
+				{
+					/* Some kind of header. */
+					fputc('M', symbol_file);
+					fputc('N', symbol_file);
+					fputc('D', symbol_file);
+					fputc(1, symbol_file);
+					fputc(0, symbol_file);
+					fputc(0, symbol_file);
+					fputc(0, symbol_file);
+					fputc(0, symbol_file);
+
+					Dictionary_Filter(&state.dictionary, DictionaryFilterProduceSymbolFile, symbol_file);
 				}
 			}
 		}
