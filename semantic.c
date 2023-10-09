@@ -643,6 +643,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 					case EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT:
 					case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
 					case EXPRESSION_STRLEN:
+					case EXPRESSION_DEF:
 					case EXPRESSION_NEGATE:
 					case EXPRESSION_BITWISE_NOT:
 					case EXPRESSION_LOGICAL_NOT:
@@ -746,6 +747,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 					case EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT:
 					case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
 					case EXPRESSION_STRLEN:
+					case EXPRESSION_DEF:
 					case EXPRESSION_SUBTRACT:
 					case EXPRESSION_ADD:
 					case EXPRESSION_MULTIPLY:
@@ -832,6 +834,10 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 		case EXPRESSION_STRLEN:
 			*value = strlen(expression->shared.string);
 			break;
+
+		case EXPRESSION_DEF:
+			*value = LookupSymbol(state, expression->shared.string, strlen(expression->shared.string)) != NULL;
+			break;
 	}
 
 	/* Now that we have resolved the value, let's hardcode it here so that we don't ever have to calculate it again. */
@@ -867,6 +873,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			case EXPRESSION_IDENTIFIER:
 			case EXPRESSION_STRING:
 			case EXPRESSION_STRLEN:
+			case EXPRESSION_DEF:
 				free(expression->shared.string);
 				break;
 

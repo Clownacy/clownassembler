@@ -606,6 +606,22 @@ LetsGetWacky:
 	endif
 	dc.l *
 
+
+	; Test DEF
+	if def(Spaghetti)
+	dc.l	'NOPE'
+	else
+	dc.l	'GOOD'
+	endif
+
+Spaghetti = $BEEF
+
+	if def(Spaghetti)
+	dc.l	'GOOD'
+	else
+	dc.l	'NOPE'
+	endif
+
   ; More blank lines to test support for trailing blank statements
 
 

@@ -216,7 +216,8 @@ typedef enum ExpressionType
 	EXPRESSION_STRING,
 	EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT,
 	EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION,
-	EXPRESSION_STRLEN
+	EXPRESSION_STRLEN,
+	EXPRESSION_DEF
 } ExpressionType;
 
 typedef struct Expression
@@ -605,6 +606,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_LEFT_SHIFT
 %token TOKEN_RIGHT_SHIFT
 %token TOKEN_STRLEN
+%token TOKEN_DEF
 
 %type<instruction> instruction
 %type<opcode> opcode
@@ -1986,6 +1988,11 @@ expression8
 		$$.type = EXPRESSION_STRLEN;
 		$$.shared.string = $3;
 	}
+	| TOKEN_DEF '(' TOKEN_IDENTIFIER ')'
+	{
+		$$.type = EXPRESSION_DEF;
+		$$.shared.string = $3;
+	}
 	;
 
 %%
@@ -2055,6 +2062,7 @@ void DestroyExpression(Expression *expression)
 		case EXPRESSION_IDENTIFIER:
 		case EXPRESSION_STRING:
 		case EXPRESSION_STRLEN:
+		case EXPRESSION_DEF:
 			free(expression->shared.string);
 			break;
 
