@@ -626,6 +626,11 @@ Spaghetti = $BEEF
 Swag.Legit:
 	dc.l	Swag.Legit
 
+	; Test alternate syntaxes
+	cnop 0,2
+	pea	Swag.Legit.w
+	pea	Swag.Legit.l
+
   ; More blank lines to test support for trailing blank statements
 
 
