@@ -451,18 +451,17 @@ static char* ExpandIdentifier(SemanticState *state, const char* const identifier
 		else
 		{
 			const size_t prefix_length = strlen(state->last_global_label);
-			const size_t suffix_length = identifier_length - 1;
-			expanded_identifier = (char*)MallocAndHandleError(state, prefix_length + 1 + suffix_length + 1);
+			const size_t suffix_length = identifier_length;
+			expanded_identifier = (char*)MallocAndHandleError(state, prefix_length + suffix_length + 1);
 
 			if (expanded_identifier != NULL)
 			{
 				memcpy(&expanded_identifier[0], state->last_global_label, prefix_length);
-				expanded_identifier[prefix_length] = '@';
-				memcpy(&expanded_identifier[prefix_length + 1], &identifier[1], suffix_length);
-				expanded_identifier[prefix_length + 1 + suffix_length] = '\0';
+				memcpy(&expanded_identifier[prefix_length], identifier, suffix_length);
+				expanded_identifier[prefix_length + suffix_length] = '\0';
 
 				if (expanded_identifier_length != NULL)
-					*expanded_identifier_length = prefix_length + 1 + suffix_length;
+					*expanded_identifier_length = prefix_length + suffix_length;
 			}
 		}
 	}

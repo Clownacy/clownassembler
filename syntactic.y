@@ -1952,7 +1952,7 @@ expression8
 	| TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER
 	{
 		const size_t identifier_length = strlen($1);
-		const size_t local_identifier_length = strlen($2 + 1);
+		const size_t local_identifier_length = strlen($2);
 
 		$$.shared.string = (char*)malloc(identifier_length + 1 + local_identifier_length + 1);
 
@@ -1967,8 +1967,7 @@ expression8
 			$$.type = EXPRESSION_IDENTIFIER;
 			memcpy(&$$.shared.string[0], $1, identifier_length);
 			free($1);
-			$$.shared.string[identifier_length] = '@';
-			memcpy(&$$.shared.string[identifier_length + 1], $2 + 1, local_identifier_length + 1);
+			memcpy(&$$.shared.string[identifier_length], $2, local_identifier_length + 1);
 			free($2);
 		}
 	}

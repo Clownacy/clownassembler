@@ -310,11 +310,11 @@ Object:
 	move.b	2(a0),d0
 	add.w	d0,d0
 	move.w	@Offsets(pc,d0.w),d0
-	jmp	.Offsets(pc,d0.w)
+	jmp	@Offsets(pc,d0.w)
 
 @Offsets:
-	dc.w	.Offset1-Object.Offsets
-	dc.w	Object@Offset2-@Offsets
+	dc.w	@Offset1-Object@Offsets
+	dc.w	Object.Offset2-@Offsets
 
 @Offset1:
 	rts
@@ -621,6 +621,10 @@ Spaghetti = $BEEF
 	else
 	dc.l	'NOPE'
 	endif
+
+	; Test dotted labels
+Swag.Legit:
+	dc.l	Swag.Legit
 
   ; More blank lines to test support for trailing blank statements
 
