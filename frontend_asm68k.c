@@ -149,46 +149,46 @@ int main(int argc, char **argv)
 
 						for (option = strtok(argv[i], ","); option != NULL; option = strtok(NULL, ","))
 						{
-							if (strcmpci(argv[i], "ae+") == 0)
+							if (strcmpci(option, "ae+") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "ae-") == 0)
+							else if (strcmpci(option, "ae-") == 0)
 							{
 								/* TODO - AE should be enabled by default. */
 								/* Already disabled by default but okay. */
 							}
-							else if (strcmpci(argv[i], "an+") == 0)
+							else if (strcmpci(option, "an+") == 0)
 							{
 								/* Quietly accept this even though it isn't configurable. */
 							}
-							else if (strcmpci(argv[i], "an-") == 0)
+							else if (strcmpci(option, "an-") == 0)
 							{
 								fprintf(stderr, "Warning: Option '%s' has no effect, as alternate numeric specifiers are always enabled.\n", argv[i]);
 							}
-							else if (strcmpci(argv[i], "c+") == 0)
+							else if (strcmpci(option, "c+") == 0)
 							{
 								case_insensitive = cc_false;
 							}
-							else if (strcmpci(argv[i], "c-") == 0)
+							else if (strcmpci(option, "c-") == 0)
 							{
 								case_insensitive = cc_true;
 							}
-							else if (strcmpci(argv[i], "d+") == 0)
+							else if (strcmpci(option, "d+") == 0)
 							{
 								equ_set_descope_local_labels = cc_true;
 							}
-							else if (strcmpci(argv[i], "d-") == 0)
+							else if (strcmpci(option, "d-") == 0)
 							{
 								equ_set_descope_local_labels = cc_false;
 							}
-							else if (strcmpci(argv[i], "e+") == 0)
+							else if (strcmpci(option, "e+") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "e-") == 0)
+							else if (strcmpci(option, "e-") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
@@ -208,120 +208,120 @@ int main(int argc, char **argv)
 										break;
 								}
 							}
-							else if (strcmpci(argv[i], "s+") == 0)
+							else if (strcmpci(option, "s+") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "s-") == 0)
+							else if (strcmpci(option, "s-") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "v+") == 0)
+							else if (strcmpci(option, "v+") == 0)
 							{
 								output_local_labels_to_sym_file = cc_true;
 							}
-							else if (strcmpci(argv[i], "v-") == 0)
+							else if (strcmpci(option, "v-") == 0)
 							{
 								output_local_labels_to_sym_file = cc_false;
 							}
-							else if (strcmpci(argv[i], "w+") == 0)
+							else if (strcmpci(option, "w+") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "w-") == 0)
+							else if (strcmpci(option, "w-") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "ws+") == 0)
+							else if (strcmpci(option, "ws+") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "ws-") == 0)
+							else if (strcmpci(option, "ws-") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "x+") == 0)
+							else if (strcmpci(option, "x+") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "x-") == 0)
+							else if (strcmpci(option, "x-") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "op+") == 0)
+							else if (strcmpci(option, "op+") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "op-") == 0)
+							else if (strcmpci(option, "op-") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "os+") == 0)
+							else if (strcmpci(option, "os+") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "os-") == 0)
+							else if (strcmpci(option, "os-") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "ow+") == 0)
+							else if (strcmpci(option, "ow+") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "ow-") == 0)
+							else if (strcmpci(option, "ow-") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "oz+") == 0)
+							else if (strcmpci(option, "oz+") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "oz-") == 0)
+							else if (strcmpci(option, "oz-") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "oaq+") == 0)
+							else if (strcmpci(option, "oaq+") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "oaq-") == 0)
+							else if (strcmpci(option, "oaq-") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "osq+") == 0)
+							else if (strcmpci(option, "osq+") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "osq-") == 0)
+							else if (strcmpci(option, "osq-") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "omq+") == 0)
+							else if (strcmpci(option, "omq+") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(argv[i], "omq-") == 0)
+							else if (strcmpci(option, "omq-") == 0)
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
