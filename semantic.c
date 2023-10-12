@@ -2727,7 +2727,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							break;
 					}
 
-					SemanticError(state, "Instruction operand %u cannot be %s.", i, operand_string);
+					SemanticError(state, "%s operand cannot be %s.", i == 0 ? "First" : "Second", operand_string);
 					good_operands = cc_false;
 				}
 			}
