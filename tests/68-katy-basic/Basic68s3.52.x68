@@ -77,7 +77,6 @@ nobrk		EQU	0				; null response to INPUT causes a break
 
 	;ORG		$000400			; past the vectors in a real system
 	;ORG		$080000
-	rsreset
 
 	bra.w	JumpToAddressZero
 	dc.l	                                              start_here,    Group0ExceptionHandler02,    Group0ExceptionHandler03
@@ -442,7 +441,7 @@ save_title
 
 file_list
 	dc.b	';.bas',0				; file type list
-	rs.w	0					; ensure even
+	cnop	0,2					; ensure even
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
