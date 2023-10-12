@@ -5383,7 +5383,7 @@ static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const 
 
 		is_local_label = label_length != identifier_length;
 
-		if (label_length < 0x100 && (output_local_labels_to_sym_file || !is_local_label))
+		if (label_length < 0x100 && (!is_local_label || output_local_labels_to_sym_file))
 		{
 			unsigned int i;
 
