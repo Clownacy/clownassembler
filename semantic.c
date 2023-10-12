@@ -1175,6 +1175,281 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const char *label, 
 	}
 }
 
+static void ResolveInstructionAmbiguity(SemanticState* const state, StatementInstruction* const instruction)
+{
+	/* Some instructions are ambiguous, so figure them out fully here. */
+	for (;;)
+	{
+		switch (instruction->opcode.type)
+		{
+			#define ALIAS_AND_LOOP(ALIAS) do {instruction->opcode.type = ALIAS; continue;} while (0)
+			#define WARN_ALIAS_AND_LOOP(ALIAS, MESSAGE) do {SemanticWarning(state, MESSAGE); ALIAS_AND_LOOP(ALIAS);} while (0)
+
+			case OPCODE_ORI:
+				if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_ORI_TO_CCR);
+				else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_ORI_TO_SR);
+
+				break;
+
+			case OPCODE_ANDI:
+				if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_ANDI_TO_CCR);
+				else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_ANDI_TO_SR);
+
+				break;
+
+			case OPCODE_EORI:
+				if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_EORI_TO_CCR);
+				else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_EORI_TO_SR);
+
+				break;
+
+			case OPCODE_BTST_STATIC:
+				if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_BTST_DYNAMIC);
+
+				break;
+
+			case OPCODE_BCHG_STATIC:
+				if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_BCHG_DYNAMIC);
+
+				break;
+
+			case OPCODE_BCLR_STATIC:
+				if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_BCLR_DYNAMIC);
+
+				break;
+
+			case OPCODE_BSET_STATIC:
+				if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_BSET_DYNAMIC);
+
+				break;
+
+			case OPCODE_MOVEP_TO_REG:
+				if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_MOVEP_FROM_REG);
+
+				break;
+
+			case OPCODE_MOVE:
+				if (instruction->operands[0].type == OPERAND_STATUS_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_MOVE_FROM_SR);
+				else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_MOVE_TO_SR);
+				else if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_MOVE_TO_CCR);
+				else if (instruction->operands[0].type == OPERAND_USER_STACK_POINTER_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_MOVE_FROM_USP);
+				else if (instruction->operands[1].type == OPERAND_USER_STACK_POINTER_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_MOVE_TO_USP);
+				else if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
+					WARN_ALIAS_AND_LOOP(OPCODE_MOVEA, "MOVE should be MOVEA.");
+
+				break;
+
+			case OPCODE_MOVEM_TO_REGS:
+				if (instruction->operands[0].type == OPERAND_DATA_REGISTER || instruction->operands[0].type == OPERAND_ADDRESS_REGISTER || instruction->operands[0].type == OPERAND_REGISTER_LIST)
+					ALIAS_AND_LOOP(OPCODE_MOVEM_FROM_REGS);
+
+				break;
+
+			case OPCODE_SBCD_DATA_REGS:
+				if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+					ALIAS_AND_LOOP(OPCODE_SBCD_ADDRESS_REGS);
+
+				break;
+
+			case OPCODE_OR_TO_REG:
+				if (instruction->operands[0].type == OPERAND_LITERAL)
+					WARN_ALIAS_AND_LOOP(OPCODE_ORI, "OR should be ORI.");
+				else if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_OR_FROM_REG);
+
+				break;
+
+			case OPCODE_SUB_TO_REG:
+				if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
+					WARN_ALIAS_AND_LOOP(OPCODE_SUBA, "SUB should be SUBA.");
+				else if (instruction->operands[0].type == OPERAND_LITERAL)
+					WARN_ALIAS_AND_LOOP(OPCODE_SUBI, "SUB should be SUBI.");
+				else if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_SUB_FROM_REG);
+
+				break;
+
+			case OPCODE_SUBX_DATA_REGS:
+				if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+					ALIAS_AND_LOOP(OPCODE_SUBX_ADDRESS_REGS);
+
+				break;
+
+			case OPCODE_ABCD_DATA_REGS:
+				if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+					ALIAS_AND_LOOP(OPCODE_ABCD_ADDRESS_REGS);
+
+				break;
+
+			case OPCODE_AND_TO_REG:
+				if (instruction->operands[0].type == OPERAND_LITERAL)
+					WARN_ALIAS_AND_LOOP(OPCODE_ANDI, "AND should be ANDI.");
+				else if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_AND_FROM_REG);
+
+				break;
+
+			case OPCODE_ADD_TO_REG:
+				if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
+					WARN_ALIAS_AND_LOOP(OPCODE_ADDA, "ADD should be ADDA.");
+				else if (instruction->operands[0].type == OPERAND_LITERAL)
+					WARN_ALIAS_AND_LOOP(OPCODE_ADDI, "ADD should be ADDI.");
+				else if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
+					ALIAS_AND_LOOP(OPCODE_ADD_FROM_REG);
+
+				break;
+
+			case OPCODE_ADDX_DATA_REGS:
+				if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+					ALIAS_AND_LOOP(OPCODE_ADDX_ADDRESS_REGS);
+
+				break;
+
+			case OPCODE_CMP:
+				if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
+					WARN_ALIAS_AND_LOOP(OPCODE_CMPA, "CMP should be CMPA.");
+				else if (instruction->operands[0].type == OPERAND_LITERAL)
+					WARN_ALIAS_AND_LOOP(OPCODE_CMPI, "CMP should be CMPI.");
+				else if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT && instruction->operands[1].type == OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT)
+					WARN_ALIAS_AND_LOOP(OPCODE_CMPM, "CMP should be CMPM.");
+
+				break;
+
+			case OPCODE_EOR:
+				if (instruction->operands[0].type == OPERAND_LITERAL)
+					WARN_ALIAS_AND_LOOP(OPCODE_EORI, "EOR should be EORI.");
+
+				break;
+
+			case OPCODE_ASL_STATIC:
+			case OPCODE_ASR_STATIC:
+			case OPCODE_LSL_STATIC:
+			case OPCODE_LSR_STATIC:
+			case OPCODE_ROXL_STATIC:
+			case OPCODE_ROXR_STATIC:
+			case OPCODE_ROL_STATIC:
+			case OPCODE_ROR_STATIC:
+				if (instruction->operands[1].type != 0)
+				{
+					if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+					{
+						switch (instruction->opcode.type)
+						{
+							case OPCODE_ASL_STATIC:
+								ALIAS_AND_LOOP(OPCODE_ASL_DYNAMIC);
+								break;
+
+							case OPCODE_ASR_STATIC:
+								ALIAS_AND_LOOP(OPCODE_ASR_DYNAMIC);
+								break;
+
+							case OPCODE_LSL_STATIC:
+								ALIAS_AND_LOOP(OPCODE_LSL_DYNAMIC);
+								break;
+
+							case OPCODE_LSR_STATIC:
+								ALIAS_AND_LOOP(OPCODE_LSR_DYNAMIC);
+								break;
+
+							case OPCODE_ROXL_STATIC:
+								ALIAS_AND_LOOP(OPCODE_ROXL_DYNAMIC);
+								break;
+
+							case OPCODE_ROXR_STATIC:
+								ALIAS_AND_LOOP(OPCODE_ROXR_DYNAMIC);
+								break;
+
+							case OPCODE_ROL_STATIC:
+								ALIAS_AND_LOOP(OPCODE_ROL_DYNAMIC);
+								break;
+
+							case OPCODE_ROR_STATIC:
+								ALIAS_AND_LOOP(OPCODE_ROR_DYNAMIC);
+								break;
+
+							default:
+								break;
+						}
+					}
+				}
+				else
+				{
+					if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+					{
+						/* If I remember correctly, this syntax is actually officially valid. */
+						instruction->operands[1] = instruction->operands[0];
+						instruction->operands[0].type = OPERAND_LITERAL;
+						instruction->operands[0].literal.type = EXPRESSION_NUMBER;
+						instruction->operands[0].literal.shared.unsigned_long = 1;
+					}
+					else
+					{
+						switch (instruction->opcode.type)
+						{
+							case OPCODE_ASL_STATIC:
+								ALIAS_AND_LOOP(OPCODE_ASL_SINGLE);
+								break;
+
+							case OPCODE_ASR_STATIC:
+								ALIAS_AND_LOOP(OPCODE_ASR_SINGLE);
+								break;
+
+							case OPCODE_LSL_STATIC:
+								ALIAS_AND_LOOP(OPCODE_LSL_SINGLE);
+								break;
+
+							case OPCODE_LSR_STATIC:
+								ALIAS_AND_LOOP(OPCODE_LSR_SINGLE);
+								break;
+
+							case OPCODE_ROXL_STATIC:
+								ALIAS_AND_LOOP(OPCODE_ROXL_SINGLE);
+								break;
+
+							case OPCODE_ROXR_STATIC:
+								ALIAS_AND_LOOP(OPCODE_ROXR_SINGLE);
+								break;
+
+							case OPCODE_ROL_STATIC:
+								ALIAS_AND_LOOP(OPCODE_ROL_SINGLE);
+								break;
+
+							case OPCODE_ROR_STATIC:
+								ALIAS_AND_LOOP(OPCODE_ROR_SINGLE);
+								break;
+
+							default:
+								break;
+						}
+					}
+				}
+
+				break;
+
+			default:
+				break;
+		}
+
+		break;
+	}
+}
+
 typedef struct InstructionMetadata
 {
 	const char *name;
@@ -2280,238 +2555,12 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 	operands_to_output[1] = &instruction->operands[1];
 
 	/* Instructions on odd addresses cause exceptions on the 68k, so warn the user if they are produced. */
-	if (state->program_counter & 1)
+	if ((state->program_counter & 1) != 0)
 		SemanticWarning(state, "Instruction is at an odd address.");
 
 	state->program_counter += 2;
 
-	/* Some instructions are ambiguous, so figure them out fully here. */
-	switch (instruction->opcode.type)
-	{
-		case OPCODE_ORI:
-			if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
-				instruction->opcode.type = OPCODE_ORI_TO_CCR;
-			else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
-				instruction->opcode.type = OPCODE_ORI_TO_SR;
-
-			break;
-
-		case OPCODE_ANDI:
-			if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
-				instruction->opcode.type = OPCODE_ANDI_TO_CCR;
-			else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
-				instruction->opcode.type = OPCODE_ANDI_TO_SR;
-
-			break;
-
-		case OPCODE_EORI:
-			if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
-				instruction->opcode.type = OPCODE_EORI_TO_CCR;
-			else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
-				instruction->opcode.type = OPCODE_EORI_TO_SR;
-
-			break;
-
-		case OPCODE_BTST_STATIC:
-			if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
-				instruction->opcode.type = OPCODE_BTST_DYNAMIC;
-
-			break;
-
-		case OPCODE_BCHG_STATIC:
-			if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
-				instruction->opcode.type = OPCODE_BCHG_DYNAMIC;
-
-			break;
-
-		case OPCODE_BCLR_STATIC:
-			if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
-				instruction->opcode.type = OPCODE_BCLR_DYNAMIC;
-
-			break;
-
-		case OPCODE_BSET_STATIC:
-			if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
-				instruction->opcode.type = OPCODE_BSET_DYNAMIC;
-
-			break;
-
-		case OPCODE_MOVEP_TO_REG:
-			if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
-				instruction->opcode.type = OPCODE_MOVEP_FROM_REG;
-
-			break;
-
-		case OPCODE_MOVE:
-			if (instruction->operands[0].type == OPERAND_STATUS_REGISTER)
-				instruction->opcode.type = OPCODE_MOVE_FROM_SR;
-			else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
-				instruction->opcode.type = OPCODE_MOVE_TO_SR;
-			else if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
-				instruction->opcode.type = OPCODE_MOVE_TO_CCR;
-			else if (instruction->operands[0].type == OPERAND_USER_STACK_POINTER_REGISTER)
-				instruction->opcode.type = OPCODE_MOVE_FROM_USP;
-			else if (instruction->operands[1].type == OPERAND_USER_STACK_POINTER_REGISTER)
-				instruction->opcode.type = OPCODE_MOVE_TO_USP;
-			else if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
-			{
-				instruction->opcode.type = OPCODE_MOVEA; /* MOVEA mistyped as MOVE */
-				SemanticWarning(state, "MOVE should be MOVEA.");
-			}
-
-			break;
-
-		case OPCODE_MOVEM_TO_REGS:
-			if (instruction->operands[0].type == OPERAND_DATA_REGISTER || instruction->operands[0].type == OPERAND_ADDRESS_REGISTER || instruction->operands[0].type == OPERAND_REGISTER_LIST)
-				instruction->opcode.type = OPCODE_MOVEM_FROM_REGS;
-
-			break;
-
-		case OPCODE_SBCD_DATA_REGS:
-			if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-				instruction->opcode.type = OPCODE_SBCD_ADDRESS_REGS;
-
-			break;
-
-		case OPCODE_OR_TO_REG:
-			if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
-				instruction->opcode.type = OPCODE_OR_FROM_REG;
-
-			break;
-
-		case OPCODE_SUB_TO_REG:
-			if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
-				instruction->opcode.type = OPCODE_SUB_FROM_REG;
-
-			break;
-
-		case OPCODE_SUBX_DATA_REGS:
-			if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-				instruction->opcode.type = OPCODE_SUBX_ADDRESS_REGS;
-
-			break;
-
-		case OPCODE_ABCD_DATA_REGS:
-			if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-				instruction->opcode.type = OPCODE_ABCD_ADDRESS_REGS;
-
-			break;
-
-		case OPCODE_AND_TO_REG:
-			if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
-				instruction->opcode.type = OPCODE_AND_FROM_REG;
-
-			break;
-
-		case OPCODE_ADD_TO_REG:
-			if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
-				instruction->opcode.type = OPCODE_ADD_FROM_REG;
-
-			break;
-
-		case OPCODE_ADDX_DATA_REGS:
-			if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
-				instruction->opcode.type = OPCODE_ADDX_ADDRESS_REGS;
-
-			break;
-
-		case OPCODE_ASL_STATIC:
-		case OPCODE_ASR_STATIC:
-		case OPCODE_LSL_STATIC:
-		case OPCODE_LSR_STATIC:
-		case OPCODE_ROXL_STATIC:
-		case OPCODE_ROXR_STATIC:
-		case OPCODE_ROL_STATIC:
-		case OPCODE_ROR_STATIC:
-			if (instruction->operands[1].type != 0)
-			{
-				if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
-				{
-					switch (instruction->opcode.type)
-					{
-						case OPCODE_ASL_STATIC:
-							instruction->opcode.type = OPCODE_ASL_DYNAMIC;
-							break;
-
-						case OPCODE_ASR_STATIC:
-							instruction->opcode.type = OPCODE_ASR_DYNAMIC;
-							break;
-
-						case OPCODE_LSL_STATIC:
-							instruction->opcode.type = OPCODE_LSL_DYNAMIC;
-							break;
-
-						case OPCODE_LSR_STATIC:
-							instruction->opcode.type = OPCODE_LSR_DYNAMIC;
-							break;
-
-						case OPCODE_ROXL_STATIC:
-							instruction->opcode.type = OPCODE_ROXL_DYNAMIC;
-							break;
-
-						case OPCODE_ROXR_STATIC:
-							instruction->opcode.type = OPCODE_ROXR_DYNAMIC;
-							break;
-
-						case OPCODE_ROL_STATIC:
-							instruction->opcode.type = OPCODE_ROL_DYNAMIC;
-							break;
-
-						case OPCODE_ROR_STATIC:
-							instruction->opcode.type = OPCODE_ROR_DYNAMIC;
-							break;
-
-						default:
-							break;
-					}
-				}
-			}
-			else
-			{
-				switch (instruction->opcode.type)
-				{
-					case OPCODE_ASL_STATIC:
-						instruction->opcode.type = OPCODE_ASL_SINGLE;
-						break;
-
-					case OPCODE_ASR_STATIC:
-						instruction->opcode.type = OPCODE_ASR_SINGLE;
-						break;
-
-					case OPCODE_LSL_STATIC:
-						instruction->opcode.type = OPCODE_LSL_SINGLE;
-						break;
-
-					case OPCODE_LSR_STATIC:
-						instruction->opcode.type = OPCODE_LSR_SINGLE;
-						break;
-
-					case OPCODE_ROXL_STATIC:
-						instruction->opcode.type = OPCODE_ROXL_SINGLE;
-						break;
-
-					case OPCODE_ROXR_STATIC:
-						instruction->opcode.type = OPCODE_ROXR_SINGLE;
-						break;
-
-					case OPCODE_ROL_STATIC:
-						instruction->opcode.type = OPCODE_ROL_SINGLE;
-						break;
-
-					case OPCODE_ROR_STATIC:
-						instruction->opcode.type = OPCODE_ROR_SINGLE;
-						break;
-
-					default:
-						break;
-				}
-			}
-
-			break;
-
-		default:
-			break;
-	}
+	ResolveInstructionAmbiguity(state, instruction);
 
 	instruction_metadata = &instruction_metadata_all[instruction->opcode.type];
 

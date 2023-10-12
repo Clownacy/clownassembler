@@ -631,6 +631,33 @@ Swag.Legit:
 	pea	Swag.Legit.w
 	pea	Swag.Legit.l
 
+	; Test incorrect code that is usually automatically corrected by assemblers
+	cmp.w	#1,d0
+	cmp.w	a0,a1
+	cmp.w	(a0)+,(a1)+
+	or.w	#$FFFF,d0
+	eor.w	#$FFFF,d0
+	and.w	#$FFFF,d0
+	add.w	#$FFFF,d0
+	sub.w	#$FFFF,d0
+	add.w	#$FFFF,a0
+	sub.w	#$FFFF,a0
+	lsl.w	d0
+	lsr.w	d0
+	asl.w	d0
+	asr.w	d0
+	rol.w	d0
+	ror.w	d0
+	roxl.w	d0
+	roxr.w	d0
+
+	; Vladikcomper tests
+	cmp.l	a1, a2
+	cmp.w	#$4EF9, (a2)+
+	and.w	#$FF, d1
+	add.w	(a3), a3
+	lsr.w	d0
+
   ; More blank lines to test support for trailing blank statements
 
 
