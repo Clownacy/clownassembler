@@ -26,7 +26,18 @@
 extern "C" {
 #endif
 
-cc_bool ClownAssembler_Assemble(FILE *input_file, FILE *output_file, FILE *listing_file, FILE *symbol_file, const char *input_file_path, cc_bool debug, cc_bool case_insensitive, cc_bool equ_set_descope_local_labels, void (*definition_callback)(void *internal, void *user_data, void (*add_definition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value)), const void *user_data);
+cc_bool ClownAssembler_Assemble(
+	FILE *input_file,
+	FILE *output_file,
+	FILE *listing_file,
+	FILE *symbol_file,
+	const char *input_file_path,
+	cc_bool debug,
+	cc_bool case_insensitive,
+	cc_bool equ_set_descope_local_labels,
+	cc_bool output_local_labels_to_sym_file,
+	void (*definition_callback)(void *internal, void *user_data, void (*add_definition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value)),
+	const void *user_data);
 
 #ifdef __cplusplus
 }

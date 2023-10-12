@@ -5367,25 +5367,41 @@ static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const 
 {
 	/* The symbol file only contains labels. */
 	/* Labels longer than 0xFF characters are silently ignored. */
-	/* Local labels are also silently ignored. */
-	if (entry->type == SYMBOL_LABEL && identifier_length < 0x100 && memchr(identifier, '@', identifier_length) == NULL && memchr(identifier, '.', identifier_length) == NULL)
+	/* Local labels are also silently ignored (unless 'v+' is specified). */
+	void** const parameters = (void**)user_data;
+	const cc_bool output_local_labels_to_sym_file = *(cc_bool*)parameters[1];
+
+	if (entry->type == SYMBOL_LABEL)
 	{
-		unsigned int i;
+		const char *label;
+		size_t label_length;
+		cc_bool is_local_label;
 
-		FILE* const symbol_file = (FILE*)user_data;
+		for (label = &identifier[identifier_length], label_length = 0; label_length != identifier_length; --label, ++label_length)
+			if (*label == '@' || *label == '.')
+				break;
 
-		/* Output the address of the label. */
-		for (i = 0; i < 4; ++i)
-			fputc((entry->shared.unsigned_long >> (i * 8)) & 0xFF, symbol_file);
+		is_local_label = label_length != identifier_length;
 
-		/* I have no idea what this means. */
-		fputc(2, symbol_file);
+		if (identifier_length < 0x100 && (output_local_labels_to_sym_file || !is_local_label))
+		{
+			unsigned int i;
 
-		/* Output the length of the label. */
-		fputc(identifier_length, symbol_file);
+			FILE* const symbol_file = (FILE*)parameters[0];
 
-		/* Output the label itself. */
-		fwrite(identifier, 1, identifier_length, symbol_file);
+			/* Output the address of the label. */
+			for (i = 0; i < 4; ++i)
+				fputc((entry->shared.unsigned_long >> (i * 8)) & 0xFF, symbol_file);
+
+			/* I have no idea what this means. */
+			fputc(is_local_label ? 6 : 2, symbol_file);
+
+			/* Output the length of the label. */
+			fputc(label_length, symbol_file);
+
+			/* Output the label itself. */
+			fwrite(label, 1, label_length, symbol_file);
+		}
 	}
 
 	return cc_true;
@@ -5413,7 +5429,18 @@ static void AddDefinition(void* const internal, const char* const identifier, co
 	}
 }
 
-cc_bool ClownAssembler_Assemble(FILE* const input_file, FILE* const output_file, FILE* const listing_file, FILE* const symbol_file, const char* const input_file_path, const cc_bool debug, const cc_bool case_insensitive, const cc_bool equ_set_descope_local_labels, void (* const definition_callback)(void *internal, void *user_data, void (*add_definition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value)), const void* const user_data)
+cc_bool ClownAssembler_Assemble(
+	FILE* const input_file,
+	FILE* const output_file,
+	FILE* const listing_file,
+	FILE* const symbol_file,
+	const char* const input_file_path,
+	const cc_bool debug,
+	const cc_bool case_insensitive,
+	const cc_bool equ_set_descope_local_labels,
+	const cc_bool output_local_labels_to_sym_file,
+	void (* const definition_callback)(void *internal, void *user_data, void (*add_definition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value)),
+	const void* const user_data)
 {
 	Location location;
 	SemanticState state;
@@ -5582,6 +5609,11 @@ cc_bool ClownAssembler_Assemble(FILE* const input_file, FILE* const output_file,
 				/* Produce asm68k symbol file, if requested. */
 				if (symbol_file != NULL)
 				{
+					const void *parameters[2];
+
+					parameters[0] = symbol_file;
+					parameters[1] = &output_local_labels_to_sym_file;
+
 					/* Some kind of header. */
 					fputc('M', symbol_file);
 					fputc('N', symbol_file);
@@ -5592,7 +5624,7 @@ cc_bool ClownAssembler_Assemble(FILE* const input_file, FILE* const output_file,
 					fputc(0, symbol_file);
 					fputc(0, symbol_file);
 
-					Dictionary_Filter(&state.dictionary, DictionaryFilterProduceSymbolFile, symbol_file);
+					Dictionary_Filter(&state.dictionary, DictionaryFilterProduceSymbolFile, parameters);
 				}
 			}
 		}

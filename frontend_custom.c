@@ -76,6 +76,7 @@ int main(int argc, char **argv)
 	cc_bool case_insensitive;
 	cc_bool debug;
 	cc_bool equ_set_descope_local_labels;
+	cc_bool output_local_labels_to_sym_file;
 	int i;
 
 	total_arguments = argc;
@@ -89,6 +90,7 @@ int main(int argc, char **argv)
 	case_insensitive = cc_false;
 	debug = cc_false;
 	equ_set_descope_local_labels = cc_false;
+	output_local_labels_to_sym_file = cc_false;
 
 	for (i = 1; i < argc; ++i)
 	{
@@ -154,6 +156,10 @@ int main(int argc, char **argv)
 						++i;
 
 					continue;
+
+				case 'v':
+					output_local_labels_to_sym_file = cc_true;
+					continue;
 			}
 		}
 
@@ -175,6 +181,7 @@ int main(int argc, char **argv)
 			" -b        - Enable Bison's debug output.\n"
 			" -d        - Allow EQU/SET to descope local labels.\n"
 			" -e X=Y    - Defines symbol X to value Y.\n"
+			" -v        - Include local labels in symbol file.\n"
 			, stdout);
 	}
 	else
@@ -235,7 +242,7 @@ int main(int argc, char **argv)
 							ERROR("Could not open symbol file.");
 					}
 
-					if (!ClownAssembler_Assemble(input_file, output_file, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive, equ_set_descope_local_labels, DefinitionCallback, NULL))
+					if (!ClownAssembler_Assemble(input_file, output_file, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive, equ_set_descope_local_labels, output_local_labels_to_sym_file, DefinitionCallback, NULL))
 						ERROR("Could not assemble.");
 
 					if (listing_file != NULL)

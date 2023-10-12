@@ -74,6 +74,7 @@ int main(int argc, char **argv)
 	char *combined_arguments;
 	cc_bool case_insensitive;
 	cc_bool equ_set_descope_local_labels;
+	cc_bool output_local_labels_to_sym_file;
 	const char *source_file_path;
 	const char *object_file_path;
 	const char *symbol_file_path;
@@ -96,6 +97,7 @@ int main(int argc, char **argv)
 
 	case_insensitive = cc_true;
 	equ_set_descope_local_labels = cc_false;
+	output_local_labels_to_sym_file = cc_false;
 
 	source_file_path = object_file_path = symbol_file_path = listing_file_path = NULL;
 	source_file = object_file = symbol_file = listing_file = NULL;
@@ -218,13 +220,11 @@ int main(int argc, char **argv)
 							}
 							else if (strcmpci(argv[i], "v+") == 0)
 							{
-								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
-								exit_code = EXIT_FAILURE;
+								output_local_labels_to_sym_file = cc_true;
 							}
 							else if (strcmpci(argv[i], "v-") == 0)
 							{
-								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
-								exit_code = EXIT_FAILURE;
+								output_local_labels_to_sym_file = cc_false;
 							}
 							else if (strcmpci(argv[i], "w+") == 0)
 							{
@@ -453,7 +453,7 @@ int main(int argc, char **argv)
 	/* If we've gotten this far without any errors, then finally run the assembler. */
 	if (exit_code != EXIT_FAILURE)
 	{
-		if (!ClownAssembler_Assemble(source_file, object_file, listing_file, symbol_file, source_file_path, cc_false, case_insensitive, equ_set_descope_local_labels, DefinitionCallback, NULL))
+		if (!ClownAssembler_Assemble(source_file, object_file, listing_file, symbol_file, source_file_path, cc_false, case_insensitive, equ_set_descope_local_labels, output_local_labels_to_sym_file, DefinitionCallback, NULL))
 		{
 			fprintf(stderr, "Error: Failed to assemble.\n");
 			exit_code = EXIT_FAILURE;
