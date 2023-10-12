@@ -1655,6 +1655,12 @@ operand
 		$$.literal = $1;
 		$$.size = SIZE_UNDEFINED;
 	}
+	| expression size
+	{
+		$$.type = OPERAND_ADDRESS_ABSOLUTE;
+		$$.literal = $1;
+		$$.size = $2;
+	}
 	| '(' expression ')' size
 	{
 		$$.type = OPERAND_ADDRESS_ABSOLUTE;
