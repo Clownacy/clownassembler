@@ -4517,13 +4517,13 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			}
 			else
 			{
-				Dictionary_Entry* const rs = LookupSymbol(state, "__RS", sizeof("__RS") - 1);
+				Dictionary_Entry* const rs = LookupSymbol(state, "__rs", sizeof("__rs") - 1);
 
 				/* Add label to symbol table. */
 				if (label != NULL)
 					AddIdentifierToSymbolTable(state, label, rs->shared.unsigned_long, SYMBOL_VARIABLE);
 
-				/* Advance '__RS' by the specified amount. */
+				/* Advance '__rs' by the specified amount. */
 				switch (statement->shared.rs.size)
 				{
 					case SIZE_BYTE:
@@ -4553,20 +4553,20 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 
 		case STATEMENT_TYPE_RSSET:
 		{
-			/* Set '__RS' to value. */
+			/* Set '__rs' to value. */
 			unsigned long value;
 
 			if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
 				SemanticError(state, "Value must be evaluable on the first pass.");
 			else
-				LookupSymbol(state, "__RS", sizeof("__RS") - 1)->shared.unsigned_long = value;
+				LookupSymbol(state, "__rs", sizeof("__rs") - 1)->shared.unsigned_long = value;
 
 			break;
 		}
 
 		case STATEMENT_TYPE_RSRESET:
-			/* Set '__RS' to 0. */
-			LookupSymbol(state, "__RS", sizeof("__RS") - 1)->shared.unsigned_long = 0;
+			/* Set '__rs' to 0. */
+			LookupSymbol(state, "__rs", sizeof("__rs") - 1)->shared.unsigned_long = 0;
 			break;
 
 		case STATEMENT_TYPE_OBJ:
@@ -4576,7 +4576,6 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			}
 			else
 			{
-				/* Set '__RS' to value. */
 				unsigned long value;
 
 				if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
@@ -4605,7 +4604,6 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 
 		case STATEMENT_TYPE_ORG:
 		{
-			/* Set '__RS' to value. */
 			unsigned long value;
 
 			if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
@@ -5360,7 +5358,7 @@ static cc_bool DictionaryFilterDeleteVariables(Dictionary_Entry *entry, const ch
 	return (entry->type != SYMBOL_VARIABLE
 	    || (identifier_length == sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1 && memcmp(identifier, PROGRAM_COUNTER_OF_STATEMENT, identifier_length) == 0)
 	    || (identifier_length == sizeof(PROGRAM_COUNTER_OF_EXPRESSION) - 1 && memcmp(identifier, PROGRAM_COUNTER_OF_EXPRESSION, identifier_length) == 0)
-	    || (identifier_length == sizeof("__RS") - 1 && memcmp(identifier, "__RS", identifier_length) == 0));
+	    || (identifier_length == sizeof("__rs") - 1 && memcmp(identifier, "__rs", identifier_length) == 0));
 }
 
 static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data)
@@ -5491,8 +5489,8 @@ cc_bool ClownAssembler_Assemble(
 		   of two values, so we need to maintain two separate copies of it. */
 		if (INITIALISE_BUILT_IN_VARIABLE(PROGRAM_COUNTER_OF_STATEMENT)
 		 && INITIALISE_BUILT_IN_VARIABLE(PROGRAM_COUNTER_OF_EXPRESSION)
-		 /* Create the secret '__RS' symbol too. */
-		 && INITIALISE_BUILT_IN_VARIABLE("__RS"))
+		 /* Create the secret '__rs' symbol too. */
+		 && INITIALISE_BUILT_IN_VARIABLE("__rs"))
 		{
 			if (definition_callback != NULL)
 				definition_callback(&state, (void*)user_data, AddDefinition);
