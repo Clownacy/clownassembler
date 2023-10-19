@@ -5422,6 +5422,7 @@ static void AddDefinition(void* const internal, const char* const identifier, co
 
 	if (symbol != NULL)
 	{
+		/* TODO: Does asm68k create a constant or a variable? */
 		symbol->type = SYMBOL_CONSTANT;
 		symbol->shared.unsigned_long = value;
 	}
