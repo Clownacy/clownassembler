@@ -5441,7 +5441,7 @@ cc_bool ClownAssembler_Assemble(
 	const void* const user_data)
 {
 	Location location;
-	SemanticState state;
+	SemanticState state = {0}; /* Default-initialise everything. */
 
 	/* For error messages, we want to maintain a list of filenames and line
 	   numbers that describe the location and nesting of the erroneous
@@ -5450,26 +5450,13 @@ cc_bool ClownAssembler_Assemble(
 	location.file_path = NULL;
 	location.line_number = 0;
 
-	/* Initialise the state. */
+	/* Initialise the state's non-default values. */
 	state.success = cc_true;
 	state.output_file = output_file;
 	state.listing_file = listing_file;
 	state.equ_set_descope_local_labels = equ_set_descope_local_labels;
-	state.program_counter = 0;
-	state.obj_active = cc_false;
-	state.obj_delta = 0;
-	state.fix_up_list_head = NULL;
-	state.fix_up_list_tail = NULL;
-	state.doing_fix_up = cc_false;
-	state.doing_final_pass = cc_false;
-	state.last_global_label = NULL;
 	state.location = &location;
-	state.source_line = NULL;
-	state.current_if_level = 0;
-	state.false_if_level = 0;
-	state.true_already_found = cc_false;
 	state.mode = MODE_NORMAL;
-	state.end = cc_false;
 
 	/* Set the location path (note that we're taking care to not do this
 	   before the state is fully initialised, as the error handler requires
