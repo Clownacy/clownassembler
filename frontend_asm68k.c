@@ -75,6 +75,7 @@ int main(int argc, char **argv)
 	cc_bool case_sensitive;
 	cc_bool equ_set_descope_local_labels;
 	cc_bool output_local_labels_to_sym_file;
+	cc_bool warnings_enabled;
 	const char *source_file_path;
 	const char *object_file_path;
 	const char *symbol_file_path;
@@ -98,6 +99,7 @@ int main(int argc, char **argv)
 	case_sensitive = cc_false;
 	equ_set_descope_local_labels = cc_false;
 	output_local_labels_to_sym_file = cc_false;
+	warnings_enabled = cc_true;
 
 	source_file_path = object_file_path = symbol_file_path = listing_file_path = NULL;
 	source_file = object_file = symbol_file = listing_file = NULL;
@@ -228,18 +230,15 @@ int main(int argc, char **argv)
 							}
 							else if (strcmpci(option, "w+") == 0)
 							{
-								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
-								exit_code = EXIT_FAILURE;
+								warnings_enabled = cc_true;
 							}
 							else if (strcmpci(option, "w-") == 0)
 							{
-								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
-								exit_code = EXIT_FAILURE;
+								warnings_enabled = cc_false;
 							}
 							else if (strcmpci(option, "ws+") == 0)
 							{
-								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
-								exit_code = EXIT_FAILURE;
+								/* This is always enabled. */
 							}
 							else if (strcmpci(option, "ws-") == 0)
 							{
@@ -453,7 +452,7 @@ int main(int argc, char **argv)
 	/* If we've gotten this far without any errors, then finally run the assembler. */
 	if (exit_code != EXIT_FAILURE)
 	{
-		if (!ClownAssembler_Assemble(source_file, object_file, listing_file, symbol_file, source_file_path, cc_false, !case_sensitive, equ_set_descope_local_labels, output_local_labels_to_sym_file, DefinitionCallback, NULL))
+		if (!ClownAssembler_Assemble(source_file, object_file, listing_file, symbol_file, source_file_path, cc_false, !case_sensitive, equ_set_descope_local_labels, output_local_labels_to_sym_file, warnings_enabled, DefinitionCallback, NULL))
 		{
 			fprintf(stderr, "Error: Failed to assemble.\n");
 			exit_code = EXIT_FAILURE;

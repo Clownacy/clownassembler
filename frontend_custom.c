@@ -77,6 +77,7 @@ int main(int argc, char **argv)
 	cc_bool debug;
 	cc_bool equ_set_descope_local_labels;
 	cc_bool output_local_labels_to_sym_file;
+	cc_bool warnings_enabled;
 	int i;
 
 	total_arguments = argc;
@@ -91,6 +92,7 @@ int main(int argc, char **argv)
 	debug = cc_false;
 	equ_set_descope_local_labels = cc_false;
 	output_local_labels_to_sym_file = cc_false;
+	warnings_enabled = cc_true;
 
 	for (i = 1; i < argc; ++i)
 	{
@@ -160,6 +162,10 @@ int main(int argc, char **argv)
 				case 'v':
 					output_local_labels_to_sym_file = cc_true;
 					continue;
+
+				case 'w':
+					warnings_enabled = cc_false;
+					continue;
 			}
 		}
 
@@ -182,6 +188,7 @@ int main(int argc, char **argv)
 			" -d        - Allow EQU/SET to descope local labels.\n"
 			" -e X=Y    - Defines symbol X to value Y.\n"
 			" -v        - Include local labels in symbol file.\n"
+			" -w        - Silence warnings.\n"
 			, stdout);
 	}
 	else
@@ -242,7 +249,7 @@ int main(int argc, char **argv)
 							ERROR("Could not open symbol file.");
 					}
 
-					if (!ClownAssembler_Assemble(input_file, output_file, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive, equ_set_descope_local_labels, output_local_labels_to_sym_file, DefinitionCallback, NULL))
+					if (!ClownAssembler_Assemble(input_file, output_file, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive, equ_set_descope_local_labels, output_local_labels_to_sym_file, warnings_enabled, DefinitionCallback, NULL))
 						ERROR("Could not assemble.");
 
 					if (listing_file != NULL)

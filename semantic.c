@@ -90,6 +90,7 @@ typedef struct SemanticState
 	FILE *output_file;
 	FILE *listing_file;
 	cc_bool equ_set_descope_local_labels;
+	cc_bool warnings_enabled;
 	unsigned long program_counter;
 	cc_bool obj_active;
 	unsigned long obj_delta;
@@ -169,15 +170,18 @@ static void ErrorMessageCommon(SemanticState *state)
 
 ATTRIBUTE_PRINTF(2, 3) static void SemanticWarning(SemanticState *state, const char *fmt, ...)
 {
-	va_list args;
+	if (state->warnings_enabled)
+	{
+		va_list args;
 
-	fputs("Warning: ", stderr);
+		fputs("Warning: ", stderr);
 
-	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
-	va_end(args);
+		va_start(args, fmt);
+		vfprintf(stderr, fmt, args);
+		va_end(args);
 
-	ErrorMessageCommon(state);
+		ErrorMessageCommon(state);
+	}
 }
 
 ATTRIBUTE_PRINTF(2, 3) static void SemanticError(SemanticState *state, const char *fmt, ...)
@@ -223,11 +227,14 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message)
 {
 	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
 
-	(void)statement;
+	if (state->warnings_enabled)
+	{
+		(void)statement;
 
-	fprintf(stderr, "Warning: %s", message);
+		fprintf(stderr, "Warning: %s", message);
 
-	ErrorMessageCommon(state);
+		ErrorMessageCommon(state);
+	}
 }
 
 void m68kasm_error(void *scanner, Statement *statement, const char *message)
@@ -5438,6 +5445,7 @@ cc_bool ClownAssembler_Assemble(
 	const cc_bool case_insensitive,
 	const cc_bool equ_set_descope_local_labels,
 	const cc_bool output_local_labels_to_sym_file,
+	const cc_bool warnings_enabled,
 	void (* const definition_callback)(void *internal, void *user_data, void (*add_definition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value)),
 	const void* const user_data)
 {
@@ -5456,6 +5464,7 @@ cc_bool ClownAssembler_Assemble(
 	state.output_file = output_file;
 	state.listing_file = listing_file;
 	state.equ_set_descope_local_labels = equ_set_descope_local_labels;
+	state.warnings_enabled = warnings_enabled;
 	state.location = &location;
 	state.mode = MODE_NORMAL;
 

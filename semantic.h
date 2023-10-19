@@ -36,6 +36,7 @@ cc_bool ClownAssembler_Assemble(
 	cc_bool case_insensitive,
 	cc_bool equ_set_descope_local_labels,
 	cc_bool output_local_labels_to_sym_file,
+	cc_bool warnings_enabled,
 	void (*definition_callback)(void *internal, void *user_data, void (*add_definition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value)),
 	const void *user_data);
 
