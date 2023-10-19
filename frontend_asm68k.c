@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 
 	int i;
 	char *combined_arguments;
-	cc_bool case_insensitive;
+	cc_bool case_sensitive;
 	cc_bool equ_set_descope_local_labels;
 	cc_bool output_local_labels_to_sym_file;
 	const char *source_file_path;
@@ -95,7 +95,7 @@ int main(int argc, char **argv)
 
 	combined_arguments = NULL;
 
-	case_insensitive = cc_true;
+	case_sensitive = cc_false;
 	equ_set_descope_local_labels = cc_false;
 	output_local_labels_to_sym_file = cc_false;
 
@@ -169,11 +169,11 @@ int main(int argc, char **argv)
 							}
 							else if (strcmpci(option, "c+") == 0)
 							{
-								case_insensitive = cc_false;
+								case_sensitive = cc_true;
 							}
 							else if (strcmpci(option, "c-") == 0)
 							{
-								case_insensitive = cc_true;
+								case_sensitive = cc_false;
 							}
 							else if (strcmpci(option, "d+") == 0)
 							{
@@ -453,7 +453,7 @@ int main(int argc, char **argv)
 	/* If we've gotten this far without any errors, then finally run the assembler. */
 	if (exit_code != EXIT_FAILURE)
 	{
-		if (!ClownAssembler_Assemble(source_file, object_file, listing_file, symbol_file, source_file_path, cc_false, case_insensitive, equ_set_descope_local_labels, output_local_labels_to_sym_file, DefinitionCallback, NULL))
+		if (!ClownAssembler_Assemble(source_file, object_file, listing_file, symbol_file, source_file_path, cc_false, !case_sensitive, equ_set_descope_local_labels, output_local_labels_to_sym_file, DefinitionCallback, NULL))
 		{
 			fprintf(stderr, "Error: Failed to assemble.\n");
 			exit_code = EXIT_FAILURE;
