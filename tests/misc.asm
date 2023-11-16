@@ -592,7 +592,7 @@ variable set 12
 	org *+4
 	dc.b "wow"
 
-	; Test an edge involving a combination of obj and org
+	; Test an edgecase involving a combination of obj and org
 LetsGetWacky:
 	obj LetsGetWacky+1
 	org LetsGetWacky
@@ -605,7 +605,6 @@ LetsGetWacky:
 		inform 2,"Wrong OBJEND address"
 	endif
 	dc.l *
-
 
 	; Test DEF
 	if def(Spaghetti)
