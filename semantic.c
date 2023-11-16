@@ -89,6 +89,7 @@ typedef struct SemanticState
 	cc_bool success;
 	FILE *output_file;
 	FILE *listing_file;
+	FILE *error_file;
 	cc_bool equ_set_descope_local_labels;
 	cc_bool warnings_enabled;
 	unsigned long start_position;
@@ -164,9 +165,9 @@ static void ErrorMessageCommon(SemanticState *state)
 	const Location *location;
 
 	for (location = state->location; location != NULL; location = location->previous)
-		fprintf(stderr, "\nOn line %lu of '%s'...", location->line_number, location->file_path != NULL ? location->file_path : "[No path given]");
+		fprintf(state->error_file, "\nOn line %lu of '%s'...", location->line_number, location->file_path != NULL ? location->file_path : "[No path given]");
 
-	fprintf(stderr, "\n%s\n\n", state->source_line != NULL ? state->source_line : "[No source line]");
+	fprintf(state->error_file, "\n%s\n\n", state->source_line != NULL ? state->source_line : "[No source line]");
 }
 
 ATTRIBUTE_PRINTF(2, 3) static void SemanticWarning(SemanticState *state, const char *fmt, ...)
@@ -175,10 +176,10 @@ ATTRIBUTE_PRINTF(2, 3) static void SemanticWarning(SemanticState *state, const c
 	{
 		va_list args;
 
-		fputs("Warning: ", stderr);
+		fputs("Warning: ", state->error_file);
 
 		va_start(args, fmt);
-		vfprintf(stderr, fmt, args);
+		vfprintf(state->error_file, fmt, args);
 		va_end(args);
 
 		ErrorMessageCommon(state);
@@ -189,10 +190,10 @@ ATTRIBUTE_PRINTF(2, 3) static void SemanticError(SemanticState *state, const cha
 {
 	va_list args;
 
-	fputs("Error: ", stderr);
+	fputs("Error: ", state->error_file);
 
 	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
+	vfprintf(state->error_file, fmt, args);
 	va_end(args);
 
 	ErrorMessageCommon(state);
@@ -204,10 +205,10 @@ ATTRIBUTE_PRINTF(2, 3) static void InternalError(SemanticState *state, const cha
 {
 	va_list args;
 
-	fputs("Internal error: ", stderr);
+	fputs("Internal error: ", state->error_file);
 
 	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
+	vfprintf(state->error_file, fmt, args);
 	va_end(args);
 
 	ErrorMessageCommon(state);
@@ -217,7 +218,7 @@ ATTRIBUTE_PRINTF(2, 3) static void InternalError(SemanticState *state, const cha
 
 static void OutOfMemoryError(SemanticState *state)
 {
-	fputs("Out-of-memory error.", stderr);
+	fputs("Out-of-memory error.", state->error_file);
 
 	ErrorMessageCommon(state);
 
@@ -232,7 +233,7 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message)
 	{
 		(void)statement;
 
-		fprintf(stderr, "Warning: %s", message);
+		fprintf(state->error_file, "Warning: %s", message);
 
 		ErrorMessageCommon(state);
 	}
@@ -244,7 +245,7 @@ void m68kasm_error(void *scanner, Statement *statement, const char *message)
 
 	(void)statement;
 
-	fprintf(stderr, "Error: %s", message);
+	fprintf(state->error_file, "Error: %s", message);
 
 	ErrorMessageCommon(state);
 }
@@ -4494,7 +4495,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 				switch (severity)
 				{
 					case 0:
-						fprintf(stderr, "INFORM: '%s'\n", statement->shared.inform.message);
+						fprintf(state->error_file, "INFORM: '%s'\n", statement->shared.inform.message);
 						break;
 
 					case 1:
@@ -5461,6 +5462,7 @@ static void AddDefinition(void* const internal, const char* const identifier, co
 cc_bool ClownAssembler_Assemble(
 	FILE* const input_file,
 	FILE* const output_file,
+	FILE* const error_file,
 	FILE* const listing_file,
 	FILE* const symbol_file,
 	const char* const input_file_path,
@@ -5485,6 +5487,7 @@ cc_bool ClownAssembler_Assemble(
 	/* Initialise the state's non-default values. */
 	state.success = cc_true;
 	state.output_file = output_file;
+	state.error_file = error_file;
 	state.listing_file = listing_file;
 	state.equ_set_descope_local_labels = equ_set_descope_local_labels;
 	state.warnings_enabled = warnings_enabled;

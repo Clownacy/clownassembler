@@ -29,6 +29,7 @@ extern "C" {
 cc_bool ClownAssembler_Assemble(
 	FILE *input_file,
 	FILE *output_file,
+	FILE *error_file,
 	FILE *listing_file,
 	FILE *symbol_file,
 	const char *input_file_path,
