@@ -91,6 +91,7 @@ typedef struct SemanticState
 	FILE *listing_file;
 	cc_bool equ_set_descope_local_labels;
 	cc_bool warnings_enabled;
+	unsigned long start_position;
 	unsigned long program_counter;
 	cc_bool obj_active;
 	unsigned long obj_delta;
@@ -4619,8 +4620,30 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 			}
 			else
 			{
-				fseek(state->output_file, value, SEEK_SET);
-				state->program_counter = value;
+				if (value < state->start_position)
+				{
+					SemanticError(state, "ORG cannot be used to seek before the start of the output file.");
+				}
+				else
+				{
+					/* If we're at the start of the file, then don't cause the org to insert padding. */
+					/* This is a hidden feature of S.N. 68k (asm68k). */
+					const long current_position = ftell(state->output_file);
+
+					fseek(state->output_file, 0, SEEK_END);
+
+					if (ftell(state->output_file) == 0)
+					{
+						state->start_position = value;
+						fseek(state->output_file, current_position, SEEK_SET);
+					}
+					else
+					{
+						fseek(state->output_file, value - state->start_position, SEEK_SET);
+					}
+
+					state->program_counter = value;
+				}
 			}
 
 			break;
