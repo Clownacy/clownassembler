@@ -58,6 +58,12 @@ extern int m68kasm_debug;
 
 #include "clowncommon.h"
 
+/* A hack for older versions of Bison. */
+/* Should probably be removed when they go out of circulation. */
+#if defined(YYBISON) && YYBISON < 30802 && !defined(YYNOMEM)
+#define YYNOMEM goto yyexhaustedlab;
+#endif
+
 #define YYSTYPE M68KASM_STYPE
 
 #define CREATE_LIST_TYPE(TYPE)\
@@ -425,7 +431,7 @@ typedef struct Statement
 } Statement;
 
 
-#line 429 "syntactic.h"
+#line 435 "syntactic.h"
 
 /* Token kinds.  */
 #ifndef M68KASM_TOKENTYPE
@@ -613,7 +619,7 @@ typedef struct Statement
 #if ! defined M68KASM_STYPE && ! defined M68KASM_STYPE_IS_DECLARED
 union M68KASM_STYPE
 {
-#line 428 "syntactic.y"
+#line 434 "syntactic.y"
 
 	unsigned long unsigned_long;
 	char *string;
@@ -626,7 +632,7 @@ union M68KASM_STYPE
 	IdentifierList identifier_list;
 	Expression expression;
 
-#line 630 "syntactic.h"
+#line 636 "syntactic.h"
 
 };
 typedef union M68KASM_STYPE M68KASM_STYPE;
@@ -640,13 +646,13 @@ typedef union M68KASM_STYPE M68KASM_STYPE;
 int m68kasm_parse (void *scanner, Statement *statement);
 
 /* "%code provides" blocks.  */
-#line 402 "syntactic.y"
+#line 408 "syntactic.y"
 
 
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
 
 
-#line 651 "syntactic.h"
+#line 657 "syntactic.h"
 
 #endif /* !YY_M68KASM_SYNTACTIC_H_INCLUDED  */

@@ -1667,12 +1667,6 @@ operand
 		$$.literal = $1;
 		$$.size = $2;
 	}
-	| '(' expression ')' size
-	{
-		$$.type = OPERAND_ADDRESS_ABSOLUTE;
-		$$.literal = $2;
-		$$.size = $4;
-	}
 	/* Register list */
 	| register_list
 	{
