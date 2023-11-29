@@ -1036,8 +1036,11 @@ static unsigned int ConstructEffectiveAddressBits(SemanticState *state, const Op
 
 	switch (operand->type)
 	{
+		default:
 		case OPERAND_NONE:
 			assert(cc_false);
+			m = 0;
+			xn = 0;
 			break;
 
 		case OPERAND_DATA_REGISTER:
@@ -1091,6 +1094,7 @@ static unsigned int ConstructEffectiveAddressBits(SemanticState *state, const Op
 
 			switch (operand->size)
 			{
+				default:
 				case SIZE_WORD:
 					xn = 0; /* 000 */
 					break;
@@ -2667,10 +2671,10 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 					switch (instruction->operands[i].type)
 					{
+						default:
 						case OPERAND_NONE:
 							assert(cc_false);
-							break;
-
+							/* Fallthrough */
 						case OPERAND_DATA_REGISTER:
 							operand_string = "a data register";
 							break;
@@ -5044,6 +5048,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 									/* Silence bogus(?) 'variable may be used uninitialised' compiler warnings. */
 									/* TODO: Are these really bogus? */
+									substitute = NULL;
 									earliest_parameter_end = NULL;
 
 									/* Find numerical macro parameter placeholder. */
