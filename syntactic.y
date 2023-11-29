@@ -31,6 +31,12 @@
 
 #include "clowncommon.h"
 
+/* A hack for older versions of Bison. */
+/* Should probably be removed when they go out of circulation. */
+#if defined(YYBISON) && YYBISON < 30802 && !defined(YYNOMEM)
+#define YYNOMEM goto yyexhaustedlab;
+#endif
+
 #define YYSTYPE M68KASM_STYPE
 
 #define CREATE_LIST_TYPE(TYPE)\
