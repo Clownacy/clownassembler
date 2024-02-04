@@ -249,7 +249,7 @@ int main(int argc, char **argv)
 							ERROR("Could not open symbol file.");
 					}
 
-					if (!ClownAssembler_Assemble(input_file, output_file, stderr, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive, equ_set_descope_local_labels, output_local_labels_to_sym_file, warnings_enabled, DefinitionCallback, NULL))
+					if (!ClownAssembler_AssembleFile(input_file, output_file, stderr, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive, equ_set_descope_local_labels, output_local_labels_to_sym_file, warnings_enabled, DefinitionCallback, NULL))
 						ERROR("Could not assemble.");
 
 					if (listing_file != NULL)

@@ -34,6 +34,10 @@
 #define PROGRAM_COUNTER_OF_STATEMENT ",PROGRAM_COUNTER_OF_STATEMENT"
 #define PROGRAM_COUNTER_OF_EXPRESSION ",PROGRAM_COUNTER_OF_EXPRESSION"
 
+typedef ClownAssembler_TextInput TextInput;
+typedef ClownAssembler_BinaryOutput BinaryOutput;
+typedef ClownAssembler_TextOutput TextOutput;
+
 typedef enum SymbolType
 {
 	SYMBOL_CONSTANT,
@@ -56,7 +60,7 @@ typedef struct FixUp
 
 	Statement statement;
 	unsigned long program_counter;
-	long output_position;
+	size_t output_position;
 	char *last_global_label;
 	char *source_line;
 	Location location;
@@ -87,11 +91,13 @@ typedef enum Mode
 typedef struct SemanticState
 {
 	cc_bool success;
-	FILE *output_file;
-	FILE *listing_file;
-	FILE *error_file;
+	const BinaryOutput *output_callbacks;
+	const TextOutput *listing_callbacks;
+	const TextOutput *error_callbacks;
 	cc_bool equ_set_descope_local_labels;
 	cc_bool warnings_enabled;
+	size_t output_position;
+	cc_bool output_written_to;
 	unsigned long start_position;
 	unsigned long program_counter;
 	cc_bool obj_active;
@@ -149,7 +155,7 @@ typedef struct Macro
 } Macro;
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
-static void AssembleFile(SemanticState *state, FILE *input_file);
+static void AssembleFile(SemanticState *state, const TextInput *input_callbacks);
 static void AssembleLine(SemanticState *state, const char *source_line);
 
 /* Prevent errors when '__attribute__((format(printf, X, X)))' is not supported. */
@@ -160,14 +166,132 @@ static void AssembleLine(SemanticState *state, const char *source_line);
 #define ATTRIBUTE_PRINTF(a, b)
 #endif
 
+/* IO Callbacks */
+
+static int TextInput_fgetc(const TextInput* const callbacks)
+{
+	return callbacks->read_character((void*)callbacks->user_data);
+}
+
+/* TODO: Maybe make this a frontend-provided function. */
+static char* TextInput_fgets(char* const buffer, size_t total_characters, const TextInput* const callbacks)
+{
+	size_t i;
+
+	char *buffer_pointer = buffer;
+
+	if (total_characters == 0)
+		return buffer;
+
+	for (i = 0; i < total_characters - 1; ++i)
+	{
+		const int character = TextInput_fgetc(callbacks);
+
+		if (character == -1)
+		{
+			if (i == 0)
+				return NULL;
+			else
+				break;
+		}
+
+		if (character == '\0')
+			break;
+
+		*buffer_pointer++ = character;
+
+		if (character == '\n')
+			break;
+	}
+
+	*buffer_pointer++ = '\0';
+	return buffer;
+}
+
+static void BinaryOutput_fputc(const int character, const BinaryOutput* const callbacks)
+{
+	callbacks->write_byte((void*)callbacks->user_data, character);
+}
+
+static void BinaryOutput_fseek(SemanticState* const state, const BinaryOutput* const callbacks, const size_t position)
+{
+	state->output_position = position;
+	callbacks->seek((void*)callbacks->user_data, position);
+}
+
+/* TODO: Maybe make this a frontend-provided function. */
+static void BinaryOutput_fwrite(const char* const buffer, const size_t size, const size_t count, const BinaryOutput* const callbacks)
+{
+	size_t i;
+	for (i = 0; i < size * count; ++i)
+		BinaryOutput_fputc(buffer[i], callbacks);
+}
+
+static void TextOutput_vfprintf(const TextOutput* const callbacks, const char* const format, va_list args)
+{
+	callbacks->print_formatted((void*)callbacks->user_data, format, args);
+}
+
+ATTRIBUTE_PRINTF(2, 3) static void TextOutput_fprintf(const TextOutput* const callbacks, const char* const format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	TextOutput_vfprintf(callbacks, format, args);
+	va_end(args);
+}
+
+/* TODO: Maybe make this a frontend-provided function. */
+static void TextOutput_fputs(const char* const string, const TextOutput* const callbacks)
+{
+	TextOutput_fprintf(callbacks, "%s", string);
+}
+
+/* TODO: Maybe make this a frontend-provided function. */
+static void TextOutput_fputc(const int character, const TextOutput* const callbacks)
+{
+	TextOutput_fprintf(callbacks, "%c", character);
+}
+
+static void WriteOutputByte(SemanticState* const state, const unsigned char byte)
+{
+	state->output_written_to = cc_true;
+	++state->output_position;
+	BinaryOutput_fputc(byte, state->output_callbacks);
+}
+
+/* Default FILE-based IO callbacks */
+
+static int ReadCharacter(void *user_data)
+{
+	const int value = fgetc(user_data);
+	return value == EOF ? -1 : value;
+}
+
+static void Seek(void *user_data, size_t position)
+{
+	fseek(user_data, position, SEEK_SET);
+}
+
+static void WriteByte(void *user_data, unsigned char byte)
+{
+	fputc(byte, user_data);
+}
+
+static void PrintFormatted(void *user_data, const char *format, va_list args)
+{
+	vfprintf(user_data, format, args);
+}
+
+/* Other stuff */
+
 static void ErrorMessageCommon(SemanticState *state)
 {
 	const Location *location;
 
 	for (location = state->location; location != NULL; location = location->previous)
-		fprintf(state->error_file, "\nOn line %lu of '%s'...", location->line_number, location->file_path != NULL ? location->file_path : "[No path given]");
+		TextOutput_fprintf(state->error_callbacks, "\nOn line %lu of '%s'...", location->line_number, location->file_path != NULL ? location->file_path : "[No path given]");
 
-	fprintf(state->error_file, "\n%s\n\n", state->source_line != NULL ? state->source_line : "[No source line]");
+	TextOutput_fprintf(state->error_callbacks, "\n%s\n\n", state->source_line != NULL ? state->source_line : "[No source line]");
 }
 
 ATTRIBUTE_PRINTF(2, 3) static void SemanticWarning(SemanticState *state, const char *fmt, ...)
@@ -176,10 +300,10 @@ ATTRIBUTE_PRINTF(2, 3) static void SemanticWarning(SemanticState *state, const c
 	{
 		va_list args;
 
-		fputs("Warning: ", state->error_file);
+		TextOutput_fputs("Warning: ", state->error_callbacks);
 
 		va_start(args, fmt);
-		vfprintf(state->error_file, fmt, args);
+		TextOutput_vfprintf(state->error_callbacks, fmt, args);
 		va_end(args);
 
 		ErrorMessageCommon(state);
@@ -190,10 +314,10 @@ ATTRIBUTE_PRINTF(2, 3) static void SemanticError(SemanticState *state, const cha
 {
 	va_list args;
 
-	fputs("Error: ", state->error_file);
+	TextOutput_fputs("Error: ", state->error_callbacks);
 
 	va_start(args, fmt);
-	vfprintf(state->error_file, fmt, args);
+	TextOutput_vfprintf(state->error_callbacks, fmt, args);
 	va_end(args);
 
 	ErrorMessageCommon(state);
@@ -205,10 +329,10 @@ ATTRIBUTE_PRINTF(2, 3) static void InternalError(SemanticState *state, const cha
 {
 	va_list args;
 
-	fputs("Internal error: ", state->error_file);
+	TextOutput_fputs("Internal error: ", state->error_callbacks);
 
 	va_start(args, fmt);
-	vfprintf(state->error_file, fmt, args);
+	TextOutput_vfprintf(state->error_callbacks, fmt, args);
 	va_end(args);
 
 	ErrorMessageCommon(state);
@@ -218,7 +342,7 @@ ATTRIBUTE_PRINTF(2, 3) static void InternalError(SemanticState *state, const cha
 
 static void OutOfMemoryError(SemanticState *state)
 {
-	fputs("Out-of-memory error.", state->error_file);
+	TextOutput_fputs("Out-of-memory error.", state->error_callbacks);
 
 	ErrorMessageCommon(state);
 
@@ -233,7 +357,7 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message)
 	{
 		(void)statement;
 
-		fprintf(state->error_file, "Warning: %s", message);
+		TextOutput_fprintf(state->error_callbacks, "Warning: %s", message);
 
 		ErrorMessageCommon(state);
 	}
@@ -245,7 +369,7 @@ void m68kasm_error(void *scanner, Statement *statement, const char *message)
 
 	(void)statement;
 
-	fprintf(state->error_file, "Error: %s", message);
+	TextOutput_fprintf(state->error_callbacks, "Error: %s", message);
 
 	ErrorMessageCommon(state);
 }
@@ -418,7 +542,7 @@ static cc_bool FindMacroParameter(const char* const remaining_line, const char* 
 static void OutputByte(SemanticState *state, unsigned int byte)
 {
 	/* Write to listing file. */
-	if (!state->doing_fix_up && state->listing_file != NULL)
+	if (!state->doing_fix_up && state->listing_callbacks != NULL)
 	{
 		/* We can only write up to 10 bytes. */
 		if (state->listing_counter <= 10)
@@ -426,14 +550,14 @@ static void OutputByte(SemanticState *state, unsigned int byte)
 			if (state->listing_counter == 10)
 			{
 				/* After the last byte, we output a '+' to signal there's more. */
-				fputc('+', state->listing_file);
+				TextOutput_fputc('+', state->listing_callbacks);
 			}
 			else
 			{
 				if (state->listing_counter % 2 == 0)
-					fputc(' ', state->listing_file);
+					TextOutput_fputc(' ', state->listing_callbacks);
 
-				fprintf(state->listing_file, "%02X", byte);
+				TextOutput_fprintf(state->listing_callbacks, "%02X", byte);
 			}
 
 			++state->listing_counter;
@@ -441,7 +565,7 @@ static void OutputByte(SemanticState *state, unsigned int byte)
 	}
 
 	/* Write to output file. */
-	fputc(byte, state->output_file);
+	WriteOutputByte(state, byte);
 }
 
 static char* ExpandIdentifier(SemanticState *state, const char* const identifier, const size_t identifier_length, size_t* const expanded_identifier_length)
@@ -4048,6 +4172,11 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 	}
 	else
 	{
+		ClownAssembler_TextInput input_callbacks = {
+			input_file,
+			ReadCharacter
+		};
+
 		/* Add file path and line number to the location list. */
 		Location location;
 
@@ -4057,7 +4186,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 		location.previous = state->location;
 		state->location = &location;
 
-		AssembleFile(state, input_file);
+		AssembleFile(state, &input_callbacks);
 
 		state->location = state->location->previous;
 
@@ -4108,7 +4237,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 				}
 
 				++state->program_counter;
-				fputc(character, state->output_file);
+				WriteOutputByte(state, character);
 			}
 		}
 		else
@@ -4118,7 +4247,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 			while ((character = fgetc(input_file)) != EOF)
 			{
 				++state->program_counter;
-				fputc(character, state->output_file);
+				WriteOutputByte(state, character);
 			}
 		}
 
@@ -4499,7 +4628,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 				switch (severity)
 				{
 					case 0:
-						fprintf(state->error_file, "INFORM: '%s'\n", statement->shared.inform.message);
+						TextOutput_fprintf(state->error_callbacks, "INFORM: '%s'\n", statement->shared.inform.message);
 						break;
 
 					case 1:
@@ -4633,19 +4762,10 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 				{
 					/* If we're at the start of the file, then don't cause the org to insert padding. */
 					/* This is a hidden feature of S.N. 68k (asm68k). */
-					const long current_position = ftell(state->output_file);
-
-					fseek(state->output_file, 0, SEEK_END);
-
-					if (ftell(state->output_file) == 0)
-					{
+					if (!state->output_written_to)
 						state->start_position = value;
-						fseek(state->output_file, current_position, SEEK_SET);
-					}
 					else
-					{
-						fseek(state->output_file, value - state->start_position, SEEK_SET);
-					}
+						BinaryOutput_fseek(state, state->output_callbacks, value - state->start_position);
 
 					state->program_counter = value;
 				}
@@ -4665,7 +4785,7 @@ static void ParseLine(SemanticState *state, const char *source_line, const char 
 
 	/* Back these up, before they get a chance to be modified by ProcessStatement. */
 	const unsigned long starting_program_counter = state->program_counter;
-	const long starting_output_position = ftell(state->output_file);
+	const size_t starting_output_position = state->output_position;
 
 	/* Parse the source line with Flex and Bison (Lex and Yacc). */
 	buffer = m68kasm__scan_string(directive_and_operands, state->flex_state);
@@ -5264,14 +5384,14 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	free(label);
 }
 
-static void AssembleFile(SemanticState *state, FILE *input_file)
+static void AssembleFile(SemanticState *state, const TextInput* const input_callbacks)
 {
 	char *line_buffer_write_pointer;
 
 	line_buffer_write_pointer = state->line_buffer;
 
 	/* Read lines one at a time, feeding them to the 'AssembleLine' function. */
-	while (!state->end && fgets(line_buffer_write_pointer, &state->line_buffer[sizeof(state->line_buffer)] - line_buffer_write_pointer, input_file) != NULL)
+	while (!state->end && TextInput_fgets(line_buffer_write_pointer, &state->line_buffer[sizeof(state->line_buffer)] - line_buffer_write_pointer, input_callbacks) != NULL)
 	{
 		size_t newline_index;
 		char newline_character;
@@ -5312,7 +5432,7 @@ static void AssembleFile(SemanticState *state, FILE *input_file)
 		/* TODO: Is there no way to remove this limit? */
 		if (newline_character == '\0')
 		{
-			int character = fgetc(input_file);
+			int character = TextInput_fgetc(input_callbacks);
 
 			if (character != EOF)
 			{
@@ -5320,7 +5440,7 @@ static void AssembleFile(SemanticState *state, FILE *input_file)
 
 				/* Fast-forward through until the end of the line. */
 				while (character != '\r' && character != '\n' && character != EOF)
-					character = fgetc(input_file);
+					character = TextInput_fgetc(input_callbacks);
 			}
 		}
 		else if (newline_index != 0 && state->line_buffer[newline_index - 1] == '&')
@@ -5337,23 +5457,23 @@ static void AssembleFile(SemanticState *state, FILE *input_file)
 		state->line_buffer[newline_index] = '\0';
 
 		/* Output program counter to listing file. */
-		if (state->listing_file != NULL)
+		if (state->listing_callbacks != NULL)
 		{
 			state->listing_counter = 0;
-			fprintf(state->listing_file, "%08lX", state->program_counter);
+			TextOutput_fprintf(state->listing_callbacks, "%08lX", state->program_counter);
 		}
 
 		AssembleLine(state, state->line_buffer);
 
 		/* Output line to listing file. */
-		if (state->listing_file != NULL)
+		if (state->listing_callbacks != NULL)
 		{
 			unsigned int i;
 
 			for (i = state->listing_counter * 2 + state->listing_counter / 2; i < 28; ++i)
-				fputc(' ', state->listing_file);
+				TextOutput_fputc(' ', state->listing_callbacks);
 
-			fprintf(state->listing_file, "%s\n", state->line_buffer);
+			TextOutput_fprintf(state->listing_callbacks, "%s\n", state->line_buffer);
 		}
 	}
 
@@ -5421,20 +5541,20 @@ static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const 
 		{
 			unsigned int i;
 
-			FILE* const symbol_file = (FILE*)parameters[0];
+			const BinaryOutput* const symbol_callbacks = (const BinaryOutput*)parameters[0];
 
 			/* Output the address of the label. */
 			for (i = 0; i < 4; ++i)
-				fputc((entry->shared.unsigned_long >> (i * 8)) & 0xFF, symbol_file);
+				BinaryOutput_fputc((entry->shared.unsigned_long >> (i * 8)) & 0xFF, symbol_callbacks);
 
 			/* I have no idea what this means. */
-			fputc(is_local_label ? 6 : 2, symbol_file);
+			BinaryOutput_fputc(is_local_label ? 6 : 2, symbol_callbacks);
 
 			/* Output the length of the label. */
-			fputc(label_length, symbol_file);
+			BinaryOutput_fputc(label_length, symbol_callbacks);
 
 			/* Output the label itself. */
-			fwrite(label, 1, label_length, symbol_file);
+			BinaryOutput_fwrite(label, 1, label_length, symbol_callbacks);
 		}
 	}
 
@@ -5465,11 +5585,11 @@ static void AddDefinition(void* const internal, const char* const identifier, co
 }
 
 cc_bool ClownAssembler_Assemble(
-	FILE* const input_file,
-	FILE* const output_file,
-	FILE* const error_file,
-	FILE* const listing_file,
-	FILE* const symbol_file,
+	const TextInput* const input_callbacks,
+	const BinaryOutput* const output_callbacks,
+	const TextOutput* const error_callbacks,
+	const TextOutput* const listing_callbacks,
+	const BinaryOutput* const symbol_callbacks,
 	const char* const input_file_path,
 	const cc_bool debug,
 	const cc_bool case_insensitive,
@@ -5491,9 +5611,9 @@ cc_bool ClownAssembler_Assemble(
 
 	/* Initialise the state's non-default values. */
 	state.success = cc_true;
-	state.output_file = output_file;
-	state.error_file = error_file;
-	state.listing_file = listing_file;
+	state.output_callbacks = output_callbacks;
+	state.error_callbacks = error_callbacks;
+	state.listing_callbacks = listing_callbacks;
 	state.equ_set_descope_local_labels = equ_set_descope_local_labels;
 	state.warnings_enabled = warnings_enabled;
 	state.location = &location;
@@ -5539,7 +5659,7 @@ cc_bool ClownAssembler_Assemble(
 			#endif
 
 				/* Perform first pass of assembly, creating a list of fix-ups. */
-				AssembleFile(&state, input_file);
+				AssembleFile(&state, input_callbacks);
 
 				/* Destroy the lexer, as we no longer need it. */
 				if (m68kasm_lex_destroy(state.flex_state) != 0)
@@ -5574,7 +5694,7 @@ cc_bool ClownAssembler_Assemble(
 
 						/* Reset some state to how it was at the time the statement was first processed. */
 						state.program_counter = fix_up->program_counter;
-						fseek(state.output_file, fix_up->output_position, SEEK_SET);
+						BinaryOutput_fseek(&state, state.output_callbacks, fix_up->output_position);
 						state.last_global_label = fix_up->last_global_label == NULL ? NULL : DuplicateString(&state, fix_up->last_global_label);
 						state.source_line = fix_up->source_line;
 						state.location = &fix_up->location;
@@ -5633,22 +5753,22 @@ cc_bool ClownAssembler_Assemble(
 				free(state.last_global_label);
 
 				/* Produce asm68k symbol file, if requested. */
-				if (symbol_file != NULL)
+				if (symbol_callbacks != NULL)
 				{
 					const void *parameters[2];
 
-					parameters[0] = symbol_file;
+					parameters[0] = symbol_callbacks;
 					parameters[1] = &output_local_labels_to_sym_file;
 
 					/* Some kind of header. */
-					fputc('M', symbol_file);
-					fputc('N', symbol_file);
-					fputc('D', symbol_file);
-					fputc(1, symbol_file);
-					fputc(0, symbol_file);
-					fputc(0, symbol_file);
-					fputc(0, symbol_file);
-					fputc(0, symbol_file);
+					BinaryOutput_fputc('M', symbol_callbacks);
+					BinaryOutput_fputc('N', symbol_callbacks);
+					BinaryOutput_fputc('D', symbol_callbacks);
+					BinaryOutput_fputc(1, symbol_callbacks);
+					BinaryOutput_fputc(0, symbol_callbacks);
+					BinaryOutput_fputc(0, symbol_callbacks);
+					BinaryOutput_fputc(0, symbol_callbacks);
+					BinaryOutput_fputc(0, symbol_callbacks);
 
 					Dictionary_Filter(&state.dictionary, DictionaryFilterProduceSymbolFile, parameters);
 				}
@@ -5661,4 +5781,49 @@ cc_bool ClownAssembler_Assemble(
 	free(location.file_path);
 
 	return state.success;
+}
+
+cc_bool ClownAssembler_AssembleFile(
+	FILE* const input_file,
+	FILE* const output_file,
+	FILE* const error_file,
+	FILE* const listing_file,
+	FILE* const symbol_file,
+	const char* const input_file_path,
+	const cc_bool debug,
+	const cc_bool case_insensitive,
+	const cc_bool equ_set_descope_local_labels,
+	const cc_bool output_local_labels_to_sym_file,
+	const cc_bool warnings_enabled,
+	void (* const definition_callback)(void *internal, void *user_data, void (*add_definition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value)),
+	const void* const user_data)
+{
+	ClownAssembler_TextInput input_callbacks = {
+		input_file,
+		ReadCharacter
+	};
+
+	ClownAssembler_BinaryOutput output_callbacks = {
+		output_file,
+		WriteByte,
+		Seek
+	};
+
+	ClownAssembler_TextOutput error_callbacks = {
+		error_file,
+		PrintFormatted
+	};
+
+	ClownAssembler_TextOutput listing_callbacks = {
+		listing_file,
+		PrintFormatted
+	};
+
+	ClownAssembler_BinaryOutput symbol_callbacks = {
+		symbol_file,
+		WriteByte,
+		Seek
+	};
+
+	return ClownAssembler_Assemble(&input_callbacks, &output_callbacks, &error_callbacks, &listing_callbacks, &symbol_callbacks, input_file_path, debug, case_insensitive, equ_set_descope_local_labels, output_local_labels_to_sym_file, warnings_enabled, definition_callback, user_data);
 }

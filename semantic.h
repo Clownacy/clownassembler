@@ -18,6 +18,8 @@
 #ifndef SEMANTIC_H
 #define SEMANTIC_H
 
+#include <stdarg.h>
+#include <stddef.h>
 #include <stdio.h>
 
 #include "clowncommon.h"
@@ -26,12 +28,51 @@
 extern "C" {
 #endif
 
+typedef int (*ClownAssembler_ReadCharacter)(void *user_data);
+typedef void (*ClownAssembler_Seek)(void *user_data, size_t position);
+typedef void (*ClownAssembler_WriteByte)(void *user_data, unsigned char byte);
+typedef void (*ClownAssembler_PrintFormatted)(void *user_data, const char *format, va_list args);
+
+typedef struct ClownAssembler_TextInput
+{
+	const void *user_data;
+	ClownAssembler_ReadCharacter read_character;
+} ClownAssembler_TextInput;
+
+typedef struct ClownAssembler_BinaryOutput
+{
+	const void *user_data;
+	ClownAssembler_WriteByte write_byte;
+	ClownAssembler_Seek seek;
+} ClownAssembler_BinaryOutput;
+
+typedef struct ClownAssembler_TextOutput
+{
+	const void *user_data;
+	ClownAssembler_PrintFormatted print_formatted;
+} ClownAssembler_TextOutput;
+
+cc_bool ClownAssembler_AssembleFile(
+	FILE *input_callbacks,
+	FILE *output_callbacks,
+	FILE *error_callbacks,
+	FILE *listing_callbacks,
+	FILE *symbol_callbacks,
+	const char *input_file_path,
+	cc_bool debug,
+	cc_bool case_insensitive,
+	cc_bool equ_set_descope_local_labels,
+	cc_bool output_local_labels_to_sym_file,
+	cc_bool warnings_enabled,
+	void (*definition_callback)(void *internal, void *user_data, void (*add_definition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value)),
+	const void *user_data);
+
 cc_bool ClownAssembler_Assemble(
-	FILE *input_file,
-	FILE *output_file,
-	FILE *error_file,
-	FILE *listing_file,
-	FILE *symbol_file,
+	const ClownAssembler_TextInput *input_callbacks,
+	const ClownAssembler_BinaryOutput *output_callbacks,
+	const ClownAssembler_TextOutput *error_callbacks,
+	const ClownAssembler_TextOutput *listing_callbacks,
+	const ClownAssembler_BinaryOutput *symbol_callbacks,
 	const char *input_file_path,
 	cc_bool debug,
 	cc_bool case_insensitive,
