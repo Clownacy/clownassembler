@@ -192,9 +192,7 @@ static void BinaryOutput_fseek(SemanticState* const state, const BinaryOutput* c
 /* TODO: Maybe make this a frontend-provided function. */
 static void BinaryOutput_fwrite(const char* const buffer, const size_t size, const size_t count, const BinaryOutput* const callbacks)
 {
-	size_t i;
-	for (i = 0; i < size * count; ++i)
-		BinaryOutput_fputc(buffer[i], callbacks);
+	callbacks->write_characters((void*)callbacks->user_data, buffer, size * count);
 }
 
 static void TextOutput_vfprintf(const TextOutput* const callbacks, const char* const format, va_list args)
@@ -250,6 +248,10 @@ static void WriteCharacter(void* const user_data, const int character)
 	fputc(character, user_data);
 }
 
+static void WriteCharacters(void* const user_data, const char* const characters, const size_t total_characters)
+{
+	fwrite(characters, 1, total_characters, user_data);
+}
 
 static void WriteString(void* const user_data, const char* const string)
 {
@@ -5787,6 +5789,7 @@ cc_bool ClownAssembler_AssembleFile(
 	ClownAssembler_BinaryOutput output_callbacks = {
 		output_file,
 		WriteCharacter,
+		WriteCharacters,
 		Seek
 	};
 
@@ -5807,6 +5810,7 @@ cc_bool ClownAssembler_AssembleFile(
 	ClownAssembler_BinaryOutput symbol_callbacks = {
 		symbol_file,
 		WriteCharacter,
+		WriteCharacters,
 		Seek
 	};
 
