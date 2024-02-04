@@ -210,10 +210,9 @@ ATTRIBUTE_PRINTF(2, 3) static void TextOutput_fprintf(const TextOutput* const ca
 	va_end(args);
 }
 
-/* TODO: Maybe make this a frontend-provided function. */
 static void TextOutput_fputs(const char* const string, const TextOutput* const callbacks)
 {
-	TextOutput_fprintf(callbacks, "%s", string);
+	callbacks->write_string((void*)callbacks->user_data, string);
 }
 
 static void TextOutput_fputc(const int character, const TextOutput* const callbacks)
@@ -249,6 +248,12 @@ static void Seek(void* const user_data, const size_t position)
 static void WriteCharacter(void* const user_data, const int character)
 {
 	fputc(character, user_data);
+}
+
+
+static void WriteString(void* const user_data, const char* const string)
+{
+	fputs(string, user_data);
 }
 
 static void PrintFormatted(void* const user_data, const char* const format, va_list args)
@@ -5788,13 +5793,15 @@ cc_bool ClownAssembler_AssembleFile(
 	ClownAssembler_TextOutput error_callbacks = {
 		error_file,
 		PrintFormatted,
-		WriteCharacter
+		WriteCharacter,
+		WriteString
 	};
 
 	ClownAssembler_TextOutput listing_callbacks = {
 		listing_file,
 		PrintFormatted,
-		WriteCharacter
+		WriteCharacter,
+		WriteString
 	};
 
 	ClownAssembler_BinaryOutput symbol_callbacks = {

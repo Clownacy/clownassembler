@@ -32,6 +32,7 @@ typedef int (*ClownAssembler_ReadCharacter)(void *user_data);
 typedef char* (*ClownAssembler_ReadCharacters)(void *user_data, char *buffer, size_t total_characters);
 typedef void (*ClownAssembler_Seek)(void *user_data, size_t position);
 typedef void (*ClownAssembler_WriteCharacter)(void *user_data, int character);
+typedef void (*ClownAssembler_WriteString)(void *user_data, const char *string);
 typedef void (*ClownAssembler_PrintFormatted)(void *user_data, const char *format, va_list args);
 
 typedef struct ClownAssembler_TextInput
@@ -53,6 +54,7 @@ typedef struct ClownAssembler_TextOutput
 	const void *user_data;
 	ClownAssembler_PrintFormatted print_formatted;
 	ClownAssembler_WriteCharacter write_character;
+	ClownAssembler_WriteString write_string;
 } ClownAssembler_TextOutput;
 
 cc_bool ClownAssembler_AssembleFile(
