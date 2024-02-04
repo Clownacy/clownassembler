@@ -29,7 +29,7 @@ extern "C" {
 #endif
 
 typedef int (*ClownAssembler_ReadCharacter)(void *user_data);
-typedef char* (*ClownAssembler_ReadCharacters)(void *user_data, char *buffer, size_t total_characters);
+typedef char* (*ClownAssembler_ReadLine)(void *user_data, char *buffer, size_t buffer_size);
 typedef void (*ClownAssembler_Seek)(void *user_data, size_t position);
 typedef void (*ClownAssembler_WriteCharacter)(void *user_data, int character);
 typedef void (*ClownAssembler_WriteCharacters)(void *user_data, const char *characters, size_t total_characters);
@@ -40,7 +40,7 @@ typedef struct ClownAssembler_TextInput
 {
 	const void *user_data;
 	ClownAssembler_ReadCharacter read_character;
-	ClownAssembler_ReadCharacters read_characters;
+	ClownAssembler_ReadLine read_line;
 } ClownAssembler_TextInput;
 
 typedef struct ClownAssembler_BinaryOutput

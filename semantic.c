@@ -173,9 +173,9 @@ static int TextInput_fgetc(const TextInput* const callbacks)
 	return callbacks->read_character((void*)callbacks->user_data);
 }
 
-static char* TextInput_fgets(char* const buffer, const size_t total_characters, const TextInput* const callbacks)
+static char* TextInput_fgets(char* const buffer, const size_t buffer_size, const TextInput* const callbacks)
 {
-	return callbacks->read_characters((void*)callbacks->user_data, buffer, total_characters);
+	return callbacks->read_line((void*)callbacks->user_data, buffer, buffer_size);
 }
 
 static void BinaryOutput_fputc(const int character, const BinaryOutput* const callbacks)
@@ -233,9 +233,9 @@ static int ReadCharacter(void* const user_data)
 	return value == EOF ? -1 : value;
 }
 
-static char* ReadCharacters(void* const user_data, char* const buffer, const size_t total_characters)
+static char* ReadLine(void* const user_data, char* const buffer, const size_t buffer_size)
 {
-	return fgets(buffer, total_characters, user_data);
+	return fgets(buffer, buffer_size, user_data);
 }
 
 static void Seek(void* const user_data, const size_t position)
@@ -4156,7 +4156,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 		ClownAssembler_TextInput input_callbacks = {
 			input_file,
 			ReadCharacter,
-			ReadCharacters
+			ReadLine
 		};
 
 		/* Add file path and line number to the location list. */
@@ -5783,7 +5783,7 @@ cc_bool ClownAssembler_AssembleFile(
 	ClownAssembler_TextInput input_callbacks = {
 		input_file,
 		ReadCharacter,
-		ReadCharacters
+		ReadLine
 	};
 
 	ClownAssembler_BinaryOutput output_callbacks = {
