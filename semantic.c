@@ -173,39 +173,9 @@ static int TextInput_fgetc(const TextInput* const callbacks)
 	return callbacks->read_character((void*)callbacks->user_data);
 }
 
-/* TODO: Maybe make this a frontend-provided function. */
-static char* TextInput_fgets(char* const buffer, size_t total_characters, const TextInput* const callbacks)
+static char* TextInput_fgets(char* const buffer, const size_t total_characters, const TextInput* const callbacks)
 {
-	size_t i;
-
-	char *buffer_pointer = buffer;
-
-	if (total_characters == 0)
-		return buffer;
-
-	for (i = 0; i < total_characters - 1; ++i)
-	{
-		const int character = TextInput_fgetc(callbacks);
-
-		if (character == -1)
-		{
-			if (i == 0)
-				return NULL;
-			else
-				break;
-		}
-
-		if (character == '\0')
-			break;
-
-		*buffer_pointer++ = character;
-
-		if (character == '\n')
-			break;
-	}
-
-	*buffer_pointer++ = '\0';
-	return buffer;
+	return callbacks->read_characters((void*)callbacks->user_data, buffer, total_characters);
 }
 
 static void BinaryOutput_fputc(const int character, const BinaryOutput* const callbacks)
@@ -261,23 +231,28 @@ static void WriteOutputByte(SemanticState* const state, const unsigned char byte
 
 /* Default FILE-based IO callbacks */
 
-static int ReadCharacter(void *user_data)
+static int ReadCharacter(void* const user_data)
 {
 	const int value = fgetc(user_data);
 	return value == EOF ? -1 : value;
 }
 
-static void Seek(void *user_data, size_t position)
+static char* ReadCharacters(void* const user_data, char* const buffer, const size_t total_characters)
+{
+	return fgets(buffer, total_characters, user_data);
+}
+
+static void Seek(void* const user_data, const size_t position)
 {
 	fseek(user_data, position, SEEK_SET);
 }
 
-static void WriteByte(void *user_data, unsigned char byte)
+static void WriteByte(void* const user_data, const unsigned char byte)
 {
 	fputc(byte, user_data);
 }
 
-static void PrintFormatted(void *user_data, const char *format, va_list args)
+static void PrintFormatted(void* const user_data, const char* const format, va_list args)
 {
 	vfprintf(user_data, format, args);
 }
@@ -4174,7 +4149,8 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 	{
 		ClownAssembler_TextInput input_callbacks = {
 			input_file,
-			ReadCharacter
+			ReadCharacter,
+			ReadCharacters
 		};
 
 		/* Add file path and line number to the location list. */
@@ -5800,7 +5776,8 @@ cc_bool ClownAssembler_AssembleFile(
 {
 	ClownAssembler_TextInput input_callbacks = {
 		input_file,
-		ReadCharacter
+		ReadCharacter,
+		ReadCharacters
 	};
 
 	ClownAssembler_BinaryOutput output_callbacks = {
