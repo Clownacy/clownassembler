@@ -180,7 +180,7 @@ static char* TextInput_fgets(char* const buffer, const size_t total_characters, 
 
 static void BinaryOutput_fputc(const int character, const BinaryOutput* const callbacks)
 {
-	callbacks->write_byte((void*)callbacks->user_data, character);
+	callbacks->write_character((void*)callbacks->user_data, character);
 }
 
 static void BinaryOutput_fseek(SemanticState* const state, const BinaryOutput* const callbacks, const size_t position)
@@ -216,10 +216,9 @@ static void TextOutput_fputs(const char* const string, const TextOutput* const c
 	TextOutput_fprintf(callbacks, "%s", string);
 }
 
-/* TODO: Maybe make this a frontend-provided function. */
 static void TextOutput_fputc(const int character, const TextOutput* const callbacks)
 {
-	TextOutput_fprintf(callbacks, "%c", character);
+	callbacks->write_character((void*)callbacks->user_data, character);
 }
 
 static void WriteOutputByte(SemanticState* const state, const unsigned char byte)
@@ -247,9 +246,9 @@ static void Seek(void* const user_data, const size_t position)
 	fseek(user_data, position, SEEK_SET);
 }
 
-static void WriteByte(void* const user_data, const unsigned char byte)
+static void WriteCharacter(void* const user_data, const int character)
 {
-	fputc(byte, user_data);
+	fputc(character, user_data);
 }
 
 static void PrintFormatted(void* const user_data, const char* const format, va_list args)
@@ -5782,23 +5781,25 @@ cc_bool ClownAssembler_AssembleFile(
 
 	ClownAssembler_BinaryOutput output_callbacks = {
 		output_file,
-		WriteByte,
+		WriteCharacter,
 		Seek
 	};
 
 	ClownAssembler_TextOutput error_callbacks = {
 		error_file,
-		PrintFormatted
+		PrintFormatted,
+		WriteCharacter
 	};
 
 	ClownAssembler_TextOutput listing_callbacks = {
 		listing_file,
-		PrintFormatted
+		PrintFormatted,
+		WriteCharacter
 	};
 
 	ClownAssembler_BinaryOutput symbol_callbacks = {
 		symbol_file,
-		WriteByte,
+		WriteCharacter,
 		Seek
 	};
 
