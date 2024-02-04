@@ -521,7 +521,7 @@ static cc_bool FindMacroParameter(const char* const remaining_line, const char* 
 static void OutputByte(SemanticState *state, unsigned int byte)
 {
 	/* Write to listing file. */
-	if (!state->doing_fix_up && state->listing_callbacks != NULL)
+	if (!state->doing_fix_up && state->listing_callbacks != NULL && state->listing_callbacks->user_data != NULL)
 	{
 		/* We can only write up to 10 bytes. */
 		if (state->listing_counter <= 10)
@@ -5437,7 +5437,7 @@ static void AssembleFile(SemanticState *state, const TextInput* const input_call
 		state->line_buffer[newline_index] = '\0';
 
 		/* Output program counter to listing file. */
-		if (state->listing_callbacks != NULL)
+		if (state->listing_callbacks != NULL && state->listing_callbacks->user_data != NULL)
 		{
 			state->listing_counter = 0;
 			TextOutput_fprintf(state->listing_callbacks, "%08lX", state->program_counter);
@@ -5446,7 +5446,7 @@ static void AssembleFile(SemanticState *state, const TextInput* const input_call
 		AssembleLine(state, state->line_buffer);
 
 		/* Output line to listing file. */
-		if (state->listing_callbacks != NULL)
+		if (state->listing_callbacks != NULL && state->listing_callbacks->user_data != NULL)
 		{
 			unsigned int i;
 
@@ -5733,7 +5733,7 @@ cc_bool ClownAssembler_Assemble(
 				free(state.last_global_label);
 
 				/* Produce asm68k symbol file, if requested. */
-				if (symbol_callbacks != NULL)
+				if (symbol_callbacks != NULL && symbol_callbacks->user_data != NULL)
 				{
 					const void *parameters[2];
 
