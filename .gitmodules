@@ -7,3 +7,6 @@
 [submodule "tests/Sonic-2-Aug-21st-Disassembly"]
 	path = tests/Sonic-2-Aug-21st-Disassembly
 	url = https://github.com/Clownacy/Sonic-2-Aug-21st-Disassembly
+[submodule "clowncommon"]
+	path = clowncommon
+	url = https://github.com/Clownacy/clowncommon

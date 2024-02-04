@@ -29,7 +29,7 @@
 
 %code requires {
 
-#include "clowncommon.h"
+#include "clowncommon/clowncommon.h"
 
 /* A hack for older versions of Bison. */
 /* Should probably be removed when they go out of circulation. */

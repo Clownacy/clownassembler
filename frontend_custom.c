@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "clowncommon.h"
+#include "clowncommon/clowncommon.h"
 
 #include "semantic.h"
 

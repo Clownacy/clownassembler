@@ -20,7 +20,7 @@
 
 #include <stddef.h>
 
-#include "clowncommon.h"
+#include "clowncommon/clowncommon.h"
 
 #define TOTAL_HASH_TABLE_ENTRIES 0x1000
 
