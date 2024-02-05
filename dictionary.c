@@ -356,7 +356,7 @@ cc_bool Dictionary_Remove(Dictionary_State *state, const char *identifier, size_
 	return success;
 }
 
-void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data), void *user_data)
+void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data), const void *user_data)
 {
 	Dictionary_Bucket *bucket;
 
@@ -370,7 +370,7 @@ void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dicti
 		{
 			Dictionary_Node* const next_node = node->next;
 
-			if (!filter_function(&node->entry, &node->identifier, node->identifier_length, user_data))
+			if (!filter_function(&node->entry, &node->identifier, node->identifier_length, (void*)user_data))
 				RemoveNodeFromBucket(bucket, node);
 
 			node = next_node;

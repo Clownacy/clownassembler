@@ -68,6 +68,6 @@ void Dictionary_Deinit(Dictionary_State *state);
 cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const char *identifier, size_t identifier_length, Dictionary_Entry **entry_pointer);
 Dictionary_Entry* Dictionary_LookUp(Dictionary_State *state, const char *identifier, size_t identifier_length);
 cc_bool Dictionary_Remove(Dictionary_State *state, const char *identifier, size_t identifier_length);
-void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data), void *user_data);
+void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data), const void *user_data);
 
 #endif /* DICTIONARY_H */
