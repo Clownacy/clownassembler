@@ -244,38 +244,38 @@ static void WriteOutputByte(SemanticState* const state, const unsigned char byte
 
 static int ReadCharacter(void* const user_data)
 {
-	const int value = fgetc(user_data);
+	const int value = fgetc((FILE*)user_data);
 	return value == EOF ? -1 : value;
 }
 
 static char* ReadLine(void* const user_data, char* const buffer, const size_t buffer_size)
 {
-	return fgets(buffer, buffer_size, user_data);
+	return fgets(buffer, buffer_size, (FILE*)user_data);
 }
 
 static void Seek(void* const user_data, const size_t position)
 {
-	fseek(user_data, position, SEEK_SET);
+	fseek((FILE*)user_data, position, SEEK_SET);
 }
 
 static void WriteCharacter(void* const user_data, const int character)
 {
-	fputc(character, user_data);
+	fputc(character, (FILE*)user_data);
 }
 
 static void WriteCharacters(void* const user_data, const char* const characters, const size_t total_characters)
 {
-	fwrite(characters, 1, total_characters, user_data);
+	fwrite(characters, 1, total_characters, (FILE*)user_data);
 }
 
 static void WriteString(void* const user_data, const char* const string)
 {
-	fputs(string, user_data);
+	fputs(string, (FILE*)user_data);
 }
 
 static void PrintFormatted(void* const user_data, const char* const format, va_list args)
 {
-	vfprintf(user_data, format, args);
+	vfprintf((FILE*)user_data, format, args);
 }
 
 /* Other stuff */
@@ -4241,6 +4241,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 		{
 			int character;
 
+			/* TODO: Batch bytes to make this faster? */
 			while ((character = fgetc(input_file)) != EOF)
 			{
 				++state->program_counter;
