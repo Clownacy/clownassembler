@@ -194,7 +194,6 @@ static void BinaryOutput_fseek(SemanticState* const state, const BinaryOutput* c
 	callbacks->seek((void*)callbacks->user_data, position);
 }
 
-/* TODO: Maybe make this a frontend-provided function. */
 static void BinaryOutput_fwrite(const char* const buffer, const size_t size, const size_t count, const BinaryOutput* const callbacks)
 {
 	callbacks->write_characters((void*)callbacks->user_data, buffer, size * count);
