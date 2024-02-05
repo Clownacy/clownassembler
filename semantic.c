@@ -178,6 +178,11 @@ static char* TextInput_fgets(char* const buffer, const size_t buffer_size, const
 	return callbacks->read_line((void*)callbacks->user_data, buffer, buffer_size);
 }
 
+static cc_bool BinaryOutput_exists(const BinaryOutput* const callbacks)
+{
+	return callbacks != NULL && callbacks->user_data != NULL;
+}
+
 static void BinaryOutput_fputc(const int character, const BinaryOutput* const callbacks)
 {
 	callbacks->write_character((void*)callbacks->user_data, character);
@@ -193,6 +198,11 @@ static void BinaryOutput_fseek(SemanticState* const state, const BinaryOutput* c
 static void BinaryOutput_fwrite(const char* const buffer, const size_t size, const size_t count, const BinaryOutput* const callbacks)
 {
 	callbacks->write_characters((void*)callbacks->user_data, buffer, size * count);
+}
+
+static cc_bool TextOutput_exists(const TextOutput* const callbacks)
+{
+	return callbacks != NULL && callbacks->user_data != NULL;
 }
 
 static void TextOutput_vfprintf(const TextOutput* const callbacks, const char* const format, va_list args)
@@ -523,7 +533,7 @@ static cc_bool FindMacroParameter(const char* const remaining_line, const char* 
 static void OutputByte(SemanticState *state, unsigned int byte)
 {
 	/* Write to listing file. */
-	if (!state->doing_fix_up && state->listing_callbacks != NULL && state->listing_callbacks->user_data != NULL)
+	if (!state->doing_fix_up && TextOutput_exists(state->listing_callbacks))
 	{
 		/* We can only write up to 10 bytes. */
 		if (state->listing_counter <= 10)
@@ -5439,7 +5449,7 @@ static void AssembleFile(SemanticState *state, const TextInput* const input_call
 		state->line_buffer[newline_index] = '\0';
 
 		/* Output program counter to listing file. */
-		if (state->listing_callbacks != NULL && state->listing_callbacks->user_data != NULL)
+		if (TextOutput_exists(state->listing_callbacks))
 		{
 			state->listing_counter = 0;
 			TextOutput_fprintf(state->listing_callbacks, "%08lX", state->program_counter);
@@ -5448,7 +5458,7 @@ static void AssembleFile(SemanticState *state, const TextInput* const input_call
 		AssembleLine(state, state->line_buffer);
 
 		/* Output line to listing file. */
-		if (state->listing_callbacks != NULL && state->listing_callbacks->user_data != NULL)
+		if (TextOutput_exists(state->listing_callbacks))
 		{
 			unsigned int i;
 
@@ -5735,7 +5745,7 @@ cc_bool ClownAssembler_Assemble(
 				free(state.last_global_label);
 
 				/* Produce asm68k symbol file, if requested. */
-				if (symbol_callbacks != NULL && symbol_callbacks->user_data != NULL)
+				if (BinaryOutput_exists(symbol_callbacks))
 				{
 					const void *parameters[2];
 
