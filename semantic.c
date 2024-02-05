@@ -206,25 +206,31 @@ static cc_bool TextOutput_exists(const TextOutput* const callbacks)
 
 static void TextOutput_vfprintf(const TextOutput* const callbacks, const char* const format, va_list args)
 {
-	callbacks->print_formatted((void*)callbacks->user_data, format, args);
+	if (TextOutput_exists(callbacks))
+		callbacks->print_formatted((void*)callbacks->user_data, format, args);
 }
 
 ATTRIBUTE_PRINTF(2, 3) static void TextOutput_fprintf(const TextOutput* const callbacks, const char* const format, ...)
 {
-	va_list args;
-	va_start(args, format);
-	TextOutput_vfprintf(callbacks, format, args);
-	va_end(args);
+	if (TextOutput_exists(callbacks))
+	{
+		va_list args;
+		va_start(args, format);
+		TextOutput_vfprintf(callbacks, format, args);
+		va_end(args);
+	}
 }
 
 static void TextOutput_fputs(const char* const string, const TextOutput* const callbacks)
 {
-	callbacks->write_string((void*)callbacks->user_data, string);
+	if (TextOutput_exists(callbacks))
+		callbacks->write_string((void*)callbacks->user_data, string);
 }
 
 static void TextOutput_fputc(const int character, const TextOutput* const callbacks)
 {
-	callbacks->write_character((void*)callbacks->user_data, character);
+	if (TextOutput_exists(callbacks))
+		callbacks->write_character((void*)callbacks->user_data, character);
 }
 
 static void WriteOutputByte(SemanticState* const state, const unsigned char byte)
