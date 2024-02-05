@@ -5432,12 +5432,12 @@ static void AssembleFile(SemanticState *state, const TextInput* const input_call
 		{
 			int character = TextInput_fgetc(input_callbacks);
 
-			if (character != EOF)
+			if (character != -1)
 			{
 				InternalError(state, "The source line was too long to fit in the internal buffer.");
 
 				/* Fast-forward through until the end of the line. */
-				while (character != '\r' && character != '\n' && character != EOF)
+				while (character != '\r' && character != '\n' && character != -1)
 					character = TextInput_fgetc(input_callbacks);
 			}
 		}
