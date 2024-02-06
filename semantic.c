@@ -5796,39 +5796,35 @@ cc_bool ClownAssembler_AssembleFile(
 	void (* const definition_callback)(void *internal, void *user_data, void (*add_definition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value)),
 	const void* const user_data)
 {
-	ClownAssembler_TextInput input_callbacks = {
-		input_file,
-		ReadCharacter,
-		ReadLine
-	};
+	ClownAssembler_TextInput input_callbacks;
+	ClownAssembler_BinaryOutput output_callbacks;
+	ClownAssembler_TextOutput error_callbacks;
+	ClownAssembler_TextOutput listing_callbacks;
+	ClownAssembler_BinaryOutput symbol_callbacks;
 
-	ClownAssembler_BinaryOutput output_callbacks = {
-		output_file,
-		WriteCharacter,
-		WriteCharacters,
-		Seek
-	};
+	input_callbacks.user_data = input_file;
+	input_callbacks.read_character = ReadCharacter;
+	input_callbacks.read_line = ReadLine;
 
-	ClownAssembler_TextOutput error_callbacks = {
-		error_file,
-		PrintFormatted,
-		WriteCharacter,
-		WriteString
-	};
+	output_callbacks.user_data = output_file;
+	output_callbacks.write_character = WriteCharacter;
+	output_callbacks.write_characters = WriteCharacters;
+	output_callbacks.seek = Seek;
 
-	ClownAssembler_TextOutput listing_callbacks = {
-		listing_file,
-		PrintFormatted,
-		WriteCharacter,
-		WriteString
-	};
+	error_callbacks.user_data = error_file;
+	error_callbacks.print_formatted = PrintFormatted;
+	error_callbacks.write_character = WriteCharacter;
+	error_callbacks.write_string = WriteString;
 
-	ClownAssembler_BinaryOutput symbol_callbacks = {
-		symbol_file,
-		WriteCharacter,
-		WriteCharacters,
-		Seek
-	};
+	listing_callbacks.user_data = listing_file;
+	listing_callbacks.print_formatted = PrintFormatted;
+	listing_callbacks.write_character = WriteCharacter;
+	listing_callbacks.write_string = WriteString;
+
+	symbol_callbacks.user_data = symbol_file;
+	symbol_callbacks.write_character = WriteCharacter;
+	symbol_callbacks.write_characters = WriteCharacters;
+	symbol_callbacks.seek = Seek;
 
 	return ClownAssembler_Assemble(&input_callbacks, &output_callbacks, &error_callbacks, &listing_callbacks, &symbol_callbacks, input_file_path, debug, case_insensitive, equ_set_descope_local_labels, output_local_labels_to_sym_file, warnings_enabled, definition_callback, user_data);
 }
