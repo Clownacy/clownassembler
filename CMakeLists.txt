@@ -16,12 +16,6 @@ add_library(clownassembler_core STATIC
 	"syntactic.h"
 )
 
-set_target_properties(clownassembler_core PROPERTIES
-	C_STANDARD 90
-	C_STANDARD_REQUIRED YES
-	C_EXTENSIONS OFF
-)
-
 # Custom frontend
 add_executable(clownassembler
 	"frontend_custom.c"
@@ -29,24 +23,12 @@ add_executable(clownassembler
 
 target_link_libraries(clownassembler clownassembler_core)
 
-set_target_properties(clownassembler PROPERTIES
-	C_STANDARD 90
-	C_STANDARD_REQUIRED YES
-	C_EXTENSIONS OFF
-)
-
 # asm68k frontend
 add_executable(clownassembler_asm68k
 	"frontend_asm68k.c"
 )
 
 target_link_libraries(clownassembler_asm68k clownassembler_core)
-
-set_target_properties(clownassembler_asm68k PROPERTIES
-	C_STANDARD 90
-	C_STANDARD_REQUIRED YES
-	C_EXTENSIONS OFF
-)
 
 # Tests
 include(CTest)
