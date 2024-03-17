@@ -317,6 +317,9 @@ cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const char
 			new_node->next = bucket->linked_list;
 			bucket->linked_list = new_node;
 
+			if (new_node->next != NULL)
+				new_node->next->previous = new_node;
+
 			if (entry_pointer != NULL)
 				*entry_pointer = &new_node->entry;
 		}
