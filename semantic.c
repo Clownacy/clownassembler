@@ -4474,9 +4474,14 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 
 					/* If this condition is false, then mark this as the false if-level. */
 					if (state->true_already_found || value == 0)
+					{
 						state->false_if_level = state->current_if_level;
+					}
 					else
+					{
 						state->false_if_level = 0;
+						state->true_already_found = cc_true;
+					}
 				}
 			}
 
