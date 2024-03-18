@@ -176,7 +176,7 @@ int main(int argc, char **argv)
 	if (argc < 2 || print_usage)
 	{
 		fputs(
-			"clownassembler: an assembler for the Motorola 68000.\n"
+			"clownassembler - An assembler for the Motorola 68000.\n"
 			"\n"
 			"Options:\n"
 			" -i [path] - Input file. If not specified, STDIN is used instead.\n"
