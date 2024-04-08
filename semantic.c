@@ -4666,7 +4666,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 
 				/* Add label to symbol table. */
 				if (label != NULL)
-					AddIdentifierToSymbolTable(state, label, rs->shared.unsigned_long, SYMBOL_VARIABLE);
+					AddIdentifierToSymbolTable(state, label, rs->shared.unsigned_long, SYMBOL_CONSTANT);
 
 				/* Advance '__rs' by the specified amount. */
 				switch (statement->shared.rs.size)
