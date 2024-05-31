@@ -1,7 +1,6 @@
 #ifndef CLOWNASSEMBLER_CPP_H
 #define CLOWNASSEMBLER_CPP_H
 
-#include <filesystem>
 #include <functional>
 #include <iostream>
 
@@ -16,7 +15,7 @@ bool Assemble(
 	std::ostream *errors,
 	std::ostream *listing,
 	std::ostream *symbols,
-	const std::filesystem::path &input_file_path,
+	const char *input_file_path,
 	bool debug,
 	bool case_insensitive,
 	bool equ_set_descope_local_labels,

@@ -2,12 +2,11 @@
 
 #include <cstdio>
 #include <cstring>
-#include <optional>
 #include <string>
 
 struct OutputData
 {
-	std::ostream &stream;
+	std::ostream *stream;
 	std::ostream::pos_type base_position;
 };
 
@@ -41,26 +40,26 @@ static char* ReadLine(void* const user_data, char* const buffer, const std::size
 static void WriteCharacter(void* const user_data, const int character)
 {
 	const auto &data = *static_cast<OutputData*>(user_data);
-	data.stream.put(character);
+	data.stream->put(character);
 }
 
 static void WriteCharacters(void* const user_data, const char* const characters, const size_t total_characters)
 {
 	const auto &data = *static_cast<OutputData*>(user_data);
-	data.stream.write(characters, total_characters);
+	data.stream->write(characters, total_characters);
 }
 
 static void Seek(void* const user_data, const size_t position)
 {
 	const auto &data = *static_cast<OutputData*>(user_data);
-	data.stream.seekp(data.base_position);
-	data.stream.seekp(position, std::ostream::cur);
+	data.stream->seekp(data.base_position);
+	data.stream->seekp(position, std::ostream::cur);
 }
 
 static void WriteString(void* const user_data, const char* const string)
 {
 	const auto &data = *static_cast<OutputData*>(user_data);
-	data.stream << string;
+	*data.stream << string;
 }
 
 static void PrintFormatted(void* const user_data, const char* const format, va_list args)
@@ -75,7 +74,7 @@ static void PrintFormatted(void* const user_data, const char* const format, va_l
 	std::string buffer(buffer_size, '\0');
 	std::vsnprintf(buffer.data(), buffer.size() + 1, format, args);
 
-	data.stream << buffer;
+	*data.stream << buffer;
 }
 
 bool ClownAssembler::Assemble(
@@ -84,7 +83,7 @@ bool ClownAssembler::Assemble(
 	std::ostream* const errors,
 	std::ostream* const listing,
 	std::ostream* const symbols,
-	const std::filesystem::path &input_file_path,
+	const char* const input_file_path,
 	const bool debug,
 	const bool case_insensitive,
 	const bool equ_set_descope_local_labels,
@@ -94,23 +93,44 @@ bool ClownAssembler::Assemble(
 )
 {
 	const ClownAssembler_TextInput input_callbacks = {&input, ReadCharacter, ReadLine};
-	const OutputData output_data = {output, output.tellp()};
+	const OutputData output_data = {&output, output.tellp()};
 	const ClownAssembler_BinaryOutput output_callbacks = {&output_data, WriteCharacter, WriteCharacters, Seek};
 
-	std::optional<OutputData> error_data;
-	if (errors != nullptr)
-		error_data.emplace(*errors, errors->tellp());
-	const ClownAssembler_TextOutput error_callbacks = {error_data.has_value() ? &*error_data : nullptr, PrintFormatted, WriteCharacter, WriteString};
+	OutputData error_data;
+	ClownAssembler_TextOutput error_callbacks;
+	if (errors == nullptr)
+	{
+		error_callbacks = {nullptr, PrintFormatted, WriteCharacter, WriteString};
+	}
+	else
+	{
+		error_data = {errors, errors->tellp()};
+		error_callbacks = {&error_data, PrintFormatted, WriteCharacter, WriteString};
+	}
 
-	std::optional<OutputData> listing_data;
-	if (listing != nullptr)
-		listing_data.emplace(*listing, listing->tellp());
-	const ClownAssembler_TextOutput listing_callbacks = {listing_data.has_value() ? &*listing_data : nullptr, PrintFormatted, WriteCharacter, WriteString};
+	OutputData listing_data;
+	ClownAssembler_TextOutput listing_callbacks;
+	if (listing == nullptr)
+	{
+		listing_callbacks = {nullptr, PrintFormatted, WriteCharacter, WriteString};
+	}
+	else
+	{
+		listing_data = {listing, listing->tellp()};
+		listing_callbacks = {&listing_data, PrintFormatted, WriteCharacter, WriteString};
+	}
 
-	std::optional<OutputData> symbol_data;
-	if (symbols != nullptr)
-		symbol_data.emplace(*symbols, symbols->tellp());
-	const ClownAssembler_BinaryOutput symbol_callbacks = {symbol_data.has_value() ? &*symbol_data : nullptr, WriteCharacter, WriteCharacters, Seek};
+	OutputData symbol_data;
+	ClownAssembler_BinaryOutput symbol_callbacks;
+	if (symbols == nullptr)
+	{
+		symbol_callbacks = {nullptr, WriteCharacter, WriteCharacters, Seek};
+	}
+	else
+	{
+		symbol_data = {symbols, symbols->tellp()};
+		symbol_callbacks = {&symbol_data, WriteCharacter, WriteCharacters, Seek};
+	}
 
 	const auto definition_callback_wrapper = [](void* const internal, void* const user_data, const ClownAssembler_AddDefinition add_definition)
 	{
@@ -125,7 +145,7 @@ bool ClownAssembler::Assemble(
 		&error_callbacks,
 		&listing_callbacks,
 		&symbol_callbacks,
-		input_file_path.string().c_str(),
+		input_file_path,
 		debug,
 		case_insensitive,
 		equ_set_descope_local_labels,
