@@ -5599,7 +5599,7 @@ cc_bool ClownAssembler_Assemble(
 	const cc_bool equ_set_descope_local_labels,
 	const cc_bool output_local_labels_to_sym_file,
 	const cc_bool warnings_enabled,
-	void (* const definition_callback)(void *internal, void *user_data, void (*add_definition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value)),
+	void (* const definition_callback)(void *internal, void *user_data, ClownAssembler_AddDefinition add_definition),
 	const void* const user_data)
 {
 	Location location;
@@ -5798,7 +5798,7 @@ cc_bool ClownAssembler_AssembleFile(
 	const cc_bool equ_set_descope_local_labels,
 	const cc_bool output_local_labels_to_sym_file,
 	const cc_bool warnings_enabled,
-	void (* const definition_callback)(void *internal, void *user_data, void (*add_definition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value)),
+	void (* const definition_callback)(void *internal, void *user_data, ClownAssembler_AddDefinition add_definition),
 	const void* const user_data)
 {
 	ClownAssembler_TextInput input_callbacks;

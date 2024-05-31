@@ -59,6 +59,9 @@ typedef struct ClownAssembler_TextOutput
 	ClownAssembler_WriteString write_string;
 } ClownAssembler_TextOutput;
 
+typedef void (*ClownAssembler_AddDefinition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value);
+typedef void (*ClownAssembler_DefinitionCallback)(void *internal, void *user_data, ClownAssembler_AddDefinition add_definition);
+
 cc_bool ClownAssembler_AssembleFile(
 	FILE *input_callbacks,
 	FILE *output_callbacks,
@@ -71,7 +74,7 @@ cc_bool ClownAssembler_AssembleFile(
 	cc_bool equ_set_descope_local_labels,
 	cc_bool output_local_labels_to_sym_file,
 	cc_bool warnings_enabled,
-	void (*definition_callback)(void *internal, void *user_data, void (*add_definition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value)),
+	ClownAssembler_DefinitionCallback definition_callback,
 	const void *user_data);
 
 cc_bool ClownAssembler_Assemble(
@@ -86,7 +89,7 @@ cc_bool ClownAssembler_Assemble(
 	cc_bool equ_set_descope_local_labels,
 	cc_bool output_local_labels_to_sym_file,
 	cc_bool warnings_enabled,
-	void (*definition_callback)(void *internal, void *user_data, void (*add_definition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value)),
+	ClownAssembler_DefinitionCallback definition_callback,
 	const void *user_data);
 
 #ifdef __cplusplus
