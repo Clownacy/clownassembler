@@ -72,7 +72,7 @@ static void PrintFormatted(void* const user_data, const char* const format, va_l
 	va_end(args_copy);
 
 	std::string buffer(buffer_size, '\0');
-	std::vsnprintf(buffer.data(), buffer.size() + 1, format, args);
+	std::vsnprintf(&buffer[0], buffer.size() + 1, format, args);
 
 	*data.stream << buffer;
 }
