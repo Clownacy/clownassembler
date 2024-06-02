@@ -2,7 +2,7 @@
 
 #include <cstdio>
 #include <cstring>
-#include <string>
+#include <vector>
 
 struct OutputData
 {
@@ -68,13 +68,13 @@ static void PrintFormatted(void* const user_data, const char* const format, va_l
 
 	va_list args_copy;
 	va_copy(args_copy, args);
-	const auto buffer_size = std::vsnprintf(nullptr, 0, format, args_copy);
+	const auto buffer_size = std::vsnprintf(nullptr, 0, format, args_copy) + 1;
 	va_end(args_copy);
 
-	std::string buffer(buffer_size, '\0');
-	std::vsnprintf(&buffer[0], buffer.size() + 1, format, args);
+	std::vector<char> buffer(buffer_size);
+	std::vsnprintf(buffer.data(), buffer.size(), format, args);
 
-	*data.stream << buffer;
+	*data.stream << buffer.data();
 }
 
 bool ClownAssembler::Assemble(
@@ -97,39 +97,27 @@ bool ClownAssembler::Assemble(
 	const ClownAssembler_BinaryOutput output_callbacks = {&output_data, WriteCharacter, WriteCharacters, Seek};
 
 	OutputData error_data;
-	ClownAssembler_TextOutput error_callbacks;
-	if (errors == nullptr)
-	{
-		error_callbacks = {nullptr, PrintFormatted, WriteCharacter, WriteString};
-	}
-	else
+	ClownAssembler_TextOutput error_callbacks = {nullptr, PrintFormatted, WriteCharacter, WriteString};
+	if (errors != nullptr)
 	{
 		error_data = {errors, errors->tellp()};
-		error_callbacks = {&error_data, PrintFormatted, WriteCharacter, WriteString};
+		error_callbacks.user_data = &error_data;
 	}
 
 	OutputData listing_data;
-	ClownAssembler_TextOutput listing_callbacks;
-	if (listing == nullptr)
-	{
-		listing_callbacks = {nullptr, PrintFormatted, WriteCharacter, WriteString};
-	}
-	else
+	ClownAssembler_TextOutput listing_callbacks = {nullptr, PrintFormatted, WriteCharacter, WriteString};
+	if (listing != nullptr)
 	{
 		listing_data = {listing, listing->tellp()};
-		listing_callbacks = {&listing_data, PrintFormatted, WriteCharacter, WriteString};
+		listing_callbacks.user_data = &listing_data;
 	}
 
 	OutputData symbol_data;
-	ClownAssembler_BinaryOutput symbol_callbacks;
-	if (symbols == nullptr)
-	{
-		symbol_callbacks = {nullptr, WriteCharacter, WriteCharacters, Seek};
-	}
-	else
+	ClownAssembler_BinaryOutput symbol_callbacks = {nullptr, WriteCharacter, WriteCharacters, Seek};
+	if (symbols != nullptr)
 	{
 		symbol_data = {symbols, symbols->tellp()};
-		symbol_callbacks = {&symbol_data, WriteCharacter, WriteCharacters, Seek};
+		symbol_callbacks.user_data = &symbol_data;
 	}
 
 	const auto definition_callback_wrapper = [](void* const internal, void* const user_data, const ClownAssembler_AddDefinition add_definition)
