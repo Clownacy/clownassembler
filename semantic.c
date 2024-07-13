@@ -568,7 +568,7 @@ static char* ExpandIdentifier(SemanticState *state, const char* const identifier
 {
 	char *expanded_identifier = NULL;
 
-	if (identifier[0] == '@' || identifier[0] == '.')
+	if (identifier_length != 0 && (identifier[0] == '@' || identifier[0] == '.'))
 	{
 		if (state->last_global_label == NULL)
 		{
