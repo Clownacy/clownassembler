@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <type_traits>
 #include <vector>
 
 struct OutputData
@@ -122,7 +123,7 @@ bool ClownAssembler::Assemble(
 
 	const auto definition_callback_wrapper = [](void* const internal, void* const user_data, const ClownAssembler_AddDefinition add_definition)
 	{
-		const auto &callback = *static_cast<decltype(definition_callback)>(user_data);
+		const auto &callback = *static_cast<std::remove_cv<decltype(definition_callback)>::type>(user_data);
 
 		callback(internal, add_definition);
 	};
