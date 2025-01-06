@@ -650,12 +650,19 @@ Swag.Legit:
 	roxl.w	d0
 	roxr.w	d0
 
-	; Vladikcomper tests
+	; Vladikcomper tests (invalid but correctable operand and instruction combinations)
 	cmp.l	a1, a2
 	cmp.w	#$4EF9, (a2)+
 	and.w	#$FF, d1
 	add.w	(a3), a3
 	lsr.w	d0
+
+	; Nested REPTs (Sik, #17).
+	rept 2
+	rept 3
+	dc.b	6
+	endr
+	endr
 
   ; More blank lines to test support for trailing blank statements
 

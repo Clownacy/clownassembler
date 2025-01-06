@@ -91,6 +91,7 @@ typedef enum Mode
 typedef struct SemanticState
 {
 	cc_bool success;
+	const TextInput *input_callbacks;
 	const BinaryOutput *output_callbacks;
 	const TextOutput *listing_callbacks;
 	const TextOutput *error_callbacks;
@@ -155,7 +156,7 @@ typedef struct Macro
 } Macro;
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
-static void AssembleFile(SemanticState *state, const TextInput *input_callbacks);
+static void AssembleFile(SemanticState *state);
 static void AssembleLine(SemanticState *state, const char *source_line);
 
 /* Prevent errors when '__attribute__((format(printf, X, X)))' is not supported. */
@@ -1020,35 +1021,8 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 
 static void TerminateRept(SemanticState *state)
 {
-	unsigned long countdown;
-
-	/* Back-up some state into local variables, in case a nested REPT statement clobbers it. */
-	unsigned long starting_line_number = state->shared.rept.line_number;
-	SourceLineListNode* const source_line_list_head = state->shared.rept.source_line_list.head;
-
-	/* Exit REPT mode before we recurse into the REPT's nested statements. */
+	/* Exit REPT mode. */
 	state->mode = MODE_NORMAL;
-
-	/* Repeat the statements as many times as requested. */
-	countdown = state->shared.rept.repetitions;
-	/* TODO - Nested REPTs! Put the 'state->shared.rept' stuff in local variables! */
-
-	while (countdown-- != 0)
-	{
-		SourceLineListNode *source_line_list_node;
-
-		/* Rewind back to the line number of the start of the REPT. */
-		state->location->line_number = starting_line_number;
-
-		/* Process the REPT's nested statements. */
-		for (source_line_list_node = source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-			AssembleLine(state, source_line_list_node->source_line);
-	}
-
-	/* Increment past the ENDR line number. */
-	++state->location->line_number;
-
-	FreeSourceLineList(source_line_list_head);
 }
 
 static void TerminateMacro(SemanticState *state)
@@ -4168,7 +4142,9 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 	}
 	else
 	{
-		ClownAssembler_TextInput input_callbacks = {
+		const TextInput* const previous_input_callbacks = state->input_callbacks;
+
+		TextInput input_callbacks = {
 			input_file,
 			ReadCharacter,
 			ReadLine
@@ -4183,7 +4159,11 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 		location.previous = state->location;
 		state->location = &location;
 
-		AssembleFile(state, &input_callbacks);
+		state->input_callbacks = &input_callbacks;
+
+		AssembleFile(state);
+
+		state->input_callbacks = previous_input_callbacks;
 
 		state->location = state->location->previous;
 
@@ -4253,8 +4233,114 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 	}
 }
 
+static cc_bool ReadSourceLine(SemanticState *state)
+{
+	char *line_buffer_write_pointer;
+
+	line_buffer_write_pointer = state->line_buffer;
+
+	/* Read lines one at a time, feeding them to the 'AssembleLine' function. */
+	while (TextInput_fgets(line_buffer_write_pointer, &state->line_buffer[sizeof(state->line_buffer)] - line_buffer_write_pointer, state->input_callbacks) != NULL)
+	{
+		size_t newline_index;
+		char newline_character;
+
+		/* Find the end of the line. We terminate on '\0', '\r', '\n', and ';'.
+		   Note that terminating at ';' prevents a trailing '&' from being recognised
+		   and causing a line to be continued on the next line.
+		   This is needed for compatibility with S.N. 68k (asm68k). */
+		{
+			char quote_character = '\0';
+			for (newline_index = 0; ; ++newline_index)
+			{
+				const char character = state->line_buffer[newline_index];
+
+				if (character == '\0' || character == '\r' || character == '\n')
+					break;
+
+				if (quote_character == '\0')
+				{
+					if (character == '"' || character == '\'')
+						quote_character = character;
+					else if (character == ';')
+						break;
+				}
+				else if (character == quote_character)
+				{
+					quote_character = '\0';
+				}
+			}
+		}
+
+		newline_character = state->line_buffer[newline_index];
+
+		line_buffer_write_pointer = state->line_buffer;
+
+		/* If there is no newline, then we've either reached the end of the file,
+		   or the source line was too long to fit in the buffer. */
+		/* TODO: Is there no way to remove this limit? */
+		if (newline_character == '\0')
+		{
+			int character = TextInput_fgetc(state->input_callbacks);
+
+			if (character != -1)
+			{
+				InternalError(state, "The source line was too long to fit in the internal buffer.");
+
+				/* Fast-forward through until the end of the line. */
+				while (character != '\r' && character != '\n' && character != -1)
+					character = TextInput_fgetc(state->input_callbacks);
+			}
+		}
+		else if (newline_index != 0 && state->line_buffer[newline_index - 1] == '&')
+		{
+			/* An '&' at the end of a line is like a '\' at the end of a line in C:
+			   it signals that the current line is continued on the next line. */
+
+			/* Go back and get another line. */
+			line_buffer_write_pointer = &state->line_buffer[newline_index - 1];
+			continue;
+		}
+
+		/* Remove newlines from the string, so that they don't appear in the error message. */
+		state->line_buffer[newline_index] = '\0';
+
+		return cc_true;
+	}
+
+	return cc_false;
+}
+
+static void AssembleAndListLine(SemanticState *state)
+{
+	/* Output program counter to listing file. */
+	if (TextOutput_exists(state->listing_callbacks))
+	{
+		state->listing_counter = 0;
+		TextOutput_fprintf(state->listing_callbacks, "%08lX", state->program_counter);
+	}
+
+	AssembleLine(state, state->line_buffer);
+
+	/* Output line to listing file. */
+	if (TextOutput_exists(state->listing_callbacks))
+	{
+		unsigned int i;
+
+		for (i = state->listing_counter * 2 + state->listing_counter / 2; i < 28; ++i)
+			TextOutput_fputc(' ', state->listing_callbacks);
+
+		TextOutput_fprintf(state->listing_callbacks, "%s\n", state->line_buffer);
+	}
+}
+
 static void ProcessRept(SemanticState *state, StatementRept *rept)
 {
+	const Mode previous_mode = state->mode;
+	const unsigned long previous_repetitions = state->shared.rept.repetitions;
+	const unsigned long previous_line_number = state->location->line_number;
+	const SourceLineList previous_source_line_list = state->shared.rept.source_line_list;
+
 	/* Enter REPT mode. */
 	state->mode = MODE_REPT;
 
@@ -4268,6 +4354,57 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 
 	state->shared.rept.source_line_list.head = NULL;
 	state->shared.rept.source_line_list.tail = NULL;
+
+	for (;;)
+	{
+		if (!ReadSourceLine(state))
+		{
+			/* The file ended before an 'ENDR' could be found! */
+
+			/* Terminate the REPT to hopefully avoid future complications. */
+			TerminateRept(state);
+
+			SemanticError(state, "REPT statement beginning at line %lu is missing its ENDR.", state->shared.rept.line_number);
+		}
+		else
+		{
+			AssembleLine(state, state->line_buffer);
+		}
+
+		if (state->mode != MODE_REPT)
+		{
+			/* An 'ENDR' must have been encountered. */
+
+			/* Revert back to the previous state. */
+			unsigned long repetitions = state->shared.rept.repetitions;
+			const unsigned long line_number = state->location->line_number;
+			const SourceLineList source_line_list = state->shared.rept.source_line_list;
+
+			state->mode = previous_mode;
+			state->shared.rept.repetitions = previous_repetitions;
+			state->location->line_number = previous_line_number;
+			state->shared.rept.source_line_list = previous_source_line_list;
+
+			while (repetitions-- != 0)
+			{
+				SourceLineListNode *source_line_list_node;
+
+				/* Rewind back to the line number of the start of the REPT. */
+				state->location->line_number = line_number;
+
+				/* Process the REPT's nested statements. */
+				for (source_line_list_node = source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
+					AssembleLine(state, source_line_list_node->source_line);
+			}
+
+			/* Increment past the ENDR line number. */
+			++state->location->line_number;
+
+			FreeSourceLineList(source_line_list.head);
+
+			break;
+		}
+	}
 }
 
 static void ProcessMacro(SemanticState *state, StatementMacro *macro, const char *label, cc_bool is_short)
@@ -5323,7 +5460,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 		case MODE_REPT:
 			/* If this line is an 'ENDR' directive, then exit REPT mode. Otherwise, add the line to the REPT. */
-			if (directive_length != 0 && strncmpci(source_line_pointer, "endr", directive_length) == 0)
+			if (directive_length != 0 && (strncmpci(source_line_pointer, "rept", directive_length) == 0 || strncmpci(source_line_pointer, "endr", directive_length) == 0))
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
 				ParseLine(state, source_line, label, source_line_pointer);
@@ -5387,98 +5524,10 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	free(label);
 }
 
-static void AssembleFile(SemanticState *state, const TextInput* const input_callbacks)
+static void AssembleFile(SemanticState *state)
 {
-	char *line_buffer_write_pointer;
-
-	line_buffer_write_pointer = state->line_buffer;
-
-	/* Read lines one at a time, feeding them to the 'AssembleLine' function. */
-	while (!state->end && TextInput_fgets(line_buffer_write_pointer, &state->line_buffer[sizeof(state->line_buffer)] - line_buffer_write_pointer, input_callbacks) != NULL)
-	{
-		size_t newline_index;
-		char newline_character;
-
-		/* Find the end of the line. We terminate on '\0', '\r', '\n', and ';'.
-		   Note that terminating at ';' prevents a trailing '&' from being recognised
-		   and causing a line to be continued on the next line.
-		   This is needed for compatibility with S.N. 68k (asm68k). */
-		{
-			char quote_character = '\0';
-			for (newline_index = 0; ; ++newline_index)
-			{
-				const char character = state->line_buffer[newline_index];
-
-				if (character == '\0' || character == '\r' || character == '\n')
-					break;
-
-				if (quote_character == '\0')
-				{
-					if (character == '"' || character == '\'')
-						quote_character = character;
-					else if (character == ';')
-						break;
-				}
-				else if (character == quote_character)
-				{
-					quote_character = '\0';
-				}
-			}
-		}
-
-		newline_character = state->line_buffer[newline_index];
-
-		line_buffer_write_pointer = state->line_buffer;
-
-		/* If there is no newline, then we've either reached the end of the file,
-		   or the source line was too long to fit in the buffer. */
-		/* TODO: Is there no way to remove this limit? */
-		if (newline_character == '\0')
-		{
-			int character = TextInput_fgetc(input_callbacks);
-
-			if (character != -1)
-			{
-				InternalError(state, "The source line was too long to fit in the internal buffer.");
-
-				/* Fast-forward through until the end of the line. */
-				while (character != '\r' && character != '\n' && character != -1)
-					character = TextInput_fgetc(input_callbacks);
-			}
-		}
-		else if (newline_index != 0 && state->line_buffer[newline_index - 1] == '&')
-		{
-			/* An '&' at the end of a line is like a '\' at the end of a line in C:
-			   it signals that the current line is continued on the next line. */
-
-			/* Go back and get another line. */
-			line_buffer_write_pointer = &state->line_buffer[newline_index - 1];
-			continue;
-		}
-
-		/* Remove newlines from the string, so that they don't appear in the error message. */
-		state->line_buffer[newline_index] = '\0';
-
-		/* Output program counter to listing file. */
-		if (TextOutput_exists(state->listing_callbacks))
-		{
-			state->listing_counter = 0;
-			TextOutput_fprintf(state->listing_callbacks, "%08lX", state->program_counter);
-		}
-
-		AssembleLine(state, state->line_buffer);
-
-		/* Output line to listing file. */
-		if (TextOutput_exists(state->listing_callbacks))
-		{
-			unsigned int i;
-
-			for (i = state->listing_counter * 2 + state->listing_counter / 2; i < 28; ++i)
-				TextOutput_fputc(' ', state->listing_callbacks);
-
-			TextOutput_fprintf(state->listing_callbacks, "%s\n", state->line_buffer);
-		}
-	}
+	while (!state->end && ReadSourceLine(state))
+		AssembleAndListLine(state);
 
 	/* If we're not in normal mode when a file ends, then something is wrong. */
 	switch (state->mode)
@@ -5614,6 +5663,7 @@ cc_bool ClownAssembler_Assemble(
 
 	/* Initialise the state's non-default values. */
 	state.success = cc_true;
+	state.input_callbacks = input_callbacks;
 	state.output_callbacks = output_callbacks;
 	state.error_callbacks = error_callbacks;
 	state.listing_callbacks = listing_callbacks;
@@ -5662,7 +5712,7 @@ cc_bool ClownAssembler_Assemble(
 			#endif
 
 				/* Perform first pass of assembly, creating a list of fix-ups. */
-				AssembleFile(&state, input_callbacks);
+				AssembleFile(&state);
 
 				/* Destroy the lexer, as we no longer need it. */
 				if (m68kasm_lex_destroy(state.flex_state) != 0)
