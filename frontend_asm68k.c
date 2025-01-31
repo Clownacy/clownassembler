@@ -461,5 +461,26 @@ int main(int argc, char **argv)
 
 	free(combined_arguments);
 
+	if (source_file != NULL)
+		fclose(source_file);
+
+	if (object_file != NULL)
+	{
+		fclose(object_file);
+
+		if (exit_code == EXIT_FAILURE)
+		{
+			/* Delete the output file; it will be junk anyway.
+			   Also, leaving a junk file will confuse Make, which will think that the assembler had previously succeeded. */
+			remove(object_file_path);
+		}
+	}
+
+	if (listing_file != NULL)
+		fclose(listing_file);
+
+	if (symbol_file != NULL)
+		fclose(symbol_file);
+
 	return exit_code;
 }

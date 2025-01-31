@@ -224,6 +224,7 @@ int main(int argc, char **argv)
 				{
 					FILE *listing_file;
 					FILE *symbol_file;
+					cc_bool success;
 
 					if (listing_file_path == NULL)
 					{
@@ -249,13 +250,20 @@ int main(int argc, char **argv)
 							ERROR("Could not open symbol file.");
 					}
 
-					if (!ClownAssembler_AssembleFile(input_file, output_file, stderr, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive, equ_set_descope_local_labels, output_local_labels_to_sym_file, warnings_enabled, DefinitionCallback, NULL))
-						ERROR("Could not assemble.");
+					success = ClownAssembler_AssembleFile(input_file, output_file, stderr, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive, equ_set_descope_local_labels, output_local_labels_to_sym_file, warnings_enabled, DefinitionCallback, NULL);
 
 					if (listing_file != NULL)
 						fclose(listing_file);
 
 					fclose(output_file);
+
+					if (!success)
+					{
+						ERROR("Could not assemble.");
+						/* Delete the output file; it will be junk anyway.
+						   Also, leaving a junk file will confuse Make, which will think that the assembler had previously succeeded. */
+						remove(output_file_path);
+					}
 				}
 
 				fclose(input_file);
