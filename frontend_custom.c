@@ -29,7 +29,7 @@
 static int total_arguments;
 static char **arguments;
 
-static void DefinitionCallback(void *internal, void* const user_data, void (* const add_definition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value))
+static void DefinitionCallback(void *internal, void* const user_data, const ClownAssembler_AddDefinition add_definition)
 {
 	int i;
 
