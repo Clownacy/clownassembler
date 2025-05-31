@@ -5200,6 +5200,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 					/* Extract and store the macro parameters, if they exist. */
 					{
+						const char* const parameter_string = source_line_pointer + strspn(source_line_pointer, " \t");
+
 						char character;
 
 						do
@@ -5261,199 +5263,203 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 								}
 							} while (character != ';' && character != '\0');
 						} while (character != ';' && character != '\0');
-					}
 
-					/* Stringify the number of parameters for the 'narg' placeholder. */
-					narg_string = DecimalIntegerToString(state, total_parameters - 1);
+						/* Stringify the number of parameters for the 'narg' placeholder. */
+						narg_string = DecimalIntegerToString(state, total_parameters - 1);
 
-					/* Finally, invoke the macro. */
-					{
-						const SourceLineListNode *source_line_list_node;
-
-						/* Push a new location (this macro).*/
-						Location location;
-
-						location.file_path = macro->name;
-						location.line_number = 0;
-
-						location.previous = state->location;
-						state->location = &location;
-
-						/* Iterate over each line of the macro, performing parameter substitution and then sending it to be processed. */
-						for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
+						/* Finally, invoke the macro. */
 						{
-							const char *remaining_line;
-							char *modified_line;
+							const SourceLineListNode *source_line_list_node;
 
-							/* Update the source line for the error printers. */
-							state->source_line = source_line_list_node->source_line;
+							/* Push a new location (this macro).*/
+							Location location;
 
-							/* A bit of a cheat so that errors that occur before the call to AssembleLine still show the correct line number. */
-							++state->location->line_number;
+							location.file_path = macro->name;
+							location.line_number = 0;
 
-							/* Replace the parameter placeholders with their proper contents. */
-							remaining_line = modified_line = DuplicateString(state, source_line_list_node->source_line);
+							location.previous = state->location;
+							state->location = &location;
 
-							if (modified_line != NULL)
+							/* Iterate over each line of the macro, performing parameter substitution and then sending it to be processed. */
+							for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
 							{
-								for (;;)
+								const char *remaining_line;
+								char *modified_line;
+
+								/* Update the source line for the error printers. */
+								state->source_line = source_line_list_node->source_line;
+
+								/* A bit of a cheat so that errors that occur before the call to AssembleLine still show the correct line number. */
+								++state->location->line_number;
+
+								/* Replace the parameter placeholders with their proper contents. */
+								remaining_line = modified_line = DuplicateString(state, source_line_list_node->source_line);
+
+								if (modified_line != NULL)
 								{
-									const char *earliest_parameter_start;
-									const char *earliest_parameter_end;
-									const IdentifierListNode *parameter_name;
-									unsigned long i;
-									const char *found_parameter_start;
-									const char *found_parameter_end;
-									const char *substitute;
-
-									/* Search for the earliest macro parameter placeholder in the line, storing its location in 'earliest_parameter_start'. */
-
-									/* Silence bogus(?) 'variable may be used uninitialised' compiler warnings. */
-									/* TODO: Are these really bogus? */
-									substitute = NULL;
-									earliest_parameter_end = NULL;
-
-									/* Find numerical macro parameter placeholder. */
-									earliest_parameter_start = strchr(remaining_line, '\\');
-
-									if (earliest_parameter_start != NULL)
+									for (;;)
 									{
-										earliest_parameter_end = earliest_parameter_start + 2;
+										const char *earliest_parameter_start;
+										const char *earliest_parameter_end;
+										const IdentifierListNode *parameter_name;
+										unsigned long i;
+										const char *found_parameter_start;
+										const char *found_parameter_end;
+										const char *substitute;
 
-										if (earliest_parameter_start[1] == '*')
+										/* Search for the earliest macro parameter placeholder in the line, storing its location in 'earliest_parameter_start'. */
+
+										/* Silence bogus(?) 'variable may be used uninitialised' compiler warnings. */
+										/* TODO: Are these really bogus? */
+										substitute = NULL;
+										earliest_parameter_end = NULL;
+
+										/* Find numerical macro parameter placeholder. */
+										earliest_parameter_start = strchr(remaining_line, '\\');
+
+										if (earliest_parameter_start != NULL)
 										{
-											substitute = label;
-										}
-										else if (earliest_parameter_start[1] == '@')
-										{
-											substitute = unique_suffix;
-										}
-										else if (earliest_parameter_start[1] == '#' || earliest_parameter_start[1] == '$')
-										{
-											unsigned long value;
+											earliest_parameter_end = earliest_parameter_start + 2;
 
-											const char* const identifier = earliest_parameter_start + 2;
-											const size_t identifier_length = strspn(identifier, DIRECTIVE_OR_MACRO_CHARS);
+											if (earliest_parameter_start[1] == '*')
+											{
+												substitute = label;
+											}
+											else if (earliest_parameter_start[1] == '@')
+											{
+												substitute = unique_suffix;
+											}
+											else if (earliest_parameter_start[1] == '_')
+											{
+												substitute = parameter_string;
+											}
+											else if (earliest_parameter_start[1] == '#' || earliest_parameter_start[1] == '$')
+											{
+												unsigned long value;
 
-											earliest_parameter_end = identifier + identifier_length;
-											/* Absorb trailing backslash. */
-											if (identifier[identifier_length] == '\\')
-												++earliest_parameter_end;
+												const char* const identifier = earliest_parameter_start + 2;
+												const size_t identifier_length = strspn(identifier, DIRECTIVE_OR_MACRO_CHARS);
 
-											free(symbol_value_string);
+												earliest_parameter_end = identifier + identifier_length;
+												/* Absorb trailing backslash. */
+												if (identifier[identifier_length] == '\\')
+													++earliest_parameter_end;
 
-											if (!GetSymbolInteger(state, identifier, identifier_length, cc_true, &value))
-												value = 0;
+												free(symbol_value_string);
 
-											if (earliest_parameter_start[1] == '#')
-												symbol_value_string = DecimalIntegerToString(state, value);
-											else /*if (earliest_parameter_start[1] == '$')*/
-												symbol_value_string = HexadecimalIntegerToString(state, value);
+												if (!GetSymbolInteger(state, identifier, identifier_length, cc_true, &value))
+													value = 0;
 
-											substitute = symbol_value_string;
-										}
-										else
-										{
-											char *end;
+												if (earliest_parameter_start[1] == '#')
+													symbol_value_string = DecimalIntegerToString(state, value);
+												else /*if (earliest_parameter_start[1] == '$')*/
+													symbol_value_string = HexadecimalIntegerToString(state, value);
 
-											/* Obtain numerical index of the parameter. */
-											const unsigned long parameter_index = strtoul(earliest_parameter_start + 1, &end, 10);
-											earliest_parameter_end = end;
-
-											/* Check if conversion failed. */
-											if (end == earliest_parameter_start + 1)
-												earliest_parameter_start = NULL;
+												substitute = symbol_value_string;
+											}
 											else
-												substitute = (parameter_index < total_parameters && parameters[parameter_index] != NULL) ? parameters[parameter_index] : "";
-										}
-									}
+											{
+												char *end;
 
-									/* Now find the identifier-based macro parameter placeholders. */
-									for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
-									{
-										if (FindMacroParameter(remaining_line, parameter_name->identifier, &found_parameter_start, &found_parameter_end))
+												/* Obtain numerical index of the parameter. */
+												const unsigned long parameter_index = strtoul(earliest_parameter_start + 1, &end, 10);
+												earliest_parameter_end = end;
+
+												/* Check if conversion failed. */
+												if (end == earliest_parameter_start + 1)
+													earliest_parameter_start = NULL;
+												else
+													substitute = (parameter_index < total_parameters && parameters[parameter_index] != NULL) ? parameters[parameter_index] : "";
+											}
+										}
+
+										/* Now find the identifier-based macro parameter placeholders. */
+										for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
+										{
+											if (FindMacroParameter(remaining_line, parameter_name->identifier, &found_parameter_start, &found_parameter_end))
+											{
+												if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
+												{
+													substitute = (i < total_parameters && parameters[i] != NULL) ? parameters[i] : "";
+													earliest_parameter_start = found_parameter_start;
+													earliest_parameter_end = found_parameter_end;
+												}
+											}
+										}
+
+										/* Find the 'narg' placeholder, which represents how many parameters (arguments) have been passed to the macro. */
+										if (FindMacroParameter(remaining_line, "narg", &found_parameter_start, &found_parameter_end))
 										{
 											if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
 											{
-												substitute = (i < total_parameters && parameters[i] != NULL) ? parameters[i] : "";
+												substitute = narg_string;
 												earliest_parameter_start = found_parameter_start;
 												earliest_parameter_end = found_parameter_end;
 											}
 										}
-									}
 
-									/* Find the 'narg' placeholder, which represents how many parameters (arguments) have been passed to the macro. */
-									if (FindMacroParameter(remaining_line, "narg", &found_parameter_start, &found_parameter_end))
-									{
-										if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
+										/* If no placeholders can be found, then we are done here. */
+										if (earliest_parameter_start == NULL)
+											break;
+
+										/* Split the line in two, and insert the parameter between them. */
 										{
-											substitute = narg_string;
-											earliest_parameter_start = found_parameter_start;
-											earliest_parameter_end = found_parameter_end;
-										}
-									}
+											char *new_modified_line;
 
-									/* If no placeholders can be found, then we are done here. */
-									if (earliest_parameter_start == NULL)
-										break;
+											const char* const parameter = substitute == NULL ? "" : substitute;
+											const size_t first_half_length = earliest_parameter_start - modified_line;
+											const size_t parameter_length = strlen(parameter);
+											const size_t second_half_length = strlen(earliest_parameter_end);
 
-									/* Split the line in two, and insert the parameter between them. */
-									{
-										char *new_modified_line;
+											new_modified_line = (char*)MallocAndHandleError(state, first_half_length + parameter_length + second_half_length + 1);
 
-										const char* const parameter = substitute == NULL ? "" : substitute;
-										const size_t first_half_length = earliest_parameter_start - modified_line;
-										const size_t parameter_length = strlen(parameter);
-										const size_t second_half_length = strlen(earliest_parameter_end);
+											if (new_modified_line != NULL)
+											{
+												memcpy(new_modified_line, modified_line, first_half_length);
+												memcpy(new_modified_line + first_half_length, parameter, parameter_length);
+												memcpy(new_modified_line + first_half_length + parameter_length, earliest_parameter_end, second_half_length);
+												new_modified_line[first_half_length + parameter_length + second_half_length] = '\0';
 
-										new_modified_line = (char*)MallocAndHandleError(state, first_half_length + parameter_length + second_half_length + 1);
+												/* Continue our search from after the inserted parameter. */
+												remaining_line = &new_modified_line[first_half_length + parameter_length];
 
-										if (new_modified_line != NULL)
-										{
-											memcpy(new_modified_line, modified_line, first_half_length);
-											memcpy(new_modified_line + first_half_length, parameter, parameter_length);
-											memcpy(new_modified_line + first_half_length + parameter_length, earliest_parameter_end, second_half_length);
-											new_modified_line[first_half_length + parameter_length + second_half_length] = '\0';
-
-											/* Continue our search from after the inserted parameter. */
-											remaining_line = &new_modified_line[first_half_length + parameter_length];
-
-											/* We don't need the old copy of the line anymore: free it, and replace it with the new copy. */
-											free(modified_line);
-											modified_line = new_modified_line;
+												/* We don't need the old copy of the line anymore: free it, and replace it with the new copy. */
+												free(modified_line);
+												modified_line = new_modified_line;
+											}
 										}
 									}
 								}
+
+								/* Undo our hack from before. */
+								--state->location->line_number;
+
+								/* Send our expanded macro line to be assembled. */
+								AssembleLine(state, modified_line != NULL ? modified_line : source_line_list_node->source_line);
+
+								/* The expanded line is done, so we can free it now. */
+								free(modified_line);
 							}
 
-							/* Undo our hack from before. */
-							--state->location->line_number;
-
-							/* Send our expanded macro line to be assembled. */
-							AssembleLine(state, modified_line != NULL ? modified_line : source_line_list_node->source_line);
-
-							/* The expanded line is done, so we can free it now. */
-							free(modified_line);
+							/* Pop location. */
+							state->location = state->location->previous;
 						}
 
-						/* Pop location. */
-						state->location = state->location->previous;
+						/* Free the parameter strings. */
+						{
+							size_t i;
+
+							for (i = 0; i < total_parameters; ++i)
+								free(parameters[i]);
+
+							free(parameters);
+						}
+
+						/* Free other stuff. */
+						free(narg_string);
+						free(unique_suffix);
+						free(symbol_value_string);
 					}
-
-					/* Free the parameter strings. */
-					{
-						size_t i;
-
-						for (i = 0; i < total_parameters; ++i)
-							free(parameters[i]);
-
-						free(parameters);
-					}
-
-					/* Free other stuff. */
-					free(narg_string);
-					free(unique_suffix);
-					free(symbol_value_string);
 				}
 			}
 
