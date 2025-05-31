@@ -507,11 +507,12 @@ static cc_bool FindMacroParameter(const char* const remaining_line, const char* 
 	for (;;)
 	{
 		other_parameter_position = strstr(other_parameter_end, identifier);
-		other_parameter_end = other_parameter_position + strlen(identifier);
 
 		/* Obviously bail if the identifier wasn't found. */
 		if (other_parameter_position == NULL)
 			break;
+
+		other_parameter_end = other_parameter_position + strlen(identifier);
 
 		/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
 		/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
