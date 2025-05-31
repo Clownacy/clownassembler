@@ -366,8 +366,8 @@ def             return TOKEN_DEF;
 }
 
  /* String. */
-\"[^\"]+\" |
-\'[^\']+\' {
+\"[^\"]*\" |
+\'[^\']*\' {
 	const size_t length = strlen(yytext) - 2;
 
 	/* Escape PATH mode so that the following arguments use the correct rules. */
