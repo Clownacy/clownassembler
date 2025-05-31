@@ -307,6 +307,7 @@ pc              return TOKEN_PROGRAM_COUNTER;
 
  /* Functions. */
 strlen          return TOKEN_STRLEN;
+strcmp          return TOKEN_STRCMP;
 def             return TOKEN_DEF;
 
  /* Decimal number. */

@@ -223,6 +223,7 @@ typedef enum ExpressionType
 	EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT,
 	EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION,
 	EXPRESSION_STRLEN,
+	EXPRESSION_STRCMP,
 	EXPRESSION_DEF
 } ExpressionType;
 
@@ -612,6 +613,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_LEFT_SHIFT
 %token TOKEN_RIGHT_SHIFT
 %token TOKEN_STRLEN
+%token TOKEN_STRCMP
 %token TOKEN_DEF
 
 %type<instruction> instruction
@@ -624,13 +626,13 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %type<unsigned_long> data_or_address_register
 %type<expression_list> expression_list
 %type<identifier_list> identifier_list
-%type<expression> expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8
+%type<expression> expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 string
 
 %destructor { free($$); } TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER TOKEN_STRING
 %destructor { DestroyOperand(&$$); } operand
 %destructor { DestroyExpressionList(&$$); } expression_list
 %destructor { DestroyIdentifierList(&$$); } identifier_list
-%destructor { DestroyExpression(&$$); } expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8
+%destructor { DestroyExpression(&$$); } expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 string
 
 %start statement
 
@@ -1971,10 +1973,9 @@ expression8
 			free($2);
 		}
 	}
-	| TOKEN_STRING
+	| string
 	{
-		$$.type = EXPRESSION_STRING;
-		$$.shared.string = $1;
+		$$ = $1;
 	}
 	| '*'
 	{
@@ -1993,12 +1994,24 @@ expression8
 		$$.type = EXPRESSION_STRLEN;
 		$$.shared.string = $3;
 	}
+	| TOKEN_STRCMP '(' string ',' string ')'
+	{
+		if (!DoExpression(&$$, EXPRESSION_STRLEN, &$3, &$5))
+			YYNOMEM;
+	}
 	| TOKEN_DEF '(' TOKEN_IDENTIFIER ')'
 	{
 		$$.type = EXPRESSION_DEF;
 		$$.shared.string = $3;
 	}
 	;
+
+string
+	: TOKEN_STRING
+	{
+		$$.type = EXPRESSION_STRING;
+		$$.shared.string = $1;
+	}
 
 %%
 
@@ -2052,6 +2065,7 @@ void DestroyExpression(Expression *expression)
 		case EXPRESSION_MORE_OR_EQUAL:
 		case EXPRESSION_LEFT_SHIFT:
 		case EXPRESSION_RIGHT_SHIFT:
+		case EXPRESSION_STRCMP:
 			DestroyExpression(&expression->shared.subexpressions[0]);
 			DestroyExpression(&expression->shared.subexpressions[1]);
 			free(expression->shared.subexpressions);
