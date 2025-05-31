@@ -492,43 +492,45 @@ static FILE* fopen_backslash(SemanticState *state, const char *path, const char 
 	return file;
 }
 
+static cc_bool IsMacroBlockingCharacter(const char character)
+{
+	return ((character >= 'a' && character <= 'z')
+	     || (character >= 'A' && character <= 'Z')
+	     || (character >= '0' && character <= '9'));
+}
+
 static cc_bool FindMacroParameter(const char* const remaining_line, const char* const identifier, const char** const other_parameter_position_out, const char** const other_parameter_end_out)
 {
 	const char *other_parameter_position;
-	const char *other_parameter_end;
+	const char *other_parameter_end = remaining_line;
 
-	other_parameter_position = strstr(remaining_line, identifier);
-	other_parameter_end = other_parameter_position + strlen(identifier);
-
-	/* Obviously bail if the identifier wasn't found. */
-	if (other_parameter_position != NULL)
+	for (;;)
 	{
+		other_parameter_position = strstr(other_parameter_end, identifier);
+		other_parameter_end = other_parameter_position + strlen(identifier);
+
+		/* Obviously bail if the identifier wasn't found. */
+		if (other_parameter_position == NULL)
+			break;
+
 		/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
 		/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
-		if (other_parameter_position == remaining_line
-		|| ((other_parameter_position[-1] < 'a' || other_parameter_position[-1] > 'z')
-		 && (other_parameter_position[-1] < 'A' || other_parameter_position[-1] > 'Z')
-		 && (other_parameter_position[-1] < '0' || other_parameter_position[-1] > '9')))
+		if ((other_parameter_position == remaining_line || !IsMacroBlockingCharacter(other_parameter_position[-1])) && !IsMacroBlockingCharacter(other_parameter_end[0]))
 		{
-			if ((other_parameter_end[0] < 'a' || other_parameter_end[0] > 'z')
-			 && (other_parameter_end[0] < 'A' || other_parameter_end[0] > 'Z')
-			 && (other_parameter_end[0] < '0' || other_parameter_end[0] > '9'))
+			/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
+			/* asm68k allows backslashes before and after the parameter to separate them from surrounding characters. */
+			if (other_parameter_position != remaining_line && other_parameter_position[-1] == '\\')
 			{
-				/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
-				/* asm68k allows backslashes before and after the parameter to separate them from surrounding characters. */
-				if (other_parameter_position != remaining_line && other_parameter_position[-1] == '\\')
-				{
-					--other_parameter_position;
+				--other_parameter_position;
 
-					if (other_parameter_end[0] == '\\')
-						++other_parameter_end;
-				}
-
-				*other_parameter_position_out = other_parameter_position;
-				*other_parameter_end_out = other_parameter_end;
-
-				return cc_true;
+				if (other_parameter_end[0] == '\\')
+					++other_parameter_end;
 			}
+
+			*other_parameter_position_out = other_parameter_position;
+			*other_parameter_end_out = other_parameter_end;
+
+			return cc_true;
 		}
 	}
 
