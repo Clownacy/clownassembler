@@ -20,7 +20,7 @@
 
 #include <stddef.h>
 
-int strcmpci(const char *lhs, const char *rhs);
+#define strcmpci(lhs, rhs) strncmpci(lhs, rhs, (size_t)-1)
 int strncmpci(const char *lhs, const char *rhs, size_t count);
 
 #endif /* STRCMPCI_H */
