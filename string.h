@@ -20,5 +20,7 @@ void String_Destroy(String *string);
 cc_bool String_Compare(const String *string, const String *other_string);
 #define String_Buffer(STRING) (STRING)->buffer
 #define String_Length(STRING) (STRING)->length
+#define String_Empty(STRING) ((STRING)->length == 0)
+#define String_At(STRING, INDEX) (STRING)->buffer[INDEX]
 
 #endif /* STRING_H */

@@ -61,10 +61,10 @@ typedef struct FixUp
 	Statement statement;
 	unsigned long program_counter;
 	size_t output_position;
-	char *last_global_label;
+	String last_global_label;
 	char *source_line;
 	Location location;
-	char *label;
+	String label;
 } FixUp;
 
 typedef struct SourceLineListNode
@@ -109,7 +109,7 @@ typedef struct SemanticState
 	cc_bool doing_fix_up;
 	cc_bool doing_final_pass;
 	Dictionary_State dictionary;
-	char *last_global_label;
+	String last_global_label;
 	Location *location;
 	yyscan_t flex_state;
 	char line_buffer[1024];
@@ -573,8 +573,9 @@ static char* ExpandIdentifier(SemanticState *state, const char* const identifier
 
 	if (identifier_length != 0 && (identifier[0] == '@' || identifier[0] == '.'))
 	{
-		if (state->last_global_label == NULL)
+		if (String_Empty(&state->last_global_label))
 		{
+			/* TODO: Use `String_Copy`. */
 			expanded_identifier = DuplicateStringWithLength(state, identifier + 1, identifier_length - 1);
 
 			if (expanded_identifier_length != NULL)
@@ -582,13 +583,14 @@ static char* ExpandIdentifier(SemanticState *state, const char* const identifier
 		}
 		else
 		{
-			const size_t prefix_length = strlen(state->last_global_label);
+			/* TODO: Use `String_Append`. */
+			const size_t prefix_length = String_Length(&state->last_global_label);
 			const size_t suffix_length = identifier_length;
 			expanded_identifier = (char*)MallocAndHandleError(state, prefix_length + suffix_length + 1);
 
 			if (expanded_identifier != NULL)
 			{
-				memcpy(&expanded_identifier[0], state->last_global_label, prefix_length);
+				memcpy(&expanded_identifier[0], String_Buffer(&state->last_global_label), prefix_length);
 				memcpy(&expanded_identifier[prefix_length], identifier, suffix_length);
 				expanded_identifier[prefix_length + suffix_length] = '\0';
 
@@ -1243,17 +1245,19 @@ static unsigned int ToAlternateEffectiveAddressBits(unsigned int bits)
 	return (m << 6) | (dn << 9);
 }
 
-static void SetLastGlobalLabel(SemanticState *state, const char *label)
+static void SetLastGlobalLabel(SemanticState *state, const String *label)
 {
-	if (label[0] != '@' && label[0] != '.')
+	const char first_character = String_At(label, 0);
+
+	if (first_character != '@' && first_character != '.')
 	{
 		/* This is a global label - cache it for later. */
-		free(state->last_global_label);
-		state->last_global_label = DuplicateString(state, label);
+		String_Destroy(&state->last_global_label);
+		String_Copy(&state->last_global_label, label);
 	}
 }
 
-static void AddIdentifierToSymbolTable(SemanticState *state, const char *label, unsigned long value, SymbolType type)
+static void AddIdentifierToSymbolTable(SemanticState *state, const String *label, unsigned long value, SymbolType type)
 {
 	Dictionary_Entry *symbol;
 
@@ -1264,7 +1268,7 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const char *label, 
 	{
 		case SYMBOL_VARIABLE:
 		case SYMBOL_CONSTANT:
-			symbol = LookupSymbolAndCreateIfNotExist(state, label, strlen(label));
+			symbol = LookupSymbolAndCreateIfNotExist(state, String_Buffer(label), String_Length(label));
 
 			if (symbol != NULL)
 			{
@@ -1277,7 +1281,7 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const char *label, 
 			break;
 
 		case SYMBOL_LABEL:
-			symbol = CreateSymbol(state, label, strlen(label));
+			symbol = CreateSymbol(state, String_Buffer(label), String_Length(label));
 			break;
 
 		case SYMBOL_MACRO:
@@ -4418,12 +4422,12 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 	}
 }
 
-static void ProcessMacro(SemanticState *state, StatementMacro *macro, const char *label, cc_bool is_short)
+static void ProcessMacro(SemanticState *state, StatementMacro *macro, const String *label, cc_bool is_short)
 {
 	/* Enter MACRO mode. */
 	state->mode = MODE_MACRO;
 
-	state->shared.macro.name = DuplicateString(state, label);
+	state->shared.macro.name = DuplicateStringWithLength(state, String_Buffer(label), String_Length(label));
 	state->shared.macro.line_number = state->location->line_number;
 	state->shared.macro.parameter_names = macro->parameter_names;
 	macro->parameter_names.head = NULL;
@@ -4454,7 +4458,7 @@ static void ProcessIf(SemanticState *state, Expression *expression)
 	state->true_already_found = value != 0;
 }
 
-static void ProcessStatement(SemanticState *state, Statement *statement, const char *label)
+static void ProcessStatement(SemanticState *state, Statement *statement, const String *label)
 {
 	/* Update both copies of the program counter. */
 	LookupSymbol(state, PROGRAM_COUNTER_OF_STATEMENT, sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1)->shared.unsigned_long = state->program_counter;
@@ -4476,7 +4480,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		case STATEMENT_TYPE_INFORM:
 		case STATEMENT_TYPE_FAIL:
 		case STATEMENT_TYPE_END:
-			if (label != NULL && !state->doing_fix_up)
+			if (!String_Empty(label) && !state->doing_fix_up)
 			{
 				/* Handle the label here, instead of passing it onto a later function. */
 				SetLastGlobalLabel(state, label);
@@ -4496,7 +4500,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		case STATEMENT_TYPE_OBJ:
 		case STATEMENT_TYPE_OBJEND:
 		case STATEMENT_TYPE_ORG:
-			if (label != NULL)
+			if (!String_Empty(label))
 				SemanticError(state, "There cannot be a label on this type of statement.");
 
 			break;
@@ -4505,7 +4509,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		case STATEMENT_TYPE_MACROS:
 		case STATEMENT_TYPE_EQU:
 		case STATEMENT_TYPE_SET:
-			if (label == NULL)
+			if (String_Empty(label))
 			{
 				SemanticError(state, "This type of statement must have a label.");
 				/* Bail, to avoid null pointer dereferences. */
@@ -4810,7 +4814,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 				Dictionary_Entry* const rs = LookupSymbol(state, "__rs", sizeof("__rs") - 1);
 
 				/* Add label to symbol table. */
-				if (label != NULL)
+				if (!String_Empty(label))
 					AddIdentifierToSymbolTable(state, label, rs->shared.unsigned_long, SYMBOL_CONSTANT);
 
 				/* Advance '__rs' by the specified amount. */
@@ -4924,7 +4928,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 	}
 }
 
-static void ParseLine(SemanticState *state, const char *source_line, const char *label, const char *directive_and_operands)
+static void ParseLine(SemanticState *state, const char *source_line, const String *label, const char *directive_and_operands)
 {
 	/* This is a normal assembly line. */
 	YY_BUFFER_STATE buffer;
@@ -4983,9 +4987,9 @@ static void ParseLine(SemanticState *state, const char *source_line, const char 
 					/* Backup some state. */
 					fix_up->program_counter = starting_program_counter;
 					fix_up->output_position = starting_output_position;
-					fix_up->last_global_label = state->last_global_label == NULL ? NULL : DuplicateString(state, state->last_global_label);
+					String_Copy(&fix_up->last_global_label, &state->last_global_label);
 					fix_up->source_line = DuplicateString(state, source_line);
-					fix_up->label = label == NULL ? NULL : DuplicateString(state, label);
+					String_Copy(&fix_up->label, label);
 
 					/* Clone the location. */
 					*destination_location = *source_location;
@@ -5030,7 +5034,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 {
 	size_t label_length;
 	const char *source_line_pointer;
-	char *label;
+	String label;
 	size_t directive_length;
 
 	++state->location->line_number;
@@ -5088,16 +5092,12 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 		}
 	}
 
-	if (label_length == 0)
-	{
-		/* "My disappointment is immeasurable, and my day is ruined." */
-		label = NULL;
-	}
-	else
-	{
-		/* This line has a label; duplicate it for later. */
-		label = DuplicateStringWithLength(state, source_line_pointer, label_length);
+	/* Duplicate the label (if any) for later. */
+	/* TODO: Create a view instead of a duplicate. */
+	String_Create(&label, source_line_pointer, label_length);
 
+	if (label_length != 0)
+	{
 		/* Advance past the label in the source string. */
 		source_line_pointer += label_length;
 
@@ -5142,7 +5142,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					      || strncmpci(source_line_pointer, "endif" , directive_length) == 0)
 					{
 						/* These can be processed normally too. */
-						ParseLine(state, source_line, label, source_line_pointer);
+						ParseLine(state, source_line, &label, source_line_pointer);
 					}
 					else
 					{
@@ -5160,7 +5160,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 				if (macro_dictionary_entry == NULL || macro_dictionary_entry->type != SYMBOL_MACRO)
 				{
 					/* This is not a macro invocation: it's just a regular line that can be assembled as-is. */
-					ParseLine(state, source_line, label, source_line_pointer);
+					ParseLine(state, source_line, &label, source_line_pointer);
 				}
 				else
 				{
@@ -5177,12 +5177,12 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					total_parameters = 1;
 					symbol_value_string = NULL;
 
-					if (label != NULL)
+					if (!String_Empty(&label))
 					{
-						SetLastGlobalLabel(state, label);
+						SetLastGlobalLabel(state, &label);
 
 						if (!macro->uses_label)
-							AddIdentifierToSymbolTable(state, label, state->program_counter, SYMBOL_LABEL);
+							AddIdentifierToSymbolTable(state, &label, state->program_counter, SYMBOL_LABEL);
 					}
 
 					/* Extract and store the macro size specifier, if one exists. */
@@ -5329,7 +5329,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 											if (earliest_parameter_start[1] == '*')
 											{
-												substitute = label;
+												substitute = String_Buffer(&label);
 											}
 											else if (earliest_parameter_start[1] == '@')
 											{
@@ -5477,7 +5477,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			if (directive_length != 0 && (strncmpci(source_line_pointer, "rept", directive_length) == 0 || strncmpci(source_line_pointer, "endr", directive_length) == 0))
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
-				ParseLine(state, source_line, label, source_line_pointer);
+				ParseLine(state, source_line, &label, source_line_pointer);
 			}
 			else
 			{
@@ -5491,7 +5491,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			if (directive_length != 0 && strncmpci(source_line_pointer, "endm", directive_length) == 0)
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
-				ParseLine(state, source_line, label, source_line_pointer);
+				ParseLine(state, source_line, &label, source_line_pointer);
 
 				if (state->shared.macro.is_short)
 					SemanticError(state, "Short macros shouldn't use ENDM.");
@@ -5503,7 +5503,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					/* Short macros automatically terminate after one statement. */
 					const char first_nonwhitespace_character = source_line[strspn(source_line, " \t")];
 
-					if (label != NULL)
+					if (!String_Empty(&label))
 						SemanticError(state, "Short macros shouldn't create labels.");
 
 					if (first_nonwhitespace_character == '\0' || first_nonwhitespace_character == ';')
@@ -5528,14 +5528,14 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 			/* If this line is an 'ENDW' directive, then exit 'WHILE' mode. Otherwise, add the line to the 'WHILE'. */
 			if (directive_length != 0 && strncmpci(source_line_pointer, "endw", directive_length) == 0)
 				/* TODO - Detect code after the keyword and error if any is found. */
-				ParseLine(state, source_line, label, source_line_pointer);
+				ParseLine(state, source_line, &label, source_line_pointer);
 			else
 				AddToSourceLineList(state, &state->shared.while_statement.source_line_list, source_line);
 
 			break;
 	}
 
-	free(label);
+	String_Destroy(&label);
 }
 
 static void AssembleFile(SemanticState *state)
@@ -5683,6 +5683,7 @@ cc_bool ClownAssembler_Assemble(
 	state.listing_callbacks = listing_callbacks;
 	state.equ_set_descope_local_labels = equ_set_descope_local_labels;
 	state.warnings_enabled = warnings_enabled;
+	String_Create(&state.last_global_label, NULL, 0);
 	state.location = &location;
 	state.mode = MODE_NORMAL;
 
@@ -5762,14 +5763,15 @@ cc_bool ClownAssembler_Assemble(
 						/* Reset some state to how it was at the time the statement was first processed. */
 						state.program_counter = fix_up->program_counter;
 						BinaryOutput_fseek(&state, state.output_callbacks, fix_up->output_position);
-						state.last_global_label = fix_up->last_global_label == NULL ? NULL : DuplicateString(&state, fix_up->last_global_label);
+						String_Destroy(&state.last_global_label);
+						String_Copy(&state.last_global_label, &fix_up->last_global_label);
 						state.source_line = fix_up->source_line;
 						state.location = &fix_up->location;
 
 						state.fix_up_needed = cc_false;
 
 						/* Re-process statement. */
-						ProcessStatement(&state, &fix_up->statement, fix_up->label);
+						ProcessStatement(&state, &fix_up->statement, &fix_up->label);
 
 						/* If this fix-up has been fixed, then we are done with it and free to delete it.
 						   Alternatively, if this is the final pass, then just delete the fix-ups anyway
@@ -5782,9 +5784,9 @@ cc_bool ClownAssembler_Assemble(
 
 							/* We're done with this statement: delete it. */
 							DestroyStatement(&fix_up->statement);
-							free(fix_up->last_global_label);
+							String_Destroy(&fix_up->last_global_label);
 							free(fix_up->source_line);
-							free(fix_up->label);
+							String_Destroy(&fix_up->label);
 
 							/* Pop one location from the list. */
 							location = fix_up->location.previous;
@@ -5817,8 +5819,6 @@ cc_bool ClownAssembler_Assemble(
 						state.doing_final_pass = cc_true;
 				}
 
-				free(state.last_global_label);
-
 				/* Produce asm68k symbol file, if requested. */
 				if (BinaryOutput_exists(symbol_callbacks))
 				{
@@ -5845,6 +5845,7 @@ cc_bool ClownAssembler_Assemble(
 		Dictionary_Deinit(&state.dictionary);
 	}
 
+	String_Destroy(&state.last_global_label);
 	free(location.file_path);
 
 	return state.success;
