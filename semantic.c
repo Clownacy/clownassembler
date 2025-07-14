@@ -479,11 +479,11 @@ static FILE* fopen_backslash(SemanticState *state, const StringView *path, const
 	}
 	else
 	{
-		char *path_copy_pointer;
+		size_t i;
 
-		for (path_copy_pointer = path_copy; *path_copy_pointer != '\0'; ++path_copy_pointer)
-			if (*path_copy_pointer == '\\')
-				*path_copy_pointer = '/';
+		for (i = 0; i < StringView_Length(path); ++i)
+			if (path_copy[i] == '\\')
+				path_copy[i] = '/';
 
 		file = fopen(path_copy, mode);
 
@@ -918,14 +918,14 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			}
 			else
 			{
-				const char *character;
+				size_t i;
 
 				*value = 0;
 
-				for (character = String_Data(&expression->shared.string); *character != '\0'; ++character)
+				for (i = 0; i < length; ++i)
 				{
 					*value <<= 8;
-					*value |= *character;
+					*value |= String_At(&expression->shared.string, i);
 				}
 			}
 
@@ -4078,10 +4078,10 @@ static void ProcessDc(SemanticState *state, StatementDc *dc)
 		{
 			/* If this is a 'dc.b', and the value is a raw string, then output each character as a single byte. */
 			/* This allows 'dc.b' to be used to embed strings into the output. */
-			const char *character;
+			size_t i;
 
-			for (character = String_Data(&expression_list_node->expression.shared.string); *character != '\0'; ++character)
-				OutputDcValue(state, dc->size, *character);
+			for (i = 0; i < String_Length(&expression_list_node->expression.shared.string); ++i)
+				OutputDcValue(state, dc->size, String_At(&expression_list_node->expression.shared.string, i));
 		}
 		else
 		{
