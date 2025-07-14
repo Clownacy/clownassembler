@@ -8,18 +8,24 @@ static const char string_dummy_buffer[] = "";
 
 void StringView_Create(StringView* const view, const char* const source_buffer, const size_t source_length)
 {
+	assert(view != NULL);
+
 	view->buffer = source_buffer;
 	view->length = source_length;
 }
 
 cc_bool StringView_Compare(const StringView* const view, const StringView* const other_view)
 {
+	assert(view != NULL && other_view != NULL);
+
 	return StringView_Length(view) == StringView_Length(other_view) && memcmp(StringView_Data(view), StringView_Data(other_view), StringView_Length(view)) == 0;
 }
 
 void String_CreateBlank(String* const string)
 {
-	StringView_Create(&string->view, string_dummy_buffer, 0);
+	assert(string != NULL);
+
+	StringView_Create(&string->view, string_dummy_buffer, sizeof(string_dummy_buffer) - 1);
 }
 
 cc_bool String_CreateInternal(String* const string, const char* const source_1_buffer, const size_t source_1_length, const char* const source_2_buffer, const size_t source_2_length)
@@ -57,6 +63,8 @@ cc_bool String_CreateInternal(String* const string, const char* const source_1_b
 
 void String_CreateMove(String* const string, String* const other_string)
 {
+	assert(string != NULL && other_string != NULL);
+
 	*string = *other_string;
 	String_CreateBlank(other_string);
 }
