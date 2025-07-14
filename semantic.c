@@ -4168,7 +4168,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 		/* Add file path and line number to the location list. */
 		Location location;
 
-		location.file_path = String_Data(&include->path);
+		location.file_path = (char*)String_Data(&include->path); /* TODO: Ugly hack. */
 		location.line_number = 0;
 
 		location.previous = state->location;
@@ -5280,7 +5280,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 							/* Push a new location (this macro).*/
 							Location location;
 
-							location.file_path = String_Data(&macro->name);
+							location.file_path = (char*)String_Data(&macro->name); /* TODO: Ugly hack. */
 							location.line_number = 0;
 
 							location.previous = state->location;
