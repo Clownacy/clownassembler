@@ -781,6 +781,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 					case EXPRESSION_BITWISE_NOT:
 					case EXPRESSION_LOGICAL_NOT:
 						/* This code should never be ran. */
+						assert(cc_false);
 						break;
 
 					case EXPRESSION_SUBTRACT:
@@ -901,6 +902,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 					case EXPRESSION_LEFT_SHIFT:
 					case EXPRESSION_RIGHT_SHIFT:
 						/* This code should never be ran. */
+						assert(cc_false);
 						break;
 
 					case EXPRESSION_NEGATE:
