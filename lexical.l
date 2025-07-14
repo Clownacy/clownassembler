@@ -369,45 +369,30 @@ def             return TOKEN_DEF;
  /* String. */
 \"[^\"]*\" |
 \'[^\']*\' {
-	const size_t length = yyleng - 2;
-
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
-	yylval->string = (char*)malloc(length + 1);
-
-	if (yylval->string == NULL)
+	if (!String_Create(&yylval->string, yytext + 1, yyleng - 2))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
 		return M68KASM_error;
 	}
-	else
-	{
-		memcpy(yylval->string, yytext + 1, length);
-		yylval->string[length] = '\0';
-		return TOKEN_STRING;
-	}
+
+	return TOKEN_STRING;
 }
 
  /* File path (like a string, but it doesn't need to be wrapped in quotation marks). */
 <PATH>[^, \t;]([^,;]*[^, \t;])? {
-	const size_t length = yyleng;
-
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
-	yylval->string = (char*)malloc(length + 1);
-
-	if (yylval->string == NULL)
+	if (!String_Create(&yylval->string, yytext, yyleng))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
 		return M68KASM_error;
 	}
-	else
-	{
-		memcpy(yylval->string, yytext, length + 1);
-		return TOKEN_STRING;
-	}
+
+	return TOKEN_STRING;
 }
 
  /* Identifier, data register, or address register. */
@@ -421,35 +406,25 @@ def             return TOKEN_DEF;
 	else
 	{
 		/* Identifier. */
-		const size_t length = yyleng;
-		yylval->string = (char*)malloc(length + 1);
-		if (yylval->string == NULL)
+		if (!String_Create(&yylval->string, yytext, yyleng))
 		{
 			m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
 			return M68KASM_error;
 		}
-		else
-		{
-			memcpy(yylval->string, yytext, length + 1);
-			return TOKEN_IDENTIFIER;
-		}
+
+		return TOKEN_IDENTIFIER;
 	}
 }
 
  /* Local label. */
 [@\.][A-Za-z_0-9\?]+ {
-	const size_t length = yyleng;
-	yylval->string = (char*)malloc(length + 1);
-	if (yylval->string == NULL)
+	if (!String_Create(&yylval->string, yytext, yyleng))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
 		return M68KASM_error;
 	}
-	else
-	{
-		memcpy(yylval->string, yytext, length + 1);
-		return TOKEN_LOCAL_IDENTIFIER;
-	}
+
+	return TOKEN_LOCAL_IDENTIFIER;
 }
 
  /* Make Bison signal a syntax error for unrecognised symbols */

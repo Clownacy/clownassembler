@@ -12,6 +12,8 @@ add_library(clownassembler_core STATIC
 	"semantic.h"
 	"strcmpci.c"
 	"strcmpci.h"
+	"string.c"
+	"string.h"
 	"syntactic.c"
 	"syntactic.h"
 )

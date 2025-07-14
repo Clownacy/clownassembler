@@ -30,6 +30,7 @@
 %code requires {
 
 #include "clowncommon/clowncommon.h"
+#include "string.h"
 
 /* A hack for older versions of Bison. */
 /* Should probably be removed when they go out of circulation. */
@@ -233,7 +234,7 @@ typedef struct Expression
 	union
 	{
 		unsigned long unsigned_long;
-		char *string;
+		String string;
 		struct Expression *subexpressions;
 	} shared;
 } Expression;
@@ -251,7 +252,7 @@ typedef struct IdentifierListNode
 {
 	struct IdentifierListNode *next;
 
-	char *identifier;
+	String identifier;
 } IdentifierListNode;
 
 CREATE_LIST_TYPE(IdentifierList);
@@ -316,12 +317,12 @@ typedef struct StatementDcb
 
 typedef struct StatementInclude
 {
-	char *path;
+	String path;
 } StatementInclude;
 
 typedef struct StatementIncbin
 {
-	char *path;
+	String path;
 	Expression start;
 	cc_bool has_length;
 	Expression length;
@@ -341,7 +342,7 @@ typedef struct StatementMacro
 typedef struct StatementInform
 {
 	Expression severity;
-	char *message;
+	String message;
 } StatementInform;
 
 typedef enum StatementType
@@ -368,6 +369,7 @@ typedef enum StatementType
 	STATEMENT_TYPE_EVEN,
 	STATEMENT_TYPE_CNOP,
 	STATEMENT_TYPE_INFORM,
+	STATEMENT_TYPE_FAIL,
 	STATEMENT_TYPE_END,
 	STATEMENT_TYPE_RS,
 	STATEMENT_TYPE_RSSET,
@@ -434,7 +436,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 
 %union {
 	unsigned long unsigned_long;
-	char *string;
+	String string;
 	Opcode opcode;
 	Size size;
 	Operand operand;
@@ -628,7 +630,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %type<identifier_list> identifier_list
 %type<expression> expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 string
 
-%destructor { free($$); } TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER TOKEN_STRING
+%destructor { String_Destroy(&$$); } TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER TOKEN_STRING
 %destructor { DestroyOperand(&$$); } operand
 %destructor { DestroyExpressionList(&$$); } expression_list
 %destructor { DestroyIdentifierList(&$$); } identifier_list
@@ -812,8 +814,7 @@ statement
 	}
 	| TOKEN_DIRECTIVE_FAIL
 	{
-		statement->type = STATEMENT_TYPE_INFORM;
-		statement->shared.inform.message = NULL;
+		statement->type = STATEMENT_TYPE_FAIL;
 	}
 	| TOKEN_DIRECTIVE_END
 	{
@@ -909,7 +910,7 @@ identifier_list
 
 		if (node == NULL)
 		{
-			free($1);
+			String_Destroy(&$1);
 			YYNOMEM;
 		}
 		else
@@ -929,7 +930,7 @@ identifier_list
 		if (node == NULL)
 		{
 			DestroyIdentifierList(&$1);
-			free(&$3);
+			String_Destroy(&$3);
 			YYNOMEM;
 		}
 		else
@@ -1953,25 +1954,13 @@ expression8
 	}
 	| TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER
 	{
-		const size_t identifier_length = strlen($1);
-		const size_t local_identifier_length = strlen($2);
+		const cc_bool success = String_Append(&$$.shared.string, &$1, &$2);
+		String_Destroy(&$1);
+		String_Destroy(&$2);
+		$$.type = EXPRESSION_IDENTIFIER;
 
-		$$.shared.string = (char*)malloc(identifier_length + 1 + local_identifier_length + 1);
-
-		if ($$.shared.string == NULL)
-		{
-			free($1);
-			free($2);
+		if (!success)
 			YYNOMEM;
-		}
-		else
-		{
-			$$.type = EXPRESSION_IDENTIFIER;
-			memcpy(&$$.shared.string[0], $1, identifier_length);
-			free($1);
-			memcpy(&$$.shared.string[identifier_length], $2, local_identifier_length + 1);
-			free($2);
-		}
 	}
 	| string
 	{
@@ -2082,7 +2071,7 @@ void DestroyExpression(Expression *expression)
 		case EXPRESSION_STRING:
 		case EXPRESSION_STRLEN:
 		case EXPRESSION_DEF:
-			free(expression->shared.string);
+			String_Destroy(&expression->shared.string);
 			break;
 
 		case EXPRESSION_NUMBER:
@@ -2100,7 +2089,7 @@ static void DestroyIdentifierList(IdentifierList *list)
 	{
 		IdentifierListNode* const next_node = node->next;
 
-		free(node->identifier);
+		String_Destroy(&node->identifier);
 
 		free(node);
 
@@ -2172,6 +2161,7 @@ void DestroyStatement(Statement *statement)
 		case STATEMENT_TYPE_ENDW:
 		case STATEMENT_TYPE_EVEN:
 		case STATEMENT_TYPE_END:
+		case STATEMENT_TYPE_FAIL:
 		case STATEMENT_TYPE_RSRESET:
 		case STATEMENT_TYPE_OBJEND:
 			break;
@@ -2190,11 +2180,11 @@ void DestroyStatement(Statement *statement)
 			break;
 
 		case STATEMENT_TYPE_INCLUDE:
-			free(statement->shared.include.path);
+			String_Destroy(&statement->shared.include.path);
 			break;
 
 		case STATEMENT_TYPE_INCBIN:
-			free(statement->shared.incbin.path);
+			String_Destroy(&statement->shared.incbin.path);
 			DestroyExpression(&statement->shared.incbin.start);
 
 			if (statement->shared.incbin.has_length)
@@ -2228,7 +2218,7 @@ void DestroyStatement(Statement *statement)
 			break;
 
 		case STATEMENT_TYPE_INFORM:
-			free(statement->shared.inform.message);
+			String_Destroy(&statement->shared.inform.message);
 			break;
 
 		case STATEMENT_TYPE_RS:

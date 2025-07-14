@@ -57,6 +57,7 @@ extern int m68kasm_debug;
 
 
 #include "clowncommon/clowncommon.h"
+#include "string.h"
 
 /* A hack for older versions of Bison. */
 /* Should probably be removed when they go out of circulation. */
@@ -260,7 +261,7 @@ typedef struct Expression
 	union
 	{
 		unsigned long unsigned_long;
-		char *string;
+		String string;
 		struct Expression *subexpressions;
 	} shared;
 } Expression;
@@ -278,7 +279,7 @@ typedef struct IdentifierListNode
 {
 	struct IdentifierListNode *next;
 
-	char *identifier;
+	String identifier;
 } IdentifierListNode;
 
 CREATE_LIST_TYPE(IdentifierList);
@@ -343,12 +344,12 @@ typedef struct StatementDcb
 
 typedef struct StatementInclude
 {
-	char *path;
+	String path;
 } StatementInclude;
 
 typedef struct StatementIncbin
 {
-	char *path;
+	String path;
 	Expression start;
 	cc_bool has_length;
 	Expression length;
@@ -368,7 +369,7 @@ typedef struct StatementMacro
 typedef struct StatementInform
 {
 	Expression severity;
-	char *message;
+	String message;
 } StatementInform;
 
 typedef enum StatementType
@@ -395,6 +396,7 @@ typedef enum StatementType
 	STATEMENT_TYPE_EVEN,
 	STATEMENT_TYPE_CNOP,
 	STATEMENT_TYPE_INFORM,
+	STATEMENT_TYPE_FAIL,
 	STATEMENT_TYPE_END,
 	STATEMENT_TYPE_RS,
 	STATEMENT_TYPE_RSSET,
@@ -432,7 +434,7 @@ typedef struct Statement
 } Statement;
 
 
-#line 436 "syntactic.h"
+#line 438 "syntactic.h"
 
 /* Token kinds.  */
 #ifndef M68KASM_TOKENTYPE
@@ -621,10 +623,10 @@ typedef struct Statement
 #if ! defined M68KASM_STYPE && ! defined M68KASM_STYPE_IS_DECLARED
 union M68KASM_STYPE
 {
-#line 435 "syntactic.y"
+#line 437 "syntactic.y"
 
 	unsigned long unsigned_long;
-	char *string;
+	String string;
 	Opcode opcode;
 	Size size;
 	Operand operand;
@@ -634,7 +636,7 @@ union M68KASM_STYPE
 	IdentifierList identifier_list;
 	Expression expression;
 
-#line 638 "syntactic.h"
+#line 640 "syntactic.h"
 
 };
 typedef union M68KASM_STYPE M68KASM_STYPE;
@@ -648,13 +650,13 @@ typedef union M68KASM_STYPE M68KASM_STYPE;
 int m68kasm_parse (void *scanner, Statement *statement);
 
 /* "%code provides" blocks.  */
-#line 409 "syntactic.y"
+#line 411 "syntactic.y"
 
 
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
 
 
-#line 659 "syntactic.h"
+#line 661 "syntactic.h"
 
 #endif /* !YY_M68KASM_SYNTACTIC_H_INCLUDED  */

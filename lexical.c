@@ -2565,55 +2565,40 @@ case 197:
 YY_RULE_SETUP
 #line 372 "lexical.l"
 {
-	const size_t length = yyleng - 2;
-
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
-	yylval->string = (char*)malloc(length + 1);
-
-	if (yylval->string == NULL)
+	if (!String_Create(&yylval->string, yytext + 1, yyleng - 2))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
 		return M68KASM_error;
 	}
-	else
-	{
-		memcpy(yylval->string, yytext + 1, length);
-		yylval->string[length] = '\0';
-		return TOKEN_STRING;
-	}
+
+	return TOKEN_STRING;
 }
 	YY_BREAK
 /* File path (like a string, but it doesn't need to be wrapped in quotation marks). */
 case 198:
 /* rule 198 can match eol */
 YY_RULE_SETUP
-#line 394 "lexical.l"
+#line 386 "lexical.l"
 {
-	const size_t length = yyleng;
-
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
-	yylval->string = (char*)malloc(length + 1);
-
-	if (yylval->string == NULL)
+	if (!String_Create(&yylval->string, yytext, yyleng))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
 		return M68KASM_error;
 	}
-	else
-	{
-		memcpy(yylval->string, yytext, length + 1);
-		return TOKEN_STRING;
-	}
+
+	return TOKEN_STRING;
 }
 	YY_BREAK
 /* Identifier, data register, or address register. */
 case 199:
 YY_RULE_SETUP
-#line 415 "lexical.l"
+#line 400 "lexical.l"
 {
 	if (yytext[2] == '\0' && (yytext[0] == 'd' || yytext[0] == 'D' || yytext[0] == 'a' || yytext[0] == 'A') && yytext[1] >= '0' && yytext[1] <= '7')
 	{
@@ -2624,52 +2609,42 @@ YY_RULE_SETUP
 	else
 	{
 		/* Identifier. */
-		const size_t length = yyleng;
-		yylval->string = (char*)malloc(length + 1);
-		if (yylval->string == NULL)
+		if (!String_Create(&yylval->string, yytext, yyleng))
 		{
 			m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
 			return M68KASM_error;
 		}
-		else
-		{
-			memcpy(yylval->string, yytext, length + 1);
-			return TOKEN_IDENTIFIER;
-		}
+
+		return TOKEN_IDENTIFIER;
 	}
 }
 	YY_BREAK
 /* Local label. */
 case 200:
 YY_RULE_SETUP
-#line 441 "lexical.l"
+#line 421 "lexical.l"
 {
-	const size_t length = yyleng;
-	yylval->string = (char*)malloc(length + 1);
-	if (yylval->string == NULL)
+	if (!String_Create(&yylval->string, yytext, yyleng))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
 		return M68KASM_error;
 	}
-	else
-	{
-		memcpy(yylval->string, yytext, length + 1);
-		return TOKEN_LOCAL_IDENTIFIER;
-	}
+
+	return TOKEN_LOCAL_IDENTIFIER;
 }
 	YY_BREAK
 /* Make Bison signal a syntax error for unrecognised symbols */
 case 201:
 YY_RULE_SETUP
-#line 457 "lexical.l"
+#line 432 "lexical.l"
 return yytext[0];
 	YY_BREAK
 case 202:
 YY_RULE_SETUP
-#line 459 "lexical.l"
+#line 434 "lexical.l"
 ECHO;
 	YY_BREAK
-#line 2672 "lexical.c"
+#line 2647 "lexical.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -3811,6 +3786,6 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 459 "lexical.l"
+#line 434 "lexical.l"
 
 

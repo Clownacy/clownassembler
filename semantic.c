@@ -465,11 +465,11 @@ static char* ComputeUniqueMacroSuffix(SemanticState *state, Macro* const macro)
 	return suffix;
 }
 
-static FILE* fopen_backslash(SemanticState *state, const char *path, const char *mode)
+static FILE* fopen_backslash(SemanticState *state, const String *path, const char *mode)
 {
 	FILE *file;
 
-	char* const path_copy = DuplicateString(state, path);
+	char* const path_copy = DuplicateStringWithLength(state, String_Buffer(path), String_Length(path));
 
 	if (path_copy == NULL)
 	{
@@ -498,7 +498,7 @@ static cc_bool IsMacroBlockingCharacter(const char character)
 	     || (character >= '0' && character <= '9'));
 }
 
-static cc_bool FindMacroParameter(const char* const remaining_line, const char* const identifier, const char** const other_parameter_position_out, const char** const other_parameter_end_out)
+static cc_bool FindMacroParameter(const char* const remaining_line, const char* const identifier, const size_t identifier_length, const char** const other_parameter_position_out, const char** const other_parameter_end_out)
 {
 	const char *other_parameter_position;
 	const char *other_parameter_end = remaining_line;
@@ -511,7 +511,7 @@ static cc_bool FindMacroParameter(const char* const remaining_line, const char* 
 		if (other_parameter_position == NULL)
 			break;
 
-		other_parameter_end = other_parameter_position + strlen(identifier);
+		other_parameter_end = other_parameter_position + identifier_length;
 
 		/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
 		/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
@@ -928,14 +928,14 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			break;
 
 		case EXPRESSION_IDENTIFIER:
-			if (!GetSymbolInteger(state, expression->shared.string, strlen(expression->shared.string), cc_false, value))
+			if (!GetSymbolInteger(state, String_Buffer(&expression->shared.string), String_Length(&expression->shared.string), cc_false, value))
 				success = cc_false;
 
 			break;
 
 		case EXPRESSION_STRING:
 		{
-			const size_t length = strlen(expression->shared.string);
+			const size_t length = String_Length(&expression->shared.string);
 
 			if (length > 4)
 			{
@@ -944,14 +944,14 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			}
 			else
 			{
-				size_t i;
+				const char *character;
 
 				*value = 0;
 
-				for (i = 0; i < length; ++i)
+				for (character = String_Buffer(&expression->shared.string); *character != '\0'; ++character)
 				{
 					*value <<= 8;
-					*value |= expression->shared.string[i];
+					*value |= *character;
 				}
 			}
 
@@ -967,15 +967,15 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			break;
 
 		case EXPRESSION_STRLEN:
-			*value = strlen(expression->shared.string);
+			*value = String_Length(&expression->shared.string);
 			break;
 
 		case EXPRESSION_STRCMP:
-			*value = strcmp(expression->shared.subexpressions[0].shared.string, expression->shared.subexpressions[1].shared.string) == 0;
+			*value = strcmp(String_Buffer(&expression->shared.subexpressions[0].shared.string), String_Buffer(&expression->shared.subexpressions[1].shared.string)) == 0;
 			break;
 
 		case EXPRESSION_DEF:
-			*value = LookupSymbol(state, expression->shared.string, strlen(expression->shared.string)) != NULL;
+			*value = LookupSymbol(state, String_Buffer(&expression->shared.string), String_Length(&expression->shared.string)) != NULL;
 			break;
 	}
 
@@ -1014,7 +1014,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			case EXPRESSION_STRING:
 			case EXPRESSION_STRLEN:
 			case EXPRESSION_DEF:
-				free(expression->shared.string);
+				String_Destroy(&expression->shared.string);
 				break;
 
 			case EXPRESSION_NUMBER:
@@ -4104,7 +4104,7 @@ static void ProcessDc(SemanticState *state, StatementDc *dc)
 			/* This allows 'dc.b' to be used to embed strings into the output. */
 			const char *character;
 
-			for (character = expression_list_node->expression.shared.string; *character != '\0'; ++character)
+			for (character = String_Buffer(&expression_list_node->expression.shared.string); *character != '\0'; ++character)
 				OutputDcValue(state, dc->size, *character);
 		}
 		else
@@ -4145,11 +4145,11 @@ static void ProcessDcb(SemanticState *state, StatementDcb *dcb)
 
 static void ProcessInclude(SemanticState *state, const StatementInclude *include)
 {
-	FILE* const input_file = fopen_backslash(state, include->path, "r");
+	FILE* const input_file = fopen_backslash(state, &include->path, "r");
 
 	if (input_file == NULL)
 	{
-		SemanticError(state, "File '%s' could not be opened.", include->path);
+		SemanticError(state, "File '%s' could not be opened.", String_Buffer(&include->path));
 	}
 	else
 	{
@@ -4164,7 +4164,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 		/* Add file path and line number to the location list. */
 		Location location;
 
-		location.file_path = include->path;
+		location.file_path = String_Buffer(&include->path);
 		location.line_number = 0;
 
 		location.previous = state->location;
@@ -4184,11 +4184,11 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 
 static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 {
-	FILE* const input_file = fopen_backslash(state, incbin->path, "rb");
+	FILE* const input_file = fopen_backslash(state, &incbin->path, "rb");
 
 	if (input_file == NULL)
 	{
-		SemanticError(state, "File '%s' could not be opened.", incbin->path);
+		SemanticError(state, "File '%s' could not be opened.", String_Buffer(&incbin->path));
 	}
 	else
 	{
@@ -4474,6 +4474,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		case STATEMENT_TYPE_EVEN:
 		case STATEMENT_TYPE_CNOP:
 		case STATEMENT_TYPE_INFORM:
+		case STATEMENT_TYPE_FAIL:
 		case STATEMENT_TYPE_END:
 			if (label != NULL && !state->doing_fix_up)
 			{
@@ -4760,41 +4761,37 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const c
 		{
 			unsigned long severity;
 
-			if (statement->shared.inform.message == NULL)
+			/* Definitely an 'INFORM'... */
+			if (!ResolveExpression(state, &statement->shared.inform.severity, &severity, cc_true))
 			{
-				/* Actually a 'FAIL'. */
-				/* TODO: Halt assembly. */
-				SemanticError(state, "Assembly Failed");
+				SemanticError(state, "Severity must be evaluable on the first pass.");
+				severity = 0;
 			}
-			else
+
+			/* TODO - Everything... */
+			switch (severity)
 			{
-				/* Definitely an 'INFORM'... */
-				if (!ResolveExpression(state, &statement->shared.inform.severity, &severity, cc_true))
-				{
-					SemanticError(state, "Severity must be evaluable on the first pass.");
-					severity = 0;
-				}
+				case 0:
+					TextOutput_fprintf(state->error_callbacks, "INFORM: '%s'\n", String_Buffer(&statement->shared.inform.message));
+					break;
 
-				/* TODO - Everything... */
-				switch (severity)
-				{
-					case 0:
-						TextOutput_fprintf(state->error_callbacks, "INFORM: '%s'\n", statement->shared.inform.message);
-						break;
+				case 1:
+					SemanticWarning(state, "INFORM: '%s'", String_Buffer(&statement->shared.inform.message));
+					break;
 
-					case 1:
-						SemanticWarning(state, "INFORM: '%s'", statement->shared.inform.message);
-						break;
-
-					case 2:
-					case 3: /* TODO: Halt assembly. */
-						SemanticError(state, "INFORM: '%s'", statement->shared.inform.message);
-						break;
-				}
+				case 2:
+				case 3: /* TODO: Halt assembly. */
+					SemanticError(state, "INFORM: '%s'", String_Buffer(&statement->shared.inform.message));
+					break;
 			}
 
 			break;
 		}
+
+		case STATEMENT_TYPE_FAIL:
+			/* TODO: Halt assembly. */
+			SemanticError(state, "Assembly Failed");
+			break;
 
 		case STATEMENT_TYPE_END:
 			state->end = cc_true;
@@ -5385,7 +5382,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										/* Now find the identifier-based macro parameter placeholders. */
 										for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
 										{
-											if (FindMacroParameter(remaining_line, parameter_name->identifier, &found_parameter_start, &found_parameter_end))
+											if (FindMacroParameter(remaining_line, String_Buffer(&parameter_name->identifier), String_Length(&parameter_name->identifier), &found_parameter_start, &found_parameter_end))
 											{
 												if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
 												{
@@ -5397,7 +5394,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										}
 
 										/* Find the 'narg' placeholder, which represents how many parameters (arguments) have been passed to the macro. */
-										if (FindMacroParameter(remaining_line, "narg", &found_parameter_start, &found_parameter_end))
+										if (FindMacroParameter(remaining_line, "narg", sizeof("narg") - 1, &found_parameter_start, &found_parameter_end))
 										{
 											if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
 											{
