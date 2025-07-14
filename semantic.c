@@ -31,10 +31,6 @@
 #define YY_NO_UNISTD_H
 #include "lexical.h"
 
-static const StringView string_program_counter_statement = STRING_VIEW_INITIALISER(",PROGRAM_COUNTER_OF_STATEMENT");
-static const StringView string_program_counter_expression = STRING_VIEW_INITIALISER(",PROGRAM_COUNTER_OF_EXPRESSION");
-static const StringView string_rs = STRING_VIEW_INITIALISER("__rs");
-
 typedef ClownAssembler_TextInput TextInput;
 typedef ClownAssembler_BinaryOutput BinaryOutput;
 typedef ClownAssembler_TextOutput TextOutput;
@@ -167,6 +163,11 @@ static void AssembleLine(SemanticState *state, const char *source_line);
 #else
 #define ATTRIBUTE_PRINTF(a, b)
 #endif
+
+static const StringView string_program_counter_statement = STRING_VIEW_INITIALISER(",PROGRAM_COUNTER_OF_STATEMENT");
+static const StringView string_program_counter_expression = STRING_VIEW_INITIALISER(",PROGRAM_COUNTER_OF_EXPRESSION");
+static const StringView string_rs = STRING_VIEW_INITIALISER("__rs");
+static const String string_narg = STRING_INITIALISER("narg");
 
 /* IO Callbacks */
 
@@ -499,20 +500,20 @@ static cc_bool IsMacroBlockingCharacter(const char character)
 	     || (character >= '0' && character <= '9'));
 }
 
-static cc_bool FindMacroParameter(const char* const remaining_line, const char* const identifier, const size_t identifier_length, const char** const other_parameter_position_out, const char** const other_parameter_end_out)
+static cc_bool FindMacroParameter(const char* const remaining_line, const String* const identifier, const char** const other_parameter_position_out, const char** const other_parameter_end_out)
 {
 	const char *other_parameter_position;
 	const char *other_parameter_end = remaining_line;
 
 	for (;;)
 	{
-		other_parameter_position = strstr(other_parameter_end, identifier);
+		other_parameter_position = strstr(other_parameter_end, String_Data(identifier));
 
 		/* Obviously bail if the identifier wasn't found. */
 		if (other_parameter_position == NULL)
 			break;
 
-		other_parameter_end = other_parameter_position + identifier_length;
+		other_parameter_end = other_parameter_position + String_Length(identifier);
 
 		/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
 		/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
@@ -5174,7 +5175,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					}
 					else
 					{
-						StringView_Create(&parameters[0], "", 0);
+						StringView_CreateBlank(&parameters[0]);
 					}
 
 					/* Extract and store the macro parameters, if they exist. */
@@ -5284,7 +5285,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 										/* Silence bogus(?) 'variable may be used uninitialised' compiler warnings. */
 										/* TODO: Are these really bogus? */
-										StringView_Create(&substitute, "", 0);
+										StringView_CreateBlank(&substitute);
 										earliest_parameter_end = NULL;
 
 										/* Find numerical macro parameter placeholder. */
@@ -5353,7 +5354,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 													if (parameter_index < total_parameters)
 														substitute = parameters[parameter_index];
 													else
-														StringView_Create(&substitute, "", 0);
+														StringView_CreateBlank(&substitute);
 												}
 											}
 										}
@@ -5361,16 +5362,14 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										/* Now find the identifier-based macro parameter placeholders. */
 										for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
 										{
-											if (FindMacroParameter(remaining_line, String_Data(&parameter_name->identifier), String_Length(&parameter_name->identifier), &found_parameter_start, &found_parameter_end))
+											if (FindMacroParameter(remaining_line, &parameter_name->identifier, &found_parameter_start, &found_parameter_end))
 											{
 												if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
 												{
 													if (i < total_parameters)
-													{
 														substitute = parameters[i];
-													}
 													else
-														StringView_Create(&substitute, "", 0);
+														StringView_CreateBlank(&substitute);
 
 													earliest_parameter_start = found_parameter_start;
 													earliest_parameter_end = found_parameter_end;
@@ -5379,7 +5378,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										}
 
 										/* Find the 'narg' placeholder, which represents how many parameters (arguments) have been passed to the macro. */
-										if (FindMacroParameter(remaining_line, "narg", sizeof("narg") - 1, &found_parameter_start, &found_parameter_end))
+										if (FindMacroParameter(remaining_line, &string_narg, &found_parameter_start, &found_parameter_end))
 										{
 											if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
 											{

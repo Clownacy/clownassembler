@@ -19,11 +19,14 @@ typedef struct String
 #define STRING_VIEW_INITIALISER(STRING) {STRING, sizeof(STRING) - 1}
 
 void StringView_Create(StringView *view, const char *source_buffer, size_t source_length);
+#define StringView_CreateBlank(VIEW) StringView_Create(VIEW, "", 0)
 #define StringView_Data(VIEW) ((VIEW)->buffer)
 #define StringView_Length(VIEW) ((VIEW)->length)
 #define StringView_Empty(VIEW) (StringView_Length(VIEW) == 0)
 #define StringView_At(VIEW, INDEX) (StringView_Data(VIEW)[INDEX])
 cc_bool StringView_Compare(const StringView *view, const StringView *other_view);
+
+#define STRING_INITIALISER(STRING) {STRING_VIEW_INITIALISER(STRING)}
 
 void String_CreateBlank(String *string);
 cc_bool String_CreateInternal(String *string, const char *source_1_buffer, size_t source_1_length, const char *source_2_buffer, size_t source_2_length);
