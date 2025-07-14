@@ -5672,7 +5672,7 @@ cc_bool ClownAssembler_Assemble(
 	/* Set the location path (note that we're taking care to not do this
 	   before the state is fully initialised, as the error handler requires
 	   valid state). */
-	location.file_path = DuplicateString(&state, input_file_path);
+	location.file_path = (char*)input_file_path; /* TODO: Remove this hack. */
 
 	/* Create the symbol table dictionary. */
 	if (!Dictionary_Init(&state.dictionary, case_insensitive))
@@ -5827,7 +5827,6 @@ cc_bool ClownAssembler_Assemble(
 	}
 
 	String_Destroy(&state.last_global_label);
-	free(location.file_path);
 
 	return state.success;
 }
