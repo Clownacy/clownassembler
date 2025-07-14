@@ -2484,7 +2484,7 @@ case 189:
 YY_RULE_SETUP
 #line 315 "lexical.l"
 {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, strlen(yytext), 10))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng, 10))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -2495,7 +2495,7 @@ case 190:
 YY_RULE_SETUP
 #line 323 "lexical.l"
 {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, strlen(yytext + 1), 16))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, yyleng - 1, 16))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -2506,7 +2506,7 @@ case 191:
 YY_RULE_SETUP
 #line 331 "lexical.l"
 {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, strlen(yytext + 1), 2))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, yyleng - 1, 2))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -2517,7 +2517,7 @@ case 192:
 YY_RULE_SETUP
 #line 339 "lexical.l"
 {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, strlen(yytext) - 1, 16))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng - 1, 16))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -2528,7 +2528,7 @@ case 193:
 YY_RULE_SETUP
 #line 347 "lexical.l"
 {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, strlen(yytext) - 1, 2))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng - 1, 2))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -2539,7 +2539,7 @@ case 194:
 YY_RULE_SETUP
 #line 355 "lexical.l"
 {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, strlen(yytext + 2), 16))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, yyleng - 2, 16))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -2550,7 +2550,7 @@ case 195:
 YY_RULE_SETUP
 #line 363 "lexical.l"
 {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, strlen(yytext + 2), 2))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, yyleng - 2, 2))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -2565,7 +2565,7 @@ case 197:
 YY_RULE_SETUP
 #line 372 "lexical.l"
 {
-	const size_t length = strlen(yytext) - 2;
+	const size_t length = yyleng - 2;
 
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
@@ -2591,7 +2591,7 @@ case 198:
 YY_RULE_SETUP
 #line 394 "lexical.l"
 {
-	const size_t length = strlen(yytext);
+	const size_t length = yyleng;
 
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
@@ -2624,7 +2624,7 @@ YY_RULE_SETUP
 	else
 	{
 		/* Identifier. */
-		const size_t length = strlen(yytext);
+		const size_t length = yyleng;
 		yylval->string = (char*)malloc(length + 1);
 		if (yylval->string == NULL)
 		{
@@ -2644,7 +2644,7 @@ case 200:
 YY_RULE_SETUP
 #line 441 "lexical.l"
 {
-	const size_t length = strlen(yytext);
+	const size_t length = yyleng;
 	yylval->string = (char*)malloc(length + 1);
 	if (yylval->string == NULL)
 	{

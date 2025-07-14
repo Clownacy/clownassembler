@@ -312,7 +312,7 @@ def             return TOKEN_DEF;
 
  /* Decimal number. */
 {decimal} {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, strlen(yytext), 10))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng, 10))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -320,7 +320,7 @@ def             return TOKEN_DEF;
 
  /* Hexadecimal number (68k). */
 \${hexadecimal} {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, strlen(yytext + 1), 16))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, yyleng - 1, 16))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -328,7 +328,7 @@ def             return TOKEN_DEF;
 
  /* Binary number (68k). */
 \%{binary} {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, strlen(yytext + 1), 2))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, yyleng - 1, 2))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -336,7 +336,7 @@ def             return TOKEN_DEF;
 
  /* Hexadecimal number (Z80). */
 [0-9]{hexadecimal}?h {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, strlen(yytext) - 1, 16))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng - 1, 16))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -344,7 +344,7 @@ def             return TOKEN_DEF;
 
  /* Binary number (Z80). */
 {binary}b {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, strlen(yytext) - 1, 2))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng - 1, 2))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -352,7 +352,7 @@ def             return TOKEN_DEF;
 
  /* Hexadecimal number (C). */
 0x{hexadecimal} {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, strlen(yytext + 2), 16))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, yyleng - 2, 16))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -360,7 +360,7 @@ def             return TOKEN_DEF;
 
  /* Binary number (GNU C). */
 0b{binary} {
-	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, strlen(yytext + 2), 2))
+	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, yyleng - 2, 2))
 		return M68KASM_error;
 
 	return TOKEN_NUMBER;
@@ -369,7 +369,7 @@ def             return TOKEN_DEF;
  /* String. */
 \"[^\"]*\" |
 \'[^\']*\' {
-	const size_t length = strlen(yytext) - 2;
+	const size_t length = yyleng - 2;
 
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
@@ -391,7 +391,7 @@ def             return TOKEN_DEF;
 
  /* File path (like a string, but it doesn't need to be wrapped in quotation marks). */
 <PATH>[^, \t;]([^,;]*[^, \t;])? {
-	const size_t length = strlen(yytext);
+	const size_t length = yyleng;
 
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
@@ -421,7 +421,7 @@ def             return TOKEN_DEF;
 	else
 	{
 		/* Identifier. */
-		const size_t length = strlen(yytext);
+		const size_t length = yyleng;
 		yylval->string = (char*)malloc(length + 1);
 		if (yylval->string == NULL)
 		{
@@ -438,7 +438,7 @@ def             return TOKEN_DEF;
 
  /* Local label. */
 [@\.][A-Za-z_0-9\?]+ {
-	const size_t length = strlen(yytext);
+	const size_t length = yyleng;
 	yylval->string = (char*)malloc(length + 1);
 	if (yylval->string == NULL)
 	{
