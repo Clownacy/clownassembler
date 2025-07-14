@@ -22,6 +22,8 @@
 
 #include "clowncommon/clowncommon.h"
 
+#include "string.h"
+
 #define TOTAL_HASH_TABLE_ENTRIES 0x1000
 
 typedef struct Dictionary_Entry
@@ -65,9 +67,9 @@ typedef struct Dictionary_State
 cc_bool Dictionary_Init(Dictionary_State *state, cc_bool case_insensitive);
 void Dictionary_Deinit(Dictionary_State *state);
 
-cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const char *identifier, size_t identifier_length, Dictionary_Entry **entry_pointer);
-Dictionary_Entry* Dictionary_LookUp(Dictionary_State *state, const char *identifier, size_t identifier_length);
-cc_bool Dictionary_Remove(Dictionary_State *state, const char *identifier, size_t identifier_length);
+cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const StringView *identifier, Dictionary_Entry **entry_pointer);
+Dictionary_Entry* Dictionary_LookUp(Dictionary_State *state, const StringView *identifier);
+cc_bool Dictionary_Remove(Dictionary_State *state, const StringView *identifier);
 void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data), const void *user_data);
 
 #endif /* DICTIONARY_H */

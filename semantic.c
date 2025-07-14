@@ -590,7 +590,7 @@ static Dictionary_Entry* LookupSymbol(SemanticState *state, const StringView *id
 	if (!String_Empty(&expanded_identifier))
 		identifier = String_View(&expanded_identifier);
 
-	dictionary_entry = Dictionary_LookUp(&state->dictionary, StringView_Data(identifier), StringView_Length(identifier));
+	dictionary_entry = Dictionary_LookUp(&state->dictionary, identifier);
 
 	String_Destroy(&expanded_identifier);
 
@@ -608,7 +608,7 @@ static Dictionary_Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, c
 	if (!String_Empty(&expanded_identifier))
 		identifier = String_View(&expanded_identifier);
 
-	if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, StringView_Data(identifier), StringView_Length(identifier), &dictionary_entry))
+	if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
 	{
 		OutOfMemoryError(state);
 		dictionary_entry = NULL;
