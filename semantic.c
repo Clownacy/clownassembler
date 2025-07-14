@@ -130,7 +130,7 @@ typedef struct SemanticState
 		} rept;
 		struct
 		{
-			char *name;
+			String name;
 			unsigned long line_number;
 			IdentifierList parameter_names;
 			SourceLineList source_line_list;
@@ -149,7 +149,7 @@ typedef struct SemanticState
 typedef struct Macro
 {
 	cc_bool uses_label;
-	char *name;
+	String name;
 	IdentifierListNode *parameter_names;
 	SourceLineListNode *source_line_list_head;
 	unsigned int current_invocation;
@@ -1043,9 +1043,9 @@ static void TerminateMacro(SemanticState *state)
 	/* Exit macro mode. */
 	state->mode = MODE_NORMAL;
 
-	if (state->shared.macro.name != NULL)
+	if (!String_Empty(&state->shared.macro.name))
 	{
-		Dictionary_Entry* const symbol = CreateSymbol(state, state->shared.macro.name, strlen(state->shared.macro.name));
+		Dictionary_Entry* const symbol = CreateSymbol(state, String_Data(&state->shared.macro.name), String_Length(&state->shared.macro.name));
 
 		/* Add the macro to the symbol table. */
 		if (symbol != NULL)
@@ -1055,7 +1055,7 @@ static void TerminateMacro(SemanticState *state)
 			if (macro != NULL)
 			{
 				macro->uses_label = state->shared.macro.uses_label;
-				macro->name = state->shared.macro.name;
+				String_CreateMove(&macro->name, &state->shared.macro.name);
 				macro->parameter_names = state->shared.macro.parameter_names.head;
 				macro->source_line_list_head = state->shared.macro.source_line_list.head;
 				macro->current_invocation = 0;
@@ -4427,7 +4427,7 @@ static void ProcessMacro(SemanticState *state, StatementMacro *macro, const Stri
 	/* Enter MACRO mode. */
 	state->mode = MODE_MACRO;
 
-	state->shared.macro.name = DuplicateStringWithLength(state, String_Data(label), String_Length(label));
+	String_CreateCopy(&state->shared.macro.name, label);
 	state->shared.macro.line_number = state->location->line_number;
 	state->shared.macro.parameter_names = macro->parameter_names;
 	macro->parameter_names.head = NULL;
@@ -5280,7 +5280,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 							/* Push a new location (this macro).*/
 							Location location;
 
-							location.file_path = macro->name;
+							location.file_path = String_Data(&macro->name);
 							location.line_number = 0;
 
 							location.previous = state->location;
@@ -5683,7 +5683,7 @@ cc_bool ClownAssembler_Assemble(
 	state.listing_callbacks = listing_callbacks;
 	state.equ_set_descope_local_labels = equ_set_descope_local_labels;
 	state.warnings_enabled = warnings_enabled;
-	String_Create(&state.last_global_label, NULL, 0);
+	String_CreateBlank(&state.last_global_label);
 	state.location = &location;
 	state.mode = MODE_NORMAL;
 

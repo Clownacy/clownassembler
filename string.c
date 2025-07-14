@@ -6,6 +6,12 @@
 
 static const char string_dummy_buffer[] = "";
 
+void String_CreateBlank(String* const string)
+{
+	string->buffer = (char*)string_dummy_buffer;
+	string->length = 0;
+}
+
 cc_bool String_CreateInternal(String* const string, const char* const source_1_buffer, const size_t source_1_length, const char* const source_2_buffer, const size_t source_2_length)
 {
 	cc_bool success = cc_true;
@@ -34,10 +40,15 @@ cc_bool String_CreateInternal(String* const string, const char* const source_1_b
 		}
 	}
 
-	string->buffer = (char*)string_dummy_buffer;
-	string->length = 0;
+	String_CreateBlank(string);
 
 	return success;
+}
+
+void String_CreateMove(String* const string, String* const other_string)
+{
+	*string = *other_string;
+	String_CreateBlank(other_string);
 }
 
 void String_Destroy(String* const string)
@@ -49,8 +60,7 @@ void String_Destroy(String* const string)
 
 	free(string->buffer);
 
-	string->buffer = (char*)string_dummy_buffer;
-	string->length = 0;
+	String_CreateBlank(string);
 }
 
 cc_bool String_Compare(const String* const string, const String* const other_string)
