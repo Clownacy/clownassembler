@@ -47,7 +47,7 @@ typedef struct Location
 {
 	struct Location *previous;
 
-	char *file_path;
+	const char *file_path;
 	unsigned long line_number;
 } Location;
 
@@ -4140,7 +4140,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 		/* Add file path and line number to the location list. */
 		Location location;
 
-		location.file_path = (char*)String_Data(&include->path); /* TODO: Ugly hack. */
+		location.file_path = String_Data(&include->path);
 		location.line_number = 0;
 
 		location.previous = state->location;
@@ -5248,7 +5248,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 							/* Push a new location (this macro).*/
 							Location location;
 
-							location.file_path = (char*)String_Data(&macro->name); /* TODO: Ugly hack. */
+							location.file_path = String_Data(&macro->name);
 							location.line_number = 0;
 
 							location.previous = state->location;
@@ -5549,14 +5549,18 @@ static void AssembleFile(SemanticState *state)
 	}
 }
 
-static cc_bool DictionaryFilterDeleteVariables(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data)
+static cc_bool DictionaryFilterDeleteVariables(Dictionary_Entry *entry, const char *identifier_buffer, size_t identifier_length, void *user_data)
 {
+	StringView identifier;
+
 	(void)user_data;
 
+	StringView_Create(&identifier, identifier_buffer, identifier_length);
+
 	return (entry->type != SYMBOL_VARIABLE
-	    || (identifier_length == StringView_Length(&string_program_counter_statement) && memcmp(identifier, StringView_Data(&string_program_counter_statement), identifier_length) == 0)
-	    || (identifier_length == StringView_Length(&string_program_counter_expression) && memcmp(identifier, StringView_Data(&string_program_counter_expression), identifier_length) == 0)
-	    || (identifier_length == StringView_Length(&string_rs) && memcmp(identifier, StringView_Data(&string_rs), identifier_length) == 0));
+	    || StringView_Compare(&identifier, &string_program_counter_statement)
+	    || StringView_Compare(&identifier, &string_program_counter_expression)
+	    || StringView_Compare(&identifier, &string_rs));
 }
 
 static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data)
@@ -5672,7 +5676,7 @@ cc_bool ClownAssembler_Assemble(
 	/* Set the location path (note that we're taking care to not do this
 	   before the state is fully initialised, as the error handler requires
 	   valid state). */
-	location.file_path = (char*)input_file_path; /* TODO: Remove this hack. */
+	location.file_path = input_file_path;
 
 	/* Create the symbol table dictionary. */
 	if (!Dictionary_Init(&state.dictionary, case_insensitive))
@@ -5775,7 +5779,7 @@ cc_bool ClownAssembler_Assemble(
 							while (location != NULL)
 							{
 								Location *previous_location = location->previous;
-								free(location->file_path);
+								free((char*)location->file_path); /* Can anything be done to avoid this awkward hack? */
 								free(location);
 								location = previous_location;
 							}
