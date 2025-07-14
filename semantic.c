@@ -465,11 +465,11 @@ static char* ComputeUniqueMacroSuffix(SemanticState *state, Macro* const macro)
 	return suffix;
 }
 
-static FILE* fopen_backslash(SemanticState *state, const String *path, const char *mode)
+static FILE* fopen_backslash(SemanticState *state, const StringView *path, const char *mode)
 {
 	FILE *file;
 
-	char* const path_copy = DuplicateStringWithLength(state, String_Data(path), String_Length(path));
+	char* const path_copy = DuplicateStringWithLength(state, StringView_Data(path), StringView_Length(path));
 
 	if (path_copy == NULL)
 	{
@@ -1245,19 +1245,19 @@ static unsigned int ToAlternateEffectiveAddressBits(unsigned int bits)
 	return (m << 6) | (dn << 9);
 }
 
-static void SetLastGlobalLabel(SemanticState *state, const String *label)
+static void SetLastGlobalLabel(SemanticState *state, const StringView *label)
 {
-	const char first_character = String_At(label, 0);
+	const char first_character = StringView_At(label, 0);
 
 	if (first_character != '@' && first_character != '.')
 	{
 		/* This is a global label - cache it for later. */
 		String_Destroy(&state->last_global_label);
-		String_CreateCopy(&state->last_global_label, label);
+		String_CreateCopyView(&state->last_global_label, label);
 	}
 }
 
-static void AddIdentifierToSymbolTable(SemanticState *state, const String *label, unsigned long value, SymbolType type)
+static void AddIdentifierToSymbolTable(SemanticState *state, const StringView *label, unsigned long value, SymbolType type)
 {
 	Dictionary_Entry *symbol;
 
@@ -1268,7 +1268,7 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const String *label
 	{
 		case SYMBOL_VARIABLE:
 		case SYMBOL_CONSTANT:
-			symbol = LookupSymbolAndCreateIfNotExist(state, String_Data(label), String_Length(label));
+			symbol = LookupSymbolAndCreateIfNotExist(state, StringView_Data(label), StringView_Length(label));
 
 			if (symbol != NULL)
 			{
@@ -1281,7 +1281,7 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const String *label
 			break;
 
 		case SYMBOL_LABEL:
-			symbol = CreateSymbol(state, String_Data(label), String_Length(label));
+			symbol = CreateSymbol(state, StringView_Data(label), StringView_Length(label));
 			break;
 
 		case SYMBOL_MACRO:
@@ -4149,7 +4149,7 @@ static void ProcessDcb(SemanticState *state, StatementDcb *dcb)
 
 static void ProcessInclude(SemanticState *state, const StatementInclude *include)
 {
-	FILE* const input_file = fopen_backslash(state, &include->path, "r");
+	FILE* const input_file = fopen_backslash(state, String_View(&include->path), "r");
 
 	if (input_file == NULL)
 	{
@@ -4188,7 +4188,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 
 static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 {
-	FILE* const input_file = fopen_backslash(state, &incbin->path, "rb");
+	FILE* const input_file = fopen_backslash(state, String_View(&incbin->path), "rb");
 
 	if (input_file == NULL)
 	{
@@ -4422,12 +4422,12 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 	}
 }
 
-static void ProcessMacro(SemanticState *state, StatementMacro *macro, const String *label, cc_bool is_short)
+static void ProcessMacro(SemanticState *state, StatementMacro *macro, const StringView *label, cc_bool is_short)
 {
 	/* Enter MACRO mode. */
 	state->mode = MODE_MACRO;
 
-	String_CreateCopy(&state->shared.macro.name, label);
+	String_CreateCopyView(&state->shared.macro.name, label);
 	state->shared.macro.line_number = state->location->line_number;
 	state->shared.macro.parameter_names = macro->parameter_names;
 	macro->parameter_names.head = NULL;
@@ -4458,7 +4458,7 @@ static void ProcessIf(SemanticState *state, Expression *expression)
 	state->true_already_found = value != 0;
 }
 
-static void ProcessStatement(SemanticState *state, Statement *statement, const String *label)
+static void ProcessStatement(SemanticState *state, Statement *statement, const StringView *label)
 {
 	/* Update both copies of the program counter. */
 	LookupSymbol(state, PROGRAM_COUNTER_OF_STATEMENT, sizeof(PROGRAM_COUNTER_OF_STATEMENT) - 1)->shared.unsigned_long = state->program_counter;
@@ -4480,7 +4480,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_INFORM:
 		case STATEMENT_TYPE_FAIL:
 		case STATEMENT_TYPE_END:
-			if (!String_Empty(label) && !state->doing_fix_up)
+			if (!StringView_Empty(label) && !state->doing_fix_up)
 			{
 				/* Handle the label here, instead of passing it onto a later function. */
 				SetLastGlobalLabel(state, label);
@@ -4500,7 +4500,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_OBJ:
 		case STATEMENT_TYPE_OBJEND:
 		case STATEMENT_TYPE_ORG:
-			if (!String_Empty(label))
+			if (!StringView_Empty(label))
 				SemanticError(state, "There cannot be a label on this type of statement.");
 
 			break;
@@ -4509,7 +4509,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_MACROS:
 		case STATEMENT_TYPE_EQU:
 		case STATEMENT_TYPE_SET:
-			if (String_Empty(label))
+			if (StringView_Empty(label))
 			{
 				SemanticError(state, "This type of statement must have a label.");
 				/* Bail, to avoid null pointer dereferences. */
@@ -4814,7 +4814,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				Dictionary_Entry* const rs = LookupSymbol(state, "__rs", sizeof("__rs") - 1);
 
 				/* Add label to symbol table. */
-				if (!String_Empty(label))
+				if (!StringView_Empty(label))
 					AddIdentifierToSymbolTable(state, label, rs->shared.unsigned_long, SYMBOL_CONSTANT);
 
 				/* Advance '__rs' by the specified amount. */
@@ -4928,7 +4928,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 	}
 }
 
-static void ParseLine(SemanticState *state, const char *source_line, const String *label, const char *directive_and_operands)
+static void ParseLine(SemanticState *state, const char *source_line, const StringView *label, const char *directive_and_operands)
 {
 	/* This is a normal assembly line. */
 	YY_BUFFER_STATE buffer;
@@ -4989,7 +4989,7 @@ static void ParseLine(SemanticState *state, const char *source_line, const Strin
 					fix_up->output_position = starting_output_position;
 					String_CreateCopy(&fix_up->last_global_label, &state->last_global_label);
 					fix_up->source_line = DuplicateString(state, source_line);
-					String_CreateCopy(&fix_up->label, label);
+					String_CreateCopyView(&fix_up->label, label);
 
 					/* Clone the location. */
 					*destination_location = *source_location;
@@ -5034,7 +5034,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 {
 	size_t label_length;
 	const char *source_line_pointer;
-	String label;
+	StringView label;
 	size_t directive_length;
 
 	++state->location->line_number;
@@ -5093,8 +5093,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 	}
 
 	/* Duplicate the label (if any) for later. */
-	/* TODO: Create a view instead of a duplicate. */
-	String_Create(&label, source_line_pointer, label_length);
+	StringView_Create(&label, source_line_pointer, label_length);
 
 	if (label_length != 0)
 	{
@@ -5165,7 +5164,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 				else
 				{
 					/* This is a macro invocation. */
-					char **parameters;
+					StringView *parameters;
 					unsigned int total_parameters;
 					char *narg_string, *symbol_value_string;
 
@@ -5173,11 +5172,11 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					char* const unique_suffix = ComputeUniqueMacroSuffix(state, macro);
 
 					source_line_pointer += strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
-					parameters = (char**)MallocAndHandleError(state, sizeof(char*));
+					parameters = (StringView*)MallocAndHandleError(state, sizeof(StringView));
 					total_parameters = 1;
 					symbol_value_string = NULL;
 
-					if (!String_Empty(&label))
+					if (!StringView_Empty(&label))
 					{
 						SetLastGlobalLabel(state, &label);
 
@@ -5194,14 +5193,14 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 						++source_line_pointer;
 
 						size_length = strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
-						parameters[0] = DuplicateStringWithLength(state, source_line_pointer, size_length);
+						StringView_Create(&parameters[0], source_line_pointer, size_length);
 
 						/* Advance past the size specifier. */
 						source_line_pointer += size_length;
 					}
 					else
 					{
-						parameters[0] = NULL;
+						StringView_Create(&parameters[0], "", 0);
 					}
 
 					/* Extract and store the macro parameters, if they exist. */
@@ -5245,23 +5244,17 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 									if (parameter_string_length != 0)
 									{
-										char* const parameter_string = DuplicateStringWithLength(state, parameter_start, parameter_string_length);
+										StringView* const new_parameters = (StringView*)realloc(parameters, sizeof(StringView) * (total_parameters + 1));
 
-										if (parameter_string != NULL)
+										if (new_parameters == NULL)
 										{
-											char** const new_parameters = (char**)realloc(parameters, sizeof(char*) * (total_parameters + 1));
-
-											if (new_parameters == NULL)
-											{
-												free(parameter_string);
-												OutOfMemoryError(state);
-											}
-											else
-											{
-												parameters = new_parameters;
-												parameters[total_parameters] = parameter_string;
-												++total_parameters;
-											}
+											OutOfMemoryError(state);
+										}
+										else
+										{
+											parameters = new_parameters;
+											StringView_Create(&parameters[total_parameters], parameter_start, parameter_string_length);
+											++total_parameters;
 										}
 									}
 
@@ -5311,13 +5304,13 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										unsigned long i;
 										const char *found_parameter_start;
 										const char *found_parameter_end;
-										const char *substitute;
+										StringView substitute;
 
 										/* Search for the earliest macro parameter placeholder in the line, storing its location in 'earliest_parameter_start'. */
 
 										/* Silence bogus(?) 'variable may be used uninitialised' compiler warnings. */
 										/* TODO: Are these really bogus? */
-										substitute = NULL;
+										StringView_Create(&substitute, "", 0);
 										earliest_parameter_end = NULL;
 
 										/* Find numerical macro parameter placeholder. */
@@ -5329,15 +5322,17 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 											if (earliest_parameter_start[1] == '*')
 											{
-												substitute = String_Data(&label);
+												substitute = label;
 											}
 											else if (earliest_parameter_start[1] == '@')
 											{
-												substitute = unique_suffix;
+												/* TODO: Remove this 'strlen' junk! */
+												StringView_Create(&substitute, unique_suffix, strlen(unique_suffix));
 											}
 											else if (earliest_parameter_start[1] == '_')
 											{
-												substitute = parameter_string;
+												/* TODO: Remove this 'strlen' junk! */
+												StringView_Create(&substitute, parameter_string, strlen(parameter_string));
 											}
 											else if (earliest_parameter_start[1] == '#' || earliest_parameter_start[1] == '$')
 											{
@@ -5361,7 +5356,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 												else /*if (earliest_parameter_start[1] == '$')*/
 													symbol_value_string = HexadecimalIntegerToString(state, value);
 
-												substitute = symbol_value_string;
+												/* TODO: No more 'strlen' junk! */
+												StringView_Create(&substitute, symbol_value_string, strlen(symbol_value_string));
 											}
 											else
 											{
@@ -5373,9 +5369,16 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 												/* Check if conversion failed. */
 												if (end == earliest_parameter_start + 1)
+												{
 													earliest_parameter_start = NULL;
+												}
 												else
-													substitute = (parameter_index < total_parameters && parameters[parameter_index] != NULL) ? parameters[parameter_index] : "";
+												{
+													if (parameter_index < total_parameters)
+														substitute = parameters[parameter_index];
+													else
+														StringView_Create(&substitute, "", 0);
+												}
 											}
 										}
 
@@ -5386,7 +5389,13 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 											{
 												if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
 												{
-													substitute = (i < total_parameters && parameters[i] != NULL) ? parameters[i] : "";
+													if (i < total_parameters)
+													{
+														substitute = parameters[i];
+													}
+													else
+														StringView_Create(&substitute, "", 0);
+
 													earliest_parameter_start = found_parameter_start;
 													earliest_parameter_end = found_parameter_end;
 												}
@@ -5398,7 +5407,9 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										{
 											if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
 											{
-												substitute = narg_string;
+												/* TODO: Eliminate this 'strlen' junk! */
+												StringView_Create(&substitute, narg_string, strlen(narg_string));
+
 												earliest_parameter_start = found_parameter_start;
 												earliest_parameter_end = found_parameter_end;
 											}
@@ -5412,9 +5423,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										{
 											char *new_modified_line;
 
-											const char* const parameter = substitute == NULL ? "" : substitute;
 											const size_t first_half_length = earliest_parameter_start - modified_line;
-											const size_t parameter_length = strlen(parameter);
+											const size_t parameter_length = StringView_Length(&substitute);
 											const size_t second_half_length = strlen(earliest_parameter_end);
 
 											new_modified_line = (char*)MallocAndHandleError(state, first_half_length + parameter_length + second_half_length + 1);
@@ -5422,7 +5432,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 											if (new_modified_line != NULL)
 											{
 												memcpy(new_modified_line, modified_line, first_half_length);
-												memcpy(new_modified_line + first_half_length, parameter, parameter_length);
+												memcpy(new_modified_line + first_half_length, StringView_Data(&substitute), parameter_length);
 												memcpy(new_modified_line + first_half_length + parameter_length, earliest_parameter_end, second_half_length);
 												new_modified_line[first_half_length + parameter_length + second_half_length] = '\0';
 
@@ -5452,14 +5462,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 						}
 
 						/* Free the parameter strings. */
-						{
-							size_t i;
-
-							for (i = 0; i < total_parameters; ++i)
-								free(parameters[i]);
-
-							free(parameters);
-						}
+						free(parameters);
 
 						/* Free other stuff. */
 						free(narg_string);
@@ -5503,7 +5506,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					/* Short macros automatically terminate after one statement. */
 					const char first_nonwhitespace_character = source_line[strspn(source_line, " \t")];
 
-					if (!String_Empty(&label))
+					if (!StringView_Empty(&label))
 						SemanticError(state, "Short macros shouldn't create labels.");
 
 					if (first_nonwhitespace_character == '\0' || first_nonwhitespace_character == ';')
@@ -5534,8 +5537,6 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 			break;
 	}
-
-	String_Destroy(&label);
 }
 
 static void AssembleFile(SemanticState *state)
@@ -5771,7 +5772,7 @@ cc_bool ClownAssembler_Assemble(
 						state.fix_up_needed = cc_false;
 
 						/* Re-process statement. */
-						ProcessStatement(&state, &fix_up->statement, &fix_up->label);
+						ProcessStatement(&state, &fix_up->statement, String_View(&fix_up->label));
 
 						/* If this fix-up has been fixed, then we are done with it and free to delete it.
 						   Alternatively, if this is the final pass, then just delete the fix-ups anyway
