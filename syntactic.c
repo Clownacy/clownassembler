@@ -4157,7 +4157,7 @@ yyreduce:
   case 234: /* expression8: TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER  */
 #line 1956 "syntactic.y"
         {
-		const cc_bool success = String_Append(&(yyval.expression).shared.string, &(yyvsp[-1].string), &(yyvsp[0].string));
+		const cc_bool success = String_CreateAppend(&(yyval.expression).shared.string, &(yyvsp[-1].string), &(yyvsp[0].string));
 		String_Destroy(&(yyvsp[-1].string));
 		String_Destroy(&(yyvsp[0].string));
 		(yyval.expression).type = EXPRESSION_IDENTIFIER;

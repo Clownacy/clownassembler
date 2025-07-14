@@ -1954,7 +1954,7 @@ expression8
 	}
 	| TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER
 	{
-		const cc_bool success = String_Append(&$$.shared.string, &$1, &$2);
+		const cc_bool success = String_CreateAppend(&$$.shared.string, &$1, &$2);
 		String_Destroy(&$1);
 		String_Destroy(&$2);
 		$$.type = EXPRESSION_IDENTIFIER;

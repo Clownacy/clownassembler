@@ -55,5 +55,5 @@ void String_Destroy(String* const string)
 
 cc_bool String_Compare(const String* const string, const String* const other_string)
 {
-	return String_Length(string) == String_Length(other_string) && memcmp(String_Buffer(string), String_Buffer(other_string), String_Length(string)) == 0;
+	return String_Length(string) == String_Length(other_string) && memcmp(String_Data(string), String_Data(other_string), String_Length(string)) == 0;
 }

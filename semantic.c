@@ -469,7 +469,7 @@ static FILE* fopen_backslash(SemanticState *state, const String *path, const cha
 {
 	FILE *file;
 
-	char* const path_copy = DuplicateStringWithLength(state, String_Buffer(path), String_Length(path));
+	char* const path_copy = DuplicateStringWithLength(state, String_Data(path), String_Length(path));
 
 	if (path_copy == NULL)
 	{
@@ -575,7 +575,7 @@ static char* ExpandIdentifier(SemanticState *state, const char* const identifier
 	{
 		if (String_Empty(&state->last_global_label))
 		{
-			/* TODO: Use `String_Copy`. */
+			/* TODO: Use `String_CreateCopy`. */
 			expanded_identifier = DuplicateStringWithLength(state, identifier + 1, identifier_length - 1);
 
 			if (expanded_identifier_length != NULL)
@@ -583,14 +583,14 @@ static char* ExpandIdentifier(SemanticState *state, const char* const identifier
 		}
 		else
 		{
-			/* TODO: Use `String_Append`. */
+			/* TODO: Use `String_CreateAppend`. */
 			const size_t prefix_length = String_Length(&state->last_global_label);
 			const size_t suffix_length = identifier_length;
 			expanded_identifier = (char*)MallocAndHandleError(state, prefix_length + suffix_length + 1);
 
 			if (expanded_identifier != NULL)
 			{
-				memcpy(&expanded_identifier[0], String_Buffer(&state->last_global_label), prefix_length);
+				memcpy(&expanded_identifier[0], String_Data(&state->last_global_label), prefix_length);
 				memcpy(&expanded_identifier[prefix_length], identifier, suffix_length);
 				expanded_identifier[prefix_length + suffix_length] = '\0';
 
@@ -930,7 +930,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			break;
 
 		case EXPRESSION_IDENTIFIER:
-			if (!GetSymbolInteger(state, String_Buffer(&expression->shared.string), String_Length(&expression->shared.string), cc_false, value))
+			if (!GetSymbolInteger(state, String_Data(&expression->shared.string), String_Length(&expression->shared.string), cc_false, value))
 				success = cc_false;
 
 			break;
@@ -950,7 +950,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 
 				*value = 0;
 
-				for (character = String_Buffer(&expression->shared.string); *character != '\0'; ++character)
+				for (character = String_Data(&expression->shared.string); *character != '\0'; ++character)
 				{
 					*value <<= 8;
 					*value |= *character;
@@ -977,7 +977,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			break;
 
 		case EXPRESSION_DEF:
-			*value = LookupSymbol(state, String_Buffer(&expression->shared.string), String_Length(&expression->shared.string)) != NULL;
+			*value = LookupSymbol(state, String_Data(&expression->shared.string), String_Length(&expression->shared.string)) != NULL;
 			break;
 	}
 
@@ -1253,7 +1253,7 @@ static void SetLastGlobalLabel(SemanticState *state, const String *label)
 	{
 		/* This is a global label - cache it for later. */
 		String_Destroy(&state->last_global_label);
-		String_Copy(&state->last_global_label, label);
+		String_CreateCopy(&state->last_global_label, label);
 	}
 }
 
@@ -1268,7 +1268,7 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const String *label
 	{
 		case SYMBOL_VARIABLE:
 		case SYMBOL_CONSTANT:
-			symbol = LookupSymbolAndCreateIfNotExist(state, String_Buffer(label), String_Length(label));
+			symbol = LookupSymbolAndCreateIfNotExist(state, String_Data(label), String_Length(label));
 
 			if (symbol != NULL)
 			{
@@ -1281,7 +1281,7 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const String *label
 			break;
 
 		case SYMBOL_LABEL:
-			symbol = CreateSymbol(state, String_Buffer(label), String_Length(label));
+			symbol = CreateSymbol(state, String_Data(label), String_Length(label));
 			break;
 
 		case SYMBOL_MACRO:
@@ -4108,7 +4108,7 @@ static void ProcessDc(SemanticState *state, StatementDc *dc)
 			/* This allows 'dc.b' to be used to embed strings into the output. */
 			const char *character;
 
-			for (character = String_Buffer(&expression_list_node->expression.shared.string); *character != '\0'; ++character)
+			for (character = String_Data(&expression_list_node->expression.shared.string); *character != '\0'; ++character)
 				OutputDcValue(state, dc->size, *character);
 		}
 		else
@@ -4153,7 +4153,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 
 	if (input_file == NULL)
 	{
-		SemanticError(state, "File '%s' could not be opened.", String_Buffer(&include->path));
+		SemanticError(state, "File '%s' could not be opened.", String_Data(&include->path));
 	}
 	else
 	{
@@ -4168,7 +4168,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 		/* Add file path and line number to the location list. */
 		Location location;
 
-		location.file_path = String_Buffer(&include->path);
+		location.file_path = String_Data(&include->path);
 		location.line_number = 0;
 
 		location.previous = state->location;
@@ -4192,7 +4192,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 
 	if (input_file == NULL)
 	{
-		SemanticError(state, "File '%s' could not be opened.", String_Buffer(&incbin->path));
+		SemanticError(state, "File '%s' could not be opened.", String_Data(&incbin->path));
 	}
 	else
 	{
@@ -4427,7 +4427,7 @@ static void ProcessMacro(SemanticState *state, StatementMacro *macro, const Stri
 	/* Enter MACRO mode. */
 	state->mode = MODE_MACRO;
 
-	state->shared.macro.name = DuplicateStringWithLength(state, String_Buffer(label), String_Length(label));
+	state->shared.macro.name = DuplicateStringWithLength(state, String_Data(label), String_Length(label));
 	state->shared.macro.line_number = state->location->line_number;
 	state->shared.macro.parameter_names = macro->parameter_names;
 	macro->parameter_names.head = NULL;
@@ -4776,16 +4776,16 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			switch (severity)
 			{
 				case 0:
-					TextOutput_fprintf(state->error_callbacks, "INFORM: '%s'\n", String_Buffer(&statement->shared.inform.message));
+					TextOutput_fprintf(state->error_callbacks, "INFORM: '%s'\n", String_Data(&statement->shared.inform.message));
 					break;
 
 				case 1:
-					SemanticWarning(state, "INFORM: '%s'", String_Buffer(&statement->shared.inform.message));
+					SemanticWarning(state, "INFORM: '%s'", String_Data(&statement->shared.inform.message));
 					break;
 
 				case 2:
 				case 3: /* TODO: Halt assembly. */
-					SemanticError(state, "INFORM: '%s'", String_Buffer(&statement->shared.inform.message));
+					SemanticError(state, "INFORM: '%s'", String_Data(&statement->shared.inform.message));
 					break;
 			}
 
@@ -4987,9 +4987,9 @@ static void ParseLine(SemanticState *state, const char *source_line, const Strin
 					/* Backup some state. */
 					fix_up->program_counter = starting_program_counter;
 					fix_up->output_position = starting_output_position;
-					String_Copy(&fix_up->last_global_label, &state->last_global_label);
+					String_CreateCopy(&fix_up->last_global_label, &state->last_global_label);
 					fix_up->source_line = DuplicateString(state, source_line);
-					String_Copy(&fix_up->label, label);
+					String_CreateCopy(&fix_up->label, label);
 
 					/* Clone the location. */
 					*destination_location = *source_location;
@@ -5329,7 +5329,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 											if (earliest_parameter_start[1] == '*')
 											{
-												substitute = String_Buffer(&label);
+												substitute = String_Data(&label);
 											}
 											else if (earliest_parameter_start[1] == '@')
 											{
@@ -5382,7 +5382,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										/* Now find the identifier-based macro parameter placeholders. */
 										for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
 										{
-											if (FindMacroParameter(remaining_line, String_Buffer(&parameter_name->identifier), String_Length(&parameter_name->identifier), &found_parameter_start, &found_parameter_end))
+											if (FindMacroParameter(remaining_line, String_Data(&parameter_name->identifier), String_Length(&parameter_name->identifier), &found_parameter_start, &found_parameter_end))
 											{
 												if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
 												{
@@ -5764,7 +5764,7 @@ cc_bool ClownAssembler_Assemble(
 						state.program_counter = fix_up->program_counter;
 						BinaryOutput_fseek(&state, state.output_callbacks, fix_up->output_position);
 						String_Destroy(&state.last_global_label);
-						String_Copy(&state.last_global_label, &fix_up->last_global_label);
+						String_CreateCopy(&state.last_global_label, &fix_up->last_global_label);
 						state.source_line = fix_up->source_line;
 						state.location = &fix_up->location;
 
