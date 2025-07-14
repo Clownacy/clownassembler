@@ -16,6 +16,8 @@ typedef struct String
 	StringView view;
 } String;
 
+#define STRING_VIEW_INITIALISER(STRING) {STRING, sizeof(STRING) - 1}
+
 void StringView_Create(StringView *view, const char *source_buffer, size_t source_length);
 #define StringView_Data(VIEW) ((VIEW)->buffer)
 #define StringView_Length(VIEW) ((VIEW)->length)
