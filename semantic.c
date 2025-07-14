@@ -477,12 +477,11 @@ static FILE* fopen_backslash(SemanticState *state, const char *path, const char 
 	}
 	else
 	{
-		char *backslash;
+		char *path_copy_pointer;
 
-		backslash = path_copy;
-
-		while ((backslash = strchr(backslash, '\\')) != NULL)
-			*backslash++ = '/';
+		for (path_copy_pointer = path_copy; *path_copy_pointer != '\0'; ++path_copy_pointer)
+			if (*path_copy_pointer == '\\')
+				*path_copy_pointer = '/';
 
 		file = fopen(path_copy, mode);
 
