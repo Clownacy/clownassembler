@@ -971,7 +971,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			break;
 
 		case EXPRESSION_STRCMP:
-			*value = strcmp(String_Buffer(&expression->shared.subexpressions[0].shared.string), String_Buffer(&expression->shared.subexpressions[1].shared.string)) == 0;
+			*value = String_Compare(&expression->shared.subexpressions[0].shared.string, &expression->shared.subexpressions[1].shared.string);
 			break;
 
 		case EXPRESSION_DEF:

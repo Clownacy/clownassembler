@@ -17,6 +17,7 @@ cc_bool String_CreateInternal(String *string, const char *source_1_buffer, size_
 #define String_Append(OUTPUT, INPUT_1, INPUT_2) String_CreateInternal(OUTPUT, (INPUT_1)->buffer, (INPUT_1)->length, (INPUT_2)->buffer, (INPUT_2)->length)
 void String_Destroy(String *string);
 
+cc_bool String_Compare(const String *string, const String *other_string);
 #define String_Buffer(STRING) (STRING)->buffer
 #define String_Length(STRING) (STRING)->length
 

@@ -52,3 +52,8 @@ void String_Destroy(String* const string)
 	string->buffer = (char*)string_dummy_buffer;
 	string->length = 0;
 }
+
+cc_bool String_Compare(const String* const string, const String* const other_string)
+{
+	return String_Length(string) == String_Length(other_string) && memcmp(String_Buffer(string), String_Buffer(other_string), String_Length(string)) == 0;
+}
