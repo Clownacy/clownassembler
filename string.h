@@ -17,6 +17,7 @@ typedef struct String
 } String;
 
 #define STRING_VIEW_INITIALISER(STRING) {STRING, sizeof(STRING) - 1}
+#define STRING_VIEW_INITIALISER_BLANK {"", 0}
 
 void StringView_Create(StringView *view, const char *source_buffer, size_t source_length);
 #define StringView_CreateBlank(VIEW) StringView_Create(VIEW, "", 0)

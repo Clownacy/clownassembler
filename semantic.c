@@ -500,8 +500,10 @@ static cc_bool IsSubstituteBlockingCharacter(const char character)
 	     || (character >= '0' && character <= '9'));
 }
 
-static cc_bool FindSubstitute(const char* const string_to_search, const String* const identifier, const char** const match_start_out, const char** const match_end_out)
+static StringView FindSubstitute(const char* const string_to_search, const String* const identifier)
 {
+	StringView match = STRING_VIEW_INITIALISER_BLANK;
+
 	const char *match_start = string_to_search;
 
 	for (;;)
@@ -531,17 +533,15 @@ static cc_bool FindSubstitute(const char* const string_to_search, const String* 
 					++match_end;
 			}
 
-			*match_start_out = match_start;
-			*match_end_out = match_end;
-
-			return cc_true;
+			StringView_Create(&match, match_start, match_end - match_start);
+			break;
 		}
 
 		/* Start search from the next character. */
 		++match_start;
 	}
 
-	return cc_false;
+	return match;
 }
 
 /* TODO: Duplicate this and use function pointers. */
@@ -5281,9 +5281,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										const char *earliest_parameter_end;
 										const IdentifierListNode *parameter_name;
 										unsigned long i;
-										const char *found_parameter_start;
-										const char *found_parameter_end;
 										StringView substitute;
+										StringView found_parameter;
 
 										/* Search for the earliest macro parameter placeholder in the line, storing its location in 'earliest_parameter_start'. */
 
@@ -5366,31 +5365,35 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										/* Now find the identifier-based macro parameter placeholders. */
 										for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
 										{
-											if (FindSubstitute(remaining_line, &parameter_name->identifier, &found_parameter_start, &found_parameter_end))
+											found_parameter = FindSubstitute(remaining_line, &parameter_name->identifier);
+
+											if (!StringView_Empty(&found_parameter))
 											{
-												if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
+												if (earliest_parameter_start == NULL || StringView_Data(&found_parameter) < earliest_parameter_start)
 												{
 													if (i < total_parameters)
 														substitute = parameters[i];
 													else
 														StringView_CreateBlank(&substitute);
 
-													earliest_parameter_start = found_parameter_start;
-													earliest_parameter_end = found_parameter_end;
+													earliest_parameter_start = StringView_Data(&found_parameter);
+													earliest_parameter_end = earliest_parameter_start + StringView_Length(&found_parameter);
 												}
 											}
 										}
 
 										/* Find the 'narg' placeholder, which represents how many parameters (arguments) have been passed to the macro. */
-										if (FindSubstitute(remaining_line, &string_narg, &found_parameter_start, &found_parameter_end))
+										found_parameter = FindSubstitute(remaining_line, &string_narg);
+
+										if (!StringView_Empty(&found_parameter))
 										{
-											if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
+											if (earliest_parameter_start == NULL || StringView_Data(&found_parameter) < earliest_parameter_start)
 											{
 												/* TODO: Eliminate this 'strlen' junk! */
 												StringView_Create(&substitute, narg_string, strlen(narg_string));
 
-												earliest_parameter_start = found_parameter_start;
-												earliest_parameter_end = found_parameter_end;
+												earliest_parameter_start = StringView_Data(&found_parameter);
+												earliest_parameter_end = earliest_parameter_start + StringView_Length(&found_parameter);;
 											}
 										}
 
