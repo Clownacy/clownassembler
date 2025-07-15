@@ -4129,17 +4129,16 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 	}
 	else
 	{
-		const TextInput* const previous_input_callbacks = state->input_callbacks;
-
-		TextInput input_callbacks = {
-			input_file,
-			ReadCharacter,
-			ReadLine
-		};
-
-		/* Add file path and line number to the location list. */
+		TextInput input_callbacks;
 		Location location;
 
+		const TextInput* const previous_input_callbacks = state->input_callbacks;
+
+		input_callbacks.user_data = input_file;
+		input_callbacks.read_character = ReadCharacter;
+		input_callbacks.read_line = ReadLine;
+
+		/* Add file path and line number to the location list. */
 		location.file_path = String_Data(&include->path);
 		location.line_number = 0;
 
