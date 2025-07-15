@@ -493,47 +493,52 @@ static FILE* fopen_backslash(SemanticState *state, const StringView *path, const
 	return file;
 }
 
-static cc_bool IsMacroBlockingCharacter(const char character)
+static cc_bool IsSubstituteBlockingCharacter(const char character)
 {
 	return ((character >= 'a' && character <= 'z')
 	     || (character >= 'A' && character <= 'Z')
 	     || (character >= '0' && character <= '9'));
 }
 
-static cc_bool FindMacroParameter(const char* const remaining_line, const String* const identifier, const char** const other_parameter_position_out, const char** const other_parameter_end_out)
+static cc_bool FindSubstitute(const char* const string_to_search, const String* const identifier, const char** const match_start_out, const char** const match_end_out)
 {
-	const char *other_parameter_position;
-	const char *other_parameter_end = remaining_line;
+	const char *match_start = string_to_search;
 
 	for (;;)
 	{
-		other_parameter_position = strstr(other_parameter_end, String_Data(identifier));
+		const char *match_end;
+
+		/* Find identifier within string. */
+		match_start = strstr(match_start, String_Data(identifier));
 
 		/* Obviously bail if the identifier wasn't found. */
-		if (other_parameter_position == NULL)
+		if (match_start == NULL)
 			break;
 
-		other_parameter_end = other_parameter_position + String_Length(identifier);
+		match_end = match_start + String_Length(identifier);
 
 		/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
 		/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
-		if ((other_parameter_position == remaining_line || !IsMacroBlockingCharacter(other_parameter_position[-1])) && !IsMacroBlockingCharacter(other_parameter_end[0]))
+		if ((match_start == string_to_search || !IsSubstituteBlockingCharacter(match_start[-1])) && !IsSubstituteBlockingCharacter(match_end[0]))
 		{
 			/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
 			/* asm68k allows backslashes before and after the parameter to separate them from surrounding characters. */
-			if (other_parameter_position != remaining_line && other_parameter_position[-1] == '\\')
+			if (match_start != string_to_search && match_start[-1] == '\\')
 			{
-				--other_parameter_position;
+				--match_start;
 
-				if (other_parameter_end[0] == '\\')
-					++other_parameter_end;
+				if (match_end[0] == '\\')
+					++match_end;
 			}
 
-			*other_parameter_position_out = other_parameter_position;
-			*other_parameter_end_out = other_parameter_end;
+			*match_start_out = match_start;
+			*match_end_out = match_end;
 
 			return cc_true;
 		}
+
+		/* Start search from the next character. */
+		++match_start;
 	}
 
 	return cc_false;
@@ -5361,7 +5366,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										/* Now find the identifier-based macro parameter placeholders. */
 										for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
 										{
-											if (FindMacroParameter(remaining_line, &parameter_name->identifier, &found_parameter_start, &found_parameter_end))
+											if (FindSubstitute(remaining_line, &parameter_name->identifier, &found_parameter_start, &found_parameter_end))
 											{
 												if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
 												{
@@ -5377,7 +5382,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										}
 
 										/* Find the 'narg' placeholder, which represents how many parameters (arguments) have been passed to the macro. */
-										if (FindMacroParameter(remaining_line, &string_narg, &found_parameter_start, &found_parameter_end))
+										if (FindSubstitute(remaining_line, &string_narg, &found_parameter_start, &found_parameter_end))
 										{
 											if (earliest_parameter_start == NULL || found_parameter_start < earliest_parameter_start)
 											{
