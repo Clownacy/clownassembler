@@ -149,7 +149,7 @@ typedef struct Macro
 	String name;
 	IdentifierListNode *parameter_names;
 	SourceLineListNode *source_line_list_head;
-	unsigned int current_invocation;
+	char suffix[3];
 } Macro;
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
@@ -453,18 +453,23 @@ static char* HexadecimalIntegerToString(SemanticState *state, const unsigned int
 	return integer_string;
 }
 
-static char* ComputeUniqueMacroSuffix(SemanticState *state, Macro* const macro)
+static StringView ComputeUniqueMacroSuffix(Macro* const macro)
 {
-	const unsigned int integer_string_length = GetDecimalIntegerStringLength(macro->current_invocation);
-	const unsigned int suffix_string_length = 1 + CC_MAX(3, integer_string_length);
-	char* const suffix = (char*)MallocAndHandleError(state, suffix_string_length + 1);
+	size_t i;
+	unsigned int carry = 1;
+	StringView view;
 
-	if (suffix != NULL)
-		sprintf(suffix, "_%03u", macro->current_invocation);
+	for (i = CC_COUNT_OF(macro->suffix); i-- != 0;)
+	{
+		unsigned int digit = macro->suffix[i] - '0';
+		digit += carry;
+		carry = digit / 10;
+		digit = digit % 10;
+		macro->suffix[i] = digit + '0';
+	}
 
-	++macro->current_invocation;
-
-	return suffix;
+	StringView_Create(&view, macro->suffix, CC_COUNT_OF(macro->suffix));
+	return view;
 }
 
 static FILE* fopen_backslash(SemanticState *state, const StringView *path, const char *mode)
@@ -1035,7 +1040,7 @@ static void TerminateMacro(SemanticState *state)
 				String_CreateMove(&macro->name, &state->shared.macro.name);
 				macro->parameter_names = state->shared.macro.parameter_names.head;
 				macro->source_line_list_head = state->shared.macro.source_line_list.head;
-				macro->current_invocation = 0;
+				memset(macro->suffix, '0', CC_COUNT_OF(macro->suffix));
 
 				symbol->type = SYMBOL_MACRO;
 				symbol->shared.pointer = macro;
@@ -5148,7 +5153,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					char *narg_string, *symbol_value_string;
 
 					Macro *macro = (Macro*)macro_dictionary_entry->shared.pointer;
-					char* const unique_suffix = ComputeUniqueMacroSuffix(state, macro);
+					const StringView unique_suffix = ComputeUniqueMacroSuffix( macro);
 
 					source_line_pointer += strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
 					parameters = (StringView*)MallocAndHandleError(state, sizeof(StringView));
@@ -5307,8 +5312,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 											}
 											else if (earliest_parameter_start[1] == '@')
 											{
-												/* TODO: Remove this 'strlen' junk! */
-												StringView_Create(&substitute, unique_suffix, strlen(unique_suffix));
+												substitute = unique_suffix;
 											}
 											else if (earliest_parameter_start[1] == '_')
 											{
@@ -5450,7 +5454,6 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 						/* Free other stuff. */
 						free(narg_string);
-						free(unique_suffix);
 						free(symbol_value_string);
 					}
 				}
