@@ -5184,13 +5184,16 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 					/* Extract and store the macro parameters, if they exist. */
 					{
-						const char* const parameter_string = source_line_pointer + strspn(source_line_pointer, " \t");
-
+						StringView parameters_string;
 						char character;
+
+						const char* const parameters_string_start = source_line_pointer + strspn(source_line_pointer, " \t");
+
+						StringView_Create(&parameters_string, parameters_string_start, strlen(parameters_string_start));
 
 						do
 						{
-							const char* const parameter_start = source_line_pointer += strspn(source_line_pointer, " \t");
+							const char* const parameter_string_start = source_line_pointer += strspn(source_line_pointer, " \t");
 
 							do
 							{
@@ -5219,7 +5222,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 								/* If we encounter a comma, a comment, or the end of the line, then split this off as a macro parameter. */
 								if (character == ',' || character == ';' || character == '\0')
 								{
-									const size_t parameter_string_length = source_line_pointer - parameter_start - 1;
+									const size_t parameter_string_length = source_line_pointer - parameter_string_start - 1;
 
 									if (parameter_string_length != 0)
 									{
@@ -5232,7 +5235,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										else
 										{
 											parameters = new_parameters;
-											StringView_Create(&parameters[total_parameters], parameter_start, parameter_string_length);
+											StringView_Create(&parameters[total_parameters], parameter_string_start, parameter_string_length);
 											++total_parameters;
 										}
 									}
@@ -5309,8 +5312,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 											}
 											else if (earliest_parameter_start[1] == '_')
 											{
-												/* TODO: Remove this 'strlen' junk! */
-												StringView_Create(&substitute, parameter_string, strlen(parameter_string));
+												substitute = parameters_string;
 											}
 											else if (earliest_parameter_start[1] == '#' || earliest_parameter_start[1] == '$')
 											{
