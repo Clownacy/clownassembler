@@ -433,24 +433,36 @@ static unsigned int GetHexadecimalIntegerStringLength(unsigned int integer)
 	return string_length;
 }
 
-static char* DecimalIntegerToString(SemanticState *state, const unsigned int integer)
+static String DecimalIntegerToString(SemanticState *state, const unsigned int integer)
 {
-	char* const integer_string = (char*)MallocAndHandleError(state, GetDecimalIntegerStringLength(integer) + 1);
+	String string;
+
+	const size_t length = GetDecimalIntegerStringLength(integer);
+	char* const integer_string = (char*)MallocAndHandleError(state, length + 1);
 
 	if (integer_string != NULL)
 		sprintf(integer_string, "%u", integer);
 
-	return integer_string;
+	string.view.buffer = integer_string;
+	string.view.length = length;
+
+	return string;
 }
 
-static char* HexadecimalIntegerToString(SemanticState *state, const unsigned int integer)
+static String HexadecimalIntegerToString(SemanticState *state, const unsigned int integer)
 {
-	char* const integer_string = (char*)MallocAndHandleError(state, GetHexadecimalIntegerStringLength(integer) + 1);
+	String string;
+
+	const size_t length = GetHexadecimalIntegerStringLength(integer);
+	char* const integer_string = (char*)MallocAndHandleError(state, length + 1);
 
 	if (integer_string != NULL)
 		sprintf(integer_string, "%X", integer);
 
-	return integer_string;
+	string.view.buffer = integer_string;
+	string.view.length = length;
+
+	return string;
 }
 
 static StringView ComputeUniqueMacroSuffix(Macro* const macro)
@@ -5149,7 +5161,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					/* This is a macro invocation. */
 					StringView *parameters;
 					unsigned int total_parameters;
-					char *narg_string, *symbol_value_string;
+					String narg_string, symbol_value_string;
 
 					Macro *macro = (Macro*)macro_dictionary_entry->shared.pointer;
 					const StringView unique_suffix = ComputeUniqueMacroSuffix( macro);
@@ -5157,7 +5169,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 					source_line_pointer += strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
 					parameters = (StringView*)MallocAndHandleError(state, sizeof(StringView));
 					total_parameters = 1;
-					symbol_value_string = NULL;
+					String_CreateBlank(&symbol_value_string);
 
 					if (!StringView_Empty(&label))
 					{
@@ -5331,7 +5343,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 												if (identifier_start[identifier_length] == '\\')
 													++earliest_parameter_end;
 
-												free(symbol_value_string);
+												String_Destroy(&symbol_value_string);
 
 												if (!GetSymbolInteger(state, &identifier, cc_true, &value))
 													value = 0;
@@ -5341,8 +5353,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 												else /*if (earliest_parameter_start[1] == '$')*/
 													symbol_value_string = HexadecimalIntegerToString(state, value);
 
-												/* TODO: No more 'strlen' junk! */
-												StringView_Create(&substitute, symbol_value_string, strlen(symbol_value_string));
+												substitute = *String_View(&symbol_value_string);
 											}
 											else
 											{
@@ -5394,8 +5405,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										{
 											if (earliest_parameter_start == NULL || StringView_Data(&found_parameter) < earliest_parameter_start)
 											{
-												/* TODO: Eliminate this 'strlen' junk! */
-												StringView_Create(&substitute, narg_string, strlen(narg_string));
+												substitute = *String_View(&narg_string);
 
 												earliest_parameter_start = StringView_Data(&found_parameter);
 												earliest_parameter_end = earliest_parameter_start + StringView_Length(&found_parameter);;
@@ -5452,8 +5462,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 						free(parameters);
 
 						/* Free other stuff. */
-						free(narg_string);
-						free(symbol_value_string);
+						String_Destroy(&narg_string);
+						String_Destroy(&symbol_value_string);
 					}
 				}
 			}
