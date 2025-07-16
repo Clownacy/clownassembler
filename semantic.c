@@ -68,7 +68,7 @@ typedef struct SourceLineListNode
 {
 	struct SourceLineListNode *next;
 
-	char *source_line;
+	char source_line_buffer;
 } SourceLineListNode;
 
 typedef struct SourceLineList
@@ -677,7 +677,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 static void AddToSourceLineList(SemanticState *state, SourceLineList *source_line_list, const char *source_line)
 {
 	const size_t source_line_length = strlen(source_line);
-	SourceLineListNode* const source_line_list_node = (SourceLineListNode*)MallocAndHandleError(state, sizeof(SourceLineListNode) + source_line_length + 1);
+	SourceLineListNode* const source_line_list_node = (SourceLineListNode*)MallocAndHandleError(state, sizeof(SourceLineListNode) + source_line_length);
 
 	if (source_line_list_node != NULL)
 	{
@@ -691,8 +691,7 @@ static void AddToSourceLineList(SemanticState *state, SourceLineList *source_lin
 
 		/* Initialise the list node. */
 		source_line_list_node->next = NULL;
-		source_line_list_node->source_line = (char*)(source_line_list_node + 1);
-		memcpy(source_line_list_node->source_line, source_line, source_line_length + 1);
+		memcpy(&source_line_list_node->source_line_buffer, source_line, source_line_length + 1);
 	}
 }
 
@@ -1084,7 +1083,7 @@ static void TerminateWhile(SemanticState *state)
 
 		/* Process the WHILE's nested statements. */
 		for (source_line_list_node = source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-			AssembleLine(state, source_line_list_node->source_line);
+			AssembleLine(state, &source_line_list_node->source_line_buffer);
 	}
 
 	DestroyExpression(&expression);
@@ -4390,7 +4389,7 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 
 				/* Process the REPT's nested statements. */
 				for (source_line_list_node = source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-					AssembleLine(state, source_line_list_node->source_line);
+					AssembleLine(state, &source_line_list_node->source_line_buffer);
 			}
 
 			/* Increment past the ENDR line number. */
@@ -5273,13 +5272,13 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 								char *modified_line;
 
 								/* Update the source line for the error printers. */
-								state->source_line = source_line_list_node->source_line;
+								state->source_line = &source_line_list_node->source_line_buffer;
 
 								/* A bit of a cheat so that errors that occur before the call to AssembleLine still show the correct line number. */
 								++state->location->line_number;
 
 								/* Replace the parameter placeholders with their proper contents. */
-								remaining_line = modified_line = DuplicateString(state, source_line_list_node->source_line);
+								remaining_line = modified_line = DuplicateString(state, &source_line_list_node->source_line_buffer);
 
 								if (modified_line != NULL)
 								{
@@ -5439,7 +5438,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 								--state->location->line_number;
 
 								/* Send our expanded macro line to be assembled. */
-								AssembleLine(state, modified_line != NULL ? modified_line : source_line_list_node->source_line);
+								AssembleLine(state, modified_line != NULL ? modified_line : &source_line_list_node->source_line_buffer);
 
 								/* The expanded line is done, so we can free it now. */
 								free(modified_line);
