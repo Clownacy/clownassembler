@@ -1957,10 +1957,11 @@ expression8
 		const cc_bool success = String_CreateAppend(&$$.shared.string, &$1, &$2);
 		String_Destroy(&$1);
 		String_Destroy(&$2);
-		$$.type = EXPRESSION_IDENTIFIER;
 
 		if (!success)
 			YYNOMEM;
+
+		$$.type = EXPRESSION_IDENTIFIER;
 	}
 	| string
 	{

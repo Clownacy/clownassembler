@@ -61,6 +61,20 @@ cc_bool String_CreateInternal(String* const string, const char* const source_1_b
 	return success;
 }
 
+cc_bool String_CreateCopyView(String* const string, const StringView* const source)
+{
+	assert(string != NULL && source != NULL);
+
+	return String_CreateInternal(string, StringView_Data(source), StringView_Length(source), NULL, 0);
+}
+
+cc_bool String_CreateAppendView(String* const string, const StringView* const source_1, const StringView* const source_2)
+{
+	assert(string != NULL && source_1 != NULL && source_2 != NULL);
+
+	return String_CreateInternal(string, StringView_Data(source_1), StringView_Length(source_1), StringView_Data(source_2), StringView_Length(source_2));
+}
+
 void String_CreateMove(String* const string, String* const other_string)
 {
 	assert(string != NULL && other_string != NULL);
