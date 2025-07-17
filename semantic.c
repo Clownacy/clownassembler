@@ -167,7 +167,7 @@ static void AssembleLine(SemanticState *state, const char *source_line);
 static const StringView string_program_counter_statement = STRING_VIEW_INITIALISER(",PROGRAM_COUNTER_OF_STATEMENT");
 static const StringView string_program_counter_expression = STRING_VIEW_INITIALISER(",PROGRAM_COUNTER_OF_EXPRESSION");
 static const StringView string_rs = STRING_VIEW_INITIALISER("__rs");
-static const String string_narg = STRING_INITIALISER("narg");
+static const StringView string_narg = STRING_VIEW_INITIALISER("narg");
 
 /* IO Callbacks */
 
@@ -517,45 +517,55 @@ static cc_bool IsSubstituteBlockingCharacter(const char character)
 	     || (character >= '0' && character <= '9'));
 }
 
-static StringView FindSubstitute(const char* const string_to_search, const String* const identifier)
+static StringView FindSubstitute(const char* const string_to_search_c, const StringView* const identifier)
 {
 	StringView match = STRING_VIEW_INITIALISER_BLANK;
+	StringView string_to_search;
 
-	const char *match_start = string_to_search;
+	size_t match_start = 0;
+
+	/* TODO: Delete this. */
+	StringView_Create(&string_to_search, string_to_search_c, strlen(string_to_search_c));
 
 	for (;;)
 	{
-		const char *match_end;
-
 		/* Find identifier within string. */
-		match_start = strstr(match_start, String_Data(identifier));
+		match_start = StringView_Find(&string_to_search, identifier, match_start);
 
 		/* Obviously bail if the identifier wasn't found. */
-		if (match_start == NULL)
-			break;
-
-		match_end = match_start + String_Length(identifier);
-
-		/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
-		/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
-		if ((match_start == string_to_search || !IsSubstituteBlockingCharacter(match_start[-1])) && !IsSubstituteBlockingCharacter(match_end[0]))
+		if (match_start == STRING_POSITION_INVALID)
 		{
-			/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
-			/* asm68k allows backslashes before and after the parameter to separate them from surrounding characters. */
-			if (match_start != string_to_search && match_start[-1] == '\\')
-			{
-				--match_start;
-
-				if (match_end[0] == '\\')
-					++match_end;
-			}
-
-			StringView_Create(&match, match_start, match_end - match_start);
 			break;
 		}
+		else
+		{
+			size_t match_length = StringView_Length(identifier);
 
-		/* Start search from the next character. */
-		++match_start;
+			const char character_before = match_start == 0 ? 'a' : StringView_At(&string_to_search, match_start - 1);
+			const char character_after = StringView_At(&string_to_search, match_start + match_length);
+
+			/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
+			/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
+			if (!IsSubstituteBlockingCharacter(character_before) && !IsSubstituteBlockingCharacter(character_after))
+			{
+				/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
+				/* asm68k allows backslashes before and after the parameter to separate them from surrounding characters. */
+				if (character_before == '\\')
+				{
+					--match_start;
+					++match_length;
+
+					if (character_after == '\\')
+						++match_length;
+				}
+
+				StringView_SubStr(&match, &string_to_search, match_start, match_length);
+				break;
+			}
+
+			/* Start search from the next character. */
+			++match_start;
+		}
 	}
 
 	return match;
@@ -5381,7 +5391,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										/* Now find the identifier-based macro parameter placeholders. */
 										for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
 										{
-											found_parameter = FindSubstitute(remaining_line, &parameter_name->identifier);
+											found_parameter = FindSubstitute(remaining_line, String_View(&parameter_name->identifier));
 
 											if (!StringView_Empty(&found_parameter))
 											{

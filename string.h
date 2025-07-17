@@ -16,6 +16,8 @@ typedef struct String
 	StringView view;
 } String;
 
+#define STRING_POSITION_INVALID ((size_t)-1)
+
 #define STRING_VIEW_INITIALISER(STRING) {STRING, sizeof(STRING) - 1}
 #define STRING_VIEW_INITIALISER_BLANK STRING_VIEW_INITIALISER("")
 
@@ -24,8 +26,10 @@ void StringView_Create(StringView *view, const char *source_buffer, size_t sourc
 #define StringView_Data(VIEW) ((VIEW)->buffer)
 #define StringView_Length(VIEW) ((VIEW)->length)
 #define StringView_Empty(VIEW) (StringView_Length(VIEW) == 0)
-#define StringView_At(VIEW, INDEX) (StringView_Data(VIEW)[INDEX])
+#define StringView_At(VIEW, INDEX) StringView_Data(VIEW)[INDEX]
 cc_bool StringView_Compare(const StringView *view, const StringView *other_view);
+size_t StringView_Find(const StringView *view, const StringView *sub_view, size_t position);
+#define StringView_SubStr(VIEW, OTHER_VIEW, POSITION, LENGTH) StringView_Create(VIEW, &StringView_At(OTHER_VIEW, POSITION), LENGTH)
 
 #define STRING_INITIALISER(STRING) {STRING_VIEW_INITIALISER(STRING)}
 

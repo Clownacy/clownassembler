@@ -21,6 +21,22 @@ cc_bool StringView_Compare(const StringView* const view, const StringView* const
 	return StringView_Length(view) == StringView_Length(other_view) && memcmp(StringView_Data(view), StringView_Data(other_view), StringView_Length(view)) == 0;
 }
 
+size_t StringView_Find(const StringView* const view, const StringView* const sub_view, const size_t position)
+{
+	size_t i;
+
+	assert(view != NULL && sub_view != NULL);
+
+	if (StringView_Length(view) < StringView_Length(sub_view))
+		return STRING_POSITION_INVALID;
+
+	for (i = position; i <= StringView_Length(view) - StringView_Length(sub_view); ++i)
+		if (memcmp(&StringView_At(view, i), StringView_Data(sub_view), StringView_Length(sub_view)) == 0)
+			return i;
+
+	return STRING_POSITION_INVALID;
+}
+
 void String_CreateBlank(String* const string)
 {
 	assert(string != NULL);
