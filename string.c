@@ -37,6 +37,16 @@ size_t StringView_Find(const StringView* const view, const StringView* const sub
 	return STRING_POSITION_INVALID;
 }
 
+size_t StringView_FindCharacter(const StringView* const view, const char character, const size_t position)
+{
+	const char* const found_pointer = (const char*)memchr(StringView_Data(view) + position, character, StringView_Length(view) - position);
+
+	if (found_pointer == NULL)
+		return STRING_POSITION_INVALID;
+
+	return found_pointer - StringView_Data(view);
+}
+
 void String_CreateBlank(String* const string)
 {
 	assert(string != NULL);

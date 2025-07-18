@@ -29,6 +29,7 @@ void StringView_Create(StringView *view, const char *source_buffer, size_t sourc
 #define StringView_At(VIEW, INDEX) StringView_Data(VIEW)[INDEX]
 cc_bool StringView_Compare(const StringView *view, const StringView *other_view);
 size_t StringView_Find(const StringView *view, const StringView *sub_view, size_t position);
+size_t StringView_FindCharacter(const StringView *view, char character, size_t position);
 #define StringView_SubStr(VIEW, OTHER_VIEW, POSITION, LENGTH) StringView_Create(VIEW, &StringView_At(OTHER_VIEW, POSITION), LENGTH)
 
 #define STRING_INITIALISER(STRING) {STRING_VIEW_INITIALISER(STRING)}
@@ -50,5 +51,6 @@ cc_bool String_Replace(String *string, size_t position, size_t count, const Stri
 #define String_Empty(STRING) StringView_Empty(String_View(STRING))
 #define String_At(STRING, INDEX) StringView_At(String_View(STRING), INDEX)
 #define String_Compare(STRING, OTHER_STRING) StringView_Compare(String_View(STRING), String_View(OTHER_STRING))
+#define String_FindCharacter(STRING, CHARACTER, POSITION) StringView_FindCharacter(String_View(STRING), CHARACTER, POSITION)
 
 #endif /* STRING_H */

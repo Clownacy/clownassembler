@@ -517,20 +517,16 @@ static cc_bool IsSubstituteBlockingCharacter(const char character)
 	     || (character >= '0' && character <= '9'));
 }
 
-static StringView FindSubstitute(const char* const string_to_search_c, const StringView* const identifier, const size_t position)
+static StringView FindSubstitute(const StringView* const string_to_search, const StringView* const identifier, const size_t position)
 {
 	StringView match = STRING_VIEW_INITIALISER_BLANK;
-	StringView string_to_search;
 
 	size_t match_start = position;
-
-	/* TODO: Delete this. */
-	StringView_Create(&string_to_search, string_to_search_c, strlen(string_to_search_c));
 
 	for (;;)
 	{
 		/* Find identifier within string. */
-		match_start = StringView_Find(&string_to_search, identifier, match_start);
+		match_start = StringView_Find(string_to_search, identifier, match_start);
 
 		/* Obviously bail if the identifier wasn't found. */
 		if (match_start == STRING_POSITION_INVALID)
@@ -541,8 +537,8 @@ static StringView FindSubstitute(const char* const string_to_search_c, const Str
 		{
 			size_t match_length = StringView_Length(identifier);
 
-			const char character_before = match_start == 0 ? 'a' : StringView_At(&string_to_search, match_start - 1);
-			const char character_after = StringView_At(&string_to_search, match_start + match_length);
+			const char character_before = match_start == 0 ? 'a' : StringView_At(string_to_search, match_start - 1);
+			const char character_after = StringView_At(string_to_search, match_start + match_length);
 
 			/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
 			/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
@@ -559,7 +555,7 @@ static StringView FindSubstitute(const char* const string_to_search_c, const Str
 						++match_length;
 				}
 
-				StringView_SubStr(&match, &string_to_search, match_start, match_length);
+				StringView_SubStr(&match, string_to_search, match_start, match_length);
 				break;
 			}
 
@@ -5290,7 +5286,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 							/* Iterate over each line of the macro, performing parameter substitution and then sending it to be processed. */
 							for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
 							{
-								char *modified_line;
+								String modified_line;
 								size_t search_position;
 
 								/* Update the source line for the error printers. */
@@ -5300,10 +5296,10 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 								++state->location->line_number;
 
 								/* Replace the parameter placeholders with their proper contents. */
-								modified_line = DuplicateString(state, &source_line_list_node->source_line_buffer);
 								search_position = 0;
 
-								if (modified_line != NULL)
+								/* TODO: No more `strlen`. */
+								if (String_Create(&modified_line, &source_line_list_node->source_line_buffer, strlen(&source_line_list_node->source_line_buffer)))
 								{
 									for (;;)
 									{
@@ -5313,40 +5309,37 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										unsigned long i;
 										StringView substitute;
 										StringView found_parameter;
-										const char *search_result;
 
 										/* Search for the earliest macro parameter placeholder in the line, storing its location in 'earliest_parameter_start'. */
 
 										/* Silence bogus(?) 'variable may be used uninitialised' compiler warnings. */
 										/* TODO: Are these really bogus? */
 										StringView_CreateBlank(&substitute);
-										earliest_parameter_start = STRING_POSITION_INVALID;
 										earliest_parameter_length = 0;
 
 										/* Find numerical macro parameter placeholder. */
-										search_result = strchr(modified_line + search_position, '\\');
+										earliest_parameter_start = String_FindCharacter(&modified_line, '\\', search_position);
 
-										if (search_result != NULL)
+										if (earliest_parameter_start != STRING_POSITION_INVALID)
 										{
-											earliest_parameter_start = search_result - modified_line;
 											earliest_parameter_length = 2;
 
-											if (modified_line[earliest_parameter_start + 1] == '*')
+											if (String_At(&modified_line, earliest_parameter_start + 1) == '*')
 											{
 												substitute = label;
 											}
-											else if (modified_line[earliest_parameter_start + 1] == '@')
+											else if (String_At(&modified_line, earliest_parameter_start + 1) == '@')
 											{
 												substitute = unique_suffix;
 											}
-											else if (modified_line[earliest_parameter_start + 1] == '_')
+											else if (String_At(&modified_line, earliest_parameter_start + 1) == '_')
 											{
 												substitute = parameters_string;
 											}
-											else if (modified_line[earliest_parameter_start + 1] == '#' || modified_line[earliest_parameter_start + 1] == '$')
+											else if (String_At(&modified_line, earliest_parameter_start + 1) == '#' || String_At(&modified_line, earliest_parameter_start + 1) == '$')
 											{
 												unsigned long value;
-												const char* const identifier_start = modified_line + earliest_parameter_start + 2;
+												const char* const identifier_start = String_Data(&modified_line) + earliest_parameter_start + 2;
 												const size_t identifier_length = strspn(identifier_start, DIRECTIVE_OR_MACRO_CHARS);
 												StringView identifier;
 
@@ -5362,9 +5355,9 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 												if (!GetSymbolInteger(state, &identifier, cc_true, &value))
 													value = 0;
 
-												if (modified_line[earliest_parameter_start + 1] == '#')
+												if (String_At(&modified_line, earliest_parameter_start + 1) == '#')
 													symbol_value_string = DecimalIntegerToString(state, value);
-												else /*if (modified_line[earliest_parameter_start + 1] == '$')*/
+												else /*if (String_At(&modified_line, earliest_parameter_start + 1) == '$')*/
 													symbol_value_string = HexadecimalIntegerToString(state, value);
 
 												substitute = *String_View(&symbol_value_string);
@@ -5374,7 +5367,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 												char *end;
 
 												/* Obtain numerical index of the parameter. */
-												const char* const start = modified_line + earliest_parameter_start + 1;
+												const char* const start = String_Data(&modified_line) + earliest_parameter_start + 1;
 												const unsigned long parameter_index = strtoul(start, &end, 10);
 												earliest_parameter_length = 1 + end - start;
 
@@ -5396,33 +5389,33 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										/* Now find the identifier-based macro parameter placeholders. */
 										for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
 										{
-											found_parameter = FindSubstitute(modified_line, String_View(&parameter_name->identifier), search_position);
+											found_parameter = FindSubstitute(String_View(&modified_line), String_View(&parameter_name->identifier), search_position);
 
 											if (!StringView_Empty(&found_parameter))
 											{
-												if (earliest_parameter_start == STRING_POSITION_INVALID || StringView_Data(&found_parameter) < modified_line + earliest_parameter_start)
+												if (earliest_parameter_start == STRING_POSITION_INVALID || StringView_Data(&found_parameter) < String_Data(&modified_line) + earliest_parameter_start)
 												{
 													if (i < total_parameters)
 														substitute = parameters[i];
 													else
 														StringView_CreateBlank(&substitute);
 
-													earliest_parameter_start = StringView_Data(&found_parameter) - modified_line;
+													earliest_parameter_start = StringView_Data(&found_parameter) - String_Data(&modified_line);
 													earliest_parameter_length = StringView_Length(&found_parameter);
 												}
 											}
 										}
 
 										/* Find the 'narg' placeholder, which represents how many parameters (arguments) have been passed to the macro. */
-										found_parameter = FindSubstitute(modified_line, &string_narg, search_position);
+										found_parameter = FindSubstitute(String_View(&modified_line), &string_narg, search_position);
 
 										if (!StringView_Empty(&found_parameter))
 										{
-											if (earliest_parameter_start == STRING_POSITION_INVALID || StringView_Data(&found_parameter) < modified_line + earliest_parameter_start)
+											if (earliest_parameter_start == STRING_POSITION_INVALID || StringView_Data(&found_parameter) < String_Data(&modified_line) + earliest_parameter_start)
 											{
 												substitute = *String_View(&narg_string);
 
-												earliest_parameter_start = StringView_Data(&found_parameter) - modified_line;
+												earliest_parameter_start = StringView_Data(&found_parameter) - String_Data(&modified_line);
 												earliest_parameter_length = StringView_Length(&found_parameter);
 											}
 										}
@@ -5432,30 +5425,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 											break;
 
 										/* Split the line in two, and insert the parameter between them. */
-										{
-											char *new_modified_line;
-
-											const size_t first_half_length = earliest_parameter_start;
-											const size_t parameter_length = StringView_Length(&substitute);
-											const size_t second_half_length = strlen(modified_line + earliest_parameter_start + earliest_parameter_length);
-
-											new_modified_line = (char*)MallocAndHandleError(state, first_half_length + parameter_length + second_half_length + 1);
-
-											if (new_modified_line != NULL)
-											{
-												memcpy(new_modified_line, modified_line, first_half_length);
-												memcpy(new_modified_line + first_half_length, StringView_Data(&substitute), parameter_length);
-												memcpy(new_modified_line + first_half_length + parameter_length, modified_line + earliest_parameter_start + earliest_parameter_length, second_half_length);
-												new_modified_line[first_half_length + parameter_length + second_half_length] = '\0';
-
-												/* Continue our search from after the inserted parameter. */
-												search_position = first_half_length + parameter_length;
-
-												/* We don't need the old copy of the line anymore: free it, and replace it with the new copy. */
-												free(modified_line);
-												modified_line = new_modified_line;
-											}
-										}
+										String_Replace(&modified_line, earliest_parameter_start, earliest_parameter_length, &substitute);
+										search_position = earliest_parameter_start + StringView_Length(&substitute);
 									}
 								}
 
@@ -5463,10 +5434,10 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 								--state->location->line_number;
 
 								/* Send our expanded macro line to be assembled. */
-								AssembleLine(state, modified_line != NULL ? modified_line : &source_line_list_node->source_line_buffer);
+								AssembleLine(state, !String_Empty(&modified_line) ? String_Data(&modified_line) : &source_line_list_node->source_line_buffer);
 
 								/* The expanded line is done, so we can free it now. */
-								free(modified_line);
+								String_Destroy(&modified_line);
 							}
 
 							/* Pop location. */
