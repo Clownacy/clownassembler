@@ -171,11 +171,6 @@ static const StringView string_narg = STRING_VIEW_INITIALISER("narg");
 
 /* IO Callbacks */
 
-static int TextInput_fgetc(const TextInput* const callbacks)
-{
-	return callbacks->read_character((void*)callbacks->user_data);
-}
-
 static char* TextInput_fgets(char* const buffer, const size_t buffer_size, const TextInput* const callbacks)
 {
 	return callbacks->read_line((void*)callbacks->user_data, buffer, buffer_size);
@@ -244,12 +239,6 @@ static void WriteOutputByte(SemanticState* const state, const unsigned char byte
 }
 
 /* Default FILE-based IO callbacks */
-
-static int ReadCharacter(void* const user_data)
-{
-	const int value = fgetc((FILE*)user_data);
-	return value == EOF ? -1 : value;
-}
 
 static char* ReadLine(void* const user_data, char* const buffer, const size_t buffer_size)
 {
@@ -4161,7 +4150,6 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 		const TextInput* const previous_input_callbacks = state->input_callbacks;
 
 		input_callbacks.user_data = input_file;
-		input_callbacks.read_character = ReadCharacter;
 		input_callbacks.read_line = ReadLine;
 
 		/* Add file path and line number to the location list. */
@@ -5880,7 +5868,6 @@ cc_bool ClownAssembler_AssembleFile(
 	ClownAssembler_BinaryOutput symbol_callbacks;
 
 	input_callbacks.user_data = input_file;
-	input_callbacks.read_character = ReadCharacter;
 	input_callbacks.read_line = ReadLine;
 
 	output_callbacks.user_data = output_file;
