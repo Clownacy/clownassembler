@@ -4151,7 +4151,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 
 	if (input_file == NULL)
 	{
-		SemanticError(state, "File '%s' could not be opened.", String_Data(&include->path));
+		SemanticError(state, "File '%s' could not be opened.", String_CStr(&include->path));
 	}
 	else
 	{
@@ -4165,7 +4165,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 		input_callbacks.read_line = ReadLine;
 
 		/* Add file path and line number to the location list. */
-		location.file_path = String_Data(&include->path);
+		location.file_path = String_CStr(&include->path);
 		location.line_number = 0;
 
 		location.previous = state->location;
@@ -4189,7 +4189,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 
 	if (input_file == NULL)
 	{
-		SemanticError(state, "File '%s' could not be opened.", String_Data(&incbin->path));
+		SemanticError(state, "File '%s' could not be opened.", String_CStr(&incbin->path));
 	}
 	else
 	{
@@ -4352,7 +4352,7 @@ static void AssembleAndListLine(SemanticState *state)
 		TextOutput_fprintf(state->listing_callbacks, "%08lX", state->program_counter);
 	}
 
-	AssembleLine(state, String_Data(&state->line_buffer)); /* TODO: Pass the string directly. */
+	AssembleLine(state, String_CStr(&state->line_buffer)); /* TODO: Pass the string directly. */
 
 	/* Output line to listing file. */
 	if (TextOutput_exists(state->listing_callbacks))
@@ -4362,7 +4362,7 @@ static void AssembleAndListLine(SemanticState *state)
 		for (i = state->listing_counter * 2 + state->listing_counter / 2; i < 28; ++i)
 			TextOutput_fputc(' ', state->listing_callbacks);
 
-		TextOutput_fprintf(state->listing_callbacks, "%s\n", String_Data(&state->line_buffer)); /* TODO: Pass the string directly. */
+		TextOutput_fprintf(state->listing_callbacks, "%s\n", String_CStr(&state->line_buffer));
 	}
 }
 
@@ -4400,7 +4400,7 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 		}
 		else
 		{
-			AssembleLine(state, String_Data(&state->line_buffer)); /* TODO: Pass the string directly. */
+			AssembleLine(state, String_CStr(&state->line_buffer)); /* TODO: Pass the string directly. */
 		}
 
 		if (state->mode != MODE_REPT)
@@ -4793,16 +4793,16 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			switch (severity)
 			{
 				case 0:
-					TextOutput_fprintf(state->error_callbacks, "INFORM: '%s'\n", String_Data(&statement->shared.inform.message));
+					TextOutput_fprintf(state->error_callbacks, "INFORM: '%s'\n", String_CStr(&statement->shared.inform.message));
 					break;
 
 				case 1:
-					SemanticWarning(state, "INFORM: '%s'", String_Data(&statement->shared.inform.message));
+					SemanticWarning(state, "INFORM: '%s'", String_CStr(&statement->shared.inform.message));
 					break;
 
 				case 2:
 				case 3: /* TODO: Halt assembly. */
-					SemanticError(state, "INFORM: '%s'", String_Data(&statement->shared.inform.message));
+					SemanticError(state, "INFORM: '%s'", String_CStr(&statement->shared.inform.message));
 					break;
 			}
 
@@ -5296,7 +5296,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 							/* Push a new location (this macro).*/
 							Location location;
 
-							location.file_path = String_Data(&macro->name);
+							location.file_path = String_CStr(&macro->name);
 							location.line_number = 0;
 
 							location.previous = state->location;
@@ -5356,7 +5356,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 											else if (String_At(&modified_line, earliest_parameter_start + 1) == '#' || String_At(&modified_line, earliest_parameter_start + 1) == '$')
 											{
 												unsigned long value;
-												const char* const identifier_start = String_Data(&modified_line) + earliest_parameter_start + 2;
+												const char* const identifier_start = String_CStr(&modified_line) + earliest_parameter_start + 2;
 												const size_t identifier_length = strspn(identifier_start, DIRECTIVE_OR_MACRO_CHARS);
 												StringView identifier;
 
@@ -5384,7 +5384,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 												char *end;
 
 												/* Obtain numerical index of the parameter. */
-												const char* const start = String_Data(&modified_line) + earliest_parameter_start + 1;
+												const char* const start = String_CStr(&modified_line) + earliest_parameter_start + 1;
 												const unsigned long parameter_index = strtoul(start, &end, 10);
 												earliest_parameter_length = 1 + end - start;
 
@@ -5453,7 +5453,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 								--state->location->line_number;
 
 								/* Send our expanded macro line to be assembled. */
-								AssembleLine(state, !String_Empty(&modified_line) ? String_Data(&modified_line) : &source_line_list_node->source_line_buffer);
+								AssembleLine(state, !String_Empty(&modified_line) ? String_CStr(&modified_line) : &source_line_list_node->source_line_buffer);
 
 								/* The expanded line is done, so we can free it now. */
 								String_Destroy(&modified_line);

@@ -51,6 +51,7 @@ cc_bool String_ResizeNoFill(String *string, size_t size);
 
 #define String_View(STRING) ((const StringView*)&(STRING)->view)
 #define String_Data(STRING) ((char*)StringView_Data(String_View(STRING)))
+#define String_CStr String_Data
 #define String_Length(STRING) StringView_Length(String_View(STRING))
 #define String_Capacity(STRING) ((STRING)->capacity)
 #define String_Empty(STRING) StringView_Empty(String_View(STRING))
