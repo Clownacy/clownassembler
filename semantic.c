@@ -154,7 +154,7 @@ typedef struct Macro
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
 static void AssembleFile(SemanticState *state);
-static void AssembleLine(SemanticState *state, const char *source_line);
+static void AssembleLine(SemanticState *state, const String *source_line);
 
 /* Prevent errors when '__attribute__((format(printf, X, X)))' is not supported. */
 /* GCC 3.2 is the earliest version of GCC of which I can find proof of supporting this. */
@@ -691,9 +691,9 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 	return success;
 }
 
-static void AddToSourceLineList(SemanticState *state, SourceLineList *source_line_list, const char *source_line)
+static void AddToSourceLineList(SemanticState *state, SourceLineList *source_line_list, const String *source_line)
 {
-	const size_t source_line_length = strlen(source_line);
+	const size_t source_line_length = String_Length(source_line);
 	SourceLineListNode* const source_line_list_node = (SourceLineListNode*)MallocAndHandleError(state, sizeof(SourceLineListNode) + source_line_length);
 
 	if (source_line_list_node != NULL)
@@ -708,7 +708,7 @@ static void AddToSourceLineList(SemanticState *state, SourceLineList *source_lin
 
 		/* Initialise the list node. */
 		source_line_list_node->next = NULL;
-		String_Create(&source_line_list_node->source_line_buffer, source_line, source_line_length);
+		String_CreateCopy(&source_line_list_node->source_line_buffer, source_line);
 	}
 }
 
@@ -1100,7 +1100,7 @@ static void TerminateWhile(SemanticState *state)
 
 		/* Process the WHILE's nested statements. */
 		for (source_line_list_node = source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-			AssembleLine(state, String_CStr(&source_line_list_node->source_line_buffer));
+			AssembleLine(state, &source_line_list_node->source_line_buffer);
 	}
 
 	DestroyExpression(&expression);
@@ -4352,7 +4352,7 @@ static void AssembleAndListLine(SemanticState *state)
 		TextOutput_fprintf(state->listing_callbacks, "%08lX", state->program_counter);
 	}
 
-	AssembleLine(state, String_CStr(&state->line_buffer)); /* TODO: Pass the string directly. */
+	AssembleLine(state, &state->line_buffer);
 
 	/* Output line to listing file. */
 	if (TextOutput_exists(state->listing_callbacks))
@@ -4400,7 +4400,7 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 		}
 		else
 		{
-			AssembleLine(state, String_CStr(&state->line_buffer)); /* TODO: Pass the string directly. */
+			AssembleLine(state, &state->line_buffer);
 		}
 
 		if (state->mode != MODE_REPT)
@@ -4426,7 +4426,7 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 
 				/* Process the REPT's nested statements. */
 				for (source_line_list_node = source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-					AssembleLine(state, String_CStr(&source_line_list_node->source_line_buffer));
+					AssembleLine(state, &source_line_list_node->source_line_buffer);
 			}
 
 			/* Increment past the ENDR line number. */
@@ -4945,7 +4945,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 	}
 }
 
-static void ParseLine(SemanticState *state, const char *source_line, const StringView *label, const char *directive_and_operands)
+static void ParseLine(SemanticState *state, const String *source_line, const StringView *label, const char *directive_and_operands)
 {
 	/* This is a normal assembly line. */
 	YY_BUFFER_STATE buffer;
@@ -5005,7 +5005,7 @@ static void ParseLine(SemanticState *state, const char *source_line, const Strin
 					fix_up->program_counter = starting_program_counter;
 					fix_up->output_position = starting_output_position;
 					String_CreateCopy(&fix_up->last_global_label, &state->last_global_label);
-					fix_up->source_line = DuplicateString(state, source_line);
+					fix_up->source_line = DuplicateString(state, String_CStr(source_line));
 					String_CreateCopyView(&fix_up->label, label);
 
 					/* Clone the location. */
@@ -5047,7 +5047,7 @@ static void ParseLine(SemanticState *state, const char *source_line, const Strin
 
 }
 
-static void AssembleLine(SemanticState *state, const char *source_line)
+static void AssembleLine(SemanticState *state, const String *source_line)
 {
 	size_t label_length;
 	const char *source_line_pointer;
@@ -5057,14 +5057,14 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 	++state->location->line_number;
 
-	if (source_line[0] == '*')
+	if (String_At(source_line, 0) == '*')
 	{
 		/* This whole line is a comment. */
 		return;
 	}
 
-	state->source_line = source_line;
-	source_line_pointer = source_line;
+	state->source_line = String_CStr(source_line);
+	source_line_pointer = String_CStr(source_line);
 
 	/* Despite the fact that we're using Flex and Bison to parse the
 	   language for us, we unfortunately have to do quite a bit of
@@ -5452,7 +5452,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 								--state->location->line_number;
 
 								/* Send our expanded macro line to be assembled. */
-								AssembleLine(state, !String_Empty(&modified_line) ? String_CStr(&modified_line) : String_CStr(&source_line_list_node->source_line_buffer));
+								AssembleLine(state, !String_Empty(&modified_line) ? &modified_line : &source_line_list_node->source_line_buffer);
 
 								/* The expanded line is done, so we can free it now. */
 								String_Destroy(&modified_line);
@@ -5504,7 +5504,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 				if (state->shared.macro.is_short)
 				{
 					/* Short macros automatically terminate after one statement. */
-					const char first_nonwhitespace_character = source_line[strspn(source_line, " \t")];
+					const char first_nonwhitespace_character = String_At(source_line, strspn(String_CStr(source_line), " \t"));
 
 					if (!StringView_Empty(&label))
 						SemanticError(state, "Short macros shouldn't create labels.");
