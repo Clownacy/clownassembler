@@ -18,7 +18,7 @@ typedef struct String
 
 #define STRING_POSITION_INVALID ((size_t)-1)
 
-#define STRING_VIEW_INITIALISER(STRING) {STRING, sizeof(STRING) - 1}
+#define STRING_VIEW_INITIALISER(STRING_LITERAL) {STRING_LITERAL, sizeof(STRING_LITERAL) - 1}
 #define STRING_VIEW_INITIALISER_BLANK STRING_VIEW_INITIALISER("")
 
 void StringView_Create(StringView *view, const char *source_buffer, size_t source_length);
@@ -44,12 +44,13 @@ cc_bool String_CreateAppendView(String *string, const StringView *source_1, cons
 void String_CreateMove(String *string, String *other_string);
 void String_Destroy(String *string);
 cc_bool String_Replace(String *string, size_t position, size_t count, const StringView *other_string);
+cc_bool String_Resize(String *string, size_t size);
 
 #define String_View(STRING) ((const StringView*)&(STRING)->view)
-#define String_Data(STRING) StringView_Data(String_View(STRING))
+#define String_Data(STRING) ((char*)StringView_Data(String_View(STRING)))
 #define String_Length(STRING) StringView_Length(String_View(STRING))
 #define String_Empty(STRING) StringView_Empty(String_View(STRING))
-#define String_At(STRING, INDEX) StringView_At(String_View(STRING), INDEX)
+#define String_At(STRING, INDEX) String_Data(STRING)[INDEX]
 #define String_Compare(STRING, OTHER_STRING) StringView_Compare(String_View(STRING), String_View(OTHER_STRING))
 #define String_FindCharacter(STRING, CHARACTER, POSITION) StringView_FindCharacter(String_View(STRING), CHARACTER, POSITION)
 

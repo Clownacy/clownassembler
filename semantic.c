@@ -109,7 +109,7 @@ typedef struct SemanticState
 	String last_global_label;
 	Location *location;
 	yyscan_t flex_state;
-	char line_buffer[1024];
+	String line_buffer;
 	const char *source_line;
 	unsigned int current_if_level;
 	unsigned int false_if_level;
@@ -4245,82 +4245,104 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 	}
 }
 
+static cc_bool ReadSourceLineRaw(SemanticState *state, size_t line_buffer_write_position)
+{
+	cc_bool data_read = cc_false;
+
+	/* Repeatedly read into the string until we've fit a whole line (or an error occurs). */
+	while (TextInput_fgets(&String_At(&state->line_buffer, line_buffer_write_position), String_Length(&state->line_buffer) + 1 - line_buffer_write_position, state->input_callbacks) != NULL)
+	{
+		line_buffer_write_position += strlen(&String_At(&state->line_buffer, line_buffer_write_position));
+
+		if (line_buffer_write_position != 0)
+		{
+			const char character_before_end = String_At(&state->line_buffer, line_buffer_write_position - 1);
+
+			data_read = cc_true;
+
+			/* Finding a newline means that a whole line has been read! */
+			if (character_before_end == '\r' || character_before_end == '\n')
+			{
+				/* Discard the newline. */
+				--line_buffer_write_position;
+
+				/* Discard the other newline, if one exists. */
+				if (character_before_end == '\n' && line_buffer_write_position != 0)
+				{
+					const char character_before_newline = String_At(&state->line_buffer, line_buffer_write_position - 1);
+
+					if (character_before_newline == '\r')
+						--line_buffer_write_position;
+				}
+
+				break;
+			}
+		}
+
+		/* If the buffer is not full but there is no newline, then we must have reached the end of the file, so we can exit now. */
+		if (line_buffer_write_position != String_Length(&state->line_buffer))
+			break;
+
+		/* If there the buffer is full and there is no newline, then the line must be longer than the buffer, so make the buffer bigger! */
+		String_Resize(&state->line_buffer, ((String_Length(&state->line_buffer) + 1) * 2) - 1);
+		/* Now loop back around and read more of the line! */
+	}
+
+	/* Correct line length. */
+	String_Resize(&state->line_buffer, line_buffer_write_position);
+
+	return data_read;
+}
+
 static cc_bool ReadSourceLine(SemanticState *state)
 {
-	char *line_buffer_write_pointer;
+	cc_bool data_read = cc_false;
+	size_t line_buffer_write_position = 0;
 
-	line_buffer_write_pointer = state->line_buffer;
-
-	/* Read lines one at a time, feeding them to the 'AssembleLine' function. */
-	while (TextInput_fgets(line_buffer_write_pointer, &state->line_buffer[sizeof(state->line_buffer)] - line_buffer_write_pointer, state->input_callbacks) != NULL)
+	while (ReadSourceLineRaw(state, line_buffer_write_position))
 	{
-		size_t newline_index;
-		char newline_character;
+		char quote_character;
 
-		/* Find the end of the line. We terminate on '\0', '\r', '\n', and ';'.
+		data_read = cc_true;
+
+		/* Find the code ends and a comment begins.
 		   Note that terminating at ';' prevents a trailing '&' from being recognised
 		   and causing a line to be continued on the next line.
 		   This is needed for compatibility with S.N. 68k (asm68k). */
-		{
-			char quote_character = '\0';
-			for (newline_index = 0; ; ++newline_index)
-			{
-				const char character = state->line_buffer[newline_index];
+		quote_character = '\0';
 
-				if (character == '\0' || character == '\r' || character == '\n')
+		for (; line_buffer_write_position < String_Length(&state->line_buffer); ++line_buffer_write_position)
+		{
+			const char character = String_At(&state->line_buffer, line_buffer_write_position);
+
+			if (quote_character == '\0')
+			{
+				if (character == '"' || character == '\'')
+					quote_character = character;
+				else if (character == ';')
 					break;
-
-				if (quote_character == '\0')
-				{
-					if (character == '"' || character == '\'')
-						quote_character = character;
-					else if (character == ';')
-						break;
-				}
-				else if (character == quote_character)
-				{
-					quote_character = '\0';
-				}
 			}
-		}
-
-		newline_character = state->line_buffer[newline_index];
-
-		line_buffer_write_pointer = state->line_buffer;
-
-		/* If there is no newline, then we've either reached the end of the file,
-		   or the source line was too long to fit in the buffer. */
-		/* TODO: Is there no way to remove this limit? */
-		if (newline_character == '\0')
-		{
-			int character = TextInput_fgetc(state->input_callbacks);
-
-			if (character != -1)
+			else if (character == quote_character)
 			{
-				InternalError(state, "The source line was too long to fit in the internal buffer.");
-
-				/* Fast-forward through until the end of the line. */
-				while (character != '\r' && character != '\n' && character != -1)
-					character = TextInput_fgetc(state->input_callbacks);
+				quote_character = '\0';
 			}
 		}
-		else if (newline_index != 0 && state->line_buffer[newline_index - 1] == '&')
-		{
-			/* An '&' at the end of a line is like a '\' at the end of a line in C:
-			   it signals that the current line is continued on the next line. */
 
-			/* Go back and get another line. */
-			line_buffer_write_pointer = &state->line_buffer[newline_index - 1];
-			continue;
-		}
+		/* An '&' at the end of a line is like a '\' at the end of a line in C:
+		   it signals that the current line is continued on the next line. */
+		if (line_buffer_write_position == 0 || String_At(&state->line_buffer, line_buffer_write_position - 1) != '&')
+			break;
 
-		/* Remove newlines from the string, so that they don't appear in the error message. */
-		state->line_buffer[newline_index] = '\0';
-
-		return cc_true;
+		/* Discard the '&'. */
+		--line_buffer_write_position;
+		/* Go back and get another line. */
 	}
 
-	return cc_false;
+	/* Remove comment from the line buffer, so that it is not parsed. */
+	/* TODO: Is this actually necessary? */
+	String_Resize(&state->line_buffer, line_buffer_write_position);
+
+	return data_read;
 }
 
 static void AssembleAndListLine(SemanticState *state)
@@ -4332,7 +4354,7 @@ static void AssembleAndListLine(SemanticState *state)
 		TextOutput_fprintf(state->listing_callbacks, "%08lX", state->program_counter);
 	}
 
-	AssembleLine(state, state->line_buffer);
+	AssembleLine(state, String_Data(&state->line_buffer)); /* TODO: Pass the string directly. */
 
 	/* Output line to listing file. */
 	if (TextOutput_exists(state->listing_callbacks))
@@ -4342,7 +4364,7 @@ static void AssembleAndListLine(SemanticState *state)
 		for (i = state->listing_counter * 2 + state->listing_counter / 2; i < 28; ++i)
 			TextOutput_fputc(' ', state->listing_callbacks);
 
-		TextOutput_fprintf(state->listing_callbacks, "%s\n", state->line_buffer);
+		TextOutput_fprintf(state->listing_callbacks, "%s\n", String_Data(&state->line_buffer)); /* TODO: Pass the string directly. */
 	}
 }
 
@@ -4380,7 +4402,7 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 		}
 		else
 		{
-			AssembleLine(state, state->line_buffer);
+			AssembleLine(state, String_Data(&state->line_buffer)); /* TODO: Pass the string directly. */
 		}
 
 		if (state->mode != MODE_REPT)
@@ -5522,6 +5544,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 
 static void AssembleFile(SemanticState *state)
 {
+	/* Read lines one at a time, feeding them to the 'AssembleLine' function. */
 	while (!state->end && ReadSourceLine(state))
 		AssembleAndListLine(state);
 
@@ -5676,6 +5699,7 @@ cc_bool ClownAssembler_Assemble(
 	state.equ_set_descope_local_labels = equ_set_descope_local_labels;
 	state.warnings_enabled = warnings_enabled;
 	String_CreateBlank(&state.last_global_label);
+	String_CreateBlank(&state.line_buffer);
 	state.location = &location;
 	state.mode = MODE_NORMAL;
 
@@ -5836,6 +5860,7 @@ cc_bool ClownAssembler_Assemble(
 		Dictionary_Deinit(&state.dictionary);
 	}
 
+	String_Destroy(&state.line_buffer);
 	String_Destroy(&state.last_global_label);
 
 	return state.success;

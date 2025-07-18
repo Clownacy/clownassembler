@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const char string_dummy_buffer[] = "";
+static char string_dummy_buffer[] = "";
 
 void StringView_Create(StringView* const view, const char* const source_buffer, const size_t source_length)
 {
@@ -123,22 +123,54 @@ void String_Destroy(String* const string)
 
 cc_bool String_Replace(String* const string, const size_t position, const size_t count, const StringView* const other_string)
 {
-	const size_t first_half_length = position;
-	const size_t parameter_length = StringView_Length(other_string);
-	const size_t second_half_length = String_Length(string) - (position + count);
-	const size_t new_length = first_half_length + parameter_length + second_half_length;
+	assert(string != NULL);
+	assert(other_string != NULL);
+	assert(position <= String_Length(string));
+	assert(position + count <= String_Length(string));
 
-	char* const new_buffer = (char*)malloc(new_length + 1);
+	{
+		const size_t first_half_length = position;
+		const size_t parameter_length = StringView_Length(other_string);
+		const size_t second_half_length = String_Length(string) - (position + count);
+		const size_t new_length = first_half_length + parameter_length + second_half_length;
 
-	if (new_buffer == NULL)
-		return cc_false;
+		char* const new_buffer = (char*)malloc(new_length + 1);
 
-	memcpy(new_buffer, String_Data(string), first_half_length);
-	memcpy(new_buffer + first_half_length, StringView_Data(other_string), parameter_length);
-	memcpy(new_buffer + first_half_length + parameter_length, &String_At(string, position + count), second_half_length);
-	new_buffer[first_half_length + parameter_length + second_half_length] = '\0';
+		if (new_buffer == NULL)
+			return cc_false;
 
-	String_Destroy(string);
-	StringView_Create(&string->view, new_buffer, new_length);
-	return cc_true;
+		memcpy(new_buffer, String_Data(string), first_half_length);
+		memcpy(new_buffer + first_half_length, StringView_Data(other_string), parameter_length);
+		memcpy(new_buffer + first_half_length + parameter_length, &String_At(string, position + count), second_half_length);
+		new_buffer[first_half_length + parameter_length + second_half_length] = '\0';
+
+		String_Destroy(string);
+		StringView_Create(&string->view, new_buffer, new_length);
+		return cc_true;
+	}
+}
+
+cc_bool String_Resize(String* const string, const size_t size)
+{
+	assert(string != NULL);
+
+	{
+		char* const old_buffer = String_Data(string) == string_dummy_buffer ? NULL : (char*)string->view.buffer;
+		char* const new_buffer = realloc(old_buffer, size + 1);
+
+		if (new_buffer == NULL)
+			return cc_false;
+
+		/* Fill the new space with null characters. */
+		if (size > String_Length(string))
+			memset(new_buffer + String_Length(string), '\0', size - String_Length(string));
+
+		/* Add the terminating null character. */
+		new_buffer[size] = '\0';
+
+		/* Update the view with the new buffer and size. */
+		StringView_Create(&string->view, new_buffer, size);
+
+		return cc_true;
+	}
 }
