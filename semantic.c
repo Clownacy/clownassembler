@@ -68,7 +68,7 @@ typedef struct SourceLineListNode
 {
 	struct SourceLineListNode *next;
 
-	char source_line_buffer;
+	String source_line_buffer;
 } SourceLineListNode;
 
 typedef struct SourceLineList
@@ -708,7 +708,7 @@ static void AddToSourceLineList(SemanticState *state, SourceLineList *source_lin
 
 		/* Initialise the list node. */
 		source_line_list_node->next = NULL;
-		memcpy(&source_line_list_node->source_line_buffer, source_line, source_line_length + 1);
+		String_Create(&source_line_list_node->source_line_buffer, source_line, source_line_length);
 	}
 }
 
@@ -1100,7 +1100,7 @@ static void TerminateWhile(SemanticState *state)
 
 		/* Process the WHILE's nested statements. */
 		for (source_line_list_node = source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-			AssembleLine(state, &source_line_list_node->source_line_buffer);
+			AssembleLine(state, String_CStr(&source_line_list_node->source_line_buffer));
 	}
 
 	DestroyExpression(&expression);
@@ -4426,7 +4426,7 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 
 				/* Process the REPT's nested statements. */
 				for (source_line_list_node = source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-					AssembleLine(state, &source_line_list_node->source_line_buffer);
+					AssembleLine(state, String_CStr(&source_line_list_node->source_line_buffer));
 			}
 
 			/* Increment past the ENDR line number. */
@@ -5309,7 +5309,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 								size_t search_position;
 
 								/* Update the source line for the error printers. */
-								state->source_line = &source_line_list_node->source_line_buffer;
+								state->source_line = String_CStr(&source_line_list_node->source_line_buffer);
 
 								/* A bit of a cheat so that errors that occur before the call to AssembleLine still show the correct line number. */
 								++state->location->line_number;
@@ -5317,8 +5317,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 								/* Replace the parameter placeholders with their proper contents. */
 								search_position = 0;
 
-								/* TODO: No more `strlen`. */
-								if (String_Create(&modified_line, &source_line_list_node->source_line_buffer, strlen(&source_line_list_node->source_line_buffer)))
+								if (String_CreateCopy(&modified_line, &source_line_list_node->source_line_buffer))
 								{
 									for (;;)
 									{
@@ -5453,7 +5452,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 								--state->location->line_number;
 
 								/* Send our expanded macro line to be assembled. */
-								AssembleLine(state, !String_Empty(&modified_line) ? String_CStr(&modified_line) : &source_line_list_node->source_line_buffer);
+								AssembleLine(state, !String_Empty(&modified_line) ? String_CStr(&modified_line) : String_CStr(&source_line_list_node->source_line_buffer));
 
 								/* The expanded line is done, so we can free it now. */
 								String_Destroy(&modified_line);
