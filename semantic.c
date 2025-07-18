@@ -4305,10 +4305,11 @@ static cc_bool ReadSourceLine(SemanticState *state)
 
 		data_read = cc_true;
 
-		/* Find the code ends and a comment begins.
+		/* Find where the code ends and a comment begins.
 		   Note that terminating at ';' prevents a trailing '&' from being recognised
 		   and causing a line to be continued on the next line.
 		   This is needed for compatibility with S.N. 68k (asm68k). */
+		/* TODO: Does S.N. 68k actually concatenate when a '&' occurs before a comment? */
 		quote_character = '\0';
 
 		for (; line_buffer_write_position < String_Length(&state->line_buffer); ++line_buffer_write_position)
@@ -4335,6 +4336,7 @@ static cc_bool ReadSourceLine(SemanticState *state)
 
 		/* Discard the '&'. */
 		--line_buffer_write_position;
+
 		/* Go back and get another line. */
 	}
 
