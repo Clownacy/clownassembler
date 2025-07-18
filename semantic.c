@@ -136,7 +136,7 @@ typedef struct SemanticState
 		struct
 		{
 			Expression expression;
-			char *source_line;
+			String source_line;
 			unsigned long line_number;
 			SourceLineList source_line_list;
 		} while_statement;
@@ -1070,7 +1070,7 @@ static void TerminateWhile(SemanticState *state)
 	Expression expression;
 
 	/* Back-up some state into local variables, in case a nested WHILE statement clobbers it. */
-	char* const source_line = state->shared.while_statement.source_line;
+	String source_line = state->shared.while_statement.source_line;
 	const unsigned long starting_line_number = state->shared.while_statement.line_number;
 	SourceLineListNode* const source_line_list_head = state->shared.while_statement.source_line_list.head;
 
@@ -1084,7 +1084,7 @@ static void TerminateWhile(SemanticState *state)
 		unsigned long value;
 		SourceLineListNode *source_line_list_node;
 
-		state->source_line = source_line;
+		state->source_line = String_CStr(&source_line);
 
 		if (!ResolveExpression(state, &expression, &value, cc_false))
 		{
@@ -1108,7 +1108,7 @@ static void TerminateWhile(SemanticState *state)
 	/* Increment past the ENDW line number. */
 	++state->location->line_number;
 
-	free(source_line);
+	String_Destroy(&source_line);
 	FreeSourceLineList(source_line_list_head);
 }
 
@@ -4707,7 +4707,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			state->mode = MODE_WHILE;
 
 			state->shared.while_statement.expression = statement->shared.expression;
-			state->shared.while_statement.source_line = DuplicateString(state, state->source_line);
+			String_Create(&state->shared.while_statement.source_line, state->source_line, strlen(state->source_line)); /* TODO: Down with `strlen`! */
 
 			state->shared.while_statement.line_number = state->location->line_number;
 
