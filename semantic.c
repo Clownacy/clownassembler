@@ -517,12 +517,12 @@ static cc_bool IsSubstituteBlockingCharacter(const char character)
 	     || (character >= '0' && character <= '9'));
 }
 
-static StringView FindSubstitute(const char* const string_to_search_c, const StringView* const identifier)
+static StringView FindSubstitute(const char* const string_to_search_c, const StringView* const identifier, const size_t position)
 {
 	StringView match = STRING_VIEW_INITIALISER_BLANK;
 	StringView string_to_search;
 
-	size_t match_start = 0;
+	size_t match_start = position;
 
 	/* TODO: Delete this. */
 	StringView_Create(&string_to_search, string_to_search_c, strlen(string_to_search_c));
@@ -5290,8 +5290,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 							/* Iterate over each line of the macro, performing parameter substitution and then sending it to be processed. */
 							for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
 							{
-								const char *remaining_line;
 								char *modified_line;
+								size_t search_position;
 
 								/* Update the source line for the error printers. */
 								state->source_line = &source_line_list_node->source_line_buffer;
@@ -5300,7 +5300,8 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 								++state->location->line_number;
 
 								/* Replace the parameter placeholders with their proper contents. */
-								remaining_line = modified_line = DuplicateString(state, &source_line_list_node->source_line_buffer);
+								modified_line = DuplicateString(state, &source_line_list_node->source_line_buffer);
+								search_position = 0;
 
 								if (modified_line != NULL)
 								{
@@ -5321,7 +5322,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										earliest_parameter_end = NULL;
 
 										/* Find numerical macro parameter placeholder. */
-										earliest_parameter_start = strchr(remaining_line, '\\');
+										earliest_parameter_start = strchr(modified_line + search_position, '\\');
 
 										if (earliest_parameter_start != NULL)
 										{
@@ -5391,7 +5392,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										/* Now find the identifier-based macro parameter placeholders. */
 										for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
 										{
-											found_parameter = FindSubstitute(remaining_line, String_View(&parameter_name->identifier));
+											found_parameter = FindSubstitute(modified_line, String_View(&parameter_name->identifier), search_position);
 
 											if (!StringView_Empty(&found_parameter))
 											{
@@ -5409,7 +5410,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										}
 
 										/* Find the 'narg' placeholder, which represents how many parameters (arguments) have been passed to the macro. */
-										found_parameter = FindSubstitute(remaining_line, &string_narg);
+										found_parameter = FindSubstitute(modified_line, &string_narg, search_position);
 
 										if (!StringView_Empty(&found_parameter))
 										{
@@ -5444,7 +5445,7 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 												new_modified_line[first_half_length + parameter_length + second_half_length] = '\0';
 
 												/* Continue our search from after the inserted parameter. */
-												remaining_line = &new_modified_line[first_half_length + parameter_length];
+												search_position = first_half_length + parameter_length;
 
 												/* We don't need the old copy of the line anymore: free it, and replace it with the new copy. */
 												free(modified_line);
