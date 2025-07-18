@@ -47,7 +47,7 @@ typedef struct Location
 {
 	struct Location *previous;
 
-	const char *file_path;
+	const char *file_path; /* TODO: Convert this to `String`. */
 	unsigned long line_number;
 } Location;
 
@@ -5684,7 +5684,7 @@ cc_bool ClownAssembler_Assemble(
 	   numbers that describe the location and nesting of the erroneous
 	   line. This is the first entry in that list. */
 	location.previous = NULL;
-	location.file_path = NULL;
+	location.file_path = input_file_path;
 	location.line_number = 0;
 
 	/* Initialise the state's non-default values. */
@@ -5699,11 +5699,6 @@ cc_bool ClownAssembler_Assemble(
 	String_CreateBlank(&state.line_buffer);
 	state.location = &location;
 	state.mode = MODE_NORMAL;
-
-	/* Set the location path (note that we're taking care to not do this
-	   before the state is fully initialised, as the error handler requires
-	   valid state). */
-	location.file_path = input_file_path;
 
 	/* Create the symbol table dictionary. */
 	if (!Dictionary_Init(&state.dictionary, case_insensitive))
