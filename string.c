@@ -52,6 +52,7 @@ void String_CreateBlank(String* const string)
 	assert(string != NULL);
 
 	StringView_Create(&string->view, string_dummy_buffer, sizeof(string_dummy_buffer) - 1);
+	string->capacity = StringView_Length(&string->view);
 }
 
 cc_bool String_CreateInternal(String* const string, const char* const source_1_buffer, const size_t source_1_length, const char* const source_2_buffer, const size_t source_2_length)
@@ -79,6 +80,7 @@ cc_bool String_CreateInternal(String* const string, const char* const source_1_b
 			output_buffer[output_length] = '\0';
 
 			StringView_Create(&string->view, output_buffer, output_length);
+			string->capacity = StringView_Length(&string->view);
 			return success;
 		}
 	}
@@ -146,6 +148,27 @@ cc_bool String_Replace(String* const string, const size_t position, const size_t
 
 		String_Destroy(string);
 		StringView_Create(&string->view, new_buffer, new_length);
+		string->capacity = StringView_Length(&string->view);
+		return cc_true;
+	}
+}
+
+cc_bool String_Reserve(String* const string, const size_t size)
+{
+	assert(string != NULL);
+
+	{
+		/* As an optimisation, we do not shrink the buffer. */
+		const size_t new_capacity = CC_MAX(size, string->capacity);
+		char* const old_buffer = String_Data(string) == string_dummy_buffer ? NULL : (char*)string->view.buffer;
+		char* const new_buffer = realloc(old_buffer, new_capacity + 1);
+
+		if (new_buffer == NULL)
+			return cc_false;
+
+		string->view.buffer = new_buffer;
+		string->capacity = new_capacity;
+
 		return cc_true;
 	}
 }
@@ -155,22 +178,31 @@ cc_bool String_Resize(String* const string, const size_t size)
 	assert(string != NULL);
 
 	{
-		char* const old_buffer = String_Data(string) == string_dummy_buffer ? NULL : (char*)string->view.buffer;
-		char* const new_buffer = realloc(old_buffer, size + 1);
+		const size_t old_size = String_Length(string);
 
-		if (new_buffer == NULL)
+		if (!String_ResizeNoFill(string, size))
 			return cc_false;
 
 		/* Fill the new space with null characters. */
-		if (size > String_Length(string))
-			memset(new_buffer + String_Length(string), '\0', size - String_Length(string));
-
-		/* Add the terminating null character. */
-		new_buffer[size] = '\0';
-
-		/* Update the view with the new buffer and size. */
-		StringView_Create(&string->view, new_buffer, size);
+		if (size > old_size)
+			memset(&String_At(string, old_size), '\0', size - old_size);
 
 		return cc_true;
 	}
+}
+
+cc_bool String_ResizeNoFill(String* const string, const size_t size)
+{
+	assert(string != NULL);
+
+	if (!String_Reserve(string, size))
+		return cc_false;
+
+	/* Update the view with the new size. */
+	string->view.length = size;
+
+	/* Add the terminating null character. */
+	String_At(string, String_Length(string)) = '\0';
+
+	return cc_true;
 }

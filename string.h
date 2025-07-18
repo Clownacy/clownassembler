@@ -14,6 +14,7 @@ typedef struct StringView
 typedef struct String
 {
 	StringView view;
+	size_t capacity;
 } String;
 
 #define STRING_POSITION_INVALID ((size_t)-1)
@@ -44,11 +45,14 @@ cc_bool String_CreateAppendView(String *string, const StringView *source_1, cons
 void String_CreateMove(String *string, String *other_string);
 void String_Destroy(String *string);
 cc_bool String_Replace(String *string, size_t position, size_t count, const StringView *other_string);
+cc_bool String_Reserve(String *string, size_t size);
 cc_bool String_Resize(String *string, size_t size);
+cc_bool String_ResizeNoFill(String *string, size_t size);
 
 #define String_View(STRING) ((const StringView*)&(STRING)->view)
 #define String_Data(STRING) ((char*)StringView_Data(String_View(STRING)))
 #define String_Length(STRING) StringView_Length(String_View(STRING))
+#define String_Capacity(STRING) ((STRING)->capacity)
 #define String_Empty(STRING) StringView_Empty(String_View(STRING))
 #define String_At(STRING, INDEX) String_Data(STRING)[INDEX]
 #define String_Compare(STRING, OTHER_STRING) StringView_Compare(String_View(STRING), String_View(OTHER_STRING))

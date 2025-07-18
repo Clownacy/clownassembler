@@ -4250,7 +4250,7 @@ static cc_bool ReadSourceLineRaw(SemanticState *state, size_t line_buffer_write_
 	cc_bool data_read = cc_false;
 
 	/* Repeatedly read into the string until we've fit a whole line (or an error occurs). */
-	while (TextInput_fgets(&String_At(&state->line_buffer, line_buffer_write_position), String_Length(&state->line_buffer) + 1 - line_buffer_write_position, state->input_callbacks) != NULL)
+	while (TextInput_fgets(&String_At(&state->line_buffer, line_buffer_write_position), String_Capacity(&state->line_buffer) + 1 - line_buffer_write_position, state->input_callbacks) != NULL)
 	{
 		line_buffer_write_position += strlen(&String_At(&state->line_buffer, line_buffer_write_position));
 
@@ -4280,16 +4280,16 @@ static cc_bool ReadSourceLineRaw(SemanticState *state, size_t line_buffer_write_
 		}
 
 		/* If the buffer is not full but there is no newline, then we must have reached the end of the file, so we can exit now. */
-		if (line_buffer_write_position != String_Length(&state->line_buffer))
+		if (line_buffer_write_position != String_Capacity(&state->line_buffer))
 			break;
 
 		/* If there the buffer is full and there is no newline, then the line must be longer than the buffer, so make the buffer bigger! */
-		String_Resize(&state->line_buffer, ((String_Length(&state->line_buffer) + 1) * 2) - 1);
+		String_Reserve(&state->line_buffer, ((String_Capacity(&state->line_buffer) + 1) * 2) - 1);
 		/* Now loop back around and read more of the line! */
 	}
 
 	/* Correct line length. */
-	String_Resize(&state->line_buffer, line_buffer_write_position);
+	String_ResizeNoFill(&state->line_buffer, line_buffer_write_position);
 
 	return data_read;
 }
