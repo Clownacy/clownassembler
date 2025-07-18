@@ -4338,10 +4338,6 @@ static cc_bool ReadSourceLine(SemanticState *state)
 		/* Go back and get another line. */
 	}
 
-	/* Remove comment from the line buffer, so that it is not parsed. */
-	/* TODO: Is this actually necessary? */
-	String_Resize(&state->line_buffer, line_buffer_write_position);
-
 	return data_read;
 }
 
