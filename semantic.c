@@ -517,10 +517,8 @@ static cc_bool IsSubstituteBlockingCharacter(const char character)
 	     || (character >= '0' && character <= '9'));
 }
 
-static StringView FindSubstitute(const StringView* const string_to_search, const StringView* const identifier, const size_t position)
+static cc_bool FindSubstitute(const StringView* const string_to_search, const StringView* const identifier, const size_t position, size_t* const match_start_out, size_t* const match_length_out)
 {
-	StringView match = STRING_VIEW_INITIALISER_BLANK;
-
 	size_t match_start = position;
 
 	for (;;)
@@ -555,8 +553,9 @@ static StringView FindSubstitute(const StringView* const string_to_search, const
 						++match_length;
 				}
 
-				StringView_SubStr(&match, string_to_search, match_start, match_length);
-				break;
+				*match_start_out = match_start;
+				*match_length_out = match_length;
+				return cc_true;
 			}
 
 			/* Start search from the next character. */
@@ -564,7 +563,7 @@ static StringView FindSubstitute(const StringView* const string_to_search, const
 		}
 	}
 
-	return match;
+	return cc_false;
 }
 
 /* TODO: Duplicate this and use function pointers. */
@@ -5303,12 +5302,10 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 								{
 									for (;;)
 									{
-										size_t earliest_parameter_start;
-										size_t earliest_parameter_length;
+										size_t earliest_parameter_start, earliest_parameter_length;
 										const IdentifierListNode *parameter_name;
-										unsigned long i;
+										unsigned int i;
 										StringView substitute;
-										StringView found_parameter;
 
 										/* Search for the earliest macro parameter placeholder in the line, storing its location in 'earliest_parameter_start'. */
 
@@ -5389,34 +5386,36 @@ static void AssembleLine(SemanticState *state, const char *source_line)
 										/* Now find the identifier-based macro parameter placeholders. */
 										for (parameter_name = macro->parameter_names, i = 1; parameter_name != NULL; parameter_name = parameter_name->next, ++i)
 										{
-											found_parameter = FindSubstitute(String_View(&modified_line), String_View(&parameter_name->identifier), search_position);
+											size_t found_parameter_start, found_parameter_length;
 
-											if (!StringView_Empty(&found_parameter))
+											if (FindSubstitute(String_View(&modified_line), String_View(&parameter_name->identifier), search_position, &found_parameter_start, &found_parameter_length))
 											{
-												if (earliest_parameter_start == STRING_POSITION_INVALID || StringView_Data(&found_parameter) < String_Data(&modified_line) + earliest_parameter_start)
+												if (earliest_parameter_start == STRING_POSITION_INVALID || found_parameter_start < earliest_parameter_start)
 												{
 													if (i < total_parameters)
 														substitute = parameters[i];
 													else
 														StringView_CreateBlank(&substitute);
 
-													earliest_parameter_start = StringView_Data(&found_parameter) - String_Data(&modified_line);
-													earliest_parameter_length = StringView_Length(&found_parameter);
+													earliest_parameter_start = found_parameter_start;
+													earliest_parameter_length = found_parameter_length;
 												}
 											}
 										}
 
 										/* Find the 'narg' placeholder, which represents how many parameters (arguments) have been passed to the macro. */
-										found_parameter = FindSubstitute(String_View(&modified_line), &string_narg, search_position);
-
-										if (!StringView_Empty(&found_parameter))
 										{
-											if (earliest_parameter_start == STRING_POSITION_INVALID || StringView_Data(&found_parameter) < String_Data(&modified_line) + earliest_parameter_start)
-											{
-												substitute = *String_View(&narg_string);
+											size_t found_parameter_start, found_parameter_length;
 
-												earliest_parameter_start = StringView_Data(&found_parameter) - String_Data(&modified_line);
-												earliest_parameter_length = StringView_Length(&found_parameter);
+											if (FindSubstitute(String_View(&modified_line), &string_narg, search_position, &found_parameter_start, &found_parameter_length))
+											{
+												if (earliest_parameter_start == STRING_POSITION_INVALID || found_parameter_start < earliest_parameter_start)
+												{
+													substitute = *String_View(&narg_string);
+
+													earliest_parameter_start = found_parameter_start;
+													earliest_parameter_length = found_parameter_length;
+												}
 											}
 										}
 
