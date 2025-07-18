@@ -116,6 +116,7 @@ typedef struct SemanticState
 	cc_bool true_already_found;
 	cc_bool end;
 	unsigned int listing_counter;
+	cc_bool line_listed;
 	Mode mode;
 	union
 	{
@@ -155,6 +156,7 @@ typedef struct Macro
 /* Some forward declarations that are needed because some functions recurse into each other. */
 static void AssembleFile(SemanticState *state);
 static void AssembleLine(SemanticState *state, const String *source_line);
+static void ListLine(SemanticState *state);
 
 /* Prevent errors when '__attribute__((format(printf, X, X)))' is not supported. */
 /* GCC 3.2 is the earliest version of GCC of which I can find proof of supporting this. */
@@ -4161,6 +4163,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 
 		state->input_callbacks = &input_callbacks;
 
+		ListLine(state);
 		AssembleFile(state);
 
 		state->input_callbacks = previous_input_callbacks;
@@ -4331,27 +4334,39 @@ static cc_bool ReadSourceLine(SemanticState *state)
 	return data_read;
 }
 
+static void ListLine(SemanticState *state)
+{
+	/* Output line to listing file. */
+	if (TextOutput_exists(state->listing_callbacks))
+	{
+		if (!state->line_listed)
+		{
+			state->line_listed = cc_true;
+
+			unsigned int i;
+
+			for (i = state->listing_counter * 2 + state->listing_counter / 2; i < 28; ++i)
+				TextOutput_fputc(' ', state->listing_callbacks);
+
+			TextOutput_fprintf(state->listing_callbacks, "%s\n", String_CStr(&state->line_buffer));
+		}
+	}
+}
+
 static void AssembleAndListLine(SemanticState *state)
 {
 	/* Output program counter to listing file. */
 	if (TextOutput_exists(state->listing_callbacks))
 	{
+		state->line_listed = cc_false;
+
 		state->listing_counter = 0;
 		TextOutput_fprintf(state->listing_callbacks, "%08lX", state->program_counter);
 	}
 
 	AssembleLine(state, &state->line_buffer);
 
-	/* Output line to listing file. */
-	if (TextOutput_exists(state->listing_callbacks))
-	{
-		unsigned int i;
-
-		for (i = state->listing_counter * 2 + state->listing_counter / 2; i < 28; ++i)
-			TextOutput_fputc(' ', state->listing_callbacks);
-
-		TextOutput_fprintf(state->listing_callbacks, "%s\n", String_CStr(&state->line_buffer));
-	}
+	ListLine(state);
 }
 
 static void ProcessRept(SemanticState *state, StatementRept *rept)
