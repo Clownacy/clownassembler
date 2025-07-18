@@ -110,3 +110,25 @@ void String_Destroy(String* const string)
 
 	String_CreateBlank(string);
 }
+
+cc_bool String_Replace(String* const string, const size_t position, const size_t count, const StringView* const other_string)
+{
+	const size_t first_half_length = position;
+	const size_t parameter_length = StringView_Length(other_string);
+	const size_t second_half_length = String_Length(string) - (position + count);
+	const size_t new_length = first_half_length + parameter_length + second_half_length;
+
+	char* const new_buffer = (char*)malloc(new_length + 1);
+
+	if (new_buffer == NULL)
+		return cc_false;
+
+	memcpy(new_buffer, String_Data(string), first_half_length);
+	memcpy(new_buffer + first_half_length, StringView_Data(other_string), parameter_length);
+	memcpy(new_buffer + first_half_length + parameter_length, &String_At(string, position + count), second_half_length);
+	new_buffer[first_half_length + parameter_length + second_half_length] = '\0';
+
+	String_Destroy(string);
+	StringView_Create(&string->view, new_buffer, new_length);
+	return cc_true;
+}

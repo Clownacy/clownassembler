@@ -42,6 +42,7 @@ cc_bool String_CreateAppendView(String *string, const StringView *source_1, cons
 #define String_CreateAppend(OUTPUT, INPUT_1, INPUT_2) String_CreateAppendView(OUTPUT, String_View(INPUT_1), String_View(INPUT_2))
 void String_CreateMove(String *string, String *other_string);
 void String_Destroy(String *string);
+cc_bool String_Replace(String *string, size_t position, size_t count, const StringView *other_string);
 
 #define String_View(STRING) ((const StringView*)&(STRING)->view)
 #define String_Data(STRING) StringView_Data(String_View(STRING))
