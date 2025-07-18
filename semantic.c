@@ -59,7 +59,7 @@ typedef struct FixUp
 	unsigned long program_counter;
 	size_t output_position;
 	String last_global_label;
-	char *source_line;
+	String source_line;
 	Location location;
 	String label;
 } FixUp;
@@ -5005,7 +5005,7 @@ static void ParseLine(SemanticState *state, const String *source_line, const Str
 					fix_up->program_counter = starting_program_counter;
 					fix_up->output_position = starting_output_position;
 					String_CreateCopy(&fix_up->last_global_label, &state->last_global_label);
-					fix_up->source_line = DuplicateString(state, String_CStr(source_line));
+					String_CreateCopy(&fix_up->source_line, source_line);
 					String_CreateCopyView(&fix_up->label, label);
 
 					/* Clone the location. */
@@ -5777,7 +5777,7 @@ cc_bool ClownAssembler_Assemble(
 						BinaryOutput_fseek(&state, state.output_callbacks, fix_up->output_position);
 						String_Destroy(&state.last_global_label);
 						String_CreateCopy(&state.last_global_label, &fix_up->last_global_label);
-						state.source_line = fix_up->source_line;
+						state.source_line = String_CStr(&fix_up->source_line);
 						state.location = &fix_up->location;
 
 						state.fix_up_needed = cc_false;
@@ -5797,7 +5797,7 @@ cc_bool ClownAssembler_Assemble(
 							/* We're done with this statement: delete it. */
 							DestroyStatement(&fix_up->statement);
 							String_Destroy(&fix_up->last_global_label);
-							free(fix_up->source_line);
+							String_Destroy(&fix_up->source_line);
 							String_Destroy(&fix_up->label);
 
 							/* Pop one location from the list. */
