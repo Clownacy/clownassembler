@@ -110,7 +110,7 @@ typedef struct SemanticState
 	Location *location;
 	yyscan_t flex_state;
 	String line_buffer;
-	const char *source_line;
+	const String *source_line;
 	unsigned int current_if_level;
 	unsigned int false_if_level;
 	cc_bool true_already_found;
@@ -290,7 +290,7 @@ static void ErrorMessageCommon(SemanticState *state)
 	for (location = state->location; location != NULL; location = location->previous)
 		TextOutput_fprintf(state->error_callbacks, "\nOn line %lu of '%s'...", location->line_number, location->file_path != NULL ? location->file_path : "[No path given]");
 
-	TextOutput_fprintf(state->error_callbacks, "\n%s\n\n", state->source_line != NULL ? state->source_line : "[No source line]");
+	TextOutput_fprintf(state->error_callbacks, "\n%s\n\n", String_CStr(state->source_line));
 }
 
 ATTRIBUTE_PRINTF(2, 3) static void SemanticWarning(SemanticState *state, const char *fmt, ...)
@@ -1084,7 +1084,7 @@ static void TerminateWhile(SemanticState *state)
 		unsigned long value;
 		SourceLineListNode *source_line_list_node;
 
-		state->source_line = String_CStr(&source_line);
+		state->source_line = &source_line;
 
 		if (!ResolveExpression(state, &expression, &value, cc_false))
 		{
@@ -4707,7 +4707,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			state->mode = MODE_WHILE;
 
 			state->shared.while_statement.expression = statement->shared.expression;
-			String_Create(&state->shared.while_statement.source_line, state->source_line, strlen(state->source_line)); /* TODO: Down with `strlen`! */
+			String_CreateCopy(&state->shared.while_statement.source_line, state->source_line);
 
 			state->shared.while_statement.line_number = state->location->line_number;
 
@@ -5063,7 +5063,7 @@ static void AssembleLine(SemanticState *state, const String *source_line)
 		return;
 	}
 
-	state->source_line = String_CStr(source_line);
+	state->source_line = source_line;
 	source_line_pointer = String_CStr(source_line);
 
 	/* Despite the fact that we're using Flex and Bison to parse the
@@ -5309,7 +5309,7 @@ static void AssembleLine(SemanticState *state, const String *source_line)
 								size_t search_position;
 
 								/* Update the source line for the error printers. */
-								state->source_line = String_CStr(&source_line_list_node->source_line_buffer);
+								state->source_line = &source_line_list_node->source_line_buffer;
 
 								/* A bit of a cheat so that errors that occur before the call to AssembleLine still show the correct line number. */
 								++state->location->line_number;
@@ -5777,7 +5777,7 @@ cc_bool ClownAssembler_Assemble(
 						BinaryOutput_fseek(&state, state.output_callbacks, fix_up->output_position);
 						String_Destroy(&state.last_global_label);
 						String_CreateCopy(&state.last_global_label, &fix_up->last_global_label);
-						state.source_line = String_CStr(&fix_up->source_line);
+						state.source_line = &fix_up->source_line;
 						state.location = &fix_up->location;
 
 						state.fix_up_needed = cc_false;

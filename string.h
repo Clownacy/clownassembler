@@ -33,7 +33,7 @@ size_t StringView_Find(const StringView *view, const StringView *sub_view, size_
 size_t StringView_FindCharacter(const StringView *view, char character, size_t position);
 #define StringView_SubStr(VIEW, OTHER_VIEW, POSITION, LENGTH) StringView_Create(VIEW, &StringView_At(OTHER_VIEW, POSITION), LENGTH)
 
-#define STRING_INITIALISER(STRING) {STRING_VIEW_INITIALISER(STRING)}
+#define STRING_INITIALISER(STRING_LITERAL) {STRING_VIEW_INITIALISER(STRING_LITERAL), sizeof(STRING_LITERAL) - 1}
 
 void String_CreateBlank(String *string);
 cc_bool String_CreateInternal(String *string, const char *source_1_buffer, size_t source_1_length, const char *source_2_buffer, size_t source_2_length);
