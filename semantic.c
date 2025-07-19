@@ -477,7 +477,7 @@ static void ListSourceLine(SemanticState *state)
 
 			state->line_listed = cc_true;
 
-			for (i = state->listing_counter * 2 + state->listing_counter / 2; i < 28; ++i)
+			for (i = state->listing_counter; i < 28; ++i)
 				TextOutput_fputc(' ', state->listing_callbacks);
 
 			TextOutput_fprintf(state->listing_callbacks, "%s\n", String_CStr(&state->line_buffer));
@@ -492,7 +492,7 @@ static void ListIdentifierValue(SemanticState *state, unsigned long value)
 	{
 		TextOutput_fprintf(state->listing_callbacks, " =%08lX", value);
 
-		state->listing_counter += 4;
+		state->listing_counter += 2 + 8;
 	}
 }
 
@@ -559,22 +559,25 @@ static void OutputByte(SemanticState *state, unsigned int byte)
 	if (TextOutput_exists(state->listing_callbacks) && !state->doing_fix_up && !state->suppress_listing)
 	{
 		/* We can only write up to 10 bytes. */
-		if (state->listing_counter <= 10)
+		if (state->listing_counter <= 25)
 		{
-			if (state->listing_counter == 10)
+			if (state->listing_counter == 25)
 			{
 				/* After the last byte, we output a '+' to signal there's more. */
 				TextOutput_fputc('+', state->listing_callbacks);
+				++state->listing_counter;
 			}
 			else
 			{
-				if (state->listing_counter % 2 == 0)
+				if (state->listing_counter % 5 == 0)
+				{
 					TextOutput_fputc(' ', state->listing_callbacks);
+					++state->listing_counter;
+				}
 
 				TextOutput_fprintf(state->listing_callbacks, "%02X", byte);
+				state->listing_counter += 2;
 			}
-
-			++state->listing_counter;
 		}
 	}
 
