@@ -158,14 +158,6 @@ typedef struct Macro
 static void AssembleFile(SemanticState *state);
 static void AssembleLine(SemanticState *state, const String *source_line);
 
-/* Prevent errors when '__attribute__((format(printf, X, X)))' is not supported. */
-/* GCC 3.2 is the earliest version of GCC of which I can find proof of supporting this. */
-#if defined(__GNUC__) && defined(__GNUC_MINOR__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 2))
-#define ATTRIBUTE_PRINTF(a, b) __attribute__((format(printf, a, b)))
-#else
-#define ATTRIBUTE_PRINTF(a, b)
-#endif
-
 static const StringView string_program_counter_statement = STRING_VIEW_INITIALISER(",PROGRAM_COUNTER_OF_STATEMENT");
 static const StringView string_program_counter_expression = STRING_VIEW_INITIALISER(",PROGRAM_COUNTER_OF_EXPRESSION");
 static const StringView string_rs = STRING_VIEW_INITIALISER("__rs");
@@ -210,7 +202,7 @@ static void TextOutput_vfprintf(const TextOutput* const callbacks, const char* c
 		callbacks->print_formatted((void*)callbacks->user_data, format, args);
 }
 
-ATTRIBUTE_PRINTF(2, 3) static void TextOutput_fprintf(const TextOutput* const callbacks, const char* const format, ...)
+CC_ATTRIBUTE_PRINTF(2, 3) static void TextOutput_fprintf(const TextOutput* const callbacks, const char* const format, ...)
 {
 	if (TextOutput_exists(callbacks))
 	{
@@ -284,7 +276,7 @@ static void ErrorMessageCommon(SemanticState *state)
 	TextOutput_fprintf(state->error_callbacks, "\n%s\n\n", String_CStr(state->source_line));
 }
 
-ATTRIBUTE_PRINTF(2, 3) static void SemanticWarning(SemanticState *state, const char *fmt, ...)
+CC_ATTRIBUTE_PRINTF(2, 3) static void SemanticWarning(SemanticState *state, const char *fmt, ...)
 {
 	if (state->warnings_enabled)
 	{
@@ -300,7 +292,7 @@ ATTRIBUTE_PRINTF(2, 3) static void SemanticWarning(SemanticState *state, const c
 	}
 }
 
-ATTRIBUTE_PRINTF(2, 3) static void SemanticError(SemanticState *state, const char *fmt, ...)
+CC_ATTRIBUTE_PRINTF(2, 3) static void SemanticError(SemanticState *state, const char *fmt, ...)
 {
 	va_list args;
 
@@ -315,7 +307,7 @@ ATTRIBUTE_PRINTF(2, 3) static void SemanticError(SemanticState *state, const cha
 	state->success = cc_false;
 }
 
-ATTRIBUTE_PRINTF(2, 3) static void InternalError(SemanticState *state, const char *fmt, ...)
+CC_ATTRIBUTE_PRINTF(2, 3) static void InternalError(SemanticState *state, const char *fmt, ...)
 {
 	va_list args;
 
