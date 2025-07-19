@@ -4859,6 +4859,8 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				if (!StringView_Empty(label))
 					AddIdentifierToSymbolTable(state, label, rs->shared.unsigned_long, SYMBOL_CONSTANT);
 
+				ListIdentifierValue(state, rs->shared.unsigned_long);
+
 				/* Advance '__rs' by the specified amount. */
 				switch (statement->shared.rs.size)
 				{
