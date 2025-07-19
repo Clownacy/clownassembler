@@ -366,26 +366,6 @@ static void* MallocAndHandleError(SemanticState *state, size_t size)
 	return memory;
 }
 
-static char* DuplicateStringWithLength(SemanticState *state, const char *string, const size_t length)
-{
-	char *duplicated_string;
-
-	duplicated_string = (char*)MallocAndHandleError(state, length + 1);
-
-	if (duplicated_string != NULL)
-	{
-		memcpy(duplicated_string, string, length);
-		duplicated_string[length] = '\0';
-	}
-
-	return duplicated_string;
-}
-
-static char* DuplicateString(SemanticState *state, const char *string)
-{
-	return DuplicateStringWithLength(state, string, strlen(string));
-}
-
 static unsigned int GetDecimalIntegerStringLength(unsigned int integer)
 {
 	unsigned int string_length;
