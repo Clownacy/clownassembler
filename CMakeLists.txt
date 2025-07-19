@@ -54,22 +54,25 @@ add_test(NAME INSTURCTION_MOVE_TO_SR_INVALID_5 COMMAND clownassembler -i "${CMAK
 set_property(TEST INSTURCTION_MOVE_TO_SR_INVALID_5 PROPERTY WILL_FAIL true)
 
 # Test that all valid combinations of instructions and operands assemble.
-add_test(NAME valid_instructions_assemble COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/valid instructions.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
+add_test(NAME valid_instructions_assemble COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/valid instructions.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/valid instructions.bin")
 
 # Test that all valid combinations of instructions and operands produce the correct machine code.
-add_test(NAME valid_instructions_compare COMMAND ${CMAKE_COMMAND} -E compare_files "${CMAKE_CURRENT_SOURCE_DIR}/tests/valid instructions.bin" "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
+add_test(NAME valid_instructions_compare COMMAND ${CMAKE_COMMAND} -E compare_files "${CMAKE_CURRENT_SOURCE_DIR}/tests/valid instructions.bin" "${CMAKE_CURRENT_BINARY_DIR}/valid instructions.bin")
+set_tests_properties(valid_instructions_compare PROPERTIES DEPENDS valid_instructions_assemble)
 
 # Test that the Sonic 1 disassembly assembles.
 add_test(NAME sonic_1_assemble COMMAND clownassembler -i "sonic.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/s1built.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/s1disasm")
 
 # Test that the Sonic 1 disassembly produces the correct machine code.
 add_test(NAME sonic_1_compare COMMAND ${CMAKE_COMMAND} -E compare_files "s1rev01.bin" "${CMAKE_CURRENT_BINARY_DIR}/s1built.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/s1disasm")
+set_tests_properties(sonic_1_compare PROPERTIES DEPENDS sonic_1_assemble)
 
 # Test that the 68 Katy's BASIC environment assembles.
-add_test(NAME 68_katy_basic_assemble COMMAND clownassembler -i "Basic68s3.52.x68" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/68-katy-basic")
+add_test(NAME 68_katy_basic_assemble COMMAND clownassembler -i "Basic68s3.52.x68" -o "${CMAKE_CURRENT_BINARY_DIR}/68-katy-basic.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/68-katy-basic")
 
 # Test that the 68 Katy's BASIC environment produces the correct machine code.
-add_test(NAME 68_katy_basic_compare COMMAND ${CMAKE_COMMAND} -E compare_files "basic.bin" "${CMAKE_CURRENT_BINARY_DIR}/output.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/68-katy-basic")
+add_test(NAME 68_katy_basic_compare COMMAND ${CMAKE_COMMAND} -E compare_files "basic.bin" "${CMAKE_CURRENT_BINARY_DIR}/68-katy-basic.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/68-katy-basic")
+set_tests_properties(68_katy_basic_compare PROPERTIES DEPENDS 68_katy_basic_assemble)
 
 # Test that the Sonic Spinball disassembly assembles.
 add_test(NAME sonic_spinball_assemble COMMAND clownassembler -i "spinball.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/sbbuilt.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/spindisasm")
@@ -79,3 +82,4 @@ add_test(NAME sonic_2_august_21st_assemble COMMAND clownassembler -i "sonic2alph
 
 # Test that the Sonic 2 August 21st disassembly produces the correct machine code.
 add_test(NAME sonic_2_august_21st_compare COMMAND ${CMAKE_COMMAND} -E compare_files "sonic2alpha.bin" "${CMAKE_CURRENT_BINARY_DIR}/sonic2alpha.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/Sonic-2-Aug-21st-Disassembly")
+set_tests_properties(sonic_2_august_21st_compare PROPERTIES DEPENDS sonic_2_august_21st_assemble)
