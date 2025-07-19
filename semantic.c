@@ -47,7 +47,7 @@ typedef struct Location
 {
 	struct Location *previous;
 
-	const char *file_path; /* TODO: Convert this to `String`. */
+	String file_path; /* TODO: This should really be a `StringView`, but fix-ups need deep copies... */
 	unsigned long line_number;
 } Location;
 
@@ -271,7 +271,7 @@ static void ErrorMessageCommon(SemanticState *state)
 	const Location *location;
 
 	for (location = state->location; location != NULL; location = location->previous)
-		TextOutput_fprintf(state->error_callbacks, "\nOn line %lu of '%s'...", location->line_number, location->file_path != NULL ? location->file_path : "[No path given]");
+		TextOutput_fprintf(state->error_callbacks, "\nOn line %lu of '%s'...", location->line_number, String_CStr(&location->file_path));
 
 	TextOutput_fprintf(state->error_callbacks, "\n%s\n\n", String_CStr(state->source_line));
 }
@@ -4172,7 +4172,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 		input_callbacks.read_line = ReadLine;
 
 		/* Add file path and line number to the location list. */
-		location.file_path = String_CStr(&include->path);
+		String_CreateCopy(&location.file_path, &include->path);
 		location.line_number = 0;
 
 		location.previous = state->location;
@@ -4186,6 +4186,8 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 		state->input_callbacks = previous_input_callbacks;
 
 		state->location = state->location->previous;
+
+		String_Destroy(&location.file_path);
 
 		fclose(input_file);
 	}
@@ -5025,7 +5027,7 @@ static void ParseLine(SemanticState *state, const String *source_line, const Str
 
 					/* Clone the location. */
 					*destination_location = *source_location;
-					destination_location->file_path = DuplicateString(state, source_location->file_path);
+					String_CreateCopy(&destination_location->file_path, &source_location->file_path);
 
 					for (source_location = source_location->previous; source_location != NULL; source_location = source_location->previous)
 					{
@@ -5039,7 +5041,7 @@ static void ParseLine(SemanticState *state, const String *source_line, const Str
 						{
 							destination_location = destination_location->previous;
 							*destination_location = *source_location;
-							destination_location->file_path = DuplicateString(state, source_location->file_path);
+							String_CreateCopy(&destination_location->file_path, &source_location->file_path);
 						}
 					}
 
@@ -5313,7 +5315,7 @@ static void AssembleLine(SemanticState *state, const String *source_line)
 							/* Push a new location (this macro).*/
 							Location location;
 
-							location.file_path = String_CStr(&macro->name);
+							String_CreateCopy(&location.file_path, &macro->name);
 							location.line_number = 0;
 
 							location.previous = state->location;
@@ -5477,6 +5479,8 @@ static void AssembleLine(SemanticState *state, const String *source_line)
 
 							/* Pop location. */
 							state->location = state->location->previous;
+
+							String_Destroy(&location.file_path);
 						}
 
 						/* Free the parameter strings. */
@@ -5701,7 +5705,7 @@ cc_bool ClownAssembler_Assemble(
 	   numbers that describe the location and nesting of the erroneous
 	   line. This is the first entry in that list. */
 	location.previous = NULL;
-	location.file_path = input_file_path;
+	String_Create(&location.file_path, input_file_path, strlen(input_file_path));
 	location.line_number = 0;
 
 	/* Initialise the state's non-default values. */
@@ -5818,7 +5822,7 @@ cc_bool ClownAssembler_Assemble(
 							while (location != NULL)
 							{
 								Location *previous_location = location->previous;
-								free((char*)location->file_path); /* Can anything be done to avoid this awkward hack? */
+								String_Destroy(&location->file_path);
 								free(location);
 								location = previous_location;
 							}
