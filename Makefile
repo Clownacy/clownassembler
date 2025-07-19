@@ -4,7 +4,7 @@ YACC = bison
 ifneq ($(RELEASE),)
  CFLAGS = -ansi -Wno-long-long -Wall -Wextra -pedantic -Wc++-compat -O2 -DNDEBUG
 else
- CFLAGS = -ansi -Wno-long-long -Wall -Wextra -pedantic -Wc++-compat -ggdb3 -Og -fwrapv -Wshift-overflow=2
+ CFLAGS = -ansi -Wno-long-long -Wall -Wextra -pedantic -Wc++-compat -ggdb3 -Og -fwrapv -Wshift-overflow
  YFLAGS = --debug
 endif
 
@@ -20,8 +20,8 @@ syntactic.c syntactic.h: syntactic.y
 
 assemblers: clownassembler clownassembler_asm68k
 
-clownassembler_asm68k: frontend_asm68k.c dictionary.c lexical.c semantic.c strcmpci.c syntactic.c
+clownassembler_asm68k: frontend_asm68k.c dictionary.c lexical.c semantic.c strcmpci.c string.c syntactic.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
 
-clownassembler: frontend_custom.c dictionary.c lexical.c semantic.c strcmpci.c syntactic.c
+clownassembler: frontend_custom.c dictionary.c lexical.c semantic.c strcmpci.c string.c syntactic.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
