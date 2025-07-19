@@ -4624,9 +4624,10 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				SetLastGlobalLabel(state, label);
 
 			if (ResolveExpression(state, &statement->shared.expression, &value, cc_true))
+			{
 				AddIdentifierToSymbolTable(state, label, value, SYMBOL_CONSTANT);
-
-			ListIdentifierValue(state, value);
+				ListIdentifierValue(state, value);
+			}
 
 			break;
 		}
@@ -4639,9 +4640,10 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				SetLastGlobalLabel(state, label);
 
 			if (ResolveExpression(state, &statement->shared.expression, &value, cc_true))
+			{
 				AddIdentifierToSymbolTable(state, label, value, SYMBOL_VARIABLE);
-
-			ListIdentifierValue(state, value);
+				ListIdentifierValue(state, value);
+			}
 
 			break;
 		}
@@ -4857,9 +4859,10 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 				/* Add label to symbol table. */
 				if (!StringView_Empty(label))
+				{
 					AddIdentifierToSymbolTable(state, label, rs->shared.unsigned_long, SYMBOL_CONSTANT);
-
-				ListIdentifierValue(state, rs->shared.unsigned_long);
+					ListIdentifierValue(state, rs->shared.unsigned_long);
+				}
 
 				/* Advance '__rs' by the specified amount. */
 				switch (statement->shared.rs.size)
