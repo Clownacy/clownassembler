@@ -461,13 +461,12 @@ static StringView ComputeUniqueMacroSuffix(Macro* const macro)
 	return view;
 }
 
-static FILE* fopen_backslash(SemanticState *state, const StringView *path, const char *mode)
+static FILE* fopen_backslash(const StringView *path, const char *mode)
 {
 	FILE *file;
+	String path_copy;
 
-	char* const path_copy = DuplicateStringWithLength(state, StringView_Data(path), StringView_Length(path));
-
-	if (path_copy == NULL)
+	if (!String_CreateCopyView(&path_copy, path))
 	{
 		file = NULL;
 	}
@@ -476,12 +475,12 @@ static FILE* fopen_backslash(SemanticState *state, const StringView *path, const
 		size_t i;
 
 		for (i = 0; i < StringView_Length(path); ++i)
-			if (path_copy[i] == '\\')
-				path_copy[i] = '/';
+			if (String_At(&path_copy, i) == '\\')
+				String_At(&path_copy, i) = '/';
 
-		file = fopen(path_copy, mode);
+		file = fopen(String_CStr(&path_copy), mode);
 
-		free(path_copy);
+		String_Destroy(&path_copy);
 	}
 
 	return file;
@@ -4156,7 +4155,7 @@ static void ProcessDcb(SemanticState *state, StatementDcb *dcb)
 
 static void ProcessInclude(SemanticState *state, const StatementInclude *include)
 {
-	FILE* const input_file = fopen_backslash(state, String_View(&include->path), "r");
+	FILE* const input_file = fopen_backslash(String_View(&include->path), "r");
 
 	if (input_file == NULL)
 	{
@@ -4194,7 +4193,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 
 static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 {
-	FILE* const input_file = fopen_backslash(state, String_View(&incbin->path), "rb");
+	FILE* const input_file = fopen_backslash(String_View(&incbin->path), "rb");
 
 	if (input_file == NULL)
 	{
