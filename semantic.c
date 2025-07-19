@@ -679,8 +679,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 
 static void AddToSourceLineList(SemanticState *state, SourceLineList *source_line_list, const String *source_line)
 {
-	const size_t source_line_length = String_Length(source_line);
-	SourceLineListNode* const source_line_list_node = (SourceLineListNode*)MallocAndHandleError(state, sizeof(SourceLineListNode) + source_line_length);
+	SourceLineListNode* const source_line_list_node = (SourceLineListNode*)MallocAndHandleError(state, sizeof(SourceLineListNode));
 
 	if (source_line_list_node != NULL)
 	{
