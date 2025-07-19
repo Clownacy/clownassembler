@@ -473,9 +473,9 @@ static void ListSourceLine(SemanticState *state)
 	{
 		if (!state->line_listed)
 		{
-			state->line_listed = cc_true;
-
 			unsigned int i;
+
+			state->line_listed = cc_true;
 
 			for (i = state->listing_counter * 2 + state->listing_counter / 2; i < 28; ++i)
 				TextOutput_fputc(' ', state->listing_callbacks);
