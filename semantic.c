@@ -416,34 +416,28 @@ static unsigned int GetHexadecimalIntegerStringLength(unsigned int integer)
 	return string_length;
 }
 
-static String DecimalIntegerToString(SemanticState *state, const unsigned int integer)
+static String DecimalIntegerToString(const unsigned int integer)
 {
 	String string;
 
 	const size_t length = GetDecimalIntegerStringLength(integer);
-	char* const integer_string = (char*)MallocAndHandleError(state, length + 1);
 
-	if (integer_string != NULL)
-		sprintf(integer_string, "%u", integer);
-
-	string.view.buffer = integer_string;
-	string.view.length = length;
+	String_CreateBlank(&string);
+	if (String_ResizeNoFill(&string, length))
+		sprintf(String_Data(&string), "%u", integer);
 
 	return string;
 }
 
-static String HexadecimalIntegerToString(SemanticState *state, const unsigned int integer)
+static String HexadecimalIntegerToString(const unsigned int integer)
 {
 	String string;
 
 	const size_t length = GetHexadecimalIntegerStringLength(integer);
-	char* const integer_string = (char*)MallocAndHandleError(state, length + 1);
 
-	if (integer_string != NULL)
-		sprintf(integer_string, "%X", integer);
-
-	string.view.buffer = integer_string;
-	string.view.length = length;
+	String_CreateBlank(&string);
+	if (String_ResizeNoFill(&string, length))
+		sprintf(String_Data(&string), "%X", integer);
 
 	return string;
 }
@@ -5311,7 +5305,7 @@ static void AssembleLine(SemanticState *state, const String *source_line)
 						} while (character != ';' && character != '\0');
 
 						/* Stringify the number of parameters for the 'narg' placeholder. */
-						narg_string = DecimalIntegerToString(state, total_parameters - 1);
+						narg_string = DecimalIntegerToString(total_parameters - 1);
 
 						/* Finally, invoke the macro. */
 						{
@@ -5396,9 +5390,9 @@ static void AssembleLine(SemanticState *state, const String *source_line)
 													value = 0;
 
 												if (String_At(&modified_line, earliest_parameter_start + 1) == '#')
-													symbol_value_string = DecimalIntegerToString(state, value);
+													symbol_value_string = DecimalIntegerToString(value);
 												else /*if (String_At(&modified_line, earliest_parameter_start + 1) == '$')*/
-													symbol_value_string = HexadecimalIntegerToString(state, value);
+													symbol_value_string = HexadecimalIntegerToString(value);
 
 												substitute = *String_View(&symbol_value_string);
 											}
