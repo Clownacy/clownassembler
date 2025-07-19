@@ -1,11 +1,11 @@
 LEX = flex
 YACC = bison
 
-ifneq ($(RELEASE),)
- CFLAGS = -ansi -Wno-long-long -Wall -Wextra -pedantic -Wc++-compat -O2 -DNDEBUG
-else
+ifeq ($(DEBUG),1)
  CFLAGS = -ansi -Wno-long-long -Wall -Wextra -pedantic -Wc++-compat -ggdb3 -Og -fwrapv -Wshift-overflow
  YFLAGS = --debug
+else
+ CFLAGS = -ansi -Wno-long-long -Wall -Wextra -pedantic -Wc++-compat -O2 -DNDEBUG
 endif
 
 all: generators

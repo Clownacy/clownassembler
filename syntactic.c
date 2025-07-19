@@ -759,8 +759,8 @@ static const yytype_int16 yyrline[] =
     1767,  1773,  1781,  1785,  1790,  1795,  1803,  1807,  1812,  1817,
     1822,  1830,  1834,  1839,  1847,  1851,  1856,  1861,  1869,  1873,
     1878,  1883,  1888,  1896,  1900,  1905,  1913,  1917,  1921,  1926,
-    1932,  1940,  1945,  1950,  1955,  1965,  1969,  1973,  1977,  1981,
-    1986,  1991,  1999
+    1932,  1940,  1945,  1950,  1955,  1966,  1970,  1974,  1978,  1982,
+    1987,  1992,  2000
 };
 #endif
 
@@ -4160,84 +4160,85 @@ yyreduce:
 		const cc_bool success = String_CreateAppend(&(yyval.expression).shared.string, &(yyvsp[-1].string), &(yyvsp[0].string));
 		String_Destroy(&(yyvsp[-1].string));
 		String_Destroy(&(yyvsp[0].string));
-		(yyval.expression).type = EXPRESSION_IDENTIFIER;
 
 		if (!success)
 			YYNOMEM;
+
+		(yyval.expression).type = EXPRESSION_IDENTIFIER;
 	}
-#line 4169 "syntactic.c"
+#line 4170 "syntactic.c"
     break;
 
   case 235: /* expression8: string  */
-#line 1966 "syntactic.y"
+#line 1967 "syntactic.y"
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4177 "syntactic.c"
+#line 4178 "syntactic.c"
     break;
 
   case 236: /* expression8: '*'  */
-#line 1970 "syntactic.y"
+#line 1971 "syntactic.y"
         {
 		(yyval.expression).type = EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT;
 	}
-#line 4185 "syntactic.c"
+#line 4186 "syntactic.c"
     break;
 
   case 237: /* expression8: '@'  */
-#line 1974 "syntactic.y"
+#line 1975 "syntactic.y"
         {
 		(yyval.expression).type = EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION;
 	}
-#line 4193 "syntactic.c"
+#line 4194 "syntactic.c"
     break;
 
   case 238: /* expression8: '(' expression ')'  */
-#line 1978 "syntactic.y"
+#line 1979 "syntactic.y"
         {
 		(yyval.expression) = (yyvsp[-1].expression);
 	}
-#line 4201 "syntactic.c"
+#line 4202 "syntactic.c"
     break;
 
   case 239: /* expression8: TOKEN_STRLEN '(' TOKEN_STRING ')'  */
-#line 1982 "syntactic.y"
+#line 1983 "syntactic.y"
         {
 		(yyval.expression).type = EXPRESSION_STRLEN;
 		(yyval.expression).shared.string = (yyvsp[-1].string);
 	}
-#line 4210 "syntactic.c"
+#line 4211 "syntactic.c"
     break;
 
   case 240: /* expression8: TOKEN_STRCMP '(' string ',' string ')'  */
-#line 1987 "syntactic.y"
+#line 1988 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_STRLEN, &(yyvsp[-3].expression), &(yyvsp[-1].expression)))
 			YYNOMEM;
 	}
-#line 4219 "syntactic.c"
+#line 4220 "syntactic.c"
     break;
 
   case 241: /* expression8: TOKEN_DEF '(' TOKEN_IDENTIFIER ')'  */
-#line 1992 "syntactic.y"
+#line 1993 "syntactic.y"
         {
 		(yyval.expression).type = EXPRESSION_DEF;
 		(yyval.expression).shared.string = (yyvsp[-1].string);
 	}
-#line 4228 "syntactic.c"
+#line 4229 "syntactic.c"
     break;
 
   case 242: /* string: TOKEN_STRING  */
-#line 2000 "syntactic.y"
+#line 2001 "syntactic.y"
         {
 		(yyval.expression).type = EXPRESSION_STRING;
 		(yyval.expression).shared.string = (yyvsp[0].string);
 	}
-#line 4237 "syntactic.c"
+#line 4238 "syntactic.c"
     break;
 
 
-#line 4241 "syntactic.c"
+#line 4242 "syntactic.c"
 
       default: break;
     }
@@ -4461,7 +4462,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 2005 "syntactic.y"
+#line 2006 "syntactic.y"
 
 
 static cc_bool DoExpression(Expression *expression, ExpressionType type, Expression *left_expression, Expression *right_expression)
