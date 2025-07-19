@@ -117,6 +117,7 @@ typedef struct SemanticState
 	cc_bool end;
 	unsigned int listing_counter;
 	cc_bool line_listed;
+	cc_bool suppress_listing;
 	Mode mode;
 	union
 	{
@@ -156,7 +157,6 @@ typedef struct Macro
 /* Some forward declarations that are needed because some functions recurse into each other. */
 static void AssembleFile(SemanticState *state);
 static void AssembleLine(SemanticState *state, const String *source_line);
-static void ListLine(SemanticState *state);
 
 /* Prevent errors when '__attribute__((format(printf, X, X)))' is not supported. */
 /* GCC 3.2 is the earliest version of GCC of which I can find proof of supporting this. */
@@ -501,6 +501,36 @@ static FILE* fopen_backslash(SemanticState *state, const StringView *path, const
 	return file;
 }
 
+static void ListSourceLine(SemanticState *state)
+{
+	/* Output line to listing file. */
+	if (TextOutput_exists(state->listing_callbacks))
+	{
+		if (!state->line_listed)
+		{
+			state->line_listed = cc_true;
+
+			unsigned int i;
+
+			for (i = state->listing_counter * 2 + state->listing_counter / 2; i < 28; ++i)
+				TextOutput_fputc(' ', state->listing_callbacks);
+
+			TextOutput_fprintf(state->listing_callbacks, "%s\n", String_CStr(&state->line_buffer));
+		}
+	}
+}
+
+static void ListIdentifierValue(SemanticState *state, unsigned long value)
+{
+	/* Output line to listing file. */
+	if (TextOutput_exists(state->listing_callbacks) && !state->doing_fix_up && !state->suppress_listing)
+	{
+		TextOutput_fprintf(state->listing_callbacks, " =%08lX", value);
+
+		state->listing_counter += 4;
+	}
+}
+
 static cc_bool IsSubstituteBlockingCharacter(const char character)
 {
 	return ((character >= 'a' && character <= 'z')
@@ -561,7 +591,7 @@ static cc_bool FindSubstitute(const StringView* const string_to_search, const St
 static void OutputByte(SemanticState *state, unsigned int byte)
 {
 	/* Write to listing file. */
-	if (!state->doing_fix_up && TextOutput_exists(state->listing_callbacks))
+	if (TextOutput_exists(state->listing_callbacks) && !state->doing_fix_up && !state->suppress_listing)
 	{
 		/* We can only write up to 10 bytes. */
 		if (state->listing_counter <= 10)
@@ -1069,6 +1099,8 @@ static void TerminateWhile(SemanticState *state)
 
 	/* Exit WHILE mode before we recurse into the WHILE's nested statements. */
 	state->mode = MODE_NORMAL;
+
+	state->suppress_listing = cc_true;
 
 	for (;;)
 	{
@@ -4163,7 +4195,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 
 		state->input_callbacks = &input_callbacks;
 
-		ListLine(state);
+		ListSourceLine(state);
 		AssembleFile(state);
 
 		state->input_callbacks = previous_input_callbacks;
@@ -4334,25 +4366,6 @@ static cc_bool ReadSourceLine(SemanticState *state)
 	return data_read;
 }
 
-static void ListLine(SemanticState *state)
-{
-	/* Output line to listing file. */
-	if (TextOutput_exists(state->listing_callbacks))
-	{
-		if (!state->line_listed)
-		{
-			state->line_listed = cc_true;
-
-			unsigned int i;
-
-			for (i = state->listing_counter * 2 + state->listing_counter / 2; i < 28; ++i)
-				TextOutput_fputc(' ', state->listing_callbacks);
-
-			TextOutput_fprintf(state->listing_callbacks, "%s\n", String_CStr(&state->line_buffer));
-		}
-	}
-}
-
 static void AssembleAndListLine(SemanticState *state)
 {
 	/* Output program counter to listing file. */
@@ -4361,12 +4374,13 @@ static void AssembleAndListLine(SemanticState *state)
 		state->line_listed = cc_false;
 
 		state->listing_counter = 0;
+		state->suppress_listing = cc_false;
 		TextOutput_fprintf(state->listing_callbacks, "%08lX", state->program_counter);
 	}
 
 	AssembleLine(state, &state->line_buffer);
 
-	ListLine(state);
+	ListSourceLine(state);
 }
 
 static void ProcessRept(SemanticState *state, StatementRept *rept)
@@ -4390,6 +4404,8 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 	state->shared.rept.source_line_list.head = NULL;
 	state->shared.rept.source_line_list.tail = NULL;
 
+	ListSourceLine(state);
+
 	for (;;)
 	{
 		if (!ReadSourceLine(state))
@@ -4403,7 +4419,7 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 		}
 		else
 		{
-			AssembleLine(state, &state->line_buffer);
+			AssembleAndListLine(state);
 		}
 
 		if (state->mode != MODE_REPT)
@@ -4419,6 +4435,8 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 			state->shared.rept.repetitions = previous_repetitions;
 			state->location->line_number = previous_line_number;
 			state->shared.rept.source_line_list = previous_source_line_list;
+
+			state->suppress_listing = cc_true;
 
 			while (repetitions-- != 0)
 			{
@@ -4608,6 +4626,8 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			if (ResolveExpression(state, &statement->shared.expression, &value, cc_true))
 				AddIdentifierToSymbolTable(state, label, value, SYMBOL_CONSTANT);
 
+			ListIdentifierValue(state, value);
+
 			break;
 		}
 
@@ -4620,6 +4640,8 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 			if (ResolveExpression(state, &statement->shared.expression, &value, cc_true))
 				AddIdentifierToSymbolTable(state, label, value, SYMBOL_VARIABLE);
+
+			ListIdentifierValue(state, value);
 
 			break;
 		}
@@ -5193,6 +5215,8 @@ static void AssembleLine(SemanticState *state, const String *source_line)
 
 					Macro *macro = (Macro*)macro_dictionary_entry->shared.pointer;
 					const StringView unique_suffix = ComputeUniqueMacroSuffix( macro);
+
+					state->suppress_listing = cc_true;
 
 					source_line_pointer += strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
 					parameters = (StringView*)MallocAndHandleError(state, sizeof(StringView));
