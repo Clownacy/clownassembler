@@ -119,6 +119,7 @@ typedef struct SemanticState
 	unsigned int listing_counter;
 	cc_bool line_listed;
 	cc_bool suppress_listing;
+	Substitute_State substitutions;
 	Mode mode;
 	union
 	{
@@ -4460,6 +4461,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_MACRO:
 		case STATEMENT_TYPE_MACROS:
 		case STATEMENT_TYPE_EQU:
+		case STATEMENT_TYPE_EQUS:
 		case STATEMENT_TYPE_SET:
 			if (StringView_Empty(label))
 			{
@@ -4545,6 +4547,10 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 			break;
 		}
+
+		case STATEMENT_TYPE_EQUS:
+			Substitute_PushSubstitute(&state->substitutions, label, String_View(&statement->shared.string));
+			break;
 
 		case STATEMENT_TYPE_SET:
 		{
@@ -5090,8 +5096,9 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 	return NULL;
 }
 
-static void AssembleLine(SemanticState *state, const String *source_line)
+static void AssembleLine(SemanticState *state, const String *source_line_raw)
 {
+	String source_line;
 	size_t label_length;
 	const char *source_line_pointer;
 	StringView label;
@@ -5100,14 +5107,17 @@ static void AssembleLine(SemanticState *state, const String *source_line)
 
 	++state->location->line_number;
 
-	if (String_At(source_line, 0) == '*')
+	String_CreateCopy(&source_line, source_line_raw);
+	Substitute_ProcessString(&state->substitutions, &source_line, NULL, NULL);
+
+	if (String_At(&source_line, 0) == '*')
 	{
 		/* This whole line is a comment. */
 		return;
 	}
 
-	state->source_line = source_line;
-	source_line_pointer = String_CStr(source_line);
+	state->source_line = &source_line;
+	source_line_pointer = String_CStr(&source_line);
 
 	/* Despite the fact that we're using Flex and Bison to parse the
 	   language for us, we unfortunately have to do quite a bit of
@@ -5201,7 +5211,7 @@ static void AssembleLine(SemanticState *state, const String *source_line)
 					      || strncmpci(source_line_pointer, "endif" , directive_length) == 0)
 					{
 						/* These can be processed normally too. */
-						ParseLine(state, source_line, &label, source_line_pointer);
+						ParseLine(state, &source_line, &label, source_line_pointer);
 					}
 					else
 					{
@@ -5219,7 +5229,7 @@ static void AssembleLine(SemanticState *state, const String *source_line)
 				if (macro_dictionary_entry == NULL || macro_dictionary_entry->type != SYMBOL_MACRO)
 				{
 					/* This is not a macro invocation: it's just a regular line that can be assembled as-is. */
-					ParseLine(state, source_line, &label, source_line_pointer);
+					ParseLine(state, &source_line, &label, source_line_pointer);
 				}
 				else
 				{
@@ -5412,11 +5422,11 @@ static void AssembleLine(SemanticState *state, const String *source_line)
 			if (directive_length != 0 && (strncmpci(source_line_pointer, "rept", directive_length) == 0 || strncmpci(source_line_pointer, "endr", directive_length) == 0))
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
-				ParseLine(state, source_line, &label, source_line_pointer);
+				ParseLine(state, &source_line, &label, source_line_pointer);
 			}
 			else
 			{
-				AddToSourceLineList(state, &state->shared.rept.source_line_list, source_line);
+				AddToSourceLineList(state, &state->shared.rept.source_line_list, &source_line);
 			}
 
 			break;
@@ -5426,7 +5436,7 @@ static void AssembleLine(SemanticState *state, const String *source_line)
 			if (directive_length != 0 && strncmpci(source_line_pointer, "endm", directive_length) == 0)
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
-				ParseLine(state, source_line, &label, source_line_pointer);
+				ParseLine(state, &source_line, &label, source_line_pointer);
 
 				if (state->shared.macro.is_short)
 					SemanticError(state, "Short macros shouldn't use ENDM.");
@@ -5436,7 +5446,7 @@ static void AssembleLine(SemanticState *state, const String *source_line)
 				if (state->shared.macro.is_short)
 				{
 					/* Short macros automatically terminate after one statement. */
-					const char first_nonwhitespace_character = String_At(source_line, strspn(String_CStr(source_line), " \t"));
+					const char first_nonwhitespace_character = String_At(&source_line, strspn(String_CStr(&source_line), " \t"));
 
 					if (!StringView_Empty(&label))
 						SemanticError(state, "Short macros shouldn't create labels.");
@@ -5447,13 +5457,13 @@ static void AssembleLine(SemanticState *state, const String *source_line)
 					}
 					else
 					{
-						AddToSourceLineList(state, &state->shared.macro.source_line_list, source_line);
+						AddToSourceLineList(state, &state->shared.macro.source_line_list, &source_line);
 						TerminateMacro(state);
 					}
 				}
 				else
 				{
-					AddToSourceLineList(state, &state->shared.macro.source_line_list, source_line);
+					AddToSourceLineList(state, &state->shared.macro.source_line_list, &source_line);
 				}
 			}
 
@@ -5463,9 +5473,9 @@ static void AssembleLine(SemanticState *state, const String *source_line)
 			/* If this line is an 'ENDW' directive, then exit 'WHILE' mode. Otherwise, add the line to the 'WHILE'. */
 			if (directive_length != 0 && strncmpci(source_line_pointer, "endw", directive_length) == 0)
 				/* TODO - Detect code after the keyword and error if any is found. */
-				ParseLine(state, source_line, &label, source_line_pointer);
+				ParseLine(state, &source_line, &label, source_line_pointer);
 			else
-				AddToSourceLineList(state, &state->shared.while_statement.source_line_list, source_line);
+				AddToSourceLineList(state, &state->shared.while_statement.source_line_list, &source_line);
 
 			break;
 	}
@@ -5630,6 +5640,7 @@ cc_bool ClownAssembler_Assemble(
 	String_CreateBlank(&state.last_global_label);
 	String_CreateBlank(&state.line_buffer);
 	state.location = &location;
+	Substitute_Initialise(&state.substitutions);
 	state.mode = MODE_NORMAL;
 
 	/* Create the symbol table dictionary. */
@@ -5784,6 +5795,7 @@ cc_bool ClownAssembler_Assemble(
 		Dictionary_Deinit(&state.dictionary);
 	}
 
+	Substitute_Deinitialise(&state.substitutions);
 	String_Destroy(&state.line_buffer);
 	String_Destroy(&state.last_global_label);
 

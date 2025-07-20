@@ -73,11 +73,11 @@ static cc_bool Substitute_FindSubstitute(const String* const string_to_search, c
 
 			/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
 			/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
-			if (!Substitute_IsSubstituteBlockingCharacter(character_before) && !Substitute_IsSubstituteBlockingCharacter(character_after))
+			if (character_before != '"' && character_before != '\'' && !Substitute_IsSubstituteBlockingCharacter(character_before) && !Substitute_IsSubstituteBlockingCharacter(character_after))
 			{
 				/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
 				/* asm68k allows backslashes before and after the parameter to separate them from surrounding characters. */
-				if (StringView_At(substitute, 0) != '\\' && character_before == '\\')
+				if (character_before == '\\')
 				{
 					--match_start;
 					++match_length;

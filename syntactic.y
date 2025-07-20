@@ -359,6 +359,7 @@ typedef enum StatementType
 	STATEMENT_TYPE_MACROS,
 	STATEMENT_TYPE_ENDM,
 	STATEMENT_TYPE_EQU,
+	STATEMENT_TYPE_EQUS,
 	STATEMENT_TYPE_SET,
 	STATEMENT_TYPE_IF,
 	STATEMENT_TYPE_ELSEIF,
@@ -403,6 +404,7 @@ typedef struct Statement
 			Expression length;
 		} rs;
 		Expression expression;
+		String string;
 	} shared;
 } Statement;
 
@@ -574,6 +576,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_INCLUDE
 %token TOKEN_DIRECTIVE_INCBIN
 %token TOKEN_DIRECTIVE_EQU
+%token TOKEN_DIRECTIVE_EQUS
 %token TOKEN_DIRECTIVE_SET
 %token TOKEN_DIRECTIVE_IF
 %token TOKEN_DIRECTIVE_ELSEIF
@@ -745,6 +748,11 @@ statement
 	{
 		statement->type = STATEMENT_TYPE_EQU;
 		statement->shared.expression = $2;
+	}
+	| TOKEN_DIRECTIVE_EQUS TOKEN_STRING
+	{
+		statement->type = STATEMENT_TYPE_EQUS;
+		statement->shared.string = $2;
 	}
 	| TOKEN_DIRECTIVE_SET expression
 	{
@@ -2211,6 +2219,10 @@ void DestroyStatement(Statement *statement)
 		case STATEMENT_TYPE_OBJ:
 		case STATEMENT_TYPE_ORG:
 			DestroyExpression(&statement->shared.expression);
+			break;
+
+		case STATEMENT_TYPE_EQUS:
+			String_Destroy(&statement->shared.string);
 			break;
 
 		case STATEMENT_TYPE_CNOP:

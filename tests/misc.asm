@@ -664,6 +664,10 @@ Swag.Legit:
 	endr
 	endr
 
+StringVar EQUS "dc.b"
+StringVar2 EQUS "stringvar!"
+	StringVar "\StringVar2"
+
   ; More blank lines to test support for trailing blank statements
 
 
