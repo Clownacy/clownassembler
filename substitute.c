@@ -6,7 +6,7 @@
 
 void Substitute_Initialise(Substitute_State* const state)
 {
-	state->list_head = NULL;
+	state->list_head = state->list_tail = NULL;
 }
 
 void Substitute_Deinitialise(Substitute_State* const state)
@@ -22,25 +22,50 @@ cc_bool Substitute_PushSubstitute(Substitute_State* const state, const StringVie
 	if (list_entry == NULL)
 		return cc_false;
 
-	list_entry->next = state->list_head;
-	state->list_head = list_entry;
-
+	list_entry->next = NULL;
 	String_CreateCopyView(&list_entry->identifier, identifier);
 	String_CreateCopyView(&list_entry->value, value);
+
+	if (state->list_tail == NULL)
+		state->list_head = list_entry;
+	else
+		state->list_tail->next = list_entry;
+
+	state->list_tail = list_entry;
 
 	return cc_true;
 }
 
 void Substitute_PopSubstitute(Substitute_State* const state)
 {
-	Substitute_ListEntry* const list_entry = state->list_head;
+	Substitute_ListEntry* const list_entry = state->list_tail;
 
-	state->list_head = list_entry->next;
+	state->list_tail = list_entry->next;
+
+	if (state->list_tail == NULL)
+		state->list_head = NULL;
 
 	String_Destroy(&list_entry->identifier);
 	String_Destroy(&list_entry->value);
 
 	free(list_entry);
+}
+
+const StringView* Substitute_GetSubstitute(const Substitute_State* const state, const size_t wanted_index)
+{
+	const Substitute_ListEntry *list_entry = state->list_head;
+	size_t current_index = 0;
+
+	while (list_entry != NULL && current_index != wanted_index)
+	{
+		list_entry = list_entry->next;
+		++current_index;
+	}
+
+	if (list_entry == NULL)
+		return NULL;
+
+	return String_View(&list_entry->value);
 }
 
 static cc_bool Substitute_IsSubstituteBlockingCharacter(const char character)
@@ -50,14 +75,14 @@ static cc_bool Substitute_IsSubstituteBlockingCharacter(const char character)
 	     || (character >= '0' && character <= '9'));
 }
 
-static cc_bool Substitute_FindSubstitute(const StringView* const string_to_search, const size_t starting_position, const StringView* const substitute, size_t* const found_position, size_t* const found_length)
+static cc_bool Substitute_FindSubstitute(const String* const string_to_search, const size_t starting_position, const StringView* const substitute, size_t* const found_position, size_t* const found_length)
 {
 	size_t match_start = starting_position;
 
 	for (;;)
 	{
 		/* Find identifier within string. */
-		match_start = StringView_Find(string_to_search, substitute, match_start);
+		match_start = String_Find(string_to_search, substitute, match_start);
 
 		/* Obviously bail if the identifier wasn't found. */
 		if (match_start == STRING_POSITION_INVALID)
@@ -68,8 +93,8 @@ static cc_bool Substitute_FindSubstitute(const StringView* const string_to_searc
 		{
 			size_t match_length = StringView_Length(substitute);
 
-			const char character_before = match_start == 0 ? 'a' : StringView_At(string_to_search, match_start - 1);
-			const char character_after = StringView_At(string_to_search, match_start + match_length);
+			const char character_before = match_start == 0 ? 'a' : String_At(string_to_search, match_start - 1);
+			const char character_after = String_At(string_to_search, match_start + match_length);
 
 			/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
 			/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
@@ -77,7 +102,7 @@ static cc_bool Substitute_FindSubstitute(const StringView* const string_to_searc
 			{
 				/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
 				/* asm68k allows backslashes before and after the parameter to separate them from surrounding characters. */
-				if (character_before == '\\')
+				if (StringView_At(substitute, 0) != '\\' && character_before == '\\')
 				{
 					--match_start;
 					++match_length;
@@ -99,13 +124,26 @@ static cc_bool Substitute_FindSubstitute(const StringView* const string_to_searc
 	return cc_false;
 }
 
-static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* const state, const StringView* const string_to_search, const size_t starting_position, size_t* const earliest_found_position, size_t* const earliest_found_length)
+static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* const state, const String* const string_to_search, const size_t starting_position, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, size_t* const earliest_found_position, size_t* const earliest_found_length)
 {
 	Substitute_ListEntry *list_entry;
 	const StringView *found_substitute = NULL;
 
 	*earliest_found_position = (size_t)-1;
 	*earliest_found_length = 0;
+
+	if (custom_search_callback != NULL)
+	{
+		size_t found_position, found_length;
+
+		found_substitute = custom_search_callback((void*)custom_search_user_data, state, string_to_search, starting_position, &found_position, &found_length);
+
+		if (found_substitute != NULL)
+		{
+			*earliest_found_position = found_position;
+			*earliest_found_length = found_length;
+		}
+	}
 
 	/* Search all substitutes, looking for the earliest. */
 	for (list_entry = state->list_head; list_entry != NULL; list_entry = list_entry->next)
@@ -127,7 +165,7 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 	return found_substitute;
 }
 
-void Substitute_ProcessString(Substitute_State* const state, String* const string)
+void Substitute_ProcessString(Substitute_State* const state, String* const string, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data)
 {
 	size_t starting_position = 0;
 
@@ -135,7 +173,7 @@ void Substitute_ProcessString(Substitute_State* const state, String* const strin
 	{
 		/* Find a substitute. */
 		size_t found_position, found_length;
-		const StringView* const found_substitute = Substitute_FindEarliestSubstitute(state, String_View(string), starting_position, &found_position, &found_length);
+		const StringView* const found_substitute = Substitute_FindEarliestSubstitute(state, string, starting_position, custom_search_callback, custom_search_user_data, &found_position, &found_length);
 
 		if (found_substitute == NULL)
 			break;

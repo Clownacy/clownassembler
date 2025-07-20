@@ -57,6 +57,7 @@ cc_bool String_ResizeNoFill(String *string, size_t size);
 #define String_Empty(STRING) StringView_Empty(String_View(STRING))
 #define String_At(STRING, INDEX) String_Data(STRING)[INDEX]
 #define String_Compare(STRING, OTHER_STRING) StringView_Compare(String_View(STRING), String_View(OTHER_STRING))
+#define String_Find(STRING, SUB_VIEW, POSITION) StringView_Find(String_View(STRING), SUB_VIEW, POSITION)
 #define String_FindCharacter(STRING, CHARACTER, POSITION) StringView_FindCharacter(String_View(STRING), CHARACTER, POSITION)
 
 #endif /* STRING_H */
