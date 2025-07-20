@@ -115,7 +115,7 @@ JumpToAddressZero:
 	even
 
 MakeExceptionHandler macro group,number
-\group\ExceptionHandler\number:
+\group\ExceptionHandler\number\:
 	moveq	#$\number\,d3
 	bra.w	\group\ExceptionHandlerCommon
 	endm
