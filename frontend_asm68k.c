@@ -98,6 +98,7 @@ int main(int argc, char **argv)
 	settings.equ_set_descope_local_labels = cc_false;
 	settings.output_local_labels_to_sym_file = cc_false;
 	settings.warnings_enabled = cc_true;
+	settings.expand_all_macros = cc_false;
 
 	source_file_path = object_file_path = symbol_file_path = listing_file_path = NULL;
 	source_file = object_file = symbol_file = listing_file = NULL;
@@ -125,10 +126,13 @@ int main(int argc, char **argv)
 				case 'g':
 				case 'k':
 				case 'l':
-				case 'm':
 				case 'w':
 				case 'z': /* And 'zd'. */
 					fprintf(stderr, "Warning: Unsupported option: '%s'.\n", argv[i]);
+					break;
+
+				case 'm':
+					settings.expand_all_macros = cc_true;
 					break;
 
 				case 'p': /* And 'ps'. */

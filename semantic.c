@@ -5410,7 +5410,7 @@ static void AssembleLineRaw(SemanticState *state, const String *source_line)
 							--state->location->line_number;
 
 							/* Send our expanded macro line to be assembled. */
-							AssembleLine(state, &modified_line, cc_false);
+							AssembleLine(state, &modified_line, state->settings->expand_all_macros);
 
 							/* The expanded line is done, so we can free it now. */
 							String_Destroy(&modified_line);

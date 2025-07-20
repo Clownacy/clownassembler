@@ -89,6 +89,7 @@ int main(int argc, char **argv)
 	settings.equ_set_descope_local_labels = cc_false;
 	settings.output_local_labels_to_sym_file = cc_false;
 	settings.warnings_enabled = cc_true;
+	settings.expand_all_macros = cc_false;
 
 	for (i = 1; i < argc; ++i)
 	{
@@ -153,6 +154,10 @@ int main(int argc, char **argv)
 					if (i < argc && argv[i + 1][0] != '-')
 						++i;
 
+					continue;
+
+				case 'm':
+					settings.expand_all_macros = cc_true;
 					continue;
 
 				case 'v':

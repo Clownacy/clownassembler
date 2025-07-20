@@ -64,6 +64,7 @@ typedef struct ClownAssembler_Settings
 	cc_bool equ_set_descope_local_labels;
 	cc_bool output_local_labels_to_sym_file;
 	cc_bool warnings_enabled;
+	cc_bool expand_all_macros;
 } ClownAssembler_Settings;
 
 typedef void (*ClownAssembler_AddDefinition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value);
