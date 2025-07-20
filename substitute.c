@@ -1,0 +1,149 @@
+#include "substitute.h"
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+
+void Substitute_Initialise(Substitute_State* const state)
+{
+	state->list_head = NULL;
+}
+
+void Substitute_Deinitialise(Substitute_State* const state)
+{
+	while (state->list_head != NULL)
+		Substitute_PopSubstitute(state);
+}
+
+cc_bool Substitute_PushSubstitute(Substitute_State* const state, const StringView* const identifier, const StringView* const value)
+{
+	Substitute_ListEntry* const list_entry = (Substitute_ListEntry*)malloc(sizeof(Substitute_ListEntry));
+
+	if (list_entry == NULL)
+		return cc_false;
+
+	list_entry->next = state->list_head;
+	state->list_head = list_entry;
+
+	String_CreateCopyView(&list_entry->identifier, identifier);
+	String_CreateCopyView(&list_entry->value, value);
+
+	return cc_true;
+}
+
+void Substitute_PopSubstitute(Substitute_State* const state)
+{
+	Substitute_ListEntry* const list_entry = state->list_head;
+
+	state->list_head = list_entry->next;
+
+	String_Destroy(&list_entry->identifier);
+	String_Destroy(&list_entry->value);
+
+	free(list_entry);
+}
+
+static cc_bool Substitute_IsSubstituteBlockingCharacter(const char character)
+{
+	return ((character >= 'a' && character <= 'z')
+	     || (character >= 'A' && character <= 'Z')
+	     || (character >= '0' && character <= '9'));
+}
+
+static cc_bool Substitute_FindSubstitute(const StringView* const string_to_search, const size_t starting_position, const StringView* const substitute, size_t* const found_position, size_t* const found_length)
+{
+	size_t match_start = starting_position;
+
+	for (;;)
+	{
+		/* Find identifier within string. */
+		match_start = StringView_Find(string_to_search, substitute, match_start);
+
+		/* Obviously bail if the identifier wasn't found. */
+		if (match_start == STRING_POSITION_INVALID)
+		{
+			break;
+		}
+		else
+		{
+			size_t match_length = StringView_Length(substitute);
+
+			const char character_before = match_start == 0 ? 'a' : StringView_At(string_to_search, match_start - 1);
+			const char character_after = StringView_At(string_to_search, match_start + match_length);
+
+			/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
+			/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
+			if (!Substitute_IsSubstituteBlockingCharacter(character_before) && !Substitute_IsSubstituteBlockingCharacter(character_after))
+			{
+				/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
+				/* asm68k allows backslashes before and after the parameter to separate them from surrounding characters. */
+				if (character_before == '\\')
+				{
+					--match_start;
+					++match_length;
+
+					if (character_after == '\\')
+						++match_length;
+				}
+
+				*found_position = match_start;
+				*found_length = match_length;
+				return cc_true;
+			}
+
+			/* Start search from the next character. */
+			++match_start;
+		}
+	}
+
+	return cc_false;
+}
+
+static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* const state, const StringView* const string_to_search, const size_t starting_position, size_t* const earliest_found_position, size_t* const earliest_found_length)
+{
+	Substitute_ListEntry *list_entry;
+	const StringView *found_substitute = NULL;
+
+	*earliest_found_position = (size_t)-1;
+	*earliest_found_length = 0;
+
+	/* Search all substitutes, looking for the earliest. */
+	for (list_entry = state->list_head; list_entry != NULL; list_entry = list_entry->next)
+	{
+		size_t found_position, found_length;
+
+		if (Substitute_FindSubstitute(string_to_search, starting_position, String_View(&list_entry->identifier), &found_position, &found_length))
+		{
+			/* Record if this substitute occurs first. */
+			if (*earliest_found_position > found_position)
+			{
+				found_substitute = String_View(&list_entry->value);
+				*earliest_found_position = found_position;
+				*earliest_found_length = found_length;
+			}
+		}
+	}
+
+	return found_substitute;
+}
+
+void Substitute_ProcessString(Substitute_State* const state, String* const string)
+{
+	size_t starting_position = 0;
+
+	for (;;)
+	{
+		/* Find a substitute. */
+		size_t found_position, found_length;
+		const StringView* const found_substitute = Substitute_FindEarliestSubstitute(state, String_View(string), starting_position, &found_position, &found_length);
+
+		if (found_substitute == NULL)
+			break;
+
+		/* Substitute it. */
+		String_Replace(string, found_position, found_length, found_substitute);
+
+		/* Limit the next search to after this. */
+		starting_position = found_position + StringView_Length(found_substitute);
+	}
+}
