@@ -668,6 +668,25 @@ StringVar EQUS "dc.b"
 StringVar2 EQUS "stringvar!"
 	StringVar "\StringVar2"
 
+StringVar3 SUBSTR 1,5,"\StringVar2"
+	StringVar "\StringVar3"
+
+Message equs "A short Sample String"
+Part1 substr 9,14,"\Message"
+Part2 substr 16,21,"\Message"
+Part3 substr 1,7,"\Message"
+Part4 substr 1,21,"\Message"
+
+	dc.b '-'
+	dc.b "\Part1"
+	dc.b '-'
+	dc.b "\Part2"
+	dc.b '-'
+	dc.b "\Part3"
+	dc.b '-'
+	dc.b "\Part4"
+	dc.b '-'
+
   ; More blank lines to test support for trailing blank statements
 
 

@@ -249,6 +249,7 @@ hexadecimal       {hexadecimal_digit}+
 <INITIAL>binclude        BEGIN(PATH); return TOKEN_DIRECTIVE_INCBIN;
 <INITIAL>equ             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EQU;
 <INITIAL>equs            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EQUS;
+<INITIAL>substr          BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBSTR;
 <INITIAL>set             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SET;
 <INITIAL>if              BEGIN(OPERANDS); return TOKEN_DIRECTIVE_IF;
 <INITIAL>elseif          BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ELSEIF;

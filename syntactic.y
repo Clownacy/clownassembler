@@ -345,6 +345,12 @@ typedef struct StatementInform
 	String message;
 } StatementInform;
 
+typedef struct StatementSubstr
+{
+	Expression start, end;
+	String string;
+} StatementSubstr;
+
 typedef enum StatementType
 {
 	STATEMENT_TYPE_EMPTY,
@@ -360,6 +366,7 @@ typedef enum StatementType
 	STATEMENT_TYPE_ENDM,
 	STATEMENT_TYPE_EQU,
 	STATEMENT_TYPE_EQUS,
+	STATEMENT_TYPE_SUBSTR,
 	STATEMENT_TYPE_SET,
 	STATEMENT_TYPE_IF,
 	STATEMENT_TYPE_ELSEIF,
@@ -403,6 +410,7 @@ typedef struct Statement
 			Size size;
 			Expression length;
 		} rs;
+		StatementSubstr substr;
 		Expression expression;
 		String string;
 	} shared;
@@ -577,6 +585,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_INCBIN
 %token TOKEN_DIRECTIVE_EQU
 %token TOKEN_DIRECTIVE_EQUS
+%token TOKEN_DIRECTIVE_SUBSTR
 %token TOKEN_DIRECTIVE_SET
 %token TOKEN_DIRECTIVE_IF
 %token TOKEN_DIRECTIVE_ELSEIF
@@ -753,6 +762,13 @@ statement
 	{
 		statement->type = STATEMENT_TYPE_EQUS;
 		statement->shared.string = $2;
+	}
+	| TOKEN_DIRECTIVE_SUBSTR expression ',' expression ',' TOKEN_STRING
+	{
+		statement->type = STATEMENT_TYPE_SUBSTR;
+		statement->shared.substr.start = $2;
+		statement->shared.substr.end = $4;
+		statement->shared.substr.string = $6;
 	}
 	| TOKEN_DIRECTIVE_SET expression
 	{
@@ -2223,6 +2239,12 @@ void DestroyStatement(Statement *statement)
 
 		case STATEMENT_TYPE_EQUS:
 			String_Destroy(&statement->shared.string);
+			break;
+
+		case STATEMENT_TYPE_SUBSTR:
+			DestroyExpression(&statement->shared.substr.start);
+			DestroyExpression(&statement->shared.substr.end);
+			String_Destroy(&statement->shared.substr.string);
 			break;
 
 		case STATEMENT_TYPE_CNOP:

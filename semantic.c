@@ -4462,6 +4462,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_MACROS:
 		case STATEMENT_TYPE_EQU:
 		case STATEMENT_TYPE_EQUS:
+		case STATEMENT_TYPE_SUBSTR:
 		case STATEMENT_TYPE_SET:
 			if (StringView_Empty(label))
 			{
@@ -4551,6 +4552,40 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_EQUS:
 			Substitute_PushSubstitute(&state->substitutions, label, String_View(&statement->shared.string));
 			break;
+
+		case STATEMENT_TYPE_SUBSTR:
+		{
+			unsigned long start, end;
+			StringView substring;
+
+			if (!ResolveExpression(state, &statement->shared.substr.start, &start, cc_true))
+			{
+				SemanticError(state, "Start must be evaluable on the first pass.");
+				break;
+			}
+
+			if (!ResolveExpression(state, &statement->shared.substr.end, &end, cc_true))
+			{
+				SemanticError(state, "End must be evaluable on the first pass.");
+				break;
+			}
+
+			if (start == 0)
+			{
+				SemanticError(state, "Start cannot be zero.");
+				break;
+			}
+
+			if (end < start)
+			{
+				SemanticError(state, "End cannot come before start.");
+				break;
+			}
+
+			StringView_SubStr(&substring, String_View(&statement->shared.substr.string), start - 1, end - start + 1);
+			Substitute_PushSubstitute(&state->substitutions, label, &substring);
+			break;
+		}
 
 		case STATEMENT_TYPE_SET:
 		{
