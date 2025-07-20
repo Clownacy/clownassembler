@@ -158,7 +158,7 @@ typedef struct Macro
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
 static void AssembleFile(SemanticState *state);
-static void AssembleLine(SemanticState *state, const String *source_line);
+static void AssembleLine(SemanticState *state, const String *source_line, const cc_bool write_line_to_listing_file);
 
 static const StringView string_program_counter_statement = STRING_VIEW_INITIALISER(",PROGRAM_COUNTER_OF_STATEMENT");
 static const StringView string_program_counter_expression = STRING_VIEW_INITIALISER(",PROGRAM_COUNTER_OF_EXPRESSION");
@@ -482,7 +482,7 @@ static void ListSourceLine(SemanticState *state)
 			for (i = state->listing_counter; i < 28; ++i)
 				TextOutput_fputc(' ', state->listing_callbacks);
 
-			TextOutput_fprintf(state->listing_callbacks, "%s\n", String_CStr(&state->line_buffer));
+			TextOutput_fprintf(state->listing_callbacks, "%s\n", String_CStr(state->source_line));
 		}
 	}
 }
@@ -1036,7 +1036,7 @@ static void TerminateWhile(SemanticState *state)
 
 		/* Process the WHILE's nested statements. */
 		for (source_line_list_node = source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-			AssembleLine(state, &source_line_list_node->source_line_buffer);
+			AssembleLine(state, &source_line_list_node->source_line_buffer, cc_false);
 	}
 
 	DestroyExpression(&expression);
@@ -4281,23 +4281,6 @@ static cc_bool ReadSourceLine(SemanticState *state)
 	return data_read;
 }
 
-static void AssembleAndListLine(SemanticState *state)
-{
-	/* Output program counter to listing file. */
-	if (TextOutput_exists(state->listing_callbacks))
-	{
-		state->line_listed = cc_false;
-
-		state->listing_counter = 0;
-		state->suppress_listing = cc_false;
-		TextOutput_fprintf(state->listing_callbacks, "%08lX", state->program_counter);
-	}
-
-	AssembleLine(state, &state->line_buffer);
-
-	ListSourceLine(state);
-}
-
 static void ProcessRept(SemanticState *state, StatementRept *rept)
 {
 	const Mode previous_mode = state->mode;
@@ -4334,7 +4317,7 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 		}
 		else
 		{
-			AssembleAndListLine(state);
+			AssembleLine(state, &state->line_buffer, cc_true);
 		}
 
 		if (state->mode != MODE_REPT)
@@ -4362,7 +4345,7 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 
 				/* Process the REPT's nested statements. */
 				for (source_line_list_node = source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-					AssembleLine(state, &source_line_list_node->source_line_buffer);
+					AssembleLine(state, &source_line_list_node->source_line_buffer, cc_false);
 			}
 
 			/* Increment past the ENDR line number. */
@@ -5131,9 +5114,8 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 	return NULL;
 }
 
-static void AssembleLine(SemanticState *state, const String *source_line_raw)
+static void AssembleLineRaw(SemanticState *state, const String *source_line)
 {
-	String source_line;
 	size_t label_length;
 	const char *source_line_pointer;
 	StringView label;
@@ -5142,17 +5124,14 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw)
 
 	++state->location->line_number;
 
-	String_CreateCopy(&source_line, source_line_raw);
-	Substitute_ProcessString(&state->substitutions, &source_line, NULL, NULL);
-
-	if (String_At(&source_line, 0) == '*')
+	if (String_At(source_line, 0) == '*')
 	{
 		/* This whole line is a comment. */
 		return;
 	}
 
-	state->source_line = &source_line;
-	source_line_pointer = String_CStr(&source_line);
+	state->source_line = source_line;
+	source_line_pointer = String_CStr(source_line);
 
 	/* Despite the fact that we're using Flex and Bison to parse the
 	   language for us, we unfortunately have to do quite a bit of
@@ -5246,7 +5225,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw)
 					      || strncmpci(source_line_pointer, "endif" , directive_length) == 0)
 					{
 						/* These can be processed normally too. */
-						ParseLine(state, &source_line, &label, source_line_pointer);
+						ParseLine(state, source_line, &label, source_line_pointer);
 					}
 					else
 					{
@@ -5264,7 +5243,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw)
 				if (macro_dictionary_entry == NULL || macro_dictionary_entry->type != SYMBOL_MACRO)
 				{
 					/* This is not a macro invocation: it's just a regular line that can be assembled as-is. */
-					ParseLine(state, &source_line, &label, source_line_pointer);
+					ParseLine(state, source_line, &label, source_line_pointer);
 				}
 				else
 				{
@@ -5431,7 +5410,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw)
 							--state->location->line_number;
 
 							/* Send our expanded macro line to be assembled. */
-							AssembleLine(state, !String_Empty(&modified_line) ? &modified_line : &source_line_list_node->source_line_buffer);
+							AssembleLine(state, !String_Empty(&modified_line) ? &modified_line : &source_line_list_node->source_line_buffer, cc_false);
 
 							/* The expanded line is done, so we can free it now. */
 							String_Destroy(&modified_line);
@@ -5457,11 +5436,11 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw)
 			if (directive_length != 0 && (strncmpci(source_line_pointer, "rept", directive_length) == 0 || strncmpci(source_line_pointer, "endr", directive_length) == 0))
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
-				ParseLine(state, &source_line, &label, source_line_pointer);
+				ParseLine(state, source_line, &label, source_line_pointer);
 			}
 			else
 			{
-				AddToSourceLineList(state, &state->shared.rept.source_line_list, &source_line);
+				AddToSourceLineList(state, &state->shared.rept.source_line_list, source_line);
 			}
 
 			break;
@@ -5471,7 +5450,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw)
 			if (directive_length != 0 && strncmpci(source_line_pointer, "endm", directive_length) == 0)
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
-				ParseLine(state, &source_line, &label, source_line_pointer);
+				ParseLine(state, source_line, &label, source_line_pointer);
 
 				if (state->shared.macro.is_short)
 					SemanticError(state, "Short macros shouldn't use ENDM.");
@@ -5481,7 +5460,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw)
 				if (state->shared.macro.is_short)
 				{
 					/* Short macros automatically terminate after one statement. */
-					const char first_nonwhitespace_character = String_At(&source_line, strspn(String_CStr(&source_line), " \t"));
+					const char first_nonwhitespace_character = String_At(source_line, strspn(String_CStr(source_line), " \t"));
 
 					if (!StringView_Empty(&label))
 						SemanticError(state, "Short macros shouldn't create labels.");
@@ -5492,13 +5471,13 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw)
 					}
 					else
 					{
-						AddToSourceLineList(state, &state->shared.macro.source_line_list, &source_line);
+						AddToSourceLineList(state, &state->shared.macro.source_line_list, source_line);
 						TerminateMacro(state);
 					}
 				}
 				else
 				{
-					AddToSourceLineList(state, &state->shared.macro.source_line_list, &source_line);
+					AddToSourceLineList(state, &state->shared.macro.source_line_list, source_line);
 				}
 			}
 
@@ -5508,19 +5487,45 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw)
 			/* If this line is an 'ENDW' directive, then exit 'WHILE' mode. Otherwise, add the line to the 'WHILE'. */
 			if (directive_length != 0 && strncmpci(source_line_pointer, "endw", directive_length) == 0)
 				/* TODO - Detect code after the keyword and error if any is found. */
-				ParseLine(state, &source_line, &label, source_line_pointer);
+				ParseLine(state, source_line, &label, source_line_pointer);
 			else
-				AddToSourceLineList(state, &state->shared.while_statement.source_line_list, &source_line);
+				AddToSourceLineList(state, &state->shared.while_statement.source_line_list, source_line);
 
 			break;
 	}
+}
+
+static void AssembleLine(SemanticState *state, const String *source_line_raw, const cc_bool write_line_to_listing_file)
+{
+	String source_line;
+
+	String_CreateCopy(&source_line, source_line_raw);
+	Substitute_ProcessString(&state->substitutions, &source_line, NULL, NULL);
+
+	if (write_line_to_listing_file)
+	{
+		/* Output program counter to listing file. */
+		if (TextOutput_exists(state->listing_callbacks))
+		{
+			state->line_listed = cc_false;
+
+			state->listing_counter = 0;
+			state->suppress_listing = cc_false;
+			TextOutput_fprintf(state->listing_callbacks, "%08lX", state->program_counter);
+		}
+	}
+
+	AssembleLineRaw(state, &source_line);
+
+	if (write_line_to_listing_file)
+		ListSourceLine(state);
 }
 
 static void AssembleFile(SemanticState *state)
 {
 	/* Read lines one at a time, feeding them to the 'AssembleLine' function. */
 	while (!state->end && ReadSourceLine(state))
-		AssembleAndListLine(state);
+		AssembleLine(state, &state->line_buffer, cc_true);
 
 	/* If we're not in normal mode when a file ends, then something is wrong. */
 	switch (state->mode)
