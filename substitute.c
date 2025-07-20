@@ -6,7 +6,7 @@
 
 void Substitute_Initialise(Substitute_State* const state)
 {
-	state->list_head = state->list_tail = NULL;
+	state->list_head = NULL;
 }
 
 void Substitute_Deinitialise(Substitute_State* const state)
@@ -22,50 +22,25 @@ cc_bool Substitute_PushSubstitute(Substitute_State* const state, const StringVie
 	if (list_entry == NULL)
 		return cc_false;
 
-	list_entry->next = NULL;
+	list_entry->next = state->list_head;
+	state->list_head = list_entry;
+
 	String_CreateCopyView(&list_entry->identifier, identifier);
 	String_CreateCopyView(&list_entry->value, value);
-
-	if (state->list_tail == NULL)
-		state->list_head = list_entry;
-	else
-		state->list_tail->next = list_entry;
-
-	state->list_tail = list_entry;
 
 	return cc_true;
 }
 
 void Substitute_PopSubstitute(Substitute_State* const state)
 {
-	Substitute_ListEntry* const list_entry = state->list_tail;
+	Substitute_ListEntry* const list_entry = state->list_head;
 
-	state->list_tail = list_entry->next;
-
-	if (state->list_tail == NULL)
-		state->list_head = NULL;
+	state->list_head = list_entry->next;
 
 	String_Destroy(&list_entry->identifier);
 	String_Destroy(&list_entry->value);
 
 	free(list_entry);
-}
-
-const StringView* Substitute_GetSubstitute(const Substitute_State* const state, const size_t wanted_index)
-{
-	const Substitute_ListEntry *list_entry = state->list_head;
-	size_t current_index = 0;
-
-	while (list_entry != NULL && current_index != wanted_index)
-	{
-		list_entry = list_entry->next;
-		++current_index;
-	}
-
-	if (list_entry == NULL)
-		return NULL;
-
-	return String_View(&list_entry->value);
 }
 
 static cc_bool Substitute_IsSubstituteBlockingCharacter(const char character)

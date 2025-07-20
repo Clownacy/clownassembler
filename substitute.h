@@ -13,7 +13,7 @@ typedef struct Substitute_ListEntry
 
 typedef struct Substitute_State
 {
-	Substitute_ListEntry *list_head, *list_tail;
+	Substitute_ListEntry *list_head;
 } Substitute_State;
 
 typedef const StringView* (*Substitute_CustomSearch)(void *user_data, const Substitute_State *state, const String *string_to_search, size_t starting_position, size_t* const found_position, size_t* const found_length);
@@ -23,8 +23,6 @@ void Substitute_Deinitialise(Substitute_State *state);
 
 cc_bool Substitute_PushSubstitute(Substitute_State *state, const StringView *identifier, const StringView *value);
 void Substitute_PopSubstitute(Substitute_State *state);
-
-const StringView* Substitute_GetSubstitute(const Substitute_State *state, size_t index);
 
 void Substitute_ProcessString(Substitute_State *state, String *string, Substitute_CustomSearch custom_search_callback, const void *custom_search_user_data);
 
