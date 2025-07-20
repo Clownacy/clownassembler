@@ -5050,7 +5050,7 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 
 				StringView_Create(&identifier, identifier_start, identifier_length);
 
-				*found_length = identifier_length;
+				*found_length += identifier_length;
 				/* Absorb trailing backslash. */
 				if (identifier_start[identifier_length] == '\\')
 					++*found_length;
