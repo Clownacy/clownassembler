@@ -47,7 +47,9 @@ static cc_bool Substitute_IsSubstituteBlockingCharacter(const char character)
 {
 	return ((character >= 'a' && character <= 'z')
 	     || (character >= 'A' && character <= 'Z')
-	     || (character >= '0' && character <= '9'));
+	     || (character >= '0' && character <= '9')
+	     || character == '_'
+	     || character == ':');
 }
 
 static cc_bool Substitute_FindSubstitute(const String* const string_to_search, const size_t starting_position, const StringView* const substitute, size_t* const found_position, size_t* const found_length)
