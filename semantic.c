@@ -473,7 +473,7 @@ static void ListSourceLine(SemanticState *state)
 	/* Output line to listing file. */
 	if (TextOutput_exists(state->listing_callbacks))
 	{
-		if (!state->line_listed)
+		if (!state->line_listed && state->source_line != NULL)
 		{
 			unsigned int i;
 
@@ -4112,7 +4112,6 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 
 		state->input_callbacks = &input_callbacks;
 
-		ListSourceLine(state);
 		AssembleFile(state);
 
 		state->input_callbacks = previous_input_callbacks;
@@ -4305,8 +4304,6 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 
 	state->shared.rept.source_line_list.head = NULL;
 	state->shared.rept.source_line_list.tail = NULL;
-
-	ListSourceLine(state);
 
 	for (;;)
 	{
@@ -5390,8 +5387,6 @@ static void AssembleLineRaw(SemanticState *state, const String *source_line)
 						/* Push a new location (this macro).*/
 						Location location;
 
-						const String* const old_source_line = state->source_line;
-
 						String_CreateCopy(&location.file_path, &macro->name);
 						location.line_number = 0;
 
@@ -5403,9 +5398,6 @@ static void AssembleLineRaw(SemanticState *state, const String *source_line)
 						{
 							String modified_line;
 
-							/* Update the source line for the error printers. */
-							state->source_line = &source_line_list_node->source_line_buffer;
-
 							/* A bit of a cheat so that errors that occur before the call to AssembleLine still show the correct line number. */
 							++state->location->line_number;
 
@@ -5416,13 +5408,11 @@ static void AssembleLineRaw(SemanticState *state, const String *source_line)
 							--state->location->line_number;
 
 							/* Send our expanded macro line to be assembled. */
-							AssembleLine(state, !String_Empty(&modified_line) ? &modified_line : &source_line_list_node->source_line_buffer, cc_false);
+							AssembleLine(state, &modified_line, cc_false);
 
 							/* The expanded line is done, so we can free it now. */
 							String_Destroy(&modified_line);
 						}
-
-						state->source_line = old_source_line;
 
 						/* Pop location. */
 						state->location = state->location->previous;
@@ -5512,6 +5502,8 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 
 	if (write_line_to_listing_file)
 	{
+		ListSourceLine(state);
+
 		/* Output program counter to listing file. */
 		if (TextOutput_exists(state->listing_callbacks))
 		{
