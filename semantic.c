@@ -1003,6 +1003,8 @@ static void TerminateWhile(SemanticState *state)
 {
 	Expression expression;
 
+	const String* const old_source_line = state->source_line;
+
 	/* Back-up some state into local variables, in case a nested WHILE statement clobbers it. */
 	String source_line = state->shared.while_statement.source_line;
 	const unsigned long starting_line_number = state->shared.while_statement.line_number;
@@ -1040,6 +1042,8 @@ static void TerminateWhile(SemanticState *state)
 	}
 
 	DestroyExpression(&expression);
+
+	state->source_line = old_source_line;
 
 	/* Increment past the ENDW line number. */
 	++state->location->line_number;
@@ -5123,6 +5127,7 @@ static void AssembleLineRaw(SemanticState *state, const String *source_line)
 	StringView directive;
 
 	++state->location->line_number;
+	state->source_line = source_line;
 
 	if (String_At(source_line, 0) == '*')
 	{
@@ -5130,7 +5135,6 @@ static void AssembleLineRaw(SemanticState *state, const String *source_line)
 		return;
 	}
 
-	state->source_line = source_line;
 	source_line_pointer = String_CStr(source_line);
 
 	/* Despite the fact that we're using Flex and Bison to parse the
@@ -5386,6 +5390,8 @@ static void AssembleLineRaw(SemanticState *state, const String *source_line)
 						/* Push a new location (this macro).*/
 						Location location;
 
+						const String* const old_source_line = state->source_line;
+
 						String_CreateCopy(&location.file_path, &macro->name);
 						location.line_number = 0;
 
@@ -5415,6 +5421,8 @@ static void AssembleLineRaw(SemanticState *state, const String *source_line)
 							/* The expanded line is done, so we can free it now. */
 							String_Destroy(&modified_line);
 						}
+
+						state->source_line = old_source_line;
 
 						/* Pop location. */
 						state->location = state->location->previous;
