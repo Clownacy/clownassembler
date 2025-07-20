@@ -72,10 +72,7 @@ int main(int argc, char **argv)
 
 	int i;
 	char *combined_arguments;
-	cc_bool case_sensitive;
-	cc_bool equ_set_descope_local_labels;
-	cc_bool output_local_labels_to_sym_file;
-	cc_bool warnings_enabled;
+	ClownAssembler_Settings settings = {0};
 	const char *source_file_path;
 	const char *object_file_path;
 	const char *symbol_file_path;
@@ -96,10 +93,11 @@ int main(int argc, char **argv)
 
 	combined_arguments = NULL;
 
-	case_sensitive = cc_false;
-	equ_set_descope_local_labels = cc_false;
-	output_local_labels_to_sym_file = cc_false;
-	warnings_enabled = cc_true;
+	settings.debug = cc_false;
+	settings.case_insensitive = cc_true;
+	settings.equ_set_descope_local_labels = cc_false;
+	settings.output_local_labels_to_sym_file = cc_false;
+	settings.warnings_enabled = cc_true;
 
 	source_file_path = object_file_path = symbol_file_path = listing_file_path = NULL;
 	source_file = object_file = symbol_file = listing_file = NULL;
@@ -171,19 +169,19 @@ int main(int argc, char **argv)
 							}
 							else if (strcmpci(option, "c+") == 0)
 							{
-								case_sensitive = cc_true;
+								settings.case_insensitive = cc_false;
 							}
 							else if (strcmpci(option, "c-") == 0)
 							{
-								case_sensitive = cc_false;
+								settings.case_insensitive = cc_true;
 							}
 							else if (strcmpci(option, "d+") == 0)
 							{
-								equ_set_descope_local_labels = cc_true;
+								settings.equ_set_descope_local_labels = cc_true;
 							}
 							else if (strcmpci(option, "d-") == 0)
 							{
-								equ_set_descope_local_labels = cc_false;
+								settings.equ_set_descope_local_labels = cc_false;
 							}
 							else if (strcmpci(option, "e+") == 0)
 							{
@@ -222,19 +220,19 @@ int main(int argc, char **argv)
 							}
 							else if (strcmpci(option, "v+") == 0)
 							{
-								output_local_labels_to_sym_file = cc_true;
+								settings.output_local_labels_to_sym_file = cc_true;
 							}
 							else if (strcmpci(option, "v-") == 0)
 							{
-								output_local_labels_to_sym_file = cc_false;
+								settings.output_local_labels_to_sym_file = cc_false;
 							}
 							else if (strcmpci(option, "w+") == 0)
 							{
-								warnings_enabled = cc_true;
+								settings.warnings_enabled = cc_true;
 							}
 							else if (strcmpci(option, "w-") == 0)
 							{
-								warnings_enabled = cc_false;
+								settings.warnings_enabled = cc_false;
 							}
 							else if (strcmpci(option, "ws+") == 0)
 							{
@@ -452,7 +450,7 @@ int main(int argc, char **argv)
 	/* If we've gotten this far without any errors, then finally run the assembler. */
 	if (exit_code != EXIT_FAILURE)
 	{
-		if (!ClownAssembler_AssembleFile(source_file, object_file, stdout, listing_file, symbol_file, source_file_path, cc_false, !case_sensitive, equ_set_descope_local_labels, output_local_labels_to_sym_file, warnings_enabled, DefinitionCallback, NULL))
+		if (!ClownAssembler_AssembleFile(source_file, object_file, stdout, listing_file, symbol_file, source_file_path, &settings, DefinitionCallback, NULL))
 		{
 			fprintf(stderr, "Error: Failed to assemble.\n");
 			exit_code = EXIT_FAILURE;

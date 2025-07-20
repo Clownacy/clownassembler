@@ -57,6 +57,15 @@ typedef struct ClownAssembler_TextOutput
 	ClownAssembler_WriteString write_string;
 } ClownAssembler_TextOutput;
 
+typedef struct ClownAssembler_Settings
+{
+	cc_bool debug;
+	cc_bool case_insensitive;
+	cc_bool equ_set_descope_local_labels;
+	cc_bool output_local_labels_to_sym_file;
+	cc_bool warnings_enabled;
+} ClownAssembler_Settings;
+
 typedef void (*ClownAssembler_AddDefinition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value);
 typedef void (*ClownAssembler_DefinitionCallback)(void *internal, void *user_data, ClownAssembler_AddDefinition add_definition);
 
@@ -67,11 +76,7 @@ cc_bool ClownAssembler_AssembleFile(
 	FILE *listing_callbacks,
 	FILE *symbol_callbacks,
 	const char *input_file_path,
-	cc_bool debug,
-	cc_bool case_insensitive,
-	cc_bool equ_set_descope_local_labels,
-	cc_bool output_local_labels_to_sym_file,
-	cc_bool warnings_enabled,
+	const ClownAssembler_Settings *settings,
 	ClownAssembler_DefinitionCallback definition_callback,
 	const void *user_data);
 
@@ -82,11 +87,7 @@ cc_bool ClownAssembler_Assemble(
 	const ClownAssembler_TextOutput *listing_callbacks,
 	const ClownAssembler_BinaryOutput *symbol_callbacks,
 	const char *input_file_path,
-	cc_bool debug,
-	cc_bool case_insensitive,
-	cc_bool equ_set_descope_local_labels,
-	cc_bool output_local_labels_to_sym_file,
-	cc_bool warnings_enabled,
+	const ClownAssembler_Settings *settings,
 	ClownAssembler_DefinitionCallback definition_callback,
 	const void *user_data);
 

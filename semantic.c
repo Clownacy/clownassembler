@@ -89,12 +89,14 @@ typedef enum Mode
 typedef struct SemanticState
 {
 	cc_bool success;
+
 	const TextInput *input_callbacks;
 	const BinaryOutput *output_callbacks;
 	const TextOutput *listing_callbacks;
 	const TextOutput *error_callbacks;
-	cc_bool equ_set_descope_local_labels;
-	cc_bool warnings_enabled;
+
+	const ClownAssembler_Settings *settings;
+
 	size_t output_position;
 	cc_bool output_written_to;
 	unsigned long start_position;
@@ -280,7 +282,7 @@ static void ErrorMessageCommon(SemanticState *state)
 
 CC_ATTRIBUTE_PRINTF(2, 3) static void SemanticWarning(SemanticState *state, const char *fmt, ...)
 {
-	if (state->warnings_enabled)
+	if (state->settings->warnings_enabled)
 	{
 		va_list args;
 
@@ -337,7 +339,7 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message)
 {
 	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
 
-	if (state->warnings_enabled)
+	if (state->settings->warnings_enabled)
 	{
 		(void)statement;
 
@@ -4521,7 +4523,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		{
 			unsigned long value;
 
-			if (state->equ_set_descope_local_labels)
+			if (state->settings->equ_set_descope_local_labels)
 				SetLastGlobalLabel(state, label);
 
 			if (ResolveExpression(state, &statement->shared.expression, &value, cc_true))
@@ -4575,7 +4577,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		{
 			unsigned long value;
 
-			if (state->equ_set_descope_local_labels)
+			if (state->settings->equ_set_descope_local_labels)
 				SetLastGlobalLabel(state, label);
 
 			if (ResolveExpression(state, &statement->shared.expression, &value, cc_true))
@@ -5651,11 +5653,7 @@ cc_bool ClownAssembler_Assemble(
 	const TextOutput* const listing_callbacks,
 	const BinaryOutput* const symbol_callbacks,
 	const char* const input_file_path,
-	const cc_bool debug,
-	const cc_bool case_insensitive,
-	const cc_bool equ_set_descope_local_labels,
-	const cc_bool output_local_labels_to_sym_file,
-	const cc_bool warnings_enabled,
+	const ClownAssembler_Settings* const settings,
 	const ClownAssembler_DefinitionCallback definition_callback,
 	const void* const user_data)
 {
@@ -5671,12 +5669,14 @@ cc_bool ClownAssembler_Assemble(
 
 	/* Initialise the state's non-default values. */
 	state.success = cc_true;
+
 	state.input_callbacks = input_callbacks;
 	state.output_callbacks = output_callbacks;
 	state.error_callbacks = error_callbacks;
 	state.listing_callbacks = listing_callbacks;
-	state.equ_set_descope_local_labels = equ_set_descope_local_labels;
-	state.warnings_enabled = warnings_enabled;
+
+	state.settings = settings;
+
 	String_CreateBlank(&state.last_global_label);
 	String_CreateBlank(&state.line_buffer);
 	state.location = &location;
@@ -5684,7 +5684,7 @@ cc_bool ClownAssembler_Assemble(
 	state.mode = MODE_NORMAL;
 
 	/* Create the symbol table dictionary. */
-	if (!Dictionary_Init(&state.dictionary, case_insensitive))
+	if (!Dictionary_Init(&state.dictionary, settings->case_insensitive))
 	{
 		OutOfMemoryError(&state);
 	}
@@ -5710,10 +5710,8 @@ cc_bool ClownAssembler_Assemble(
 			{
 				/* Enable Bison debugging if available and requested by the user. */
 			#if M68KASM_DEBUG
-				if (debug)
+				if (settings->debug)
 					m68kasm_debug = 1;
-			#else
-				(void)debug;
 			#endif
 
 				/* Perform first pass of assembly, creating a list of fix-ups. */
@@ -5815,7 +5813,7 @@ cc_bool ClownAssembler_Assemble(
 					const void *parameters[2];
 
 					parameters[0] = symbol_callbacks;
-					parameters[1] = &output_local_labels_to_sym_file;
+					parameters[1] = &settings->output_local_labels_to_sym_file;
 
 					/* Some kind of header. */
 					BinaryOutput_fputc('M', symbol_callbacks);
@@ -5849,11 +5847,7 @@ cc_bool ClownAssembler_AssembleFile(
 	FILE* const listing_file,
 	FILE* const symbol_file,
 	const char* const input_file_path,
-	const cc_bool debug,
-	const cc_bool case_insensitive,
-	const cc_bool equ_set_descope_local_labels,
-	const cc_bool output_local_labels_to_sym_file,
-	const cc_bool warnings_enabled,
+	const ClownAssembler_Settings* const settings,
 	const ClownAssembler_DefinitionCallback definition_callback,
 	const void* const user_data)
 {
@@ -5886,5 +5880,5 @@ cc_bool ClownAssembler_AssembleFile(
 	symbol_callbacks.write_characters = WriteCharacters;
 	symbol_callbacks.seek = Seek;
 
-	return ClownAssembler_Assemble(&input_callbacks, &output_callbacks, &error_callbacks, &listing_callbacks, &symbol_callbacks, input_file_path, debug, case_insensitive, equ_set_descope_local_labels, output_local_labels_to_sym_file, warnings_enabled, definition_callback, user_data);
+	return ClownAssembler_Assemble(&input_callbacks, &output_callbacks, &error_callbacks, &listing_callbacks, &symbol_callbacks, input_file_path, settings, definition_callback, user_data);
 }

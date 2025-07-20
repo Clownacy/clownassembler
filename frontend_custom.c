@@ -73,11 +73,7 @@ int main(int argc, char **argv)
 	const char *output_file_path;
 	const char *listing_file_path;
 	const char *symbol_file_path;
-	cc_bool case_insensitive;
-	cc_bool debug;
-	cc_bool equ_set_descope_local_labels;
-	cc_bool output_local_labels_to_sym_file;
-	cc_bool warnings_enabled;
+	ClownAssembler_Settings settings = {0};
 	int i;
 
 	total_arguments = argc;
@@ -88,11 +84,11 @@ int main(int argc, char **argv)
 	output_file_path = NULL;
 	listing_file_path = NULL;
 	symbol_file_path = NULL;
-	case_insensitive = cc_false;
-	debug = cc_false;
-	equ_set_descope_local_labels = cc_false;
-	output_local_labels_to_sym_file = cc_false;
-	warnings_enabled = cc_true;
+	settings.case_insensitive = cc_false;
+	settings.debug = cc_false;
+	settings.equ_set_descope_local_labels = cc_false;
+	settings.output_local_labels_to_sym_file = cc_false;
+	settings.warnings_enabled = cc_true;
 
 	for (i = 1; i < argc; ++i)
 	{
@@ -141,15 +137,15 @@ int main(int argc, char **argv)
 					continue;
 
 				case 'c':
-					case_insensitive = cc_true;
+					settings.case_insensitive = cc_true;
 					continue;
 
 				case 'b':
-					debug = cc_true;
+					settings.debug = cc_true;
 					continue;
 
 				case 'd':
-					equ_set_descope_local_labels = cc_true;
+					settings.equ_set_descope_local_labels = cc_true;
 					continue;
 
 				case 'e':
@@ -160,11 +156,11 @@ int main(int argc, char **argv)
 					continue;
 
 				case 'v':
-					output_local_labels_to_sym_file = cc_true;
+					settings.output_local_labels_to_sym_file = cc_true;
 					continue;
 
 				case 'w':
-					warnings_enabled = cc_false;
+					settings.warnings_enabled = cc_false;
 					continue;
 			}
 		}
@@ -250,7 +246,7 @@ int main(int argc, char **argv)
 							ERROR("Could not open symbol file.");
 					}
 
-					success = ClownAssembler_AssembleFile(input_file, output_file, stderr, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", debug, case_insensitive, equ_set_descope_local_labels, output_local_labels_to_sym_file, warnings_enabled, DefinitionCallback, NULL);
+					success = ClownAssembler_AssembleFile(input_file, output_file, stderr, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", &settings, DefinitionCallback, NULL);
 
 					if (listing_file != NULL)
 						fclose(listing_file);
