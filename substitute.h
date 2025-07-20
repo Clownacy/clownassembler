@@ -16,7 +16,7 @@ typedef struct Substitute_State
 	Substitute_ListEntry *list_head;
 } Substitute_State;
 
-typedef const StringView* (*Substitute_CustomSearch)(void *user_data, const Substitute_State *state, const String *string_to_search, size_t starting_position, size_t* const found_position, size_t* const found_length);
+typedef const StringView* (*Substitute_CustomSearch)(void *user_data, const String *string_to_search, size_t starting_position, size_t* const found_position, size_t* const found_length);
 
 void Substitute_Initialise(Substitute_State *state);
 void Substitute_Deinitialise(Substitute_State *state);

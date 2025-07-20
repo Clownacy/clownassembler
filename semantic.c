@@ -5015,7 +5015,7 @@ typedef struct MacroCustomSubstituteSearch_Closure
 	String symbol_value_string;
 } MacroCustomSubstituteSearch_Closure;
 
-static const StringView* MacroCustomSubstituteSearch(void* const user_data, const Substitute_State* const state, const String *string_to_search, size_t starting_position, size_t* const found_position, size_t* const found_length)
+static const StringView* MacroCustomSubstituteSearch(void* const user_data, const String *string_to_search, size_t starting_position, size_t* const found_position, size_t* const found_length)
 {
 	MacroCustomSubstituteSearch_Closure* const closure = (MacroCustomSubstituteSearch_Closure*)user_data;
 

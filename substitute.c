@@ -111,7 +111,7 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 	{
 		size_t found_position, found_length;
 
-		found_substitute = custom_search_callback((void*)custom_search_user_data, state, string_to_search, starting_position, &found_position, &found_length);
+		found_substitute = custom_search_callback((void*)custom_search_user_data, string_to_search, starting_position, &found_position, &found_length);
 
 		if (found_substitute != NULL)
 		{
