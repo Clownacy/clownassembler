@@ -4451,6 +4451,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_END:
 		case STATEMENT_TYPE_PUSHO:
 		case STATEMENT_TYPE_POPO:
+		case STATEMENT_TYPE_OPT:
 			if (!StringView_Empty(label) && !state->doing_fix_up)
 			{
 				/* Handle the label here, instead of passing it onto a later function. */
@@ -4953,6 +4954,23 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_POPO:
 			Options_Pop(&state->options);
 			break;
+
+		case STATEMENT_TYPE_OPT:
+		{
+			const IdentifierListNode *option;
+
+			for (option = statement->shared.opt.options.head; option != NULL; option = option->next)
+			{
+				if (String_CompareCStrCaseInsensitive(&option->identifier, "c+"))
+					Options_Get(&state->options)->case_insensitive = cc_false;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "c-"))
+					Options_Get(&state->options)->case_insensitive = cc_true;
+				else
+					SemanticWarning(state, "Unrecognised option '%s'.", String_CStr(&option->identifier));
+			}			
+
+			break;
+		}
 	}
 }
 

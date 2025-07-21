@@ -352,6 +352,11 @@ typedef struct StatementSubstr
 	String string;
 } StatementSubstr;
 
+typedef struct StatementOpt
+{
+	IdentifierList options;
+} StatementOpt;
+
 typedef enum StatementType
 {
 	STATEMENT_TYPE_EMPTY,
@@ -387,7 +392,8 @@ typedef enum StatementType
 	STATEMENT_TYPE_OBJEND,
 	STATEMENT_TYPE_ORG,
 	STATEMENT_TYPE_PUSHO,
-	STATEMENT_TYPE_POPO
+	STATEMENT_TYPE_POPO,
+	STATEMENT_TYPE_OPT
 } StatementType;
 
 typedef struct Statement
@@ -414,6 +420,7 @@ typedef struct Statement
 			Expression length;
 		} rs;
 		StatementSubstr substr;
+		StatementOpt opt;
 		Expression expression;
 		String string;
 	} shared;
@@ -610,6 +617,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_ORG
 %token TOKEN_DIRECTIVE_PUSHO
 %token TOKEN_DIRECTIVE_POPO
+%token TOKEN_DIRECTIVE_OPT
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -620,6 +628,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token<string> TOKEN_IDENTIFIER
 %token<string> TOKEN_LOCAL_IDENTIFIER
 %token<string> TOKEN_STRING
+%token<string> TOKEN_OPTION
 %token TOKEN_STATUS_REGISTER
 %token TOKEN_CONDITION_CODE_REGISTER
 %token TOKEN_USER_STACK_POINTER_REGISTER
@@ -646,13 +655,13 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %type<unsigned_long> register_span
 %type<unsigned_long> data_or_address_register
 %type<expression_list> expression_list
-%type<identifier_list> identifier_list
+%type<identifier_list> identifier_list option_list
 %type<expression> expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 string
 
-%destructor { String_Destroy(&$$); } TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER TOKEN_STRING
+%destructor { String_Destroy(&$$); } TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER TOKEN_STRING TOKEN_OPTION
 %destructor { DestroyOperand(&$$); } operand
 %destructor { DestroyExpressionList(&$$); } expression_list
-%destructor { DestroyIdentifierList(&$$); } identifier_list
+%destructor { DestroyIdentifierList(&$$); } identifier_list option_list
 %destructor { DestroyExpression(&$$); } expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 string
 
 %start statement
@@ -920,6 +929,11 @@ statement
 	{
 		statement->type = STATEMENT_TYPE_POPO;
 	}
+	| TOKEN_DIRECTIVE_OPT option_list
+	{
+		statement->type = STATEMENT_TYPE_OPT;
+		statement->shared.opt.options = $2;
+	}
 	;
 
 expression_list
@@ -986,6 +1000,51 @@ identifier_list
 		$$.head = $$.tail = node;
 	}
 	| identifier_list ',' TOKEN_IDENTIFIER
+	{
+		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
+
+		$$ = $1;
+
+		if (node == NULL)
+		{
+			DestroyIdentifierList(&$1);
+			String_Destroy(&$3);
+			YYNOMEM;
+		}
+		else
+		{
+			node->identifier = $3;
+			node->next = NULL;
+
+			if ($$.head == NULL)
+				$$.head = node;
+			else
+				((IdentifierListNode*)$$.tail)->next = node;
+
+			$$.tail = node;
+		}
+	}
+	;
+
+option_list
+	: TOKEN_OPTION
+	{
+		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
+
+		if (node == NULL)
+		{
+			String_Destroy(&$1);
+			YYNOMEM;
+		}
+		else
+		{
+			node->identifier = $1;
+			node->next = NULL;
+		}
+
+		$$.head = $$.tail = node;
+	}
+	| option_list ',' TOKEN_OPTION
 	{
 		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
 
@@ -2333,6 +2392,10 @@ void DestroyStatement(Statement *statement)
 
 		case STATEMENT_TYPE_RS:
 			DestroyExpression(&statement->shared.rs.length);
+			break;
+
+		case STATEMENT_TYPE_OPT:
+			DestroyIdentifierList(&statement->shared.opt.options);
 			break;
 	}
 }

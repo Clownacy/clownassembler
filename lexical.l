@@ -270,6 +270,7 @@ hexadecimal       {hexadecimal_digit}+
 <INITIAL>org             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ORG;
 <INITIAL>pusho           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_PUSHO;
 <INITIAL>popo            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_POPO;
+<INITIAL>opt             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_OPT;
 
  /* Sizes. */
 ".b"            return TOKEN_SIZE_BYTE;
@@ -430,6 +431,17 @@ def             return TOKEN_DEF;
 	}
 
 	return TOKEN_LOCAL_IDENTIFIER;
+}
+
+ /* Option. */
+[^ \t\r\n]+[\+\-] {
+	if (!String_Create(&yylval->string, yytext, yyleng))
+	{
+		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
+		return M68KASM_error;
+	}
+
+	return TOKEN_OPTION;
 }
 
  /* Make Bison signal a syntax error for unrecognised symbols */
