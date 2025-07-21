@@ -763,6 +763,31 @@ statement
 		statement->type = STATEMENT_TYPE_EQUS;
 		statement->shared.string = $2;
 	}
+	| TOKEN_DIRECTIVE_SUBSTR ',' ',' TOKEN_STRING
+	{
+		statement->type = STATEMENT_TYPE_SUBSTR;
+		statement->shared.substr.start.type = EXPRESSION_NUMBER;
+		statement->shared.substr.start.shared.unsigned_long = 1;
+		statement->shared.substr.end.type = EXPRESSION_NUMBER;
+		statement->shared.substr.end.shared.unsigned_long = String_Length(&$4);
+		statement->shared.substr.string = $4;
+	}
+	| TOKEN_DIRECTIVE_SUBSTR expression ',' ',' TOKEN_STRING
+	{
+		statement->type = STATEMENT_TYPE_SUBSTR;
+		statement->shared.substr.start = $2;
+		statement->shared.substr.end.type = EXPRESSION_NUMBER;
+		statement->shared.substr.end.shared.unsigned_long = String_Length(&$5);
+		statement->shared.substr.string = $5;
+	}
+	| TOKEN_DIRECTIVE_SUBSTR ',' expression ',' TOKEN_STRING
+	{
+		statement->type = STATEMENT_TYPE_SUBSTR;
+		statement->shared.substr.start.type = EXPRESSION_NUMBER;
+		statement->shared.substr.start.shared.unsigned_long = 1;
+		statement->shared.substr.end = $3;
+		statement->shared.substr.string = $5;
+	}
 	| TOKEN_DIRECTIVE_SUBSTR expression ',' expression ',' TOKEN_STRING
 	{
 		statement->type = STATEMENT_TYPE_SUBSTR;

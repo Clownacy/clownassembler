@@ -672,9 +672,9 @@ StringVar2 SUBSTR 1,5,"\StringVar"
 
 Message equs "A short Sample String"
 Part1 substr 9,14,"\Message"
-Part2 substr 16,21,"\Message"
-Part3 substr 1,7,"\Message"
-Part4 substr 1,21,"\Message"
+Part2 substr 16,,"\Message"
+Part3 substr ,7,"\Message"
+Part4 substr ,,"\Message"
 
 	dc.b '-'
 	dc.b "\Part1"
