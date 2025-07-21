@@ -8,6 +8,8 @@ add_library(clownassembler_core STATIC
 	"dictionary.h"
 	"lexical.c"
 	"lexical.h"
+	"options.c"
+	"options.h"
 	"semantic.c"
 	"semantic.h"
 	"strcmpci.c"

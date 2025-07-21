@@ -20,8 +20,8 @@ syntactic.c syntactic.h: syntactic.y
 
 assemblers: clownassembler clownassembler_asm68k
 
-clownassembler_asm68k: frontend_asm68k.c dictionary.c lexical.c semantic.c strcmpci.c string.c substitute.c syntactic.c
+clownassembler_asm68k: frontend_asm68k.c dictionary.c lexical.c options.c semantic.c strcmpci.c string.c substitute.c syntactic.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
 
-clownassembler: frontend_custom.c dictionary.c lexical.c semantic.c strcmpci.c string.c substitute.c syntactic.c
+clownassembler: frontend_custom.c dictionary.c lexical.c options.c semantic.c strcmpci.c string.c substitute.c syntactic.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)

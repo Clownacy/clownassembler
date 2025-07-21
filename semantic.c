@@ -95,7 +95,7 @@ typedef struct SemanticState
 	const TextOutput *listing_callbacks;
 	const TextOutput *error_callbacks;
 
-	const ClownAssembler_Settings *settings;
+	Options_State options;
 
 	size_t output_position;
 	cc_bool output_written_to;
@@ -282,7 +282,7 @@ static void ErrorMessageCommon(SemanticState *state)
 
 CC_ATTRIBUTE_PRINTF(2, 3) static void SemanticWarning(SemanticState *state, const char *fmt, ...)
 {
-	if (state->settings->warnings_enabled)
+	if (Options_Get(&state->options)->warnings_enabled)
 	{
 		va_list args;
 
@@ -339,7 +339,7 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message)
 {
 	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
 
-	if (state->settings->warnings_enabled)
+	if (Options_Get(&state->options)->warnings_enabled)
 	{
 		(void)statement;
 
@@ -926,7 +926,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			else
 			{
 				const size_t found_position = String_Find(&expression->shared.subexpressions[1].shared.string, String_View(&expression->shared.subexpressions[2].shared.string), position + 1);
-				*value = found_position == STRING_POSITION_INVALID ? 0 : found_position + 1;;
+				*value = found_position == STRING_POSITION_INVALID ? 0 : found_position + 1;
 			}
 			break;
 		}
@@ -1091,7 +1091,6 @@ static unsigned int ConstructSizeBits(Size size)
 			return 0x0080;
 
 		case SIZE_UNDEFINED:
-			assert(cc_false);
 			break;
 	}
 
@@ -4549,7 +4548,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		{
 			unsigned long value;
 
-			if (state->settings->equ_set_descope_local_labels)
+			if (Options_Get(&state->options)->equ_set_descope_local_labels)
 				SetLastGlobalLabel(state, label);
 
 			if (ResolveExpression(state, &statement->shared.expression, &value, cc_true))
@@ -4603,7 +4602,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		{
 			unsigned long value;
 
-			if (state->settings->equ_set_descope_local_labels)
+			if (Options_Get(&state->options)->equ_set_descope_local_labels)
 				SetLastGlobalLabel(state, label);
 
 			if (ResolveExpression(state, &statement->shared.expression, &value, cc_true))
@@ -5460,7 +5459,7 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 							--state->location->line_number;
 
 							/* Send our expanded macro line to be assembled. */
-							AssembleLine(state, &modified_line, state->settings->expand_all_macros);
+							AssembleLine(state, &modified_line, Options_Get(&state->options)->expand_all_macros);
 
 							/* The expanded line is done, so we can free it now. */
 							String_Destroy(&modified_line);
@@ -5668,7 +5667,7 @@ cc_bool ClownAssembler_Assemble(
 	const TextOutput* const listing_callbacks,
 	const BinaryOutput* const symbol_callbacks,
 	const char* const input_file_path,
-	const ClownAssembler_Settings* const settings,
+	const ClownAssembler_Settings* const initial_options,
 	const ClownAssembler_DefinitionCallback definition_callback,
 	const void* const user_data)
 {
@@ -5690,7 +5689,7 @@ cc_bool ClownAssembler_Assemble(
 	state.error_callbacks = error_callbacks;
 	state.listing_callbacks = listing_callbacks;
 
-	state.settings = settings;
+	Options_Initialise(&state.options, initial_options);
 
 	String_CreateBlank(&state.last_global_label);
 	String_CreateBlank(&state.line_buffer);
@@ -5699,7 +5698,7 @@ cc_bool ClownAssembler_Assemble(
 	state.mode = MODE_NORMAL;
 
 	/* Create the symbol table dictionary. */
-	if (!Dictionary_Init(&state.dictionary, settings->case_insensitive))
+	if (!Dictionary_Init(&state.dictionary, Options_Get(&state.options)->case_insensitive))
 	{
 		OutOfMemoryError(&state);
 	}
@@ -5725,7 +5724,7 @@ cc_bool ClownAssembler_Assemble(
 			{
 				/* Enable Bison debugging if available and requested by the user. */
 			#if M68KASM_DEBUG
-				if (settings->debug)
+				if (Options_Get(&state.options)->debug)
 					m68kasm_debug = 1;
 			#endif
 
@@ -5824,7 +5823,7 @@ cc_bool ClownAssembler_Assemble(
 					const void *parameters[2];
 
 					parameters[0] = symbol_callbacks;
-					parameters[1] = &settings->output_local_labels_to_sym_file;
+					parameters[1] = &Options_Get(&state.options)->output_local_labels_to_sym_file;
 
 					/* Some kind of header. */
 					BinaryOutput_fputc('M', symbol_callbacks);
@@ -5847,6 +5846,8 @@ cc_bool ClownAssembler_Assemble(
 	Substitute_Deinitialise(&state.substitutions);
 	String_Destroy(&state.line_buffer);
 	String_Destroy(&state.last_global_label);
+
+	Options_Deinitialise(&state.options);
 
 	return state.success;
 }

@@ -28,6 +28,8 @@
 extern "C" {
 #endif
 
+#include "options.h"
+
 typedef char* (*ClownAssembler_ReadLine)(void *user_data, char *buffer, size_t buffer_size);
 typedef void (*ClownAssembler_Seek)(void *user_data, size_t position);
 typedef void (*ClownAssembler_WriteCharacter)(void *user_data, int character);
@@ -57,15 +59,7 @@ typedef struct ClownAssembler_TextOutput
 	ClownAssembler_WriteString write_string;
 } ClownAssembler_TextOutput;
 
-typedef struct ClownAssembler_Settings
-{
-	cc_bool debug;
-	cc_bool case_insensitive;
-	cc_bool equ_set_descope_local_labels;
-	cc_bool output_local_labels_to_sym_file;
-	cc_bool warnings_enabled;
-	cc_bool expand_all_macros;
-} ClownAssembler_Settings;
+typedef Options ClownAssembler_Settings;
 
 typedef void (*ClownAssembler_AddDefinition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value);
 typedef void (*ClownAssembler_DefinitionCallback)(void *internal, void *user_data, ClownAssembler_AddDefinition add_definition);
