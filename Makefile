@@ -8,6 +8,10 @@ else
  CFLAGS = -ansi -Wno-long-long -Wall -Wextra -pedantic -Wc++-compat -O2 -DNDEBUG
 endif
 
+ifeq ($(COUNTEREXAMPLES),1)
+ YFLAGS += -Wcounterexamples
+endif
+
 all: generators
 
 generators: lexical.c lexical.h syntactic.c syntactic.h
