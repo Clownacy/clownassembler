@@ -90,38 +90,51 @@ typedef struct SemanticState
 {
 	cc_bool success;
 
+	/* Callbacks. */
 	const TextInput *input_callbacks;
 	const BinaryOutput *output_callbacks;
 	const TextOutput *listing_callbacks;
 	const TextOutput *error_callbacks;
 
-	Options_State options;
-
-	size_t output_position;
-	cc_bool output_written_to;
-	unsigned long start_position;
-	unsigned long program_counter;
-	cc_bool obj_active;
-	unsigned long obj_delta;
-	FixUp *fix_up_list_head;
-	FixUp *fix_up_list_tail;
-	cc_bool fix_up_needed;
-	cc_bool doing_fix_up;
-	cc_bool doing_final_pass;
+	/* Global stuff. */
 	Dictionary_State dictionary;
 	String last_global_label;
 	Location *location;
 	yyscan_t flex_state;
 	String line_buffer;
 	const String *source_line;
+	Substitute_State substitutions;
+	Options_State options;
+	size_t output_position;
+	unsigned long program_counter;
+	cc_bool end;
+
+	/* Fix-ups. */
+	FixUp *fix_up_list_head;
+	FixUp *fix_up_list_tail;
+	cc_bool fix_up_needed;
+	cc_bool doing_fix_up;
+	cc_bool doing_final_pass;
+
+	/* If-statements. */
 	unsigned int current_if_level;
 	unsigned int false_if_level;
 	cc_bool true_already_found;
-	cc_bool end;
+
+	/* ORG directive */
+	cc_bool output_written_to;
+	unsigned long start_position;
+
+	/* OBJ directive. */
+	cc_bool obj_active;
+	unsigned long obj_delta;
+
+	/* Listing. */
 	unsigned int listing_counter;
 	cc_bool line_listed;
 	cc_bool suppress_listing;
-	Substitute_State substitutions;
+
+	/* Modes. */
 	Mode mode;
 	union
 	{
