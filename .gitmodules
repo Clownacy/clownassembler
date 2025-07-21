@@ -10,3 +10,6 @@
 [submodule "clowncommon"]
 	path = clowncommon
 	url = https://github.com/Clownacy/clowncommon
+[submodule "tests/Dr-Robotnik-Mean-Bean-Machine-Disassembly"]
+	path = tests/Dr-Robotnik-Mean-Bean-Machine-Disassembly
+	url = https://github.com/radioshadow/Dr-Robotnik-Mean-Bean-Machine-Disassembly

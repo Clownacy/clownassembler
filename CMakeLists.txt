@@ -85,3 +85,6 @@ add_test(NAME sonic_2_august_21st_assemble COMMAND clownassembler -i "sonic2alph
 # Test that the Sonic 2 August 21st disassembly produces the correct machine code.
 add_test(NAME sonic_2_august_21st_compare COMMAND ${CMAKE_COMMAND} -E compare_files "sonic2alpha.bin" "${CMAKE_CURRENT_BINARY_DIR}/sonic2alpha.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/Sonic-2-Aug-21st-Disassembly")
 set_tests_properties(sonic_2_august_21st_compare PROPERTIES DEPENDS sonic_2_august_21st_assemble)
+
+# Test that the Mean Bean Machine disassembly assembles.
+add_test(NAME mean_bean_machine_assemble COMMAND clownassembler -c -i "main.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/bean.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/Dr-Robotnik-Mean-Bean-Machine-Disassembly")
