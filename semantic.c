@@ -4916,7 +4916,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 	}
 }
 
-static void ParseLine(SemanticState *state, const String *source_line, const StringView *label, const char *directive_and_operands)
+static void ParseLine(SemanticState *state, const StringView *label, const char *directive_and_operands)
 {
 	/* This is a normal assembly line. */
 	YY_BUFFER_STATE buffer;
@@ -4976,7 +4976,7 @@ static void ParseLine(SemanticState *state, const String *source_line, const Str
 					fix_up->program_counter = starting_program_counter;
 					fix_up->output_position = starting_output_position;
 					String_CreateCopy(&fix_up->last_global_label, &state->last_global_label);
-					String_CreateCopy(&fix_up->source_line, source_line);
+					String_CreateCopy(&fix_up->source_line, state->source_line);
 					String_CreateCopyView(&fix_up->label, label);
 
 					/* Clone the location. */
@@ -5253,7 +5253,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 					      || strncmpci(source_line_pointer, "endif" , directive_length) == 0)
 					{
 						/* These can be processed normally too. */
-						ParseLine(state, state->source_line, &label, source_line_pointer);
+						ParseLine(state, &label, source_line_pointer);
 					}
 					else
 					{
@@ -5271,7 +5271,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 				if (macro_dictionary_entry == NULL || macro_dictionary_entry->type != SYMBOL_MACRO)
 				{
 					/* This is not a macro invocation: it's just a regular line that can be assembled as-is. */
-					ParseLine(state, state->source_line, &label, source_line_pointer);
+					ParseLine(state, &label, source_line_pointer);
 				}
 				else
 				{
@@ -5463,7 +5463,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 			if (directive_length != 0 && (strncmpci(source_line_pointer, "rept", directive_length) == 0 || strncmpci(source_line_pointer, "endr", directive_length) == 0))
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
-				ParseLine(state, state->source_line, &label, source_line_pointer);
+				ParseLine(state, &label, source_line_pointer);
 			}
 			else
 			{
@@ -5477,7 +5477,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 			if (directive_length != 0 && strncmpci(source_line_pointer, "endm", directive_length) == 0)
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
-				ParseLine(state, state->source_line, &label, source_line_pointer);
+				ParseLine(state, &label, source_line_pointer);
 
 				if (state->shared.macro.is_short)
 					SemanticError(state, "Short macros shouldn't use ENDM.");
@@ -5514,7 +5514,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 			/* If this line is an 'ENDW' directive, then exit 'WHILE' mode. Otherwise, add the line to the 'WHILE'. */
 			if (directive_length != 0 && strncmpci(source_line_pointer, "endw", directive_length) == 0)
 				/* TODO - Detect code after the keyword and error if any is found. */
-				ParseLine(state, state->source_line, &label, source_line_pointer);
+				ParseLine(state, &label, source_line_pointer);
 			else
 				AddToSourceLineList(state, &state->shared.while_statement.source_line_list, state->source_line);
 
