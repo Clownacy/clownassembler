@@ -1035,7 +1035,7 @@ static void TerminateWhile(SemanticState *state)
 		if (value == 0)
 			break;
 
-		/* Rewind back to the line number of the start of the REPT. */
+		/* Rewind back to the line number of the start of the WHILE. */
 		state->location->line_number = starting_line_number;
 
 		/* Process the WHILE's nested statements. */
