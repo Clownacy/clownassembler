@@ -3332,6 +3332,9 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							custom_operands[0].literal.shared.unsigned_long = 0 - offset;
 						}
 
+						if ((value & 1) != 0)
+							SemanticWarning(state, "Branch leads to odd address 0x%lX.", value);
+
 						break;
 					}
 
@@ -3402,6 +3405,9 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 							offset = 0 - offset;
 						}
+
+						if ((value & 1) != 0)
+							SemanticWarning(state, "Branch leads to odd address 0x%lX.", value);
 
 						if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
 						{
