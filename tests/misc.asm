@@ -664,12 +664,11 @@ Swag.Legit:
 	endr
 	endr
 
-StringVar EQUS "dc.b"
-StringVar2 EQUS "stringvar!"
-	StringVar "\StringVar2"
+StringVar EQUS "stringvar!"
+	dc.b "\StringVar"
 
-StringVar3 SUBSTR 1,5,"\StringVar2"
-	StringVar "\StringVar3"
+StringVar2 SUBSTR 1,5,"\StringVar"
+	dc.b "\StringVar2"
 
 Message equs "A short Sample String"
 Part1 substr 9,14,"\Message"

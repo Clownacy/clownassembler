@@ -5119,7 +5119,6 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 
 static void AssembleLine(SemanticState *state, const String *source_line_raw, const cc_bool write_line_to_listing_file)
 {
-	String source_line;
 	size_t label_length;
 	const char *source_line_pointer;
 	StringView label;
@@ -5127,9 +5126,6 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 	StringView directive;
 
 	const String* const old_source_line = state->source_line;
-
-	String_CreateCopy(&source_line, source_line_raw);
-	Substitute_ProcessString(&state->substitutions, &source_line, NULL, NULL);
 
 	if (write_line_to_listing_file)
 	{
@@ -5146,7 +5142,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 		}
 	}
 
-	state->source_line = &source_line;
+	state->source_line = source_line_raw;
 	++state->location->line_number;
 
 	if (String_At(state->source_line, 0) == '*')
@@ -5227,6 +5223,14 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 	{
 		case MODE_NORMAL:
 		{
+			String source_line;
+
+			/* TODO: Avoid this `strlen`? */
+			String_Create(&source_line, source_line_pointer, strlen(source_line_pointer));
+			Substitute_ProcessString(&state->substitutions, &source_line, NULL, NULL);
+
+			source_line_pointer = String_CStr(&source_line);
+
 			/* If we are in the false part of an if-statement, then manually parse the
 			   source code until we encounter an IF, ELSEIF, ELSE, ENDC, or ENDIF.
 			   The reason for this is that the false part of an if-statement may contain
@@ -5448,6 +5452,8 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 					Substitute_Deinitialise(&substitutions);
 				}
 			}
+
+			String_Destroy(&source_line);
 
 			break;
 		}
