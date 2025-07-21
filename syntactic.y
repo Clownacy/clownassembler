@@ -385,7 +385,9 @@ typedef enum StatementType
 	STATEMENT_TYPE_RSRESET,
 	STATEMENT_TYPE_OBJ,
 	STATEMENT_TYPE_OBJEND,
-	STATEMENT_TYPE_ORG
+	STATEMENT_TYPE_ORG,
+	STATEMENT_TYPE_PUSHO,
+	STATEMENT_TYPE_POPO
 } StatementType;
 
 typedef struct Statement
@@ -606,6 +608,8 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_OBJ
 %token TOKEN_DIRECTIVE_OBJEND
 %token TOKEN_DIRECTIVE_ORG
+%token TOKEN_DIRECTIVE_PUSHO
+%token TOKEN_DIRECTIVE_POPO
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -907,6 +911,14 @@ statement
 	{
 		statement->type = STATEMENT_TYPE_ORG;
 		statement->shared.expression = $2;
+	}
+	| TOKEN_DIRECTIVE_PUSHO
+	{
+		statement->type = STATEMENT_TYPE_PUSHO;
+	}
+	| TOKEN_DIRECTIVE_POPO
+	{
+		statement->type = STATEMENT_TYPE_POPO;
 	}
 	;
 
@@ -2250,6 +2262,8 @@ void DestroyStatement(Statement *statement)
 		case STATEMENT_TYPE_FAIL:
 		case STATEMENT_TYPE_RSRESET:
 		case STATEMENT_TYPE_OBJEND:
+		case STATEMENT_TYPE_PUSHO:
+		case STATEMENT_TYPE_POPO:
 			break;
 
 		case STATEMENT_TYPE_INSTRUCTION:

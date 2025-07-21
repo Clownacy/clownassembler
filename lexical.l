@@ -268,6 +268,8 @@ hexadecimal       {hexadecimal_digit}+
 <INITIAL>obj             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_OBJ;
 <INITIAL>objend          BEGIN(OPERANDS); return TOKEN_DIRECTIVE_OBJEND;
 <INITIAL>org             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ORG;
+<INITIAL>pusho           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_PUSHO;
+<INITIAL>popo            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_POPO;
 
  /* Sizes. */
 ".b"            return TOKEN_SIZE_BYTE;

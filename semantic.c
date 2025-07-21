@@ -4444,6 +4444,8 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_INFORM:
 		case STATEMENT_TYPE_FAIL:
 		case STATEMENT_TYPE_END:
+		case STATEMENT_TYPE_PUSHO:
+		case STATEMENT_TYPE_POPO:
 			if (!StringView_Empty(label) && !state->doing_fix_up)
 			{
 				/* Handle the label here, instead of passing it onto a later function. */
@@ -4938,6 +4940,14 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 			break;
 		}
+
+		case STATEMENT_TYPE_PUSHO:
+			Options_Push(&state->options);
+			break;
+
+		case STATEMENT_TYPE_POPO:
+			Options_Pop(&state->options);
+			break;
 	}
 }
 
