@@ -33,6 +33,8 @@ cc_bool StringView_CompareCStrCaseInsensitive(const StringView *view, const char
 size_t StringView_Find(const StringView *view, const StringView *sub_view, size_t position);
 size_t StringView_FindCharacter(const StringView *view, char character, size_t position);
 #define StringView_SubStr(VIEW, OTHER_VIEW, POSITION, LENGTH) StringView_Create(VIEW, &StringView_At(OTHER_VIEW, POSITION), LENGTH)
+#define StringView_Front(VIEW) StringView_At(VIEW, 0)
+#define StringView_Back(VIEW) StringView_At(VIEW, StringView_Length(VIEW) - 1)
 
 #define STRING_INITIALISER(STRING_LITERAL) {STRING_VIEW_INITIALISER(STRING_LITERAL), sizeof(STRING_LITERAL) - 1}
 
@@ -61,5 +63,7 @@ cc_bool String_ResizeNoFill(String *string, size_t size);
 #define String_CompareCStrCaseInsensitive(STRING, C_STRING) StringView_CompareCStrCaseInsensitive(String_View(STRING), C_STRING)
 #define String_Find(STRING, SUB_VIEW, POSITION) StringView_Find(String_View(STRING), SUB_VIEW, POSITION)
 #define String_FindCharacter(STRING, CHARACTER, POSITION) StringView_FindCharacter(String_View(STRING), CHARACTER, POSITION)
+#define String_Front(STRING) StringView_Front(String_View(STRING))
+#define String_Back(STRING) StringView_Back(String_View(STRING))
 
 #endif /* STRING_H */

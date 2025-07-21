@@ -101,7 +101,7 @@ binary            {binary_digit}+
 decimal           {decimal_digit}+
 hexadecimal       {hexadecimal_digit}+
 
-%s OPERANDS PATH
+%s OPERANDS PATH OPTIONS
 
 %%
 
@@ -270,7 +270,7 @@ hexadecimal       {hexadecimal_digit}+
 <INITIAL>org             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ORG;
 <INITIAL>pusho           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_PUSHO;
 <INITIAL>popo            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_POPO;
-<INITIAL>opt             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_OPT;
+<INITIAL>opt             BEGIN(OPTIONS); return TOKEN_DIRECTIVE_OPT;
 
  /* Sizes. */
 ".b"            return TOKEN_SIZE_BYTE;
@@ -434,7 +434,7 @@ def             return TOKEN_DEF;
 }
 
  /* Option. */
-[^ \t\r\n]+[\+\-] {
+<OPTIONS>[^ \t\r\n,]+ {
 	if (!String_Create(&yylval->string, yytext, yyleng))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");

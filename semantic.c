@@ -4961,10 +4961,38 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 			for (option = statement->shared.opt.options.head; option != NULL; option = option->next)
 			{
-				if (String_CompareCStrCaseInsensitive(&option->identifier, "c+"))
+				/*if (String_CompareCStrCaseInsensitive(&option->identifier, "ae+"))
+					;
+				else*/ if (String_CompareCStrCaseInsensitive(&option->identifier, "ae-"))
+					;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "an+"))
+					;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "an-"))
+					;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "c+"))
 					Options_Get(&state->options)->case_insensitive = cc_false;
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "c-"))
 					Options_Get(&state->options)->case_insensitive = cc_true;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "d+"))
+					Options_Get(&state->options)->equ_set_descope_local_labels = cc_true;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "d-"))
+					Options_Get(&state->options)->equ_set_descope_local_labels = cc_false;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "e+"))
+					;
+				else if (String_Length(&option->identifier) == 2 && (String_Front(&option->identifier) == 'l' || String_Front(&option->identifier) == 'L'))
+					;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "m+"))
+					Options_Get(&state->options)->expand_all_macros = cc_true;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "m-"))
+					Options_Get(&state->options)->expand_all_macros = cc_false;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "w+"))
+					Options_Get(&state->options)->warnings_enabled = cc_true;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "w-"))
+					Options_Get(&state->options)->warnings_enabled = cc_false;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "ws+"))
+					;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "ws-"))
+					;
 				else
 					SemanticWarning(state, "Unrecognised option '%s'.", String_CStr(&option->identifier));
 			}			
