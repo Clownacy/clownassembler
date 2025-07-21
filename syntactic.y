@@ -2053,7 +2053,7 @@ expression8
 		if (!DoExpression(&$$, EXPRESSION_STRLEN, &$3, &$5))
 			YYNOMEM;
 	}
-	| TOKEN_INSTR '(' string ',' string ')'
+	| TOKEN_INSTR '(' expression ',' expression ')'
 	{
 		Expression expression;
 
@@ -2063,7 +2063,7 @@ expression8
 		if (!DoExpressionTriple(&$$, EXPRESSION_INSTR, &expression, &$3, &$5))
 			YYNOMEM;
 	}
-	| TOKEN_INSTR '(' expression ',' string ',' string ')'
+	| TOKEN_INSTR '(' expression ',' expression ',' expression ')'
 	{
 		if (!DoExpressionTriple(&$$, EXPRESSION_INSTR, &$3, &$5, &$7))
 			YYNOMEM;

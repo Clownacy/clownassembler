@@ -923,6 +923,11 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			{
 				success = cc_false;
 			}
+			else if (expression->shared.subexpressions[1].type != EXPRESSION_STRING || expression->shared.subexpressions[2].type != EXPRESSION_STRING)
+			{
+				success = cc_false;
+				SemanticError(state, "Last two arguments to `INSTR` must be strings.");
+			}
 			else
 			{
 				const size_t found_position = String_Find(&expression->shared.subexpressions[1].shared.string, String_View(&expression->shared.subexpressions[2].shared.string), position + 1);
