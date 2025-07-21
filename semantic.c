@@ -4329,12 +4329,10 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 
 			/* Revert back to the previous state. */
 			unsigned long repetitions = state->shared.rept.repetitions;
-			const unsigned long line_number = state->location->line_number;
 			const SourceLineList source_line_list = state->shared.rept.source_line_list;
 
 			state->mode = previous_mode;
 			state->shared.rept.repetitions = previous_repetitions;
-			state->location->line_number = previous_line_number;
 			state->shared.rept.source_line_list = previous_source_line_list;
 
 			state->suppress_listing = cc_true;
@@ -4344,7 +4342,7 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 				SourceLineListNode *source_line_list_node;
 
 				/* Rewind back to the line number of the start of the REPT. */
-				state->location->line_number = line_number;
+				state->location->line_number = previous_line_number;
 
 				/* Process the REPT's nested statements. */
 				for (source_line_list_node = source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
