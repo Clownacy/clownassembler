@@ -621,6 +621,9 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 	}
 	else
 	{
+		if (state->doing_fix_up && dictionary_entry->type == SYMBOL_VARIABLE)
+			SemanticWarning(state, "Symbol '%.*s' forward-referenced despite being a redefineable variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
+
 		success = cc_true;
 		*value = dictionary_entry->shared.unsigned_long;
 	}
@@ -5560,20 +5563,6 @@ static void AssembleFile(SemanticState *state)
 	}
 }
 
-static cc_bool DictionaryFilterDeleteVariables(Dictionary_Entry *entry, const char *identifier_buffer, size_t identifier_length, void *user_data)
-{
-	StringView identifier;
-
-	(void)user_data;
-
-	StringView_Create(&identifier, identifier_buffer, identifier_length);
-
-	return (entry->type != SYMBOL_VARIABLE
-	    || StringView_Compare(&identifier, &string_program_counter_statement)
-	    || StringView_Compare(&identifier, &string_program_counter_expression)
-	    || StringView_Compare(&identifier, &string_rs));
-}
-
 static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data)
 {
 	/* The symbol file only contains labels. */
@@ -5727,10 +5716,6 @@ cc_bool ClownAssembler_Assemble(
 					SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
 				if (state.obj_active)
 					SemanticError(&state, "An OBJ statement somewhere is missing its OBJEND.");
-
-				/* We're about to process the fix-ups, but first we need to remove all variables
-				   from the symbol table so that they're not able to be used before they are declared. */
-				Dictionary_Filter(&state.dictionary, DictionaryFilterDeleteVariables, NULL);
 
 				/* Process the fix-ups: reassemble instructions and reprocess
 				   directives that could not be completed in the first pass. */
