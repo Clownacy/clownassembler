@@ -714,6 +714,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 					case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
 					case EXPRESSION_STRLEN:
 					case EXPRESSION_STRCMP:
+					case EXPRESSION_INSTR:
 					case EXPRESSION_DEF:
 					case EXPRESSION_NEGATE:
 					case EXPRESSION_BITWISE_NOT:
@@ -820,6 +821,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 					case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
 					case EXPRESSION_STRLEN:
 					case EXPRESSION_STRCMP:
+					case EXPRESSION_INSTR:
 					case EXPRESSION_DEF:
 					case EXPRESSION_SUBTRACT:
 					case EXPRESSION_ADD:
@@ -913,6 +915,22 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			*value = String_Compare(&expression->shared.subexpressions[0].shared.string, &expression->shared.subexpressions[1].shared.string);
 			break;
 
+		case EXPRESSION_INSTR:
+		{
+			unsigned long position;
+
+			if (!ResolveExpression(state, &expression->shared.subexpressions[0], &position, fold))
+			{
+				success = cc_false;
+			}
+			else
+			{
+				const size_t found_position = String_Find(&expression->shared.subexpressions[1].shared.string, String_View(&expression->shared.subexpressions[2].shared.string), position + 1);
+				*value = found_position == STRING_POSITION_INVALID ? 0 : found_position + 1;;
+			}
+			break;
+		}
+
 		case EXPRESSION_DEF:
 			*value = LookupSymbol(state, String_View(&expression->shared.string)) != NULL;
 			break;
@@ -946,6 +964,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			case EXPRESSION_BITWISE_NOT:
 			case EXPRESSION_LOGICAL_NOT:
 			case EXPRESSION_STRCMP:
+			case EXPRESSION_INSTR:
 				free(expression->shared.subexpressions);
 				break;
 

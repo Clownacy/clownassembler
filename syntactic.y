@@ -225,6 +225,7 @@ typedef enum ExpressionType
 	EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION,
 	EXPRESSION_STRLEN,
 	EXPRESSION_STRCMP,
+	EXPRESSION_INSTR,
 	EXPRESSION_DEF
 } ExpressionType;
 
@@ -436,6 +437,7 @@ int m68kasm_lex(M68KASM_STYPE *yylval_param, void *yyscanner);
 void m68kasm_warning(void *scanner, Statement *statement, const char *message);
 void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
+static cc_bool DoExpressionTriple(Expression *expression, ExpressionType type, Expression *left_expression, Expression *middle_expression, Expression *right_expression);
 static cc_bool DoExpression(Expression *expression, ExpressionType type, Expression *left_expression, Expression *right_expression);
 static void DestroyIdentifierList(IdentifierList *list);
 static void DestroyExpressionList(ExpressionList *list);
@@ -628,6 +630,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_RIGHT_SHIFT
 %token TOKEN_STRLEN
 %token TOKEN_STRCMP
+%token TOKEN_INSTR
 %token TOKEN_DEF
 
 %type<instruction> instruction
@@ -2038,6 +2041,21 @@ expression8
 		if (!DoExpression(&$$, EXPRESSION_STRLEN, &$3, &$5))
 			YYNOMEM;
 	}
+	| TOKEN_INSTR '(' string ',' string ')'
+	{
+		Expression expression;
+
+		expression.type = EXPRESSION_NUMBER;
+		expression.shared.unsigned_long = 1;
+
+		if (!DoExpressionTriple(&$$, EXPRESSION_INSTR, &expression, &$3, &$5))
+			YYNOMEM;
+	}
+	| TOKEN_INSTR '(' expression ',' string ',' string ')'
+	{
+		if (!DoExpressionTriple(&$$, EXPRESSION_INSTR, &$3, &$5, &$7))
+			YYNOMEM;
+	}
 	| TOKEN_DEF '(' TOKEN_IDENTIFIER ')'
 	{
 		$$.type = EXPRESSION_DEF;
@@ -2054,17 +2072,20 @@ string
 
 %%
 
-static cc_bool DoExpression(Expression *expression, ExpressionType type, Expression *left_expression, Expression *right_expression)
+static cc_bool DoExpressionTriple(Expression *expression, ExpressionType type, Expression *left_expression, Expression *middle_expression, Expression *right_expression)
 {
 	cc_bool success = cc_true;
 
 	expression->type = type;
 
-	expression->shared.subexpressions = (Expression*)malloc(sizeof(Expression) * (right_expression != NULL ? 2 : 1));
+	expression->shared.subexpressions = (Expression*)malloc(sizeof(Expression) * (right_expression != NULL ? 3 : middle_expression != NULL ? 2 : 1));
 
 	if (expression->shared.subexpressions == NULL)
 	{
 		DestroyExpression(left_expression);
+
+		if (middle_expression != NULL)
+			DestroyExpression(middle_expression);
 
 		if (right_expression != NULL)
 			DestroyExpression(right_expression);
@@ -2075,17 +2096,32 @@ static cc_bool DoExpression(Expression *expression, ExpressionType type, Express
 	{
 		expression->shared.subexpressions[0] = *left_expression;
 
+		if (middle_expression != NULL)
+			expression->shared.subexpressions[1] = *middle_expression;
+
 		if (right_expression != NULL)
-			expression->shared.subexpressions[1] = *right_expression;
+			expression->shared.subexpressions[2] = *right_expression;
 	}
 
 	return success;
+}
+
+static cc_bool DoExpression(Expression *expression, ExpressionType type, Expression *left_expression, Expression *right_expression)
+{
+	return DoExpressionTriple(expression, type, left_expression, right_expression, NULL);
 }
 
 void DestroyExpression(Expression *expression)
 {
 	switch (expression->type)
 	{
+		case EXPRESSION_INSTR:
+			DestroyExpression(&expression->shared.subexpressions[0]);
+			DestroyExpression(&expression->shared.subexpressions[1]);
+			DestroyExpression(&expression->shared.subexpressions[2]);
+			free(expression->shared.subexpressions);
+			break;
+
 		case EXPRESSION_SUBTRACT:
 		case EXPRESSION_ADD:
 		case EXPRESSION_MULTIPLY:
