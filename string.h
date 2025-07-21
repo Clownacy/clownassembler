@@ -29,6 +29,7 @@ void StringView_Create(StringView *view, const char *source_buffer, size_t sourc
 #define StringView_Empty(VIEW) (StringView_Length(VIEW) == 0)
 #define StringView_At(VIEW, INDEX) StringView_Data(VIEW)[INDEX]
 cc_bool StringView_Compare(const StringView *view, const StringView *other_view);
+cc_bool StringView_CompareCStrCaseInsensitive(const StringView *view, const char *c_string);
 size_t StringView_Find(const StringView *view, const StringView *sub_view, size_t position);
 size_t StringView_FindCharacter(const StringView *view, char character, size_t position);
 #define StringView_SubStr(VIEW, OTHER_VIEW, POSITION, LENGTH) StringView_Create(VIEW, &StringView_At(OTHER_VIEW, POSITION), LENGTH)

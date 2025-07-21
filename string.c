@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "strcmpci.h"
+
 static char string_dummy_buffer[] = "";
 
 void StringView_Create(StringView* const view, const char* const source_buffer, const size_t source_length)
@@ -19,6 +21,13 @@ cc_bool StringView_Compare(const StringView* const view, const StringView* const
 	assert(view != NULL && other_view != NULL);
 
 	return StringView_Length(view) == StringView_Length(other_view) && memcmp(StringView_Data(view), StringView_Data(other_view), StringView_Length(view)) == 0;
+}
+
+cc_bool StringView_CompareCStrCaseInsensitive(const StringView* const view, const char* const c_string)
+{
+	assert(view != NULL && c_string != NULL);
+
+	return StringView_Length(view) != 0 && strncmpci(StringView_Data(view), c_string, StringView_Length(view)) == 0;
 }
 
 size_t StringView_Find(const StringView* const view, const StringView* const sub_view, const size_t position)

@@ -5240,27 +5240,24 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 			   This can get pretty complicated because we need to account for nesting. */
 			if (state->false_if_level != 0)
 			{
-				if (directive_length != 0)
+				/* TODO - Detect code after the keyword and error if any is found. */
+				if (StringView_CompareCStrCaseInsensitive(&directive, "if"))
 				{
-					/* TODO - Detect code after the keyword and error if any is found. */
-					if (strncmpci(source_line_pointer, "if", directive_length) == 0)
-					{
-						/* If-statements that are nested within the false part of another if-statement
-						   are themselves false, so create a false if-statement here and process it. */
-						++state->current_if_level;
-					}
-					else if (strncmpci(source_line_pointer, "elseif", directive_length) == 0
-					      || strncmpci(source_line_pointer, "else"  , directive_length) == 0
-					      || strncmpci(source_line_pointer, "endc"  , directive_length) == 0
-					      || strncmpci(source_line_pointer, "endif" , directive_length) == 0)
-					{
-						/* These can be processed normally too. */
-						ParseLine(state, &label, &directive_and_operands);
-					}
-					else
-					{
-						/* Drop the line completely, since it's inside the false half of an if statement and should be ignored. */
-					}
+					/* If-statements that are nested within the false part of another if-statement
+					   are themselves false, so create a false if-statement here and process it. */
+					++state->current_if_level;
+				}
+				else if (StringView_CompareCStrCaseInsensitive(&directive, "elseif")
+				      || StringView_CompareCStrCaseInsensitive(&directive, "else"  )
+				      || StringView_CompareCStrCaseInsensitive(&directive, "endc"  )
+				      || StringView_CompareCStrCaseInsensitive(&directive, "endif" ))
+				{
+					/* These can be processed normally too. */
+					ParseLine(state, &label, &directive_and_operands);
+				}
+				else
+				{
+					/* Drop the line completely, since it's inside the false half of an if statement and should be ignored. */
 				}
 			}
 			else
@@ -5462,7 +5459,7 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 
 		case MODE_REPT:
 			/* If this line is an 'ENDR' directive, then exit REPT mode. Otherwise, add the line to the REPT. */
-			if (directive_length != 0 && (strncmpci(source_line_pointer, "rept", directive_length) == 0 || strncmpci(source_line_pointer, "endr", directive_length) == 0))
+			if (StringView_CompareCStrCaseInsensitive(&directive, "rept") || StringView_CompareCStrCaseInsensitive(&directive, "endr"))
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
 				ParseLine(state, &label, &directive_and_operands);
@@ -5476,7 +5473,7 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 
 		case MODE_MACRO:
 			/* If this line is an 'ENDM' directive, then exit macro mode. Otherwise, add the line to the macro. */
-			if (directive_length != 0 && strncmpci(source_line_pointer, "endm", directive_length) == 0)
+			if (StringView_CompareCStrCaseInsensitive(&directive, "endm"))
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
 				ParseLine(state, &label, &directive_and_operands);
@@ -5514,7 +5511,7 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 
 		case MODE_WHILE:
 			/* If this line is an 'ENDW' directive, then exit 'WHILE' mode. Otherwise, add the line to the 'WHILE'. */
-			if (directive_length != 0 && strncmpci(source_line_pointer, "endw", directive_length) == 0)
+			if (StringView_CompareCStrCaseInsensitive(&directive, "endw"))
 				/* TODO - Detect code after the keyword and error if any is found. */
 				ParseLine(state, &label, &directive_and_operands);
 			else
