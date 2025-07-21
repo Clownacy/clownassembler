@@ -4916,7 +4916,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 	}
 }
 
-static void ParseLine(SemanticState *state, const StringView *label, const char *directive_and_operands)
+static void ParseLine(SemanticState *state, const StringView *label, const StringView *directive_and_operands)
 {
 	/* This is a normal assembly line. */
 	YY_BUFFER_STATE buffer;
@@ -4928,7 +4928,7 @@ static void ParseLine(SemanticState *state, const StringView *label, const char 
 	const size_t starting_output_position = state->output_position;
 
 	/* Parse the source line with Flex and Bison (Lex and Yacc). */
-	buffer = m68kasm__scan_string(directive_and_operands, state->flex_state);
+	buffer = m68kasm__scan_bytes(StringView_Data(directive_and_operands), StringView_Length(directive_and_operands), state->flex_state);
 	parse_result = m68kasm_parse(state->flex_state, &statement);
 	m68kasm__delete_buffer(buffer, state->flex_state);
 
@@ -5117,13 +5117,13 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 	return NULL;
 }
 
-static void AssembleLine(SemanticState *state, const String *source_line_raw, const cc_bool write_line_to_listing_file)
+static void AssembleLine(SemanticState *state, const String *source_line, const cc_bool write_line_to_listing_file)
 {
 	size_t label_length;
 	const char *source_line_pointer;
 	StringView label;
 	size_t directive_length;
-	StringView directive;
+	StringView directive_and_operands, directive;
 
 	const String* const old_source_line = state->source_line;
 
@@ -5142,7 +5142,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 		}
 	}
 
-	state->source_line = source_line_raw;
+	state->source_line = source_line;
 	++state->location->line_number;
 
 	if (String_At(state->source_line, 0) == '*')
@@ -5217,19 +5217,21 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 	/* Determine the length of the directive. */
 	directive_length = strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
 
-	StringView_Create(&directive, source_line_pointer, directive_length);
+	/* TODO: Avoid this `strlen`? */
+	StringView_Create(&directive_and_operands, source_line_pointer, strlen(source_line_pointer));
+	StringView_SubStr(&directive, &directive_and_operands, 0, directive_length);
 
 	switch (state->mode)
 	{
 		case MODE_NORMAL:
 		{
-			String source_line;
+			String modified_directive_and_operands;
 
-			/* TODO: Avoid this `strlen`? */
-			String_Create(&source_line, source_line_pointer, strlen(source_line_pointer));
-			Substitute_ProcessString(&state->substitutions, &source_line, NULL, NULL);
+			String_CreateCopyView(&modified_directive_and_operands, &directive_and_operands);
+			Substitute_ProcessString(&state->substitutions, &modified_directive_and_operands, NULL, NULL);
+			directive_and_operands = *String_View(&modified_directive_and_operands);
 
-			source_line_pointer = String_CStr(&source_line);
+			source_line_pointer = String_CStr(&modified_directive_and_operands);
 
 			/* If we are in the false part of an if-statement, then manually parse the
 			   source code until we encounter an IF, ELSEIF, ELSE, ENDC, or ENDIF.
@@ -5253,7 +5255,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 					      || strncmpci(source_line_pointer, "endif" , directive_length) == 0)
 					{
 						/* These can be processed normally too. */
-						ParseLine(state, &label, source_line_pointer);
+						ParseLine(state, &label, &directive_and_operands);
 					}
 					else
 					{
@@ -5271,7 +5273,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 				if (macro_dictionary_entry == NULL || macro_dictionary_entry->type != SYMBOL_MACRO)
 				{
 					/* This is not a macro invocation: it's just a regular line that can be assembled as-is. */
-					ParseLine(state, &label, source_line_pointer);
+					ParseLine(state, &label, &directive_and_operands);
 				}
 				else
 				{
@@ -5453,7 +5455,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 				}
 			}
 
-			String_Destroy(&source_line);
+			String_Destroy(&modified_directive_and_operands);
 
 			break;
 		}
@@ -5463,7 +5465,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 			if (directive_length != 0 && (strncmpci(source_line_pointer, "rept", directive_length) == 0 || strncmpci(source_line_pointer, "endr", directive_length) == 0))
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
-				ParseLine(state, &label, source_line_pointer);
+				ParseLine(state, &label, &directive_and_operands);
 			}
 			else
 			{
@@ -5477,7 +5479,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 			if (directive_length != 0 && strncmpci(source_line_pointer, "endm", directive_length) == 0)
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
-				ParseLine(state, &label, source_line_pointer);
+				ParseLine(state, &label, &directive_and_operands);
 
 				if (state->shared.macro.is_short)
 					SemanticError(state, "Short macros shouldn't use ENDM.");
@@ -5514,7 +5516,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 			/* If this line is an 'ENDW' directive, then exit 'WHILE' mode. Otherwise, add the line to the 'WHILE'. */
 			if (directive_length != 0 && strncmpci(source_line_pointer, "endw", directive_length) == 0)
 				/* TODO - Detect code after the keyword and error if any is found. */
-				ParseLine(state, &label, source_line_pointer);
+				ParseLine(state, &label, &directive_and_operands);
 			else
 				AddToSourceLineList(state, &state->shared.while_statement.source_line_list, state->source_line);
 
