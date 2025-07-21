@@ -5448,8 +5448,9 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 								/* If we encounter a comma, a comment, or the end of the line, then split this off as a macro argument. */
 								if (character == ',' || character == ';' || character == '\0')
 								{
+									/* Extract argument, removing trailing whitespace. */
 									StringView argument;
-									StringView_Create(&argument, argument_string_start, source_line_pointer - argument_string_start - 1);
+									StringView_Create(&argument, argument_string_start, strcspn(argument_string_start, ",; \t"));
 
 									/* Add to argument list. */
 									{
