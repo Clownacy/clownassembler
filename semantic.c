@@ -277,7 +277,7 @@ static void ErrorMessageCommon(SemanticState *state)
 	for (location = state->location; location != NULL; location = location->previous)
 		TextOutput_fprintf(state->error_callbacks, "\nOn line %lu of '%s'...", location->line_number, String_CStr(&location->file_path));
 
-	TextOutput_fprintf(state->error_callbacks, "\n%s\n\n", String_CStr(state->source_line));
+	TextOutput_fprintf(state->error_callbacks, "\n%s\n\n", state->source_line == NULL ? "[No source line]" : String_CStr(state->source_line));
 }
 
 CC_ATTRIBUTE_PRINTF(2, 3) static void SemanticWarning(SemanticState *state, const char *fmt, ...)
