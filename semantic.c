@@ -142,6 +142,7 @@ typedef struct SemanticState
 		{
 			unsigned long repetitions;
 			unsigned long line_number;
+			unsigned int nesting;
 			SourceLineList source_line_list;
 		} rept;
 		struct
@@ -1008,8 +1009,34 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 
 static void TerminateRept(SemanticState *state)
 {
+	/* Back-up some state into local variables, in case a nested REPT statement clobbers it. */
+	unsigned long repetitions = state->shared.rept.repetitions;
+
+	const unsigned long line_number = state->shared.rept.line_number;
+	const SourceLineList source_line_list = state->shared.rept.source_line_list;
+
 	/* Exit REPT mode. */
 	state->mode = MODE_NORMAL;
+
+	state->suppress_listing = cc_true;
+
+	while (repetitions-- != 0)
+	{
+		SourceLineListNode *source_line_list_node;
+
+		/* Rewind back to the line number of the start of the REPT. */
+		state->location->line_number = line_number;
+
+		/* Process the REPT's nested statements. */
+		for (source_line_list_node = source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
+			AssembleLine(state, &source_line_list_node->source_line_buffer, cc_false);
+	}
+
+	/* Increment past the ENDR line number. */
+	++state->location->line_number;
+
+	FreeSourceLineList(source_line_list.head);
+
 }
 
 static void TerminateMacro(SemanticState *state)
@@ -1043,18 +1070,15 @@ static void TerminateMacro(SemanticState *state)
 
 static void TerminateWhile(SemanticState *state)
 {
-	Expression expression;
-
 	const String* const old_source_line = state->source_line;
 
 	/* Back-up some state into local variables, in case a nested WHILE statement clobbers it. */
+	Expression expression = state->shared.while_statement.expression;
 	String source_line = state->shared.while_statement.source_line;
 	const unsigned long starting_line_number = state->shared.while_statement.line_number;
 	SourceLineListNode* const source_line_list_head = state->shared.while_statement.source_line_list.head;
 
-	expression = state->shared.while_statement.expression;
-
-	/* Exit WHILE mode before we recurse into the WHILE's nested statements. */
+	/* Exit WHILE mode. */
 	state->mode = MODE_NORMAL;
 
 	state->suppress_listing = cc_true;
@@ -1083,15 +1107,14 @@ static void TerminateWhile(SemanticState *state)
 			AssembleLine(state, &source_line_list_node->source_line_buffer, cc_false);
 	}
 
-	DestroyExpression(&expression);
-
-	state->source_line = old_source_line;
-
 	/* Increment past the ENDW line number. */
 	++state->location->line_number;
 
-	String_Destroy(&source_line);
 	FreeSourceLineList(source_line_list_head);
+	String_Destroy(&source_line);
+	DestroyExpression(&expression);
+
+	state->source_line = old_source_line;
 }
 
 static unsigned int ConstructSizeBits(Size size)
@@ -4333,11 +4356,6 @@ static cc_bool ReadSourceLine(SemanticState *state)
 
 static void ProcessRept(SemanticState *state, StatementRept *rept)
 {
-	const Mode previous_mode = state->mode;
-	const unsigned long previous_repetitions = state->shared.rept.repetitions;
-	const unsigned long previous_line_number = state->location->line_number;
-	const SourceLineList previous_source_line_list = state->shared.rept.source_line_list;
-
 	/* Enter REPT mode. */
 	state->mode = MODE_REPT;
 
@@ -4348,60 +4366,10 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 	}
 
 	state->shared.rept.line_number = state->location->line_number;
+	state->shared.rept.nesting = 0;
 
 	state->shared.rept.source_line_list.head = NULL;
 	state->shared.rept.source_line_list.tail = NULL;
-
-	for (;;)
-	{
-		if (!ReadSourceLine(state))
-		{
-			/* The file ended before an 'ENDR' could be found! */
-
-			/* Terminate the REPT to hopefully avoid future complications. */
-			TerminateRept(state);
-
-			SemanticError(state, "REPT statement beginning at line %lu is missing its ENDR.", state->shared.rept.line_number);
-		}
-		else
-		{
-			AssembleLine(state, &state->line_buffer, cc_true);
-		}
-
-		if (state->mode != MODE_REPT)
-		{
-			/* An 'ENDR' must have been encountered. */
-
-			/* Revert back to the previous state. */
-			unsigned long repetitions = state->shared.rept.repetitions;
-			const SourceLineList source_line_list = state->shared.rept.source_line_list;
-
-			state->mode = previous_mode;
-			state->shared.rept.repetitions = previous_repetitions;
-			state->shared.rept.source_line_list = previous_source_line_list;
-
-			state->suppress_listing = cc_true;
-
-			while (repetitions-- != 0)
-			{
-				SourceLineListNode *source_line_list_node;
-
-				/* Rewind back to the line number of the start of the REPT. */
-				state->location->line_number = previous_line_number;
-
-				/* Process the REPT's nested statements. */
-				for (source_line_list_node = source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-					AssembleLine(state, &source_line_list_node->source_line_buffer, cc_false);
-			}
-
-			/* Increment past the ENDR line number. */
-			++state->location->line_number;
-
-			FreeSourceLineList(source_line_list.head);
-
-			break;
-		}
-	}
 }
 
 static void ProcessMacro(SemanticState *state, StatementMacro *macro, const StringView *label, cc_bool is_short)
@@ -5570,13 +5538,16 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 
 		case MODE_REPT:
 			/* If this line is an 'ENDR' directive, then exit REPT mode. Otherwise, add the line to the REPT. */
-			if (StringView_CompareCStrCaseInsensitive(&directive, "rept") || StringView_CompareCStrCaseInsensitive(&directive, "endr"))
+			if (StringView_CompareCStrCaseInsensitive(&directive, "endr") && state->shared.rept.nesting-- == 0)
 			{
 				/* TODO - Detect code after the keyword and error if any is found. */
 				ParseLine(state, &label, &directive_and_operands);
 			}
 			else
 			{
+				if (StringView_CompareCStrCaseInsensitive(&directive, "rept"))
+					++state->shared.rept.nesting;
+
 				AddToSourceLineList(state, &state->shared.rept.source_line_list, state->source_line);
 			}
 
