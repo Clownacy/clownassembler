@@ -26,7 +26,8 @@
 #include "clowncommon/clowncommon.h"
 
 #include "dictionary.h"
-#include "strcmpci.h"
+#include "string.h"
+#include "string-stack.h"
 #include "substitute.h"
 #include "syntactic.h"
 #define YY_NO_UNISTD_H
@@ -105,6 +106,7 @@ typedef struct SemanticState
 	String line_buffer;
 	const String *source_line;
 	Substitute_State substitutions;
+	StringStack_State string_stack;
 	Options_State options;
 	size_t output_position;
 	unsigned long program_counter;
@@ -4436,6 +4438,8 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_PUSHO:
 		case STATEMENT_TYPE_POPO:
 		case STATEMENT_TYPE_OPT:
+		case STATEMENT_TYPE_PUSHP:
+		case STATEMENT_TYPE_POPP:
 			if (!StringView_Empty(label) && !state->doing_fix_up)
 			{
 				/* Handle the label here, instead of passing it onto a later function. */
@@ -5002,6 +5006,24 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				else
 					SemanticWarning(state, "Unrecognised option '%s'.", String_CStr(&option->identifier));
 			}			
+
+			break;
+		}
+
+		case STATEMENT_TYPE_PUSHP:
+			if (!StringStack_Push(&state->string_stack, String_View(&statement->shared.string)))
+				InternalError(state, "Failed to allocate memory for the string stack.");
+
+			break;
+
+		case STATEMENT_TYPE_POPP:
+		{
+			String string;
+
+			if (!StringStack_Pop(&state->string_stack, &string))
+				InternalError(state, "POPO used but the string stack was empty.");
+			else
+				Substitute_PushSubstitute(&state->substitutions, String_View(&statement->shared.string), String_View(&string));
 
 			break;
 		}
@@ -5792,6 +5814,7 @@ cc_bool ClownAssembler_Assemble(
 	String_CreateBlank(&state.line_buffer);
 	state.location = &location;
 	Substitute_Initialise(&state.substitutions);
+	StringStack_Initialise(&state.string_stack);
 	state.mode = MODE_NORMAL;
 
 	/* Create the symbol table dictionary. */
@@ -5941,6 +5964,7 @@ cc_bool ClownAssembler_Assemble(
 		Dictionary_Deinit(&state.dictionary);
 	}
 
+	StringStack_Deinitialise(&state.string_stack);
 	Substitute_Deinitialise(&state.substitutions);
 	String_Destroy(&state.line_buffer);
 	String_Destroy(&state.last_global_label);
