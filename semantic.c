@@ -4981,6 +4981,10 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			break;
 		}
 	}
+
+	/* Update both copies of the program counter again, so that things like WHILE statements don't use stale values in their expressions. */
+	LookupSymbol(state, &string_program_counter_statement)->shared.unsigned_long = state->program_counter;
+	LookupSymbol(state, &string_program_counter_expression)->shared.unsigned_long = state->program_counter;
 }
 
 static void ParseLine(SemanticState *state, const StringView *label, const StringView *directive_and_operands)
