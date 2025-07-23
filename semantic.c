@@ -110,6 +110,7 @@ typedef struct SemanticState
 	Options_State options;
 	size_t output_position;
 	unsigned long program_counter;
+	unsigned long current_macro_invocation;
 	cc_bool end;
 
 	/* Fix-ups. */
@@ -173,7 +174,6 @@ typedef struct Macro
 	String name;
 	IdentifierListNode *parameter_names;
 	SourceLineListNode *source_line_list_head;
-	char suffix[3];
 } Macro;
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
@@ -388,7 +388,7 @@ static void* MallocAndHandleError(SemanticState *state, size_t size)
 	return memory;
 }
 
-static unsigned int GetDecimalIntegerStringLength(unsigned int integer)
+static unsigned int GetDecimalIntegerStringLength(unsigned long integer)
 {
 	unsigned int string_length;
 
@@ -403,7 +403,7 @@ static unsigned int GetDecimalIntegerStringLength(unsigned int integer)
 	return string_length;
 }
 
-static unsigned int GetHexadecimalIntegerStringLength(unsigned int integer)
+static unsigned int GetHexadecimalIntegerStringLength(unsigned long integer)
 {
 	unsigned int string_length;
 
@@ -418,7 +418,7 @@ static unsigned int GetHexadecimalIntegerStringLength(unsigned int integer)
 	return string_length;
 }
 
-static String DecimalIntegerToString(const unsigned int integer)
+static String DecimalIntegerToString(const unsigned long integer)
 {
 	String string;
 
@@ -426,12 +426,12 @@ static String DecimalIntegerToString(const unsigned int integer)
 
 	String_CreateBlank(&string);
 	if (String_ResizeNoFill(&string, length))
-		sprintf(String_Data(&string), "%u", integer);
+		sprintf(String_Data(&string), "%lu", integer);
 
 	return string;
 }
 
-static String HexadecimalIntegerToString(const unsigned int integer)
+static String HexadecimalIntegerToString(const unsigned long integer)
 {
 	String string;
 
@@ -439,29 +439,23 @@ static String HexadecimalIntegerToString(const unsigned int integer)
 
 	String_CreateBlank(&string);
 	if (String_ResizeNoFill(&string, length))
-		sprintf(String_Data(&string), "%X", integer);
+		sprintf(String_Data(&string), "%lX", integer);
 
 	return string;
 }
 
-static StringView ComputeUniqueMacroSuffix(Macro* const macro)
+static String ComputeUniqueMacroSuffix(const SemanticState* const state)
 {
-	/* TODO: Apparently SN 68k does not limit itself to specifically three digits. */
-	size_t i;
-	unsigned int carry = 1;
-	StringView view;
+	String string;
+	const unsigned long integer = state->current_macro_invocation;
 
-	for (i = CC_COUNT_OF(macro->suffix); i-- != 0;)
-	{
-		unsigned int digit = macro->suffix[i] - '0';
-		digit += carry;
-		carry = digit / 10;
-		digit = digit % 10;
-		macro->suffix[i] = digit + '0';
-	}
+	const size_t length = GetDecimalIntegerStringLength(integer);
 
-	StringView_Create(&view, macro->suffix, CC_COUNT_OF(macro->suffix));
-	return view;
+	String_CreateBlank(&string);
+	if (String_ResizeNoFill(&string, 1 + length))
+		sprintf(String_Data(&string), "_%lu", integer);
+
+	return string;
 }
 
 static FILE* fopen_backslash(const StringView *path, const char *mode)
@@ -1064,7 +1058,6 @@ static void TerminateMacro(SemanticState *state)
 				String_CreateMove(&macro->name, &state->shared.macro.name);
 				macro->parameter_names = state->shared.macro.parameter_names.head;
 				macro->source_line_list_head = state->shared.macro.source_line_list.head;
-				memset(macro->suffix, '0', CC_COUNT_OF(macro->suffix));
 
 				symbol->type = SYMBOL_MACRO;
 				symbol->shared.pointer = macro;
@@ -5151,7 +5144,7 @@ typedef struct MacroCustomSubstituteSearch_Closure
 	StringView size;
 	StringView arguments;
 	StringView label;
-	StringView unique_suffix;
+	String unique_suffix;
 	String symbol_value_string;
 } MacroCustomSubstituteSearch_Closure;
 
@@ -5181,7 +5174,7 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 				return &closure->label;
 
 			case '@':
-				return &closure->unique_suffix;
+				return String_View(&closure->unique_suffix);
 
 			case '#':
 			case '$':
@@ -5402,6 +5395,8 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 
 					Macro *macro = (Macro*)macro_dictionary_entry->shared.pointer;
 
+					++state->current_macro_invocation;
+
 					closure.state = state;
 
 					Substitute_Initialise(&substitutions);
@@ -5443,7 +5438,7 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 					}
 
 					closure.label = label;
-					closure.unique_suffix = ComputeUniqueMacroSuffix(macro);
+					closure.unique_suffix = ComputeUniqueMacroSuffix(state);
 					String_CreateBlank(&closure.symbol_value_string);
 
 					/* Extract and store the individual macro arguments, if they exist. */
