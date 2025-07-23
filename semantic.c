@@ -63,6 +63,7 @@ typedef struct FixUp
 	String source_line;
 	Location location;
 	String label;
+	Options options;
 } FixUp;
 
 typedef struct SourceLineListNode
@@ -5073,6 +5074,7 @@ static void ParseLine(SemanticState *state, const StringView *label, const Strin
 					String_CreateCopy(&fix_up->last_global_label, &state->last_global_label);
 					String_CreateCopy(&fix_up->source_line, state->source_line);
 					String_CreateCopyView(&fix_up->label, label);
+					fix_up->options = *Options_Get(&state->options);
 
 					/* Clone the location. */
 					*destination_location = *source_location;
@@ -5860,6 +5862,7 @@ cc_bool ClownAssembler_Assemble(
 						String_CreateCopy(&state.last_global_label, &fix_up->last_global_label);
 						state.source_line = &fix_up->source_line;
 						state.location = &fix_up->location;
+						*Options_Get(&state.options) = fix_up->options;
 
 						state.fix_up_needed = cc_false;
 
