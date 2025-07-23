@@ -711,6 +711,29 @@ Part4 substr ,,"\Message"
 	endw
 	endw
 
+	; Test SHIFT.
+Hell macro named
+;	rept narg
+	dc.b "\named"
+	dc.b "\1"
+	dc.b "\_"
+	dc.b narg
+	shift
+	dc.b "\named"
+	dc.b "\1"
+	dc.b "\_"
+	dc.b narg
+	shift
+	dc.b "\named"
+	dc.b "\1"
+	dc.b "\_"
+	dc.b narg
+	shift
+;	endr
+    endm
+
+	Hell hath,no,fury
+
   ; More blank lines to test support for trailing blank statements
 
 

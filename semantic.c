@@ -88,6 +88,22 @@ typedef enum Mode
 	MODE_WHILE
 } Mode;
 
+typedef struct Macro
+{
+	cc_bool uses_label;
+	String name;
+	IdentifierListNode *parameter_names;
+	SourceLineListNode *source_line_list_head;
+} Macro;
+
+typedef struct SemanticState_Macro
+{
+	Macro *metadata;
+	Substitute_State substitutions;
+	StringView *argument_list;
+	size_t total_arguments;
+} SemanticState_Macro;
+
 typedef struct SemanticState
 {
 	cc_bool success;
@@ -108,6 +124,7 @@ typedef struct SemanticState
 	Substitute_State substitutions;
 	StringStack_State string_stack;
 	Options_State options;
+	SemanticState_Macro macro;
 	size_t output_position;
 	unsigned long program_counter;
 	unsigned long current_macro_invocation;
@@ -125,7 +142,7 @@ typedef struct SemanticState
 	unsigned int false_if_level;
 	cc_bool true_already_found;
 
-	/* ORG directive */
+	/* ORG directive. */
 	cc_bool output_written_to;
 	unsigned long start_position;
 
@@ -168,14 +185,6 @@ typedef struct SemanticState
 		} while_statement;
 	} shared;
 } SemanticState;
-
-typedef struct Macro
-{
-	cc_bool uses_label;
-	String name;
-	IdentifierListNode *parameter_names;
-	SourceLineListNode *source_line_list_head;
-} Macro;
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
 static void AssembleFile(SemanticState *state);
@@ -4066,6 +4075,21 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 	}
 }
 
+static void PushMacroArgumentSubstitutions(SemanticState* const state)
+{
+	const IdentifierListNode *parameter_name;
+	size_t argument_index;
+
+	const StringView blank_argument = STRING_VIEW_INITIALISER_BLANK;
+
+	for (parameter_name = state->macro.metadata->parameter_names, argument_index = 0; parameter_name != NULL; parameter_name = parameter_name->next, ++argument_index)
+	{
+		const StringView* const argument = argument_index >= state->macro.total_arguments ? &blank_argument : &state->macro.argument_list[argument_index];
+
+		Substitute_PushSubstitute(&state->macro.substitutions, String_View(&parameter_name->identifier), argument);
+	}
+}
+
 static void OutputDcValue(SemanticState *state, const Size size, unsigned long value)
 {
 	unsigned int bytes_to_write = 0;
@@ -4436,6 +4460,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_OPT:
 		case STATEMENT_TYPE_PUSHP:
 		case STATEMENT_TYPE_POPP:
+		case STATEMENT_TYPE_SHIFT:
 			if (!StringView_Empty(label) && !state->doing_fix_up)
 			{
 				/* Handle the label here, instead of passing it onto a later function. */
@@ -5023,6 +5048,22 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 			break;
 		}
+
+		case STATEMENT_TYPE_SHIFT:
+		{
+			if (state->macro.metadata == NULL)
+			{
+				SemanticError(state, "SHIFT used outside of macro.");
+			}
+			else
+			{
+				--state->macro.total_arguments;
+				memmove(state->macro.argument_list, state->macro.argument_list + 1, sizeof(*state->macro.argument_list) * state->macro.total_arguments);
+				PushMacroArgumentSubstitutions(state);
+			}
+
+			break;
+		}
 	}
 
 	/* Update both copies of the program counter again, so that things like WHILE statements don't use stale values in their expressions. */
@@ -5139,10 +5180,7 @@ static void ParseLine(SemanticState *state, const StringView *label, const Strin
 /* TODO: When I switch to C++, make this the first thing to go... */
 typedef struct MacroCustomSubstituteSearch_Closure
 {
-	SemanticState *state;
-
-	StringView *argument_list;
-	size_t total_arguments;
+	struct SemanticState *state;
 
 	StringView size;
 	StringView arguments;
@@ -5154,6 +5192,7 @@ typedef struct MacroCustomSubstituteSearch_Closure
 static const StringView* MacroCustomSubstituteSearch(void* const user_data, const String *string_to_search, size_t starting_position, size_t* const found_position, size_t* const found_length)
 {
 	MacroCustomSubstituteSearch_Closure* const closure = (MacroCustomSubstituteSearch_Closure*)user_data;
+	SemanticState* const state = closure->state;
 
 	*found_position = String_FindCharacter(string_to_search, '\\', starting_position);
 	*found_length = 2;
@@ -5196,7 +5235,7 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 
 				String_Destroy(&closure->symbol_value_string);
 
-				if (!GetSymbolInteger(closure->state, &identifier, cc_true, &value))
+				if (!GetSymbolInteger(state, &identifier, cc_true, &value))
 					value = 0;
 
 				if (symbol == '#')
@@ -5221,13 +5260,13 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 
 				*found_length = 1 + (end - start);
 
-				if (parameter_index >= closure->total_arguments)
+				if (parameter_index >= state->macro.total_arguments)
 				{
 					static const StringView blank_argument = STRING_VIEW_INITIALISER_BLANK;
 					return &blank_argument;
 				}
 
-				return &closure->argument_list[parameter_index];
+				return &state->macro.argument_list[parameter_index];
 			}
 		}
 	}
@@ -5394,15 +5433,18 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 				{
 					/* This is a macro invocation. */
 					MacroCustomSubstituteSearch_Closure closure;
-					Substitute_State substitutions;
 
-					Macro *macro = (Macro*)macro_dictionary_entry->shared.pointer;
+					Macro* const macro = (Macro*)macro_dictionary_entry->shared.pointer;
+					const SemanticState_Macro previous_macro_state = state->macro;
+
+					state->macro.metadata = macro;
+					Substitute_Initialise(&state->macro.substitutions);
+					state->macro.argument_list = NULL;
+					state->macro.total_arguments = 0;
 
 					++state->current_macro_invocation;
 
 					closure.state = state;
-
-					Substitute_Initialise(&substitutions);
 
 					state->suppress_listing = cc_true;
 
@@ -5447,9 +5489,6 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 					/* Extract and store the individual macro arguments, if they exist. */
 					{
 						char character;
-
-						closure.argument_list = NULL;
-						closure.total_arguments = 0;
 
 						do
 						{
@@ -5499,14 +5538,14 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 
 									/* Add to argument list. */
 									{
-										StringView* const new_argument_list = (StringView*)realloc(closure.argument_list, sizeof(*closure.argument_list) * (closure.total_arguments + 1));
+										StringView* const new_argument_list = (StringView*)realloc(state->macro.argument_list, sizeof(*state->macro.argument_list) * (state->macro.total_arguments + 1));
 
 										if (new_argument_list != NULL)
 										{
-											closure.argument_list = new_argument_list;
-											closure.argument_list[closure.total_arguments] = argument;
+											state->macro.argument_list = new_argument_list;
+											state->macro.argument_list[state->macro.total_arguments] = argument;
 
-											++closure.total_arguments;
+											++state->macro.total_arguments;
 										}
 									}
 
@@ -5517,25 +5556,13 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 
 						/* Stringify the number of arguments for the 'narg' placeholder. */
 						{
-							const String narg_value = DecimalIntegerToString(closure.total_arguments);
+							const String narg_value = DecimalIntegerToString(state->macro.total_arguments);
 
-							Substitute_PushSubstitute(&substitutions, &string_narg, String_View(&narg_value));
+							Substitute_PushSubstitute(&state->macro.substitutions, &string_narg, String_View(&narg_value));
 						}
 
 						/* Add identifier substitute. */
-						{
-							const IdentifierListNode *parameter_name;
-							size_t argument_index;
-
-							const StringView blank_argument = STRING_VIEW_INITIALISER_BLANK;
-
-							for (parameter_name = macro->parameter_names, argument_index = 0; parameter_name != NULL; parameter_name = parameter_name->next, ++argument_index)
-							{
-								const StringView* const argument = argument_index >= closure.total_arguments ? &blank_argument : &closure.argument_list[argument_index];
-
-								Substitute_PushSubstitute(&substitutions, String_View(&parameter_name->identifier), argument);
-							}
-						}
+						PushMacroArgumentSubstitutions(state);
 					}
 
 					/* Finally, invoke the macro. */
@@ -5565,7 +5592,7 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 							++state->location->line_number;
 
 							if (String_CreateCopy(&modified_line, &source_line_list_node->source_line_buffer))
-								Substitute_ProcessString(&substitutions, &modified_line, MacroCustomSubstituteSearch, &closure);
+								Substitute_ProcessString(&state->macro.substitutions, &modified_line, MacroCustomSubstituteSearch, &closure);
 
 							/* Undo our hack from before. */
 							--state->location->line_number;
@@ -5587,7 +5614,9 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 
 					String_Destroy(&closure.symbol_value_string);
 
-					Substitute_Deinitialise(&substitutions);
+					Substitute_Deinitialise(&state->macro.substitutions);
+
+					state->macro = previous_macro_state;
 				}
 			}
 

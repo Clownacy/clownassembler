@@ -395,7 +395,8 @@ typedef enum StatementType
 	STATEMENT_TYPE_POPO,
 	STATEMENT_TYPE_OPT,
 	STATEMENT_TYPE_PUSHP,
-	STATEMENT_TYPE_POPP
+	STATEMENT_TYPE_POPP,
+	STATEMENT_TYPE_SHIFT
 } StatementType;
 
 typedef struct Statement
@@ -622,6 +623,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_OPT
 %token TOKEN_DIRECTIVE_PUSHP
 %token TOKEN_DIRECTIVE_POPP
+%token TOKEN_DIRECTIVE_SHIFT
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -947,6 +949,10 @@ statement
 	{
 		statement->type = STATEMENT_TYPE_POPP;
 		statement->shared.string = $2;
+	}
+	| TOKEN_DIRECTIVE_SHIFT
+	{
+		statement->type = STATEMENT_TYPE_SHIFT;
 	}
 	;
 
@@ -2337,6 +2343,7 @@ void DestroyStatement(Statement *statement)
 		case STATEMENT_TYPE_OBJEND:
 		case STATEMENT_TYPE_PUSHO:
 		case STATEMENT_TYPE_POPO:
+		case STATEMENT_TYPE_SHIFT:
 			break;
 
 		case STATEMENT_TYPE_INSTRUCTION:

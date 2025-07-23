@@ -46,7 +46,7 @@ add_executable(clownassembler_hash "tests/hash/hash.c")
 # Misc. test
 add_test(NAME misc_assemble COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/shim.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/misc.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/")
 
-add_test(NAME misc_compare COMMAND clownassembler_hash "${CMAKE_CURRENT_BINARY_DIR}/misc.bin" "8b17e442107d08b00c3dfc4d55b84f5d")
+add_test(NAME misc_compare COMMAND clownassembler_hash "${CMAKE_CURRENT_BINARY_DIR}/misc.bin" "db82784fe0ecbca2719ad2dc7592752b")
 set_tests_properties(misc_compare PROPERTIES DEPENDS misc_assemble)
 
 # Test valid MOVE_TO_SR instructions (this is made redundant by the 'valid_instructions' test and will likely be removed in the future).
