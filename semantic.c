@@ -5017,7 +5017,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			String string;
 
 			if (!StringStack_Pop(&state->string_stack, &string))
-				InternalError(state, "POPO used but the string stack was empty.");
+				SemanticError(state, "POPO used but the string stack was empty.");
 			else
 				Substitute_PushSubstitute(&state->substitutions, String_View(&statement->shared.string), String_View(&string));
 
