@@ -5111,8 +5111,6 @@ typedef struct MacroCustomSubstituteSearch_Closure
 
 static const StringView* MacroCustomSubstituteSearch(void* const user_data, const String *string_to_search, size_t starting_position, size_t* const found_position, size_t* const found_length)
 {
-	const StringView *found_substitute = NULL;
-
 	MacroCustomSubstituteSearch_Closure* const closure = (MacroCustomSubstituteSearch_Closure*)user_data;
 
 	*found_position = String_FindCharacter(string_to_search, '\\', starting_position);
@@ -5125,20 +5123,19 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 		switch (symbol)
 		{
 			case '0':
-				found_substitute = &closure->size;
-				break;
+				return &closure->size;
 
 			case '_':
-				found_substitute = &closure->arguments;
-				break;
+				if (Substitute_IsSubstituteBlockingCharacter(String_At(string_to_search, *found_position + *found_length)))
+					return NULL;
+
+				return &closure->arguments;
 
 			case '*':
-				found_substitute = &closure->label;
-				break;
+				return &closure->label;
 
 			case '@':
-				found_substitute = &closure->unique_suffix;
-				break;
+				return &closure->unique_suffix;
 
 			case '#':
 			case '$':
@@ -5165,8 +5162,7 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 				else /*if (symbol == '$')*/
 					closure->symbol_value_string = HexadecimalIntegerToString(value);
 
-				found_substitute = String_View(&closure->symbol_value_string);
-				break;
+				return String_View(&closure->symbol_value_string);
 			}
 
 			default:
@@ -5186,20 +5182,15 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 				if (parameter_index >= closure->total_arguments)
 				{
 					static const StringView blank_argument = STRING_VIEW_INITIALISER_BLANK;
-					found_substitute = &blank_argument;
-					break;
+					return &blank_argument;
 				}
 
-				found_substitute = &closure->argument_list[parameter_index];
-				break;
+				return &closure->argument_list[parameter_index];
 			}
 		}
 	}
 
-	if (found_substitute != NULL && Substitute_IsSubstituteBlockingCharacter(String_At(string_to_search, *found_position + *found_length)))
-		found_substitute = NULL;
-
-	return found_substitute;
+	return NULL;
 }
 
 static void AssembleLine(SemanticState *state, const String *source_line, const cc_bool write_line_to_listing_file)
