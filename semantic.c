@@ -4944,6 +4944,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 			for (option = statement->shared.opt.options.head; option != NULL; option = option->next)
 			{
+				/* TODO: A lot of these are unimplemented... */
 				/*if (String_CompareCStrCaseInsensitive(&option->identifier, "ae+"))
 					;
 				else*/ if (String_CompareCStrCaseInsensitive(&option->identifier, "ae-"))
@@ -4962,12 +4963,28 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					Options_Get(&state->options)->equ_set_descope_local_labels = cc_false;
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "e+"))
 					;
-				else if (String_Length(&option->identifier) == 2 && (String_Front(&option->identifier) == 'l' || String_Front(&option->identifier) == 'L'))
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "e-"))
+					;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "l+"))
+					;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "l-"))
+					;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "l."))
+					;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "l@"))
+					;
+				/*else if (String_CompareCStrCaseInsensitive(&option->identifier, "s+"))
+					;*/
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "s-"))
 					;
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "m+"))
 					Options_Get(&state->options)->expand_all_macros = cc_true;
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "m-"))
 					Options_Get(&state->options)->expand_all_macros = cc_false;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "v+"))
+					Options_Get(&state->options)->output_local_labels_to_sym_file = cc_true;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "v-"))
+					Options_Get(&state->options)->output_local_labels_to_sym_file = cc_false;
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "w+"))
 					Options_Get(&state->options)->warnings_enabled = cc_true;
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "w-"))
