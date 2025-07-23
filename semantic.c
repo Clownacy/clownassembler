@@ -5094,7 +5094,7 @@ static void ParseLine(SemanticState *state, const StringView *label, const Strin
 #define DIRECTIVE_OR_MACRO_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_"
 #define LABEL_CHARS DIRECTIVE_OR_MACRO_CHARS ".@"
 
-/* TODO: When I swtich to C++, make this the first thing to go... */
+/* TODO: When I switch to C++, make this the first thing to go... */
 typedef struct MacroCustomSubstituteSearch_Closure
 {
 	SemanticState *state;
