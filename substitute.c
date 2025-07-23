@@ -43,15 +43,6 @@ void Substitute_PopSubstitute(Substitute_State* const state)
 	free(list_entry);
 }
 
-static cc_bool Substitute_IsSubstituteBlockingCharacter(const char character)
-{
-	return ((character >= 'a' && character <= 'z')
-	     || (character >= 'A' && character <= 'Z')
-	     || (character >= '0' && character <= '9')
-	     || character == '_'
-	     || character == ':');
-}
-
 static cc_bool Substitute_FindSubstitute(const String* const string_to_search, const size_t starting_position, const StringView* const substitute, size_t* const found_position, size_t* const found_length)
 {
 	size_t match_start = starting_position;
@@ -161,4 +152,13 @@ void Substitute_ProcessString(Substitute_State* const state, String* const strin
 		/* Limit the next search to after this. */
 		starting_position = found_position + StringView_Length(found_substitute);
 	}
+}
+
+cc_bool Substitute_IsSubstituteBlockingCharacter(const char character)
+{
+	return ((character >= 'a' && character <= 'z')
+	     || (character >= 'A' && character <= 'Z')
+	     || (character >= '0' && character <= '9')
+	     || character == '_'
+	     || character == ':');
 }
