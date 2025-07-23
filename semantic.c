@@ -1029,8 +1029,6 @@ static void TerminateRept(SemanticState *state)
 	/* Exit REPT mode. */
 	state->mode = MODE_NORMAL;
 
-	state->suppress_listing = cc_true;
-
 	while (repetitions-- != 0)
 	{
 		SourceLineListNode *source_line_list_node;
@@ -1040,7 +1038,7 @@ static void TerminateRept(SemanticState *state)
 
 		/* Process the REPT's nested statements. */
 		for (source_line_list_node = source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-			AssembleLine(state, &source_line_list_node->source_line_buffer, cc_false);
+			AssembleLine(state, &source_line_list_node->source_line_buffer, Options_Get(&state->options)->expand_all_macros);
 	}
 
 	/* Increment past the ENDR line number. */
