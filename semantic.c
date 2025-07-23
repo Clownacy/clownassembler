@@ -443,6 +443,7 @@ static String HexadecimalIntegerToString(const unsigned int integer)
 
 static StringView ComputeUniqueMacroSuffix(Macro* const macro)
 {
+	/* TODO: Apparently SN 68k does not limit itself to specifically three digits. */
 	size_t i;
 	unsigned int carry = 1;
 	StringView view;
