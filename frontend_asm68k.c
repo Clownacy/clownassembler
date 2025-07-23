@@ -98,6 +98,7 @@ int main(int argc, char **argv)
 	settings.equ_set_descope_local_labels = cc_false;
 	settings.output_local_labels_to_sym_file = cc_false;
 	settings.warnings_enabled = cc_true;
+	settings.pedantic_warnings_enabled = cc_false;
 	settings.expand_all_macros = cc_false;
 
 	source_file_path = object_file_path = symbol_file_path = listing_file_path = NULL;
@@ -237,6 +238,14 @@ int main(int argc, char **argv)
 							else if (strcmpci(option, "w-") == 0)
 							{
 								settings.warnings_enabled = cc_false;
+							}
+							else if (strcmpci(option, "wp+") == 0)
+							{
+								settings.pedantic_warnings_enabled = cc_true;
+							}
+							else if (strcmpci(option, "wp-") == 0)
+							{
+								settings.pedantic_warnings_enabled = cc_false;
 							}
 							else if (strcmpci(option, "ws+") == 0)
 							{

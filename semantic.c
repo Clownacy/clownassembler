@@ -1308,7 +1308,7 @@ static void ResolveInstructionAmbiguity(SemanticState* const state, StatementIns
 		switch (instruction->opcode.type)
 		{
 			#define ALIAS_AND_LOOP(ALIAS) do {instruction->opcode.type = ALIAS; continue;} while (0)
-			#define WARN_ALIAS_AND_LOOP(ALIAS, MESSAGE) do {SemanticWarning(state, MESSAGE); ALIAS_AND_LOOP(ALIAS);} while (0)
+			#define WARN_ALIAS_AND_LOOP(ALIAS, MESSAGE) do {if (Options_Get(&state->options)->pedantic_warnings_enabled) SemanticWarning(state, MESSAGE); ALIAS_AND_LOOP(ALIAS);} while (0)
 
 			case OPCODE_ORI:
 				if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
@@ -4989,6 +4989,10 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					Options_Get(&state->options)->warnings_enabled = cc_true;
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "w-"))
 					Options_Get(&state->options)->warnings_enabled = cc_false;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "wp+"))
+					Options_Get(&state->options)->pedantic_warnings_enabled = cc_true;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "wp-"))
+					Options_Get(&state->options)->pedantic_warnings_enabled = cc_false;
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "ws+"))
 					;
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "ws-"))

@@ -89,6 +89,7 @@ int main(int argc, char **argv)
 	settings.equ_set_descope_local_labels = cc_false;
 	settings.output_local_labels_to_sym_file = cc_false;
 	settings.warnings_enabled = cc_true;
+	settings.pedantic_warnings_enabled = cc_true;
 	settings.expand_all_macros = cc_false;
 
 	for (i = 1; i < argc; ++i)
@@ -160,6 +161,10 @@ int main(int argc, char **argv)
 					settings.expand_all_macros = cc_true;
 					continue;
 
+				case 'p':
+					settings.pedantic_warnings_enabled = cc_false;
+					continue;
+
 				case 'v':
 					settings.output_local_labels_to_sym_file = cc_true;
 					continue;
@@ -188,6 +193,7 @@ int main(int argc, char **argv)
 			" -b        - Enable Bison's debug output.\n"
 			" -d        - Allow EQU/SET to descope local labels.\n"
 			" -e X=Y    - Defines symbol X to value Y.\n"
+			" -p        - Silence pedantic warnings.\n"
 			" -v        - Include local labels in symbol file.\n"
 			" -w        - Silence warnings.\n"
 			, stdout);

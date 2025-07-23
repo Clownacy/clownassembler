@@ -10,6 +10,7 @@ typedef struct Options
 	cc_bool equ_set_descope_local_labels;
 	cc_bool output_local_labels_to_sym_file;
 	cc_bool warnings_enabled;
+	cc_bool pedantic_warnings_enabled;
 	cc_bool expand_all_macros;
 } Options;
 
