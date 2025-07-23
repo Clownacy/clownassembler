@@ -373,16 +373,45 @@ def             return TOKEN_DEF;
 }
 
  /* String. */
-\"[^\"]*\" |
-\'[^\']*\' {
+(?:\"[^\"]*\")+ |
+(?:\'[^\']*\')+ {
+	StringView view;
+	size_t i, output_size;
+	char previous_character;
+
+	const char quotation_character = yytext[0];
+
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
-	if (!String_Create(&yylval->string, yytext + 1, yyleng - 2))
+	StringView_Create(&view, yytext + 1, yyleng - 2);
+	String_CreateBlank(&yylval->string);
+
+	if (!String_ResizeNoFill(&yylval->string, StringView_Length(&view)))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
 		return M68KASM_error;
 	}
+
+	/* Copy string, turning escaped (paired) quotes into regular (lone) quotes. */
+	output_size = 0;
+	previous_character = '\0';
+
+	for (i = 0; i < StringView_Length(&view); ++i)
+	{
+		const char character = StringView_At(&view, i);
+
+		if (character == quotation_character && previous_character == quotation_character)
+		{
+			previous_character = '\0';
+			continue;
+		}
+
+		previous_character = character;
+		String_At(&yylval->string, output_size++) = character;
+	}
+
+	String_ResizeNoFill(&yylval->string, output_size);
 
 	return TOKEN_STRING;
 }
