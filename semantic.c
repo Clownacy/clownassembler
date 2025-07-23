@@ -5556,6 +5556,7 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 
 						/* Stringify the number of arguments for the 'narg' placeholder. */
 						{
+							/* TODO: This should be a constant, shouldn't it? */
 							const String narg_value = DecimalIntegerToString(state->macro.total_arguments);
 
 							Substitute_PushSubstitute(&state->macro.substitutions, &string_narg, String_View(&narg_value));
