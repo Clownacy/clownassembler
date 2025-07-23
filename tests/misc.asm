@@ -664,6 +664,7 @@ Swag.Legit:
 	endr
 	endr
 
+	; EQUS and SUBSTR.
 StringVar EQUS "stringvar!"
 	dc.b "\StringVar"
 
@@ -685,6 +686,30 @@ Part4 substr ,,"\Message"
 	dc.b '-'
 	dc.b "\Part4"
 	dc.b '-'
+
+	; Test nested WHILE loops.
+	while (* & 3) != 0
+	dc.b * & 3
+	endw
+
+	dc.b $AA
+
+	while (* & 1) != 0
+	while (* & 3) != 0
+	dc.b * & 3
+	endw
+	endw
+
+	dc.b $AA
+
+	while (* & 3) != 0
+	while (* & 1) != 0
+	dc.b * & 3
+	endw
+	while (* & 2) != 0
+	dc.b * & 3
+	endw
+	endw
 
   ; More blank lines to test support for trailing blank statements
 

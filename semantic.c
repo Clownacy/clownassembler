@@ -158,6 +158,7 @@ typedef struct SemanticState
 			Expression expression;
 			String source_line;
 			unsigned long line_number;
+			unsigned int nesting;
 			SourceLineList source_line_list;
 		} while_statement;
 	} shared;
@@ -4692,6 +4693,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			String_CreateCopy(&state->shared.while_statement.source_line, state->source_line);
 
 			state->shared.while_statement.line_number = state->location->line_number;
+			state->shared.while_statement.nesting = 0;
 
 			state->shared.while_statement.source_line_list.head = NULL;
 			state->shared.while_statement.source_line_list.tail = NULL;
@@ -5597,11 +5599,18 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 
 		case MODE_WHILE:
 			/* If this line is an 'ENDW' directive, then exit 'WHILE' mode. Otherwise, add the line to the 'WHILE'. */
-			if (StringView_CompareCStrCaseInsensitive(&directive, "endw"))
+			if (StringView_CompareCStrCaseInsensitive(&directive, "endw") && state->shared.while_statement.nesting-- == 0)
+			{
 				/* TODO - Detect code after the keyword and error if any is found. */
 				ParseLine(state, &label, &directive_and_operands);
+			}
 			else
+			{
+				if (StringView_CompareCStrCaseInsensitive(&directive, "while"))
+					++state->shared.while_statement.nesting;
+
 				AddToSourceLineList(state, &state->shared.while_statement.source_line_list, state->source_line);
+			}
 
 			break;
 	}
