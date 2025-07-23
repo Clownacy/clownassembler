@@ -137,6 +137,7 @@ typedef struct SemanticState
 	unsigned int listing_counter;
 	cc_bool line_listed;
 	cc_bool suppress_listing;
+	cc_bool listing_macro;
 
 	/* Modes. */
 	Mode mode;
@@ -494,10 +495,12 @@ static void ListSourceLine(SemanticState *state)
 
 			state->line_listed = cc_true;
 
-			for (i = state->listing_counter; i < 28; ++i)
+			for (i = state->listing_counter; i < 26; ++i)
 				TextOutput_fputc(' ', state->listing_callbacks);
 
-			TextOutput_fprintf(state->listing_callbacks, "%s\n", String_CStr(state->source_line));
+			TextOutput_fputc(state->listing_macro ? 'M' : ' ', state->listing_callbacks);
+
+			TextOutput_fprintf(state->listing_callbacks, " %s\n", String_CStr(state->source_line));
 		}
 	}
 }
@@ -5537,11 +5540,16 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 
 					/* Finally, invoke the macro. */
 					{
+						Location location;
 						const SourceLineListNode *source_line_list_node;
 
-						/* Push a new location (this macro).*/
-						Location location;
+						const cc_bool previous_listing_macro = state->listing_macro;
 
+						/* Flush line before changing this state, so that the macro line is not given the 'M' label. */
+						ListSourceLine(state);
+						state->listing_macro = cc_true;
+
+						/* Push a new location (this macro).*/
 						String_CreateCopy(&location.file_path, &macro->name);
 						location.line_number = 0;
 
@@ -5573,6 +5581,8 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 						state->location = state->location->previous;
 
 						String_Destroy(&location.file_path);
+
+						state->listing_macro = previous_listing_macro;
 					}
 
 					String_Destroy(&closure.symbol_value_string);
