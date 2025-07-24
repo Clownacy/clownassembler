@@ -5384,7 +5384,7 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 			String modified_directive_and_operands;
 
 			String_CreateCopyView(&modified_directive_and_operands, &directive_and_operands);
-			Substitute_ProcessString(&state->substitutions, &modified_directive_and_operands, NULL, NULL);
+			Substitute_ProcessString(&state->substitutions, &modified_directive_and_operands, NULL, NULL, cc_true);
 			directive_and_operands = *String_View(&modified_directive_and_operands);
 
 			source_line_pointer = String_CStr(&modified_directive_and_operands);
@@ -5592,7 +5592,7 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 							++state->location->line_number;
 
 							if (String_CreateCopy(&modified_line, &source_line_list_node->source_line_buffer))
-								Substitute_ProcessString(&state->macro.substitutions, &modified_line, MacroCustomSubstituteSearch, &closure);
+								Substitute_ProcessString(&state->macro.substitutions, &modified_line, MacroCustomSubstituteSearch, &closure, cc_true);
 
 							/* Undo our hack from before. */
 							--state->location->line_number;

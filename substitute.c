@@ -43,56 +43,48 @@ void Substitute_PopSubstitute(Substitute_State* const state)
 	free(list_entry);
 }
 
-static cc_bool Substitute_FindSubstitute(const StringView* const view_to_search, const size_t starting_position, const StringView* const substitute, size_t* const found_position, size_t* const found_length)
+static cc_bool Substitute_FindSubstitute(const StringView* const view_to_search, const size_t starting_position, const StringView* const substitute, const cc_bool allow_implicit_matches, size_t* const found_position, size_t* const found_length)
 {
-	size_t match_start = starting_position;
+	size_t match_start;
 
-	for (;;)
+	/* Find identifier within string. */
+	/* Obviously bail if the identifier wasn't found. */
+	for (match_start = starting_position; (match_start = StringView_Find(view_to_search, substitute, match_start)) != STRING_POSITION_INVALID; ++match_start)
 	{
-		/* Find identifier within string. */
-		match_start = StringView_Find(view_to_search, substitute, match_start);
+		size_t match_length = StringView_Length(substitute);
 
-		/* Obviously bail if the identifier wasn't found. */
-		if (match_start == STRING_POSITION_INVALID)
+		const char character_before = match_start == 0 ? ' ' : StringView_At(view_to_search, match_start - 1);
+		const char character_after = match_start + match_length == StringView_Length(view_to_search) ? ' ' : StringView_At(view_to_search, match_start + match_length);
+
+		/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
+		/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
+		if (character_before != '"' && character_before != '\'' && !Substitute_IsSubstituteBlockingCharacter(character_before) && !Substitute_IsSubstituteBlockingCharacter(character_after))
 		{
-			break;
-		}
-		else
-		{
-			size_t match_length = StringView_Length(substitute);
-
-			const char character_before = match_start == 0 ? ' ' : StringView_At(view_to_search, match_start - 1);
-			const char character_after = match_start + match_length == StringView_Length(view_to_search) ? ' ' : StringView_At(view_to_search, match_start + match_length);
-
-			/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
-			/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
-			if (character_before != '"' && character_before != '\'' && !Substitute_IsSubstituteBlockingCharacter(character_before) && !Substitute_IsSubstituteBlockingCharacter(character_after))
+			/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
+			/* asm68k allows backslashes before and after the parameter to separate them from surrounding characters. */
+			if (character_before == '\\')
 			{
-				/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
-				/* asm68k allows backslashes before and after the parameter to separate them from surrounding characters. */
-				if (character_before == '\\')
-				{
-					--match_start;
+				--match_start;
+				++match_length;
+
+				if (character_after == '\\')
 					++match_length;
-
-					if (character_after == '\\')
-						++match_length;
-				}
-
-				*found_position = match_start;
-				*found_length = match_length;
-				return cc_true;
+			}
+			else if (!allow_implicit_matches)
+			{
+				continue;
 			}
 
-			/* Start search from the next character. */
-			++match_start;
+			*found_position = match_start;
+			*found_length = match_length;
+			return cc_true;
 		}
 	}
 
 	return cc_false;
 }
 
-static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* const state, const StringView* const view_to_search, const size_t starting_position, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, size_t* const earliest_found_position, size_t* const earliest_found_length)
+static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* const state, const StringView* const view_to_search, const size_t starting_position, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches, size_t* const earliest_found_position, size_t* const earliest_found_length)
 {
 	Substitute_ListEntry *list_entry;
 	const StringView *found_substitute = NULL;
@@ -118,7 +110,7 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 	{
 		size_t found_position, found_length;
 
-		if (Substitute_FindSubstitute(view_to_search, starting_position, String_View(&list_entry->identifier), &found_position, &found_length))
+		if (Substitute_FindSubstitute(view_to_search, starting_position, String_View(&list_entry->identifier), allow_implicit_matches, &found_position, &found_length))
 		{
 			/* Record if this substitute occurs first. */
 			if (*earliest_found_position > found_position)
@@ -133,7 +125,7 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 	return found_substitute;
 }
 
-void Substitute_ProcessStringPartial(Substitute_State* const state, String* const string, StringView* const view_to_search, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data)
+void Substitute_ProcessStringPartial(Substitute_State* const state, String* const string, StringView* const view_to_search, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches)
 {
 	size_t starting_position = 0;
 
@@ -147,7 +139,7 @@ void Substitute_ProcessStringPartial(Substitute_State* const state, String* cons
 	{
 		/* Find a substitute. */
 		size_t found_position, found_length;
-		const StringView* const found_substitute = Substitute_FindEarliestSubstitute(state, view_to_search, starting_position, custom_search_callback, custom_search_user_data, &found_position, &found_length);
+		const StringView* const found_substitute = Substitute_FindEarliestSubstitute(state, view_to_search, starting_position, custom_search_callback, custom_search_user_data, allow_implicit_matches, &found_position, &found_length);
 
 		if (found_substitute == NULL)
 			break;
@@ -166,10 +158,10 @@ void Substitute_ProcessStringPartial(Substitute_State* const state, String* cons
 	String_At(string, offset_into_string + StringView_Length(view_to_search)) = removed_character;
 }
 
-void Substitute_ProcessString(Substitute_State* const state, String* const string, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data)
+void Substitute_ProcessString(Substitute_State* const state, String* const string, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches)
 {
 	StringView view = *String_View(string);
-	Substitute_ProcessStringPartial(state, string, &view, custom_search_callback, custom_search_user_data);
+	Substitute_ProcessStringPartial(state, string, &view, custom_search_callback, custom_search_user_data, allow_implicit_matches);
 }
 
 cc_bool Substitute_IsSubstituteBlockingCharacter(const char character)
