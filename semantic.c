@@ -119,7 +119,6 @@ typedef struct SemanticState
 	Dictionary_State dictionary;
 	String last_global_label;
 	Location *location;
-	yyscan_t flex_state;
 	String line_buffer;
 	const String *source_line;
 	Substitute_State substitutions;
@@ -130,6 +129,10 @@ typedef struct SemanticState
 	unsigned long program_counter;
 	unsigned long current_macro_invocation;
 	cc_bool end;
+
+	/* Parsing. */
+	yyscan_t flex_state;
+	int start_token;
 
 	/* Fix-ups. */
 	FixUp *fix_up_list_head;
@@ -387,6 +390,17 @@ void m68kasm_error(void *scanner, void *output, const char *message)
 	TextOutput_fprintf(state->error_callbacks, "Error: %s", message);
 
 	ErrorMessageCommon(state);
+}
+
+int m68kasm_get_first_token(void *scanner, void *output)
+{
+	SemanticState* const state = (SemanticState*)m68kasm_get_extra(scanner);
+	const int start_token = state->start_token;
+
+	(void)output;
+
+	state->start_token = 0;
+	return start_token;
 }
 
 static void* MallocAndHandleError(SemanticState *state, size_t size)
@@ -5070,11 +5084,16 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 	LookupSymbol(state, &string_program_counter_expression)->shared.unsigned_long = state->program_counter;
 }
 
-static cc_bool ParseStatement(SemanticState* const state, Statement* const statement, const StringView* const view)
+static cc_bool ParseCommon(SemanticState* const state, void* const output, const StringView* const view, const int start_token)
 {
+	YY_BUFFER_STATE buffer;
+	int parse_result;
+
+	state->start_token = start_token;
+
 	/* Parse the source line with Flex and Bison (Lex and Yacc). */
-	const YY_BUFFER_STATE buffer = m68kasm__scan_bytes(StringView_Data(view), StringView_Length(view), state->flex_state);
-	const int parse_result = m68kasm_parse(state->flex_state, statement);
+	buffer = m68kasm__scan_bytes(StringView_Data(view), StringView_Length(view), state->flex_state);
+	parse_result = m68kasm_parse(state->flex_state, output);
 	m68kasm__delete_buffer(buffer, state->flex_state);
 
 	/* Out of memory. */
@@ -5082,6 +5101,16 @@ static cc_bool ParseStatement(SemanticState* const state, Statement* const state
 		OutOfMemoryError(state);
 
 	return parse_result == 0;
+}
+
+static cc_bool ParseExpression(SemanticState* const state, Expression* const expression, const StringView* const view)
+{
+	return ParseCommon(state, expression, view, TOKEN_START_EXPRESSION);
+}
+
+static cc_bool ParseStatement(SemanticState* const state, Statement* const statement, const StringView* const view)
+{
+	return ParseCommon(state, statement, view, TOKEN_START_STATEMENT);
 }
 
 static void ParseLine(SemanticState* const state, const StringView* const label, const StringView* const directive_and_operands)
