@@ -100,6 +100,7 @@ typedef struct SemanticState_Macro
 {
 	Macro *metadata;
 	Substitute_State substitutions;
+	struct MacroCustomSubstituteSearch_Closure *closure;
 	StringView *argument_list;
 	size_t total_arguments;
 } SemanticState_Macro;
@@ -5384,6 +5385,8 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 			String modified_directive_and_operands;
 
 			String_CreateCopyView(&modified_directive_and_operands, &directive_and_operands);
+			if (state->macro.closure != NULL)
+				Substitute_ProcessString(&state->macro.substitutions, &modified_directive_and_operands, MacroCustomSubstituteSearch, state->macro.closure, cc_true);
 			Substitute_ProcessString(&state->substitutions, &modified_directive_and_operands, NULL, NULL, cc_true);
 			directive_and_operands = *String_View(&modified_directive_and_operands);
 
@@ -5438,6 +5441,7 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 
 					state->macro.metadata = macro;
 					Substitute_Initialise(&state->macro.substitutions);
+					state->macro.closure = &closure;
 					state->macro.argument_list = NULL;
 					state->macro.total_arguments = 0;
 
@@ -5583,26 +5587,9 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 						location.previous = state->location;
 						state->location = &location;
 
-						/* Iterate over each line of the macro, performing parameter substitution and then sending it to be processed. */
+						/* Iterate over each line of the macro, sending it to be processed. */
 						for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-						{
-							String modified_line;
-
-							/* A bit of a cheat so that errors that occur before the call to AssembleLine still show the correct line number. */
-							++state->location->line_number;
-
-							if (String_CreateCopy(&modified_line, &source_line_list_node->source_line_buffer))
-								Substitute_ProcessString(&state->macro.substitutions, &modified_line, MacroCustomSubstituteSearch, &closure, cc_true);
-
-							/* Undo our hack from before. */
-							--state->location->line_number;
-
-							/* Send our expanded macro line to be assembled. */
-							AssembleLine(state, &modified_line, Options_Get(&state->options)->expand_all_macros);
-
-							/* The expanded line is done, so we can free it now. */
-							String_Destroy(&modified_line);
-						}
+							AssembleLine(state, &source_line_list_node->source_line_buffer, Options_Get(&state->options)->expand_all_macros);
 
 						/* Pop location. */
 						state->location = state->location->previous;
