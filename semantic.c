@@ -42,7 +42,8 @@ typedef enum SymbolType
 	SYMBOL_CONSTANT,
 	SYMBOL_VARIABLE,
 	SYMBOL_MACRO,
-	SYMBOL_LABEL
+	SYMBOL_LABEL,
+	SYMBOL_SPECIAL
 } SymbolType;
 
 typedef struct Location
@@ -130,6 +131,7 @@ typedef struct SemanticState
 	size_t output_position;
 	unsigned long program_counter, program_counter_of_statement, program_counter_of_expression;
 	unsigned long current_macro_invocation;
+	unsigned long rs;
 	cc_bool end;
 
 	/* Fix-ups. */
@@ -625,7 +627,7 @@ static Dictionary_Entry* CreateSymbol(SemanticState *state, const StringView *id
 
 static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifier, const cc_bool must_evaluate_on_first_pass, unsigned long* const value)
 {
-	cc_bool success = cc_false;
+	cc_bool success = cc_true;
 
 	Dictionary_Entry *dictionary_entry;
 
@@ -639,18 +641,41 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 			SemanticError(state, "Symbol '%.*s' does not exist.", (int)StringView_Length(identifier), StringView_Data(identifier));
 		else
 			state->fix_up_needed = cc_true;
-	}
-	else if (dictionary_entry->type != SYMBOL_LABEL && dictionary_entry->type != SYMBOL_CONSTANT && dictionary_entry->type != SYMBOL_VARIABLE)
-	{
-		SemanticError(state, "Symbol '%.*s' is not a label, constant, or variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
+
+		success = cc_false;
 	}
 	else
 	{
-		if (state->doing_fix_up && dictionary_entry->type == SYMBOL_VARIABLE)
-			SemanticWarning(state, "Symbol '%.*s' forward-referenced despite being a redefineable variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
+		switch (dictionary_entry->type)
+		{
+			case SYMBOL_SPECIAL:
+				/* Don't worry; I know what I'm doing. */
+				if (dictionary_entry->shared.pointer == &string_rs)
+				{
+					*value = state->rs;
+				}
+				else
+				{
+					assert(cc_false);
+					success = cc_false;
+				}
 
-		success = cc_true;
-		*value = dictionary_entry->shared.unsigned_long;
+				break;
+
+			case SYMBOL_LABEL:
+			case SYMBOL_CONSTANT:
+			case SYMBOL_VARIABLE:
+				if (state->doing_fix_up && dictionary_entry->type == SYMBOL_VARIABLE)
+					SemanticWarning(state, "Symbol '%.*s' forward-referenced despite being a redefineable variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
+
+				*value = dictionary_entry->shared.unsigned_long;
+				break;
+
+			default:
+				SemanticError(state, "Symbol '%.*s' is not a label, constant, or variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
+				success = cc_false;
+				break;
+		}
 	}
 
 	return success;
@@ -1296,6 +1321,7 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const StringView *l
 			break;
 
 		case SYMBOL_MACRO:
+		case SYMBOL_SPECIAL:
 			/* This should not happen. */
 			assert(cc_false);
 			break;
@@ -4840,13 +4866,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			}
 			else
 			{
-				Dictionary_Entry* const rs = LookupSymbol(state, &string_rs);
-
 				/* Add label to symbol table. */
 				if (!StringView_Empty(label))
 				{
-					AddIdentifierToSymbolTable(state, label, rs->shared.unsigned_long, SYMBOL_CONSTANT);
-					ListIdentifierValue(state, rs->shared.unsigned_long);
+					AddIdentifierToSymbolTable(state, label, state->rs, SYMBOL_CONSTANT);
+					ListIdentifierValue(state, state->rs);
 				}
 
 				/* Advance '__rs' by the specified amount. */
@@ -4871,7 +4895,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 						break;
 				}
 
-				rs->shared.unsigned_long += length;
+				state->rs += length;
 			}
 
 			break;
@@ -4885,14 +4909,14 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
 				SemanticError(state, "Value must be evaluable on the first pass.");
 			else
-				LookupSymbol(state, &string_rs)->shared.unsigned_long = value;
+				state->rs = value;
 
 			break;
 		}
 
 		case STATEMENT_TYPE_RSRESET:
 			/* Set '__rs' to 0. */
-			LookupSymbol(state, &string_rs)->shared.unsigned_long = 0;
+			state->rs = 0;
 			break;
 
 		case STATEMENT_TYPE_OBJ:
@@ -5867,7 +5891,8 @@ static cc_bool InitialiseBuiltInVariable(SemanticState* const state, const Strin
 	if (symbol == NULL)
 		return cc_false;
 
-	symbol->type = SYMBOL_VARIABLE;
+	symbol->type = SYMBOL_SPECIAL;
+	symbol->shared.pointer = (void*)identifier;
 	return cc_true;
 }
 
