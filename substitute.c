@@ -72,12 +72,7 @@ static cc_bool Substitute_FindSubstitute(const StringView* const view_to_search,
 			if (character_after == '\\')
 				++match_length;
 		}
-		else if (allow_implicit_matches)
-		{
-			if (!Substitute_IsWhitespaceCharacter(character_after)) 
-				continue;
-		}
-		else
+		else if (!allow_implicit_matches)
 		{
 			continue;
 		}
