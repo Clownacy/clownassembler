@@ -103,7 +103,7 @@ typedef struct SemanticState_Macro
 	Substitute_State substitutions;
 	struct MacroCustomSubstituteSearch_Closure *closure;
 	StringView *argument_list;
-	size_t total_arguments;
+	size_t total_arguments, total_arguments_at_start;
 	cc_bool active;
 } SemanticState_Macro;
 
@@ -560,6 +560,11 @@ static void OutputByte(SemanticState *state, unsigned int byte)
 	WriteOutputByte(state, byte);
 }
 
+static cc_bool CurrentlyExpandingMacro(const SemanticState* const state)
+{
+	return state->macro.metadata != NULL;
+}
+
 static void ExpandIdentifier(SemanticState *state, String* const expanded_identifier, const StringView* const identifier)
 {
 	if (StringView_Empty(identifier) || (StringView_At(identifier, 0) != '@' && StringView_At(identifier, 0) != '.'))
@@ -653,6 +658,18 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 				if (dictionary_entry->shared.pointer == &string_rs)
 				{
 					*value = state->rs;
+				}
+				else if (dictionary_entry->shared.pointer == &string_narg)
+				{
+					if (!CurrentlyExpandingMacro(state))
+					{
+						SemanticWarning(state, "Symbol '%.*s' cannot be used outside of a macro.", (int)StringView_Length(identifier), StringView_Data(identifier));
+						success = cc_false;
+					}
+					else
+					{
+						*value = state->macro.total_arguments_at_start;
+					}
 				}
 				else
 				{
@@ -5076,7 +5093,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 		case STATEMENT_TYPE_SHIFT:
 		{
-			if (state->macro.metadata == NULL)
+			if (!CurrentlyExpandingMacro(state))
 			{
 				SemanticError(state, "SHIFT used outside of macro.");
 			}
@@ -5557,6 +5574,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 					state->macro.closure = &closure;
 					state->macro.argument_list = NULL;
 					state->macro.total_arguments = 0;
+					state->macro.total_arguments_at_start = 0;
 					state->macro.active = cc_true;
 
 					++state->current_macro_invocation;
@@ -5661,6 +5679,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 											state->macro.argument_list[state->macro.total_arguments] = argument;
 
 											++state->macro.total_arguments;
+											++state->macro.total_arguments_at_start;
 										}
 									}
 
@@ -5668,14 +5687,6 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 								}
 							} while (character != ';' && character != '\0');
 						} while (character != ';' && character != '\0');
-
-						/* Stringify the number of arguments for the 'narg' placeholder. */
-						{
-							/* TODO: This should be a constant, shouldn't it? */
-							const String narg_value = DecimalIntegerToString(state->macro.total_arguments);
-
-							Substitute_PushSubstitute(&state->macro.substitutions, &string_narg, String_View(&narg_value));
-						}
 
 						/* Add identifier substitute. */
 						PushMacroArgumentSubstitutions(state);
@@ -5960,7 +5971,8 @@ cc_bool ClownAssembler_Assemble(
 	}
 	else
 	{
-		if (InitialiseBuiltInVariable(&state, &string_rs))
+		if (InitialiseBuiltInVariable(&state, &string_rs)
+		 && InitialiseBuiltInVariable(&state, &string_narg))
 		{
 			if (definition_callback != NULL)
 				definition_callback(&state, (void*)user_data, AddDefinition);
