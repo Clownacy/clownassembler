@@ -5281,8 +5281,9 @@ static void PerformSubstitutions(SemanticState* const state, String* const strin
 	Substitute_ProcessString(&state->substitutions, string, NULL, NULL, allow_implicit_matches);
 }
 
-static void AssembleLine(SemanticState *state, const String *source_line, const cc_bool write_line_to_listing_file)
+static void AssembleLine(SemanticState *state, const String *source_line_raw, const cc_bool write_line_to_listing_file)
 {
+	String source_line;
 	size_t label_length;
 	const char *source_line_pointer;
 	StringView label;
@@ -5306,7 +5307,17 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 		}
 	}
 
-	state->source_line = source_line;
+	if (state->mode == MODE_NORMAL)
+	{
+		String_CreateCopy(&source_line, source_line_raw);
+		PerformSubstitutions(state, &source_line, cc_false);
+		state->source_line = &source_line;
+	}
+	else
+	{
+		state->source_line = source_line_raw;
+	}
+
 	++state->location->line_number;
 
 	if (String_At(state->source_line, 0) == '*')
@@ -5692,6 +5703,9 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 
 	if (write_line_to_listing_file)
 		ListSourceLine(state);
+
+	if (state->source_line == &source_line)
+		String_Destroy(&source_line);
 
 	state->source_line = old_source_line;
 }
