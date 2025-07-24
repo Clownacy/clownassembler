@@ -160,5 +160,6 @@ cc_bool Substitute_IsSubstituteBlockingCharacter(const char character)
 	     || (character >= 'A' && character <= 'Z')
 	     || (character >= '0' && character <= '9')
 	     || character == '_'
-	     || character == ':');
+	     || character == ':'
+	     || character == '.');
 }
