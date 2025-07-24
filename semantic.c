@@ -5187,17 +5187,18 @@ typedef struct MacroCustomSubstituteSearch_Closure
 	String symbol_value_string;
 } MacroCustomSubstituteSearch_Closure;
 
-static const StringView* MacroCustomSubstituteSearch(void* const user_data, const String *string_to_search, size_t starting_position, size_t* const found_position, size_t* const found_length)
+static const StringView* MacroCustomSubstituteSearch(void* const user_data, const StringView *view_to_search, size_t starting_position, size_t* const found_position, size_t* const found_length)
 {
+	/* `view_to_search` always points to a null-terminated string. */
 	MacroCustomSubstituteSearch_Closure* const closure = (MacroCustomSubstituteSearch_Closure*)user_data;
 	SemanticState* const state = closure->state;
 
-	*found_position = String_FindCharacter(string_to_search, '\\', starting_position);
+	*found_position = StringView_FindCharacter(view_to_search, '\\', starting_position);
 	*found_length = 2;
 
 	if (*found_position != STRING_POSITION_INVALID)
 	{
-		const char symbol = String_At(string_to_search, *found_position + 1);
+		const char symbol = StringView_At(view_to_search, *found_position + 1);
 
 		switch (symbol)
 		{
@@ -5205,7 +5206,7 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 				return &closure->size;
 
 			case '_':
-				if (Substitute_IsSubstituteBlockingCharacter(String_At(string_to_search, *found_position + *found_length)))
+				if (Substitute_IsSubstituteBlockingCharacter(StringView_At(view_to_search, *found_position + *found_length)))
 					return NULL;
 
 				return &closure->arguments;
@@ -5220,7 +5221,7 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 			case '$':
 			{
 				unsigned long value;
-				const char* const identifier_start = &String_At(string_to_search, *found_position + 2);
+				const char* const identifier_start = &StringView_At(view_to_search, *found_position + 2);
 				const size_t identifier_length = strspn(identifier_start, DIRECTIVE_OR_MACRO_CHARS);
 				StringView identifier;
 
@@ -5249,7 +5250,7 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 				char *end;
 
 				/* Obtain numerical index of the parameter. */
-				const char* const start = &String_At(string_to_search, *found_position + 1);
+				const char* const start = &StringView_At(view_to_search, *found_position + 1);
 				const unsigned long parameter_index = strtoul(start, &end, 10) - 1;
 
 				/* Check if conversion failed. */
