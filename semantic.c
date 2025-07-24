@@ -5274,6 +5274,13 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 	return NULL;
 }
 
+static void PerformSubstitutions(SemanticState* const state, String* const string, const cc_bool allow_implicit_matches)
+{
+	if (state->macro.closure != NULL)
+		Substitute_ProcessString(&state->macro.substitutions, string, MacroCustomSubstituteSearch, state->macro.closure, allow_implicit_matches);
+	Substitute_ProcessString(&state->substitutions, string, NULL, NULL, allow_implicit_matches);
+}
+
 static void AssembleLine(SemanticState *state, const String *source_line, const cc_bool write_line_to_listing_file)
 {
 	size_t label_length;
@@ -5385,9 +5392,7 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 			String modified_directive_and_operands;
 
 			String_CreateCopyView(&modified_directive_and_operands, &directive_and_operands);
-			if (state->macro.closure != NULL)
-				Substitute_ProcessString(&state->macro.substitutions, &modified_directive_and_operands, MacroCustomSubstituteSearch, state->macro.closure, cc_true);
-			Substitute_ProcessString(&state->substitutions, &modified_directive_and_operands, NULL, NULL, cc_true);
+			PerformSubstitutions(state, &modified_directive_and_operands, cc_true);
 			directive_and_operands = *String_View(&modified_directive_and_operands);
 
 			source_line_pointer = String_CStr(&modified_directive_and_operands);
