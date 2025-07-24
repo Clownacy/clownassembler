@@ -1,5 +1,6 @@
 #include "substitute.h"
 
+#include <ctype.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -58,27 +59,32 @@ static cc_bool Substitute_FindSubstitute(const StringView* const view_to_search,
 
 		/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
 		/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
-		if (character_before != '"' && character_before != '\'' && !Substitute_IsSubstituteBlockingCharacter(character_before) && !Substitute_IsSubstituteBlockingCharacter(character_after))
+		if (character_before == '"' || character_before == '\'' || Substitute_IsSubstituteBlockingCharacter(character_before) || Substitute_IsSubstituteBlockingCharacter(character_after))
+			continue;
+
+		/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
+		/* asm68k allows backslashes before and after the parameter to separate them from surrounding characters. */
+		if (character_before == '\\')
 		{
-			/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
-			/* asm68k allows backslashes before and after the parameter to separate them from surrounding characters. */
-			if (character_before == '\\')
-			{
-				--match_start;
+			--match_start;
+			++match_length;
+
+			if (character_after == '\\')
 				++match_length;
-
-				if (character_after == '\\')
-					++match_length;
-			}
-			else if (!allow_implicit_matches)
-			{
-				continue;
-			}
-
-			*found_position = match_start;
-			*found_length = match_length;
-			return cc_true;
 		}
+		else if (allow_implicit_matches)
+		{
+			if (!Substitute_IsWhitespaceCharacter(character_after)) 
+				continue;
+		}
+		else
+		{
+			continue;
+		}
+
+		*found_position = match_start;
+		*found_length = match_length;
+		return cc_true;
 	}
 
 	return cc_false;
@@ -166,10 +172,13 @@ void Substitute_ProcessString(Substitute_State* const state, String* const strin
 
 cc_bool Substitute_IsSubstituteBlockingCharacter(const char character)
 {
-	return ((character >= 'a' && character <= 'z')
-	     || (character >= 'A' && character <= 'Z')
-	     || (character >= '0' && character <= '9')
+	return (isalpha((unsigned char)character)
+	     || isdigit((unsigned char)character)
 	     || character == '_'
-	     || character == ':'
 	     || character == '.');
+}
+
+cc_bool Substitute_IsWhitespaceCharacter(const char character)
+{
+	return isspace((unsigned char)character);
 }

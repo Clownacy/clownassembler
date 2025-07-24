@@ -27,6 +27,7 @@ void Substitute_PopSubstitute(Substitute_State *state);
 void Substitute_ProcessStringPartial(Substitute_State *state, String *string, StringView *view_to_search, Substitute_CustomSearch custom_search_callback, const void *custom_search_user_data, cc_bool allow_implicit_matches);
 void Substitute_ProcessString(Substitute_State *state, String *string, Substitute_CustomSearch custom_search_callback, const void *custom_search_user_data, cc_bool allow_implicit_matches);
 
-cc_bool Substitute_IsSubstituteBlockingCharacter(const char character);
+cc_bool Substitute_IsSubstituteBlockingCharacter(char character);
+cc_bool Substitute_IsWhitespaceCharacter(char character);
 
 #endif /* SUBSTITUTE_H */
