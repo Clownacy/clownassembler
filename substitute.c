@@ -61,8 +61,8 @@ static cc_bool Substitute_FindSubstitute(const String* const string_to_search, c
 		{
 			size_t match_length = StringView_Length(substitute);
 
-			const char character_before = match_start == 0 ? 'a' : String_At(string_to_search, match_start - 1);
-			const char character_after = String_At(string_to_search, match_start + match_length);
+			const char character_before = match_start == 0 ? ' ' : String_At(string_to_search, match_start - 1);
+			const char character_after = match_start + match_length == String_Length(string_to_search) ? ' ' : String_At(string_to_search, match_start + match_length);
 
 			/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
 			/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
