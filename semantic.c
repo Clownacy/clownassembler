@@ -128,7 +128,7 @@ typedef struct SemanticState
 	Options_State options;
 	SemanticState_Macro macro;
 	size_t output_position;
-	unsigned long program_counter;
+	unsigned long program_counter, program_counter_of_statement, program_counter_of_expression;
 	unsigned long current_macro_invocation;
 	cc_bool end;
 
@@ -192,8 +192,6 @@ typedef struct SemanticState
 static void AssembleFile(SemanticState *state);
 static void AssembleLine(SemanticState *state, const String *source_line, const cc_bool write_line_to_listing_file);
 
-static const StringView string_program_counter_statement = STRING_VIEW_INITIALISER(",PROGRAM_COUNTER_OF_STATEMENT");
-static const StringView string_program_counter_expression = STRING_VIEW_INITIALISER(",PROGRAM_COUNTER_OF_EXPRESSION");
 static const StringView string_rs = STRING_VIEW_INITIALISER("__rs");
 static const StringView string_narg = STRING_VIEW_INITIALISER("narg");
 
@@ -927,11 +925,11 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 		}
 
 		case EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT:
-			*value = LookupSymbol(state, &string_program_counter_statement)->shared.unsigned_long;
+			*value = state->program_counter_of_statement;
 			break;
 
 		case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
-			*value = LookupSymbol(state, &string_program_counter_expression)->shared.unsigned_long;
+			*value = state->program_counter_of_expression;
 			break;
 
 		case EXPRESSION_STRLEN:
@@ -4150,7 +4148,7 @@ static void ProcessDc(SemanticState *state, StatementDc *dc)
 			unsigned long value;
 
 			/* Update the program counter symbol in between values, to keep it up to date. */
-			LookupSymbol(state, &string_program_counter_expression)->shared.unsigned_long = state->program_counter;
+			state->program_counter_of_expression = state->program_counter;
 
 			if (!ResolveExpression(state, &expression_list_node->expression, &value, cc_true))
 				value = 0;
@@ -4436,9 +4434,10 @@ static void ProcessIf(SemanticState *state, Expression *expression)
 
 static void ProcessStatement(SemanticState *state, Statement *statement, const StringView *label)
 {
-	/* Update both copies of the program counter. */
-	LookupSymbol(state, &string_program_counter_statement)->shared.unsigned_long = state->program_counter;
-	LookupSymbol(state, &string_program_counter_expression)->shared.unsigned_long = state->program_counter;
+	/* Bizarrely, depending on the context, the program counter can be one
+	   of two values, so we need to maintain two separate copies of it. */
+	state->program_counter_of_statement = state->program_counter;
+	state->program_counter_of_expression = state->program_counter;
 
 	switch (statement->type)
 	{
@@ -5073,8 +5072,8 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 	}
 
 	/* Update both copies of the program counter again, so that things like WHILE statements don't use stale values in their expressions. */
-	LookupSymbol(state, &string_program_counter_statement)->shared.unsigned_long = state->program_counter;
-	LookupSymbol(state, &string_program_counter_expression)->shared.unsigned_long = state->program_counter;
+	state->program_counter_of_statement = state->program_counter;
+	state->program_counter_of_expression = state->program_counter;
 }
 
 static cc_bool ParseStatement(SemanticState* const state, Statement* const statement, const StringView* const view)
@@ -5865,10 +5864,11 @@ static cc_bool InitialiseBuiltInVariable(SemanticState* const state, const Strin
 {
 	Dictionary_Entry* const symbol = CreateSymbol(state, identifier);
 
-	if (symbol != NULL)
-		symbol->type = SYMBOL_VARIABLE;
+	if (symbol == NULL)
+		return cc_false;
 
-	return symbol != NULL;
+	symbol->type = SYMBOL_VARIABLE;
+	return cc_true;
 }
 
 static void AddDefinition(void* const internal, const char* const identifier_buffer, const size_t identifier_length, const unsigned long value)
@@ -5935,13 +5935,7 @@ cc_bool ClownAssembler_Assemble(
 	}
 	else
 	{
-		/* Create the dictionary entry for the program counter ahead of time.
-		   Bizarrely, depending on the context, the program counter can be one
-		   of two values, so we need to maintain two separate copies of it. */
-		if (InitialiseBuiltInVariable(&state, &string_program_counter_statement)
-		 && InitialiseBuiltInVariable(&state, &string_program_counter_expression)
-		 /* Create the secret '__rs' symbol too. */
-		 && InitialiseBuiltInVariable(&state, &string_rs))
+		if (InitialiseBuiltInVariable(&state, &string_rs))
 		{
 			if (definition_callback != NULL)
 				definition_callback(&state, (void*)user_data, AddDefinition);
