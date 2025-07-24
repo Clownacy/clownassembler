@@ -5070,107 +5070,106 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 	LookupSymbol(state, &string_program_counter_expression)->shared.unsigned_long = state->program_counter;
 }
 
-static void ParseLine(SemanticState *state, const StringView *label, const StringView *directive_and_operands)
+static cc_bool ParseStatement(SemanticState* const state, Statement* const statement, const StringView* const view)
+{
+	/* Parse the source line with Flex and Bison (Lex and Yacc). */
+	const YY_BUFFER_STATE buffer = m68kasm__scan_bytes(StringView_Data(view), StringView_Length(view), state->flex_state);
+	const int parse_result = m68kasm_parse(state->flex_state, statement);
+	m68kasm__delete_buffer(buffer, state->flex_state);
+
+	/* Out of memory. */
+	if (parse_result == 2)
+		OutOfMemoryError(state);
+
+	return parse_result == 0;
+}
+
+static void ParseLine(SemanticState* const state, const StringView* const label, const StringView* const directive_and_operands)
 {
 	/* This is a normal assembly line. */
-	YY_BUFFER_STATE buffer;
-	int parse_result;
 	Statement statement;
 
 	/* Back these up, before they get a chance to be modified by ProcessStatement. */
 	const unsigned long starting_program_counter = state->program_counter;
 	const size_t starting_output_position = state->output_position;
 
-	/* Parse the source line with Flex and Bison (Lex and Yacc). */
-	buffer = m68kasm__scan_bytes(StringView_Data(directive_and_operands), StringView_Length(directive_and_operands), state->flex_state);
-	parse_result = m68kasm_parse(state->flex_state, &statement);
-	m68kasm__delete_buffer(buffer, state->flex_state);
-
-	switch (parse_result)
+	if (!ParseStatement(state, &statement, directive_and_operands))
 	{
-		case 2: /* Out of memory. */
-			OutOfMemoryError(state);
-			break;
+		/* An error message will have already been printed, so we don't need to do one here. */
+		state->success = cc_false;
+	}
+	else
+	{
+		state->fix_up_needed = cc_false;
 
-		case 1: /* Parsing error. */
-			/* An error message will have already been printed, so we don't need to do one here. */
-			state->success = cc_false;
-			break;
+		ProcessStatement(state, &statement, label);
 
-		case 0: /* No error. */
-			state->fix_up_needed = cc_false;
+		if (!state->fix_up_needed)
+		{
+			/* We're done with this statement: delete it. */
+			DestroyStatement(&statement);
+		}
+		else
+		{
+			/* If the statement cannot currently be processed because of undefined symbols,
+			   add it to the fix-up list so we can try again later. */
+			FixUp *fix_up = (FixUp*)MallocAndHandleError(state, sizeof(FixUp));
 
-			ProcessStatement(state, &statement, label);
-
-			if (!state->fix_up_needed)
+			if (fix_up == NULL)
 			{
-				/* We're done with this statement: delete it. */
+				/* Might as well delete this, since there's no fix-up to take ownership of it. */
 				DestroyStatement(&statement);
 			}
 			else
 			{
-				/* If the statement cannot currently be processed because of undefined symbols,
-				   add it to the fix-up list so we can try again later. */
-				FixUp *fix_up = (FixUp*)MallocAndHandleError(state, sizeof(FixUp));
+				const Location *source_location = state->location;
+				Location *destination_location = &fix_up->location;
 
-				if (fix_up == NULL)
+				/* Backup the statement. */
+				fix_up->statement = statement;
+
+				/* Backup some state. */
+				fix_up->program_counter = starting_program_counter;
+				fix_up->output_position = starting_output_position;
+				String_CreateCopy(&fix_up->last_global_label, &state->last_global_label);
+				String_CreateCopy(&fix_up->source_line, state->source_line);
+				String_CreateCopyView(&fix_up->label, label);
+				fix_up->options = *Options_Get(&state->options);
+
+				/* Clone the location. */
+				*destination_location = *source_location;
+				String_CreateCopy(&destination_location->file_path, &source_location->file_path);
+
+				for (source_location = source_location->previous; source_location != NULL; source_location = source_location->previous)
 				{
-					/* Might as well delete this, since there's no fix-up to take ownership of it. */
-					DestroyStatement(&statement);
-				}
-				else
-				{
-					const Location *source_location = state->location;
-					Location *destination_location = &fix_up->location;
+					destination_location->previous = (Location*)MallocAndHandleError(state, sizeof(Location));
 
-					/* Backup the statement. */
-					fix_up->statement = statement;
-
-					/* Backup some state. */
-					fix_up->program_counter = starting_program_counter;
-					fix_up->output_position = starting_output_position;
-					String_CreateCopy(&fix_up->last_global_label, &state->last_global_label);
-					String_CreateCopy(&fix_up->source_line, state->source_line);
-					String_CreateCopyView(&fix_up->label, label);
-					fix_up->options = *Options_Get(&state->options);
-
-					/* Clone the location. */
-					*destination_location = *source_location;
-					String_CreateCopy(&destination_location->file_path, &source_location->file_path);
-
-					for (source_location = source_location->previous; source_location != NULL; source_location = source_location->previous)
+					if (destination_location->previous == NULL)
 					{
-						destination_location->previous = (Location*)MallocAndHandleError(state, sizeof(Location));
-
-						if (destination_location->previous == NULL)
-						{
-							break;
-						}
-						else
-						{
-							destination_location = destination_location->previous;
-							*destination_location = *source_location;
-							String_CreateCopy(&destination_location->file_path, &source_location->file_path);
-						}
+						break;
 					}
-
-					/* Add the new fix-up to the list. */
-					if (state->fix_up_list_head == NULL)
-						state->fix_up_list_head = fix_up;
 					else
-						state->fix_up_list_tail->next = fix_up;
-
-					state->fix_up_list_tail = fix_up;
-
-					fix_up->next = NULL;
+					{
+						destination_location = destination_location->previous;
+						*destination_location = *source_location;
+						String_CreateCopy(&destination_location->file_path, &source_location->file_path);
+					}
 				}
 
-				state->fix_up_needed = cc_false;
+				/* Add the new fix-up to the list. */
+				if (state->fix_up_list_head == NULL)
+					state->fix_up_list_head = fix_up;
+				else
+					state->fix_up_list_tail->next = fix_up;
+
+				state->fix_up_list_tail = fix_up;
+
+				fix_up->next = NULL;
 			}
 
-			break;
+			state->fix_up_needed = cc_false;
+		}
 	}
-
 }
 
 #define DIRECTIVE_OR_MACRO_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_"
