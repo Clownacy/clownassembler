@@ -29,9 +29,8 @@
 
 #include "syntactic.h"
 
-void m68kasm_warning(void *scanner, void *output, const char *message);
-void m68kasm_error(void *scanner, void *output, const char *message);
-int m68kasm_get_first_token(void *scanner, void *output);
+void m68kasm_warning(void *scanner, Statement *statement, const char *message);
+void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
 static cc_bool CharacterToInteger(unsigned int* const value, const unsigned int character)
 {
@@ -105,13 +104,6 @@ hexadecimal       {hexadecimal_digit}+
 %s OPERANDS PATH OPTIONS
 
 %%
-
-%{
-	const int start_token = m68kasm_get_first_token(yyscanner, yyextra);
-
-	if (start_token != 0)
-		return start_token;
-%}
 
  /* Ignore whitespace */
 [ \t]+          ;

@@ -471,8 +471,6 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 	Expression expression;
 }
 
-%token TOKEN_START_EXPRESSION
-%token TOKEN_START_STATEMENT
 %token TOKEN_DIRECTIVE_ORI
 %token TOKEN_DIRECTIVE_ANDI
 %token TOKEN_DIRECTIVE_SUBI
@@ -679,13 +677,9 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %%
 
 start
-	: TOKEN_START_EXPRESSION expression
+	: statement
 	{
-		*(Expression*)output = $2;
-	}
-	| TOKEN_START_STATEMENT statement
-	{
-		*(Statement*)output = $2;
+		*(Statement*)output = $1;
 	}
 
 statement
