@@ -5453,8 +5453,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 	/* Determine the length of the directive. */
 	directive_length = strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
 
-	/* TODO: Avoid this `strlen`? */
-	StringView_Create(&directive_and_operands, source_line_pointer, strlen(source_line_pointer));
+	StringView_Create(&directive_and_operands, source_line_pointer, (String_Data(state->source_line) + String_Length(state->source_line)) - source_line_pointer);
 	StringView_SubStr(&directive, &directive_and_operands, 0, directive_length);
 
 	switch (state->mode)
