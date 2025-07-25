@@ -350,7 +350,7 @@ Delta:	rept 8
 TheGreatestMacro macro named_parameter_1, named_parameter_2
 	dc.l	*
 	move.\0	\1,\2
-	move.\0	named_parameter_1,named_parameter_2
+	move.\0	\named_parameter_1,\named_parameter_2
 	dc.l	narg
 	endm
 
@@ -358,7 +358,7 @@ TheGreatestMacro macro named_parameter_1, named_parameter_2
 	TheGreatestMacro.w #1000,(0).l,#$DEAD
 
 TheGreatestMacro2 MACRO opcode
-	opcode
+	\opcode
 	ENDM
 
 	TheGreatestMacro2 illegal

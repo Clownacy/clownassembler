@@ -5463,13 +5463,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 	{
 		case MODE_NORMAL:
 		{
-			String modified_directive_and_operands;
-
-			String_CreateCopyView(&modified_directive_and_operands, &directive_and_operands);
-			PerformSubstitutions(state, &modified_directive_and_operands, cc_true);
-			directive_and_operands = *String_View(&modified_directive_and_operands);
-
-			source_line_pointer = String_CStr(&modified_directive_and_operands);
+			source_line_pointer += directive_length;
 
 			/* If we are in the false part of an if-statement, then manually parse the
 			   source code until we encounter an IF, ELSEIF, ELSE, ENDC, or ENDIF.
@@ -5685,8 +5679,6 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 					state->macro = previous_macro_state;
 				}
 			}
-
-			String_Destroy(&modified_directive_and_operands);
 
 			break;
 		}
