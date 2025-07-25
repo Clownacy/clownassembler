@@ -30,6 +30,4 @@ void Substitute_ProcessString(Substitute_State *state, String *string, Substitut
 cc_bool Substitute_IsSubstituteBlockingCharacter(char character);
 cc_bool Substitute_IsWhitespaceCharacter(char character);
 
-const StringView* Substitute_GetSubstitute(const Substitute_State *state, const StringView *identifier);
-
 #endif /* SUBSTITUTE_H */

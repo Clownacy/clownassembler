@@ -177,15 +177,3 @@ cc_bool Substitute_IsWhitespaceCharacter(const char character)
 {
 	return isspace((unsigned char)character);
 }
-
-const StringView* Substitute_GetSubstitute(const Substitute_State* const state, const StringView* const identifier)
-{
-	Substitute_ListEntry *list_entry;
-
-	/* TODO: Case-insensitivity? */
-	for (list_entry = state->list_head; list_entry != NULL; list_entry = list_entry->next)
-		if (StringView_Compare(identifier, String_View(&list_entry->identifier)))
-			return String_View(&list_entry->value);
-
-	return NULL;
-}
