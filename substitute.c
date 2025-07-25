@@ -59,7 +59,7 @@ static cc_bool Substitute_FindSubstitute(const StringView* const view_to_search,
 
 		/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
 		/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
-		if (Substitute_IsSubstituteBlockingCharacter(character_before) || Substitute_IsSubstituteBlockingCharacter(character_after))
+		if (character_before == '"' || character_before == '\'' || Substitute_IsSubstituteBlockingCharacter(character_before) || Substitute_IsSubstituteBlockingCharacter(character_after))
 			continue;
 
 		/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
