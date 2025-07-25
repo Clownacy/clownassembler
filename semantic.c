@@ -956,7 +956,8 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			}
 			else
 			{
-				const size_t found_position = String_Find(&expression->shared.subexpressions[1].shared.string, String_View(&expression->shared.subexpressions[2].shared.string), position + 1);
+				/* TODO: What if 'position' is 0? */
+				const size_t found_position = String_Find(&expression->shared.subexpressions[1].shared.string, String_View(&expression->shared.subexpressions[2].shared.string), position - 1);
 				*value = found_position == STRING_POSITION_INVALID ? 0 : found_position + 1;
 			}
 			break;
