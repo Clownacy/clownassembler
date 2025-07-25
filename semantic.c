@@ -5092,7 +5092,6 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		}
 
 		case STATEMENT_TYPE_SHIFT:
-		{
 			if (!CurrentlyExpandingMacro(state))
 			{
 				SemanticError(state, "SHIFT used outside of macro.");
@@ -5106,7 +5105,6 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			}
 
 			break;
-		}
 
 		case STATEMENT_TYPE_MEXIT:
 			state->macro.active = cc_false;
