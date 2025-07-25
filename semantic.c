@@ -5339,6 +5339,21 @@ static void PerformSubstitutionsExcludingQuotedStrings(SemanticState* const stat
 	while (string_in_source_line_found);
 }
 
+static void SubstituteAndParseLine(SemanticState *state, const StringView* const label, const StringView* const directive_and_operands, const size_t substitution_starting_position)
+{
+	String modified_directive_and_operands;
+
+	/* Perform implicit (backslash-less) string substitutions on the operands.
+	   SN 68k achieves this by expanding string constants in its operand and expression evaluators,
+	   which is absolutely insane, so this trick approximates it instead. */
+	String_CreateCopyView(&modified_directive_and_operands, directive_and_operands);
+	PerformSubstitutionsExcludingQuotedStrings(state, &modified_directive_and_operands, substitution_starting_position, cc_true);
+
+	ParseLine(state, label, String_View(&modified_directive_and_operands));
+
+	String_Destroy(&modified_directive_and_operands);
+}
+
 static void AssembleLine(SemanticState *state, const String *source_line_raw, const cc_bool write_line_to_listing_file)
 {
 	String source_line;
@@ -5460,18 +5475,6 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 	{
 		case MODE_NORMAL:
 		{
-			String modified_directive_and_operands;
-
-			/* Perform implicit (backslash-less) string substitutions on the operands.
-			   SN 68k achieves this by expanding string constants in its operand and expression evaluators,
-			   which is absolutely insane, so this trick approximates it instead. */
-			String_CreateCopyView(&modified_directive_and_operands, &directive_and_operands);
-			PerformSubstitutionsExcludingQuotedStrings(state, &modified_directive_and_operands, directive_length, cc_true);
-
-			/* Use our modified operands instead. */
-			directive_and_operands = *String_View(&modified_directive_and_operands);
-			source_line_pointer = String_CStr(&modified_directive_and_operands);
-
 			/* If we are in the false part of an if-statement, then manually parse the
 			   source code until we encounter an IF, ELSEIF, ELSE, ENDC, or ENDIF.
 			   The reason for this is that the false part of an if-statement may contain
@@ -5492,7 +5495,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 				      || StringView_CompareCStrCaseInsensitive(&directive, "endif" ))
 				{
 					/* These can be processed normally too. */
-					ParseLine(state, &label, &directive_and_operands);
+					SubstituteAndParseLine(state, &label, &directive_and_operands, directive_length);
 				}
 				else
 				{
@@ -5509,7 +5512,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 				if (macro_dictionary_entry == NULL || macro_dictionary_entry->type != SYMBOL_MACRO)
 				{
 					/* This is not a macro invocation: it's just a regular line that can be assembled as-is. */
-					ParseLine(state, &label, &directive_and_operands);
+					SubstituteAndParseLine(state, &label, &directive_and_operands, directive_length);
 				}
 				else
 				{
@@ -5684,8 +5687,6 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 					state->macro = previous_macro_state;
 				}
 			}
-
-			String_Destroy(&modified_directive_and_operands);
 
 			break;
 		}

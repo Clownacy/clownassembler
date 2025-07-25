@@ -724,6 +724,32 @@ Hell macro named
 
 	Hell hath,no,fury
 
+	; Test SHIFT, as well as WHILE nested with a MACRO.
+Hell2 macro named
+	while var<>narg
+var = var+1
+	dc.b "\named"
+	dc.b "\1"
+	dc.b "\_"
+	dc.b narg
+	shift
+	endw
+    endm
+
+var = 0
+	Hell2 hath,no,fury
+
+	; Test some listing quirks.
+    rept 6
+	dc.l *
+    endr
+
+	; Test some of asm68k's bizarre string-substitution quirks.
+SUBSTITUTE EQUS "dc.b"
+SUBSTITUTE2 EQUS "Hell"
+
+	\SUBSTITUTE2 SUBSTITUTE,\SUBSTITUTE,\SUBSTITUTE\
+
 	; Despite sharing a name, the macro redefining this constant does not cause an error.
 shadowedByMacro EQU 0
 
