@@ -126,7 +126,7 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 	return found_substitute;
 }
 
-void Substitute_ProcessStringPartial(Substitute_State* const state, String* const string, StringView* const view_to_search, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches)
+void Substitute_ProcessSubString(Substitute_State* const state, String* const string, StringView* const view_to_search, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches)
 {
 	size_t starting_position = 0;
 
@@ -162,7 +162,7 @@ void Substitute_ProcessStringPartial(Substitute_State* const state, String* cons
 void Substitute_ProcessString(Substitute_State* const state, String* const string, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches)
 {
 	StringView view = *String_View(string);
-	Substitute_ProcessStringPartial(state, string, &view, custom_search_callback, custom_search_user_data, allow_implicit_matches);
+	Substitute_ProcessSubString(state, string, &view, custom_search_callback, custom_search_user_data, allow_implicit_matches);
 }
 
 cc_bool Substitute_IsSubstituteBlockingCharacter(const char character)

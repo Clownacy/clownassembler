@@ -5273,18 +5273,17 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 	return NULL;
 }
 
-static void PerformSubstitutions(SemanticState* const state, String* const string, const cc_bool allow_implicit_matches)
+static void PerformSubstitutionsOnSubString(SemanticState* const state, String* const string, StringView* const view_to_search, const cc_bool allow_implicit_matches)
 {
 	if (state->macro.closure != NULL)
-		Substitute_ProcessString(&state->macro.substitutions, string, MacroCustomSubstituteSearch, state->macro.closure, allow_implicit_matches);
-	Substitute_ProcessString(&state->substitutions, string, NULL, NULL, allow_implicit_matches);
+		Substitute_ProcessSubString(&state->macro.substitutions, string, view_to_search, MacroCustomSubstituteSearch, state->macro.closure, allow_implicit_matches);
+	Substitute_ProcessSubString(&state->substitutions, string, view_to_search, NULL, NULL, allow_implicit_matches);
 }
 
-static void PerformSubstitutionsPartial(SemanticState* const state, String* const string, StringView* const view_to_search, const cc_bool allow_implicit_matches)
+static void PerformSubstitutions(SemanticState* const state, String* const string, const cc_bool allow_implicit_matches)
 {
-	if (state->macro.closure != NULL)
-		Substitute_ProcessStringPartial(&state->macro.substitutions, string, view_to_search, MacroCustomSubstituteSearch, state->macro.closure, allow_implicit_matches);
-	Substitute_ProcessStringPartial(&state->substitutions, string, view_to_search, NULL, NULL, allow_implicit_matches);
+	StringView view = *String_View(string);
+	PerformSubstitutionsOnSubString(state, string, &view, allow_implicit_matches);
 }
 
 static cc_bool FindStringInSourceLine(const String* const string, const size_t starting_position, StringView* const view)
@@ -5306,8 +5305,8 @@ static cc_bool FindStringInSourceLine(const String* const string, const size_t s
 }
 
 /* Performs string substitutions only in parts of the string that are not wrapped in quotations. */
-/* This is needed to simulate SN 68k does not expand string constants in strings, only expressions and operands. */
-static void PerformSubstitutionsOutsideStrings(SemanticState* const state, String* const string, const size_t starting_position, const cc_bool allow_implicit_matches)
+/* This is needed to simulate how SN 68k does not expand string constants in strings, only expressions and operands. */
+static void PerformSubstitutionsExcludingQuotedStrings(SemanticState* const state, String* const string, const size_t starting_position, const cc_bool allow_implicit_matches)
 {
 	cc_bool string_in_source_line_found;
 	size_t position = starting_position;
@@ -5331,7 +5330,7 @@ static void PerformSubstitutionsOutsideStrings(SemanticState* const state, Strin
 
 			/* Perform the substitutions. */
 			StringView_Create(&view_to_search, search_start, search_length);
-			PerformSubstitutionsPartial(state, string, &view_to_search, allow_implicit_matches);
+			PerformSubstitutionsOnSubString(state, string, &view_to_search, allow_implicit_matches);
 
 			/* Move to after the string so that we can continue searching. */
 			position += StringView_Length(&view_to_search) + StringView_Length(&string_in_source_line);
@@ -5366,6 +5365,9 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 		}
 	}
 
+	/* Expand string constants and macro parameters only if we're actually parsing code;
+	   it is important that the input of REPT and WHILE is unaltered, so that each iteration
+	   can have unique expansions! */
 	if (state->mode == MODE_NORMAL)
 	{
 		String_CreateCopy(&source_line, source_line_raw);
@@ -5461,11 +5463,14 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 		{
 			String modified_directive_and_operands;
 
+			/* Perform implicit (backslash-less) string substitutions on the operands.
+			   SN 68k achieves this by expanding string constants in its operand and expression evaluators,
+			   which is absolutely insane, so this trick approximates it instead. */
 			String_CreateCopyView(&modified_directive_and_operands, &directive_and_operands);
-			PerformSubstitutionsOutsideStrings(state, &modified_directive_and_operands, directive_length, cc_true);
-			directive_and_operands = *String_View(&modified_directive_and_operands);
-			StringView_SubStr(&directive, &directive_and_operands, 0, directive_length);
+			PerformSubstitutionsExcludingQuotedStrings(state, &modified_directive_and_operands, directive_length, cc_true);
 
+			/* Use our modified operands instead. */
+			directive_and_operands = *String_View(&modified_directive_and_operands);
 			source_line_pointer = String_CStr(&modified_directive_and_operands);
 
 			/* If we are in the false part of an if-statement, then manually parse the
