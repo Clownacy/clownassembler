@@ -5099,6 +5099,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			}
 			else
 			{
+				/* TODO: What if there are already 0 arguments? */
 				--state->macro.total_arguments;
 				memmove(state->macro.argument_list, state->macro.argument_list + 1, sizeof(*state->macro.argument_list) * state->macro.total_arguments);
 				PushMacroArgumentSubstitutions(state);
@@ -5668,6 +5669,10 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 
 										StringView_SubStr(&argument, &argument, 0, StringView_Length(&argument) - 1);
 									}
+
+									/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
+									if (StringView_Length(&argument) == 0 && character == '\0' && state->macro.total_arguments == 0)
+										break;
 
 									/* Add to argument list. */
 									{
