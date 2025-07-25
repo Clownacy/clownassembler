@@ -103,6 +103,7 @@ typedef struct SemanticState_Macro
 	struct MacroCustomSubstituteSearch_Closure *closure;
 	StringView *argument_list;
 	size_t total_arguments;
+	cc_bool active;
 } SemanticState_Macro;
 
 typedef struct SemanticState
@@ -4461,6 +4462,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_PUSHP:
 		case STATEMENT_TYPE_POPP:
 		case STATEMENT_TYPE_SHIFT:
+		case STATEMENT_TYPE_MEXIT:
 			if (!StringView_Empty(label) && !state->doing_fix_up)
 			{
 				/* Handle the label here, instead of passing it onto a later function. */
@@ -5064,6 +5066,10 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 			break;
 		}
+
+		case STATEMENT_TYPE_MEXIT:
+			state->macro.active = cc_false;
+			break;
 	}
 
 	/* Update both copies of the program counter again, so that things like WHILE statements don't use stale values in their expressions. */
@@ -5528,6 +5534,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 					state->macro.closure = &closure;
 					state->macro.argument_list = NULL;
 					state->macro.total_arguments = 0;
+					state->macro.active = cc_true;
 
 					++state->current_macro_invocation;
 
@@ -5670,7 +5677,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 						state->location = &location;
 
 						/* Iterate over each line of the macro, sending it to be processed. */
-						for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
+						for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL && state->macro.active; source_line_list_node = source_line_list_node->next)
 							AssembleLine(state, &source_line_list_node->source_line_buffer, Options_Get(&state->options)->expand_all_macros);
 
 						/* Pop location. */
