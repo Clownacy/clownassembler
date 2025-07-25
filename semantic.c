@@ -364,25 +364,25 @@ static void OutOfMemoryError(SemanticState *state)
 	state->success = cc_false;
 }
 
-void m68kasm_warning(void *scanner, void *output, const char *message)
+void m68kasm_warning(void *scanner, Statement *statement, const char *message)
 {
 	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
 
-	(void)output;
-
 	if (Options_Get(&state->options)->warnings_enabled)
 	{
+		(void)statement;
+
 		TextOutput_fprintf(state->error_callbacks, "Warning: %s", message);
 
 		ErrorMessageCommon(state);
 	}
 }
 
-void m68kasm_error(void *scanner, void *output, const char *message)
+void m68kasm_error(void *scanner, Statement *statement, const char *message)
 {
 	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
 
-	(void)output;
+	(void)statement;
 
 	TextOutput_fprintf(state->error_callbacks, "Error: %s", message);
 

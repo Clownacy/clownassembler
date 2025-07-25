@@ -23,7 +23,7 @@
 
 %param {void *scanner}
 
-%parse-param {void *output}
+%parse-param {Statement *statement}
 
 %define parse.error verbose
 
@@ -446,8 +446,8 @@ void DestroyStatement(Statement *statement);
 #include <string.h>
 
 int m68kasm_lex(M68KASM_STYPE *yylval_param, void *yyscanner);
-void m68kasm_warning(void *scanner, void *output, const char *message);
-void m68kasm_error(void *scanner, void *output, const char *message);
+void m68kasm_warning(void *scanner, Statement *statement, const char *message);
+void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
 static cc_bool DoExpressionTriple(Expression *expression, ExpressionType type, Expression *left_expression, Expression *middle_expression, Expression *right_expression);
 static cc_bool DoExpression(Expression *expression, ExpressionType type, Expression *left_expression, Expression *right_expression);
@@ -660,307 +660,299 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %type<unsigned_long> register_list
 %type<unsigned_long> register_span
 %type<unsigned_long> data_or_address_register
-%type<statement> statement
 %type<expression_list> expression_list
 %type<identifier_list> identifier_list option_list
 %type<expression> expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 string
 
 %destructor { String_Destroy(&$$); } TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER TOKEN_STRING TOKEN_OPTION
 %destructor { DestroyOperand(&$$); } operand
-%destructor { DestroyStatement(&$$); } statement
 %destructor { DestroyExpressionList(&$$); } expression_list
 %destructor { DestroyIdentifierList(&$$); } identifier_list option_list
 %destructor { DestroyExpression(&$$); } expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 string
 
-%start start
+%start statement
 
 %%
-
-start
-	: statement
-	{
-		*(Statement*)output = $1;
-	}
 
 statement
 	:
 	{
-		$$.type = STATEMENT_TYPE_EMPTY;
+		statement->type = STATEMENT_TYPE_EMPTY;
 	}
 	| instruction
 	{
-		$$.type = STATEMENT_TYPE_INSTRUCTION;
-		$$.shared.instruction = $1;
+		statement->type = STATEMENT_TYPE_INSTRUCTION;
+		statement->shared.instruction = $1;
 	}
 	| TOKEN_DIRECTIVE_DC size expression_list
 	{
-		$$.type = STATEMENT_TYPE_DC;
-		$$.shared.dc.size = $2;
-		$$.shared.dc.values = $3;
+		statement->type = STATEMENT_TYPE_DC;
+		statement->shared.dc.size = $2;
+		statement->shared.dc.values = $3;
 	}
 	| TOKEN_DIRECTIVE_DCB size expression ',' expression
 	{
-		$$.type = STATEMENT_TYPE_DCB;
-		$$.shared.dcb.size = $2;
-		$$.shared.dcb.repetitions = $3;
-		$$.shared.dcb.value = $5;
+		statement->type = STATEMENT_TYPE_DCB;
+		statement->shared.dcb.size = $2;
+		statement->shared.dcb.repetitions = $3;
+		statement->shared.dcb.value = $5;
 	}
 	| TOKEN_DIRECTIVE_INCLUDE TOKEN_STRING
 	{
-		$$.type = STATEMENT_TYPE_INCLUDE;
-		$$.shared.include.path = $2;
+		statement->type = STATEMENT_TYPE_INCLUDE;
+		statement->shared.include.path = $2;
 	}
 	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING
 	{
-		$$.type = STATEMENT_TYPE_INCBIN;
-		$$.shared.incbin.path = $2;
-		$$.shared.incbin.start.type = EXPRESSION_NUMBER;
-		$$.shared.incbin.start.shared.unsigned_long = 0;
-		$$.shared.incbin.has_length = cc_false;
+		statement->type = STATEMENT_TYPE_INCBIN;
+		statement->shared.incbin.path = $2;
+		statement->shared.incbin.start.type = EXPRESSION_NUMBER;
+		statement->shared.incbin.start.shared.unsigned_long = 0;
+		statement->shared.incbin.has_length = cc_false;
 	}
 	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' expression
 	{
-		$$.type = STATEMENT_TYPE_INCBIN;
-		$$.shared.incbin.path = $2;
-		$$.shared.incbin.start = $4;
-		$$.shared.incbin.has_length = cc_false;
+		statement->type = STATEMENT_TYPE_INCBIN;
+		statement->shared.incbin.path = $2;
+		statement->shared.incbin.start = $4;
+		statement->shared.incbin.has_length = cc_false;
 	}
 	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' expression ',' expression
 	{
-		$$.type = STATEMENT_TYPE_INCBIN;
-		$$.shared.incbin.path = $2;
-		$$.shared.incbin.start = $4;
-		$$.shared.incbin.has_length = cc_true;
-		$$.shared.incbin.length = $6;
+		statement->type = STATEMENT_TYPE_INCBIN;
+		statement->shared.incbin.path = $2;
+		statement->shared.incbin.start = $4;
+		statement->shared.incbin.has_length = cc_true;
+		statement->shared.incbin.length = $6;
 	}
 	| TOKEN_DIRECTIVE_REPT expression
 	{
-		$$.type = STATEMENT_TYPE_REPT;
-		$$.shared.rept.repetitions = $2;
+		statement->type = STATEMENT_TYPE_REPT;
+		statement->shared.rept.repetitions = $2;
 	}
 	| TOKEN_DIRECTIVE_ENDR
 	{
-		$$.type = STATEMENT_TYPE_ENDR;
+		statement->type = STATEMENT_TYPE_ENDR;
 	}
 	| TOKEN_DIRECTIVE_MACRO
 	{
-		$$.type = STATEMENT_TYPE_MACRO;
-		$$.shared.macro.uses_label = cc_false;
-		$$.shared.macro.parameter_names.head = NULL;
-		$$.shared.macro.parameter_names.tail = NULL;
+		statement->type = STATEMENT_TYPE_MACRO;
+		statement->shared.macro.uses_label = cc_false;
+		statement->shared.macro.parameter_names.head = NULL;
+		statement->shared.macro.parameter_names.tail = NULL;
 	}
 	| TOKEN_DIRECTIVE_MACRO '*'
 	{
-		$$.type = STATEMENT_TYPE_MACRO;
-		$$.shared.macro.uses_label = cc_true;
-		$$.shared.macro.parameter_names.head = NULL;
-		$$.shared.macro.parameter_names.tail = NULL;
+		statement->type = STATEMENT_TYPE_MACRO;
+		statement->shared.macro.uses_label = cc_true;
+		statement->shared.macro.parameter_names.head = NULL;
+		statement->shared.macro.parameter_names.tail = NULL;
 	}
 	| TOKEN_DIRECTIVE_MACRO identifier_list
 	{
-		$$.type = STATEMENT_TYPE_MACRO;
-		$$.shared.macro.uses_label = cc_false;
-		$$.shared.macro.parameter_names = $2;
+		statement->type = STATEMENT_TYPE_MACRO;
+		statement->shared.macro.uses_label = cc_false;
+		statement->shared.macro.parameter_names = $2;
 	}
 	| TOKEN_DIRECTIVE_MACRO '*' ',' identifier_list
 	{
-		$$.type = STATEMENT_TYPE_MACRO;
-		$$.shared.macro.uses_label = cc_true;
-		$$.shared.macro.parameter_names = $4;
+		statement->type = STATEMENT_TYPE_MACRO;
+		statement->shared.macro.uses_label = cc_true;
+		statement->shared.macro.parameter_names = $4;
 	}
 	| TOKEN_DIRECTIVE_MACROS
 	{
-		$$.type = STATEMENT_TYPE_MACROS;
-		$$.shared.macro.parameter_names.head = NULL;
-		$$.shared.macro.parameter_names.tail = NULL;
+		statement->type = STATEMENT_TYPE_MACROS;
+		statement->shared.macro.parameter_names.head = NULL;
+		statement->shared.macro.parameter_names.tail = NULL;
 	}
 	| TOKEN_DIRECTIVE_MACROS identifier_list
 	{
-		$$.type = STATEMENT_TYPE_MACROS;
-		$$.shared.macro.parameter_names = $2;
+		statement->type = STATEMENT_TYPE_MACROS;
+		statement->shared.macro.parameter_names = $2;
 	}
 	| TOKEN_DIRECTIVE_ENDM
 	{
-		$$.type = STATEMENT_TYPE_ENDM;
+		statement->type = STATEMENT_TYPE_ENDM;
 	}
 	| TOKEN_DIRECTIVE_EQU expression
 	{
-		$$.type = STATEMENT_TYPE_EQU;
-		$$.shared.expression = $2;
+		statement->type = STATEMENT_TYPE_EQU;
+		statement->shared.expression = $2;
 	}
 	| TOKEN_DIRECTIVE_EQUS TOKEN_STRING
 	{
-		$$.type = STATEMENT_TYPE_EQUS;
-		$$.shared.string = $2;
+		statement->type = STATEMENT_TYPE_EQUS;
+		statement->shared.string = $2;
 	}
 	| TOKEN_DIRECTIVE_SUBSTR ',' ',' TOKEN_STRING
 	{
-		$$.type = STATEMENT_TYPE_SUBSTR;
-		$$.shared.substr.start.type = EXPRESSION_NUMBER;
-		$$.shared.substr.start.shared.unsigned_long = 1;
-		$$.shared.substr.end.type = EXPRESSION_NUMBER;
-		$$.shared.substr.end.shared.unsigned_long = String_Length(&$4);
-		$$.shared.substr.string = $4;
+		statement->type = STATEMENT_TYPE_SUBSTR;
+		statement->shared.substr.start.type = EXPRESSION_NUMBER;
+		statement->shared.substr.start.shared.unsigned_long = 1;
+		statement->shared.substr.end.type = EXPRESSION_NUMBER;
+		statement->shared.substr.end.shared.unsigned_long = String_Length(&$4);
+		statement->shared.substr.string = $4;
 	}
 	| TOKEN_DIRECTIVE_SUBSTR expression ',' ',' TOKEN_STRING
 	{
-		$$.type = STATEMENT_TYPE_SUBSTR;
-		$$.shared.substr.start = $2;
-		$$.shared.substr.end.type = EXPRESSION_NUMBER;
-		$$.shared.substr.end.shared.unsigned_long = String_Length(&$5);
-		$$.shared.substr.string = $5;
+		statement->type = STATEMENT_TYPE_SUBSTR;
+		statement->shared.substr.start = $2;
+		statement->shared.substr.end.type = EXPRESSION_NUMBER;
+		statement->shared.substr.end.shared.unsigned_long = String_Length(&$5);
+		statement->shared.substr.string = $5;
 	}
 	| TOKEN_DIRECTIVE_SUBSTR ',' expression ',' TOKEN_STRING
 	{
-		$$.type = STATEMENT_TYPE_SUBSTR;
-		$$.shared.substr.start.type = EXPRESSION_NUMBER;
-		$$.shared.substr.start.shared.unsigned_long = 1;
-		$$.shared.substr.end = $3;
-		$$.shared.substr.string = $5;
+		statement->type = STATEMENT_TYPE_SUBSTR;
+		statement->shared.substr.start.type = EXPRESSION_NUMBER;
+		statement->shared.substr.start.shared.unsigned_long = 1;
+		statement->shared.substr.end = $3;
+		statement->shared.substr.string = $5;
 	}
 	| TOKEN_DIRECTIVE_SUBSTR expression ',' expression ',' TOKEN_STRING
 	{
-		$$.type = STATEMENT_TYPE_SUBSTR;
-		$$.shared.substr.start = $2;
-		$$.shared.substr.end = $4;
-		$$.shared.substr.string = $6;
+		statement->type = STATEMENT_TYPE_SUBSTR;
+		statement->shared.substr.start = $2;
+		statement->shared.substr.end = $4;
+		statement->shared.substr.string = $6;
 	}
 	| TOKEN_DIRECTIVE_SET expression
 	{
-		$$.type = STATEMENT_TYPE_SET;
-		$$.shared.expression = $2;
+		statement->type = STATEMENT_TYPE_SET;
+		statement->shared.expression = $2;
 	}
 	| '=' expression
 	{
-		$$.type = STATEMENT_TYPE_SET;
-		$$.shared.expression = $2;
+		statement->type = STATEMENT_TYPE_SET;
+		statement->shared.expression = $2;
 	}
 	| TOKEN_DIRECTIVE_IF expression
 	{
-		$$.type = STATEMENT_TYPE_IF;
-		$$.shared.expression = $2;
+		statement->type = STATEMENT_TYPE_IF;
+		statement->shared.expression = $2;
 	}
 	| TOKEN_DIRECTIVE_ELSEIF expression
 	{
-		$$.type = STATEMENT_TYPE_ELSEIF;
-		$$.shared.expression = $2;
+		statement->type = STATEMENT_TYPE_ELSEIF;
+		statement->shared.expression = $2;
 	}
 	| TOKEN_DIRECTIVE_ELSEIF
 	{
-		$$.type = STATEMENT_TYPE_ELSE;
+		statement->type = STATEMENT_TYPE_ELSE;
 	}
 	| TOKEN_DIRECTIVE_ELSE
 	{
-		$$.type = STATEMENT_TYPE_ELSE;
+		statement->type = STATEMENT_TYPE_ELSE;
 	}
 	| TOKEN_DIRECTIVE_ENDC
 	{
-		$$.type = STATEMENT_TYPE_ENDC;
+		statement->type = STATEMENT_TYPE_ENDC;
 	}
 	| TOKEN_DIRECTIVE_WHILE expression
 	{
-		$$.type = STATEMENT_TYPE_WHILE;
-		$$.shared.expression = $2;
+		statement->type = STATEMENT_TYPE_WHILE;
+		statement->shared.expression = $2;
 	}
 	| TOKEN_DIRECTIVE_ENDW
 	{
-		$$.type = STATEMENT_TYPE_ENDW;
+		statement->type = STATEMENT_TYPE_ENDW;
 	}
 	| TOKEN_DIRECTIVE_EVEN
 	{
-		$$.type = STATEMENT_TYPE_EVEN;
+		statement->type = STATEMENT_TYPE_EVEN;
 	}
 	| TOKEN_DIRECTIVE_CNOP expression ',' expression
 	{
-		$$.type = STATEMENT_TYPE_CNOP;
-		$$.shared.cnop.offset = $2;
-		$$.shared.cnop.size_boundary = $4;
+		statement->type = STATEMENT_TYPE_CNOP;
+		statement->shared.cnop.offset = $2;
+		statement->shared.cnop.size_boundary = $4;
 	}
 	| TOKEN_DIRECTIVE_INFORM expression ',' TOKEN_STRING
 	{
-		$$.type = STATEMENT_TYPE_INFORM;
-		$$.shared.inform.severity = $2;
-		$$.shared.inform.message = $4;
+		statement->type = STATEMENT_TYPE_INFORM;
+		statement->shared.inform.severity = $2;
+		statement->shared.inform.message = $4;
 	}
 	| TOKEN_DIRECTIVE_INFORM expression ',' TOKEN_STRING ',' expression_list
 	{
 		(void)$6;
 
 		/* TODO - parameters */
-		$$.type = STATEMENT_TYPE_INFORM;
-		$$.shared.inform.severity = $2;
-		$$.shared.inform.message = $4;
+		statement->type = STATEMENT_TYPE_INFORM;
+		statement->shared.inform.severity = $2;
+		statement->shared.inform.message = $4;
 	}
 	| TOKEN_DIRECTIVE_FAIL
 	{
-		$$.type = STATEMENT_TYPE_FAIL;
+		statement->type = STATEMENT_TYPE_FAIL;
 	}
 	| TOKEN_DIRECTIVE_END
 	{
-		$$.type = STATEMENT_TYPE_END;
+		statement->type = STATEMENT_TYPE_END;
 	}
 	| TOKEN_DIRECTIVE_RS size expression
 	{
-		$$.type = STATEMENT_TYPE_RS;
-		$$.shared.rs.size = $2;
-		$$.shared.rs.length = $3;
+		statement->type = STATEMENT_TYPE_RS;
+		statement->shared.rs.size = $2;
+		statement->shared.rs.length = $3;
 	}
 	| TOKEN_DIRECTIVE_RSSET expression
 	{
-		$$.type = STATEMENT_TYPE_RSSET;
-		$$.shared.expression = $2;
+		statement->type = STATEMENT_TYPE_RSSET;
+		statement->shared.expression = $2;
 	}
 	| TOKEN_DIRECTIVE_RSRESET expression
 	{
 		/* As mentioned in S.N. 68k's manual, this odd hack
 		   is necessary for compatibility with other assemblers. */
-		$$.type = STATEMENT_TYPE_RSSET;
-		$$.shared.expression = $2;
+		statement->type = STATEMENT_TYPE_RSSET;
+		statement->shared.expression = $2;
 	}
 	| TOKEN_DIRECTIVE_RSRESET
 	{
-		$$.type = STATEMENT_TYPE_RSRESET;
+		statement->type = STATEMENT_TYPE_RSRESET;
 	}
 	| TOKEN_DIRECTIVE_OBJ expression
 	{
-		$$.type = STATEMENT_TYPE_OBJ;
-		$$.shared.expression = $2;
+		statement->type = STATEMENT_TYPE_OBJ;
+		statement->shared.expression = $2;
 	}
 	| TOKEN_DIRECTIVE_OBJEND
 	{
-		$$.type = STATEMENT_TYPE_OBJEND;
+		statement->type = STATEMENT_TYPE_OBJEND;
 	}
 	| TOKEN_DIRECTIVE_ORG expression
 	{
-		$$.type = STATEMENT_TYPE_ORG;
-		$$.shared.expression = $2;
+		statement->type = STATEMENT_TYPE_ORG;
+		statement->shared.expression = $2;
 	}
 	| TOKEN_DIRECTIVE_PUSHO
 	{
-		$$.type = STATEMENT_TYPE_PUSHO;
+		statement->type = STATEMENT_TYPE_PUSHO;
 	}
 	| TOKEN_DIRECTIVE_POPO
 	{
-		$$.type = STATEMENT_TYPE_POPO;
+		statement->type = STATEMENT_TYPE_POPO;
 	}
 	| TOKEN_DIRECTIVE_OPT option_list
 	{
-		$$.type = STATEMENT_TYPE_OPT;
-		$$.shared.opt.options = $2;
+		statement->type = STATEMENT_TYPE_OPT;
+		statement->shared.opt.options = $2;
 	}
 	| TOKEN_DIRECTIVE_PUSHP TOKEN_STRING
 	{
-		$$.type = STATEMENT_TYPE_PUSHP;
-		$$.shared.string = $2;
+		statement->type = STATEMENT_TYPE_PUSHP;
+		statement->shared.string = $2;
 	}
 	| TOKEN_DIRECTIVE_POPP TOKEN_IDENTIFIER
 	{
-		$$.type = STATEMENT_TYPE_POPP;
-		$$.shared.string = $2;
+		statement->type = STATEMENT_TYPE_POPP;
+		statement->shared.string = $2;
 	}
 	| TOKEN_DIRECTIVE_SHIFT
 	{
-		$$.type = STATEMENT_TYPE_SHIFT;
+		statement->type = STATEMENT_TYPE_SHIFT;
 	}
 	;
 
@@ -1130,7 +1122,7 @@ full_opcode
 	{
 		$$ = $1;
 		$$.size = SIZE_UNDEFINED;
-		m68kasm_warning(scanner, output, "Opcode has a dot but no size; either remove the dot or add an explicit size.");
+		m68kasm_warning(scanner, statement, "Opcode has a dot but no size; either remove the dot or add an explicit size.");
 	}
 	| opcode size
 	{
@@ -1719,7 +1711,7 @@ operand
 	}
 	| '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'
 	{
-		m68kasm_warning(scanner, output, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = EXPRESSION_NUMBER;
 		$$.literal.shared.unsigned_long = 0;
@@ -1730,7 +1722,7 @@ operand
 	}
 	| expression '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'
 	{
-		m68kasm_warning(scanner, output, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
 		$$.main_register = $3;
@@ -1762,7 +1754,7 @@ operand
 	}
 	| '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'
 	{
-		m68kasm_warning(scanner, output, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = EXPRESSION_NUMBER;
 		$$.literal.shared.unsigned_long = 0;
@@ -1772,7 +1764,7 @@ operand
 	}
 	| expression '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'
 	{
-		m68kasm_warning(scanner, output, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
 		$$.index_register = $5 % 8;

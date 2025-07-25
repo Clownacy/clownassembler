@@ -680,7 +680,7 @@ typedef union M68KASM_STYPE M68KASM_STYPE;
 
 
 
-int m68kasm_parse (void *scanner, void *output);
+int m68kasm_parse (void *scanner, Statement *statement);
 
 /* "%code provides" blocks.  */
 #line 434 "syntactic.y"
