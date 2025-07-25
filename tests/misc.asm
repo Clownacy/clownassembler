@@ -358,7 +358,7 @@ TheGreatestMacro macro named_parameter_1, named_parameter_2
 	TheGreatestMacro.w #1000,(0).l,#$DEAD
 
 TheGreatestMacro2 MACRO opcode
-	opcode
+	\opcode
 	ENDM
 
 	TheGreatestMacro2 illegal

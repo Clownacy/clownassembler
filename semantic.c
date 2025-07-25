@@ -5280,6 +5280,66 @@ static void PerformSubstitutions(SemanticState* const state, String* const strin
 	Substitute_ProcessString(&state->substitutions, string, NULL, NULL, allow_implicit_matches);
 }
 
+static void PerformSubstitutionsPartial(SemanticState* const state, String* const string, StringView* const view_to_search, const cc_bool allow_implicit_matches)
+{
+	if (state->macro.closure != NULL)
+		Substitute_ProcessStringPartial(&state->macro.substitutions, string, view_to_search, MacroCustomSubstituteSearch, state->macro.closure, allow_implicit_matches);
+	Substitute_ProcessStringPartial(&state->substitutions, string, view_to_search, NULL, NULL, allow_implicit_matches);
+}
+
+static cc_bool FindStringInSourceLine(const String* const string, const size_t starting_position, StringView* const view)
+{
+	char *start_pointer, *end_pointer;
+
+	start_pointer = strpbrk(&String_At(string, starting_position), "'\"");
+
+	if (start_pointer == NULL)
+		return cc_false;
+
+	end_pointer = strchr(start_pointer + 1, *start_pointer);
+
+	if (end_pointer == NULL)
+		return cc_false;
+
+	StringView_Create(view, start_pointer, end_pointer - start_pointer + 1);
+	return cc_true;
+}
+
+/* Performs string substitutions only in parts of the string that are not wrapped in quotations. */
+/* This is needed to simulate SN 68k does not expand string constants in strings, only expressions and operands. */
+static void PerformSubstitutionsOutsideStrings(SemanticState* const state, String* const string, const size_t starting_position, const cc_bool allow_implicit_matches)
+{
+	cc_bool string_in_source_line_found;
+	size_t position = starting_position;
+
+	do
+	{
+		StringView string_in_source_line;
+
+		string_in_source_line_found = FindStringInSourceLine(string, position, &string_in_source_line);
+
+		/* Pretend there's a string at the end of the line, so that we can repurpose the code below. */
+		if (!string_in_source_line_found)
+			StringView_Create(&string_in_source_line, String_Data(string) + String_Length(string), 0);
+
+		/* We've found a string! Perform substitutions on the part of the line before it. */
+		{
+			StringView view_to_search;
+			/* Define the region that we will perform substitutions on. */
+			const char* const search_start = &String_At(string, position);
+			const size_t search_length = StringView_Data(&string_in_source_line) - search_start;
+
+			/* Perform the substitutions. */
+			StringView_Create(&view_to_search, search_start, search_length);
+			PerformSubstitutionsPartial(state, string, &view_to_search, allow_implicit_matches);
+
+			/* Move to after the string so that we can continue searching. */
+			position += StringView_Length(&view_to_search) + StringView_Length(&string_in_source_line);
+		}
+	}
+	while (string_in_source_line_found);
+}
+
 static void AssembleLine(SemanticState *state, const String *source_line_raw, const cc_bool write_line_to_listing_file)
 {
 	String source_line;
@@ -5402,8 +5462,9 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 			String modified_directive_and_operands;
 
 			String_CreateCopyView(&modified_directive_and_operands, &directive_and_operands);
-			PerformSubstitutions(state, &modified_directive_and_operands, cc_true);
+			PerformSubstitutionsOutsideStrings(state, &modified_directive_and_operands, directive_length, cc_true);
 			directive_and_operands = *String_View(&modified_directive_and_operands);
+			StringView_SubStr(&directive, &directive_and_operands, 0, directive_length);
 
 			source_line_pointer = String_CStr(&modified_directive_and_operands);
 
