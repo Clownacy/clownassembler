@@ -193,6 +193,7 @@ typedef struct SemanticState
 /* Some forward declarations that are needed because some functions recurse into each other. */
 static void AssembleFile(SemanticState *state);
 static void AssembleLine(SemanticState *state, const String *source_line, const cc_bool write_line_to_listing_file);
+static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, cc_bool fold);
 
 static const StringView string_program_counter_statement = STRING_VIEW_INITIALISER(",PROGRAM_COUNTER_OF_STATEMENT");
 static const StringView string_program_counter_expression = STRING_VIEW_INITIALISER(",PROGRAM_COUNTER_OF_EXPRESSION");
@@ -573,6 +574,40 @@ static void OutputByte(SemanticState *state, unsigned int byte)
 	WriteOutputByte(state, byte);
 }
 
+static cc_bool IsExpandingMacro(const SemanticState* const state)
+{
+	return state->macro.metadata != NULL;
+}
+
+static cc_bool ParseCommon(SemanticState* const state, void* const output, const StringView* const view, const int start_token)
+{
+	YY_BUFFER_STATE buffer;
+	int parse_result;
+
+	state->start_token = start_token;
+
+	/* Parse the source line with Flex and Bison (Lex and Yacc). */
+	buffer = m68kasm__scan_bytes(StringView_Data(view), StringView_Length(view), state->flex_state);
+	parse_result = m68kasm_parse(state->flex_state, output);
+	m68kasm__delete_buffer(buffer, state->flex_state);
+
+	/* Out of memory. */
+	if (parse_result == 2)
+		OutOfMemoryError(state);
+
+	return parse_result == 0;
+}
+
+static cc_bool ParseExpression(SemanticState* const state, Expression* const expression, const StringView* const view)
+{
+	return ParseCommon(state, expression, view, TOKEN_START_EXPRESSION);
+}
+
+static cc_bool ParseStatement(SemanticState* const state, Statement* const statement, const StringView* const view)
+{
+	return ParseCommon(state, statement, view, TOKEN_START_STATEMENT);
+}
+
 static void ExpandIdentifier(SemanticState *state, String* const expanded_identifier, const StringView* const identifier)
 {
 	if (StringView_Empty(identifier) || (StringView_At(identifier, 0) != '@' && StringView_At(identifier, 0) != '.'))
@@ -638,6 +673,27 @@ static Dictionary_Entry* CreateSymbol(SemanticState *state, const StringView *id
 	return dictionary_entry;
 }
 
+static cc_bool GetSymbolIntegerFromSubstitute(SemanticState* const state, const Substitute_State* const substitutions, const StringView* const identifier, unsigned long* const value)
+{
+	cc_bool success = cc_false;
+
+	const StringView* const result = Substitute_GetSubstitute(substitutions, identifier);
+
+	if (result != NULL)
+	{
+		/* TODO: Staple this expression onto the identifier-expression, so that fix-ups aren't completely broken! */
+		Expression expression;
+
+		if (ParseExpression(state, &expression, result))
+		{
+			success = ResolveExpression(state, &expression, value, cc_false);
+			DestroyExpression(&expression);
+		}
+	}
+
+	return success;
+}
+
 static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifier, const cc_bool must_evaluate_on_first_pass, unsigned long* const value)
 {
 	cc_bool success = cc_false;
@@ -648,12 +704,20 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 
 	if (dictionary_entry == NULL || dictionary_entry->type == -1)
 	{
-		if (must_evaluate_on_first_pass)
-			SemanticError(state, "Symbol '%.*s' must be evaluable on first pass.", (int)StringView_Length(identifier), StringView_Data(identifier));
-		else if (state->doing_final_pass)
-			SemanticError(state, "Symbol '%.*s' does not exist.", (int)StringView_Length(identifier), StringView_Data(identifier));
+		if ((IsExpandingMacro(state) && GetSymbolIntegerFromSubstitute(state, &state->macro.substitutions, identifier, value))
+			|| GetSymbolIntegerFromSubstitute(state, &state->substitutions, identifier, value))
+		{
+			success = cc_true;
+		}
 		else
-			state->fix_up_needed = cc_true;
+		{
+			if (must_evaluate_on_first_pass)
+				SemanticError(state, "Symbol '%.*s' must be evaluable on first pass.", (int)StringView_Length(identifier), StringView_Data(identifier));
+			else if (state->doing_final_pass)
+				SemanticError(state, "Symbol '%.*s' does not exist.", (int)StringView_Length(identifier), StringView_Data(identifier));
+			else
+				state->fix_up_needed = cc_true;
+		}
 	}
 	else if (dictionary_entry->type != SYMBOL_LABEL && dictionary_entry->type != SYMBOL_CONSTANT && dictionary_entry->type != SYMBOL_VARIABLE)
 	{
@@ -5064,7 +5128,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 		case STATEMENT_TYPE_SHIFT:
 		{
-			if (state->macro.metadata == NULL)
+			if (!IsExpandingMacro(state))
 			{
 				SemanticError(state, "SHIFT used outside of macro.");
 			}
@@ -5082,35 +5146,6 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 	/* Update both copies of the program counter again, so that things like WHILE statements don't use stale values in their expressions. */
 	LookupSymbol(state, &string_program_counter_statement)->shared.unsigned_long = state->program_counter;
 	LookupSymbol(state, &string_program_counter_expression)->shared.unsigned_long = state->program_counter;
-}
-
-static cc_bool ParseCommon(SemanticState* const state, void* const output, const StringView* const view, const int start_token)
-{
-	YY_BUFFER_STATE buffer;
-	int parse_result;
-
-	state->start_token = start_token;
-
-	/* Parse the source line with Flex and Bison (Lex and Yacc). */
-	buffer = m68kasm__scan_bytes(StringView_Data(view), StringView_Length(view), state->flex_state);
-	parse_result = m68kasm_parse(state->flex_state, output);
-	m68kasm__delete_buffer(buffer, state->flex_state);
-
-	/* Out of memory. */
-	if (parse_result == 2)
-		OutOfMemoryError(state);
-
-	return parse_result == 0;
-}
-
-static cc_bool ParseExpression(SemanticState* const state, Expression* const expression, const StringView* const view)
-{
-	return ParseCommon(state, expression, view, TOKEN_START_EXPRESSION);
-}
-
-static cc_bool ParseStatement(SemanticState* const state, Statement* const statement, const StringView* const view)
-{
-	return ParseCommon(state, statement, view, TOKEN_START_STATEMENT);
 }
 
 static void ParseLine(SemanticState* const state, const StringView* const label, const StringView* const directive_and_operands)
@@ -5304,7 +5339,7 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 
 static void PerformSubstitutions(SemanticState* const state, String* const string, const cc_bool allow_implicit_matches)
 {
-	if (state->macro.closure != NULL)
+	if (IsExpandingMacro(state))
 		Substitute_ProcessString(&state->macro.substitutions, string, MacroCustomSubstituteSearch, state->macro.closure, allow_implicit_matches);
 	Substitute_ProcessString(&state->substitutions, string, NULL, NULL, allow_implicit_matches);
 }
