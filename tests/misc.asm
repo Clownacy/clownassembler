@@ -711,7 +711,7 @@ Part4 substr ,,"\Message"
 	endw
 	endw
 
-	; Test SHIFT.
+	; Test SHIFT, as well as REPT nested with a MACRO.
 Hell macro named
 	rept narg
 	dc.b "\named"
@@ -723,6 +723,15 @@ Hell macro named
     endm
 
 	Hell hath,no,fury
+
+	; Despite sharing a name, the macro redefining this constant does not cause an error.
+shadowedByMacro EQU 0
+
+shadowTheConstant macro shadowedByMacro
+	dc.w shadowedByMacro
+	endm
+
+	shadowTheConstant 1
 
   ; More blank lines to test support for trailing blank statements
 
