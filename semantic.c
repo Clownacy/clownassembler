@@ -104,6 +104,7 @@ typedef struct SemanticState_Macro
 	struct MacroCustomSubstituteSearch_Closure *closure;
 	StringView *argument_list;
 	size_t total_arguments, total_arguments_at_start;
+	unsigned int starting_if_level;
 	cc_bool active;
 } SemanticState_Macro;
 
@@ -1059,6 +1060,17 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 	}
 
 	return success;
+}
+
+static void TerminateIf(SemanticState *state)
+{
+	if (state->false_if_level == state->current_if_level || state->false_if_level == 0)
+	{
+		state->true_already_found = cc_true;
+		state->false_if_level = 0;
+	}
+
+	--state->current_if_level;
 }
 
 static void TerminateRept(SemanticState *state)
@@ -4740,19 +4752,9 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 		case STATEMENT_TYPE_ENDC:
 			if (state->current_if_level == 0)
-			{
 				SemanticError(state, "This stray ENDC/ENDIF has no preceeding IF.");
-			}
 			else
-			{
-				if (state->false_if_level == state->current_if_level || state->false_if_level == 0)
-				{
-					state->true_already_found = cc_true;
-					state->false_if_level = 0;
-				}
-
-				--state->current_if_level;
-			}
+				TerminateIf(state);
 
 			break;
 
@@ -5588,6 +5590,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 					state->macro.argument_list = NULL;
 					state->macro.total_arguments = 0;
 					state->macro.total_arguments_at_start = 0;
+					state->macro.starting_if_level = state->current_if_level;
 					state->macro.active = cc_true;
 
 					++state->current_macro_invocation;
@@ -5730,6 +5733,10 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 						/* Iterate over each line of the macro, sending it to be processed. */
 						for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL && state->macro.active; source_line_list_node = source_line_list_node->next)
 							AssembleLine(state, &source_line_list_node->source_line_buffer, Options_Get(&state->options)->expand_all_macros);
+
+						/* 'MEXIT' may have ended us midway through an if-statement, so unwind to the original if-level here. */
+						while (state->current_if_level != state->macro.starting_if_level)
+							TerminateIf(state);
 
 						/* Pop location. */
 						state->location = state->location->previous;
