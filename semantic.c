@@ -5543,21 +5543,19 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 					}
 
 					/* Extract and store the macro size specifier, if one exists. */
+					if (source_line_pointer[0] == '.')
 					{
-						if (source_line_pointer[0] == '.')
-						{
-							/* Skip the '.' character. */
-							++source_line_pointer;
+						/* Skip the '.' character. */
+						++source_line_pointer;
 
-							StringView_Create(&closure.size, source_line_pointer, strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS));
+						StringView_Create(&closure.size, source_line_pointer, strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS));
 
-							/* Advance past the size specifier. */
-							source_line_pointer += StringView_Length(&closure.size);
-						}
-						else
-						{
-							StringView_CreateBlank(&closure.size);
-						}
+						/* Advance past the size specifier. */
+						source_line_pointer += StringView_Length(&closure.size);
+					}
+					else
+					{
+						StringView_CreateBlank(&closure.size);
 					}
 
 					/* Extract combined arguments string. */
