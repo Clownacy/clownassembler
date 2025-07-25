@@ -5385,15 +5385,29 @@ static void PerformSubstitutionsExcludingQuotedStrings(SemanticState* const stat
 	while (string_in_source_line_found);
 }
 
-static void SubstituteAndParseLine(SemanticState *state, const StringView* const label, const StringView* const directive_and_operands, const size_t substitution_starting_position)
+static void SubstituteAndParseLine(SemanticState *state, const StringView* const label, const StringView* const directive_and_operands, const StringView* const directive)
 {
 	String modified_directive_and_operands;
+
+	/* Because of the below hack, we have to filter-out directives that do not use expressions or operands,
+	   to prevent them from accidentally being substituted. This is needed for the Natsumi Z80 macros. */
+	if (StringView_CompareCStrCaseInsensitive(directive, "binclude")
+	 || StringView_CompareCStrCaseInsensitive(directive, "incbin")
+	 || StringView_CompareCStrCaseInsensitive(directive, "include")
+	 || StringView_CompareCStrCaseInsensitive(directive, "macro")
+	 || StringView_CompareCStrCaseInsensitive(directive, "macros")
+	 || StringView_CompareCStrCaseInsensitive(directive, "opt")
+	 || StringView_CompareCStrCaseInsensitive(directive, "popp"))
+	{
+		ParseLine(state, label, directive_and_operands);
+		return;
+	}
 
 	/* Perform implicit (backslash-less) string substitutions on the operands.
 	   SN 68k achieves this by expanding string constants in its operand and expression evaluators,
 	   which is absolutely insane, so this trick approximates it instead. */
 	String_CreateCopyView(&modified_directive_and_operands, directive_and_operands);
-	PerformSubstitutionsExcludingQuotedStrings(state, &modified_directive_and_operands, substitution_starting_position, cc_true);
+	PerformSubstitutionsExcludingQuotedStrings(state, &modified_directive_and_operands, StringView_Length(directive), cc_true);
 
 	ParseLine(state, label, String_View(&modified_directive_and_operands));
 
@@ -5541,7 +5555,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 				      || StringView_CompareCStrCaseInsensitive(&directive, "endif" ))
 				{
 					/* These can be processed normally too. */
-					SubstituteAndParseLine(state, &label, &directive_and_operands, directive_length);
+					SubstituteAndParseLine(state, &label, &directive_and_operands, &directive);
 				}
 				else
 				{
@@ -5558,7 +5572,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 				if (macro_dictionary_entry == NULL || macro_dictionary_entry->type != SYMBOL_MACRO)
 				{
 					/* This is not a macro invocation: it's just a regular line that can be assembled as-is. */
-					SubstituteAndParseLine(state, &label, &directive_and_operands, directive_length);
+					SubstituteAndParseLine(state, &label, &directive_and_operands, &directive);
 				}
 				else
 				{
