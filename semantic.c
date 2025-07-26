@@ -129,7 +129,8 @@ typedef struct SemanticState
 	StringStack_State string_stack;
 	Options_State options;
 	SemanticState_Macro macro;
-	size_t output_position;
+	size_t output_position, previous_segment_length_output_position;
+	size_t segment_position, segment_length;
 	unsigned long program_counter, program_counter_of_statement, program_counter_of_expression;
 	unsigned long current_macro_invocation;
 	unsigned long rs;
@@ -146,10 +147,6 @@ typedef struct SemanticState
 	unsigned int current_if_level;
 	unsigned int false_if_level;
 	cc_bool true_already_found;
-
-	/* ORG directive. */
-	cc_bool output_written_to;
-	unsigned long start_position;
 
 	/* OBJ directive. */
 	cc_bool obj_active;
@@ -197,6 +194,7 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 
 static const StringView string_rs = STRING_VIEW_INITIALISER("__rs");
 static const StringView string_narg = STRING_VIEW_INITIALISER("narg");
+static const StringView string_assembler_identifier = STRING_VIEW_INITIALISER("clownassembler v0.5");
 
 /* IO Callbacks */
 
@@ -215,9 +213,8 @@ static void BinaryOutput_fputc(const int character, const BinaryOutput* const ca
 	callbacks->write_character((void*)callbacks->user_data, character);
 }
 
-static void BinaryOutput_fseek(SemanticState* const state, const BinaryOutput* const callbacks, const size_t position)
+static void BinaryOutput_fseek(const BinaryOutput* const callbacks, const size_t position)
 {
-	state->output_position = position;
 	callbacks->seek((void*)callbacks->user_data, position);
 }
 
@@ -260,11 +257,72 @@ static void TextOutput_fputc(const int character, const TextOutput* const callba
 		callbacks->write_character((void*)callbacks->user_data, character);
 }
 
-static void WriteOutputByte(SemanticState* const state, const unsigned char byte)
+static void OutputWriteRawByte(SemanticState* const state, const unsigned char byte)
 {
-	state->output_written_to = cc_true;
 	++state->output_position;
 	BinaryOutput_fputc(byte, state->output_callbacks);
+}
+
+static void OutputSeek(SemanticState* const state, const size_t position)
+{
+	state->output_position = position;
+	BinaryOutput_fseek(state->output_callbacks, position);
+}
+
+static void TerminatePreviousRecordSegment(SemanticState *state)
+{
+	if (state->previous_segment_length_output_position != 0)
+	{
+		const size_t previous_output_position = state->output_position;
+
+		/* Write length of previous record. */
+		OutputSeek(state, state->previous_segment_length_output_position);
+		OutputWriteRawByte(state, state->segment_length >> (8 * 0) & 0xFF);
+		OutputWriteRawByte(state, state->segment_length >> (8 * 1) & 0xFF);
+		OutputSeek(state, previous_output_position);
+	}
+}
+
+/* TODO: Don't write empty segments! */
+static void WriteRecordSegment(SemanticState *state)
+{
+	TerminatePreviousRecordSegment(state);
+
+	/* Record ID. */
+	OutputWriteRawByte(state, 0x81);
+	/* CPU architecture (68000). */
+	OutputWriteRawByte(state, 0x01);
+	/* Segment (unspecified). */
+	OutputWriteRawByte(state, 0x00);
+	/* Granularity (byte). */
+	OutputWriteRawByte(state, 0x01);
+	/* Start address. */
+	OutputWriteRawByte(state, state->segment_position >> (8 * 0) & 0xFF);
+	OutputWriteRawByte(state, state->segment_position >> (8 * 1) & 0xFF);
+	OutputWriteRawByte(state, state->segment_position >> (8 * 2) & 0xFF);
+	OutputWriteRawByte(state, state->segment_position >> (8 * 3) & 0xFF);
+	/* Length (placeholder). */
+	state->previous_segment_length_output_position = state->output_position;
+	OutputWriteRawByte(state, 0);
+	OutputWriteRawByte(state, 0);
+}
+
+static void OutputWriteSegmentByte(SemanticState* const state, const unsigned char byte)
+{
+	/* Fix-ups overwrite segments; they don't create them. */
+	if (!state->doing_fix_up)
+	{
+		if (state->segment_length == 0xFFFF)
+		{
+			state->segment_position += state->segment_length;
+			WriteRecordSegment(state);
+			state->segment_length = 0;
+		}
+
+		++state->segment_length;
+	}
+
+	OutputWriteRawByte(state, byte);
 }
 
 /* Default FILE-based IO callbacks */
@@ -558,7 +616,7 @@ static void OutputByte(SemanticState *state, unsigned int byte)
 	}
 
 	/* Write to output file. */
-	WriteOutputByte(state, byte);
+	OutputWriteSegmentByte(state, byte);
 }
 
 static cc_bool CurrentlyExpandingMacro(const SemanticState* const state)
@@ -4316,7 +4374,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 				}
 
 				++state->program_counter;
-				WriteOutputByte(state, character);
+				OutputWriteSegmentByte(state, character);
 			}
 		}
 		else
@@ -4327,7 +4385,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 			while ((character = fgetc(input_file)) != EOF)
 			{
 				++state->program_counter;
-				WriteOutputByte(state, character);
+				OutputWriteSegmentByte(state, character);
 			}
 		}
 
@@ -4981,21 +5039,10 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			}
 			else
 			{
-				if (value < state->start_position)
-				{
-					SemanticError(state, "ORG cannot be used to seek before the start of the output file.");
-				}
-				else
-				{
-					/* If we're at the start of the file, then don't cause the org to insert padding. */
-					/* This is a hidden feature of S.N. 68k (asm68k). */
-					if (!state->output_written_to)
-						state->start_position = value;
-					else
-						BinaryOutput_fseek(state, state->output_callbacks, value - state->start_position);
-
-					state->program_counter = value;
-				}
+				/* Begin a new segment! */
+				state->segment_position = value;
+				WriteRecordSegment(state);
+				state->segment_length = 0;
 			}
 
 			break;
@@ -6014,8 +6061,22 @@ cc_bool ClownAssembler_Assemble(
 					m68kasm_debug = 1;
 			#endif
 
+				/* Object file magic number. */
+				OutputWriteRawByte(&state, 0x89);
+				OutputWriteRawByte(&state, 0x14);
+
+				/* Begin first segment. */
+				WriteRecordSegment(&state);
+
 				/* Perform first pass of assembly, creating a list of fix-ups. */
 				AssembleFile(&state);
+
+				/* Finalise the segment record data. */
+				TerminatePreviousRecordSegment(&state);
+
+				/* Write terminating record. */
+				OutputWriteRawByte(&state, 0x00);
+				BinaryOutput_fwrite(StringView_Data(&string_assembler_identifier), 1, StringView_Length(&string_assembler_identifier), output_callbacks);
 
 				/* Destroy the lexer, as we no longer need it. */
 				if (m68kasm_lex_destroy(state.flex_state) != 0)
@@ -6046,7 +6107,7 @@ cc_bool ClownAssembler_Assemble(
 
 						/* Reset some state to how it was at the time the statement was first processed. */
 						state.program_counter = fix_up->program_counter;
-						BinaryOutput_fseek(&state, state.output_callbacks, fix_up->output_position);
+						OutputSeek(&state, fix_up->output_position);
 						String_Destroy(&state.last_global_label);
 						String_CreateCopy(&state.last_global_label, &fix_up->last_global_label);
 						state.source_line = &fix_up->source_line;

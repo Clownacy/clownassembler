@@ -1,4 +1,7 @@
 	; Amazing test
+
+	; TODO: Test that starting a file an ORG directive does not cause the output file to begin with a bunch of padding!
+
   
 ; A line with just a colonless label
 AmazingTest 
