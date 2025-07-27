@@ -26,6 +26,7 @@
 #include "clowncommon/clowncommon.h"
 
 #include "dictionary.h"
+#include "p2bin.h"
 #include "string.h"
 #include "string-stack.h"
 #include "substitute.h"
@@ -5936,7 +5937,7 @@ static void AddDefinition(void* const internal, const char* const identifier_buf
 	}
 }
 
-cc_bool ClownAssembler_Assemble(
+static cc_bool ClownAssembler_AssembleToObjectFile(
 	const TextInput* const input_callbacks,
 	const BinaryOutput* const output_callbacks,
 	const TextOutput* const error_callbacks,
@@ -6138,6 +6139,48 @@ cc_bool ClownAssembler_Assemble(
 	Options_Deinitialise(&state.options);
 
 	return state.success;
+}
+
+cc_bool ClownAssembler_Assemble(
+	const TextInput* const input_callbacks,
+	const BinaryOutput* const output_callbacks,
+	const TextOutput* const error_callbacks,
+	const TextOutput* const listing_callbacks,
+	const BinaryOutput* const symbol_callbacks,
+	const char* const input_file_path,
+	const ClownAssembler_Settings* const initial_options,
+	const ClownAssembler_DefinitionCallback definition_callback,
+	const void* const user_data)
+{
+	cc_bool success = cc_false;
+
+	ClownAssembler_BinaryOutput temporary_callbacks;
+
+	FILE* const temporary_file = tmpfile();
+
+	if (temporary_file == NULL)
+	{
+		TextOutput_fputs("Internal error: Could not open temporary file.\n", error_callbacks);
+	}
+	else
+	{
+		temporary_callbacks.user_data = temporary_file;
+		temporary_callbacks.write_character = WriteCharacter;
+		temporary_callbacks.write_characters = WriteCharacters;
+		temporary_callbacks.seek = Seek;
+
+		if (ClownAssembler_AssembleToObjectFile(input_callbacks, &temporary_callbacks, error_callbacks, listing_callbacks, symbol_callbacks, input_file_path, initial_options, definition_callback, user_data))
+		{
+			rewind(temporary_file);
+
+			if (ConvertObjectFileToFlatBinary(temporary_file, output_callbacks))
+				success = cc_true;
+		}
+
+		fclose(temporary_file);
+	}
+
+	return success;
 }
 
 cc_bool ClownAssembler_AssembleFile(
