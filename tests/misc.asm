@@ -768,6 +768,14 @@ shadowTheConstant macro shadowedByMacro
 
 	shadowTheConstant 1
 
+shadowedByMacro2 EQUS '"NO"'
+
+shadowTheConstant2 macro shadowedByMacro2
+	dc.b shadowedByMacro2
+	endm
+
+	shadowTheConstant2 "OK"
+
 	; Macro parameter double-definition, which SN 68k allows.
 doulbleParamMacro macro param, param
 	dc.w	param
