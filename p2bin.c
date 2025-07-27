@@ -11,7 +11,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static FILE *input_file, *output_file;
+static FILE *input_file;
+static const ClownAssembler_BinaryOutput *output_file;
 static jmp_buf jump_buffer;
 static unsigned char padding_buffer[0x1000];
 static unsigned long maximum_address = 0;
@@ -77,14 +78,14 @@ static void ProcessSegment(void)
 		/* Set padding bytes between segments. */
 		const unsigned long padding_length = start_address - maximum_address;
 
-		fseek(output_file, maximum_address, SEEK_SET);
+		BinaryOutput_fseek(output_file, maximum_address);
 
 		for (i = 0; i < padding_length; i += sizeof(padding_buffer))
-			fwrite(padding_buffer, CC_MIN(sizeof(padding_buffer), padding_length - i), 1, output_file);
+			BinaryOutput_fwrite(padding_buffer, CC_MIN(sizeof(padding_buffer), padding_length - i), 1, output_file);
 	}
 	else
 	{
-		fseek(output_file, start_address, SEEK_SET);
+		BinaryOutput_fseek(output_file, start_address);
 	}
 
 	/* Copy segment data. We do some batching using a buffer to improve performance. */
@@ -93,7 +94,7 @@ static void ProcessSegment(void)
 		const unsigned long bytes_to_do = CC_MIN(sizeof(copy_buffer), length - i);
 
 		ReadBytes(copy_buffer, bytes_to_do);
-		fwrite(copy_buffer, bytes_to_do, 1, output_file);
+		BinaryOutput_fwrite(copy_buffer, bytes_to_do, 1, output_file);
 	}
 
 	if (end_address > maximum_address)
@@ -156,7 +157,7 @@ static cc_bool ProcessRecords(void)
 	return cc_false;
 }
 
-cc_bool ConvertObjectFileToFlatBinary(FILE* const input_file_parameter, FILE* const output_file_parameter)
+cc_bool ConvertObjectFileToFlatBinary(FILE* const input_file_parameter, const ClownAssembler_BinaryOutput* const output_file_parameter)
 {
 	unsigned char magic[2];
 

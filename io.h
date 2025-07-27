@@ -40,7 +40,7 @@ char* TextInput_fgets(char *buffer, size_t buffer_size, const ClownAssembler_Tex
 cc_bool BinaryOutput_exists(const ClownAssembler_BinaryOutput *callbacks);
 void BinaryOutput_fputc(int character, const ClownAssembler_BinaryOutput *callbacks);
 void BinaryOutput_fseek(const ClownAssembler_BinaryOutput *callbacks, size_t position);
-void BinaryOutput_fwrite(const char *buffer, size_t size, size_t count, const ClownAssembler_BinaryOutput *callbacks);
+void BinaryOutput_fwrite(const void *buffer, size_t size, size_t count, const ClownAssembler_BinaryOutput *callbacks);
 
 cc_bool TextOutput_exists(const ClownAssembler_TextOutput *callbacks);
 void TextOutput_vfprintf(const ClownAssembler_TextOutput *callbacks, const char *format, va_list args);

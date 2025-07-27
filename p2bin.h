@@ -5,6 +5,8 @@
 
 #include "clowncommon/clowncommon.h"
 
-cc_bool ConvertObjectFileToFlatBinary(FILE *input_file, FILE *output_file);
+#include "io.h"
+
+cc_bool ConvertObjectFileToFlatBinary(FILE *input_file, const ClownAssembler_BinaryOutput *output_file);
 
 #endif /* P2BIN_H */
