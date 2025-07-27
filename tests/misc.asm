@@ -768,6 +768,13 @@ shadowTheConstant macro shadowedByMacro
 
 	shadowTheConstant 1
 
+	; Macro parameter double-definition, which SN 68k allows.
+doulbleParamMacro macro param, param
+	dc.w	param
+	endm
+
+	doulbleParamMacro $DEAD, $BEEF
+
   ; More blank lines to test support for trailing blank statements
 
 

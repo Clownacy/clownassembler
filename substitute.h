@@ -25,7 +25,8 @@
 typedef struct Substitute_ListEntry
 {
 	struct Substitute_ListEntry *next;
-	String identifier, value;
+	String identifier;
+	const StringView *value;
 } Substitute_ListEntry;
 
 typedef struct Substitute_State

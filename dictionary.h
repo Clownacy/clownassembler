@@ -34,6 +34,7 @@ typedef struct Dictionary_Entry
 		unsigned long unsigned_long;
 		long signed_long;
 		void *pointer;
+		String string;
 	} shared; 
 } Dictionary_Entry;
 

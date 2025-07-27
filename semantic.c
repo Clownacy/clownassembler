@@ -16,7 +16,6 @@
 */
 
 /* TODO: Implement LOCAL by adding a secondary dictionary. */
-/* TODO: Optimise EQUS by using the dictionary to store string constants to eliminate duplicate. */
 /* TODO: Optimise EQUS by having the substitution logic search for the '\' rather than the string itself. */
 
 #include "semantic.h"
@@ -48,7 +47,8 @@ typedef enum SymbolType
 	SYMBOL_VARIABLE,
 	SYMBOL_MACRO,
 	SYMBOL_LABEL,
-	SYMBOL_SPECIAL
+	SYMBOL_SPECIAL,
+	SYMBOL_STRING_CONSTANT
 } SymbolType;
 
 typedef struct Location
@@ -106,6 +106,7 @@ typedef struct Macro
 typedef struct SemanticState_Macro
 {
 	Macro *metadata;
+	Dictionary_State dictionary;
 	Substitute_State substitutions;
 	struct MacroCustomSubstituteSearch_Closure *closure;
 	StringView *argument_list;
@@ -578,7 +579,7 @@ static void ExpandIdentifier(SemanticState *state, String* const expanded_identi
 
 static Dictionary_Entry* LookupSymbol(SemanticState *state, const StringView *identifier)
 {
-	Dictionary_Entry *dictionary_entry;
+	Dictionary_Entry *dictionary_entry = NULL;
 	String expanded_identifier;
 
 	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
@@ -587,16 +588,20 @@ static Dictionary_Entry* LookupSymbol(SemanticState *state, const StringView *id
 	if (!String_Empty(&expanded_identifier))
 		identifier = String_View(&expanded_identifier);
 
-	dictionary_entry = Dictionary_LookUp(&state->dictionary, identifier);
+	if (CurrentlyExpandingMacro(state))
+		dictionary_entry = Dictionary_LookUp(&state->macro.dictionary, identifier);
+
+	if (dictionary_entry == NULL)
+		dictionary_entry = Dictionary_LookUp(&state->dictionary, identifier);
 
 	String_Destroy(&expanded_identifier);
 
 	return dictionary_entry;
 }
 
-static Dictionary_Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, const StringView *identifier)
+static Dictionary_Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, const StringView *identifier, Dictionary_State **dictionary)
 {
-	Dictionary_Entry *dictionary_entry;
+	Dictionary_Entry *dictionary_entry = NULL;
 	String expanded_identifier;
 
 	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
@@ -605,11 +610,22 @@ static Dictionary_Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, c
 	if (!String_Empty(&expanded_identifier))
 		identifier = String_View(&expanded_identifier);
 
-	if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
+	if (CurrentlyExpandingMacro(state))
+	{
+		dictionary_entry = Dictionary_LookUp(&state->macro.dictionary, identifier);
+
+		if (dictionary_entry != NULL && dictionary != NULL)
+			*dictionary = &state->macro.dictionary;
+	}
+
+	if (dictionary_entry == NULL && !Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
 	{
 		OutOfMemoryError(state);
 		dictionary_entry = NULL;
 	}
+
+	if (dictionary_entry != NULL && dictionary != NULL)
+		*dictionary = &state->dictionary;
 
 	String_Destroy(&expanded_identifier);
 
@@ -620,7 +636,7 @@ static Dictionary_Entry* CreateSymbol(SemanticState *state, const StringView *id
 {
 	Dictionary_Entry *dictionary_entry;
 
-	dictionary_entry = LookupSymbolAndCreateIfNotExist(state, identifier);
+	dictionary_entry = LookupSymbolAndCreateIfNotExist(state, identifier, NULL);
 
 	if (dictionary_entry != NULL && dictionary_entry->type != -1)
 	{
@@ -1333,7 +1349,7 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const StringView *l
 	{
 		case SYMBOL_VARIABLE:
 		case SYMBOL_CONSTANT:
-			symbol = LookupSymbolAndCreateIfNotExist(state, label);
+			symbol = LookupSymbolAndCreateIfNotExist(state, label, NULL);
 
 			if (symbol != NULL)
 			{
@@ -1351,6 +1367,7 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const StringView *l
 
 		case SYMBOL_MACRO:
 		case SYMBOL_SPECIAL:
+		case SYMBOL_STRING_CONSTANT:
 			/* This should not happen. */
 			assert(cc_false);
 			break;
@@ -4129,6 +4146,27 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 	}
 }
 
+static void PushSubstitute(SemanticState* const state, const StringView* const identifier, const StringView* const value)
+{
+	Dictionary_State *dictionary;
+	Dictionary_Entry* const dictionary_entry = LookupSymbolAndCreateIfNotExist(state, identifier, &dictionary);
+
+	if (dictionary_entry != NULL)
+	{
+		if (dictionary_entry->type == -1)
+		{
+			dictionary_entry->type = SYMBOL_STRING_CONSTANT;
+			Substitute_PushSubstitute(dictionary == &state->dictionary ? &state->substitutions :  &state->macro.substitutions, identifier, String_View(&dictionary_entry->shared.string));
+		}
+		else
+		{
+			String_Destroy(&dictionary_entry->shared.string);
+		}
+
+		String_CreateCopyView(&dictionary_entry->shared.string, value);
+	}
+}
+
 static void PushMacroArgumentSubstitutions(SemanticState* const state)
 {
 	const IdentifierListNode *parameter_name;
@@ -4138,9 +4176,30 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 
 	for (parameter_name = state->macro.metadata->parameter_names, argument_index = 0; parameter_name != NULL; parameter_name = parameter_name->next, ++argument_index)
 	{
+		Dictionary_Entry *dictionary_entry;
+
+		const StringView* const parameter = String_View(&parameter_name->identifier);
 		const StringView* const argument = argument_index >= state->macro.total_arguments ? &blank_argument : &state->macro.argument_list[argument_index];
 
-		Substitute_PushSubstitute(&state->macro.substitutions, String_View(&parameter_name->identifier), argument);
+		if (!Dictionary_LookUpAndCreateIfNotExist(&state->macro.dictionary, parameter, &dictionary_entry))
+		{
+			OutOfMemoryError(state);
+		}
+		else
+		{
+			/* TODO: De-duplicate this with the 'PushSubstitute' function. */
+			if (dictionary_entry->type == -1)
+			{
+				dictionary_entry->type = SYMBOL_STRING_CONSTANT;
+				Substitute_PushSubstitute(&state->macro.substitutions, parameter, String_View(&dictionary_entry->shared.string));
+			}
+			else
+			{
+				String_Destroy(&dictionary_entry->shared.string);
+			}
+
+			String_CreateCopyView(&dictionary_entry->shared.string, argument);
+		}
 	}
 }
 
@@ -4634,7 +4693,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		}
 
 		case STATEMENT_TYPE_EQUS:
-			Substitute_PushSubstitute(&state->substitutions, label, String_View(&statement->shared.string));
+			PushSubstitute(state, label, String_View(&statement->shared.string));
 			break;
 
 		case STATEMENT_TYPE_SUBSTR:
@@ -4667,7 +4726,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			}
 
 			StringView_SubStr(&substring, String_View(&statement->shared.substr.string), start - 1, end - start + 1);
-			Substitute_PushSubstitute(&state->substitutions, label, &substring);
+			PushSubstitute(state, label, &substring);
 			break;
 		}
 
@@ -5079,7 +5138,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			if (!StringStack_Pop(&state->string_stack, &string))
 				SemanticError(state, "POPO used but the string stack was empty.");
 			else
-				Substitute_PushSubstitute(&state->substitutions, String_View(&statement->shared.string), String_View(&string));
+				PushSubstitute(state, String_View(&statement->shared.string), String_View(&string));
 
 			break;
 		}
@@ -5578,6 +5637,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 					const SemanticState_Macro previous_macro_state = state->macro;
 
 					state->macro.metadata = macro;
+					Dictionary_Init(&state->macro.dictionary, Options_Get(&state->options)->case_insensitive);
 					Substitute_Initialise(&state->macro.substitutions);
 					state->macro.closure = &closure;
 					state->macro.argument_list = NULL;
@@ -5742,6 +5802,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 					String_Destroy(&closure.symbol_value_string);
 
 					Substitute_Deinitialise(&state->macro.substitutions);
+					Dictionary_Deinit(&state->macro.dictionary);
 
 					state->macro = previous_macro_state;
 				}

@@ -44,7 +44,7 @@ cc_bool Substitute_PushSubstitute(Substitute_State* const state, const StringVie
 	state->list_head = list_entry;
 
 	String_CreateCopyView(&list_entry->identifier, identifier);
-	String_CreateCopyView(&list_entry->value, value);
+	list_entry->value = value;
 
 	return cc_true;
 }
@@ -56,7 +56,6 @@ void Substitute_PopSubstitute(Substitute_State* const state)
 	state->list_head = list_entry->next;
 
 	String_Destroy(&list_entry->identifier);
-	String_Destroy(&list_entry->value);
 
 	free(list_entry);
 }
@@ -133,7 +132,7 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 			/* Record if this substitute occurs first. */
 			if (*earliest_found_position > found_position)
 			{
-				found_substitute = String_View(&list_entry->value);
+				found_substitute = list_entry->value;
 				*earliest_found_position = found_position;
 				*earliest_found_length = found_length;
 			}
