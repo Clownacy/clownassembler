@@ -652,6 +652,12 @@ Swag.Legit:
 	ror.w	d0
 	roxl.w	d0
 	roxr.w	d0
+	and.w	#1,sr
+	eor.w	#1,sr
+	or.w	#1,sr
+	and.b	#1,ccr
+	eor.b	#1,ccr
+	or.b	#1,ccr
 
 	; Vladikcomper tests (invalid but correctable operand and instruction combinations)
 	cmp.l	a1, a2
