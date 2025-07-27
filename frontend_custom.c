@@ -189,6 +189,8 @@ int main(int argc, char **argv)
 			" -o [path] - Output file.\n"
 			" -l [path] - Listing file. Optional.\n"
 			" -s [path] - asm68k-style symbol file. Optional.\n"
+			, stdout);
+		fputs(
 			" -c        - Enable case-insensitive mode.\n"
 			" -b        - Enable Bison's debug output.\n"
 			" -d        - Allow EQU/SET to descope local labels.\n"
