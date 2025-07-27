@@ -6,6 +6,8 @@ project(clownassembler LANGUAGES C)
 add_library(clownassembler_core STATIC
 	"dictionary.c"
 	"dictionary.h"
+	"io.c"
+	"io.h"
 	"lexical.c"
 	"lexical.h"
 	"options.c"
