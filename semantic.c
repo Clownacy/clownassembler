@@ -4983,6 +4983,8 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				state->segment_position = value;
 				WriteRecordSegment(state);
 				state->segment_length = 0;
+
+				state->program_counter = value;
 			}
 
 			break;
