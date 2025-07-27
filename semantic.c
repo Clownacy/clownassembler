@@ -610,22 +610,24 @@ static Dictionary_Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, c
 	if (!String_Empty(&expanded_identifier))
 		identifier = String_View(&expanded_identifier);
 
+	if (dictionary != NULL)
+		*dictionary = &state->macro.dictionary;
+
 	if (CurrentlyExpandingMacro(state))
-	{
 		dictionary_entry = Dictionary_LookUp(&state->macro.dictionary, identifier);
 
-		if (dictionary_entry != NULL && dictionary != NULL)
-			*dictionary = &state->macro.dictionary;
-	}
-
-	if (dictionary_entry == NULL && !Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
+	if (dictionary_entry == NULL)
 	{
-		OutOfMemoryError(state);
-		dictionary_entry = NULL;
-	}
+		if (dictionary != NULL)
+			*dictionary = &state->dictionary;
 
-	if (dictionary_entry != NULL && dictionary != NULL)
-		*dictionary = &state->dictionary;
+		if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
+		{
+			OutOfMemoryError(state);
+			dictionary_entry = NULL;
+			*dictionary = NULL;
+		}
+	}
 
 	String_Destroy(&expanded_identifier);
 
@@ -4153,14 +4155,20 @@ static void PushSubstitute(SemanticState* const state, const StringView* const i
 
 	if (dictionary_entry != NULL)
 	{
-		if (dictionary_entry->type == -1)
+		switch (dictionary_entry->type)
 		{
-			dictionary_entry->type = SYMBOL_STRING_CONSTANT;
-			Substitute_PushSubstitute(dictionary == &state->dictionary ? &state->substitutions :  &state->macro.substitutions, identifier, String_View(&dictionary_entry->shared.string));
-		}
-		else
-		{
-			String_Destroy(&dictionary_entry->shared.string);
+			case -1:
+				dictionary_entry->type = SYMBOL_STRING_CONSTANT;
+				Substitute_PushSubstitute(dictionary == &state->dictionary ? &state->substitutions : &state->macro.substitutions, identifier, String_View(&dictionary_entry->shared.string));
+				break;
+
+			case SYMBOL_STRING_CONSTANT:
+				String_Destroy(&dictionary_entry->shared.string);
+				break;
+
+			default:
+				SemanticError(state, "Attempted to redefined symbol '%.*s' as a string constant.", (int)StringView_Length(identifier), StringView_Data(identifier));
+				return;
 		}
 
 		String_CreateCopyView(&dictionary_entry->shared.string, value);
@@ -4576,6 +4584,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_POPP:
 		case STATEMENT_TYPE_SHIFT:
 		case STATEMENT_TYPE_MEXIT:
+		case STATEMENT_TYPE_LOCAL:
 			if (!StringView_Empty(label) && !state->doing_fix_up)
 			{
 				/* Handle the label here, instead of passing it onto a later function. */
@@ -5160,6 +5169,22 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 		case STATEMENT_TYPE_MEXIT:
 			state->macro.active = cc_false;
+			break;
+
+		case STATEMENT_TYPE_LOCAL:
+			if (!CurrentlyExpandingMacro(state))
+			{
+				SemanticError(state, "LOCAL used outside of macro.");
+			}
+			else
+			{
+				const IdentifierListNode *list_entry;
+
+				for (list_entry = statement->shared.local.identifiers.head; list_entry != NULL; list_entry = list_entry->next)
+					if (!Dictionary_LookUpAndCreateIfNotExist(&state->macro.dictionary, String_View(&list_entry->identifier), NULL))
+						OutOfMemoryError(state);
+			}
+
 			break;
 	}
 

@@ -275,6 +275,7 @@ hexadecimal       {hexadecimal_digit}+
 <INITIAL>popp            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_POPP;
 <INITIAL>shift           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SHIFT;
 <INITIAL>mexit           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MEXIT;
+<INITIAL>local           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LOCAL;
 
  /* Sizes. */
 ".b"            return TOKEN_SIZE_BYTE;

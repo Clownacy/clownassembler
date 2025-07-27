@@ -357,6 +357,11 @@ typedef struct StatementOpt
 	IdentifierList options;
 } StatementOpt;
 
+typedef struct StatementLocal
+{
+	IdentifierList identifiers;
+} StatementLocal;
+
 typedef enum StatementType
 {
 	STATEMENT_TYPE_EMPTY,
@@ -397,7 +402,8 @@ typedef enum StatementType
 	STATEMENT_TYPE_PUSHP,
 	STATEMENT_TYPE_POPP,
 	STATEMENT_TYPE_SHIFT,
-	STATEMENT_TYPE_MEXIT
+	STATEMENT_TYPE_MEXIT,
+	STATEMENT_TYPE_LOCAL
 } StatementType;
 
 typedef struct Statement
@@ -425,6 +431,7 @@ typedef struct Statement
 		} rs;
 		StatementSubstr substr;
 		StatementOpt opt;
+		StatementLocal local;
 		Expression expression;
 		String string;
 	} shared;
@@ -626,6 +633,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_POPP
 %token TOKEN_DIRECTIVE_SHIFT
 %token TOKEN_DIRECTIVE_MEXIT
+%token TOKEN_DIRECTIVE_LOCAL
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -959,6 +967,11 @@ statement
 	| TOKEN_DIRECTIVE_MEXIT
 	{
 		statement->type = STATEMENT_TYPE_MEXIT;
+	}
+	| TOKEN_DIRECTIVE_LOCAL identifier_list
+	{
+		statement->type = STATEMENT_TYPE_LOCAL;
+		statement->shared.local.identifiers = $2;
 	}
 	;
 
@@ -2426,6 +2439,10 @@ void DestroyStatement(Statement *statement)
 
 		case STATEMENT_TYPE_OPT:
 			DestroyIdentifierList(&statement->shared.opt.options);
+			break;
+
+		case STATEMENT_TYPE_LOCAL:
+			DestroyIdentifierList(&statement->shared.local.identifiers);
 			break;
 	}
 }
