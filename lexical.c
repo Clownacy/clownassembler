@@ -1389,7 +1389,7 @@ static const flex_int16_t yy_chk[2473] =
 #define YY_RESTORE_YY_MORE_OFFSET
 #line 1 "lexical.l"
 /*
- * Copyright (C) 2022 Clownacy
+ * Copyright (C) 2022-2025 Clownacy
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
