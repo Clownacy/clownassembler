@@ -47,9 +47,11 @@ cc_bool StringView_CompareCStrCaseInsensitive(const StringView* const view, cons
 	return StringView_Length(view) != 0 && strncmpci(StringView_Data(view), c_string, StringView_Length(view)) == 0;
 }
 
-size_t StringView_Find(const StringView* const view, const StringView* const sub_view, const size_t position)
+size_t StringView_Find(const StringView* const view, const StringView* const sub_view, const size_t position, const cc_bool case_insensitive)
 {
 	size_t i;
+
+	const MemoryComparisionFunction compare = case_insensitive ? memcasecmp : memcmp;
 
 	assert(view != NULL && sub_view != NULL);
 
@@ -57,7 +59,7 @@ size_t StringView_Find(const StringView* const view, const StringView* const sub
 		return STRING_POSITION_INVALID;
 
 	for (i = position; i <= StringView_Length(view) - StringView_Length(sub_view); ++i)
-		if (memcmp(&StringView_At(view, i), StringView_Data(sub_view), StringView_Length(sub_view)) == 0)
+		if (compare(&StringView_At(view, i), StringView_Data(sub_view), StringView_Length(sub_view)) == 0)
 			return i;
 
 	return STRING_POSITION_INVALID;

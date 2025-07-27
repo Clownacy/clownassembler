@@ -24,6 +24,8 @@
 
 #include "clowncommon/clowncommon.h"
 
+#include "strcmpci.h"
+
 /* TODO - Destructors */
 
 typedef enum SearchResult
@@ -33,32 +35,6 @@ typedef enum SearchResult
 	SEARCH_RESULT_NOT_FOUND_WOULD_BE_RIGHT_CHILD,
 	SEARCH_RESULT_BUCKET_EMPTY
 } SearchResult;
-
-/* Like strcasecmp, but doesn't check for null characters. */
-static int memcasecmp(const void *lhs, const void *rhs, size_t count)
-{
-	const unsigned char *lhs_uc;
-	const unsigned char *rhs_uc;
-	int delta;
-	size_t i;
-
-	lhs_uc = (const unsigned char*)lhs;
-	rhs_uc = (const unsigned char*)rhs;
-	delta = 0;
-
-	for (i = 0; i < count; ++i)
-	{
-		const int lhs_character = tolower(*lhs_uc++);
-		const int rhs_character = tolower(*rhs_uc++);
-
-		delta = lhs_character - rhs_character;
-
-		if (delta != 0)
-			break;
-	}
-
-	return delta;
-}
 
 static Dictionary_Bucket* GetBucket(Dictionary_State *state, const StringView *identifier)
 {

@@ -60,13 +60,13 @@ void Substitute_PopSubstitute(Substitute_State* const state)
 	free(list_entry);
 }
 
-static cc_bool Substitute_FindSubstitute(const StringView* const view_to_search, const size_t starting_position, const StringView* const substitute, const cc_bool allow_implicit_matches, size_t* const found_position, size_t* const found_length)
+static cc_bool Substitute_FindSubstitute(const StringView* const view_to_search, const size_t starting_position, const StringView* const substitute, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, size_t* const found_position, size_t* const found_length)
 {
 	size_t match_start;
 
 	/* Find identifier within string. */
 	/* Obviously bail if the identifier wasn't found. */
-	for (match_start = starting_position; (match_start = StringView_Find(view_to_search, substitute, match_start)) != STRING_POSITION_INVALID; ++match_start)
+	for (match_start = starting_position; (match_start = StringView_Find(view_to_search, substitute, match_start, case_insensitive)) != STRING_POSITION_INVALID; ++match_start)
 	{
 		size_t match_length = StringView_Length(substitute);
 
@@ -101,7 +101,7 @@ static cc_bool Substitute_FindSubstitute(const StringView* const view_to_search,
 	return cc_false;
 }
 
-static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* const state, const StringView* const view_to_search, const size_t starting_position, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches, size_t* const earliest_found_position, size_t* const earliest_found_length)
+static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* const state, const StringView* const view_to_search, const size_t starting_position, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, size_t* const earliest_found_position, size_t* const earliest_found_length)
 {
 	Substitute_ListEntry *list_entry;
 	const StringView *found_substitute = NULL;
@@ -113,7 +113,7 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 	{
 		size_t found_position, found_length;
 
-		found_substitute = custom_search_callback((void*)custom_search_user_data, view_to_search, starting_position, &found_position, &found_length);
+		found_substitute = custom_search_callback((void*)custom_search_user_data, view_to_search, starting_position, case_insensitive, &found_position, &found_length);
 
 		if (found_substitute != NULL)
 		{
@@ -127,7 +127,7 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 	{
 		size_t found_position, found_length;
 
-		if (Substitute_FindSubstitute(view_to_search, starting_position, String_View(&list_entry->identifier), allow_implicit_matches, &found_position, &found_length))
+		if (Substitute_FindSubstitute(view_to_search, starting_position, String_View(&list_entry->identifier), allow_implicit_matches, case_insensitive, &found_position, &found_length))
 		{
 			/* Record if this substitute occurs first. */
 			if (*earliest_found_position > found_position)
@@ -142,7 +142,7 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 	return found_substitute;
 }
 
-void Substitute_ProcessSubString(Substitute_State* const state, String* const string, StringView* const view_to_search, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches)
+void Substitute_ProcessSubString(Substitute_State* const state, String* const string, StringView* const view_to_search, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches, const cc_bool case_insensitive)
 {
 	size_t starting_position = 0;
 
@@ -156,7 +156,7 @@ void Substitute_ProcessSubString(Substitute_State* const state, String* const st
 	{
 		/* Find a substitute. */
 		size_t found_position, found_length;
-		const StringView* const found_substitute = Substitute_FindEarliestSubstitute(state, view_to_search, starting_position, custom_search_callback, custom_search_user_data, allow_implicit_matches, &found_position, &found_length);
+		const StringView* const found_substitute = Substitute_FindEarliestSubstitute(state, view_to_search, starting_position, custom_search_callback, custom_search_user_data, allow_implicit_matches, case_insensitive, &found_position, &found_length);
 
 		if (found_substitute == NULL)
 			break;
@@ -175,10 +175,10 @@ void Substitute_ProcessSubString(Substitute_State* const state, String* const st
 	String_At(string, offset_into_string + StringView_Length(view_to_search)) = removed_character;
 }
 
-void Substitute_ProcessString(Substitute_State* const state, String* const string, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches)
+void Substitute_ProcessString(Substitute_State* const state, String* const string, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches, const cc_bool case_insensitive)
 {
 	StringView view = *String_View(string);
-	Substitute_ProcessSubString(state, string, &view, custom_search_callback, custom_search_user_data, allow_implicit_matches);
+	Substitute_ProcessSubString(state, string, &view, custom_search_callback, custom_search_user_data, allow_implicit_matches, case_insensitive);
 }
 
 cc_bool Substitute_IsSubstituteBlockingCharacter(const char character)

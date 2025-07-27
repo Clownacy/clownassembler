@@ -22,6 +22,7 @@
 
 #include "clowncommon/clowncommon.h"
 
+#include "strcmpci.h"
 #include "string.h"
 
 #define TOTAL_HASH_TABLE_ENTRIES 0x1000
@@ -62,7 +63,7 @@ typedef struct Dictionary_Bucket
 typedef struct Dictionary_State
 {
 	Dictionary_Bucket *hash_table;
-	int (*compare_identifiers)(const void *lhs, const void *rhs, size_t count);
+	MemoryComparisionFunction compare_identifiers;
 } Dictionary_State;
 
 cc_bool Dictionary_Init(Dictionary_State *state, cc_bool case_insensitive);

@@ -40,3 +40,29 @@ int strncmpci(const char *lhs, const char *rhs, const size_t count)
 
 	return delta;
 }
+
+/* Like strcasecmp, but doesn't check for null characters. */
+int memcasecmp(const void *lhs, const void *rhs, size_t count)
+{
+	const unsigned char *lhs_uc;
+	const unsigned char *rhs_uc;
+	int delta;
+	size_t i;
+
+	lhs_uc = (const unsigned char*)lhs;
+	rhs_uc = (const unsigned char*)rhs;
+	delta = 0;
+
+	for (i = 0; i < count; ++i)
+	{
+		const int lhs_character = tolower(*lhs_uc++);
+		const int rhs_character = tolower(*rhs_uc++);
+
+		delta = lhs_character - rhs_character;
+
+		if (delta != 0)
+			break;
+	}
+
+	return delta;
+}

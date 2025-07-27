@@ -1017,7 +1017,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			else
 			{
 				/* TODO: What if 'position' is 0? */
-				const size_t found_position = String_Find(&expression->shared.subexpressions[1].shared.string, String_View(&expression->shared.subexpressions[2].shared.string), position - 1);
+				const size_t found_position = String_Find(&expression->shared.subexpressions[1].shared.string, String_View(&expression->shared.subexpressions[2].shared.string), position - 1, Options_Get(&state->options)->case_insensitive);
 				*value = found_position == STRING_POSITION_INVALID ? 0 : found_position + 1;
 			}
 			break;
@@ -1185,7 +1185,7 @@ static void TerminateWhile(SemanticState *state)
 
 		/* Process the WHILE's nested statements. */
 		for (source_line_list_node = source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-			AssembleLine(state, &source_line_list_node->source_line_buffer, cc_false);
+			AssembleLine(state, &source_line_list_node->source_line_buffer, cc_true);
 	}
 
 	/* Increment past the ENDW line number. */
@@ -5312,11 +5312,13 @@ typedef struct MacroCustomSubstituteSearch_Closure
 	String symbol_value_string;
 } MacroCustomSubstituteSearch_Closure;
 
-static const StringView* MacroCustomSubstituteSearch(void* const user_data, const StringView *view_to_search, size_t starting_position, size_t* const found_position, size_t* const found_length)
+static const StringView* MacroCustomSubstituteSearch(void* const user_data, const StringView *view_to_search, size_t starting_position, cc_bool case_insensitive, size_t* const found_position, size_t* const found_length)
 {
 	/* `view_to_search` always points to a null-terminated string. */
 	MacroCustomSubstituteSearch_Closure* const closure = (MacroCustomSubstituteSearch_Closure*)user_data;
 	SemanticState* const state = closure->state;
+
+	(void)case_insensitive;
 
 	*found_position = StringView_FindCharacter(view_to_search, '\\', starting_position);
 	*found_length = 2;
@@ -5400,9 +5402,11 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 
 static void PerformSubstitutionsOnSubString(SemanticState* const state, String* const string, StringView* const view_to_search, const cc_bool allow_implicit_matches)
 {
+	const cc_bool case_insensitive = Options_Get(&state->options)->case_insensitive;
+
 	if (state->macro.closure != NULL)
-		Substitute_ProcessSubString(&state->macro.substitutions, string, view_to_search, MacroCustomSubstituteSearch, state->macro.closure, allow_implicit_matches);
-	Substitute_ProcessSubString(&state->substitutions, string, view_to_search, NULL, NULL, allow_implicit_matches);
+		Substitute_ProcessSubString(&state->macro.substitutions, string, view_to_search, MacroCustomSubstituteSearch, state->macro.closure, allow_implicit_matches, case_insensitive);
+	Substitute_ProcessSubString(&state->substitutions, string, view_to_search, NULL, NULL, allow_implicit_matches, case_insensitive);
 }
 
 static void PerformSubstitutions(SemanticState* const state, String* const string, const cc_bool allow_implicit_matches)
