@@ -185,6 +185,7 @@ cc_bool Substitute_IsSubstituteBlockingCharacter(const char character)
 {
 	return (isalpha((unsigned char)character)
 	     || isdigit((unsigned char)character)
+	     || character == '$'
 	     || character == '_'
 	     || character == '.');
 }
