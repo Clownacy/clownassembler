@@ -559,7 +559,7 @@ static void OutputByte(SemanticState *state, unsigned int byte)
 
 static cc_bool CurrentlyExpandingMacro(const SemanticState* const state)
 {
-	return state->macro.metadata != NULL;
+	return state->macro.active;
 }
 
 static void ExpandIdentifier(SemanticState *state, String* const expanded_identifier, const StringView* const identifier)
@@ -5720,7 +5720,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 						state->location = &location;
 
 						/* Iterate over each line of the macro, sending it to be processed. */
-						for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL && state->macro.active; source_line_list_node = source_line_list_node->next)
+						for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL && CurrentlyExpandingMacro(state); source_line_list_node = source_line_list_node->next)
 							AssembleLine(state, &source_line_list_node->source_line_buffer, Options_Get(&state->options)->expand_all_macros);
 
 						/* 'MEXIT' may have ended us midway through an if-statement, so unwind to the original if-level here. */
