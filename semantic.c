@@ -15,6 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+/* TODO: Implement LOCAL by adding a secondary dictionary. */
+/* TODO: Optimise EQUS by using the dictionary to store string constants to eliminate duplicate. */
+/* TODO: Optimise EQUS by having the substitution logic search for the '\' rather than the string itself. */
+
 #include "semantic.h"
 
 #include <assert.h>
