@@ -196,7 +196,7 @@ static void AssembleLine(SemanticState *state, const String *source_line, const 
 
 static const StringView string_rs = STRING_VIEW_INITIALISER("__rs");
 static const StringView string_narg = STRING_VIEW_INITIALISER("narg");
-static const StringView string_assembler_identifier = STRING_VIEW_INITIALISER("clownassembler v0.5");
+static const StringView string_assembler_identifier = STRING_VIEW_INITIALISER(CLOWNASSEMBLER_VERSION_STRING);
 
 static void OutputWriteRawByte(SemanticState* const state, const unsigned char byte)
 {
