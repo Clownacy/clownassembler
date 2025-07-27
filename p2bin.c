@@ -13,6 +13,7 @@
 
 static FILE *input_file;
 static const ClownAssembler_BinaryOutput *output_file;
+static const ClownAssembler_TextOutput *error_callbacks;
 static jmp_buf jump_buffer;
 static unsigned char padding_buffer[0x1000];
 static unsigned long maximum_address = 0;
@@ -24,7 +25,7 @@ static unsigned int ReadByte(void)
 
 	if (byte == EOF)
 	{
-		fputs("Error: File ended prematurely.\n", stderr);
+		TextOutput_fputs("Error: File ended prematurely.\n", error_callbacks);
 		longjmp(jump_buffer, 1);
 	}
 
@@ -35,7 +36,7 @@ static void ReadBytes(unsigned char* const buffer, const unsigned int total_byte
 {
 	if (fread(buffer, total_bytes, 1, input_file) == 0)
 	{
-		fputs("Error: File ended prematurely.\n", stderr);
+		TextOutput_fputs("Error: File ended prematurely.\n", error_callbacks);
 		longjmp(jump_buffer, 1);
 	}
 }
@@ -131,7 +132,7 @@ static cc_bool ProcessRecords(void)
 
 					if (granularity != 1)
 					{
-						fprintf(stderr, "Error: Unsupported granularity of %u (only 1 is supported).\n", granularity);
+						TextOutput_fprintf(error_callbacks, "Error: Unsupported granularity of %u (only 1 is supported).\n", granularity);
 						return cc_false;
 					}
 
@@ -142,7 +143,7 @@ static cc_bool ProcessRecords(void)
 				default:
 					if (record_header >= 0x80)
 					{
-						fprintf(stderr, "Error: Unrecognised record header value (0x%02X).\n", record_header);
+						TextOutput_fprintf(error_callbacks, "Error: Unrecognised record header value (0x%02X).\n", record_header);
 						return cc_false;
 					}
 
@@ -157,7 +158,7 @@ static cc_bool ProcessRecords(void)
 	return cc_false;
 }
 
-cc_bool ConvertObjectFileToFlatBinary(FILE* const input_file_parameter, const ClownAssembler_BinaryOutput* const output_file_parameter)
+cc_bool ConvertObjectFileToFlatBinary(FILE* const input_file_parameter, const ClownAssembler_BinaryOutput* const output_file_parameter, const ClownAssembler_TextOutput* const error_callbacks_parameter)
 {
 	unsigned char magic[2];
 
@@ -165,12 +166,13 @@ cc_bool ConvertObjectFileToFlatBinary(FILE* const input_file_parameter, const Cl
 
 	input_file = input_file_parameter;
 	output_file = output_file_parameter;
+	error_callbacks = error_callbacks_parameter;
 
 	/* Read and check the header's magic number. */
 	if (fread(magic, sizeof(magic), 1, input_file) == 0)
-		fputs("Error: Could not read header magic value.\n", stderr);
+		TextOutput_fputs("Error: Could not read header magic value.\n", error_callbacks);
 	else if (magic[0] != 0x89 || magic[1] != 0x14)
-		fprintf(stderr, "Error: Invalid header magic value - expected 0x8914 but got 0x%02X%02X.\nInput file is either corrupt or not a valid AS code file.\n", magic[0], magic[1]);
+		TextOutput_fprintf(error_callbacks, "Error: Invalid header magic value - expected 0x8914 but got 0x%02X%02X.\nInput file is either corrupt or not a valid AS code file.\n", magic[0], magic[1]);
 	else if (ProcessRecords())
 		success = cc_true;
 

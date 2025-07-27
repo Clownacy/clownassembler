@@ -6173,7 +6173,7 @@ cc_bool ClownAssembler_Assemble(
 		{
 			rewind(temporary_file);
 
-			if (ConvertObjectFileToFlatBinary(temporary_file, output_callbacks))
+			if (ConvertObjectFileToFlatBinary(temporary_file, output_callbacks, error_callbacks))
 				success = cc_true;
 		}
 
