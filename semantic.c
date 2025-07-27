@@ -62,6 +62,7 @@ typedef struct FixUp
 	Statement statement;
 	unsigned long program_counter;
 	size_t output_position;
+	size_t segment_length;
 	String last_global_label;
 	String source_line;
 	Location location;
@@ -249,18 +250,21 @@ static void WriteRecordSegment(SemanticState *state)
 
 static void OutputWriteSegmentByte(SemanticState* const state, const unsigned char byte)
 {
-	/* Fix-ups overwrite segments; they don't create them. */
-	if (!state->doing_fix_up)
+	if (state->segment_length == 0xFFFF)
 	{
-		if (state->segment_length == 0xFFFF)
-		{
-			state->segment_position += state->segment_length;
-			WriteRecordSegment(state);
-			state->segment_length = 0;
-		}
+		state->segment_position += state->segment_length;
 
-		++state->segment_length;
+		/* Avoid rewriting the record header when doing fix-ups,
+		   as the length field will be left blank. */
+		if (state->doing_fix_up)
+			OutputSeek(state, state->output_position + 4 + 4 + 2);
+		else
+			WriteRecordSegment(state);
+
+		state->segment_length = 0;
 	}
+
+	++state->segment_length;
 
 	OutputWriteRawByte(state, byte);
 }
@@ -5129,6 +5133,7 @@ static void ParseLine(SemanticState* const state, const StringView* const label,
 	/* Back these up, before they get a chance to be modified by ProcessStatement. */
 	const unsigned long starting_program_counter = state->program_counter;
 	const size_t starting_output_position = state->output_position;
+	const size_t starting_segment_length = state->segment_length;
 
 	if (!ParseStatement(state, &statement, directive_and_operands))
 	{
@@ -5168,6 +5173,7 @@ static void ParseLine(SemanticState* const state, const StringView* const label,
 				/* Backup some state. */
 				fix_up->program_counter = starting_program_counter;
 				fix_up->output_position = starting_output_position;
+				fix_up->segment_length = starting_segment_length;
 				String_CreateCopy(&fix_up->last_global_label, &state->last_global_label);
 				String_CreateCopy(&fix_up->source_line, state->source_line);
 				String_CreateCopyView(&fix_up->label, label);
@@ -6050,6 +6056,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 						/* Reset some state to how it was at the time the statement was first processed. */
 						state.program_counter = fix_up->program_counter;
 						OutputSeek(&state, fix_up->output_position);
+						state.segment_length = fix_up->segment_length;
 						String_Destroy(&state.last_global_label);
 						String_CreateCopy(&state.last_global_label, &fix_up->last_global_label);
 						state.source_line = &fix_up->source_line;
