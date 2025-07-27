@@ -569,7 +569,7 @@ static cc_bool CurrentlyExpandingMacro(const SemanticState* const state)
 
 static void ExpandIdentifier(SemanticState *state, String* const expanded_identifier, const StringView* const identifier)
 {
-	if (StringView_Empty(identifier) || (StringView_At(identifier, 0) != '@' && StringView_At(identifier, 0) != '.'))
+	if (StringView_Empty(identifier) || (StringView_At(identifier, 0) != Options_Get(&state->options)->local_signifier))
 		String_CreateBlank(expanded_identifier);
 	else if (String_Empty(&state->last_global_label))
 		String_CreateInternal(expanded_identifier, StringView_Data(identifier) + 1, StringView_Length(identifier) - 1, NULL, 0);
@@ -1332,7 +1332,7 @@ static void SetLastGlobalLabel(SemanticState *state, const StringView *label)
 {
 	const char first_character = StringView_At(label, 0);
 
-	if (first_character != '@' && first_character != '.')
+	if (first_character != Options_Get(&state->options)->local_signifier)
 	{
 		/* This is a global label - cache it for later. */
 		String_Destroy(&state->last_global_label);
@@ -5096,13 +5096,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "e-"))
 					;
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "l+"))
-					;
+					Options_Get(&state->options)->local_signifier = '.';
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "l-"))
-					;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "l."))
-					;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "l@"))
-					;
+					Options_Get(&state->options)->local_signifier = '@';
+				else if (String_Length(&option->identifier) == 2 && (String_At(&option->identifier, 0) == 'l' || String_At(&option->identifier, 0) == 'L'))
+					Options_Get(&state->options)->local_signifier = String_At(&option->identifier, 1);
 				/*else if (String_CompareCStrCaseInsensitive(&option->identifier, "s+"))
 					;*/
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "s-"))
@@ -5964,7 +5962,7 @@ static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const 
 	/* Labels longer than 0xFF characters are silently ignored. */
 	/* Local labels are also silently ignored (unless 'v+' is specified). */
 	void** const parameters = (void**)user_data;
-	const cc_bool output_local_labels_to_sym_file = *(cc_bool*)parameters[1];
+	const SemanticState* const state = (const SemanticState*)parameters[1];
 
 	if (entry->type == SYMBOL_LABEL)
 	{
@@ -5973,12 +5971,12 @@ static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const 
 		cc_bool is_local_label;
 
 		for (label = &identifier[identifier_length], label_length = 0; label_length != identifier_length; --label, ++label_length)
-			if (*label == '@' || *label == '.')
+			if (*label == Options_Get(&state->options)->local_signifier)
 				break;
 
 		is_local_label = label_length != identifier_length;
 
-		if (label_length < 0x100 && (!is_local_label || output_local_labels_to_sym_file))
+		if (label_length < 0x100 && (!is_local_label || Options_Get(&state->options)->output_local_labels_to_sym_file))
 		{
 			unsigned int i;
 
@@ -6208,7 +6206,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 					const void *parameters[2];
 
 					parameters[0] = symbol_callbacks;
-					parameters[1] = &Options_Get(&state.options)->output_local_labels_to_sym_file;
+					parameters[1] = &state;
 
 					/* Some kind of header. */
 					BinaryOutput_fputc('M', symbol_callbacks);

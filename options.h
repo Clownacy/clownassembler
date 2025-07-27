@@ -22,6 +22,7 @@
 
 typedef struct Options
 {
+	char local_signifier;
 	cc_bool debug;
 	cc_bool case_insensitive;
 	cc_bool equ_set_descope_local_labels;

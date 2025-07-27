@@ -307,7 +307,7 @@ CoolFunction_Exit:
 	dc.l	0,1,2,3,4,5
 	even
 
-	; Test local labels, with both '@' and '.'.
+	; Test local labels.
 Object:
 	moveq	#0,d0
 	move.b	2(a0),d0
@@ -317,12 +317,12 @@ Object:
 
 @Offsets:
 	dc.w	@Offset1-Object@Offsets
-	dc.w	Object.Offset2-@Offsets
+	dc.w	Object@Offset2-@Offsets
 
 @Offset1:
 	rts
 
-.Offset2:
+@Offset2:
 	rts
 
 	bra.s	*

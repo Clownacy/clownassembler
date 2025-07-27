@@ -93,6 +93,7 @@ int main(int argc, char **argv)
 
 	combined_arguments = NULL;
 
+	settings.local_signifier = '@';
 	settings.debug = cc_false;
 	settings.case_insensitive = cc_true;
 	settings.equ_set_descope_local_labels = cc_false;
@@ -200,18 +201,20 @@ int main(int argc, char **argv)
 							}
 							else if (tolower(argv[i][0]) == 'l')
 							{
-								switch (tolower(argv[i][1]))
+								const char signifier = tolower(argv[i][1]);
+
+								switch (signifier)
 								{
 									case '+':
+										settings.local_signifier = '.';
+										break;
+
 									case '-':
-									case '.':
-									case '@':
-										fprintf(stderr, "Warning: Option '%s' has no effect, as '@' and '.' always specify local labels.\n", argv[i]);
+										settings.local_signifier = '@';
 										break;
 
 									default:
-										fprintf(stderr, "Error: Option '%s' is unsupported: local labels can only be specified with '@' or '.'.\n", argv[i]);
-										exit_code = EXIT_FAILURE;
+										settings.local_signifier = signifier;
 										break;
 								}
 							}

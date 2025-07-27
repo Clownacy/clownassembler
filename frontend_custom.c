@@ -84,6 +84,7 @@ int main(int argc, char **argv)
 	output_file_path = NULL;
 	listing_file_path = NULL;
 	symbol_file_path = NULL;
+	settings.local_signifier = '@';
 	settings.case_insensitive = cc_false;
 	settings.debug = cc_false;
 	settings.equ_set_descope_local_labels = cc_false;
@@ -172,6 +173,10 @@ int main(int argc, char **argv)
 				case 'w':
 					settings.warnings_enabled = cc_false;
 					continue;
+
+				case '.':
+					settings.local_signifier = argv[i][2];
+					continue;
 			}
 		}
 
@@ -198,6 +203,7 @@ int main(int argc, char **argv)
 			" -p        - Silence pedantic warnings.\n"
 			" -v        - Include local labels in symbol file.\n"
 			" -w        - Silence warnings.\n"
+			" -.X       - Set local label signifier to the character after the dot.\n"
 			, stdout);
 	}
 	else
