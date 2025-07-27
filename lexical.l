@@ -437,7 +437,7 @@ def             return TOKEN_DEF;
 
  /* Identifier, data register, or address register. */
 [A-Za-z_][A-Za-z_0-9\?]* {
-	if (yytext[2] == '\0' && (yytext[0] == 'd' || yytext[0] == 'D' || yytext[0] == 'a' || yytext[0] == 'A') && yytext[1] >= '0' && yytext[1] <= '7')
+	if (yyleng == 2 && (yytext[0] == 'd' || yytext[0] == 'D' || yytext[0] == 'a' || yytext[0] == 'A') && yytext[1] >= '0' && yytext[1] <= '7')
 	{
 		/* Data register or address register. */
 		yylval->unsigned_long = yytext[1] - '0';

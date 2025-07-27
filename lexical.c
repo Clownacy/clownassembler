@@ -2971,7 +2971,7 @@ case 210:
 YY_RULE_SETUP
 #line 440 "lexical.l"
 {
-	if (yytext[2] == '\0' && (yytext[0] == 'd' || yytext[0] == 'D' || yytext[0] == 'a' || yytext[0] == 'A') && yytext[1] >= '0' && yytext[1] <= '7')
+	if (yyleng == 2 && (yytext[0] == 'd' || yytext[0] == 'D' || yytext[0] == 'a' || yytext[0] == 'A') && yytext[1] >= '0' && yytext[1] <= '7')
 	{
 		/* Data register or address register. */
 		yylval->unsigned_long = yytext[1] - '0';
