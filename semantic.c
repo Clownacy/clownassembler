@@ -5768,7 +5768,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 									}
 
 									/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
-									if (StringView_Length(&argument) == 0 && character == '\0' && state->macro.total_arguments == 0)
+									if (StringView_Length(&argument) == 0 && (character == ';' || character == '\0') && state->macro.total_arguments == 0)
 										break;
 
 									/* Add to argument list. */
