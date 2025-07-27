@@ -229,13 +229,7 @@ static void WriteRecordSegment(SemanticState *state)
 {
 	TerminatePreviousRecordSegment(state);
 
-	/* Record ID. */
-	OutputWriteRawByte(state, 0x81);
 	/* CPU architecture (68000). */
-	OutputWriteRawByte(state, 0x01);
-	/* Segment (unspecified). */
-	OutputWriteRawByte(state, 0x00);
-	/* Granularity (byte). */
 	OutputWriteRawByte(state, 0x01);
 	/* Start address. */
 	OutputWriteRawByte(state, state->segment_position >> (8 * 0) & 0xFF);
@@ -257,7 +251,7 @@ static void OutputWriteSegmentByte(SemanticState* const state, const unsigned ch
 		/* Avoid rewriting the record header when doing fix-ups,
 		   as the length field will be left blank. */
 		if (state->doing_fix_up)
-			OutputSeek(state, state->output_position + 4 + 4 + 2);
+			OutputSeek(state, state->output_position + 1 + 4 + 2);
 		else
 			WriteRecordSegment(state);
 
