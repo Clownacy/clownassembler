@@ -12,6 +12,8 @@ add_library(clownassembler_core STATIC
 	"lexical.h"
 	"options.c"
 	"options.h"
+	"p2bin.c"
+	"p2bin.h"
 	"semantic.c"
 	"semantic.h"
 	"strcmpci.c"
