@@ -1199,7 +1199,7 @@ static void TerminateWhile(SemanticState *state)
 
 		/* Process the WHILE's nested statements. */
 		for (source_line_list_node = source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-			AssembleLine(state, &source_line_list_node->source_line_buffer, cc_true);
+			AssembleLine(state, &source_line_list_node->source_line_buffer, cc_false);
 	}
 
 	/* Increment past the ENDW line number. */
