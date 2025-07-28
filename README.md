@@ -1,4 +1,4 @@
-# clownassembler
+# ClownAssembler
 
 ## Introduction
 
