@@ -281,11 +281,22 @@ hexadecimal       {hexadecimal_digit}+
  /* axm68k opcodes. */
  /* axm68k is a modified version of asm68k with renamed opcodes, so that
     it could better-support Z80 macros. */
-<INITIAL>nxp             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NOP;
 <INITIAL>axd             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADD;
+<INITIAL>axda            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDA;
 <INITIAL>axdi            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDI;
 <INITIAL>axdq            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDQ;
+<INITIAL>axdx            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDX;
+<INITIAL>anx             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_AND;
 <INITIAL>anxi            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ANDI;
+<INITIAL>nxg             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NEG;
+<INITIAL>nxp             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NOP;
+<INITIAL>ox              BEGIN(OPERANDS); return TOKEN_DIRECTIVE_OR;
+<INITIAL>oxi             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ORI;
+<INITIAL>sxb             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUB;
+<INITIAL>sxba            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBA;
+<INITIAL>sxbi            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBI;
+<INITIAL>sxbq            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBQ;
+<INITIAL>sxbx            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBX;
 
  /* Sizes. */
 ".b"            return TOKEN_SIZE_BYTE;
