@@ -4652,7 +4652,8 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_MACRO:
 		case STATEMENT_TYPE_MACROS:
 		case STATEMENT_TYPE_EQU:
-		case STATEMENT_TYPE_EQUS:
+		case STATEMENT_TYPE_EQUS_STRING:
+		case STATEMENT_TYPE_EQUS_IDENTIFIER:
 		case STATEMENT_TYPE_SUBSTR:
 		case STATEMENT_TYPE_SET:
 			if (StringView_Empty(label))
@@ -4740,9 +4741,21 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			break;
 		}
 
-		case STATEMENT_TYPE_EQUS:
+		case STATEMENT_TYPE_EQUS_STRING:
 			PushSubstitute(state, label, String_View(&statement->shared.string));
 			break;
+
+		case STATEMENT_TYPE_EQUS_IDENTIFIER:
+		{
+			const Dictionary_Entry* const dictionary_entry = LookupSymbol(state, String_View(&statement->shared.string));
+
+			if (dictionary_entry == NULL || dictionary_entry->type != SYMBOL_STRING_CONSTANT)
+				SemanticError(state, "String constant can only be defined as a string or another string constant.");
+			else
+				PushSubstitute(state, label, String_View(&dictionary_entry->shared.string));
+
+			break;
+		}
 
 		case STATEMENT_TYPE_SUBSTR:
 		{
@@ -5509,6 +5522,7 @@ static void SubstituteAndParseLine(SemanticState *state, const StringView* const
 	/* Because of the below hack, we have to filter-out directives that do not use expressions or operands,
 	   to prevent them from accidentally being substituted. This is needed for the Natsumi Z80 macros. */
 	if (StringView_CompareCStrCaseInsensitive(directive, "binclude")
+	 || StringView_CompareCStrCaseInsensitive(directive, "equs")
 	 || StringView_CompareCStrCaseInsensitive(directive, "incbin")
 	 || StringView_CompareCStrCaseInsensitive(directive, "include")
 	 || StringView_CompareCStrCaseInsensitive(directive, "macro")

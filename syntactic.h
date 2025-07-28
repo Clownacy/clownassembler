@@ -406,7 +406,8 @@ typedef enum StatementType
 	STATEMENT_TYPE_MACROS,
 	STATEMENT_TYPE_ENDM,
 	STATEMENT_TYPE_EQU,
-	STATEMENT_TYPE_EQUS,
+	STATEMENT_TYPE_EQUS_STRING,
+	STATEMENT_TYPE_EQUS_IDENTIFIER,
 	STATEMENT_TYPE_SUBSTR,
 	STATEMENT_TYPE_SET,
 	STATEMENT_TYPE_IF,
@@ -468,7 +469,7 @@ typedef struct Statement
 } Statement;
 
 
-#line 472 "syntactic.h"
+#line 473 "syntactic.h"
 
 /* Token kinds.  */
 #ifndef M68KASM_TOKENTYPE
@@ -674,7 +675,7 @@ typedef struct Statement
 #if ! defined M68KASM_STYPE && ! defined M68KASM_STYPE_IS_DECLARED
 union M68KASM_STYPE
 {
-#line 472 "syntactic.y"
+#line 473 "syntactic.y"
 
 	unsigned long unsigned_long;
 	String string;
@@ -687,7 +688,7 @@ union M68KASM_STYPE
 	IdentifierList identifier_list;
 	Expression expression;
 
-#line 691 "syntactic.h"
+#line 692 "syntactic.h"
 
 };
 typedef union M68KASM_STYPE M68KASM_STYPE;
@@ -701,13 +702,13 @@ typedef union M68KASM_STYPE M68KASM_STYPE;
 int m68kasm_parse (void *scanner, Statement *statement);
 
 /* "%code provides" blocks.  */
-#line 445 "syntactic.y"
+#line 446 "syntactic.y"
 
 
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
 
 
-#line 712 "syntactic.h"
+#line 713 "syntactic.h"
 
 #endif /* !YY_M68KASM_SYNTACTIC_H_INCLUDED  */

@@ -379,7 +379,8 @@ typedef enum StatementType
 	STATEMENT_TYPE_MACROS,
 	STATEMENT_TYPE_ENDM,
 	STATEMENT_TYPE_EQU,
-	STATEMENT_TYPE_EQUS,
+	STATEMENT_TYPE_EQUS_STRING,
+	STATEMENT_TYPE_EQUS_IDENTIFIER,
 	STATEMENT_TYPE_SUBSTR,
 	STATEMENT_TYPE_SET,
 	STATEMENT_TYPE_IF,
@@ -800,7 +801,12 @@ statement
 	}
 	| TOKEN_DIRECTIVE_EQUS TOKEN_STRING
 	{
-		statement->type = STATEMENT_TYPE_EQUS;
+		statement->type = STATEMENT_TYPE_EQUS_STRING;
+		statement->shared.string = $2;
+	}
+	| TOKEN_DIRECTIVE_EQUS TOKEN_IDENTIFIER
+	{
+		statement->type = STATEMENT_TYPE_EQUS_IDENTIFIER;
 		statement->shared.string = $2;
 	}
 	| TOKEN_DIRECTIVE_SUBSTR ',' ',' TOKEN_STRING
@@ -2453,7 +2459,8 @@ void DestroyStatement(Statement *statement)
 			DestroyExpression(&statement->shared.expression);
 			break;
 
-		case STATEMENT_TYPE_EQUS:
+		case STATEMENT_TYPE_EQUS_STRING:
+		case STATEMENT_TYPE_EQUS_IDENTIFIER:
 		case STATEMENT_TYPE_PUSHP:
 		case STATEMENT_TYPE_POPP:
 			String_Destroy(&statement->shared.string);
