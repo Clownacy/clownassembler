@@ -4472,7 +4472,7 @@ yyreduce:
   case 255: /* expression8: TOKEN_STRCMP '(' string ',' string ')'  */
 #line 2155 "syntactic.y"
         {
-		if (!DoExpression(&(yyval.expression), EXPRESSION_STRLEN, &(yyvsp[-3].expression), &(yyvsp[-1].expression)))
+		if (!DoExpression(&(yyval.expression), EXPRESSION_STRCMP, &(yyvsp[-3].expression), &(yyvsp[-1].expression)))
 			YYNOMEM;
 	}
 #line 4479 "syntactic.c"

@@ -2153,7 +2153,7 @@ expression8
 	}
 	| TOKEN_STRCMP '(' string ',' string ')'
 	{
-		if (!DoExpression(&$$, EXPRESSION_STRLEN, &$3, &$5))
+		if (!DoExpression(&$$, EXPRESSION_STRCMP, &$3, &$5))
 			YYNOMEM;
 	}
 	| TOKEN_INSTR '(' expression ',' expression ')'
