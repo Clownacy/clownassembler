@@ -668,6 +668,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DEF
 %token TOKEN_TYPE
 %token TOKEN_FILESIZE
+%token TOKEN_OFFSET
 
 %type<instruction> instruction
 %type<opcode> opcode
@@ -2202,6 +2203,11 @@ expression8
 	{
 		$$.type = EXPRESSION_FILESIZE;
 		$$.shared.string = $3;
+	}
+	| TOKEN_OFFSET '(' expression ')'
+	{
+		/* TODO: Make this actually do something besides pass the expression through. */
+		$$ = $3;
 	}
 	;
 

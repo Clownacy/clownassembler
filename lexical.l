@@ -345,6 +345,8 @@ pc              return TOKEN_PROGRAM_COUNTER;
 <OPERANDS>def             return TOKEN_DEF;
 <OPERANDS>type            return TOKEN_TYPE;
 <OPERANDS>filesize        return TOKEN_FILESIZE;
+<OPERANDS>offset          return TOKEN_OFFSET;
+<OPERANDS>sectoff         return TOKEN_OFFSET;
 
  /* Decimal number. */
 {decimal} {
