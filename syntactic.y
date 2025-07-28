@@ -637,6 +637,8 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_SHIFT
 %token TOKEN_DIRECTIVE_MEXIT
 %token TOKEN_DIRECTIVE_LOCAL
+%token TOKEN_DIRECTIVE_LIST
+%token TOKEN_DIRECTIVE_NOLIST
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -977,6 +979,16 @@ statement
 	{
 		statement->type = STATEMENT_TYPE_LOCAL;
 		statement->shared.local.identifiers = $2;
+	}
+	| TOKEN_DIRECTIVE_LIST
+	{
+		/* TODO: Make this actually do something. */
+		statement->type = STATEMENT_TYPE_EMPTY;
+	}
+	| TOKEN_DIRECTIVE_NOLIST
+	{
+		/* TODO: Make this actually do something. */
+		statement->type = STATEMENT_TYPE_EMPTY;
 	}
 	;
 

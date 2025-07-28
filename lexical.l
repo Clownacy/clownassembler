@@ -277,6 +277,8 @@ hexadecimal       {hexadecimal_digit}+
 <INITIAL>mexit           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MEXIT;
 <INITIAL>local           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LOCAL;
 <INITIAL>"="             BEGIN(OPERANDS); return yytext[0];
+<INITIAL>list            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LIST;
+<INITIAL>nolist          BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NOLIST;
 
  /* axm68k opcodes. */
  /* axm68k is a modified version of asm68k with renamed opcodes, so that
