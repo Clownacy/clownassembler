@@ -278,6 +278,15 @@ hexadecimal       {hexadecimal_digit}+
 <INITIAL>local           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LOCAL;
 <INITIAL>"="             BEGIN(OPERANDS); return yytext[0];
 
+ /* axm68k opcodes. */
+ /* axm68k is a modified version of asm68k with renamed opcodes, so that
+    it could better-support Z80 macros. */
+<INITIAL>nxp             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NOP;
+<INITIAL>axd             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADD;
+<INITIAL>axdi            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDI;
+<INITIAL>axdq            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDQ;
+<INITIAL>anxi            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ANDI;
+
  /* Sizes. */
 ".b"            return TOKEN_SIZE_BYTE;
 ".s"            return TOKEN_SIZE_SHORT;
