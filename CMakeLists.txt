@@ -105,3 +105,24 @@ add_test(NAME mean_bean_machine_assemble COMMAND clownassembler -c -.. -i "main.
 # Test that the Mean Bean Machine disassembly produces the correct machine code.
 add_test(NAME mean_bean_machine_compare COMMAND clownassembler_hash "${CMAKE_CURRENT_BINARY_DIR}/bean.bin" "23bd83928b990dfb84c149a77ef613cf")
 set_tests_properties(mean_bean_machine_compare PROPERTIES DEPENDS mean_bean_machine_assemble)
+
+# Z80 macro tests.
+add_test(NAME z80_gems_assemble COMMAND clownassembler -c -p -i "TEST.ASM" -o "${CMAKE_CURRENT_BINARY_DIR}/z80-gems.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/ASM68K-Z80-extension/GEMS")
+add_test(NAME z80_gems_compare COMMAND clownassembler_hash "${CMAKE_CURRENT_BINARY_DIR}/z80-gems.bin" "85e18682e195dc4b7cd64673f1d879bd")
+set_tests_properties(z80_gems_compare PROPERTIES DEPENDS z80_gems_assemble)
+
+add_test(NAME z80_megapcm_assemble COMMAND clownassembler -c -p -i "MegaPCM.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/z80-megapcm.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/ASM68K-Z80-extension/MegaPCM")
+add_test(NAME z80_megapcm_compare COMMAND clownassembler_hash "${CMAKE_CURRENT_BINARY_DIR}/z80-megapcm.bin" "9c871049e5065b2991f9ac7982a9fbd8")
+set_tests_properties(z80_megapcm_compare PROPERTIES DEPENDS z80_megapcm_assemble)
+
+add_test(NAME z80_s_and_k_assemble COMMAND clownassembler -c -p -i "TEST.ASM" -o "${CMAKE_CURRENT_BINARY_DIR}/z80-s-and-k.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/ASM68K-Z80-extension/Sonic & Knuckles")
+add_test(NAME z80_s_and_k_compare COMMAND clownassembler_hash "${CMAKE_CURRENT_BINARY_DIR}/z80-s-and-k.bin" "c787ad7c4d1f952d32092bda221b843f")
+set_tests_properties(z80_s_and_k_compare PROPERTIES DEPENDS z80_s_and_k_assemble)
+
+add_test(NAME z80_sonic1_assemble COMMAND clownassembler -c -p -i "sound/z80/z80.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/z80-sonic1.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/ASM68K-Z80-extension/Sonic 1")
+add_test(NAME z80_sonic1_compare COMMAND clownassembler_hash "${CMAKE_CURRENT_BINARY_DIR}/z80-sonic1.bin" "6ae9dc82ef1c4890c5fc55fc6a47ee54")
+set_tests_properties(z80_sonic1_compare PROPERTIES DEPENDS z80_sonic1_assemble)
+
+add_test(NAME z80_westone_assemble COMMAND clownassembler -c -p -i "TEST.ASM" -o "${CMAKE_CURRENT_BINARY_DIR}/z80-westone.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/ASM68K-Z80-extension/Westone")
+add_test(NAME z80_westone_compare COMMAND clownassembler_hash "${CMAKE_CURRENT_BINARY_DIR}/z80-westone.bin" "ee34bb568b2590632d4837fbe1531f06")
+set_tests_properties(z80_westone_compare PROPERTIES DEPENDS z80_westone_assemble)

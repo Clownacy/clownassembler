@@ -13,3 +13,6 @@
 [submodule "tests/Dr-Robotnik-Mean-Bean-Machine-Disassembly"]
 	path = tests/Dr-Robotnik-Mean-Bean-Machine-Disassembly
 	url = https://github.com/radioshadow/Dr-Robotnik-Mean-Bean-Machine-Disassembly
+[submodule "tests/ASM68K-Z80-extension"]
+	path = tests/ASM68K-Z80-extension
+	url = https://github.com/Clownacy/ASM68K-Z80-extension
