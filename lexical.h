@@ -716,7 +716,7 @@ extern int yylex \
 #undef yyTABLES_NAME
 #endif
 
-#line 487 "lexical.l"
+#line 488 "lexical.l"
 
 
 #line 722 "lexical.h"

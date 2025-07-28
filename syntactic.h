@@ -255,7 +255,8 @@ typedef enum ExpressionType
 	EXPRESSION_INSTR,
 	EXPRESSION_DEF,
 	EXPRESSION_TYPE_WITH_IDENTIFIER,
-	EXPRESSION_TYPE_WITH_NUMBER
+	EXPRESSION_TYPE_WITH_NUMBER,
+	EXPRESSION_FILESIZE
 } ExpressionType;
 
 typedef struct Expression
@@ -467,7 +468,7 @@ typedef struct Statement
 } Statement;
 
 
-#line 471 "syntactic.h"
+#line 472 "syntactic.h"
 
 /* Token kinds.  */
 #ifndef M68KASM_TOKENTYPE
@@ -660,7 +661,8 @@ typedef struct Statement
     TOKEN_STRCMP = 437,            /* TOKEN_STRCMP  */
     TOKEN_INSTR = 438,             /* TOKEN_INSTR  */
     TOKEN_DEF = 439,               /* TOKEN_DEF  */
-    TOKEN_TYPE = 440               /* TOKEN_TYPE  */
+    TOKEN_TYPE = 440,              /* TOKEN_TYPE  */
+    TOKEN_FILESIZE = 441           /* TOKEN_FILESIZE  */
   };
   typedef enum m68kasm_tokentype m68kasm_token_kind_t;
 #endif
@@ -669,7 +671,7 @@ typedef struct Statement
 #if ! defined M68KASM_STYPE && ! defined M68KASM_STYPE_IS_DECLARED
 union M68KASM_STYPE
 {
-#line 471 "syntactic.y"
+#line 472 "syntactic.y"
 
 	unsigned long unsigned_long;
 	String string;
@@ -682,7 +684,7 @@ union M68KASM_STYPE
 	IdentifierList identifier_list;
 	Expression expression;
 
-#line 686 "syntactic.h"
+#line 688 "syntactic.h"
 
 };
 typedef union M68KASM_STYPE M68KASM_STYPE;
@@ -696,13 +698,13 @@ typedef union M68KASM_STYPE M68KASM_STYPE;
 int m68kasm_parse (void *scanner, Statement *statement);
 
 /* "%code provides" blocks.  */
-#line 444 "syntactic.y"
+#line 445 "syntactic.y"
 
 
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
 
 
-#line 707 "syntactic.h"
+#line 709 "syntactic.h"
 
 #endif /* !YY_M68KASM_SYNTACTIC_H_INCLUDED  */

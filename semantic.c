@@ -804,6 +804,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 					case EXPRESSION_DEF:
 					case EXPRESSION_TYPE_WITH_IDENTIFIER:
 					case EXPRESSION_TYPE_WITH_NUMBER:
+					case EXPRESSION_FILESIZE:
 					case EXPRESSION_NEGATE:
 					case EXPRESSION_BITWISE_NOT:
 					case EXPRESSION_LOGICAL_NOT:
@@ -913,6 +914,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 					case EXPRESSION_DEF:
 					case EXPRESSION_TYPE_WITH_IDENTIFIER:
 					case EXPRESSION_TYPE_WITH_NUMBER:
+					case EXPRESSION_FILESIZE:
 					case EXPRESSION_SUBTRACT:
 					case EXPRESSION_ADD:
 					case EXPRESSION_MULTIPLY:
@@ -1038,6 +1040,27 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 		case EXPRESSION_TYPE_WITH_NUMBER:
 			*value = 1; /* TODO: This is a placeholder! */
 			break;
+
+		case EXPRESSION_FILESIZE:
+		{
+			const char* const file_path = String_CStr(&expression->shared.string);
+			FILE* const file = fopen(file_path, "rb");
+
+			if (file == NULL)
+			{
+				success = cc_false;
+				SemanticError(state, "File '%s' could not be opened.", file_path);
+			}
+			else
+			{
+				fseek(file, 0, SEEK_END);
+				*value = ftell(file);
+
+				fclose(file);
+			}
+
+			break;
+		}
 	}
 
 	/* Now that we have resolved the value, let's hardcode it here so that we don't ever have to calculate it again. */
@@ -1077,6 +1100,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			case EXPRESSION_STRLEN:
 			case EXPRESSION_DEF:
 			case EXPRESSION_TYPE_WITH_IDENTIFIER:
+			case EXPRESSION_FILESIZE:
 				String_Destroy(&expression->shared.string);
 				break;
 

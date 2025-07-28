@@ -322,6 +322,7 @@ pc              return TOKEN_PROGRAM_COUNTER;
 <OPERANDS>instr           return TOKEN_INSTR;
 <OPERANDS>def             return TOKEN_DEF;
 <OPERANDS>type            return TOKEN_TYPE;
+<OPERANDS>filesize        return TOKEN_FILESIZE;
 
  /* Decimal number. */
 {decimal} {

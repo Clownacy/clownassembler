@@ -16,3 +16,6 @@
 [submodule "tests/ASM68K-Z80-extension"]
 	path = tests/ASM68K-Z80-extension
 	url = https://github.com/Clownacy/ASM68K-Z80-extension
+[submodule "tests/s1disasm2022"]
+	path = tests/s1disasm2022
+	url = https://github.com/cvghivebrain/s1disasm
