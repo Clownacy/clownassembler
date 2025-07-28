@@ -97,7 +97,7 @@ typedef enum Mode
 
 typedef struct Macro
 {
-	cc_bool uses_label;
+	cc_bool is_short, uses_label;
 	String name;
 	IdentifierListNode *parameter_names;
 	SourceLineListNode *source_line_list_head;
@@ -1151,6 +1151,7 @@ static void TerminateMacro(SemanticState *state)
 
 			if (macro != NULL)
 			{
+				macro->is_short = state->shared.macro.is_short;
 				macro->uses_label = state->shared.macro.uses_label;
 				String_CreateMove(&macro->name, &state->shared.macro.name);
 				macro->parameter_names = state->shared.macro.parameter_names.head;
@@ -5829,9 +5830,12 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 						for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL && CurrentlyExpandingMacro(state); source_line_list_node = source_line_list_node->next)
 							AssembleLine(state, &source_line_list_node->source_line_buffer, Options_Get(&state->options)->expand_all_macros);
 
-						/* 'MEXIT' may have ended us midway through an if-statement, so unwind to the original if-level here. */
-						while (state->current_if_level != state->macro.starting_if_level)
-							TerminateIf(state);
+						if (!macro->is_short)
+						{
+							/* 'MEXIT' may have ended us midway through an if-statement, so unwind to the original if-level here. */
+							while (state->current_if_level != state->macro.starting_if_level)
+								TerminateIf(state);
+						}
 
 						/* Pop location. */
 						state->location = state->location->previous;
