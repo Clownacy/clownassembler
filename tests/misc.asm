@@ -783,6 +783,10 @@ doulbleParamMacro macro param, param
 
 	doulbleParamMacro $DEAD, $BEEF
 
+	; SUBSTR with start before end, and DC.B with empty string.
+emptysubstr substr 2,,"0"
+	dc.b "\emptysubstr" ; oops, all empty
+
   ; More blank lines to test support for trailing blank statements
 
 

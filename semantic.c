@@ -4768,10 +4768,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			}
 
 			if (end < start)
-			{
-				SemanticError(state, "End cannot come before start.");
-				break;
-			}
+				end = start - 1;
 
 			StringView_SubStr(&substring, String_View(&statement->shared.substr.string), start - 1, end - start + 1);
 			PushSubstitute(state, label, &substring);
