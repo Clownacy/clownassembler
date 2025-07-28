@@ -5748,7 +5748,16 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 					/* Extract combined arguments string. */
 					{
 						const char* const arguments_string_start = source_line_pointer + strspn(source_line_pointer, " \t");
-						StringView_Create(&closure.arguments, arguments_string_start, strlen(arguments_string_start));
+						const char *arguments_string_end = strchr(arguments_string_start, ';');
+
+						if (arguments_string_end == NULL)
+							arguments_string_end = String_Data(state->source_line) + String_Length(state->source_line);
+
+						/* Remove trailing whitespace. */
+						while (arguments_string_end > arguments_string_start && (arguments_string_end[-1] == ' ' || arguments_string_end[-1] == '\t'))
+							--arguments_string_end;
+
+						StringView_Create(&closure.arguments, arguments_string_start, arguments_string_end - arguments_string_start);
 					}
 
 					closure.label = label;
