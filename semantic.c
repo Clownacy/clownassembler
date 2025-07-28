@@ -5678,6 +5678,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 					const SemanticState_Macro previous_macro_state = state->macro;
 
 					state->macro.metadata = macro;
+					/* TODO: We should not be caching this; the OPT directive can change this at any time! */
 					Dictionary_Init(&state->macro.dictionary, Options_Get(&state->options)->case_insensitive);
 					Substitute_Initialise(&state->macro.substitutions);
 					state->macro.closure = &closure;
