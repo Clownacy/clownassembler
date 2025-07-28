@@ -320,6 +320,7 @@ strlen          return TOKEN_STRLEN;
 strcmp          return TOKEN_STRCMP;
 instr           return TOKEN_INSTR;
 def             return TOKEN_DEF;
+type            return TOKEN_TYPE;
 
  /* Decimal number. */
 {decimal} {

@@ -802,6 +802,8 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 					case EXPRESSION_STRCMP:
 					case EXPRESSION_INSTR:
 					case EXPRESSION_DEF:
+					case EXPRESSION_TYPE_WITH_IDENTIFIER:
+					case EXPRESSION_TYPE_WITH_NUMBER:
 					case EXPRESSION_NEGATE:
 					case EXPRESSION_BITWISE_NOT:
 					case EXPRESSION_LOGICAL_NOT:
@@ -909,6 +911,8 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 					case EXPRESSION_STRCMP:
 					case EXPRESSION_INSTR:
 					case EXPRESSION_DEF:
+					case EXPRESSION_TYPE_WITH_IDENTIFIER:
+					case EXPRESSION_TYPE_WITH_NUMBER:
 					case EXPRESSION_SUBTRACT:
 					case EXPRESSION_ADD:
 					case EXPRESSION_MULTIPLY:
@@ -1026,6 +1030,14 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 		case EXPRESSION_DEF:
 			*value = LookupSymbol(state, String_View(&expression->shared.string)) != NULL;
 			break;
+
+		case EXPRESSION_TYPE_WITH_IDENTIFIER:
+			*value = 0; /* TODO: This is a placeholder! */
+			break;
+
+		case EXPRESSION_TYPE_WITH_NUMBER:
+			*value = 1; /* TODO: This is a placeholder! */
+			break;
 	}
 
 	/* Now that we have resolved the value, let's hardcode it here so that we don't ever have to calculate it again. */
@@ -1064,12 +1076,14 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			case EXPRESSION_STRING:
 			case EXPRESSION_STRLEN:
 			case EXPRESSION_DEF:
+			case EXPRESSION_TYPE_WITH_IDENTIFIER:
 				String_Destroy(&expression->shared.string);
 				break;
 
 			case EXPRESSION_NUMBER:
 			case EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT:
 			case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
+			case EXPRESSION_TYPE_WITH_NUMBER:
 				break;
 		}
 
