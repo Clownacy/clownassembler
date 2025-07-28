@@ -448,6 +448,7 @@ void yyfree ( void * , yyscan_t yyscanner );
 #define OPERANDS 1
 #define PATH 2
 #define OPTIONS 3
+#define MACRO_PARAMETERS 4
 
 #endif
 
@@ -715,9 +716,9 @@ extern int yylex \
 #undef yyTABLES_NAME
 #endif
 
-#line 486 "lexical.l"
+#line 487 "lexical.l"
 
 
-#line 721 "lexical.h"
+#line 722 "lexical.h"
 #undef m68kasm_IN_HEADER
 #endif /* m68kasm_HEADER_H */

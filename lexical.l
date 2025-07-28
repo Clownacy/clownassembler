@@ -101,7 +101,7 @@ binary            {binary_digit}+
 decimal           {decimal_digit}+
 hexadecimal       {hexadecimal_digit}+
 
-%s OPERANDS PATH OPTIONS
+%s OPERANDS PATH OPTIONS MACRO_PARAMETERS
 
 %%
 
@@ -241,8 +241,8 @@ hexadecimal       {hexadecimal_digit}+
 <INITIAL>dcb             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DCB;
 <INITIAL>rept            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_REPT;
 <INITIAL>endr            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDR;
-<INITIAL>macro           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MACRO;
-<INITIAL>macros          BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MACROS;
+<INITIAL>macro           BEGIN(MACRO_PARAMETERS); return TOKEN_DIRECTIVE_MACRO;
+<INITIAL>macros          BEGIN(MACRO_PARAMETERS); return TOKEN_DIRECTIVE_MACROS;
 <INITIAL>endm            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDM;
 <INITIAL>include         BEGIN(PATH); return TOKEN_DIRECTIVE_INCLUDE;
 <INITIAL>incbin          BEGIN(PATH); return TOKEN_DIRECTIVE_INCBIN;
@@ -276,6 +276,7 @@ hexadecimal       {hexadecimal_digit}+
 <INITIAL>shift           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SHIFT;
 <INITIAL>mexit           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MEXIT;
 <INITIAL>local           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LOCAL;
+<INITIAL>"="             BEGIN(OPERANDS); return yytext[0];
 
  /* Sizes. */
 ".b"            return TOKEN_SIZE_BYTE;
@@ -316,11 +317,11 @@ usp             return TOKEN_USER_STACK_POINTER_REGISTER;
 pc              return TOKEN_PROGRAM_COUNTER;
 
  /* Functions. */
-strlen          return TOKEN_STRLEN;
-strcmp          return TOKEN_STRCMP;
-instr           return TOKEN_INSTR;
-def             return TOKEN_DEF;
-type            return TOKEN_TYPE;
+<OPERANDS>strlen          return TOKEN_STRLEN;
+<OPERANDS>strcmp          return TOKEN_STRCMP;
+<OPERANDS>instr           return TOKEN_INSTR;
+<OPERANDS>def             return TOKEN_DEF;
+<OPERANDS>type            return TOKEN_TYPE;
 
  /* Decimal number. */
 {decimal} {
