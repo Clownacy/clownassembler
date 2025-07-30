@@ -782,12 +782,14 @@ statement
 	| TOKEN_DIRECTIVE_MACROS
 	{
 		statement->type = STATEMENT_TYPE_MACROS;
+		statement->shared.macro.uses_label = cc_false;
 		statement->shared.macro.parameter_names.head = NULL;
 		statement->shared.macro.parameter_names.tail = NULL;
 	}
 	| TOKEN_DIRECTIVE_MACROS identifier_list
 	{
 		statement->type = STATEMENT_TYPE_MACROS;
+		statement->shared.macro.uses_label = cc_false;
 		statement->shared.macro.parameter_names = $2;
 	}
 	| TOKEN_DIRECTIVE_ENDM
