@@ -736,6 +736,15 @@ statement
 		statement->shared.incbin.start = $4;
 		statement->shared.incbin.has_length = cc_false;
 	}
+	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' ',' expression
+	{
+		statement->type = STATEMENT_TYPE_INCBIN;
+		statement->shared.incbin.path = $2;
+		statement->shared.incbin.start.type = EXPRESSION_NUMBER;
+		statement->shared.incbin.start.shared.unsigned_long = 0;
+		statement->shared.incbin.has_length = cc_true;
+		statement->shared.incbin.length = $5;
+	}
 	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' expression ',' expression
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
