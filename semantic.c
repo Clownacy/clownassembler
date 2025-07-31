@@ -5239,6 +5239,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			{
 				/* TODO: What if there are already 0 arguments? */
 				--state->macro.total_arguments;
+				String_Destroy(&state->macro.argument_list[0]);
 				memmove(state->macro.argument_list, state->macro.argument_list + 1, sizeof(*state->macro.argument_list) * state->macro.total_arguments);
 				PushMacroArgumentSubstitutions(state);
 			}
@@ -5778,6 +5779,16 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 
 	Substitute_Deinitialise(&state->macro.substitutions);
 	Dictionary_Deinit(&state->macro.dictionary);
+
+	/* Destroy argument list. */
+	{
+		size_t i;
+
+		for (i = 0; i < state->macro.total_arguments; ++i)
+			String_Destroy(&state->macro.argument_list[0]);
+
+		free(state->macro.argument_list);
+	}
 
 	state->macro = previous_macro_state;
 }
