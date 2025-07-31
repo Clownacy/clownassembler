@@ -675,7 +675,7 @@ typedef struct Statement
 #if ! defined M68KASM_STYPE && ! defined M68KASM_STYPE_IS_DECLARED
 union M68KASM_STYPE
 {
-#line 473 "syntactic.y"
+#line 474 "syntactic.y"
 
 	unsigned long unsigned_long;
 	String string;

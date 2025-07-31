@@ -371,14 +371,22 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message)
 {
 	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
 
+	(void)statement;
+
 	if (Options_Get(&state->options)->warnings_enabled)
 	{
-		(void)statement;
-
 		TextOutput_fprintf(state->error_callbacks, "Warning: %s", message);
 
 		ErrorMessageCommon(state);
 	}
+}
+
+void m68kasm_warning_pedantic(void *scanner, Statement *statement, const char *message)
+{
+	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
+
+	if (Options_Get(&state->options)->pedantic_warnings_enabled)
+		m68kasm_warning(scanner, statement, message);
 }
 
 void m68kasm_error(void *scanner, Statement *statement, const char *message)

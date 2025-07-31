@@ -459,6 +459,7 @@ void DestroyStatement(Statement *statement);
 
 int m68kasm_lex(M68KASM_STYPE *yylval_param, void *yyscanner);
 void m68kasm_warning(void *scanner, Statement *statement, const char *message);
+void m68kasm_warning_pedantic(void *scanner, Statement *statement, const char *message);
 void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
 static cc_bool DoExpressionTriple(Expression *expression, ExpressionType type, Expression *left_expression, Expression *middle_expression, Expression *right_expression);
@@ -1176,7 +1177,7 @@ full_opcode
 	{
 		$$ = $1;
 		$$.size = SIZE_UNDEFINED;
-		m68kasm_warning(scanner, statement, "Opcode has a dot but no size; either remove the dot or add an explicit size.");
+		m68kasm_warning_pedantic(scanner, statement, "Opcode has a dot but no size; either remove the dot or add an explicit size.");
 	}
 	| opcode size
 	{
@@ -1765,7 +1766,7 @@ operand
 	}
 	| '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'
 	{
-		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = EXPRESSION_NUMBER;
 		$$.literal.shared.unsigned_long = 0;
@@ -1776,7 +1777,7 @@ operand
 	}
 	| expression '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'
 	{
-		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
 		$$.main_register = $3;
@@ -1808,7 +1809,7 @@ operand
 	}
 	| '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'
 	{
-		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = EXPRESSION_NUMBER;
 		$$.literal.shared.unsigned_long = 0;
@@ -1818,7 +1819,7 @@ operand
 	}
 	| expression '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'
 	{
-		m68kasm_warning(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
 		$$.index_register = $5 % 8;
