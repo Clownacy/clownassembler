@@ -221,123 +221,124 @@ enum yysymbol_kind_t
   YYSYMBOL_TOKEN_DIRECTIVE_ROR = 119,      /* TOKEN_DIRECTIVE_ROR  */
   YYSYMBOL_TOKEN_DIRECTIVE_DC = 120,       /* TOKEN_DIRECTIVE_DC  */
   YYSYMBOL_TOKEN_DIRECTIVE_DCB = 121,      /* TOKEN_DIRECTIVE_DCB  */
-  YYSYMBOL_TOKEN_DIRECTIVE_REPT = 122,     /* TOKEN_DIRECTIVE_REPT  */
-  YYSYMBOL_TOKEN_DIRECTIVE_ENDR = 123,     /* TOKEN_DIRECTIVE_ENDR  */
-  YYSYMBOL_TOKEN_DIRECTIVE_MACRO = 124,    /* TOKEN_DIRECTIVE_MACRO  */
-  YYSYMBOL_TOKEN_DIRECTIVE_MACROS = 125,   /* TOKEN_DIRECTIVE_MACROS  */
-  YYSYMBOL_TOKEN_DIRECTIVE_ENDM = 126,     /* TOKEN_DIRECTIVE_ENDM  */
-  YYSYMBOL_TOKEN_DIRECTIVE_INCLUDE = 127,  /* TOKEN_DIRECTIVE_INCLUDE  */
-  YYSYMBOL_TOKEN_DIRECTIVE_INCBIN = 128,   /* TOKEN_DIRECTIVE_INCBIN  */
-  YYSYMBOL_TOKEN_DIRECTIVE_EQU = 129,      /* TOKEN_DIRECTIVE_EQU  */
-  YYSYMBOL_TOKEN_DIRECTIVE_EQUS = 130,     /* TOKEN_DIRECTIVE_EQUS  */
-  YYSYMBOL_TOKEN_DIRECTIVE_SUBSTR = 131,   /* TOKEN_DIRECTIVE_SUBSTR  */
-  YYSYMBOL_TOKEN_DIRECTIVE_SET = 132,      /* TOKEN_DIRECTIVE_SET  */
-  YYSYMBOL_TOKEN_DIRECTIVE_IF = 133,       /* TOKEN_DIRECTIVE_IF  */
-  YYSYMBOL_TOKEN_DIRECTIVE_ELSEIF = 134,   /* TOKEN_DIRECTIVE_ELSEIF  */
-  YYSYMBOL_TOKEN_DIRECTIVE_ELSE = 135,     /* TOKEN_DIRECTIVE_ELSE  */
-  YYSYMBOL_TOKEN_DIRECTIVE_ENDC = 136,     /* TOKEN_DIRECTIVE_ENDC  */
-  YYSYMBOL_TOKEN_DIRECTIVE_WHILE = 137,    /* TOKEN_DIRECTIVE_WHILE  */
-  YYSYMBOL_TOKEN_DIRECTIVE_ENDW = 138,     /* TOKEN_DIRECTIVE_ENDW  */
-  YYSYMBOL_TOKEN_DIRECTIVE_EVEN = 139,     /* TOKEN_DIRECTIVE_EVEN  */
-  YYSYMBOL_TOKEN_DIRECTIVE_CNOP = 140,     /* TOKEN_DIRECTIVE_CNOP  */
-  YYSYMBOL_TOKEN_DIRECTIVE_INFORM = 141,   /* TOKEN_DIRECTIVE_INFORM  */
-  YYSYMBOL_TOKEN_DIRECTIVE_FAIL = 142,     /* TOKEN_DIRECTIVE_FAIL  */
-  YYSYMBOL_TOKEN_DIRECTIVE_END = 143,      /* TOKEN_DIRECTIVE_END  */
-  YYSYMBOL_TOKEN_DIRECTIVE_RS = 144,       /* TOKEN_DIRECTIVE_RS  */
-  YYSYMBOL_TOKEN_DIRECTIVE_RSSET = 145,    /* TOKEN_DIRECTIVE_RSSET  */
-  YYSYMBOL_TOKEN_DIRECTIVE_RSRESET = 146,  /* TOKEN_DIRECTIVE_RSRESET  */
-  YYSYMBOL_TOKEN_DIRECTIVE_OBJ = 147,      /* TOKEN_DIRECTIVE_OBJ  */
-  YYSYMBOL_TOKEN_DIRECTIVE_OBJEND = 148,   /* TOKEN_DIRECTIVE_OBJEND  */
-  YYSYMBOL_TOKEN_DIRECTIVE_ORG = 149,      /* TOKEN_DIRECTIVE_ORG  */
-  YYSYMBOL_TOKEN_DIRECTIVE_PUSHO = 150,    /* TOKEN_DIRECTIVE_PUSHO  */
-  YYSYMBOL_TOKEN_DIRECTIVE_POPO = 151,     /* TOKEN_DIRECTIVE_POPO  */
-  YYSYMBOL_TOKEN_DIRECTIVE_OPT = 152,      /* TOKEN_DIRECTIVE_OPT  */
-  YYSYMBOL_TOKEN_DIRECTIVE_PUSHP = 153,    /* TOKEN_DIRECTIVE_PUSHP  */
-  YYSYMBOL_TOKEN_DIRECTIVE_POPP = 154,     /* TOKEN_DIRECTIVE_POPP  */
-  YYSYMBOL_TOKEN_DIRECTIVE_SHIFT = 155,    /* TOKEN_DIRECTIVE_SHIFT  */
-  YYSYMBOL_TOKEN_DIRECTIVE_MEXIT = 156,    /* TOKEN_DIRECTIVE_MEXIT  */
-  YYSYMBOL_TOKEN_DIRECTIVE_LOCAL = 157,    /* TOKEN_DIRECTIVE_LOCAL  */
-  YYSYMBOL_TOKEN_DIRECTIVE_LIST = 158,     /* TOKEN_DIRECTIVE_LIST  */
-  YYSYMBOL_TOKEN_DIRECTIVE_NOLIST = 159,   /* TOKEN_DIRECTIVE_NOLIST  */
-  YYSYMBOL_TOKEN_SIZE_BYTE = 160,          /* TOKEN_SIZE_BYTE  */
-  YYSYMBOL_TOKEN_SIZE_SHORT = 161,         /* TOKEN_SIZE_SHORT  */
-  YYSYMBOL_TOKEN_SIZE_WORD = 162,          /* TOKEN_SIZE_WORD  */
-  YYSYMBOL_TOKEN_SIZE_LONGWORD = 163,      /* TOKEN_SIZE_LONGWORD  */
-  YYSYMBOL_TOKEN_DATA_REGISTER = 164,      /* TOKEN_DATA_REGISTER  */
-  YYSYMBOL_TOKEN_ADDRESS_REGISTER = 165,   /* TOKEN_ADDRESS_REGISTER  */
-  YYSYMBOL_TOKEN_NUMBER = 166,             /* TOKEN_NUMBER  */
-  YYSYMBOL_TOKEN_IDENTIFIER = 167,         /* TOKEN_IDENTIFIER  */
-  YYSYMBOL_TOKEN_LOCAL_IDENTIFIER = 168,   /* TOKEN_LOCAL_IDENTIFIER  */
-  YYSYMBOL_TOKEN_STRING = 169,             /* TOKEN_STRING  */
-  YYSYMBOL_TOKEN_OPTION = 170,             /* TOKEN_OPTION  */
-  YYSYMBOL_TOKEN_STATUS_REGISTER = 171,    /* TOKEN_STATUS_REGISTER  */
-  YYSYMBOL_TOKEN_CONDITION_CODE_REGISTER = 172, /* TOKEN_CONDITION_CODE_REGISTER  */
-  YYSYMBOL_TOKEN_USER_STACK_POINTER_REGISTER = 173, /* TOKEN_USER_STACK_POINTER_REGISTER  */
-  YYSYMBOL_TOKEN_PROGRAM_COUNTER = 174,    /* TOKEN_PROGRAM_COUNTER  */
-  YYSYMBOL_TOKEN_LOGICAL_AND = 175,        /* TOKEN_LOGICAL_AND  */
-  YYSYMBOL_TOKEN_LOGICAL_OR = 176,         /* TOKEN_LOGICAL_OR  */
-  YYSYMBOL_TOKEN_EQUALITY = 177,           /* TOKEN_EQUALITY  */
-  YYSYMBOL_TOKEN_INEQUALITY = 178,         /* TOKEN_INEQUALITY  */
-  YYSYMBOL_TOKEN_LESS_OR_EQUAL = 179,      /* TOKEN_LESS_OR_EQUAL  */
-  YYSYMBOL_TOKEN_MORE_OR_EQUAL = 180,      /* TOKEN_MORE_OR_EQUAL  */
-  YYSYMBOL_TOKEN_LEFT_SHIFT = 181,         /* TOKEN_LEFT_SHIFT  */
-  YYSYMBOL_TOKEN_RIGHT_SHIFT = 182,        /* TOKEN_RIGHT_SHIFT  */
-  YYSYMBOL_TOKEN_STRLEN = 183,             /* TOKEN_STRLEN  */
-  YYSYMBOL_TOKEN_STRCMP = 184,             /* TOKEN_STRCMP  */
-  YYSYMBOL_TOKEN_INSTR = 185,              /* TOKEN_INSTR  */
-  YYSYMBOL_TOKEN_DEF = 186,                /* TOKEN_DEF  */
-  YYSYMBOL_TOKEN_TYPE = 187,               /* TOKEN_TYPE  */
-  YYSYMBOL_TOKEN_FILESIZE = 188,           /* TOKEN_FILESIZE  */
-  YYSYMBOL_TOKEN_OFFSET = 189,             /* TOKEN_OFFSET  */
-  YYSYMBOL_190_ = 190,                     /* ','  */
-  YYSYMBOL_191_ = 191,                     /* '*'  */
-  YYSYMBOL_192_ = 192,                     /* '='  */
-  YYSYMBOL_193_ = 193,                     /* '.'  */
-  YYSYMBOL_194_ = 194,                     /* '('  */
-  YYSYMBOL_195_ = 195,                     /* ')'  */
-  YYSYMBOL_196_ = 196,                     /* '+'  */
-  YYSYMBOL_197_ = 197,                     /* '-'  */
-  YYSYMBOL_198_ = 198,                     /* '#'  */
-  YYSYMBOL_199_ = 199,                     /* '/'  */
-  YYSYMBOL_200_ = 200,                     /* '<'  */
-  YYSYMBOL_201_ = 201,                     /* '>'  */
-  YYSYMBOL_202_ = 202,                     /* '%'  */
-  YYSYMBOL_203_ = 203,                     /* '&'  */
-  YYSYMBOL_204_ = 204,                     /* '!'  */
-  YYSYMBOL_205_ = 205,                     /* '|'  */
-  YYSYMBOL_206_ = 206,                     /* '^'  */
-  YYSYMBOL_207_ = 207,                     /* '~'  */
-  YYSYMBOL_208_ = 208,                     /* '@'  */
-  YYSYMBOL_YYACCEPT = 209,                 /* $accept  */
-  YYSYMBOL_statement = 210,                /* statement  */
-  YYSYMBOL_expression_list = 211,          /* expression_list  */
-  YYSYMBOL_identifier_list = 212,          /* identifier_list  */
-  YYSYMBOL_option_list = 213,              /* option_list  */
-  YYSYMBOL_instruction = 214,              /* instruction  */
-  YYSYMBOL_full_opcode = 215,              /* full_opcode  */
-  YYSYMBOL_opcode = 216,                   /* opcode  */
-  YYSYMBOL_size = 217,                     /* size  */
-  YYSYMBOL_operand = 218,                  /* operand  */
-  YYSYMBOL_register_list = 219,            /* register_list  */
-  YYSYMBOL_register_span = 220,            /* register_span  */
-  YYSYMBOL_data_or_address_register = 221, /* data_or_address_register  */
-  YYSYMBOL_expression = 222,               /* expression  */
-  YYSYMBOL_expression1 = 223,              /* expression1  */
-  YYSYMBOL_expression2 = 224,              /* expression2  */
-  YYSYMBOL_expression3 = 225,              /* expression3  */
-  YYSYMBOL_expression4 = 226,              /* expression4  */
-  YYSYMBOL_expression5 = 227,              /* expression5  */
-  YYSYMBOL_expression6 = 228,              /* expression6  */
-  YYSYMBOL_expression7 = 229,              /* expression7  */
-  YYSYMBOL_expression8 = 230,              /* expression8  */
-  YYSYMBOL_string = 231                    /* string  */
+  YYSYMBOL_TOKEN_DIRECTIVE_DS = 122,       /* TOKEN_DIRECTIVE_DS  */
+  YYSYMBOL_TOKEN_DIRECTIVE_REPT = 123,     /* TOKEN_DIRECTIVE_REPT  */
+  YYSYMBOL_TOKEN_DIRECTIVE_ENDR = 124,     /* TOKEN_DIRECTIVE_ENDR  */
+  YYSYMBOL_TOKEN_DIRECTIVE_MACRO = 125,    /* TOKEN_DIRECTIVE_MACRO  */
+  YYSYMBOL_TOKEN_DIRECTIVE_MACROS = 126,   /* TOKEN_DIRECTIVE_MACROS  */
+  YYSYMBOL_TOKEN_DIRECTIVE_ENDM = 127,     /* TOKEN_DIRECTIVE_ENDM  */
+  YYSYMBOL_TOKEN_DIRECTIVE_INCLUDE = 128,  /* TOKEN_DIRECTIVE_INCLUDE  */
+  YYSYMBOL_TOKEN_DIRECTIVE_INCBIN = 129,   /* TOKEN_DIRECTIVE_INCBIN  */
+  YYSYMBOL_TOKEN_DIRECTIVE_EQU = 130,      /* TOKEN_DIRECTIVE_EQU  */
+  YYSYMBOL_TOKEN_DIRECTIVE_EQUS = 131,     /* TOKEN_DIRECTIVE_EQUS  */
+  YYSYMBOL_TOKEN_DIRECTIVE_SUBSTR = 132,   /* TOKEN_DIRECTIVE_SUBSTR  */
+  YYSYMBOL_TOKEN_DIRECTIVE_SET = 133,      /* TOKEN_DIRECTIVE_SET  */
+  YYSYMBOL_TOKEN_DIRECTIVE_IF = 134,       /* TOKEN_DIRECTIVE_IF  */
+  YYSYMBOL_TOKEN_DIRECTIVE_ELSEIF = 135,   /* TOKEN_DIRECTIVE_ELSEIF  */
+  YYSYMBOL_TOKEN_DIRECTIVE_ELSE = 136,     /* TOKEN_DIRECTIVE_ELSE  */
+  YYSYMBOL_TOKEN_DIRECTIVE_ENDC = 137,     /* TOKEN_DIRECTIVE_ENDC  */
+  YYSYMBOL_TOKEN_DIRECTIVE_WHILE = 138,    /* TOKEN_DIRECTIVE_WHILE  */
+  YYSYMBOL_TOKEN_DIRECTIVE_ENDW = 139,     /* TOKEN_DIRECTIVE_ENDW  */
+  YYSYMBOL_TOKEN_DIRECTIVE_EVEN = 140,     /* TOKEN_DIRECTIVE_EVEN  */
+  YYSYMBOL_TOKEN_DIRECTIVE_CNOP = 141,     /* TOKEN_DIRECTIVE_CNOP  */
+  YYSYMBOL_TOKEN_DIRECTIVE_INFORM = 142,   /* TOKEN_DIRECTIVE_INFORM  */
+  YYSYMBOL_TOKEN_DIRECTIVE_FAIL = 143,     /* TOKEN_DIRECTIVE_FAIL  */
+  YYSYMBOL_TOKEN_DIRECTIVE_END = 144,      /* TOKEN_DIRECTIVE_END  */
+  YYSYMBOL_TOKEN_DIRECTIVE_RS = 145,       /* TOKEN_DIRECTIVE_RS  */
+  YYSYMBOL_TOKEN_DIRECTIVE_RSSET = 146,    /* TOKEN_DIRECTIVE_RSSET  */
+  YYSYMBOL_TOKEN_DIRECTIVE_RSRESET = 147,  /* TOKEN_DIRECTIVE_RSRESET  */
+  YYSYMBOL_TOKEN_DIRECTIVE_OBJ = 148,      /* TOKEN_DIRECTIVE_OBJ  */
+  YYSYMBOL_TOKEN_DIRECTIVE_OBJEND = 149,   /* TOKEN_DIRECTIVE_OBJEND  */
+  YYSYMBOL_TOKEN_DIRECTIVE_ORG = 150,      /* TOKEN_DIRECTIVE_ORG  */
+  YYSYMBOL_TOKEN_DIRECTIVE_PUSHO = 151,    /* TOKEN_DIRECTIVE_PUSHO  */
+  YYSYMBOL_TOKEN_DIRECTIVE_POPO = 152,     /* TOKEN_DIRECTIVE_POPO  */
+  YYSYMBOL_TOKEN_DIRECTIVE_OPT = 153,      /* TOKEN_DIRECTIVE_OPT  */
+  YYSYMBOL_TOKEN_DIRECTIVE_PUSHP = 154,    /* TOKEN_DIRECTIVE_PUSHP  */
+  YYSYMBOL_TOKEN_DIRECTIVE_POPP = 155,     /* TOKEN_DIRECTIVE_POPP  */
+  YYSYMBOL_TOKEN_DIRECTIVE_SHIFT = 156,    /* TOKEN_DIRECTIVE_SHIFT  */
+  YYSYMBOL_TOKEN_DIRECTIVE_MEXIT = 157,    /* TOKEN_DIRECTIVE_MEXIT  */
+  YYSYMBOL_TOKEN_DIRECTIVE_LOCAL = 158,    /* TOKEN_DIRECTIVE_LOCAL  */
+  YYSYMBOL_TOKEN_DIRECTIVE_LIST = 159,     /* TOKEN_DIRECTIVE_LIST  */
+  YYSYMBOL_TOKEN_DIRECTIVE_NOLIST = 160,   /* TOKEN_DIRECTIVE_NOLIST  */
+  YYSYMBOL_TOKEN_SIZE_BYTE = 161,          /* TOKEN_SIZE_BYTE  */
+  YYSYMBOL_TOKEN_SIZE_SHORT = 162,         /* TOKEN_SIZE_SHORT  */
+  YYSYMBOL_TOKEN_SIZE_WORD = 163,          /* TOKEN_SIZE_WORD  */
+  YYSYMBOL_TOKEN_SIZE_LONGWORD = 164,      /* TOKEN_SIZE_LONGWORD  */
+  YYSYMBOL_TOKEN_DATA_REGISTER = 165,      /* TOKEN_DATA_REGISTER  */
+  YYSYMBOL_TOKEN_ADDRESS_REGISTER = 166,   /* TOKEN_ADDRESS_REGISTER  */
+  YYSYMBOL_TOKEN_NUMBER = 167,             /* TOKEN_NUMBER  */
+  YYSYMBOL_TOKEN_IDENTIFIER = 168,         /* TOKEN_IDENTIFIER  */
+  YYSYMBOL_TOKEN_LOCAL_IDENTIFIER = 169,   /* TOKEN_LOCAL_IDENTIFIER  */
+  YYSYMBOL_TOKEN_STRING = 170,             /* TOKEN_STRING  */
+  YYSYMBOL_TOKEN_OPTION = 171,             /* TOKEN_OPTION  */
+  YYSYMBOL_TOKEN_STATUS_REGISTER = 172,    /* TOKEN_STATUS_REGISTER  */
+  YYSYMBOL_TOKEN_CONDITION_CODE_REGISTER = 173, /* TOKEN_CONDITION_CODE_REGISTER  */
+  YYSYMBOL_TOKEN_USER_STACK_POINTER_REGISTER = 174, /* TOKEN_USER_STACK_POINTER_REGISTER  */
+  YYSYMBOL_TOKEN_PROGRAM_COUNTER = 175,    /* TOKEN_PROGRAM_COUNTER  */
+  YYSYMBOL_TOKEN_LOGICAL_AND = 176,        /* TOKEN_LOGICAL_AND  */
+  YYSYMBOL_TOKEN_LOGICAL_OR = 177,         /* TOKEN_LOGICAL_OR  */
+  YYSYMBOL_TOKEN_EQUALITY = 178,           /* TOKEN_EQUALITY  */
+  YYSYMBOL_TOKEN_INEQUALITY = 179,         /* TOKEN_INEQUALITY  */
+  YYSYMBOL_TOKEN_LESS_OR_EQUAL = 180,      /* TOKEN_LESS_OR_EQUAL  */
+  YYSYMBOL_TOKEN_MORE_OR_EQUAL = 181,      /* TOKEN_MORE_OR_EQUAL  */
+  YYSYMBOL_TOKEN_LEFT_SHIFT = 182,         /* TOKEN_LEFT_SHIFT  */
+  YYSYMBOL_TOKEN_RIGHT_SHIFT = 183,        /* TOKEN_RIGHT_SHIFT  */
+  YYSYMBOL_TOKEN_STRLEN = 184,             /* TOKEN_STRLEN  */
+  YYSYMBOL_TOKEN_STRCMP = 185,             /* TOKEN_STRCMP  */
+  YYSYMBOL_TOKEN_INSTR = 186,              /* TOKEN_INSTR  */
+  YYSYMBOL_TOKEN_DEF = 187,                /* TOKEN_DEF  */
+  YYSYMBOL_TOKEN_TYPE = 188,               /* TOKEN_TYPE  */
+  YYSYMBOL_TOKEN_FILESIZE = 189,           /* TOKEN_FILESIZE  */
+  YYSYMBOL_TOKEN_OFFSET = 190,             /* TOKEN_OFFSET  */
+  YYSYMBOL_191_ = 191,                     /* ','  */
+  YYSYMBOL_192_ = 192,                     /* '*'  */
+  YYSYMBOL_193_ = 193,                     /* '='  */
+  YYSYMBOL_194_ = 194,                     /* '.'  */
+  YYSYMBOL_195_ = 195,                     /* '('  */
+  YYSYMBOL_196_ = 196,                     /* ')'  */
+  YYSYMBOL_197_ = 197,                     /* '+'  */
+  YYSYMBOL_198_ = 198,                     /* '-'  */
+  YYSYMBOL_199_ = 199,                     /* '#'  */
+  YYSYMBOL_200_ = 200,                     /* '/'  */
+  YYSYMBOL_201_ = 201,                     /* '<'  */
+  YYSYMBOL_202_ = 202,                     /* '>'  */
+  YYSYMBOL_203_ = 203,                     /* '%'  */
+  YYSYMBOL_204_ = 204,                     /* '&'  */
+  YYSYMBOL_205_ = 205,                     /* '!'  */
+  YYSYMBOL_206_ = 206,                     /* '|'  */
+  YYSYMBOL_207_ = 207,                     /* '^'  */
+  YYSYMBOL_208_ = 208,                     /* '~'  */
+  YYSYMBOL_209_ = 209,                     /* '@'  */
+  YYSYMBOL_YYACCEPT = 210,                 /* $accept  */
+  YYSYMBOL_statement = 211,                /* statement  */
+  YYSYMBOL_expression_list = 212,          /* expression_list  */
+  YYSYMBOL_identifier_list = 213,          /* identifier_list  */
+  YYSYMBOL_option_list = 214,              /* option_list  */
+  YYSYMBOL_instruction = 215,              /* instruction  */
+  YYSYMBOL_full_opcode = 216,              /* full_opcode  */
+  YYSYMBOL_opcode = 217,                   /* opcode  */
+  YYSYMBOL_size = 218,                     /* size  */
+  YYSYMBOL_operand = 219,                  /* operand  */
+  YYSYMBOL_register_list = 220,            /* register_list  */
+  YYSYMBOL_register_span = 221,            /* register_span  */
+  YYSYMBOL_data_or_address_register = 222, /* data_or_address_register  */
+  YYSYMBOL_expression = 223,               /* expression  */
+  YYSYMBOL_expression1 = 224,              /* expression1  */
+  YYSYMBOL_expression2 = 225,              /* expression2  */
+  YYSYMBOL_expression3 = 226,              /* expression3  */
+  YYSYMBOL_expression4 = 227,              /* expression4  */
+  YYSYMBOL_expression5 = 228,              /* expression5  */
+  YYSYMBOL_expression6 = 229,              /* expression6  */
+  YYSYMBOL_expression7 = 230,              /* expression7  */
+  YYSYMBOL_expression8 = 231,              /* expression8  */
+  YYSYMBOL_string = 232                    /* string  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
 
 
 /* Unqualified %code blocks.  */
-#line 453 "syntactic.y"
+#line 461 "syntactic.y"
 
 
 #include <assert.h>
@@ -358,7 +359,7 @@ static void DestroyOperand(Operand *operand);
 static void DestroyStatementInstruction(StatementInstruction *instruction);
 
 
-#line 362 "syntactic.c"
+#line 363 "syntactic.c"
 
 #ifdef short
 # undef short
@@ -679,21 +680,21 @@ union yyalloc
 #endif /* !YYCOPY_NEEDED */
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  225
+#define YYFINAL  227
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   661
+#define YYLAST   629
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  209
+#define YYNTOKENS  210
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  23
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  267
+#define YYNRULES  268
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  395
+#define YYNSTATES  398
 
 /* YYMAXUTOK -- Last valid token kind.  */
-#define YYMAXUTOK   444
+#define YYMAXUTOK   445
 
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
@@ -710,16 +711,16 @@ static const yytype_uint8 yytranslate[] =
        0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,   204,     2,   198,     2,   202,   203,     2,
-     194,   195,   191,   196,   190,   197,   193,   199,     2,     2,
+       2,     2,     2,   205,     2,   199,     2,   203,   204,     2,
+     195,   196,   192,   197,   191,   198,   194,   200,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     200,   192,   201,     2,   208,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,   206,     2,     2,     2,     2,     2,
+     201,   193,   202,     2,   209,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,   205,     2,   207,     2,     2,     2,
+       2,     2,     2,     2,   207,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,   206,     2,   208,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -751,40 +752,40 @@ static const yytype_uint8 yytranslate[] =
      155,   156,   157,   158,   159,   160,   161,   162,   163,   164,
      165,   166,   167,   168,   169,   170,   171,   172,   173,   174,
      175,   176,   177,   178,   179,   180,   181,   182,   183,   184,
-     185,   186,   187,   188,   189
+     185,   186,   187,   188,   189,   190
 };
 
 #if M68KASM_DEBUG
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   699,   699,   702,   707,   713,   720,   725,   733,   740,
-     749,   757,   762,   766,   773,   780,   786,   792,   799,   805,
-     809,   814,   819,   824,   833,   841,   849,   856,   861,   866,
-     871,   876,   880,   884,   888,   893,   897,   901,   907,   913,
-     922,   926,   930,   936,   941,   948,   952,   957,   961,   966,
-     970,   974,   979,   984,   989,   993,   997,  1002,  1007,  1015,
-    1032,  1060,  1077,  1105,  1122,  1150,  1156,  1162,  1171,  1176,
-    1182,  1190,  1194,  1198,  1202,  1206,  1210,  1214,  1218,  1222,
-    1226,  1230,  1234,  1238,  1242,  1246,  1250,  1254,  1258,  1262,
-    1266,  1270,  1274,  1278,  1282,  1286,  1290,  1294,  1298,  1302,
-    1306,  1310,  1314,  1318,  1322,  1326,  1330,  1334,  1338,  1342,
-    1346,  1350,  1354,  1359,  1364,  1369,  1374,  1379,  1384,  1389,
-    1394,  1399,  1404,  1409,  1414,  1419,  1424,  1429,  1434,  1439,
-    1444,  1449,  1454,  1459,  1464,  1469,  1474,  1479,  1484,  1489,
-    1494,  1499,  1504,  1509,  1514,  1518,  1522,  1527,  1532,  1537,
-    1542,  1547,  1552,  1557,  1562,  1567,  1572,  1577,  1582,  1587,
-    1592,  1596,  1600,  1604,  1608,  1612,  1616,  1620,  1624,  1628,
-    1632,  1636,  1640,  1644,  1648,  1652,  1656,  1660,  1664,  1668,
-    1672,  1676,  1680,  1684,  1688,  1692,  1696,  1700,  1707,  1711,
-    1715,  1719,  1727,  1732,  1737,  1742,  1748,  1758,  1767,  1778,
-    1788,  1793,  1802,  1810,  1820,  1830,  1846,  1850,  1854,  1859,
-    1865,  1872,  1903,  1907,  1914,  1918,  1943,  1947,  1960,  1965,
-    1971,  1979,  1983,  1988,  1993,  2001,  2005,  2010,  2015,  2020,
-    2028,  2032,  2037,  2045,  2049,  2054,  2059,  2067,  2071,  2076,
-    2081,  2086,  2094,  2098,  2103,  2111,  2115,  2119,  2124,  2130,
-    2138,  2143,  2148,  2153,  2164,  2168,  2172,  2176,  2180,  2185,
-    2190,  2200,  2205,  2210,  2215,  2220,  2225,  2233
+       0,   708,   708,   711,   716,   722,   729,   735,   740,   748,
+     755,   764,   772,   777,   781,   788,   795,   801,   807,   814,
+     820,   824,   829,   834,   839,   848,   856,   864,   871,   876,
+     881,   886,   891,   895,   899,   903,   908,   912,   916,   922,
+     928,   937,   941,   945,   951,   956,   963,   967,   972,   976,
+     981,   985,   989,   994,   999,  1004,  1008,  1012,  1017,  1022,
+    1030,  1047,  1075,  1092,  1120,  1137,  1165,  1171,  1177,  1186,
+    1191,  1197,  1205,  1209,  1213,  1217,  1221,  1225,  1229,  1233,
+    1237,  1241,  1245,  1249,  1253,  1257,  1261,  1265,  1269,  1273,
+    1277,  1281,  1285,  1289,  1293,  1297,  1301,  1305,  1309,  1313,
+    1317,  1321,  1325,  1329,  1333,  1337,  1341,  1345,  1349,  1353,
+    1357,  1361,  1365,  1369,  1374,  1379,  1384,  1389,  1394,  1399,
+    1404,  1409,  1414,  1419,  1424,  1429,  1434,  1439,  1444,  1449,
+    1454,  1459,  1464,  1469,  1474,  1479,  1484,  1489,  1494,  1499,
+    1504,  1509,  1514,  1519,  1524,  1529,  1533,  1537,  1542,  1547,
+    1552,  1557,  1562,  1567,  1572,  1577,  1582,  1587,  1592,  1597,
+    1602,  1607,  1611,  1615,  1619,  1623,  1627,  1631,  1635,  1639,
+    1643,  1647,  1651,  1655,  1659,  1663,  1667,  1671,  1675,  1679,
+    1683,  1687,  1691,  1695,  1699,  1703,  1707,  1711,  1715,  1722,
+    1726,  1730,  1734,  1742,  1747,  1752,  1757,  1763,  1773,  1782,
+    1793,  1803,  1808,  1817,  1825,  1835,  1845,  1861,  1865,  1869,
+    1874,  1880,  1887,  1918,  1922,  1929,  1933,  1958,  1962,  1975,
+    1980,  1986,  1994,  1998,  2003,  2008,  2016,  2020,  2025,  2030,
+    2035,  2043,  2047,  2052,  2060,  2064,  2069,  2074,  2082,  2086,
+    2091,  2096,  2101,  2109,  2113,  2118,  2126,  2130,  2134,  2139,
+    2145,  2153,  2158,  2163,  2168,  2179,  2183,  2187,  2191,  2195,
+    2200,  2205,  2215,  2220,  2225,  2230,  2235,  2240,  2248
 };
 #endif
 
@@ -840,20 +841,20 @@ static const char *const yytname[] =
   "TOKEN_DIRECTIVE_ASL", "TOKEN_DIRECTIVE_ASR", "TOKEN_DIRECTIVE_LSL",
   "TOKEN_DIRECTIVE_LSR", "TOKEN_DIRECTIVE_ROXL", "TOKEN_DIRECTIVE_ROXR",
   "TOKEN_DIRECTIVE_ROL", "TOKEN_DIRECTIVE_ROR", "TOKEN_DIRECTIVE_DC",
-  "TOKEN_DIRECTIVE_DCB", "TOKEN_DIRECTIVE_REPT", "TOKEN_DIRECTIVE_ENDR",
-  "TOKEN_DIRECTIVE_MACRO", "TOKEN_DIRECTIVE_MACROS",
-  "TOKEN_DIRECTIVE_ENDM", "TOKEN_DIRECTIVE_INCLUDE",
-  "TOKEN_DIRECTIVE_INCBIN", "TOKEN_DIRECTIVE_EQU", "TOKEN_DIRECTIVE_EQUS",
-  "TOKEN_DIRECTIVE_SUBSTR", "TOKEN_DIRECTIVE_SET", "TOKEN_DIRECTIVE_IF",
-  "TOKEN_DIRECTIVE_ELSEIF", "TOKEN_DIRECTIVE_ELSE", "TOKEN_DIRECTIVE_ENDC",
-  "TOKEN_DIRECTIVE_WHILE", "TOKEN_DIRECTIVE_ENDW", "TOKEN_DIRECTIVE_EVEN",
-  "TOKEN_DIRECTIVE_CNOP", "TOKEN_DIRECTIVE_INFORM", "TOKEN_DIRECTIVE_FAIL",
-  "TOKEN_DIRECTIVE_END", "TOKEN_DIRECTIVE_RS", "TOKEN_DIRECTIVE_RSSET",
-  "TOKEN_DIRECTIVE_RSRESET", "TOKEN_DIRECTIVE_OBJ",
-  "TOKEN_DIRECTIVE_OBJEND", "TOKEN_DIRECTIVE_ORG", "TOKEN_DIRECTIVE_PUSHO",
-  "TOKEN_DIRECTIVE_POPO", "TOKEN_DIRECTIVE_OPT", "TOKEN_DIRECTIVE_PUSHP",
-  "TOKEN_DIRECTIVE_POPP", "TOKEN_DIRECTIVE_SHIFT", "TOKEN_DIRECTIVE_MEXIT",
-  "TOKEN_DIRECTIVE_LOCAL", "TOKEN_DIRECTIVE_LIST",
+  "TOKEN_DIRECTIVE_DCB", "TOKEN_DIRECTIVE_DS", "TOKEN_DIRECTIVE_REPT",
+  "TOKEN_DIRECTIVE_ENDR", "TOKEN_DIRECTIVE_MACRO",
+  "TOKEN_DIRECTIVE_MACROS", "TOKEN_DIRECTIVE_ENDM",
+  "TOKEN_DIRECTIVE_INCLUDE", "TOKEN_DIRECTIVE_INCBIN",
+  "TOKEN_DIRECTIVE_EQU", "TOKEN_DIRECTIVE_EQUS", "TOKEN_DIRECTIVE_SUBSTR",
+  "TOKEN_DIRECTIVE_SET", "TOKEN_DIRECTIVE_IF", "TOKEN_DIRECTIVE_ELSEIF",
+  "TOKEN_DIRECTIVE_ELSE", "TOKEN_DIRECTIVE_ENDC", "TOKEN_DIRECTIVE_WHILE",
+  "TOKEN_DIRECTIVE_ENDW", "TOKEN_DIRECTIVE_EVEN", "TOKEN_DIRECTIVE_CNOP",
+  "TOKEN_DIRECTIVE_INFORM", "TOKEN_DIRECTIVE_FAIL", "TOKEN_DIRECTIVE_END",
+  "TOKEN_DIRECTIVE_RS", "TOKEN_DIRECTIVE_RSSET", "TOKEN_DIRECTIVE_RSRESET",
+  "TOKEN_DIRECTIVE_OBJ", "TOKEN_DIRECTIVE_OBJEND", "TOKEN_DIRECTIVE_ORG",
+  "TOKEN_DIRECTIVE_PUSHO", "TOKEN_DIRECTIVE_POPO", "TOKEN_DIRECTIVE_OPT",
+  "TOKEN_DIRECTIVE_PUSHP", "TOKEN_DIRECTIVE_POPP", "TOKEN_DIRECTIVE_SHIFT",
+  "TOKEN_DIRECTIVE_MEXIT", "TOKEN_DIRECTIVE_LOCAL", "TOKEN_DIRECTIVE_LIST",
   "TOKEN_DIRECTIVE_NOLIST", "TOKEN_SIZE_BYTE", "TOKEN_SIZE_SHORT",
   "TOKEN_SIZE_WORD", "TOKEN_SIZE_LONGWORD", "TOKEN_DATA_REGISTER",
   "TOKEN_ADDRESS_REGISTER", "TOKEN_NUMBER", "TOKEN_IDENTIFIER",
@@ -880,7 +881,7 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
-#define YYPACT_NINF (-290)
+#define YYPACT_NINF (-292)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -894,46 +895,46 @@ yysymbol_name (yysymbol_kind_t yysymbol)
    STATE-NUM.  */
 static const yytype_int16 yypact[] =
 {
-     263,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,
-    -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,
-    -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,
-    -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,
-    -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,
-    -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,
-    -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,
-    -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,
-    -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,
-    -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,
-    -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,
-    -290,  -290,  -290,  -290,  -290,  -290,  -290,  -290,   -52,   -52,
-     421,  -290,  -159,  -161,  -290,  -130,  -107,   421,    50,   -43,
-     421,   421,   421,  -290,  -290,   421,  -290,  -290,   421,   421,
-    -290,  -290,   -52,   421,   421,   421,  -290,   421,  -290,  -290,
-    -156,   -90,  -117,  -290,  -290,  -161,  -290,  -290,   421,    72,
-    -290,    14,   -96,  -290,  -290,  -290,  -290,   421,   421,  -290,
-     -75,  -290,  -290,   -82,   -64,   -34,   -19,    10,    13,    26,
-    -290,   421,   421,   421,   421,   421,  -290,   -55,   -78,  -119,
-     -47,  -186,   -10,     8,  -290,  -290,  -290,  -290,   -51,    40,
-      40,  -290,    51,   -55,  -290,  -290,   325,   -74,   -55,   -55,
-     -55,   -55,   -71,   -58,   421,   -55,   -55,   -55,   -55,  -290,
-      53,  -290,  -290,    40,   -55,  -290,  -290,  -290,  -290,  -290,
-    -290,   260,   453,   421,    54,  -290,  -101,    48,   -87,  -290,
-    -290,    56,   -55,   -38,  -290,   -13,    79,   421,    83,    66,
-      82,   421,  -155,  -290,  -290,  -290,  -290,   421,   421,   421,
-     421,   421,   421,   421,   421,   421,   421,   421,   421,   421,
-     421,   421,   421,   421,   421,   421,   421,  -161,    85,   357,
-      84,   -18,   389,   421,    86,   -55,    87,  -173,    64,   293,
-     -55,    14,    70,    70,   -97,  -290,   421,   421,    61,    68,
-      -6,    65,    67,   228,   229,   -92,  -290,   -78,   -78,  -119,
-    -119,  -119,   -47,   -47,   -47,   -47,  -186,  -186,   -10,   -10,
-     -10,     8,     8,     8,     8,  -290,  -290,    40,  -290,   421,
-      -2,  -290,    90,    92,    16,   -55,   240,  -290,    70,   235,
-      70,   237,  -290,  -290,  -290,   -62,   -61,   -55,   -55,  -290,
-      79,   421,  -290,  -290,  -290,  -290,  -290,   -55,   421,  -290,
-    -290,   264,   421,  -132,  -290,  -126,  -290,    70,  -290,    70,
-    -290,   241,  -105,   -55,  -290,    56,  -290,   242,  -290,   243,
-    -108,  -104,  -290,   421,  -290,  -290,  -290,  -290,   244,  -290,
-     245,   -80,  -290,  -290,  -290
+     265,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,
+    -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,
+    -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,
+    -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,
+    -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,
+    -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,
+    -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,
+    -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,
+    -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,
+    -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,
+    -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,
+    -292,  -292,  -292,  -292,  -292,  -292,  -292,  -292,    84,    84,
+      84,   388,  -292,  -152,  -162,  -292,  -131,  -119,   388,   -86,
+     259,   388,   388,   388,  -292,  -292,   388,  -292,  -292,   388,
+     388,  -292,  -292,    84,   388,   388,   388,  -292,   388,  -292,
+    -292,  -118,   -65,   -57,  -292,  -292,  -162,  -292,  -292,   388,
+     115,  -292,    15,   -45,  -292,  -292,  -292,  -292,   388,   388,
+     388,  -292,   -35,  -292,  -292,   -54,   -41,   -33,     2,    24,
+      30,    36,  -292,   388,   388,   388,   388,   388,  -292,  -106,
+    -165,   -71,   -99,     6,    48,     9,  -292,  -292,  -292,  -292,
+      -5,    51,    51,  -292,    59,  -106,  -292,  -292,   292,   -17,
+    -106,  -106,  -106,  -106,    -1,    17,   388,  -106,  -106,  -106,
+    -106,  -292,    73,  -292,  -292,    51,  -106,  -292,  -292,  -292,
+    -292,  -292,  -292,  -112,   420,   388,   241,  -292,   233,   236,
+     -73,  -292,  -292,   244,  -106,    39,  -106,  -292,   266,   267,
+     388,    71,    28,   268,   388,   -64,  -292,  -292,  -292,  -292,
+     388,   388,   388,   388,   388,   388,   388,   388,   388,   388,
+     388,   388,   388,   388,   388,   388,   388,   388,   388,   388,
+    -162,   271,   324,   270,    41,   356,   388,   272,  -106,   281,
+     -90,   250,   -42,  -106,    15,    69,    69,  -158,  -292,   388,
+     388,   257,   264,    45,   269,   273,   274,   275,   -38,  -292,
+    -165,  -165,   -71,   -71,   -71,   -99,   -99,   -99,   -99,     6,
+       6,    48,    48,    48,     9,     9,     9,     9,  -292,  -292,
+      51,  -292,   388,    50,  -292,   293,   296,    52,  -106,   282,
+    -292,    69,   277,    69,   276,  -292,  -292,  -292,   -89,   -19,
+    -106,  -106,  -292,   267,   388,  -292,  -292,  -292,  -292,  -292,
+    -106,   388,  -292,  -292,   305,   388,  -132,  -292,  -127,  -292,
+      69,  -292,    69,  -292,   289,   -56,  -106,  -292,   244,  -292,
+     290,  -292,   299,  -102,   -96,  -292,   388,  -292,  -292,  -292,
+    -292,   300,  -292,   302,   -25,  -292,  -292,  -292
 };
 
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -941,62 +942,62 @@ static const yytype_int16 yypact[] =
    means the default is an error.  */
 static const yytype_int16 yydefact[] =
 {
-       2,    71,    72,    73,    74,    75,    76,    77,    78,    79,
-      80,    81,    82,    83,    84,    85,    86,    87,    88,    89,
-      90,    91,    92,    93,    94,    95,    96,    97,    98,    99,
-     100,   101,   102,   103,   104,   105,   106,   107,   108,   109,
-     110,   111,   112,   113,   114,   115,   116,   117,   118,   119,
-     120,   121,   122,   123,   124,   125,   126,   127,   128,   129,
-     130,   131,   132,   133,   134,   135,   136,   137,   138,   139,
-     140,   141,   142,   143,   144,   145,   146,   147,   148,   149,
-     150,   151,   152,   153,   154,   155,   156,   157,   158,   159,
-     160,   161,   162,   163,   164,   165,   166,   167,   168,   169,
-     170,   171,   172,   173,   174,   175,   176,   177,   178,   179,
-     180,   181,   182,   183,   184,   185,   186,   187,     0,     0,
-       0,    12,    13,    17,    19,     0,     0,     0,     0,     0,
-       0,     0,    31,    32,    33,     0,    35,    36,     0,     0,
-      40,    41,     0,     0,    45,     0,    47,     0,    49,    50,
-       0,     0,     0,    54,    55,     0,    57,    58,     0,     0,
-       3,    65,    68,   188,   189,   190,   191,     0,     0,   250,
-     251,   252,   267,     0,     0,     0,     0,     0,     0,     0,
-     255,     0,     0,     0,     0,     0,   256,    11,   218,   221,
-     225,   230,   233,   237,   242,   245,   254,    61,    14,    15,
-      18,     6,     7,    20,    22,    21,     0,     0,    27,    29,
-      30,    34,     0,     0,     0,    43,    44,    46,    48,    63,
-      51,    52,    53,    56,    28,     1,   216,   217,   206,   207,
-     208,     0,     0,     0,    66,   211,   212,   214,   209,    69,
-      70,     4,    59,     0,   253,     0,     0,     0,     0,     0,
-       0,     0,     0,   246,   247,   249,   248,     0,     0,     0,
+       2,    72,    73,    74,    75,    76,    77,    78,    79,    80,
+      81,    82,    83,    84,    85,    86,    87,    88,    89,    90,
+      91,    92,    93,    94,    95,    96,    97,    98,    99,   100,
+     101,   102,   103,   104,   105,   106,   107,   108,   109,   110,
+     111,   112,   113,   114,   115,   116,   117,   118,   119,   120,
+     121,   122,   123,   124,   125,   126,   127,   128,   129,   130,
+     131,   132,   133,   134,   135,   136,   137,   138,   139,   140,
+     141,   142,   143,   144,   145,   146,   147,   148,   149,   150,
+     151,   152,   153,   154,   155,   156,   157,   158,   159,   160,
+     161,   162,   163,   164,   165,   166,   167,   168,   169,   170,
+     171,   172,   173,   174,   175,   176,   177,   178,   179,   180,
+     181,   182,   183,   184,   185,   186,   187,   188,     0,     0,
+       0,     0,    13,    14,    18,    20,     0,     0,     0,     0,
+       0,     0,     0,    32,    33,    34,     0,    36,    37,     0,
+       0,    41,    42,     0,     0,    46,     0,    48,     0,    50,
+      51,     0,     0,     0,    55,    56,     0,    58,    59,     0,
+       0,     3,    66,    69,   189,   190,   191,   192,     0,     0,
+       0,   251,   252,   253,   268,     0,     0,     0,     0,     0,
+       0,     0,   256,     0,     0,     0,     0,     0,   257,    12,
+     219,   222,   226,   231,   234,   238,   243,   246,   255,    62,
+      15,    16,    19,     7,     8,    21,    23,    22,     0,     0,
+      28,    30,    31,    35,     0,     0,     0,    44,    45,    47,
+      49,    64,    52,    53,    54,    57,    29,     1,   217,   218,
+     207,   208,   209,     0,     0,     0,    67,   212,   213,   215,
+     210,    70,    71,     4,    60,     0,     6,   254,     0,     0,
+       0,     0,     0,     0,     0,     0,   247,   248,   250,   249,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,    42,     0,     0,     0,     0,
-     205,     0,     0,     0,     0,   210,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,   257,   219,   220,   223,
-     224,   222,   227,   229,   226,   228,   231,   232,   234,   235,
-     236,   238,   239,   240,   241,   243,   244,    16,    62,     0,
-       8,    23,     0,     0,     0,    37,    38,    64,     0,   192,
-       0,     0,    67,   213,   215,     0,     0,    60,     5,   258,
-       0,     0,   262,   264,   263,   265,   266,     9,     0,    25,
-      24,     0,     0,     0,   193,     0,   194,     0,   195,     0,
-     200,     0,     0,    10,    26,    39,   198,     0,   203,     0,
-       0,     0,   259,     0,   260,   196,   201,   199,     0,   204,
-       0,     0,   197,   202,   261
+       0,     0,     0,     0,     0,     0,     0,     0,    43,     0,
+       0,     0,     0,   206,     0,     0,     0,     0,   211,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,   258,
+     220,   221,   224,   225,   223,   228,   230,   227,   229,   232,
+     233,   235,   236,   237,   239,   240,   241,   242,   244,   245,
+      17,    63,     0,     9,    24,     0,     0,     0,    38,    39,
+      65,     0,   193,     0,     0,    68,   214,   216,     0,     0,
+      61,     5,   259,     0,     0,   263,   265,   264,   266,   267,
+      10,     0,    26,    25,     0,     0,     0,   194,     0,   195,
+       0,   196,     0,   201,     0,     0,    11,    27,    40,   199,
+       0,   204,     0,     0,     0,   260,     0,   261,   197,   202,
+     200,     0,   205,     0,     0,   198,   203,   262
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int16 yypgoto[] =
 {
-    -290,  -290,    73,  -122,  -290,  -290,  -290,  -290,  -116,   150,
-     158,  -290,  -289,  -120,   -21,   -93,   -49,   -27,   -41,   -48,
-    -140,  -290,  -244
+    -292,  -292,   123,  -123,  -292,  -292,  -292,  -292,  -117,   205,
+     207,  -292,  -291,  -121,   -23,  -242,    -9,   161,  -103,   -14,
+    -142,  -292,  -245
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_uint8 yydefgoto[] =
 {
-       0,   159,   241,   199,   220,   160,   161,   162,   167,   234,
-     235,   236,   237,   252,   188,   189,   190,   191,   192,   193,
-     194,   195,   196
+       0,   160,   243,   201,   222,   161,   162,   163,   168,   236,
+     237,   238,   239,   255,   190,   191,   192,   193,   194,   195,
+     196,   197,   198
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -1004,33 +1005,100 @@ static const yytype_uint8 yydefgoto[] =
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int16 yytable[] =
 {
-     187,   200,   299,   168,   344,   268,   197,   203,   197,   207,
-     208,   209,   210,   269,   219,   211,   270,   338,   212,   213,
-     257,   258,   339,   215,   216,   217,   214,   218,   163,   164,
-     165,   166,   198,   223,   163,   164,   165,   166,   224,   201,
-     306,   238,   253,   254,   255,   256,   240,   242,   243,   363,
-     222,   365,   163,   164,   165,   166,   163,   164,   165,   166,
-     262,   263,   202,   376,   163,   164,   165,   166,   345,   378,
-     257,   258,   225,   163,   164,   165,   166,   346,   380,   221,
-     381,   264,   265,   257,   258,   383,   281,   387,   257,   258,
-     384,   389,   254,   244,   285,   257,   258,   239,   292,   259,
-     260,   257,   258,   356,   257,   258,   371,   294,   163,   164,
-     165,   166,   245,   290,   261,   394,   282,   257,   258,   283,
-     257,   258,   295,   169,   170,   171,   172,   300,   367,   369,
-     246,   305,   284,   368,   370,   325,   326,   257,   258,   277,
-     173,   174,   175,   176,   177,   178,   179,   206,   180,   266,
-     267,   181,   297,   182,   183,   327,   298,   257,   258,   330,
-     247,   184,   334,   335,   185,   186,   309,   310,   311,   257,
-     258,   238,   332,   257,   258,   248,   347,   348,   226,   227,
-     169,   170,   171,   172,   351,   228,   229,   230,   358,   275,
-     276,   257,   258,   271,   272,   273,   274,   173,   174,   175,
-     176,   177,   178,   179,   249,   180,   361,   250,   231,   357,
-     182,   232,   233,   312,   313,   314,   315,   204,   184,   205,
-     251,   185,   186,   321,   322,   323,   324,   318,   319,   320,
-     278,   372,   302,   303,   226,   227,   307,   308,   373,   316,
-     317,   279,   242,   286,   291,   293,   296,   377,   172,   379,
-     301,   304,   328,   331,   340,   336,   349,   337,   350,   359,
-     352,   360,   353,   391,   388,   390,     1,     2,     3,     4,
+     189,   202,   169,   170,   302,   347,   199,   205,   348,   209,
+     210,   211,   212,   262,   263,   213,   199,   349,   214,   215,
+     312,   313,   314,   217,   218,   219,   216,   220,   264,   164,
+     165,   166,   167,   225,   164,   165,   166,   167,   226,   203,
+     200,   240,   256,   257,   258,   259,   242,   244,   245,   246,
+     366,   204,   368,   221,   290,   171,   172,   173,   174,   164,
+     165,   166,   167,   291,   379,   164,   165,   166,   167,   381,
+     260,   261,   175,   176,   177,   178,   179,   180,   181,   383,
+     182,   384,   206,   183,   207,   184,   185,   284,   164,   165,
+     166,   167,   257,   186,   390,   288,   187,   188,   269,   270,
+     392,   341,   370,   260,   261,   223,   342,   371,   374,   265,
+     266,   224,   260,   261,   293,   227,   164,   165,   166,   167,
+     260,   261,   297,   298,   344,   171,   172,   173,   174,   303,
+     267,   268,   309,   308,   247,   386,   328,   329,   260,   261,
+     387,   248,   175,   176,   177,   178,   179,   180,   181,   241,
+     182,   260,   261,   183,   249,   184,   185,   330,   359,   260,
+     261,   333,   250,   186,   337,   338,   187,   188,   321,   322,
+     323,   397,   372,   240,   285,   260,   261,   373,   350,   351,
+     228,   229,   171,   172,   173,   174,   280,   230,   231,   232,
+     286,   278,   279,   260,   261,   305,   306,   251,   271,   175,
+     176,   177,   178,   179,   180,   181,   272,   182,   287,   273,
+     233,   360,   184,   234,   235,   260,   261,   260,   261,   252,
+     186,   260,   261,   187,   188,   253,   260,   261,   260,   261,
+     300,   254,   335,   375,   228,   229,   354,   310,   311,   304,
+     376,   361,   281,   364,   244,   164,   165,   166,   167,   380,
+     282,   382,   274,   275,   276,   277,   315,   316,   317,   318,
+     324,   325,   326,   327,   289,   394,   391,   393,     1,     2,
+       3,     4,     5,     6,     7,     8,     9,    10,    11,    12,
+      13,    14,    15,    16,    17,    18,    19,    20,    21,    22,
+      23,    24,    25,    26,    27,    28,    29,    30,    31,    32,
+      33,    34,    35,    36,    37,    38,    39,    40,    41,    42,
+      43,    44,    45,    46,    47,    48,    49,    50,    51,    52,
+      53,    54,    55,    56,    57,    58,    59,    60,    61,    62,
+      63,    64,    65,    66,    67,    68,    69,    70,    71,    72,
+      73,    74,    75,    76,    77,    78,    79,    80,    81,    82,
+      83,    84,    85,    86,    87,    88,    89,    90,    91,    92,
+      93,    94,    95,    96,    97,    98,    99,   100,   101,   102,
+     103,   104,   105,   106,   107,   108,   109,   110,   111,   112,
+     113,   114,   115,   116,   117,   118,   119,   120,   121,   122,
+     123,   124,   125,   126,   127,   128,   129,   130,   131,   132,
+     133,   134,   135,   136,   137,   138,   139,   140,   141,   142,
+     143,   144,   145,   146,   147,   148,   149,   150,   151,   152,
+     153,   154,   155,   156,   157,   158,   171,   172,   173,   174,
+     319,   320,   294,   295,   296,   299,   301,   174,   307,   331,
+     334,   343,   339,   175,   176,   177,   178,   179,   180,   181,
+     208,   182,   340,   352,   183,   353,   184,   185,   159,   171,
+     172,   173,   174,   362,   186,   355,   363,   187,   188,   356,
+     357,   358,   369,   365,   367,   377,   175,   176,   177,   178,
+     179,   180,   181,   283,   182,   385,   388,   183,   378,   184,
+     185,   171,   172,   173,   174,   389,   395,   186,   396,   345,
+     187,   188,   346,     0,     0,     0,     0,     0,   175,   176,
+     177,   178,   179,   180,   181,   332,   182,     0,     0,   183,
+       0,   184,   185,   171,   172,   173,   174,     0,     0,   186,
+       0,     0,   187,   188,     0,     0,     0,     0,     0,     0,
+     175,   176,   177,   178,   179,   180,   181,   336,   182,     0,
+       0,   183,     0,   184,   185,   171,   172,   173,   174,     0,
+       0,   186,     0,     0,   187,   188,     0,     0,     0,     0,
+       0,     0,   175,   176,   177,   178,   179,   180,   181,     0,
+     182,     0,     0,   183,     0,   184,   185,   171,   172,   173,
+     174,     0,     0,   186,     0,     0,   187,   188,     0,     0,
+       0,     0,     0,     0,   175,   176,   177,   178,   179,   180,
+     181,     0,   182,     0,     0,   292,     0,   184,   185,     0,
+       0,     0,     0,     0,     0,   186,     0,     0,   187,   188
+};
+
+static const yytype_int16 yycheck[] =
+{
+     121,   124,   119,   120,   249,   296,   168,   128,   166,   130,
+     131,   132,   133,   178,   179,   136,   168,   175,   139,   140,
+     262,   263,   264,   144,   145,   146,   143,   148,   193,   161,
+     162,   163,   164,   156,   161,   162,   163,   164,   159,   170,
+     192,   162,   184,   185,   186,   187,   163,   168,   169,   170,
+     341,   170,   343,   171,   166,   167,   168,   169,   170,   161,
+     162,   163,   164,   175,   196,   161,   162,   163,   164,   196,
+     176,   177,   184,   185,   186,   187,   188,   189,   190,   370,
+     192,   372,   168,   195,   170,   197,   198,   208,   161,   162,
+     163,   164,   234,   205,   196,   216,   208,   209,   197,   198,
+     196,   191,   191,   176,   177,   170,   196,   196,   353,   180,
+     181,   168,   176,   177,   235,     0,   161,   162,   163,   164,
+     176,   177,   195,   240,   166,   167,   168,   169,   170,   250,
+     201,   202,   196,   254,   169,   191,   278,   279,   176,   177,
+     196,   195,   184,   185,   186,   187,   188,   189,   190,   194,
+     192,   176,   177,   195,   195,   197,   198,   280,   196,   176,
+     177,   282,   195,   205,   285,   286,   208,   209,   271,   272,
+     273,   196,   191,   294,   191,   176,   177,   196,   299,   300,
+     165,   166,   167,   168,   169,   170,   191,   172,   173,   174,
+     191,   182,   183,   176,   177,   167,   168,   195,   192,   184,
+     185,   186,   187,   188,   189,   190,   200,   192,   191,   203,
+     195,   332,   197,   198,   199,   176,   177,   176,   177,   195,
+     205,   176,   177,   208,   209,   195,   176,   177,   176,   177,
+     191,   195,   191,   354,   165,   166,   191,   260,   261,   168,
+     361,   191,   191,   191,   365,   161,   162,   163,   164,   366,
+     191,   368,   204,   205,   206,   207,   265,   266,   267,   268,
+     274,   275,   276,   277,   191,   386,   383,   384,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
       25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
@@ -1046,102 +1114,27 @@ static const yytype_int16 yytable[] =
      125,   126,   127,   128,   129,   130,   131,   132,   133,   134,
      135,   136,   137,   138,   139,   140,   141,   142,   143,   144,
      145,   146,   147,   148,   149,   150,   151,   152,   153,   154,
-     155,   156,   157,   354,   355,   287,   169,   170,   171,   172,
-     362,   364,   366,   374,   288,   375,   382,   385,   386,   392,
-     393,   342,     0,   173,   174,   175,   176,   177,   178,   179,
-     343,   180,     0,     0,   181,   158,   182,   183,   341,   169,
-     170,   171,   172,     0,   184,     0,     0,   185,   186,     0,
-       0,     0,     0,     0,     0,     0,   173,   174,   175,   176,
-     177,   178,   179,     0,   180,     0,     0,   181,     0,   182,
-     183,   169,   170,   171,   172,     0,     0,   184,     0,     0,
-     185,   186,     0,     0,     0,     0,     0,     0,   173,   174,
-     175,   176,   177,   178,   179,   280,   180,     0,     0,   181,
-       0,   182,   183,   169,   170,   171,   172,     0,     0,   184,
-       0,     0,   185,   186,     0,     0,     0,     0,     0,     0,
-     173,   174,   175,   176,   177,   178,   179,   329,   180,     0,
-       0,   181,     0,   182,   183,   169,   170,   171,   172,     0,
-       0,   184,     0,     0,   185,   186,     0,     0,     0,     0,
-       0,     0,   173,   174,   175,   176,   177,   178,   179,   333,
-     180,     0,     0,   181,     0,   182,   183,   169,   170,   171,
-     172,     0,     0,   184,     0,     0,   185,   186,     0,     0,
-       0,     0,     0,     0,   173,   174,   175,   176,   177,   178,
-     179,     0,   180,     0,     0,   181,     0,   182,   183,   169,
-     170,   171,   172,     0,     0,   184,     0,     0,   185,   186,
-       0,     0,     0,     0,     0,     0,   173,   174,   175,   176,
-     177,   178,   179,     0,   180,     0,     0,   289,     0,   182,
-     183,     0,     0,     0,     0,     0,     0,   184,     0,     0,
-     185,   186
-};
-
-static const yytype_int16 yycheck[] =
-{
-     120,   123,   246,   119,   293,   191,   167,   127,   167,   129,
-     130,   131,   132,   199,   170,   135,   202,   190,   138,   139,
-     175,   176,   195,   143,   144,   145,   142,   147,   160,   161,
-     162,   163,   191,   155,   160,   161,   162,   163,   158,   169,
-     195,   161,   182,   183,   184,   185,   162,   167,   168,   338,
-     167,   340,   160,   161,   162,   163,   160,   161,   162,   163,
-     179,   180,   169,   195,   160,   161,   162,   163,   165,   195,
-     175,   176,     0,   160,   161,   162,   163,   174,   367,   169,
-     369,   200,   201,   175,   176,   190,   206,   195,   175,   176,
-     195,   195,   232,   168,   214,   175,   176,   193,   199,   177,
-     178,   175,   176,   195,   175,   176,   350,   194,   160,   161,
-     162,   163,   194,   233,   192,   195,   190,   175,   176,   190,
-     175,   176,   238,   166,   167,   168,   169,   247,   190,   190,
-     194,   251,   190,   195,   195,   275,   276,   175,   176,   190,
-     183,   184,   185,   186,   187,   188,   189,   190,   191,   196,
-     197,   194,   190,   196,   197,   277,   169,   175,   176,   279,
-     194,   204,   282,   283,   207,   208,   259,   260,   261,   175,
-     176,   291,   190,   175,   176,   194,   296,   297,   164,   165,
-     166,   167,   168,   169,   190,   171,   172,   173,   190,   181,
-     182,   175,   176,   203,   204,   205,   206,   183,   184,   185,
-     186,   187,   188,   189,   194,   191,   190,   194,   194,   329,
-     196,   197,   198,   262,   263,   264,   265,   167,   204,   169,
-     194,   207,   208,   271,   272,   273,   274,   268,   269,   270,
-     190,   351,   166,   167,   164,   165,   257,   258,   358,   266,
-     267,   190,   362,   190,   190,   197,   190,   363,   169,   365,
-     167,   169,   167,   169,   190,   169,   195,   170,   190,   169,
-     195,   169,   195,   383,   380,   381,     3,     4,     5,     6,
-       7,     8,     9,    10,    11,    12,    13,    14,    15,    16,
-      17,    18,    19,    20,    21,    22,    23,    24,    25,    26,
-      27,    28,    29,    30,    31,    32,    33,    34,    35,    36,
-      37,    38,    39,    40,    41,    42,    43,    44,    45,    46,
-      47,    48,    49,    50,    51,    52,    53,    54,    55,    56,
-      57,    58,    59,    60,    61,    62,    63,    64,    65,    66,
-      67,    68,    69,    70,    71,    72,    73,    74,    75,    76,
-      77,    78,    79,    80,    81,    82,    83,    84,    85,    86,
-      87,    88,    89,    90,    91,    92,    93,    94,    95,    96,
-      97,    98,    99,   100,   101,   102,   103,   104,   105,   106,
-     107,   108,   109,   110,   111,   112,   113,   114,   115,   116,
-     117,   118,   119,   120,   121,   122,   123,   124,   125,   126,
-     127,   128,   129,   130,   131,   132,   133,   134,   135,   136,
-     137,   138,   139,   140,   141,   142,   143,   144,   145,   146,
-     147,   148,   149,   150,   151,   152,   153,   154,   155,   156,
-     157,   158,   159,   195,   195,   165,   166,   167,   168,   169,
-     190,   196,   195,   169,   174,   362,   195,   195,   195,   195,
-     195,   291,    -1,   183,   184,   185,   186,   187,   188,   189,
-     292,   191,    -1,    -1,   194,   192,   196,   197,   165,   166,
-     167,   168,   169,    -1,   204,    -1,    -1,   207,   208,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,   183,   184,   185,   186,
-     187,   188,   189,    -1,   191,    -1,    -1,   194,    -1,   196,
-     197,   166,   167,   168,   169,    -1,    -1,   204,    -1,    -1,
-     207,   208,    -1,    -1,    -1,    -1,    -1,    -1,   183,   184,
-     185,   186,   187,   188,   189,   190,   191,    -1,    -1,   194,
-      -1,   196,   197,   166,   167,   168,   169,    -1,    -1,   204,
-      -1,    -1,   207,   208,    -1,    -1,    -1,    -1,    -1,    -1,
-     183,   184,   185,   186,   187,   188,   189,   190,   191,    -1,
-      -1,   194,    -1,   196,   197,   166,   167,   168,   169,    -1,
-      -1,   204,    -1,    -1,   207,   208,    -1,    -1,    -1,    -1,
-      -1,    -1,   183,   184,   185,   186,   187,   188,   189,   190,
-     191,    -1,    -1,   194,    -1,   196,   197,   166,   167,   168,
-     169,    -1,    -1,   204,    -1,    -1,   207,   208,    -1,    -1,
-      -1,    -1,    -1,    -1,   183,   184,   185,   186,   187,   188,
-     189,    -1,   191,    -1,    -1,   194,    -1,   196,   197,   166,
-     167,   168,   169,    -1,    -1,   204,    -1,    -1,   207,   208,
-      -1,    -1,    -1,    -1,    -1,    -1,   183,   184,   185,   186,
-     187,   188,   189,    -1,   191,    -1,    -1,   194,    -1,   196,
-     197,    -1,    -1,    -1,    -1,    -1,    -1,   204,    -1,    -1,
-     207,   208
+     155,   156,   157,   158,   159,   160,   167,   168,   169,   170,
+     269,   270,   191,   200,   198,   191,   170,   170,   170,   168,
+     170,   191,   170,   184,   185,   186,   187,   188,   189,   190,
+     191,   192,   171,   196,   195,   191,   197,   198,   193,   167,
+     168,   169,   170,   170,   205,   196,   170,   208,   209,   196,
+     196,   196,   196,   191,   197,   170,   184,   185,   186,   187,
+     188,   189,   190,   191,   192,   196,   196,   195,   365,   197,
+     198,   167,   168,   169,   170,   196,   196,   205,   196,   294,
+     208,   209,   295,    -1,    -1,    -1,    -1,    -1,   184,   185,
+     186,   187,   188,   189,   190,   191,   192,    -1,    -1,   195,
+      -1,   197,   198,   167,   168,   169,   170,    -1,    -1,   205,
+      -1,    -1,   208,   209,    -1,    -1,    -1,    -1,    -1,    -1,
+     184,   185,   186,   187,   188,   189,   190,   191,   192,    -1,
+      -1,   195,    -1,   197,   198,   167,   168,   169,   170,    -1,
+      -1,   205,    -1,    -1,   208,   209,    -1,    -1,    -1,    -1,
+      -1,    -1,   184,   185,   186,   187,   188,   189,   190,    -1,
+     192,    -1,    -1,   195,    -1,   197,   198,   167,   168,   169,
+     170,    -1,    -1,   205,    -1,    -1,   208,   209,    -1,    -1,
+      -1,    -1,    -1,    -1,   184,   185,   186,   187,   188,   189,
+     190,    -1,   192,    -1,    -1,   195,    -1,   197,   198,    -1,
+      -1,    -1,    -1,    -1,    -1,   205,    -1,    -1,   208,   209
 };
 
 /* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
@@ -1163,76 +1156,76 @@ static const yytype_uint8 yystos[] =
      122,   123,   124,   125,   126,   127,   128,   129,   130,   131,
      132,   133,   134,   135,   136,   137,   138,   139,   140,   141,
      142,   143,   144,   145,   146,   147,   148,   149,   150,   151,
-     152,   153,   154,   155,   156,   157,   158,   159,   192,   210,
-     214,   215,   216,   160,   161,   162,   163,   217,   217,   166,
-     167,   168,   169,   183,   184,   185,   186,   187,   188,   189,
-     191,   194,   196,   197,   204,   207,   208,   222,   223,   224,
-     225,   226,   227,   228,   229,   230,   231,   167,   191,   212,
-     212,   169,   169,   222,   167,   169,   190,   222,   222,   222,
-     222,   222,   222,   222,   217,   222,   222,   222,   222,   170,
-     213,   169,   167,   212,   222,     0,   164,   165,   171,   172,
-     173,   194,   197,   198,   218,   219,   220,   221,   222,   193,
-     217,   211,   222,   222,   168,   194,   194,   194,   194,   194,
-     194,   194,   222,   229,   229,   229,   229,   175,   176,   177,
-     178,   192,   179,   180,   200,   201,   196,   197,   191,   199,
-     202,   203,   204,   205,   206,   181,   182,   190,   190,   190,
-     190,   222,   190,   190,   190,   222,   190,   165,   174,   194,
-     222,   190,   199,   197,   194,   217,   190,   190,   169,   231,
-     222,   167,   166,   167,   169,   222,   195,   223,   223,   224,
-     224,   224,   225,   225,   225,   225,   226,   226,   227,   227,
-     227,   228,   228,   228,   228,   229,   229,   212,   167,   190,
-     222,   169,   190,   190,   222,   222,   169,   170,   190,   195,
-     190,   165,   218,   219,   221,   165,   174,   222,   222,   195,
-     190,   190,   195,   195,   195,   195,   195,   222,   190,   169,
-     169,   190,   190,   221,   196,   221,   195,   190,   195,   190,
-     195,   231,   222,   222,   169,   211,   195,   217,   195,   217,
-     221,   221,   195,   190,   195,   195,   195,   195,   217,   195,
-     217,   222,   195,   195,   195
+     152,   153,   154,   155,   156,   157,   158,   159,   160,   193,
+     211,   215,   216,   217,   161,   162,   163,   164,   218,   218,
+     218,   167,   168,   169,   170,   184,   185,   186,   187,   188,
+     189,   190,   192,   195,   197,   198,   205,   208,   209,   223,
+     224,   225,   226,   227,   228,   229,   230,   231,   232,   168,
+     192,   213,   213,   170,   170,   223,   168,   170,   191,   223,
+     223,   223,   223,   223,   223,   223,   218,   223,   223,   223,
+     223,   171,   214,   170,   168,   213,   223,     0,   165,   166,
+     172,   173,   174,   195,   198,   199,   219,   220,   221,   222,
+     223,   194,   218,   212,   223,   223,   223,   169,   195,   195,
+     195,   195,   195,   195,   195,   223,   230,   230,   230,   230,
+     176,   177,   178,   179,   193,   180,   181,   201,   202,   197,
+     198,   192,   200,   203,   204,   205,   206,   207,   182,   183,
+     191,   191,   191,   191,   223,   191,   191,   191,   223,   191,
+     166,   175,   195,   223,   191,   200,   198,   195,   218,   191,
+     191,   170,   232,   223,   168,   167,   168,   170,   223,   196,
+     224,   224,   225,   225,   225,   226,   226,   226,   226,   227,
+     227,   228,   228,   228,   229,   229,   229,   229,   230,   230,
+     213,   168,   191,   223,   170,   191,   191,   223,   223,   170,
+     171,   191,   196,   191,   166,   219,   220,   222,   166,   175,
+     223,   223,   196,   191,   191,   196,   196,   196,   196,   196,
+     223,   191,   170,   170,   191,   191,   222,   197,   222,   196,
+     191,   196,   191,   196,   232,   223,   223,   170,   212,   196,
+     218,   196,   218,   222,   222,   196,   191,   196,   196,   196,
+     196,   218,   196,   218,   223,   196,   196,   196
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
 static const yytype_uint8 yyr1[] =
 {
-       0,   209,   210,   210,   210,   210,   210,   210,   210,   210,
-     210,   210,   210,   210,   210,   210,   210,   210,   210,   210,
-     210,   210,   210,   210,   210,   210,   210,   210,   210,   210,
-     210,   210,   210,   210,   210,   210,   210,   210,   210,   210,
-     210,   210,   210,   210,   210,   210,   210,   210,   210,   210,
-     210,   210,   210,   210,   210,   210,   210,   210,   210,   211,
-     211,   212,   212,   213,   213,   214,   214,   214,   215,   215,
-     215,   216,   216,   216,   216,   216,   216,   216,   216,   216,
-     216,   216,   216,   216,   216,   216,   216,   216,   216,   216,
-     216,   216,   216,   216,   216,   216,   216,   216,   216,   216,
-     216,   216,   216,   216,   216,   216,   216,   216,   216,   216,
-     216,   216,   216,   216,   216,   216,   216,   216,   216,   216,
-     216,   216,   216,   216,   216,   216,   216,   216,   216,   216,
-     216,   216,   216,   216,   216,   216,   216,   216,   216,   216,
-     216,   216,   216,   216,   216,   216,   216,   216,   216,   216,
-     216,   216,   216,   216,   216,   216,   216,   216,   216,   216,
-     216,   216,   216,   216,   216,   216,   216,   216,   216,   216,
-     216,   216,   216,   216,   216,   216,   216,   216,   216,   216,
-     216,   216,   216,   216,   216,   216,   216,   216,   217,   217,
-     217,   217,   218,   218,   218,   218,   218,   218,   218,   218,
-     218,   218,   218,   218,   218,   218,   218,   218,   218,   218,
-     218,   218,   219,   219,   220,   220,   221,   221,   222,   222,
-     222,   223,   223,   223,   223,   224,   224,   224,   224,   224,
-     225,   225,   225,   226,   226,   226,   226,   227,   227,   227,
-     227,   227,   228,   228,   228,   229,   229,   229,   229,   229,
-     230,   230,   230,   230,   230,   230,   230,   230,   230,   230,
-     230,   230,   230,   230,   230,   230,   230,   231
+       0,   210,   211,   211,   211,   211,   211,   211,   211,   211,
+     211,   211,   211,   211,   211,   211,   211,   211,   211,   211,
+     211,   211,   211,   211,   211,   211,   211,   211,   211,   211,
+     211,   211,   211,   211,   211,   211,   211,   211,   211,   211,
+     211,   211,   211,   211,   211,   211,   211,   211,   211,   211,
+     211,   211,   211,   211,   211,   211,   211,   211,   211,   211,
+     212,   212,   213,   213,   214,   214,   215,   215,   215,   216,
+     216,   216,   217,   217,   217,   217,   217,   217,   217,   217,
+     217,   217,   217,   217,   217,   217,   217,   217,   217,   217,
+     217,   217,   217,   217,   217,   217,   217,   217,   217,   217,
+     217,   217,   217,   217,   217,   217,   217,   217,   217,   217,
+     217,   217,   217,   217,   217,   217,   217,   217,   217,   217,
+     217,   217,   217,   217,   217,   217,   217,   217,   217,   217,
+     217,   217,   217,   217,   217,   217,   217,   217,   217,   217,
+     217,   217,   217,   217,   217,   217,   217,   217,   217,   217,
+     217,   217,   217,   217,   217,   217,   217,   217,   217,   217,
+     217,   217,   217,   217,   217,   217,   217,   217,   217,   217,
+     217,   217,   217,   217,   217,   217,   217,   217,   217,   217,
+     217,   217,   217,   217,   217,   217,   217,   217,   217,   218,
+     218,   218,   218,   219,   219,   219,   219,   219,   219,   219,
+     219,   219,   219,   219,   219,   219,   219,   219,   219,   219,
+     219,   219,   219,   220,   220,   221,   221,   222,   222,   223,
+     223,   223,   224,   224,   224,   224,   225,   225,   225,   225,
+     225,   226,   226,   226,   227,   227,   227,   227,   228,   228,
+     228,   228,   228,   229,   229,   229,   230,   230,   230,   230,
+     230,   231,   231,   231,   231,   231,   231,   231,   231,   231,
+     231,   231,   231,   231,   231,   231,   231,   231,   232
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr2[] =
 {
-       0,     2,     0,     1,     3,     5,     2,     2,     4,     5,
-       6,     2,     1,     1,     2,     2,     4,     1,     2,     1,
-       2,     2,     2,     4,     5,     5,     6,     2,     2,     2,
-       2,     1,     1,     1,     2,     1,     1,     4,     4,     6,
-       1,     1,     3,     2,     2,     1,     2,     1,     2,     1,
-       1,     2,     2,     2,     1,     1,     2,     1,     1,     1,
-       3,     1,     3,     1,     3,     1,     2,     4,     1,     2,
-       2,     1,     1,     1,     1,     1,     1,     1,     1,     1,
+       0,     2,     0,     1,     3,     5,     3,     2,     2,     4,
+       5,     6,     2,     1,     1,     2,     2,     4,     1,     2,
+       1,     2,     2,     2,     4,     5,     5,     6,     2,     2,
+       2,     2,     1,     1,     1,     2,     1,     1,     4,     4,
+       6,     1,     1,     3,     2,     2,     1,     2,     1,     2,
+       1,     1,     2,     2,     2,     1,     1,     2,     1,     1,
+       1,     3,     1,     3,     1,     3,     1,     2,     4,     1,
+       2,     2,     1,     1,     1,     1,     1,     1,     1,     1,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
@@ -1244,14 +1237,14 @@ static const yytype_int8 yyr2[] =
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
-       1,     1,     3,     4,     4,     4,     6,     7,     5,     6,
-       4,     6,     7,     5,     6,     2,     1,     1,     1,     1,
-       2,     1,     1,     3,     1,     3,     1,     1,     1,     3,
-       3,     1,     3,     3,     3,     1,     3,     3,     3,     3,
-       1,     3,     3,     1,     3,     3,     3,     1,     3,     3,
-       3,     3,     1,     3,     3,     1,     2,     2,     2,     2,
-       1,     1,     1,     2,     1,     1,     1,     3,     4,     6,
-       6,     8,     4,     4,     4,     4,     4,     1
+       1,     1,     1,     3,     4,     4,     4,     6,     7,     5,
+       6,     4,     6,     7,     5,     6,     2,     1,     1,     1,
+       1,     2,     1,     1,     3,     1,     3,     1,     1,     1,
+       3,     3,     1,     3,     3,     3,     1,     3,     3,     3,
+       3,     1,     3,     3,     1,     3,     3,     3,     1,     3,
+       3,     3,     3,     1,     3,     3,     1,     2,     2,     2,
+       2,     1,     1,     1,     2,     1,     1,     1,     3,     4,
+       6,     6,     8,     4,     4,     4,     4,     4,     1
 };
 
 
@@ -1726,111 +1719,111 @@ yydestruct (const char *yymsg,
   switch (yykind)
     {
     case YYSYMBOL_TOKEN_IDENTIFIER: /* TOKEN_IDENTIFIER  */
-#line 687 "syntactic.y"
+#line 696 "syntactic.y"
             { String_Destroy(&((*yyvaluep).string)); }
-#line 1732 "syntactic.c"
+#line 1725 "syntactic.c"
         break;
 
     case YYSYMBOL_TOKEN_LOCAL_IDENTIFIER: /* TOKEN_LOCAL_IDENTIFIER  */
-#line 687 "syntactic.y"
+#line 696 "syntactic.y"
             { String_Destroy(&((*yyvaluep).string)); }
-#line 1738 "syntactic.c"
+#line 1731 "syntactic.c"
         break;
 
     case YYSYMBOL_TOKEN_STRING: /* TOKEN_STRING  */
-#line 687 "syntactic.y"
+#line 696 "syntactic.y"
             { String_Destroy(&((*yyvaluep).string)); }
-#line 1744 "syntactic.c"
+#line 1737 "syntactic.c"
         break;
 
     case YYSYMBOL_TOKEN_OPTION: /* TOKEN_OPTION  */
-#line 687 "syntactic.y"
+#line 696 "syntactic.y"
             { String_Destroy(&((*yyvaluep).string)); }
-#line 1750 "syntactic.c"
+#line 1743 "syntactic.c"
         break;
 
     case YYSYMBOL_expression_list: /* expression_list  */
-#line 689 "syntactic.y"
+#line 698 "syntactic.y"
             { DestroyExpressionList(&((*yyvaluep).expression_list)); }
-#line 1756 "syntactic.c"
+#line 1749 "syntactic.c"
         break;
 
     case YYSYMBOL_identifier_list: /* identifier_list  */
-#line 690 "syntactic.y"
+#line 699 "syntactic.y"
             { DestroyIdentifierList(&((*yyvaluep).identifier_list)); }
-#line 1762 "syntactic.c"
+#line 1755 "syntactic.c"
         break;
 
     case YYSYMBOL_option_list: /* option_list  */
-#line 690 "syntactic.y"
+#line 699 "syntactic.y"
             { DestroyIdentifierList(&((*yyvaluep).identifier_list)); }
-#line 1768 "syntactic.c"
+#line 1761 "syntactic.c"
         break;
 
     case YYSYMBOL_operand: /* operand  */
-#line 688 "syntactic.y"
+#line 697 "syntactic.y"
             { DestroyOperand(&((*yyvaluep).operand)); }
-#line 1774 "syntactic.c"
+#line 1767 "syntactic.c"
         break;
 
     case YYSYMBOL_expression: /* expression  */
-#line 691 "syntactic.y"
+#line 700 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1780 "syntactic.c"
+#line 1773 "syntactic.c"
         break;
 
     case YYSYMBOL_expression1: /* expression1  */
-#line 691 "syntactic.y"
+#line 700 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1786 "syntactic.c"
+#line 1779 "syntactic.c"
         break;
 
     case YYSYMBOL_expression2: /* expression2  */
-#line 691 "syntactic.y"
+#line 700 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1792 "syntactic.c"
+#line 1785 "syntactic.c"
         break;
 
     case YYSYMBOL_expression3: /* expression3  */
-#line 691 "syntactic.y"
+#line 700 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1798 "syntactic.c"
+#line 1791 "syntactic.c"
         break;
 
     case YYSYMBOL_expression4: /* expression4  */
-#line 691 "syntactic.y"
+#line 700 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1804 "syntactic.c"
+#line 1797 "syntactic.c"
         break;
 
     case YYSYMBOL_expression5: /* expression5  */
-#line 691 "syntactic.y"
+#line 700 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1810 "syntactic.c"
+#line 1803 "syntactic.c"
         break;
 
     case YYSYMBOL_expression6: /* expression6  */
-#line 691 "syntactic.y"
+#line 700 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1816 "syntactic.c"
+#line 1809 "syntactic.c"
         break;
 
     case YYSYMBOL_expression7: /* expression7  */
-#line 691 "syntactic.y"
+#line 700 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1822 "syntactic.c"
+#line 1815 "syntactic.c"
         break;
 
     case YYSYMBOL_expression8: /* expression8  */
-#line 691 "syntactic.y"
+#line 700 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1828 "syntactic.c"
+#line 1821 "syntactic.c"
         break;
 
     case YYSYMBOL_string: /* string  */
-#line 691 "syntactic.y"
+#line 700 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1834 "syntactic.c"
+#line 1827 "syntactic.c"
         break;
 
       default:
@@ -2107,54 +2100,64 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* statement: %empty  */
-#line 699 "syntactic.y"
+#line 708 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
-#line 2115 "syntactic.c"
+#line 2108 "syntactic.c"
     break;
 
   case 3: /* statement: instruction  */
-#line 703 "syntactic.y"
+#line 712 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_INSTRUCTION;
 		statement->shared.instruction = (yyvsp[0].instruction);
 	}
-#line 2124 "syntactic.c"
+#line 2117 "syntactic.c"
     break;
 
   case 4: /* statement: TOKEN_DIRECTIVE_DC size expression_list  */
-#line 708 "syntactic.y"
+#line 717 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_DC;
 		statement->shared.dc.size = (yyvsp[-1].size);
 		statement->shared.dc.values = (yyvsp[0].expression_list);
 	}
-#line 2134 "syntactic.c"
+#line 2127 "syntactic.c"
     break;
 
   case 5: /* statement: TOKEN_DIRECTIVE_DCB size expression ',' expression  */
-#line 714 "syntactic.y"
+#line 723 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_DCB;
 		statement->shared.dcb.size = (yyvsp[-3].size);
 		statement->shared.dcb.repetitions = (yyvsp[-2].expression);
 		statement->shared.dcb.value = (yyvsp[0].expression);
 	}
-#line 2145 "syntactic.c"
+#line 2138 "syntactic.c"
     break;
 
-  case 6: /* statement: TOKEN_DIRECTIVE_INCLUDE TOKEN_STRING  */
-#line 721 "syntactic.y"
+  case 6: /* statement: TOKEN_DIRECTIVE_DS size expression  */
+#line 730 "syntactic.y"
+        {
+		statement->type = STATEMENT_TYPE_DS;
+		statement->shared.ds.size = (yyvsp[-1].size);
+		statement->shared.ds.length = (yyvsp[0].expression);
+	}
+#line 2148 "syntactic.c"
+    break;
+
+  case 7: /* statement: TOKEN_DIRECTIVE_INCLUDE TOKEN_STRING  */
+#line 736 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_INCLUDE;
 		statement->shared.include.path = (yyvsp[0].string);
 	}
-#line 2154 "syntactic.c"
+#line 2157 "syntactic.c"
     break;
 
-  case 7: /* statement: TOKEN_DIRECTIVE_INCBIN TOKEN_STRING  */
-#line 726 "syntactic.y"
+  case 8: /* statement: TOKEN_DIRECTIVE_INCBIN TOKEN_STRING  */
+#line 741 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = (yyvsp[0].string);
@@ -2162,22 +2165,22 @@ yyreduce:
 		statement->shared.incbin.start.shared.unsigned_long = 0;
 		statement->shared.incbin.has_length = cc_false;
 	}
-#line 2166 "syntactic.c"
+#line 2169 "syntactic.c"
     break;
 
-  case 8: /* statement: TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' expression  */
-#line 734 "syntactic.y"
+  case 9: /* statement: TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' expression  */
+#line 749 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = (yyvsp[-2].string);
 		statement->shared.incbin.start = (yyvsp[0].expression);
 		statement->shared.incbin.has_length = cc_false;
 	}
-#line 2177 "syntactic.c"
+#line 2180 "syntactic.c"
     break;
 
-  case 9: /* statement: TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' ',' expression  */
-#line 741 "syntactic.y"
+  case 10: /* statement: TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' ',' expression  */
+#line 756 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = (yyvsp[-3].string);
@@ -2186,11 +2189,11 @@ yyreduce:
 		statement->shared.incbin.has_length = cc_true;
 		statement->shared.incbin.length = (yyvsp[0].expression);
 	}
-#line 2190 "syntactic.c"
+#line 2193 "syntactic.c"
     break;
 
-  case 10: /* statement: TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' expression ',' expression  */
-#line 750 "syntactic.y"
+  case 11: /* statement: TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' expression ',' expression  */
+#line 765 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = (yyvsp[-4].string);
@@ -2198,126 +2201,126 @@ yyreduce:
 		statement->shared.incbin.has_length = cc_true;
 		statement->shared.incbin.length = (yyvsp[0].expression);
 	}
-#line 2202 "syntactic.c"
+#line 2205 "syntactic.c"
     break;
 
-  case 11: /* statement: TOKEN_DIRECTIVE_REPT expression  */
-#line 758 "syntactic.y"
+  case 12: /* statement: TOKEN_DIRECTIVE_REPT expression  */
+#line 773 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_REPT;
 		statement->shared.rept.repetitions = (yyvsp[0].expression);
 	}
-#line 2211 "syntactic.c"
+#line 2214 "syntactic.c"
     break;
 
-  case 12: /* statement: TOKEN_DIRECTIVE_ENDR  */
-#line 763 "syntactic.y"
+  case 13: /* statement: TOKEN_DIRECTIVE_ENDR  */
+#line 778 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_ENDR;
 	}
-#line 2219 "syntactic.c"
+#line 2222 "syntactic.c"
     break;
 
-  case 13: /* statement: TOKEN_DIRECTIVE_MACRO  */
-#line 767 "syntactic.y"
+  case 14: /* statement: TOKEN_DIRECTIVE_MACRO  */
+#line 782 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_MACRO;
 		statement->shared.macro.uses_label = cc_false;
 		statement->shared.macro.parameter_names.head = NULL;
 		statement->shared.macro.parameter_names.tail = NULL;
 	}
-#line 2230 "syntactic.c"
+#line 2233 "syntactic.c"
     break;
 
-  case 14: /* statement: TOKEN_DIRECTIVE_MACRO '*'  */
-#line 774 "syntactic.y"
+  case 15: /* statement: TOKEN_DIRECTIVE_MACRO '*'  */
+#line 789 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_MACRO;
 		statement->shared.macro.uses_label = cc_true;
 		statement->shared.macro.parameter_names.head = NULL;
 		statement->shared.macro.parameter_names.tail = NULL;
 	}
-#line 2241 "syntactic.c"
+#line 2244 "syntactic.c"
     break;
 
-  case 15: /* statement: TOKEN_DIRECTIVE_MACRO identifier_list  */
-#line 781 "syntactic.y"
+  case 16: /* statement: TOKEN_DIRECTIVE_MACRO identifier_list  */
+#line 796 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_MACRO;
 		statement->shared.macro.uses_label = cc_false;
 		statement->shared.macro.parameter_names = (yyvsp[0].identifier_list);
 	}
-#line 2251 "syntactic.c"
+#line 2254 "syntactic.c"
     break;
 
-  case 16: /* statement: TOKEN_DIRECTIVE_MACRO '*' ',' identifier_list  */
-#line 787 "syntactic.y"
+  case 17: /* statement: TOKEN_DIRECTIVE_MACRO '*' ',' identifier_list  */
+#line 802 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_MACRO;
 		statement->shared.macro.uses_label = cc_true;
 		statement->shared.macro.parameter_names = (yyvsp[0].identifier_list);
 	}
-#line 2261 "syntactic.c"
+#line 2264 "syntactic.c"
     break;
 
-  case 17: /* statement: TOKEN_DIRECTIVE_MACROS  */
-#line 793 "syntactic.y"
+  case 18: /* statement: TOKEN_DIRECTIVE_MACROS  */
+#line 808 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_MACROS;
 		statement->shared.macro.uses_label = cc_false;
 		statement->shared.macro.parameter_names.head = NULL;
 		statement->shared.macro.parameter_names.tail = NULL;
 	}
-#line 2272 "syntactic.c"
+#line 2275 "syntactic.c"
     break;
 
-  case 18: /* statement: TOKEN_DIRECTIVE_MACROS identifier_list  */
-#line 800 "syntactic.y"
+  case 19: /* statement: TOKEN_DIRECTIVE_MACROS identifier_list  */
+#line 815 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_MACROS;
 		statement->shared.macro.uses_label = cc_false;
 		statement->shared.macro.parameter_names = (yyvsp[0].identifier_list);
 	}
-#line 2282 "syntactic.c"
+#line 2285 "syntactic.c"
     break;
 
-  case 19: /* statement: TOKEN_DIRECTIVE_ENDM  */
-#line 806 "syntactic.y"
+  case 20: /* statement: TOKEN_DIRECTIVE_ENDM  */
+#line 821 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_ENDM;
 	}
-#line 2290 "syntactic.c"
+#line 2293 "syntactic.c"
     break;
 
-  case 20: /* statement: TOKEN_DIRECTIVE_EQU expression  */
-#line 810 "syntactic.y"
+  case 21: /* statement: TOKEN_DIRECTIVE_EQU expression  */
+#line 825 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_EQU;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2299 "syntactic.c"
+#line 2302 "syntactic.c"
     break;
 
-  case 21: /* statement: TOKEN_DIRECTIVE_EQUS TOKEN_STRING  */
-#line 815 "syntactic.y"
+  case 22: /* statement: TOKEN_DIRECTIVE_EQUS TOKEN_STRING  */
+#line 830 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_EQUS_STRING;
 		statement->shared.string = (yyvsp[0].string);
 	}
-#line 2308 "syntactic.c"
+#line 2311 "syntactic.c"
     break;
 
-  case 22: /* statement: TOKEN_DIRECTIVE_EQUS TOKEN_IDENTIFIER  */
-#line 820 "syntactic.y"
+  case 23: /* statement: TOKEN_DIRECTIVE_EQUS TOKEN_IDENTIFIER  */
+#line 835 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_EQUS_IDENTIFIER;
 		statement->shared.string = (yyvsp[0].string);
 	}
-#line 2317 "syntactic.c"
+#line 2320 "syntactic.c"
     break;
 
-  case 23: /* statement: TOKEN_DIRECTIVE_SUBSTR ',' ',' TOKEN_STRING  */
-#line 825 "syntactic.y"
+  case 24: /* statement: TOKEN_DIRECTIVE_SUBSTR ',' ',' TOKEN_STRING  */
+#line 840 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_SUBSTR;
 		statement->shared.substr.start.type = EXPRESSION_NUMBER;
@@ -2326,11 +2329,11 @@ yyreduce:
 		statement->shared.substr.end.shared.unsigned_long = String_Length(&(yyvsp[0].string));
 		statement->shared.substr.string = (yyvsp[0].string);
 	}
-#line 2330 "syntactic.c"
+#line 2333 "syntactic.c"
     break;
 
-  case 24: /* statement: TOKEN_DIRECTIVE_SUBSTR expression ',' ',' TOKEN_STRING  */
-#line 834 "syntactic.y"
+  case 25: /* statement: TOKEN_DIRECTIVE_SUBSTR expression ',' ',' TOKEN_STRING  */
+#line 849 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_SUBSTR;
 		statement->shared.substr.start = (yyvsp[-3].expression);
@@ -2338,11 +2341,11 @@ yyreduce:
 		statement->shared.substr.end.shared.unsigned_long = String_Length(&(yyvsp[0].string));
 		statement->shared.substr.string = (yyvsp[0].string);
 	}
-#line 2342 "syntactic.c"
+#line 2345 "syntactic.c"
     break;
 
-  case 25: /* statement: TOKEN_DIRECTIVE_SUBSTR ',' expression ',' TOKEN_STRING  */
-#line 842 "syntactic.y"
+  case 26: /* statement: TOKEN_DIRECTIVE_SUBSTR ',' expression ',' TOKEN_STRING  */
+#line 857 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_SUBSTR;
 		statement->shared.substr.start.type = EXPRESSION_NUMBER;
@@ -2350,127 +2353,127 @@ yyreduce:
 		statement->shared.substr.end = (yyvsp[-2].expression);
 		statement->shared.substr.string = (yyvsp[0].string);
 	}
-#line 2354 "syntactic.c"
+#line 2357 "syntactic.c"
     break;
 
-  case 26: /* statement: TOKEN_DIRECTIVE_SUBSTR expression ',' expression ',' TOKEN_STRING  */
-#line 850 "syntactic.y"
+  case 27: /* statement: TOKEN_DIRECTIVE_SUBSTR expression ',' expression ',' TOKEN_STRING  */
+#line 865 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_SUBSTR;
 		statement->shared.substr.start = (yyvsp[-4].expression);
 		statement->shared.substr.end = (yyvsp[-2].expression);
 		statement->shared.substr.string = (yyvsp[0].string);
 	}
-#line 2365 "syntactic.c"
+#line 2368 "syntactic.c"
     break;
 
-  case 27: /* statement: TOKEN_DIRECTIVE_SET expression  */
-#line 857 "syntactic.y"
+  case 28: /* statement: TOKEN_DIRECTIVE_SET expression  */
+#line 872 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_SET;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2374 "syntactic.c"
+#line 2377 "syntactic.c"
     break;
 
-  case 28: /* statement: '=' expression  */
-#line 862 "syntactic.y"
+  case 29: /* statement: '=' expression  */
+#line 877 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_SET;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2383 "syntactic.c"
+#line 2386 "syntactic.c"
     break;
 
-  case 29: /* statement: TOKEN_DIRECTIVE_IF expression  */
-#line 867 "syntactic.y"
+  case 30: /* statement: TOKEN_DIRECTIVE_IF expression  */
+#line 882 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_IF;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2392 "syntactic.c"
+#line 2395 "syntactic.c"
     break;
 
-  case 30: /* statement: TOKEN_DIRECTIVE_ELSEIF expression  */
-#line 872 "syntactic.y"
+  case 31: /* statement: TOKEN_DIRECTIVE_ELSEIF expression  */
+#line 887 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_ELSEIF;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2401 "syntactic.c"
+#line 2404 "syntactic.c"
     break;
 
-  case 31: /* statement: TOKEN_DIRECTIVE_ELSEIF  */
-#line 877 "syntactic.y"
+  case 32: /* statement: TOKEN_DIRECTIVE_ELSEIF  */
+#line 892 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_ELSE;
 	}
-#line 2409 "syntactic.c"
+#line 2412 "syntactic.c"
     break;
 
-  case 32: /* statement: TOKEN_DIRECTIVE_ELSE  */
-#line 881 "syntactic.y"
+  case 33: /* statement: TOKEN_DIRECTIVE_ELSE  */
+#line 896 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_ELSE;
 	}
-#line 2417 "syntactic.c"
+#line 2420 "syntactic.c"
     break;
 
-  case 33: /* statement: TOKEN_DIRECTIVE_ENDC  */
-#line 885 "syntactic.y"
+  case 34: /* statement: TOKEN_DIRECTIVE_ENDC  */
+#line 900 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_ENDC;
 	}
-#line 2425 "syntactic.c"
+#line 2428 "syntactic.c"
     break;
 
-  case 34: /* statement: TOKEN_DIRECTIVE_WHILE expression  */
-#line 889 "syntactic.y"
+  case 35: /* statement: TOKEN_DIRECTIVE_WHILE expression  */
+#line 904 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_WHILE;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2434 "syntactic.c"
+#line 2437 "syntactic.c"
     break;
 
-  case 35: /* statement: TOKEN_DIRECTIVE_ENDW  */
-#line 894 "syntactic.y"
+  case 36: /* statement: TOKEN_DIRECTIVE_ENDW  */
+#line 909 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_ENDW;
 	}
-#line 2442 "syntactic.c"
+#line 2445 "syntactic.c"
     break;
 
-  case 36: /* statement: TOKEN_DIRECTIVE_EVEN  */
-#line 898 "syntactic.y"
+  case 37: /* statement: TOKEN_DIRECTIVE_EVEN  */
+#line 913 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_EVEN;
 	}
-#line 2450 "syntactic.c"
+#line 2453 "syntactic.c"
     break;
 
-  case 37: /* statement: TOKEN_DIRECTIVE_CNOP expression ',' expression  */
-#line 902 "syntactic.y"
+  case 38: /* statement: TOKEN_DIRECTIVE_CNOP expression ',' expression  */
+#line 917 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_CNOP;
 		statement->shared.cnop.offset = (yyvsp[-2].expression);
 		statement->shared.cnop.size_boundary = (yyvsp[0].expression);
 	}
-#line 2460 "syntactic.c"
+#line 2463 "syntactic.c"
     break;
 
-  case 38: /* statement: TOKEN_DIRECTIVE_INFORM expression ',' TOKEN_STRING  */
-#line 908 "syntactic.y"
+  case 39: /* statement: TOKEN_DIRECTIVE_INFORM expression ',' TOKEN_STRING  */
+#line 923 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_INFORM;
 		statement->shared.inform.severity = (yyvsp[-2].expression);
 		statement->shared.inform.message = (yyvsp[0].string);
 	}
-#line 2470 "syntactic.c"
+#line 2473 "syntactic.c"
     break;
 
-  case 39: /* statement: TOKEN_DIRECTIVE_INFORM expression ',' TOKEN_STRING ',' expression_list  */
-#line 914 "syntactic.y"
+  case 40: /* statement: TOKEN_DIRECTIVE_INFORM expression ',' TOKEN_STRING ',' expression_list  */
+#line 929 "syntactic.y"
         {
 		(void)(yyvsp[0].expression_list);
 
@@ -2479,177 +2482,177 @@ yyreduce:
 		statement->shared.inform.severity = (yyvsp[-4].expression);
 		statement->shared.inform.message = (yyvsp[-2].string);
 	}
-#line 2483 "syntactic.c"
+#line 2486 "syntactic.c"
     break;
 
-  case 40: /* statement: TOKEN_DIRECTIVE_FAIL  */
-#line 923 "syntactic.y"
+  case 41: /* statement: TOKEN_DIRECTIVE_FAIL  */
+#line 938 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_FAIL;
 	}
-#line 2491 "syntactic.c"
+#line 2494 "syntactic.c"
     break;
 
-  case 41: /* statement: TOKEN_DIRECTIVE_END  */
-#line 927 "syntactic.y"
+  case 42: /* statement: TOKEN_DIRECTIVE_END  */
+#line 942 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_END;
 	}
-#line 2499 "syntactic.c"
+#line 2502 "syntactic.c"
     break;
 
-  case 42: /* statement: TOKEN_DIRECTIVE_RS size expression  */
-#line 931 "syntactic.y"
+  case 43: /* statement: TOKEN_DIRECTIVE_RS size expression  */
+#line 946 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_RS;
 		statement->shared.rs.size = (yyvsp[-1].size);
 		statement->shared.rs.length = (yyvsp[0].expression);
 	}
-#line 2509 "syntactic.c"
+#line 2512 "syntactic.c"
     break;
 
-  case 43: /* statement: TOKEN_DIRECTIVE_RSSET expression  */
-#line 937 "syntactic.y"
+  case 44: /* statement: TOKEN_DIRECTIVE_RSSET expression  */
+#line 952 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_RSSET;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2518 "syntactic.c"
+#line 2521 "syntactic.c"
     break;
 
-  case 44: /* statement: TOKEN_DIRECTIVE_RSRESET expression  */
-#line 942 "syntactic.y"
+  case 45: /* statement: TOKEN_DIRECTIVE_RSRESET expression  */
+#line 957 "syntactic.y"
         {
 		/* As mentioned in S.N. 68k's manual, this odd hack
 		   is necessary for compatibility with other assemblers. */
 		statement->type = STATEMENT_TYPE_RSSET;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2529 "syntactic.c"
+#line 2532 "syntactic.c"
     break;
 
-  case 45: /* statement: TOKEN_DIRECTIVE_RSRESET  */
-#line 949 "syntactic.y"
+  case 46: /* statement: TOKEN_DIRECTIVE_RSRESET  */
+#line 964 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_RSRESET;
 	}
-#line 2537 "syntactic.c"
+#line 2540 "syntactic.c"
     break;
 
-  case 46: /* statement: TOKEN_DIRECTIVE_OBJ expression  */
-#line 953 "syntactic.y"
+  case 47: /* statement: TOKEN_DIRECTIVE_OBJ expression  */
+#line 968 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_OBJ;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2546 "syntactic.c"
+#line 2549 "syntactic.c"
     break;
 
-  case 47: /* statement: TOKEN_DIRECTIVE_OBJEND  */
-#line 958 "syntactic.y"
+  case 48: /* statement: TOKEN_DIRECTIVE_OBJEND  */
+#line 973 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_OBJEND;
 	}
-#line 2554 "syntactic.c"
+#line 2557 "syntactic.c"
     break;
 
-  case 48: /* statement: TOKEN_DIRECTIVE_ORG expression  */
-#line 962 "syntactic.y"
+  case 49: /* statement: TOKEN_DIRECTIVE_ORG expression  */
+#line 977 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_ORG;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2563 "syntactic.c"
+#line 2566 "syntactic.c"
     break;
 
-  case 49: /* statement: TOKEN_DIRECTIVE_PUSHO  */
-#line 967 "syntactic.y"
+  case 50: /* statement: TOKEN_DIRECTIVE_PUSHO  */
+#line 982 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_PUSHO;
 	}
-#line 2571 "syntactic.c"
+#line 2574 "syntactic.c"
     break;
 
-  case 50: /* statement: TOKEN_DIRECTIVE_POPO  */
-#line 971 "syntactic.y"
+  case 51: /* statement: TOKEN_DIRECTIVE_POPO  */
+#line 986 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_POPO;
 	}
-#line 2579 "syntactic.c"
+#line 2582 "syntactic.c"
     break;
 
-  case 51: /* statement: TOKEN_DIRECTIVE_OPT option_list  */
-#line 975 "syntactic.y"
+  case 52: /* statement: TOKEN_DIRECTIVE_OPT option_list  */
+#line 990 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_OPT;
 		statement->shared.opt.options = (yyvsp[0].identifier_list);
 	}
-#line 2588 "syntactic.c"
+#line 2591 "syntactic.c"
     break;
 
-  case 52: /* statement: TOKEN_DIRECTIVE_PUSHP TOKEN_STRING  */
-#line 980 "syntactic.y"
+  case 53: /* statement: TOKEN_DIRECTIVE_PUSHP TOKEN_STRING  */
+#line 995 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_PUSHP;
 		statement->shared.string = (yyvsp[0].string);
 	}
-#line 2597 "syntactic.c"
+#line 2600 "syntactic.c"
     break;
 
-  case 53: /* statement: TOKEN_DIRECTIVE_POPP TOKEN_IDENTIFIER  */
-#line 985 "syntactic.y"
+  case 54: /* statement: TOKEN_DIRECTIVE_POPP TOKEN_IDENTIFIER  */
+#line 1000 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_POPP;
 		statement->shared.string = (yyvsp[0].string);
 	}
-#line 2606 "syntactic.c"
+#line 2609 "syntactic.c"
     break;
 
-  case 54: /* statement: TOKEN_DIRECTIVE_SHIFT  */
-#line 990 "syntactic.y"
+  case 55: /* statement: TOKEN_DIRECTIVE_SHIFT  */
+#line 1005 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_SHIFT;
 	}
-#line 2614 "syntactic.c"
+#line 2617 "syntactic.c"
     break;
 
-  case 55: /* statement: TOKEN_DIRECTIVE_MEXIT  */
-#line 994 "syntactic.y"
+  case 56: /* statement: TOKEN_DIRECTIVE_MEXIT  */
+#line 1009 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_MEXIT;
 	}
-#line 2622 "syntactic.c"
+#line 2625 "syntactic.c"
     break;
 
-  case 56: /* statement: TOKEN_DIRECTIVE_LOCAL identifier_list  */
-#line 998 "syntactic.y"
+  case 57: /* statement: TOKEN_DIRECTIVE_LOCAL identifier_list  */
+#line 1013 "syntactic.y"
         {
 		statement->type = STATEMENT_TYPE_LOCAL;
 		statement->shared.local.identifiers = (yyvsp[0].identifier_list);
 	}
-#line 2631 "syntactic.c"
+#line 2634 "syntactic.c"
     break;
 
-  case 57: /* statement: TOKEN_DIRECTIVE_LIST  */
-#line 1003 "syntactic.y"
+  case 58: /* statement: TOKEN_DIRECTIVE_LIST  */
+#line 1018 "syntactic.y"
         {
 		/* TODO: Make this actually do something. */
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
-#line 2640 "syntactic.c"
+#line 2643 "syntactic.c"
     break;
 
-  case 58: /* statement: TOKEN_DIRECTIVE_NOLIST  */
-#line 1008 "syntactic.y"
+  case 59: /* statement: TOKEN_DIRECTIVE_NOLIST  */
+#line 1023 "syntactic.y"
         {
 		/* TODO: Make this actually do something. */
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
-#line 2649 "syntactic.c"
+#line 2652 "syntactic.c"
     break;
 
-  case 59: /* expression_list: expression  */
-#line 1016 "syntactic.y"
+  case 60: /* expression_list: expression  */
+#line 1031 "syntactic.y"
         {
 		ExpressionListNode *node = (ExpressionListNode*)malloc(sizeof(ExpressionListNode));
 
@@ -2666,11 +2669,11 @@ yyreduce:
 
 		(yyval.expression_list).head = (yyval.expression_list).tail = node;
 	}
-#line 2670 "syntactic.c"
+#line 2673 "syntactic.c"
     break;
 
-  case 60: /* expression_list: expression_list ',' expression  */
-#line 1033 "syntactic.y"
+  case 61: /* expression_list: expression_list ',' expression  */
+#line 1048 "syntactic.y"
         {
 		ExpressionListNode *node = (ExpressionListNode*)malloc(sizeof(ExpressionListNode));
 
@@ -2695,11 +2698,11 @@ yyreduce:
 			(yyval.expression_list).tail = node;
 		}
 	}
-#line 2699 "syntactic.c"
+#line 2702 "syntactic.c"
     break;
 
-  case 61: /* identifier_list: TOKEN_IDENTIFIER  */
-#line 1061 "syntactic.y"
+  case 62: /* identifier_list: TOKEN_IDENTIFIER  */
+#line 1076 "syntactic.y"
         {
 		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
 
@@ -2716,11 +2719,11 @@ yyreduce:
 
 		(yyval.identifier_list).head = (yyval.identifier_list).tail = node;
 	}
-#line 2720 "syntactic.c"
+#line 2723 "syntactic.c"
     break;
 
-  case 62: /* identifier_list: identifier_list ',' TOKEN_IDENTIFIER  */
-#line 1078 "syntactic.y"
+  case 63: /* identifier_list: identifier_list ',' TOKEN_IDENTIFIER  */
+#line 1093 "syntactic.y"
         {
 		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
 
@@ -2745,11 +2748,11 @@ yyreduce:
 			(yyval.identifier_list).tail = node;
 		}
 	}
-#line 2749 "syntactic.c"
+#line 2752 "syntactic.c"
     break;
 
-  case 63: /* option_list: TOKEN_OPTION  */
-#line 1106 "syntactic.y"
+  case 64: /* option_list: TOKEN_OPTION  */
+#line 1121 "syntactic.y"
         {
 		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
 
@@ -2766,11 +2769,11 @@ yyreduce:
 
 		(yyval.identifier_list).head = (yyval.identifier_list).tail = node;
 	}
-#line 2770 "syntactic.c"
+#line 2773 "syntactic.c"
     break;
 
-  case 64: /* option_list: option_list ',' TOKEN_OPTION  */
-#line 1123 "syntactic.y"
+  case 65: /* option_list: option_list ',' TOKEN_OPTION  */
+#line 1138 "syntactic.y"
         {
 		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
 
@@ -2795,1120 +2798,1120 @@ yyreduce:
 			(yyval.identifier_list).tail = node;
 		}
 	}
-#line 2799 "syntactic.c"
+#line 2802 "syntactic.c"
     break;
 
-  case 65: /* instruction: full_opcode  */
-#line 1151 "syntactic.y"
+  case 66: /* instruction: full_opcode  */
+#line 1166 "syntactic.y"
         {
 		(yyval.instruction).opcode = (yyvsp[0].opcode);
 		(yyval.instruction).operands[0].type = OPERAND_NONE;
 		(yyval.instruction).operands[1].type = OPERAND_NONE;
 	}
-#line 2809 "syntactic.c"
+#line 2812 "syntactic.c"
     break;
 
-  case 66: /* instruction: full_opcode operand  */
-#line 1157 "syntactic.y"
+  case 67: /* instruction: full_opcode operand  */
+#line 1172 "syntactic.y"
         {
 		(yyval.instruction).opcode = (yyvsp[-1].opcode);
 		(yyval.instruction).operands[0] = (yyvsp[0].operand);
 		(yyval.instruction).operands[1].type = OPERAND_NONE;
 	}
-#line 2819 "syntactic.c"
+#line 2822 "syntactic.c"
     break;
 
-  case 67: /* instruction: full_opcode operand ',' operand  */
-#line 1163 "syntactic.y"
+  case 68: /* instruction: full_opcode operand ',' operand  */
+#line 1178 "syntactic.y"
         {
 		(yyval.instruction).opcode = (yyvsp[-3].opcode);
 		(yyval.instruction).operands[0] = (yyvsp[-2].operand);
 		(yyval.instruction).operands[1] = (yyvsp[0].operand);
 	}
-#line 2829 "syntactic.c"
+#line 2832 "syntactic.c"
     break;
 
-  case 68: /* full_opcode: opcode  */
-#line 1172 "syntactic.y"
+  case 69: /* full_opcode: opcode  */
+#line 1187 "syntactic.y"
         {
 		(yyval.opcode) = (yyvsp[0].opcode);
 		(yyval.opcode).size = SIZE_UNDEFINED;
 	}
-#line 2838 "syntactic.c"
+#line 2841 "syntactic.c"
     break;
 
-  case 69: /* full_opcode: opcode '.'  */
-#line 1177 "syntactic.y"
+  case 70: /* full_opcode: opcode '.'  */
+#line 1192 "syntactic.y"
         {
 		(yyval.opcode) = (yyvsp[-1].opcode);
 		(yyval.opcode).size = SIZE_UNDEFINED;
 		m68kasm_warning_pedantic(scanner, statement, "Opcode has a dot but no size; either remove the dot or add an explicit size.");
 	}
-#line 2848 "syntactic.c"
+#line 2851 "syntactic.c"
     break;
 
-  case 70: /* full_opcode: opcode size  */
-#line 1183 "syntactic.y"
+  case 71: /* full_opcode: opcode size  */
+#line 1198 "syntactic.y"
         {
 		(yyval.opcode) = (yyvsp[-1].opcode);
 		(yyval.opcode).size = (yyvsp[0].size);
 	}
-#line 2857 "syntactic.c"
+#line 2860 "syntactic.c"
     break;
 
-  case 71: /* opcode: TOKEN_DIRECTIVE_ORI  */
-#line 1191 "syntactic.y"
+  case 72: /* opcode: TOKEN_DIRECTIVE_ORI  */
+#line 1206 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_ORI;
 	}
-#line 2865 "syntactic.c"
+#line 2868 "syntactic.c"
     break;
 
-  case 72: /* opcode: TOKEN_DIRECTIVE_ANDI  */
-#line 1195 "syntactic.y"
+  case 73: /* opcode: TOKEN_DIRECTIVE_ANDI  */
+#line 1210 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_ANDI;
 	}
-#line 2873 "syntactic.c"
+#line 2876 "syntactic.c"
     break;
 
-  case 73: /* opcode: TOKEN_DIRECTIVE_SUBI  */
-#line 1199 "syntactic.y"
+  case 74: /* opcode: TOKEN_DIRECTIVE_SUBI  */
+#line 1214 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_SUBI;
 	}
-#line 2881 "syntactic.c"
+#line 2884 "syntactic.c"
     break;
 
-  case 74: /* opcode: TOKEN_DIRECTIVE_ADDI  */
-#line 1203 "syntactic.y"
+  case 75: /* opcode: TOKEN_DIRECTIVE_ADDI  */
+#line 1218 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_ADDI;
 	}
-#line 2889 "syntactic.c"
+#line 2892 "syntactic.c"
     break;
 
-  case 75: /* opcode: TOKEN_DIRECTIVE_EORI  */
-#line 1207 "syntactic.y"
+  case 76: /* opcode: TOKEN_DIRECTIVE_EORI  */
+#line 1222 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_EORI;
 	}
-#line 2897 "syntactic.c"
+#line 2900 "syntactic.c"
     break;
 
-  case 76: /* opcode: TOKEN_DIRECTIVE_CMPI  */
-#line 1211 "syntactic.y"
+  case 77: /* opcode: TOKEN_DIRECTIVE_CMPI  */
+#line 1226 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_CMPI;
 	}
-#line 2905 "syntactic.c"
+#line 2908 "syntactic.c"
     break;
 
-  case 77: /* opcode: TOKEN_DIRECTIVE_BTST  */
-#line 1215 "syntactic.y"
+  case 78: /* opcode: TOKEN_DIRECTIVE_BTST  */
+#line 1230 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_BTST_STATIC;
 	}
-#line 2913 "syntactic.c"
+#line 2916 "syntactic.c"
     break;
 
-  case 78: /* opcode: TOKEN_DIRECTIVE_BCHG  */
-#line 1219 "syntactic.y"
+  case 79: /* opcode: TOKEN_DIRECTIVE_BCHG  */
+#line 1234 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_BCHG_STATIC;
 	}
-#line 2921 "syntactic.c"
+#line 2924 "syntactic.c"
     break;
 
-  case 79: /* opcode: TOKEN_DIRECTIVE_BCLR  */
-#line 1223 "syntactic.y"
+  case 80: /* opcode: TOKEN_DIRECTIVE_BCLR  */
+#line 1238 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_BCLR_STATIC;
 	}
-#line 2929 "syntactic.c"
+#line 2932 "syntactic.c"
     break;
 
-  case 80: /* opcode: TOKEN_DIRECTIVE_BSET  */
-#line 1227 "syntactic.y"
+  case 81: /* opcode: TOKEN_DIRECTIVE_BSET  */
+#line 1242 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_BSET_STATIC;
 	}
-#line 2937 "syntactic.c"
+#line 2940 "syntactic.c"
     break;
 
-  case 81: /* opcode: TOKEN_DIRECTIVE_MOVEP  */
-#line 1231 "syntactic.y"
+  case 82: /* opcode: TOKEN_DIRECTIVE_MOVEP  */
+#line 1246 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_MOVEP_TO_REG;
 	}
-#line 2945 "syntactic.c"
+#line 2948 "syntactic.c"
     break;
 
-  case 82: /* opcode: TOKEN_DIRECTIVE_MOVEA  */
-#line 1235 "syntactic.y"
+  case 83: /* opcode: TOKEN_DIRECTIVE_MOVEA  */
+#line 1250 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_MOVEA;
 	}
-#line 2953 "syntactic.c"
+#line 2956 "syntactic.c"
     break;
 
-  case 83: /* opcode: TOKEN_DIRECTIVE_MOVE  */
-#line 1239 "syntactic.y"
+  case 84: /* opcode: TOKEN_DIRECTIVE_MOVE  */
+#line 1254 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_MOVE;
 	}
-#line 2961 "syntactic.c"
+#line 2964 "syntactic.c"
     break;
 
-  case 84: /* opcode: TOKEN_DIRECTIVE_NEGX  */
-#line 1243 "syntactic.y"
+  case 85: /* opcode: TOKEN_DIRECTIVE_NEGX  */
+#line 1258 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_NEGX;
 	}
-#line 2969 "syntactic.c"
+#line 2972 "syntactic.c"
     break;
 
-  case 85: /* opcode: TOKEN_DIRECTIVE_CLR  */
-#line 1247 "syntactic.y"
+  case 86: /* opcode: TOKEN_DIRECTIVE_CLR  */
+#line 1262 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_CLR;
 	}
-#line 2977 "syntactic.c"
+#line 2980 "syntactic.c"
     break;
 
-  case 86: /* opcode: TOKEN_DIRECTIVE_NEG  */
-#line 1251 "syntactic.y"
+  case 87: /* opcode: TOKEN_DIRECTIVE_NEG  */
+#line 1266 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_NEG;
 	}
-#line 2985 "syntactic.c"
+#line 2988 "syntactic.c"
     break;
 
-  case 87: /* opcode: TOKEN_DIRECTIVE_NOT  */
-#line 1255 "syntactic.y"
+  case 88: /* opcode: TOKEN_DIRECTIVE_NOT  */
+#line 1270 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_NOT;
 	}
-#line 2993 "syntactic.c"
+#line 2996 "syntactic.c"
     break;
 
-  case 88: /* opcode: TOKEN_DIRECTIVE_EXT  */
-#line 1259 "syntactic.y"
+  case 89: /* opcode: TOKEN_DIRECTIVE_EXT  */
+#line 1274 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_EXT;
 	}
-#line 3001 "syntactic.c"
+#line 3004 "syntactic.c"
     break;
 
-  case 89: /* opcode: TOKEN_DIRECTIVE_NBCD  */
-#line 1263 "syntactic.y"
+  case 90: /* opcode: TOKEN_DIRECTIVE_NBCD  */
+#line 1278 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_NBCD;
 	}
-#line 3009 "syntactic.c"
+#line 3012 "syntactic.c"
     break;
 
-  case 90: /* opcode: TOKEN_DIRECTIVE_SWAP  */
-#line 1267 "syntactic.y"
+  case 91: /* opcode: TOKEN_DIRECTIVE_SWAP  */
+#line 1282 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_SWAP;
 	}
-#line 3017 "syntactic.c"
+#line 3020 "syntactic.c"
     break;
 
-  case 91: /* opcode: TOKEN_DIRECTIVE_PEA  */
-#line 1271 "syntactic.y"
+  case 92: /* opcode: TOKEN_DIRECTIVE_PEA  */
+#line 1286 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_PEA;
 	}
-#line 3025 "syntactic.c"
+#line 3028 "syntactic.c"
     break;
 
-  case 92: /* opcode: TOKEN_DIRECTIVE_ILLEGAL  */
-#line 1275 "syntactic.y"
+  case 93: /* opcode: TOKEN_DIRECTIVE_ILLEGAL  */
+#line 1290 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_ILLEGAL;
 	}
-#line 3033 "syntactic.c"
+#line 3036 "syntactic.c"
     break;
 
-  case 93: /* opcode: TOKEN_DIRECTIVE_TAS  */
-#line 1279 "syntactic.y"
+  case 94: /* opcode: TOKEN_DIRECTIVE_TAS  */
+#line 1294 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_TAS;
 	}
-#line 3041 "syntactic.c"
+#line 3044 "syntactic.c"
     break;
 
-  case 94: /* opcode: TOKEN_DIRECTIVE_TST  */
-#line 1283 "syntactic.y"
+  case 95: /* opcode: TOKEN_DIRECTIVE_TST  */
+#line 1298 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_TST;
 	}
-#line 3049 "syntactic.c"
+#line 3052 "syntactic.c"
     break;
 
-  case 95: /* opcode: TOKEN_DIRECTIVE_TRAP  */
-#line 1287 "syntactic.y"
+  case 96: /* opcode: TOKEN_DIRECTIVE_TRAP  */
+#line 1302 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_TRAP;
 	}
-#line 3057 "syntactic.c"
+#line 3060 "syntactic.c"
     break;
 
-  case 96: /* opcode: TOKEN_DIRECTIVE_LINK  */
-#line 1291 "syntactic.y"
+  case 97: /* opcode: TOKEN_DIRECTIVE_LINK  */
+#line 1306 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_LINK;
 	}
-#line 3065 "syntactic.c"
+#line 3068 "syntactic.c"
     break;
 
-  case 97: /* opcode: TOKEN_DIRECTIVE_UNLK  */
-#line 1295 "syntactic.y"
+  case 98: /* opcode: TOKEN_DIRECTIVE_UNLK  */
+#line 1310 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_UNLK;
 	}
-#line 3073 "syntactic.c"
+#line 3076 "syntactic.c"
     break;
 
-  case 98: /* opcode: TOKEN_DIRECTIVE_RESET  */
-#line 1299 "syntactic.y"
+  case 99: /* opcode: TOKEN_DIRECTIVE_RESET  */
+#line 1314 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_RESET;
 	}
-#line 3081 "syntactic.c"
+#line 3084 "syntactic.c"
     break;
 
-  case 99: /* opcode: TOKEN_DIRECTIVE_NOP  */
-#line 1303 "syntactic.y"
+  case 100: /* opcode: TOKEN_DIRECTIVE_NOP  */
+#line 1318 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_NOP;
 	}
-#line 3089 "syntactic.c"
+#line 3092 "syntactic.c"
     break;
 
-  case 100: /* opcode: TOKEN_DIRECTIVE_STOP  */
-#line 1307 "syntactic.y"
+  case 101: /* opcode: TOKEN_DIRECTIVE_STOP  */
+#line 1322 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_STOP;
 	}
-#line 3097 "syntactic.c"
+#line 3100 "syntactic.c"
     break;
 
-  case 101: /* opcode: TOKEN_DIRECTIVE_RTE  */
-#line 1311 "syntactic.y"
+  case 102: /* opcode: TOKEN_DIRECTIVE_RTE  */
+#line 1326 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_RTE;
 	}
-#line 3105 "syntactic.c"
+#line 3108 "syntactic.c"
     break;
 
-  case 102: /* opcode: TOKEN_DIRECTIVE_RTS  */
-#line 1315 "syntactic.y"
+  case 103: /* opcode: TOKEN_DIRECTIVE_RTS  */
+#line 1330 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_RTS;
 	}
-#line 3113 "syntactic.c"
+#line 3116 "syntactic.c"
     break;
 
-  case 103: /* opcode: TOKEN_DIRECTIVE_TRAPV  */
-#line 1319 "syntactic.y"
+  case 104: /* opcode: TOKEN_DIRECTIVE_TRAPV  */
+#line 1334 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_TRAPV;
 	}
-#line 3121 "syntactic.c"
+#line 3124 "syntactic.c"
     break;
 
-  case 104: /* opcode: TOKEN_DIRECTIVE_RTR  */
-#line 1323 "syntactic.y"
+  case 105: /* opcode: TOKEN_DIRECTIVE_RTR  */
+#line 1338 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_RTR;
 	}
-#line 3129 "syntactic.c"
+#line 3132 "syntactic.c"
     break;
 
-  case 105: /* opcode: TOKEN_DIRECTIVE_JSR  */
-#line 1327 "syntactic.y"
+  case 106: /* opcode: TOKEN_DIRECTIVE_JSR  */
+#line 1342 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_JSR;
 	}
-#line 3137 "syntactic.c"
+#line 3140 "syntactic.c"
     break;
 
-  case 106: /* opcode: TOKEN_DIRECTIVE_JMP  */
-#line 1331 "syntactic.y"
+  case 107: /* opcode: TOKEN_DIRECTIVE_JMP  */
+#line 1346 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_JMP;
 	}
-#line 3145 "syntactic.c"
+#line 3148 "syntactic.c"
     break;
 
-  case 107: /* opcode: TOKEN_DIRECTIVE_MOVEM  */
-#line 1335 "syntactic.y"
+  case 108: /* opcode: TOKEN_DIRECTIVE_MOVEM  */
+#line 1350 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_MOVEM_TO_REGS;
 	}
-#line 3153 "syntactic.c"
+#line 3156 "syntactic.c"
     break;
 
-  case 108: /* opcode: TOKEN_DIRECTIVE_LEA  */
-#line 1339 "syntactic.y"
+  case 109: /* opcode: TOKEN_DIRECTIVE_LEA  */
+#line 1354 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_LEA;
 	}
-#line 3161 "syntactic.c"
+#line 3164 "syntactic.c"
     break;
 
-  case 109: /* opcode: TOKEN_DIRECTIVE_CHK  */
-#line 1343 "syntactic.y"
+  case 110: /* opcode: TOKEN_DIRECTIVE_CHK  */
+#line 1358 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_CHK;
 	}
-#line 3169 "syntactic.c"
+#line 3172 "syntactic.c"
     break;
 
-  case 110: /* opcode: TOKEN_DIRECTIVE_ADDQ  */
-#line 1347 "syntactic.y"
+  case 111: /* opcode: TOKEN_DIRECTIVE_ADDQ  */
+#line 1362 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_ADDQ;
 	}
-#line 3177 "syntactic.c"
+#line 3180 "syntactic.c"
     break;
 
-  case 111: /* opcode: TOKEN_DIRECTIVE_SUBQ  */
-#line 1351 "syntactic.y"
+  case 112: /* opcode: TOKEN_DIRECTIVE_SUBQ  */
+#line 1366 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_SUBQ;
 	}
-#line 3185 "syntactic.c"
+#line 3188 "syntactic.c"
     break;
 
-  case 112: /* opcode: TOKEN_DIRECTIVE_ST  */
-#line 1355 "syntactic.y"
-        {
-		(yyval.opcode).type = OPCODE_Scc;
-		(yyval.opcode).condition = CONDITION_TRUE;
-	}
-#line 3194 "syntactic.c"
-    break;
-
-  case 113: /* opcode: TOKEN_DIRECTIVE_SF  */
-#line 1360 "syntactic.y"
-        {
-		(yyval.opcode).type = OPCODE_Scc;
-		(yyval.opcode).condition = CONDITION_FALSE;
-	}
-#line 3203 "syntactic.c"
-    break;
-
-  case 114: /* opcode: TOKEN_DIRECTIVE_SHI  */
-#line 1365 "syntactic.y"
-        {
-		(yyval.opcode).type = OPCODE_Scc;
-		(yyval.opcode).condition = CONDITION_HIGHER;
-	}
-#line 3212 "syntactic.c"
-    break;
-
-  case 115: /* opcode: TOKEN_DIRECTIVE_SLS  */
+  case 113: /* opcode: TOKEN_DIRECTIVE_ST  */
 #line 1370 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Scc;
-		(yyval.opcode).condition = CONDITION_LOWER_OR_SAME;
+		(yyval.opcode).condition = CONDITION_TRUE;
 	}
-#line 3221 "syntactic.c"
+#line 3197 "syntactic.c"
     break;
 
-  case 116: /* opcode: TOKEN_DIRECTIVE_SCC  */
+  case 114: /* opcode: TOKEN_DIRECTIVE_SF  */
 #line 1375 "syntactic.y"
+        {
+		(yyval.opcode).type = OPCODE_Scc;
+		(yyval.opcode).condition = CONDITION_FALSE;
+	}
+#line 3206 "syntactic.c"
+    break;
+
+  case 115: /* opcode: TOKEN_DIRECTIVE_SHI  */
+#line 1380 "syntactic.y"
+        {
+		(yyval.opcode).type = OPCODE_Scc;
+		(yyval.opcode).condition = CONDITION_HIGHER;
+	}
+#line 3215 "syntactic.c"
+    break;
+
+  case 116: /* opcode: TOKEN_DIRECTIVE_SLS  */
+#line 1385 "syntactic.y"
+        {
+		(yyval.opcode).type = OPCODE_Scc;
+		(yyval.opcode).condition = CONDITION_LOWER_OR_SAME;
+	}
+#line 3224 "syntactic.c"
+    break;
+
+  case 117: /* opcode: TOKEN_DIRECTIVE_SCC  */
+#line 1390 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_CARRY_CLEAR;
 	}
-#line 3230 "syntactic.c"
+#line 3233 "syntactic.c"
     break;
 
-  case 117: /* opcode: TOKEN_DIRECTIVE_SCS  */
-#line 1380 "syntactic.y"
+  case 118: /* opcode: TOKEN_DIRECTIVE_SCS  */
+#line 1395 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_CARRY_SET;
 	}
-#line 3239 "syntactic.c"
+#line 3242 "syntactic.c"
     break;
 
-  case 118: /* opcode: TOKEN_DIRECTIVE_SNE  */
-#line 1385 "syntactic.y"
+  case 119: /* opcode: TOKEN_DIRECTIVE_SNE  */
+#line 1400 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_NOT_EQUAL;
 	}
-#line 3248 "syntactic.c"
+#line 3251 "syntactic.c"
     break;
 
-  case 119: /* opcode: TOKEN_DIRECTIVE_SEQ  */
-#line 1390 "syntactic.y"
+  case 120: /* opcode: TOKEN_DIRECTIVE_SEQ  */
+#line 1405 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_EQUAL;
 	}
-#line 3257 "syntactic.c"
+#line 3260 "syntactic.c"
     break;
 
-  case 120: /* opcode: TOKEN_DIRECTIVE_SVC  */
-#line 1395 "syntactic.y"
+  case 121: /* opcode: TOKEN_DIRECTIVE_SVC  */
+#line 1410 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_OVERFLOW_CLEAR;
 	}
-#line 3266 "syntactic.c"
+#line 3269 "syntactic.c"
     break;
 
-  case 121: /* opcode: TOKEN_DIRECTIVE_SVS  */
-#line 1400 "syntactic.y"
+  case 122: /* opcode: TOKEN_DIRECTIVE_SVS  */
+#line 1415 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_OVERFLOW_SET;
 	}
-#line 3275 "syntactic.c"
+#line 3278 "syntactic.c"
     break;
 
-  case 122: /* opcode: TOKEN_DIRECTIVE_SPL  */
-#line 1405 "syntactic.y"
+  case 123: /* opcode: TOKEN_DIRECTIVE_SPL  */
+#line 1420 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_PLUS;
 	}
-#line 3284 "syntactic.c"
+#line 3287 "syntactic.c"
     break;
 
-  case 123: /* opcode: TOKEN_DIRECTIVE_SMI  */
-#line 1410 "syntactic.y"
+  case 124: /* opcode: TOKEN_DIRECTIVE_SMI  */
+#line 1425 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_MINUS;
 	}
-#line 3293 "syntactic.c"
+#line 3296 "syntactic.c"
     break;
 
-  case 124: /* opcode: TOKEN_DIRECTIVE_SGE  */
-#line 1415 "syntactic.y"
+  case 125: /* opcode: TOKEN_DIRECTIVE_SGE  */
+#line 1430 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_GREATER_OR_EQUAL;
 	}
-#line 3302 "syntactic.c"
+#line 3305 "syntactic.c"
     break;
 
-  case 125: /* opcode: TOKEN_DIRECTIVE_SLT  */
-#line 1420 "syntactic.y"
+  case 126: /* opcode: TOKEN_DIRECTIVE_SLT  */
+#line 1435 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_LESS_THAN;
 	}
-#line 3311 "syntactic.c"
+#line 3314 "syntactic.c"
     break;
 
-  case 126: /* opcode: TOKEN_DIRECTIVE_SGT  */
-#line 1425 "syntactic.y"
+  case 127: /* opcode: TOKEN_DIRECTIVE_SGT  */
+#line 1440 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_GREATER_THAN;
 	}
-#line 3320 "syntactic.c"
+#line 3323 "syntactic.c"
     break;
 
-  case 127: /* opcode: TOKEN_DIRECTIVE_SLE  */
-#line 1430 "syntactic.y"
+  case 128: /* opcode: TOKEN_DIRECTIVE_SLE  */
+#line 1445 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_LESS_OR_EQUAL;
 	}
-#line 3329 "syntactic.c"
+#line 3332 "syntactic.c"
     break;
 
-  case 128: /* opcode: TOKEN_DIRECTIVE_DBT  */
-#line 1435 "syntactic.y"
+  case 129: /* opcode: TOKEN_DIRECTIVE_DBT  */
+#line 1450 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_TRUE;
 	}
-#line 3338 "syntactic.c"
+#line 3341 "syntactic.c"
     break;
 
-  case 129: /* opcode: TOKEN_DIRECTIVE_DBF  */
-#line 1440 "syntactic.y"
+  case 130: /* opcode: TOKEN_DIRECTIVE_DBF  */
+#line 1455 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_FALSE;
 	}
-#line 3347 "syntactic.c"
+#line 3350 "syntactic.c"
     break;
 
-  case 130: /* opcode: TOKEN_DIRECTIVE_DBHI  */
-#line 1445 "syntactic.y"
-        {
-		(yyval.opcode).type = OPCODE_DBcc;
-		(yyval.opcode).condition = CONDITION_HIGHER;
-	}
-#line 3356 "syntactic.c"
-    break;
-
-  case 131: /* opcode: TOKEN_DIRECTIVE_DBLS  */
-#line 1450 "syntactic.y"
-        {
-		(yyval.opcode).type = OPCODE_DBcc;
-		(yyval.opcode).condition = CONDITION_LOWER_OR_SAME;
-	}
-#line 3365 "syntactic.c"
-    break;
-
-  case 132: /* opcode: TOKEN_DIRECTIVE_DBCC  */
-#line 1455 "syntactic.y"
-        {
-		(yyval.opcode).type = OPCODE_DBcc;
-		(yyval.opcode).condition = CONDITION_CARRY_CLEAR;
-	}
-#line 3374 "syntactic.c"
-    break;
-
-  case 133: /* opcode: TOKEN_DIRECTIVE_DBCS  */
+  case 131: /* opcode: TOKEN_DIRECTIVE_DBHI  */
 #line 1460 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_DBcc;
-		(yyval.opcode).condition = CONDITION_CARRY_SET;
+		(yyval.opcode).condition = CONDITION_HIGHER;
 	}
-#line 3383 "syntactic.c"
+#line 3359 "syntactic.c"
     break;
 
-  case 134: /* opcode: TOKEN_DIRECTIVE_DBNE  */
+  case 132: /* opcode: TOKEN_DIRECTIVE_DBLS  */
 #line 1465 "syntactic.y"
+        {
+		(yyval.opcode).type = OPCODE_DBcc;
+		(yyval.opcode).condition = CONDITION_LOWER_OR_SAME;
+	}
+#line 3368 "syntactic.c"
+    break;
+
+  case 133: /* opcode: TOKEN_DIRECTIVE_DBCC  */
+#line 1470 "syntactic.y"
+        {
+		(yyval.opcode).type = OPCODE_DBcc;
+		(yyval.opcode).condition = CONDITION_CARRY_CLEAR;
+	}
+#line 3377 "syntactic.c"
+    break;
+
+  case 134: /* opcode: TOKEN_DIRECTIVE_DBCS  */
+#line 1475 "syntactic.y"
+        {
+		(yyval.opcode).type = OPCODE_DBcc;
+		(yyval.opcode).condition = CONDITION_CARRY_SET;
+	}
+#line 3386 "syntactic.c"
+    break;
+
+  case 135: /* opcode: TOKEN_DIRECTIVE_DBNE  */
+#line 1480 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_NOT_EQUAL;
 	}
-#line 3392 "syntactic.c"
+#line 3395 "syntactic.c"
     break;
 
-  case 135: /* opcode: TOKEN_DIRECTIVE_DBEQ  */
-#line 1470 "syntactic.y"
+  case 136: /* opcode: TOKEN_DIRECTIVE_DBEQ  */
+#line 1485 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_EQUAL;
 	}
-#line 3401 "syntactic.c"
+#line 3404 "syntactic.c"
     break;
 
-  case 136: /* opcode: TOKEN_DIRECTIVE_DBVC  */
-#line 1475 "syntactic.y"
+  case 137: /* opcode: TOKEN_DIRECTIVE_DBVC  */
+#line 1490 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_OVERFLOW_CLEAR;
 	}
-#line 3410 "syntactic.c"
+#line 3413 "syntactic.c"
     break;
 
-  case 137: /* opcode: TOKEN_DIRECTIVE_DBVS  */
-#line 1480 "syntactic.y"
+  case 138: /* opcode: TOKEN_DIRECTIVE_DBVS  */
+#line 1495 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_OVERFLOW_SET;
 	}
-#line 3419 "syntactic.c"
+#line 3422 "syntactic.c"
     break;
 
-  case 138: /* opcode: TOKEN_DIRECTIVE_DBPL  */
-#line 1485 "syntactic.y"
+  case 139: /* opcode: TOKEN_DIRECTIVE_DBPL  */
+#line 1500 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_PLUS;
 	}
-#line 3428 "syntactic.c"
+#line 3431 "syntactic.c"
     break;
 
-  case 139: /* opcode: TOKEN_DIRECTIVE_DBMI  */
-#line 1490 "syntactic.y"
+  case 140: /* opcode: TOKEN_DIRECTIVE_DBMI  */
+#line 1505 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_MINUS;
 	}
-#line 3437 "syntactic.c"
+#line 3440 "syntactic.c"
     break;
 
-  case 140: /* opcode: TOKEN_DIRECTIVE_DBGE  */
-#line 1495 "syntactic.y"
+  case 141: /* opcode: TOKEN_DIRECTIVE_DBGE  */
+#line 1510 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_GREATER_OR_EQUAL;
 	}
-#line 3446 "syntactic.c"
+#line 3449 "syntactic.c"
     break;
 
-  case 141: /* opcode: TOKEN_DIRECTIVE_DBLT  */
-#line 1500 "syntactic.y"
+  case 142: /* opcode: TOKEN_DIRECTIVE_DBLT  */
+#line 1515 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_LESS_THAN;
 	}
-#line 3455 "syntactic.c"
+#line 3458 "syntactic.c"
     break;
 
-  case 142: /* opcode: TOKEN_DIRECTIVE_DBGT  */
-#line 1505 "syntactic.y"
+  case 143: /* opcode: TOKEN_DIRECTIVE_DBGT  */
+#line 1520 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_GREATER_THAN;
 	}
-#line 3464 "syntactic.c"
+#line 3467 "syntactic.c"
     break;
 
-  case 143: /* opcode: TOKEN_DIRECTIVE_DBLE  */
-#line 1510 "syntactic.y"
+  case 144: /* opcode: TOKEN_DIRECTIVE_DBLE  */
+#line 1525 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_LESS_OR_EQUAL;
 	}
-#line 3473 "syntactic.c"
+#line 3476 "syntactic.c"
     break;
 
-  case 144: /* opcode: TOKEN_DIRECTIVE_BRA  */
-#line 1515 "syntactic.y"
+  case 145: /* opcode: TOKEN_DIRECTIVE_BRA  */
+#line 1530 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_BRA;
 	}
-#line 3481 "syntactic.c"
+#line 3484 "syntactic.c"
     break;
 
-  case 145: /* opcode: TOKEN_DIRECTIVE_BSR  */
-#line 1519 "syntactic.y"
+  case 146: /* opcode: TOKEN_DIRECTIVE_BSR  */
+#line 1534 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_BSR;
 	}
-#line 3489 "syntactic.c"
+#line 3492 "syntactic.c"
     break;
 
-  case 146: /* opcode: TOKEN_DIRECTIVE_BHI  */
-#line 1523 "syntactic.y"
+  case 147: /* opcode: TOKEN_DIRECTIVE_BHI  */
+#line 1538 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_HIGHER;
 	}
-#line 3498 "syntactic.c"
+#line 3501 "syntactic.c"
     break;
 
-  case 147: /* opcode: TOKEN_DIRECTIVE_BLS  */
-#line 1528 "syntactic.y"
+  case 148: /* opcode: TOKEN_DIRECTIVE_BLS  */
+#line 1543 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_LOWER_OR_SAME;
 	}
-#line 3507 "syntactic.c"
+#line 3510 "syntactic.c"
     break;
 
-  case 148: /* opcode: TOKEN_DIRECTIVE_BCC  */
-#line 1533 "syntactic.y"
+  case 149: /* opcode: TOKEN_DIRECTIVE_BCC  */
+#line 1548 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_CARRY_CLEAR;
 	}
-#line 3516 "syntactic.c"
+#line 3519 "syntactic.c"
     break;
 
-  case 149: /* opcode: TOKEN_DIRECTIVE_BCS  */
-#line 1538 "syntactic.y"
+  case 150: /* opcode: TOKEN_DIRECTIVE_BCS  */
+#line 1553 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_CARRY_SET;
 	}
-#line 3525 "syntactic.c"
+#line 3528 "syntactic.c"
     break;
 
-  case 150: /* opcode: TOKEN_DIRECTIVE_BNE  */
-#line 1543 "syntactic.y"
+  case 151: /* opcode: TOKEN_DIRECTIVE_BNE  */
+#line 1558 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_NOT_EQUAL;
 	}
-#line 3534 "syntactic.c"
+#line 3537 "syntactic.c"
     break;
 
-  case 151: /* opcode: TOKEN_DIRECTIVE_BEQ  */
-#line 1548 "syntactic.y"
+  case 152: /* opcode: TOKEN_DIRECTIVE_BEQ  */
+#line 1563 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_EQUAL;
 	}
-#line 3543 "syntactic.c"
+#line 3546 "syntactic.c"
     break;
 
-  case 152: /* opcode: TOKEN_DIRECTIVE_BVC  */
-#line 1553 "syntactic.y"
+  case 153: /* opcode: TOKEN_DIRECTIVE_BVC  */
+#line 1568 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_OVERFLOW_CLEAR;
 	}
-#line 3552 "syntactic.c"
+#line 3555 "syntactic.c"
     break;
 
-  case 153: /* opcode: TOKEN_DIRECTIVE_BVS  */
-#line 1558 "syntactic.y"
+  case 154: /* opcode: TOKEN_DIRECTIVE_BVS  */
+#line 1573 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_OVERFLOW_SET;
 	}
-#line 3561 "syntactic.c"
+#line 3564 "syntactic.c"
     break;
 
-  case 154: /* opcode: TOKEN_DIRECTIVE_BPL  */
-#line 1563 "syntactic.y"
+  case 155: /* opcode: TOKEN_DIRECTIVE_BPL  */
+#line 1578 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_PLUS;
 	}
-#line 3570 "syntactic.c"
+#line 3573 "syntactic.c"
     break;
 
-  case 155: /* opcode: TOKEN_DIRECTIVE_BMI  */
-#line 1568 "syntactic.y"
+  case 156: /* opcode: TOKEN_DIRECTIVE_BMI  */
+#line 1583 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_MINUS;
 	}
-#line 3579 "syntactic.c"
+#line 3582 "syntactic.c"
     break;
 
-  case 156: /* opcode: TOKEN_DIRECTIVE_BGE  */
-#line 1573 "syntactic.y"
+  case 157: /* opcode: TOKEN_DIRECTIVE_BGE  */
+#line 1588 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_GREATER_OR_EQUAL;
 	}
-#line 3588 "syntactic.c"
+#line 3591 "syntactic.c"
     break;
 
-  case 157: /* opcode: TOKEN_DIRECTIVE_BLT  */
-#line 1578 "syntactic.y"
+  case 158: /* opcode: TOKEN_DIRECTIVE_BLT  */
+#line 1593 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_LESS_THAN;
 	}
-#line 3597 "syntactic.c"
+#line 3600 "syntactic.c"
     break;
 
-  case 158: /* opcode: TOKEN_DIRECTIVE_BGT  */
-#line 1583 "syntactic.y"
+  case 159: /* opcode: TOKEN_DIRECTIVE_BGT  */
+#line 1598 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_GREATER_THAN;
 	}
-#line 3606 "syntactic.c"
+#line 3609 "syntactic.c"
     break;
 
-  case 159: /* opcode: TOKEN_DIRECTIVE_BLE  */
-#line 1588 "syntactic.y"
+  case 160: /* opcode: TOKEN_DIRECTIVE_BLE  */
+#line 1603 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_LESS_OR_EQUAL;
 	}
-#line 3615 "syntactic.c"
+#line 3618 "syntactic.c"
     break;
 
-  case 160: /* opcode: TOKEN_DIRECTIVE_MOVEQ  */
-#line 1593 "syntactic.y"
+  case 161: /* opcode: TOKEN_DIRECTIVE_MOVEQ  */
+#line 1608 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_MOVEQ;
 	}
-#line 3623 "syntactic.c"
+#line 3626 "syntactic.c"
     break;
 
-  case 161: /* opcode: TOKEN_DIRECTIVE_DIVU  */
-#line 1597 "syntactic.y"
+  case 162: /* opcode: TOKEN_DIRECTIVE_DIVU  */
+#line 1612 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_DIVU;
 	}
-#line 3631 "syntactic.c"
+#line 3634 "syntactic.c"
     break;
 
-  case 162: /* opcode: TOKEN_DIRECTIVE_DIVS  */
-#line 1601 "syntactic.y"
+  case 163: /* opcode: TOKEN_DIRECTIVE_DIVS  */
+#line 1616 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_DIVS;
 	}
-#line 3639 "syntactic.c"
+#line 3642 "syntactic.c"
     break;
 
-  case 163: /* opcode: TOKEN_DIRECTIVE_SBCD  */
-#line 1605 "syntactic.y"
+  case 164: /* opcode: TOKEN_DIRECTIVE_SBCD  */
+#line 1620 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_SBCD_DATA_REGS;
 	}
-#line 3647 "syntactic.c"
+#line 3650 "syntactic.c"
     break;
 
-  case 164: /* opcode: TOKEN_DIRECTIVE_OR  */
-#line 1609 "syntactic.y"
+  case 165: /* opcode: TOKEN_DIRECTIVE_OR  */
+#line 1624 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_OR_TO_REG;
 	}
-#line 3655 "syntactic.c"
+#line 3658 "syntactic.c"
     break;
 
-  case 165: /* opcode: TOKEN_DIRECTIVE_SUB  */
-#line 1613 "syntactic.y"
+  case 166: /* opcode: TOKEN_DIRECTIVE_SUB  */
+#line 1628 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_SUB_TO_REG;
 	}
-#line 3663 "syntactic.c"
+#line 3666 "syntactic.c"
     break;
 
-  case 166: /* opcode: TOKEN_DIRECTIVE_SUBX  */
-#line 1617 "syntactic.y"
+  case 167: /* opcode: TOKEN_DIRECTIVE_SUBX  */
+#line 1632 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_SUBX_DATA_REGS;
 	}
-#line 3671 "syntactic.c"
+#line 3674 "syntactic.c"
     break;
 
-  case 167: /* opcode: TOKEN_DIRECTIVE_SUBA  */
-#line 1621 "syntactic.y"
+  case 168: /* opcode: TOKEN_DIRECTIVE_SUBA  */
+#line 1636 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_SUBA;
 	}
-#line 3679 "syntactic.c"
+#line 3682 "syntactic.c"
     break;
 
-  case 168: /* opcode: TOKEN_DIRECTIVE_EOR  */
-#line 1625 "syntactic.y"
+  case 169: /* opcode: TOKEN_DIRECTIVE_EOR  */
+#line 1640 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_EOR;
 	}
-#line 3687 "syntactic.c"
+#line 3690 "syntactic.c"
     break;
 
-  case 169: /* opcode: TOKEN_DIRECTIVE_CMPM  */
-#line 1629 "syntactic.y"
+  case 170: /* opcode: TOKEN_DIRECTIVE_CMPM  */
+#line 1644 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_CMPM;
 	}
-#line 3695 "syntactic.c"
+#line 3698 "syntactic.c"
     break;
 
-  case 170: /* opcode: TOKEN_DIRECTIVE_CMP  */
-#line 1633 "syntactic.y"
+  case 171: /* opcode: TOKEN_DIRECTIVE_CMP  */
+#line 1648 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_CMP;
 	}
-#line 3703 "syntactic.c"
+#line 3706 "syntactic.c"
     break;
 
-  case 171: /* opcode: TOKEN_DIRECTIVE_CMPA  */
-#line 1637 "syntactic.y"
+  case 172: /* opcode: TOKEN_DIRECTIVE_CMPA  */
+#line 1652 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_CMPA;
 	}
-#line 3711 "syntactic.c"
+#line 3714 "syntactic.c"
     break;
 
-  case 172: /* opcode: TOKEN_DIRECTIVE_MULU  */
-#line 1641 "syntactic.y"
+  case 173: /* opcode: TOKEN_DIRECTIVE_MULU  */
+#line 1656 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_MULU;
 	}
-#line 3719 "syntactic.c"
+#line 3722 "syntactic.c"
     break;
 
-  case 173: /* opcode: TOKEN_DIRECTIVE_MULS  */
-#line 1645 "syntactic.y"
+  case 174: /* opcode: TOKEN_DIRECTIVE_MULS  */
+#line 1660 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_MULS;
 	}
-#line 3727 "syntactic.c"
+#line 3730 "syntactic.c"
     break;
 
-  case 174: /* opcode: TOKEN_DIRECTIVE_ABCD  */
-#line 1649 "syntactic.y"
+  case 175: /* opcode: TOKEN_DIRECTIVE_ABCD  */
+#line 1664 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_ABCD_DATA_REGS;
 	}
-#line 3735 "syntactic.c"
+#line 3738 "syntactic.c"
     break;
 
-  case 175: /* opcode: TOKEN_DIRECTIVE_EXG  */
-#line 1653 "syntactic.y"
+  case 176: /* opcode: TOKEN_DIRECTIVE_EXG  */
+#line 1668 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_EXG;
 	}
-#line 3743 "syntactic.c"
+#line 3746 "syntactic.c"
     break;
 
-  case 176: /* opcode: TOKEN_DIRECTIVE_AND  */
-#line 1657 "syntactic.y"
+  case 177: /* opcode: TOKEN_DIRECTIVE_AND  */
+#line 1672 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_AND_TO_REG;
 	}
-#line 3751 "syntactic.c"
+#line 3754 "syntactic.c"
     break;
 
-  case 177: /* opcode: TOKEN_DIRECTIVE_ADD  */
-#line 1661 "syntactic.y"
+  case 178: /* opcode: TOKEN_DIRECTIVE_ADD  */
+#line 1676 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_ADD_TO_REG;
 	}
-#line 3759 "syntactic.c"
+#line 3762 "syntactic.c"
     break;
 
-  case 178: /* opcode: TOKEN_DIRECTIVE_ADDX  */
-#line 1665 "syntactic.y"
+  case 179: /* opcode: TOKEN_DIRECTIVE_ADDX  */
+#line 1680 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_ADDX_DATA_REGS;
 	}
-#line 3767 "syntactic.c"
+#line 3770 "syntactic.c"
     break;
 
-  case 179: /* opcode: TOKEN_DIRECTIVE_ADDA  */
-#line 1669 "syntactic.y"
+  case 180: /* opcode: TOKEN_DIRECTIVE_ADDA  */
+#line 1684 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_ADDA;
 	}
-#line 3775 "syntactic.c"
+#line 3778 "syntactic.c"
     break;
 
-  case 180: /* opcode: TOKEN_DIRECTIVE_ASL  */
-#line 1673 "syntactic.y"
+  case 181: /* opcode: TOKEN_DIRECTIVE_ASL  */
+#line 1688 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_ASL_STATIC;
 	}
-#line 3783 "syntactic.c"
+#line 3786 "syntactic.c"
     break;
 
-  case 181: /* opcode: TOKEN_DIRECTIVE_ASR  */
-#line 1677 "syntactic.y"
+  case 182: /* opcode: TOKEN_DIRECTIVE_ASR  */
+#line 1692 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_ASR_STATIC;
 	}
-#line 3791 "syntactic.c"
+#line 3794 "syntactic.c"
     break;
 
-  case 182: /* opcode: TOKEN_DIRECTIVE_LSL  */
-#line 1681 "syntactic.y"
+  case 183: /* opcode: TOKEN_DIRECTIVE_LSL  */
+#line 1696 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_LSL_STATIC;
 	}
-#line 3799 "syntactic.c"
+#line 3802 "syntactic.c"
     break;
 
-  case 183: /* opcode: TOKEN_DIRECTIVE_LSR  */
-#line 1685 "syntactic.y"
+  case 184: /* opcode: TOKEN_DIRECTIVE_LSR  */
+#line 1700 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_LSR_STATIC;
 	}
-#line 3807 "syntactic.c"
+#line 3810 "syntactic.c"
     break;
 
-  case 184: /* opcode: TOKEN_DIRECTIVE_ROXL  */
-#line 1689 "syntactic.y"
+  case 185: /* opcode: TOKEN_DIRECTIVE_ROXL  */
+#line 1704 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_ROXL_STATIC;
 	}
-#line 3815 "syntactic.c"
+#line 3818 "syntactic.c"
     break;
 
-  case 185: /* opcode: TOKEN_DIRECTIVE_ROXR  */
-#line 1693 "syntactic.y"
+  case 186: /* opcode: TOKEN_DIRECTIVE_ROXR  */
+#line 1708 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_ROXR_STATIC;
 	}
-#line 3823 "syntactic.c"
+#line 3826 "syntactic.c"
     break;
 
-  case 186: /* opcode: TOKEN_DIRECTIVE_ROL  */
-#line 1697 "syntactic.y"
+  case 187: /* opcode: TOKEN_DIRECTIVE_ROL  */
+#line 1712 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_ROL_STATIC;
 	}
-#line 3831 "syntactic.c"
+#line 3834 "syntactic.c"
     break;
 
-  case 187: /* opcode: TOKEN_DIRECTIVE_ROR  */
-#line 1701 "syntactic.y"
+  case 188: /* opcode: TOKEN_DIRECTIVE_ROR  */
+#line 1716 "syntactic.y"
         {
 		(yyval.opcode).type = OPCODE_ROR_STATIC;
 	}
-#line 3839 "syntactic.c"
+#line 3842 "syntactic.c"
     break;
 
-  case 188: /* size: TOKEN_SIZE_BYTE  */
-#line 1708 "syntactic.y"
+  case 189: /* size: TOKEN_SIZE_BYTE  */
+#line 1723 "syntactic.y"
         {
 		(yyval.size) = SIZE_BYTE;
 	}
-#line 3847 "syntactic.c"
+#line 3850 "syntactic.c"
     break;
 
-  case 189: /* size: TOKEN_SIZE_SHORT  */
-#line 1712 "syntactic.y"
+  case 190: /* size: TOKEN_SIZE_SHORT  */
+#line 1727 "syntactic.y"
         {
 		(yyval.size) = SIZE_SHORT;
 	}
-#line 3855 "syntactic.c"
+#line 3858 "syntactic.c"
     break;
 
-  case 190: /* size: TOKEN_SIZE_WORD  */
-#line 1716 "syntactic.y"
+  case 191: /* size: TOKEN_SIZE_WORD  */
+#line 1731 "syntactic.y"
         {
 		(yyval.size) = SIZE_WORD;
 	}
-#line 3863 "syntactic.c"
+#line 3866 "syntactic.c"
     break;
 
-  case 191: /* size: TOKEN_SIZE_LONGWORD  */
-#line 1720 "syntactic.y"
+  case 192: /* size: TOKEN_SIZE_LONGWORD  */
+#line 1735 "syntactic.y"
         {
 		(yyval.size) = SIZE_LONGWORD;
 	}
-#line 3871 "syntactic.c"
+#line 3874 "syntactic.c"
     break;
 
-  case 192: /* operand: '(' TOKEN_ADDRESS_REGISTER ')'  */
-#line 1728 "syntactic.y"
+  case 193: /* operand: '(' TOKEN_ADDRESS_REGISTER ')'  */
+#line 1743 "syntactic.y"
         {
 		(yyval.operand).type = OPERAND_ADDRESS_REGISTER_INDIRECT;
 		(yyval.operand).main_register = (yyvsp[-1].unsigned_long);
 	}
-#line 3880 "syntactic.c"
+#line 3883 "syntactic.c"
     break;
 
-  case 193: /* operand: '(' TOKEN_ADDRESS_REGISTER ')' '+'  */
-#line 1733 "syntactic.y"
+  case 194: /* operand: '(' TOKEN_ADDRESS_REGISTER ')' '+'  */
+#line 1748 "syntactic.y"
         {
 		(yyval.operand).type = OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT;
 		(yyval.operand).main_register = (yyvsp[-2].unsigned_long);
 	}
-#line 3889 "syntactic.c"
+#line 3892 "syntactic.c"
     break;
 
-  case 194: /* operand: '-' '(' TOKEN_ADDRESS_REGISTER ')'  */
-#line 1738 "syntactic.y"
+  case 195: /* operand: '-' '(' TOKEN_ADDRESS_REGISTER ')'  */
+#line 1753 "syntactic.y"
         {
 		(yyval.operand).type = OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT;
 		(yyval.operand).main_register = (yyvsp[-1].unsigned_long);
 	}
-#line 3898 "syntactic.c"
+#line 3901 "syntactic.c"
     break;
 
-  case 195: /* operand: expression '(' TOKEN_ADDRESS_REGISTER ')'  */
-#line 1743 "syntactic.y"
+  case 196: /* operand: expression '(' TOKEN_ADDRESS_REGISTER ')'  */
+#line 1758 "syntactic.y"
         {
 		(yyval.operand).type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
 		(yyval.operand).literal = (yyvsp[-3].expression);
 		(yyval.operand).main_register = (yyvsp[-1].unsigned_long);
 	}
-#line 3908 "syntactic.c"
+#line 3911 "syntactic.c"
     break;
 
-  case 196: /* operand: '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register size ')'  */
-#line 1749 "syntactic.y"
+  case 197: /* operand: '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register size ')'  */
+#line 1764 "syntactic.y"
         {
 		(yyval.operand).type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		(yyval.operand).literal.type = EXPRESSION_NUMBER;
@@ -3918,11 +3921,11 @@ yyreduce:
 		(yyval.operand).size = (yyvsp[-1].size);
 		(yyval.operand).index_register_is_address_register = (yyvsp[-2].unsigned_long) / 8 != 0;
 	}
-#line 3922 "syntactic.c"
+#line 3925 "syntactic.c"
     break;
 
-  case 197: /* operand: expression '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register size ')'  */
-#line 1759 "syntactic.y"
+  case 198: /* operand: expression '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register size ')'  */
+#line 1774 "syntactic.y"
         {
 		(yyval.operand).type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		(yyval.operand).literal = (yyvsp[-6].expression);
@@ -3931,11 +3934,11 @@ yyreduce:
 		(yyval.operand).size = (yyvsp[-1].size);
 		(yyval.operand).index_register_is_address_register = (yyvsp[-2].unsigned_long) / 8 !=0;
 	}
-#line 3935 "syntactic.c"
+#line 3938 "syntactic.c"
     break;
 
-  case 198: /* operand: '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'  */
-#line 1768 "syntactic.y"
+  case 199: /* operand: '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'  */
+#line 1783 "syntactic.y"
         {
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		(yyval.operand).type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -3946,11 +3949,11 @@ yyreduce:
 		(yyval.operand).size = SIZE_WORD;
 		(yyval.operand).index_register_is_address_register = (yyvsp[-1].unsigned_long) / 8 != 0;
 	}
-#line 3950 "syntactic.c"
+#line 3953 "syntactic.c"
     break;
 
-  case 199: /* operand: expression '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'  */
-#line 1779 "syntactic.y"
+  case 200: /* operand: expression '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'  */
+#line 1794 "syntactic.y"
         {
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		(yyval.operand).type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -3960,20 +3963,20 @@ yyreduce:
 		(yyval.operand).size = SIZE_WORD;
 		(yyval.operand).index_register_is_address_register = (yyvsp[-1].unsigned_long) / 8 !=0;
 	}
-#line 3964 "syntactic.c"
+#line 3967 "syntactic.c"
     break;
 
-  case 200: /* operand: expression '(' TOKEN_PROGRAM_COUNTER ')'  */
-#line 1789 "syntactic.y"
+  case 201: /* operand: expression '(' TOKEN_PROGRAM_COUNTER ')'  */
+#line 1804 "syntactic.y"
         {
 		(yyval.operand).type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		(yyval.operand).literal = (yyvsp[-3].expression);
 	}
-#line 3973 "syntactic.c"
+#line 3976 "syntactic.c"
     break;
 
-  case 201: /* operand: '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register size ')'  */
-#line 1794 "syntactic.y"
+  case 202: /* operand: '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register size ')'  */
+#line 1809 "syntactic.y"
         {
 		(yyval.operand).type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		(yyval.operand).literal.type = EXPRESSION_NUMBER;
@@ -3982,11 +3985,11 @@ yyreduce:
 		(yyval.operand).size = (yyvsp[-1].size);
 		(yyval.operand).index_register_is_address_register = (yyvsp[-2].unsigned_long) / 8 != 0;
 	}
-#line 3986 "syntactic.c"
+#line 3989 "syntactic.c"
     break;
 
-  case 202: /* operand: expression '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register size ')'  */
-#line 1803 "syntactic.y"
+  case 203: /* operand: expression '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register size ')'  */
+#line 1818 "syntactic.y"
         {
 		(yyval.operand).type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		(yyval.operand).literal = (yyvsp[-6].expression);
@@ -3994,11 +3997,11 @@ yyreduce:
 		(yyval.operand).size = (yyvsp[-1].size);
 		(yyval.operand).index_register_is_address_register = (yyvsp[-2].unsigned_long) / 8 != 0;
 	}
-#line 3998 "syntactic.c"
+#line 4001 "syntactic.c"
     break;
 
-  case 203: /* operand: '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'  */
-#line 1811 "syntactic.y"
+  case 204: /* operand: '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'  */
+#line 1826 "syntactic.y"
         {
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		(yyval.operand).type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -4008,11 +4011,11 @@ yyreduce:
 		(yyval.operand).size = SIZE_WORD;
 		(yyval.operand).index_register_is_address_register = (yyvsp[-1].unsigned_long) / 8 != 0;
 	}
-#line 4012 "syntactic.c"
+#line 4015 "syntactic.c"
     break;
 
-  case 204: /* operand: expression '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'  */
-#line 1821 "syntactic.y"
+  case 205: /* operand: expression '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'  */
+#line 1836 "syntactic.y"
         {
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		(yyval.operand).type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -4021,64 +4024,64 @@ yyreduce:
 		(yyval.operand).size = SIZE_WORD;
 		(yyval.operand).index_register_is_address_register = (yyvsp[-1].unsigned_long) / 8 != 0;
 	}
-#line 4025 "syntactic.c"
+#line 4028 "syntactic.c"
     break;
 
-  case 205: /* operand: '#' expression  */
-#line 1831 "syntactic.y"
+  case 206: /* operand: '#' expression  */
+#line 1846 "syntactic.y"
         {
 		(yyval.operand).type = OPERAND_LITERAL;
 		(yyval.operand).literal = (yyvsp[0].expression);
 	}
-#line 4034 "syntactic.c"
+#line 4037 "syntactic.c"
     break;
 
-  case 206: /* operand: TOKEN_STATUS_REGISTER  */
-#line 1847 "syntactic.y"
+  case 207: /* operand: TOKEN_STATUS_REGISTER  */
+#line 1862 "syntactic.y"
         {
 		(yyval.operand).type = OPERAND_STATUS_REGISTER;
 	}
-#line 4042 "syntactic.c"
+#line 4045 "syntactic.c"
     break;
 
-  case 207: /* operand: TOKEN_CONDITION_CODE_REGISTER  */
-#line 1851 "syntactic.y"
+  case 208: /* operand: TOKEN_CONDITION_CODE_REGISTER  */
+#line 1866 "syntactic.y"
         {
 		(yyval.operand).type = OPERAND_CONDITION_CODE_REGISTER;
 	}
-#line 4050 "syntactic.c"
+#line 4053 "syntactic.c"
     break;
 
-  case 208: /* operand: TOKEN_USER_STACK_POINTER_REGISTER  */
-#line 1855 "syntactic.y"
+  case 209: /* operand: TOKEN_USER_STACK_POINTER_REGISTER  */
+#line 1870 "syntactic.y"
         {
 		(yyval.operand).type = OPERAND_USER_STACK_POINTER_REGISTER;
 	}
-#line 4058 "syntactic.c"
+#line 4061 "syntactic.c"
     break;
 
-  case 209: /* operand: expression  */
-#line 1860 "syntactic.y"
+  case 210: /* operand: expression  */
+#line 1875 "syntactic.y"
         {
 		(yyval.operand).type = OPERAND_ADDRESS;
 		(yyval.operand).literal = (yyvsp[0].expression);
 		(yyval.operand).size = SIZE_UNDEFINED;
 	}
-#line 4068 "syntactic.c"
+#line 4071 "syntactic.c"
     break;
 
-  case 210: /* operand: expression size  */
-#line 1866 "syntactic.y"
+  case 211: /* operand: expression size  */
+#line 1881 "syntactic.y"
         {
 		(yyval.operand).type = OPERAND_ADDRESS_ABSOLUTE;
 		(yyval.operand).literal = (yyvsp[-1].expression);
 		(yyval.operand).size = (yyvsp[0].size);
 	}
-#line 4078 "syntactic.c"
+#line 4081 "syntactic.c"
     break;
 
-  case 211: /* operand: register_list  */
-#line 1873 "syntactic.y"
+  case 212: /* operand: register_list  */
+#line 1888 "syntactic.y"
         {
 		/* Neat trick to check if only one bit is set (yes, I know that it evaluates to true for 0, but that doesn't matter here). */
 		if (((yyvsp[0].unsigned_long) & ((yyvsp[0].unsigned_long) - 1)) == 0)
@@ -4106,35 +4109,35 @@ yyreduce:
 			(yyval.operand).main_register = (yyvsp[0].unsigned_long); /* Such a hack... */
 		}
 	}
-#line 4110 "syntactic.c"
+#line 4113 "syntactic.c"
     break;
 
-  case 212: /* register_list: register_span  */
-#line 1904 "syntactic.y"
+  case 213: /* register_list: register_span  */
+#line 1919 "syntactic.y"
         {
 		(yyval.unsigned_long) = (yyvsp[0].unsigned_long);
 	}
-#line 4118 "syntactic.c"
+#line 4121 "syntactic.c"
     break;
 
-  case 213: /* register_list: register_span '/' register_list  */
-#line 1908 "syntactic.y"
+  case 214: /* register_list: register_span '/' register_list  */
+#line 1923 "syntactic.y"
         {
 		(yyval.unsigned_long) = (yyvsp[-2].unsigned_long) | (yyvsp[0].unsigned_long);
 	}
-#line 4126 "syntactic.c"
+#line 4129 "syntactic.c"
     break;
 
-  case 214: /* register_span: data_or_address_register  */
-#line 1915 "syntactic.y"
+  case 215: /* register_span: data_or_address_register  */
+#line 1930 "syntactic.y"
         {
 		(yyval.unsigned_long) = 1 << (yyvsp[0].unsigned_long);
 	}
-#line 4134 "syntactic.c"
+#line 4137 "syntactic.c"
     break;
 
-  case 215: /* register_span: data_or_address_register '-' data_or_address_register  */
-#line 1919 "syntactic.y"
+  case 216: /* register_span: data_or_address_register '-' data_or_address_register  */
+#line 1934 "syntactic.y"
         {
 		unsigned long start;
 		unsigned long end;
@@ -4156,333 +4159,333 @@ yyreduce:
 		for (i = start; i <= end; ++i)
 			(yyval.unsigned_long) |= 1 << i;
 	}
-#line 4160 "syntactic.c"
+#line 4163 "syntactic.c"
     break;
 
-  case 216: /* data_or_address_register: TOKEN_DATA_REGISTER  */
-#line 1944 "syntactic.y"
+  case 217: /* data_or_address_register: TOKEN_DATA_REGISTER  */
+#line 1959 "syntactic.y"
         {
 		(yyval.unsigned_long) = 0 + (yyvsp[0].unsigned_long);
 	}
-#line 4168 "syntactic.c"
+#line 4171 "syntactic.c"
     break;
 
-  case 217: /* data_or_address_register: TOKEN_ADDRESS_REGISTER  */
-#line 1948 "syntactic.y"
+  case 218: /* data_or_address_register: TOKEN_ADDRESS_REGISTER  */
+#line 1963 "syntactic.y"
         {
 		(yyval.unsigned_long) = 8 + (yyvsp[0].unsigned_long);
 	}
-#line 4176 "syntactic.c"
+#line 4179 "syntactic.c"
     break;
 
-  case 218: /* expression: expression1  */
-#line 1961 "syntactic.y"
+  case 219: /* expression: expression1  */
+#line 1976 "syntactic.y"
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4184 "syntactic.c"
+#line 4187 "syntactic.c"
     break;
 
-  case 219: /* expression: expression TOKEN_LOGICAL_AND expression1  */
-#line 1966 "syntactic.y"
+  case 220: /* expression: expression TOKEN_LOGICAL_AND expression1  */
+#line 1981 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_LOGICAL_AND, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4193 "syntactic.c"
+#line 4196 "syntactic.c"
     break;
 
-  case 220: /* expression: expression TOKEN_LOGICAL_OR expression1  */
-#line 1972 "syntactic.y"
+  case 221: /* expression: expression TOKEN_LOGICAL_OR expression1  */
+#line 1987 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_LOGICAL_OR, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4202 "syntactic.c"
+#line 4205 "syntactic.c"
     break;
 
-  case 221: /* expression1: expression2  */
-#line 1980 "syntactic.y"
+  case 222: /* expression1: expression2  */
+#line 1995 "syntactic.y"
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4210 "syntactic.c"
+#line 4213 "syntactic.c"
     break;
 
-  case 222: /* expression1: expression1 '=' expression2  */
-#line 1984 "syntactic.y"
+  case 223: /* expression1: expression1 '=' expression2  */
+#line 1999 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_EQUALITY, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4219 "syntactic.c"
+#line 4222 "syntactic.c"
     break;
 
-  case 223: /* expression1: expression1 TOKEN_EQUALITY expression2  */
-#line 1989 "syntactic.y"
+  case 224: /* expression1: expression1 TOKEN_EQUALITY expression2  */
+#line 2004 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_EQUALITY, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4228 "syntactic.c"
+#line 4231 "syntactic.c"
     break;
 
-  case 224: /* expression1: expression1 TOKEN_INEQUALITY expression2  */
-#line 1994 "syntactic.y"
+  case 225: /* expression1: expression1 TOKEN_INEQUALITY expression2  */
+#line 2009 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_INEQUALITY, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4237 "syntactic.c"
+#line 4240 "syntactic.c"
     break;
 
-  case 225: /* expression2: expression3  */
-#line 2002 "syntactic.y"
+  case 226: /* expression2: expression3  */
+#line 2017 "syntactic.y"
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4245 "syntactic.c"
+#line 4248 "syntactic.c"
     break;
 
-  case 226: /* expression2: expression2 '<' expression3  */
-#line 2006 "syntactic.y"
+  case 227: /* expression2: expression2 '<' expression3  */
+#line 2021 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_LESS_THAN, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4254 "syntactic.c"
+#line 4257 "syntactic.c"
     break;
 
-  case 227: /* expression2: expression2 TOKEN_LESS_OR_EQUAL expression3  */
-#line 2011 "syntactic.y"
+  case 228: /* expression2: expression2 TOKEN_LESS_OR_EQUAL expression3  */
+#line 2026 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_LESS_OR_EQUAL, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4263 "syntactic.c"
+#line 4266 "syntactic.c"
     break;
 
-  case 228: /* expression2: expression2 '>' expression3  */
-#line 2016 "syntactic.y"
+  case 229: /* expression2: expression2 '>' expression3  */
+#line 2031 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_MORE_THAN, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4272 "syntactic.c"
+#line 4275 "syntactic.c"
     break;
 
-  case 229: /* expression2: expression2 TOKEN_MORE_OR_EQUAL expression3  */
-#line 2021 "syntactic.y"
+  case 230: /* expression2: expression2 TOKEN_MORE_OR_EQUAL expression3  */
+#line 2036 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_MORE_OR_EQUAL, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4281 "syntactic.c"
+#line 4284 "syntactic.c"
     break;
 
-  case 230: /* expression3: expression4  */
-#line 2029 "syntactic.y"
+  case 231: /* expression3: expression4  */
+#line 2044 "syntactic.y"
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4289 "syntactic.c"
+#line 4292 "syntactic.c"
     break;
 
-  case 231: /* expression3: expression3 '+' expression4  */
-#line 2033 "syntactic.y"
+  case 232: /* expression3: expression3 '+' expression4  */
+#line 2048 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_ADD, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4298 "syntactic.c"
+#line 4301 "syntactic.c"
     break;
 
-  case 232: /* expression3: expression3 '-' expression4  */
-#line 2038 "syntactic.y"
+  case 233: /* expression3: expression3 '-' expression4  */
+#line 2053 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_SUBTRACT, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4307 "syntactic.c"
+#line 4310 "syntactic.c"
     break;
 
-  case 233: /* expression4: expression5  */
-#line 2046 "syntactic.y"
+  case 234: /* expression4: expression5  */
+#line 2061 "syntactic.y"
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4315 "syntactic.c"
+#line 4318 "syntactic.c"
     break;
 
-  case 234: /* expression4: expression4 '*' expression5  */
-#line 2050 "syntactic.y"
+  case 235: /* expression4: expression4 '*' expression5  */
+#line 2065 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_MULTIPLY, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4324 "syntactic.c"
+#line 4327 "syntactic.c"
     break;
 
-  case 235: /* expression4: expression4 '/' expression5  */
-#line 2055 "syntactic.y"
+  case 236: /* expression4: expression4 '/' expression5  */
+#line 2070 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_DIVIDE, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4333 "syntactic.c"
+#line 4336 "syntactic.c"
     break;
 
-  case 236: /* expression4: expression4 '%' expression5  */
-#line 2060 "syntactic.y"
+  case 237: /* expression4: expression4 '%' expression5  */
+#line 2075 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_MODULO, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4342 "syntactic.c"
+#line 4345 "syntactic.c"
     break;
 
-  case 237: /* expression5: expression6  */
-#line 2068 "syntactic.y"
+  case 238: /* expression5: expression6  */
+#line 2083 "syntactic.y"
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4350 "syntactic.c"
+#line 4353 "syntactic.c"
     break;
 
-  case 238: /* expression5: expression5 '&' expression6  */
-#line 2072 "syntactic.y"
+  case 239: /* expression5: expression5 '&' expression6  */
+#line 2087 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_BITWISE_AND, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4359 "syntactic.c"
+#line 4362 "syntactic.c"
     break;
 
-  case 239: /* expression5: expression5 '!' expression6  */
-#line 2077 "syntactic.y"
+  case 240: /* expression5: expression5 '!' expression6  */
+#line 2092 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_BITWISE_OR, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4368 "syntactic.c"
+#line 4371 "syntactic.c"
     break;
 
-  case 240: /* expression5: expression5 '|' expression6  */
-#line 2082 "syntactic.y"
+  case 241: /* expression5: expression5 '|' expression6  */
+#line 2097 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_BITWISE_OR, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4377 "syntactic.c"
+#line 4380 "syntactic.c"
     break;
 
-  case 241: /* expression5: expression5 '^' expression6  */
-#line 2087 "syntactic.y"
+  case 242: /* expression5: expression5 '^' expression6  */
+#line 2102 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_BITWISE_XOR, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4386 "syntactic.c"
+#line 4389 "syntactic.c"
     break;
 
-  case 242: /* expression6: expression7  */
-#line 2095 "syntactic.y"
+  case 243: /* expression6: expression7  */
+#line 2110 "syntactic.y"
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4394 "syntactic.c"
+#line 4397 "syntactic.c"
     break;
 
-  case 243: /* expression6: expression6 TOKEN_LEFT_SHIFT expression7  */
-#line 2099 "syntactic.y"
+  case 244: /* expression6: expression6 TOKEN_LEFT_SHIFT expression7  */
+#line 2114 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_LEFT_SHIFT, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4403 "syntactic.c"
+#line 4406 "syntactic.c"
     break;
 
-  case 244: /* expression6: expression6 TOKEN_RIGHT_SHIFT expression7  */
-#line 2104 "syntactic.y"
+  case 245: /* expression6: expression6 TOKEN_RIGHT_SHIFT expression7  */
+#line 2119 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_RIGHT_SHIFT, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4412 "syntactic.c"
+#line 4415 "syntactic.c"
     break;
 
-  case 245: /* expression7: expression8  */
-#line 2112 "syntactic.y"
+  case 246: /* expression7: expression8  */
+#line 2127 "syntactic.y"
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4420 "syntactic.c"
+#line 4423 "syntactic.c"
     break;
 
-  case 246: /* expression7: '+' expression7  */
-#line 2116 "syntactic.y"
+  case 247: /* expression7: '+' expression7  */
+#line 2131 "syntactic.y"
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4428 "syntactic.c"
+#line 4431 "syntactic.c"
     break;
 
-  case 247: /* expression7: '-' expression7  */
-#line 2120 "syntactic.y"
+  case 248: /* expression7: '-' expression7  */
+#line 2135 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_NEGATE, &(yyvsp[0].expression), NULL))
 			YYNOMEM;
 	}
-#line 4437 "syntactic.c"
+#line 4440 "syntactic.c"
     break;
 
-  case 248: /* expression7: '~' expression7  */
-#line 2125 "syntactic.y"
+  case 249: /* expression7: '~' expression7  */
+#line 2140 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_BITWISE_NOT, &(yyvsp[0].expression), NULL))
 			YYNOMEM;
 	}
-#line 4446 "syntactic.c"
+#line 4449 "syntactic.c"
     break;
 
-  case 249: /* expression7: '!' expression7  */
-#line 2131 "syntactic.y"
+  case 250: /* expression7: '!' expression7  */
+#line 2146 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_LOGICAL_NOT, &(yyvsp[0].expression), NULL))
 			YYNOMEM;
 	}
-#line 4455 "syntactic.c"
+#line 4458 "syntactic.c"
     break;
 
-  case 250: /* expression8: TOKEN_NUMBER  */
-#line 2139 "syntactic.y"
+  case 251: /* expression8: TOKEN_NUMBER  */
+#line 2154 "syntactic.y"
         {
 		(yyval.expression).type = EXPRESSION_NUMBER;
 		(yyval.expression).shared.unsigned_long = (yyvsp[0].unsigned_long);
 	}
-#line 4464 "syntactic.c"
+#line 4467 "syntactic.c"
     break;
 
-  case 251: /* expression8: TOKEN_IDENTIFIER  */
-#line 2144 "syntactic.y"
+  case 252: /* expression8: TOKEN_IDENTIFIER  */
+#line 2159 "syntactic.y"
         {
 		(yyval.expression).type = EXPRESSION_IDENTIFIER;
 		(yyval.expression).shared.string = (yyvsp[0].string);
 	}
-#line 4473 "syntactic.c"
+#line 4476 "syntactic.c"
     break;
 
-  case 252: /* expression8: TOKEN_LOCAL_IDENTIFIER  */
-#line 2149 "syntactic.y"
+  case 253: /* expression8: TOKEN_LOCAL_IDENTIFIER  */
+#line 2164 "syntactic.y"
         {
 		(yyval.expression).type = EXPRESSION_IDENTIFIER;
 		(yyval.expression).shared.string = (yyvsp[0].string);
 	}
-#line 4482 "syntactic.c"
+#line 4485 "syntactic.c"
     break;
 
-  case 253: /* expression8: TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER  */
-#line 2154 "syntactic.y"
+  case 254: /* expression8: TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER  */
+#line 2169 "syntactic.y"
         {
 		const cc_bool success = String_CreateAppend(&(yyval.expression).shared.string, &(yyvsp[-1].string), &(yyvsp[0].string));
 		String_Destroy(&(yyvsp[-1].string));
@@ -4493,61 +4496,61 @@ yyreduce:
 
 		(yyval.expression).type = EXPRESSION_IDENTIFIER;
 	}
-#line 4497 "syntactic.c"
+#line 4500 "syntactic.c"
     break;
 
-  case 254: /* expression8: string  */
-#line 2165 "syntactic.y"
+  case 255: /* expression8: string  */
+#line 2180 "syntactic.y"
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4505 "syntactic.c"
+#line 4508 "syntactic.c"
     break;
 
-  case 255: /* expression8: '*'  */
-#line 2169 "syntactic.y"
+  case 256: /* expression8: '*'  */
+#line 2184 "syntactic.y"
         {
 		(yyval.expression).type = EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT;
 	}
-#line 4513 "syntactic.c"
+#line 4516 "syntactic.c"
     break;
 
-  case 256: /* expression8: '@'  */
-#line 2173 "syntactic.y"
+  case 257: /* expression8: '@'  */
+#line 2188 "syntactic.y"
         {
 		(yyval.expression).type = EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION;
 	}
-#line 4521 "syntactic.c"
+#line 4524 "syntactic.c"
     break;
 
-  case 257: /* expression8: '(' expression ')'  */
-#line 2177 "syntactic.y"
+  case 258: /* expression8: '(' expression ')'  */
+#line 2192 "syntactic.y"
         {
 		(yyval.expression) = (yyvsp[-1].expression);
 	}
-#line 4529 "syntactic.c"
+#line 4532 "syntactic.c"
     break;
 
-  case 258: /* expression8: TOKEN_STRLEN '(' TOKEN_STRING ')'  */
-#line 2181 "syntactic.y"
+  case 259: /* expression8: TOKEN_STRLEN '(' TOKEN_STRING ')'  */
+#line 2196 "syntactic.y"
         {
 		(yyval.expression).type = EXPRESSION_STRLEN;
 		(yyval.expression).shared.string = (yyvsp[-1].string);
 	}
-#line 4538 "syntactic.c"
+#line 4541 "syntactic.c"
     break;
 
-  case 259: /* expression8: TOKEN_STRCMP '(' string ',' string ')'  */
-#line 2186 "syntactic.y"
+  case 260: /* expression8: TOKEN_STRCMP '(' string ',' string ')'  */
+#line 2201 "syntactic.y"
         {
 		if (!DoExpression(&(yyval.expression), EXPRESSION_STRCMP, &(yyvsp[-3].expression), &(yyvsp[-1].expression)))
 			YYNOMEM;
 	}
-#line 4547 "syntactic.c"
+#line 4550 "syntactic.c"
     break;
 
-  case 260: /* expression8: TOKEN_INSTR '(' expression ',' expression ')'  */
-#line 2191 "syntactic.y"
+  case 261: /* expression8: TOKEN_INSTR '(' expression ',' expression ')'  */
+#line 2206 "syntactic.y"
         {
 		Expression expression;
 
@@ -4557,74 +4560,74 @@ yyreduce:
 		if (!DoExpressionTriple(&(yyval.expression), EXPRESSION_INSTR, &expression, &(yyvsp[-3].expression), &(yyvsp[-1].expression)))
 			YYNOMEM;
 	}
-#line 4561 "syntactic.c"
+#line 4564 "syntactic.c"
     break;
 
-  case 261: /* expression8: TOKEN_INSTR '(' expression ',' expression ',' expression ')'  */
-#line 2201 "syntactic.y"
+  case 262: /* expression8: TOKEN_INSTR '(' expression ',' expression ',' expression ')'  */
+#line 2216 "syntactic.y"
         {
 		if (!DoExpressionTriple(&(yyval.expression), EXPRESSION_INSTR, &(yyvsp[-5].expression), &(yyvsp[-3].expression), &(yyvsp[-1].expression)))
 			YYNOMEM;
 	}
-#line 4570 "syntactic.c"
+#line 4573 "syntactic.c"
     break;
 
-  case 262: /* expression8: TOKEN_DEF '(' TOKEN_IDENTIFIER ')'  */
-#line 2206 "syntactic.y"
+  case 263: /* expression8: TOKEN_DEF '(' TOKEN_IDENTIFIER ')'  */
+#line 2221 "syntactic.y"
         {
 		(yyval.expression).type = EXPRESSION_DEF;
 		(yyval.expression).shared.string = (yyvsp[-1].string);
 	}
-#line 4579 "syntactic.c"
+#line 4582 "syntactic.c"
     break;
 
-  case 263: /* expression8: TOKEN_TYPE '(' TOKEN_IDENTIFIER ')'  */
-#line 2211 "syntactic.y"
+  case 264: /* expression8: TOKEN_TYPE '(' TOKEN_IDENTIFIER ')'  */
+#line 2226 "syntactic.y"
         {
 		(yyval.expression).type = EXPRESSION_TYPE_WITH_IDENTIFIER;
 		(yyval.expression).shared.string = (yyvsp[-1].string);
 	}
-#line 4588 "syntactic.c"
+#line 4591 "syntactic.c"
     break;
 
-  case 264: /* expression8: TOKEN_TYPE '(' TOKEN_NUMBER ')'  */
-#line 2216 "syntactic.y"
+  case 265: /* expression8: TOKEN_TYPE '(' TOKEN_NUMBER ')'  */
+#line 2231 "syntactic.y"
         {
 		(yyval.expression).type = EXPRESSION_TYPE_WITH_NUMBER;
 		(yyval.expression).shared.unsigned_long = (yyvsp[-1].unsigned_long);
 	}
-#line 4597 "syntactic.c"
+#line 4600 "syntactic.c"
     break;
 
-  case 265: /* expression8: TOKEN_FILESIZE '(' TOKEN_STRING ')'  */
-#line 2221 "syntactic.y"
+  case 266: /* expression8: TOKEN_FILESIZE '(' TOKEN_STRING ')'  */
+#line 2236 "syntactic.y"
         {
 		(yyval.expression).type = EXPRESSION_FILESIZE;
 		(yyval.expression).shared.string = (yyvsp[-1].string);
 	}
-#line 4606 "syntactic.c"
+#line 4609 "syntactic.c"
     break;
 
-  case 266: /* expression8: TOKEN_OFFSET '(' expression ')'  */
-#line 2226 "syntactic.y"
+  case 267: /* expression8: TOKEN_OFFSET '(' expression ')'  */
+#line 2241 "syntactic.y"
         {
 		/* TODO: Make this actually do something besides pass the expression through. */
 		(yyval.expression) = (yyvsp[-1].expression);
 	}
-#line 4615 "syntactic.c"
+#line 4618 "syntactic.c"
     break;
 
-  case 267: /* string: TOKEN_STRING  */
-#line 2234 "syntactic.y"
+  case 268: /* string: TOKEN_STRING  */
+#line 2249 "syntactic.y"
         {
 		(yyval.expression).type = EXPRESSION_STRING;
 		(yyval.expression).shared.string = (yyvsp[0].string);
 	}
-#line 4624 "syntactic.c"
+#line 4627 "syntactic.c"
     break;
 
 
-#line 4628 "syntactic.c"
+#line 4631 "syntactic.c"
 
       default: break;
     }
@@ -4848,7 +4851,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 2239 "syntactic.y"
+#line 2254 "syntactic.y"
 
 
 static cc_bool DoExpressionTriple(Expression *expression, ExpressionType type, Expression *left_expression, Expression *middle_expression, Expression *right_expression)
@@ -5049,6 +5052,10 @@ void DestroyStatement(Statement *statement)
 		case STATEMENT_TYPE_DCB:
 			DestroyExpression(&statement->shared.dcb.repetitions);
 			DestroyExpression(&statement->shared.dcb.value);
+			break;
+
+		case STATEMENT_TYPE_DS:
+			DestroyExpression(&statement->shared.ds.length);
 			break;
 
 		case STATEMENT_TYPE_INCLUDE:

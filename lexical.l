@@ -239,6 +239,7 @@ hexadecimal       {hexadecimal_digit}+
 <INITIAL>ror             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ROR;
 <INITIAL>dc              BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DC;
 <INITIAL>dcb             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DCB;
+<INITIAL>ds              BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DS;
 <INITIAL>rept            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_REPT;
 <INITIAL>endr            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDR;
 <INITIAL>macro           BEGIN(MACRO_PARAMETERS); return TOKEN_DIRECTIVE_MACRO;

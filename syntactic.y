@@ -319,6 +319,12 @@ typedef struct StatementDcb
 	Expression value;
 } StatementDcb;
 
+typedef struct StatementDs
+{
+	Size size;
+	Expression length;
+} StatementDs;
+
 typedef struct StatementInclude
 {
 	String path;
@@ -371,6 +377,7 @@ typedef enum StatementType
 	STATEMENT_TYPE_INSTRUCTION,
 	STATEMENT_TYPE_DC,
 	STATEMENT_TYPE_DCB,
+	STATEMENT_TYPE_DS,
 	STATEMENT_TYPE_INCLUDE,
 	STATEMENT_TYPE_INCBIN,
 	STATEMENT_TYPE_REPT,
@@ -418,6 +425,7 @@ typedef struct Statement
 		StatementInstruction instruction;
 		StatementDc dc;
 		StatementDcb dcb;
+		StatementDs ds;
 		StatementInclude include;
 		StatementIncbin incbin;
 		StatementRept rept;
@@ -603,6 +611,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_ROR
 %token TOKEN_DIRECTIVE_DC
 %token TOKEN_DIRECTIVE_DCB
+%token TOKEN_DIRECTIVE_DS
 %token TOKEN_DIRECTIVE_REPT
 %token TOKEN_DIRECTIVE_ENDR
 %token TOKEN_DIRECTIVE_MACRO
@@ -716,6 +725,12 @@ statement
 		statement->shared.dcb.size = $2;
 		statement->shared.dcb.repetitions = $3;
 		statement->shared.dcb.value = $5;
+	}
+	| TOKEN_DIRECTIVE_DS size expression
+	{
+		statement->type = STATEMENT_TYPE_DS;
+		statement->shared.ds.size = $2;
+		statement->shared.ds.length = $3;
 	}
 	| TOKEN_DIRECTIVE_INCLUDE TOKEN_STRING
 	{
@@ -2436,6 +2451,10 @@ void DestroyStatement(Statement *statement)
 		case STATEMENT_TYPE_DCB:
 			DestroyExpression(&statement->shared.dcb.repetitions);
 			DestroyExpression(&statement->shared.dcb.value);
+			break;
+
+		case STATEMENT_TYPE_DS:
+			DestroyExpression(&statement->shared.ds.length);
 			break;
 
 		case STATEMENT_TYPE_INCLUDE:

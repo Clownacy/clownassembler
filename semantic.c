@@ -4369,7 +4369,27 @@ static void ProcessDcb(SemanticState *state, StatementDcb *dcb)
 			value = 0;
 
 		for (i = 0; i < repetitions; ++i)
-			OutputDcValue(state, dcb->size, value);	
+			OutputDcValue(state, dcb->size, value);
+	}
+}
+
+static void ProcessDs(SemanticState *state, StatementDs *ds)
+{
+	unsigned long length;
+
+	if (ShouldPerformAutomaticEven(state, ds->size))
+		PerformEven(state);
+
+	if (!ResolveExpression(state, &ds->length, &length, cc_true))
+	{
+		SemanticError(state, "Repetition value must be evaluable on first pass.");
+	}
+	else
+	{
+		unsigned long i;
+
+		for (i = 0; i < length; ++i)
+			OutputDcValue(state, ds->size, 0);
 	}
 }
 
@@ -4639,6 +4659,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_INSTRUCTION:
 		case STATEMENT_TYPE_DC:
 		case STATEMENT_TYPE_DCB:
+		case STATEMENT_TYPE_DS:
 		case STATEMENT_TYPE_INCLUDE:
 		case STATEMENT_TYPE_INCBIN:
 		case STATEMENT_TYPE_REPT:
@@ -4718,6 +4739,10 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 		case STATEMENT_TYPE_DCB:
 			ProcessDcb(state, &statement->shared.dcb);
+			break;
+
+		case STATEMENT_TYPE_DS:
+			ProcessDs(state, &statement->shared.ds);
 			break;
 
 		case STATEMENT_TYPE_INCLUDE:
