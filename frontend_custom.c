@@ -92,6 +92,7 @@ int main(int argc, char **argv)
 	settings.warnings_enabled = cc_true;
 	settings.pedantic_warnings_enabled = cc_true;
 	settings.expand_all_macros = cc_false;
+	settings.automatic_even = cc_false;
 
 	for (i = 1; i < argc; ++i)
 	{
@@ -137,6 +138,10 @@ int main(int argc, char **argv)
 						symbol_file_path = argv[i];
 					}
 
+					continue;
+
+				case 'a':
+					settings.automatic_even = cc_true;
 					continue;
 
 				case 'c':
@@ -196,6 +201,7 @@ int main(int argc, char **argv)
 			" -s [path] - asm68k-style symbol file. Optional.\n"
 			, stdout);
 		fputs(
+			" -a        - Enable automatic-even mode.\n"
 			" -c        - Enable case-insensitive mode.\n"
 			" -b        - Enable Bison's debug output.\n"
 			" -d        - Allow EQU/SET to descope local labels.\n"

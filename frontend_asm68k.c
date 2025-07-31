@@ -101,6 +101,7 @@ int main(int argc, char **argv)
 	settings.warnings_enabled = cc_true;
 	settings.pedantic_warnings_enabled = cc_false;
 	settings.expand_all_macros = cc_false;
+	settings.automatic_even = cc_true;
 
 	source_file_path = object_file_path = symbol_file_path = listing_file_path = NULL;
 	source_file = object_file = symbol_file = listing_file = NULL;
@@ -157,13 +158,11 @@ int main(int argc, char **argv)
 						{
 							if (strcmpci(option, "ae+") == 0)
 							{
-								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
-								exit_code = EXIT_FAILURE;
+								settings.case_insensitive = cc_true;
 							}
 							else if (strcmpci(option, "ae-") == 0)
 							{
-								/* TODO - AE should be enabled by default. */
-								/* Already disabled by default but okay. */
+								settings.case_insensitive = cc_false;
 							}
 							else if (strcmpci(option, "an+") == 0)
 							{

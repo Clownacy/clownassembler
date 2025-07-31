@@ -4301,9 +4301,27 @@ static void OutputDcValue(SemanticState *state, const Size size, unsigned long v
 		OutputByte(state, (value >> (bytes_to_write * 8)) & 0xFF);
 }
 
+static void PerformEven(SemanticState* const state)
+{
+	/* Pad to the nearest even address. */
+	if (state->program_counter & 1)
+	{
+		++state->program_counter;
+		OutputByte(state, 0);
+	}
+}
+
+static cc_bool ShouldPerformAutomaticEven(SemanticState* const state, const Size size)
+{
+	return Options_Get(&state->options)->automatic_even && size != SIZE_BYTE;
+}
+
 static void ProcessDc(SemanticState *state, StatementDc *dc)
 {
 	ExpressionListNode *expression_list_node;
+
+	if (ShouldPerformAutomaticEven(state, dc->size))
+		PerformEven(state);
 
 	for (expression_list_node = dc->values.head; expression_list_node != NULL; expression_list_node = expression_list_node->next)
 	{
@@ -4334,6 +4352,9 @@ static void ProcessDc(SemanticState *state, StatementDc *dc)
 static void ProcessDcb(SemanticState *state, StatementDcb *dcb)
 {
 	unsigned long repetitions;
+
+	if (ShouldPerformAutomaticEven(state, dcb->size))
+		PerformEven(state);
 
 	if (!ResolveExpression(state, &dcb->repetitions, &repetitions, cc_true))
 	{
@@ -4916,13 +4937,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			break;
 
 		case STATEMENT_TYPE_EVEN:
-			/* Pad to the nearest even address. */
-			if (state->program_counter & 1)
-			{
-				++state->program_counter;
-				OutputByte(state, 0);
-			}
-
+			PerformEven(state);
 			break;
 
 		case STATEMENT_TYPE_CNOP:
@@ -5007,6 +5022,10 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_RS:
 		{
 			unsigned long length;
+
+			if (ShouldPerformAutomaticEven(state, statement->shared.rs.size))
+				if ((state->rs & 1) != 0)
+					++state->rs;
 
 			if (!ResolveExpression(state, &statement->shared.rs.length, &length, cc_true))
 			{
@@ -5136,10 +5155,10 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			for (option = statement->shared.opt.options.head; option != NULL; option = option->next)
 			{
 				/* TODO: A lot of these are unimplemented... */
-				/*if (String_CompareCStrCaseInsensitive(&option->identifier, "ae+"))
-					;
-				else*/ if (String_CompareCStrCaseInsensitive(&option->identifier, "ae-"))
-					;
+				if (String_CompareCStrCaseInsensitive(&option->identifier, "ae+"))
+					Options_Get(&state->options)->automatic_even = cc_true;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "ae-"))
+					Options_Get(&state->options)->automatic_even = cc_false;
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "an+"))
 					;
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "an-"))
