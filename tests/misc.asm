@@ -789,6 +789,7 @@ doulbleParamMacro macro param, param
 emptysubstr substr 2,,"0"
 	dc.b "\emptysubstr" ; oops, all empty
 
+	; Conversion of non-string macro arguments to lowercase in case-sensitive mode.
 paramlowercase macro param
 	dc.b strcmp("aaa",\param)
 		endm
