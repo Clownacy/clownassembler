@@ -4271,7 +4271,7 @@ static void OutputDcValue(SemanticState *state, const Size size, unsigned long v
 		case SIZE_BYTE:
 		case SIZE_SHORT:
 			if (value > 0xFF && value < 0xFFFFFF00)
-				SemanticError(state, "Value cannot be higher than $FF or lower than -$100, but was $%lu.", value);
+				SemanticError(state, "Value cannot be higher than $FF or lower than -$100, but was $%lX.", value);
 
 			bytes_to_write = 1;
 
@@ -4279,7 +4279,7 @@ static void OutputDcValue(SemanticState *state, const Size size, unsigned long v
 
 		case SIZE_WORD:
 			if (value > 0xFFFF && value < 0xFFFF0000)
-				SemanticError(state, "Value cannot be higher than $FFFF or lower than -$10000, but was $%lu.", value);
+				SemanticError(state, "Value cannot be higher than $FFFF or lower than -$10000, but was $%lX.", value);
 
 			bytes_to_write = 2;
 
