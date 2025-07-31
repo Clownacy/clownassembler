@@ -119,6 +119,11 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 		{
 			*earliest_found_position = found_position;
 			*earliest_found_length = found_length;
+
+			/* Absorb trailing backslash. */
+			/* TODO: Check if it already ends in a backslash? */
+			if (StringView_At(view_to_search, found_position + found_length) == '\\')
+				++*earliest_found_length;
 		}
 	}
 
