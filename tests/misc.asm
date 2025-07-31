@@ -789,6 +789,21 @@ doulbleParamMacro macro param, param
 emptysubstr substr 2,,"0"
 	dc.b "\emptysubstr" ; oops, all empty
 
+paramlowercase macro param
+	dc.b strcmp("aaa",\param)
+		endm
+paramlowercase2 macro param
+	dc.b strcmp("aaa","\param")
+		endm
+
+	opt c+
+	paramlowercase "AAA"
+	paramlowercase2 AAA
+
+	opt c-
+	paramlowercase "AAA"
+	paramlowercase2 AAA
+
   ; More blank lines to test support for trailing blank statements
 
 

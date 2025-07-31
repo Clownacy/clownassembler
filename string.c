@@ -18,6 +18,7 @@
 #include "string.h"
 
 #include <assert.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -233,4 +234,12 @@ cc_bool String_ResizeNoFill(String* const string, const size_t size)
 	String_At(string, String_Length(string)) = '\0';
 
 	return cc_true;
+}
+
+void String_ToLower(String* const string)
+{
+	char *string_pointer;
+
+	for (string_pointer = String_CStr(string); *string_pointer != '\0'; ++string_pointer)
+		*string_pointer = tolower(*string_pointer);
 }

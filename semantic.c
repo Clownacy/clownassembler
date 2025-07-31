@@ -109,7 +109,7 @@ typedef struct SemanticState_Macro
 	Dictionary_State dictionary;
 	Substitute_State substitutions;
 	struct MacroCustomSubstituteSearch_Closure *closure;
-	StringView *argument_list;
+	String *argument_list;
 	size_t total_arguments, total_arguments_at_start;
 	unsigned int starting_if_level;
 	cc_bool active;
@@ -4238,7 +4238,7 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 		Dictionary_Entry *dictionary_entry;
 
 		const StringView* const parameter = String_View(&parameter_name->identifier);
-		const StringView* const argument = argument_index >= state->macro.total_arguments ? &blank_argument : &state->macro.argument_list[argument_index];
+		const StringView* const argument = argument_index >= state->macro.total_arguments ? &blank_argument : String_View(&state->macro.argument_list[argument_index]);
 
 		if (!Dictionary_LookUpAndCreateIfNotExist(&state->macro.dictionary, parameter, &dictionary_entry))
 		{
@@ -5469,7 +5469,7 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 					return &blank_argument;
 				}
 
-				return &state->macro.argument_list[parameter_index];
+				return String_View(&state->macro.argument_list[parameter_index]);
 			}
 		}
 	}
@@ -5700,12 +5700,15 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 
 					/* Add to argument list. */
 					{
-						StringView* const new_argument_list = (StringView*)realloc(state->macro.argument_list, sizeof(*state->macro.argument_list) * (state->macro.total_arguments + 1));
+						String* const new_argument_list = (String*)realloc(state->macro.argument_list, sizeof(*state->macro.argument_list) * (state->macro.total_arguments + 1));
 
 						if (new_argument_list != NULL)
 						{
 							state->macro.argument_list = new_argument_list;
-							state->macro.argument_list[state->macro.total_arguments] = argument;
+							String_CreateCopyView(&state->macro.argument_list[state->macro.total_arguments], &argument);
+
+							if (StringView_Length(&argument) != 0 && StringView_At(&argument, 0) != '"' && StringView_At(&argument, 0) != '\'' && Options_Get(&state->options)->case_insensitive)
+								String_ToLower(&state->macro.argument_list[state->macro.total_arguments]);
 
 							++state->macro.total_arguments;
 							++state->macro.total_arguments_at_start;

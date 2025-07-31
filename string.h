@@ -68,6 +68,7 @@ cc_bool String_Replace(String *string, size_t position, size_t count, const Stri
 cc_bool String_Reserve(String *string, size_t size);
 cc_bool String_Resize(String *string, size_t size);
 cc_bool String_ResizeNoFill(String *string, size_t size);
+void String_ToLower(String *string);
 
 #define String_View(STRING) ((const StringView*)&(STRING)->view)
 #define String_Data(STRING) ((char*)StringView_Data(String_View(STRING)))
