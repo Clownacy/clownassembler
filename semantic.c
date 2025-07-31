@@ -1498,6 +1498,10 @@ static void ResolveInstructionAmbiguity(SemanticState* const state, StatementIns
 					ALIAS_AND_LOOP(OPCODE_MOVE_TO_USP)
 				else if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
 					WARN_ALIAS_AND_LOOP(OPCODE_MOVEA, "MOVE should be MOVEA.")
+				else if (instruction->operands[0].type == OPERAND_REGISTER_LIST)
+					WARN_ALIAS_AND_LOOP(OPCODE_MOVEM_FROM_REGS, "MOVE should be MOVEM.")
+				else if (instruction->operands[1].type == OPERAND_REGISTER_LIST)
+					WARN_ALIAS_AND_LOOP(OPCODE_MOVEM_TO_REGS, "MOVE should be MOVEM.")
 
 				break;
 

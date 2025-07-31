@@ -658,6 +658,8 @@ Swag.Legit:
 	and.b	#1,ccr
 	eor.b	#1,ccr
 	or.b	#1,ccr
+	move.l	d0/d1,-(sp)
+	move.l	(sp)+,d0/d1
 
 	; Vladikcomper tests (invalid but correctable operand and instruction combinations)
 	cmp.l	a1, a2
