@@ -1004,7 +1004,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			break;
 
 		case EXPRESSION_STRCMP:
-			*value = String_Compare(&expression->shared.subexpressions[0].shared.string, &expression->shared.subexpressions[1].shared.string);
+			*value = String_Compare(&expression->shared.subexpressions[0].shared.string, &expression->shared.subexpressions[1].shared.string) ? -1 : 0;
 			break;
 
 		case EXPRESSION_INSTR:
@@ -1030,7 +1030,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 		}
 
 		case EXPRESSION_DEF:
-			*value = LookupSymbol(state, String_View(&expression->shared.string)) != NULL;
+			*value = LookupSymbol(state, String_View(&expression->shared.string)) != NULL ? -1 : 0;
 			break;
 
 		case EXPRESSION_TYPE_WITH_IDENTIFIER:
