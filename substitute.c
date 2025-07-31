@@ -165,7 +165,7 @@ void Substitute_ProcessSubString(Substitute_State* const state, String* const st
 		String_Replace(string, offset_into_string + found_position, found_length, found_substitute);
 
 		/* Update the view. */
-		StringView_Create(view_to_search, &String_At(string, offset_into_string), StringView_Length(view_to_search) + (StringView_Length(found_substitute) - found_length));
+		StringView_Create(view_to_search, &String_At(string, offset_into_string), StringView_Length(view_to_search) - found_length + StringView_Length(found_substitute));
 
 		/* Limit the next search to after this. */
 		starting_position = found_position + StringView_Length(found_substitute);

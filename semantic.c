@@ -5367,12 +5367,11 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 
 	(void)case_insensitive;
 
-	*found_position = StringView_FindCharacter(view_to_search, '\\', starting_position);
-	*found_length = 2;
-
-	if (*found_position != STRING_POSITION_INVALID)
+	for (*found_position = starting_position; (*found_position = StringView_FindCharacter(view_to_search, '\\', *found_position)) != STRING_POSITION_INVALID; ++(*found_position))
 	{
 		const char symbol = StringView_At(view_to_search, *found_position + 1);
+
+		*found_length = 2;
 
 		switch (symbol)
 		{
@@ -5381,7 +5380,7 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 
 			case '_':
 				if (Substitute_IsSubstituteBlockingCharacter(StringView_At(view_to_search, *found_position + *found_length)))
-					return NULL;
+					continue;
 
 				return &closure->arguments;
 
@@ -5429,7 +5428,7 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 
 				/* Check if conversion failed. */
 				if (end == start)
-					break;
+					continue;
 
 				*found_length = 1 + (end - start);
 
