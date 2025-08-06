@@ -11,13 +11,6 @@ struct OutputData
 	std::ostream::pos_type base_position;
 };
 
-static int ReadCharacter(void* const user_data)
-{
-	auto &stream = *static_cast<std::istream*>(user_data);
-	const auto value = stream.get();
-	return value == std::istream::traits_type::eof() ? -1 : value;
-}
-
 static char* ReadLine(void* const user_data, char* const buffer, const std::size_t buffer_size)
 {
 	auto &stream = *static_cast<std::istream*>(user_data);
@@ -85,15 +78,11 @@ bool ClownAssembler::Assemble(
 	std::ostream* const listing,
 	std::ostream* const symbols,
 	const char* const input_file_path,
-	const bool debug,
-	const bool case_insensitive,
-	const bool equ_set_descope_local_labels,
-	const bool output_local_labels_to_sym_file,
-	const bool warnings_enabled,
+	const ClownAssembler_Settings *settings,
 	const std::function<void(void *internal, ClownAssembler_AddDefinition add_definition)>* const definition_callback
 )
 {
-	const ClownAssembler_TextInput input_callbacks = {&input, ReadCharacter, ReadLine};
+	const ClownAssembler_TextInput input_callbacks = {&input, ReadLine};
 	const OutputData output_data = {&output, output.tellp()};
 	const ClownAssembler_BinaryOutput output_callbacks = {&output_data, WriteCharacter, WriteCharacters, Seek};
 
@@ -135,11 +124,7 @@ bool ClownAssembler::Assemble(
 		&listing_callbacks,
 		&symbol_callbacks,
 		input_file_path,
-		debug,
-		case_insensitive,
-		equ_set_descope_local_labels,
-		output_local_labels_to_sym_file,
-		warnings_enabled,
+		settings,
 		definition_callback != nullptr ? static_cast<ClownAssembler_DefinitionCallback>(definition_callback_wrapper) : nullptr,
 		definition_callback
 	);
