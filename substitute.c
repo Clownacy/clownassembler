@@ -188,8 +188,8 @@ void Substitute_ProcessString(Substitute_State* const state, String* const strin
 
 cc_bool Substitute_IsSubstituteBlockingCharacter(const char character)
 {
-	return (isalpha((unsigned char)character)
-	     || isdigit((unsigned char)character)
+	return (isalpha((unsigned char)character) != 0
+	     || isdigit((unsigned char)character) != 0
 	     || character == '$'
 	     || character == '_'
 	     || character == '.');
@@ -197,5 +197,5 @@ cc_bool Substitute_IsSubstituteBlockingCharacter(const char character)
 
 cc_bool Substitute_IsWhitespaceCharacter(const char character)
 {
-	return isspace((unsigned char)character);
+	return isspace((unsigned char)character) != 0;
 }
