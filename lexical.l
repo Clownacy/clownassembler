@@ -17,7 +17,7 @@
 
 %option never-interactive
 %option nounistd
-%option nounput noinput noyywrap
+%option nounput noinput noyywrap nodefault
 %option reentrant bison-bridge
 %option prefix="m68kasm_"
 %option caseless

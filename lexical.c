@@ -3097,7 +3097,7 @@ return yytext[0];
 case 238:
 YY_RULE_SETUP
 #line 513 "lexical.l"
-ECHO;
+YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
 #line 3102 "lexical.c"
 
