@@ -78,7 +78,7 @@ bool ClownAssembler::Assemble(
 	std::ostream* const listing,
 	std::ostream* const symbols,
 	const char* const input_file_path,
-	const ClownAssembler_Settings *settings,
+	const ClownAssembler_Settings &settings,
 	const std::function<void(void *internal, ClownAssembler_AddDefinition add_definition)>* const definition_callback
 )
 {
@@ -124,7 +124,7 @@ bool ClownAssembler::Assemble(
 		&listing_callbacks,
 		&symbol_callbacks,
 		input_file_path,
-		settings,
+		&settings,
 		definition_callback != nullptr ? static_cast<ClownAssembler_DefinitionCallback>(definition_callback_wrapper) : nullptr,
 		definition_callback
 	);

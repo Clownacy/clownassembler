@@ -12,12 +12,12 @@ namespace ClownAssembler
 bool Assemble(
 	std::istream &input,
 	std::ostream &output,
-	std::ostream *errors,
-	std::ostream *listing,
-	std::ostream *symbols,
-	const char *input_file_path,
-	const ClownAssembler_Settings *settings,
-	const std::function<void(void *internal, ClownAssembler_AddDefinition add_definition)> *definition_callback
+	std::ostream *errors = nullptr,
+	std::ostream *listing = nullptr,
+	std::ostream *symbols = nullptr,
+	const char *input_file_path = "[Unspecified]",
+	const ClownAssembler_Settings &settings = {},
+	const std::function<void(void *internal, ClownAssembler_AddDefinition add_definition)> *definition_callback = nullptr
 );
 
 }
