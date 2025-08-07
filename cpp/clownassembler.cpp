@@ -13,20 +13,31 @@ struct OutputData
 
 static char* ReadLine(void* const user_data, char* const buffer, const std::size_t buffer_size)
 {
+	// This function needs to emulate 'fgets', which is why
+	// it does so many bizarre things.
 	auto &stream = *static_cast<std::istream*>(user_data);
 
+	stream.clear();
 	stream.getline(buffer, buffer_size);
 
 	if (stream.fail())
-		return buffer[0] == '\0' ? nullptr : buffer;
-
-	const auto end = std::strlen(buffer);
-
-	if (end != buffer_size - 1)
 	{
-		buffer[end + 0] = '\n';
-		buffer[end + 1] = '\0';
+		// If we had room to read characters but read
+		// nothing, then we reached the end of the file.
+		if (buffer_size > 1 && buffer[0] == '\0')
+			return nullptr;
+
+		// Otherwise, we just could not fit the full line
+		// in the buffer.
+		return buffer;
 	}
+
+	// Append a newline, since we read a full line.
+	// The buffer is guaranteed to not be full, as that
+	// would have caused the fail bit to be set.
+	const auto end = std::strlen(buffer);
+	buffer[end + 0] = '\n';
+	buffer[end + 1] = '\0';
 
 	return buffer;
 }
