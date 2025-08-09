@@ -190,7 +190,7 @@ cc_bool String_Reserve(String* const string, const size_t size)
 		/* As an optimisation, we do not shrink the buffer. */
 		const size_t new_capacity = CC_MAX(size, string->capacity);
 		char* const old_buffer = String_Data(string) == string_dummy_buffer ? NULL : (char*)string->view.buffer;
-		char* const new_buffer = realloc(old_buffer, new_capacity + 1);
+		char* const new_buffer = (char*)realloc(old_buffer, new_capacity + 1);
 
 		if (new_buffer == NULL)
 			return cc_false;
