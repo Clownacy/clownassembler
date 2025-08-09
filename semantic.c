@@ -5508,8 +5508,9 @@ static void PerformSubstitutionsOnSubString(SemanticState* const state, String* 
 	const cc_bool case_insensitive = Options_Get(&state->options)->case_insensitive;
 
 	if (state->macro.closure != NULL)
-		Substitute_ProcessSubString(&state->macro.substitutions, string, view_to_search, MacroCustomSubstituteSearch, state->macro.closure, allow_implicit_matches, case_insensitive);
-	Substitute_ProcessSubString(&state->substitutions, string, view_to_search, NULL, NULL, allow_implicit_matches, case_insensitive);
+		Substitute_ProcessSubString(&state->substitutions, &state->macro.substitutions, string, view_to_search, MacroCustomSubstituteSearch, state->macro.closure, allow_implicit_matches, case_insensitive);
+	else
+		Substitute_ProcessSubString(&state->substitutions, NULL, string, view_to_search, NULL, NULL, allow_implicit_matches, case_insensitive);
 }
 
 static void PerformSubstitutions(SemanticState* const state, String* const string, const cc_bool allow_implicit_matches)
