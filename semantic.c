@@ -29,6 +29,7 @@
 
 #include "dictionary.h"
 #include "p2bin.h"
+#include "shared-memory.h"
 #include "string.h"
 #include "string-stack.h"
 #include "substitute.h"
@@ -63,6 +64,7 @@ typedef struct FixUp
 	struct FixUp *next;
 
 	Statement statement;
+	Dictionary_State *macro_dictionary;
 	unsigned long program_counter;
 	size_t output_position;
 	size_t segment_length;
@@ -105,7 +107,7 @@ typedef struct Macro
 typedef struct SemanticState_Macro
 {
 	Macro *metadata;
-	Dictionary_State dictionary;
+	Dictionary_State *dictionary;
 	Substitute_State substitutions;
 	struct MacroCustomSubstituteSearch_Closure *closure;
 	String *argument_list;
@@ -595,8 +597,8 @@ static Dictionary_Entry* LookupSymbol(SemanticState *state, const StringView *id
 	if (!String_Empty(&expanded_identifier))
 		identifier = String_View(&expanded_identifier);
 
-	if (CurrentlyExpandingMacro(state))
-		dictionary_entry = Dictionary_LookUp(&state->macro.dictionary, identifier);
+	if (state->macro.dictionary != NULL)
+		dictionary_entry = Dictionary_LookUp(state->macro.dictionary, identifier);
 
 	if (dictionary_entry == NULL)
 		dictionary_entry = Dictionary_LookUp(&state->dictionary, identifier);
@@ -618,10 +620,10 @@ static Dictionary_Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, c
 		identifier = String_View(&expanded_identifier);
 
 	if (dictionary != NULL)
-		*dictionary = &state->macro.dictionary;
+		*dictionary = state->macro.dictionary;
 
-	if (CurrentlyExpandingMacro(state))
-		dictionary_entry = Dictionary_LookUp(&state->macro.dictionary, identifier);
+	if (state->macro.dictionary != NULL)
+		dictionary_entry = Dictionary_LookUp(state->macro.dictionary, identifier);
 
 	if (dictionary_entry == NULL)
 	{
@@ -4239,7 +4241,7 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 		const StringView* const parameter = String_View(&parameter_name->identifier);
 		const StringView* const argument = argument_index >= state->macro.total_arguments ? &blank_argument : String_View(&state->macro.argument_list[argument_index]);
 
-		if (!Dictionary_LookUpAndCreateIfNotExist(&state->macro.dictionary, parameter, &dictionary_entry))
+		if (!Dictionary_LookUpAndCreateIfNotExist(state->macro.dictionary, parameter, &dictionary_entry))
 		{
 			OutOfMemoryError(state);
 		}
@@ -5284,7 +5286,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				const IdentifierListNode *list_entry;
 
 				for (list_entry = statement->shared.local.identifiers.head; list_entry != NULL; list_entry = list_entry->next)
-					if (!Dictionary_LookUpAndCreateIfNotExist(&state->macro.dictionary, String_View(&list_entry->identifier), NULL))
+					if (!Dictionary_LookUpAndCreateIfNotExist(state->macro.dictionary, String_View(&list_entry->identifier), NULL))
 						OutOfMemoryError(state);
 			}
 
@@ -5356,6 +5358,7 @@ static void ParseLine(SemanticState* const state, const StringView* const label,
 				fix_up->statement = statement;
 
 				/* Backup some state. */
+				fix_up->macro_dictionary = (Dictionary_State*)SharedMemory_Copy(state->macro.dictionary);
 				fix_up->program_counter = starting_program_counter;
 				fix_up->output_position = starting_output_position;
 				fix_up->segment_length = starting_segment_length;
@@ -5609,8 +5612,16 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 	const SemanticState_Macro previous_macro_state = state->macro;
 
 	state->macro.metadata = macro;
-	/* TODO: We should not be caching this; the OPT directive can change this at any time! */
-	Dictionary_Init(&state->macro.dictionary, Options_Get(&state->options)->case_insensitive);
+	state->macro.dictionary = (Dictionary_State*)SharedMemory_Allocate(sizeof(Dictionary_State));
+
+	if (state->macro.dictionary == NULL)
+	{
+		OutOfMemoryError(state);
+		return;
+	}
+
+	/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
+	Dictionary_Init(state->macro.dictionary, Options_Get(&state->options)->case_insensitive);
 	Substitute_Initialise(&state->macro.substitutions);
 	state->macro.closure = &closure;
 	state->macro.argument_list = NULL;
@@ -5803,7 +5814,9 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 	String_Destroy(&closure.symbol_value_string);
 
 	Substitute_Deinitialise(&state->macro.substitutions);
-	Dictionary_Deinit(&state->macro.dictionary);
+	if (SharedMemory_WillBeFreed(state->macro.dictionary))
+		Dictionary_Deinit(state->macro.dictionary);
+	SharedMemory_Free(state->macro.dictionary);
 
 	/* Destroy argument list. */
 	{
@@ -6301,6 +6314,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 						FixUp *fix_up = *fix_up_pointer;
 
 						/* Reset some state to how it was at the time the statement was first processed. */
+						state.macro.dictionary = fix_up->macro_dictionary;
 						state.program_counter = fix_up->program_counter;
 						OutputSeek(&state, fix_up->output_position);
 						state.segment_length = fix_up->segment_length;
@@ -6326,6 +6340,9 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 							/* We're done with this statement: delete it. */
 							DestroyStatement(&fix_up->statement);
+							if (SharedMemory_WillBeFreed(fix_up->macro_dictionary))
+								Dictionary_Deinit(fix_up->macro_dictionary);
+							SharedMemory_Free(fix_up->macro_dictionary);
 							String_Destroy(&fix_up->last_global_label);
 							String_Destroy(&fix_up->source_line);
 							String_Destroy(&fix_up->label);

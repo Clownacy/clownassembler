@@ -16,6 +16,8 @@ add_library(clownassembler_core STATIC
 	"p2bin.h"
 	"semantic.c"
 	"semantic.h"
+	"shared-memory.c"
+	"shared-memory.h"
 	"strcmpci.c"
 	"strcmpci.h"
 	"string.c"
