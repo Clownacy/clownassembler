@@ -5814,7 +5814,7 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 	String_Destroy(&closure.symbol_value_string);
 
 	Substitute_Deinitialise(&state->macro.substitutions);
-	if (SharedMemory_WillBeFreed(state->macro.dictionary))
+	if (SharedMemory_WillBeDestroyed(state->macro.dictionary))
 		Dictionary_Deinit(state->macro.dictionary);
 	SharedMemory_Free(state->macro.dictionary);
 
@@ -6340,7 +6340,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 							/* We're done with this statement: delete it. */
 							DestroyStatement(&fix_up->statement);
-							if (SharedMemory_WillBeFreed(fix_up->macro_dictionary))
+							if (SharedMemory_WillBeDestroyed(fix_up->macro_dictionary))
 								Dictionary_Deinit(fix_up->macro_dictionary);
 							SharedMemory_Free(fix_up->macro_dictionary);
 							String_Destroy(&fix_up->last_global_label);
