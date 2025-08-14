@@ -808,6 +808,16 @@ paramlowercase2 macro param
 	purge paramlowercase
 	purge paramlowercase2
 
+	even
+ItIsGoofyTime:
+	; Goofy alternate syntax.
+	move.w (ItIsGoofyTime, pc),d0
+	move.w (ItIsGoofyTime, pc, d0),d0
+	move.w (ItIsGoofyTime, pc, d0.w),d0
+	move.w (4, a0),d0
+	move.w (4, a0, d0),d0
+	move.w (4, a0, d0.w),d0
+
   ; More blank lines to test support for trailing blank statements
 
 

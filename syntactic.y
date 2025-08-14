@@ -1767,6 +1767,12 @@ operand
 		$$.literal = $1;
 		$$.main_register = $3;
 	}
+	| '(' expression ',' TOKEN_ADDRESS_REGISTER ')'
+	{
+		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
+		$$.literal = $2;
+		$$.main_register = $4;
+	}
 	| '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register size ')'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -1785,6 +1791,15 @@ operand
 		$$.index_register = $5 % 8;
 		$$.size = $6;
 		$$.index_register_is_address_register = $5 / 8 !=0;
+	}
+	| '(' expression ',' TOKEN_ADDRESS_REGISTER ',' data_or_address_register size ')'
+	{
+		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+		$$.literal = $2;
+		$$.main_register = $4;
+		$$.index_register = $6 % 8;
+		$$.size = $7;
+		$$.index_register_is_address_register = $6 / 8 !=0;
 	}
 	| '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'
 	{
@@ -1807,10 +1822,25 @@ operand
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $5 / 8 !=0;
 	}
+	| '(' expression ',' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'
+	{
+		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+		$$.literal = $2;
+		$$.main_register = $4;
+		$$.index_register = $6 % 8;
+		$$.size = SIZE_WORD;
+		$$.index_register_is_address_register = $6 / 8 !=0;
+	}
 	| expression '(' TOKEN_PROGRAM_COUNTER ')'
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		$$.literal = $1;
+	}
+	| '(' expression ',' TOKEN_PROGRAM_COUNTER ')'
+	{
+		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
+		$$.literal = $2;
 	}
 	| '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register size ')'
 	{
@@ -1828,6 +1858,14 @@ operand
 		$$.index_register = $5 % 8;
 		$$.size = $6;
 		$$.index_register_is_address_register = $5 / 8 != 0;
+	}
+	| '(' expression ',' TOKEN_PROGRAM_COUNTER ',' data_or_address_register size ')'
+	{
+		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+		$$.literal = $2;
+		$$.index_register = $6 % 8;
+		$$.size = $7;
+		$$.index_register_is_address_register = $6 / 8 != 0;
 	}
 	| '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'
 	{
@@ -1847,6 +1885,15 @@ operand
 		$$.index_register = $5 % 8;
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $5 / 8 != 0;
+	}
+	| '(' expression ',' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'
+	{
+		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
+		$$.literal = $2;
+		$$.index_register = $6 % 8;
+		$$.size = SIZE_WORD;
+		$$.index_register_is_address_register = $6 / 8 != 0;
 	}
 	/* Literal */
 	| '#' expression
