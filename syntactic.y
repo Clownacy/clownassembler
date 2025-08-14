@@ -414,7 +414,8 @@ typedef enum StatementType
 	STATEMENT_TYPE_POPP,
 	STATEMENT_TYPE_SHIFT,
 	STATEMENT_TYPE_MEXIT,
-	STATEMENT_TYPE_LOCAL
+	STATEMENT_TYPE_LOCAL,
+	STATEMENT_TYPE_PURGE
 } StatementType;
 
 typedef struct Statement
@@ -650,6 +651,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_LOCAL
 %token TOKEN_DIRECTIVE_LIST
 %token TOKEN_DIRECTIVE_NOLIST
+%token TOKEN_DIRECTIVE_PURGE
 %token TOKEN_SIZE_BYTE
 %token TOKEN_SIZE_SHORT
 %token TOKEN_SIZE_WORD
@@ -1023,6 +1025,11 @@ statement
 	{
 		/* TODO: Make this actually do something. */
 		statement->type = STATEMENT_TYPE_EMPTY;
+	}
+	| TOKEN_DIRECTIVE_PURGE TOKEN_IDENTIFIER
+	{
+		statement->type = STATEMENT_TYPE_PURGE;
+		statement->shared.string = $2;
 	}
 	;
 
@@ -2494,6 +2501,7 @@ void DestroyStatement(Statement *statement)
 		case STATEMENT_TYPE_EQUS_IDENTIFIER:
 		case STATEMENT_TYPE_PUSHP:
 		case STATEMENT_TYPE_POPP:
+		case STATEMENT_TYPE_PURGE:
 			String_Destroy(&statement->shared.string);
 			break;
 

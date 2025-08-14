@@ -280,6 +280,7 @@ hexadecimal       {hexadecimal_digit}+
 <INITIAL>"="             BEGIN(OPERANDS); return yytext[0];
 <INITIAL>list            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LIST;
 <INITIAL>nolist          BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NOLIST;
+<INITIAL>purge           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_PURGE;
 
  /* axm68k opcodes. */
  /* axm68k is a modified version of asm68k with renamed opcodes, so that

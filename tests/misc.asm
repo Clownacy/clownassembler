@@ -805,6 +805,9 @@ paramlowercase2 macro param
 	paramlowercase "AAA"
 	paramlowercase2 AAA
 
+	purge paramlowercase
+	purge paramlowercase2
+
   ; More blank lines to test support for trailing blank statements
 
 

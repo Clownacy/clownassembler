@@ -4679,6 +4679,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_SHIFT:
 		case STATEMENT_TYPE_MEXIT:
 		case STATEMENT_TYPE_LOCAL:
+		case STATEMENT_TYPE_PURGE:
 			if (!StringView_Empty(label) && !state->doing_fix_up)
 			{
 				/* Handle the label here, instead of passing it onto a later function. */
@@ -5291,6 +5292,21 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			}
 
 			break;
+
+		case STATEMENT_TYPE_PURGE:
+		{
+			const StringView* const identifier = String_View(&statement->shared.string);
+			Dictionary_Entry* const entry = Dictionary_LookUp(&state->dictionary, identifier);
+
+			if (entry == NULL)
+				SemanticError(state, "Cannot purge '%.*s' as it does not exist.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
+			else if (entry->type != SYMBOL_MACRO)
+				SemanticError(state, "Cannot purge '%.*s' as it is not a macro.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
+			else
+				Dictionary_Remove(&state->dictionary, identifier);
+
+			break;
+		}
 	}
 
 	/* Update both copies of the program counter again, so that things like WHILE statements don't use stale values in their expressions. */
