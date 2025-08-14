@@ -586,7 +586,7 @@ static void ExpandIdentifier(SemanticState *state, String* const expanded_identi
 		String_CreateAppendView(expanded_identifier, String_View(&state->last_global_label), identifier);
 }
 
-static Dictionary_Entry* LookupSymbol(SemanticState *state, const StringView *identifier)
+static Dictionary_Entry* LookupSymbol(SemanticState *state, const StringView *identifier, Dictionary_State **dictionary)
 {
 	Dictionary_Entry *dictionary_entry = NULL;
 	String expanded_identifier;
@@ -597,11 +597,23 @@ static Dictionary_Entry* LookupSymbol(SemanticState *state, const StringView *id
 	if (!String_Empty(&expanded_identifier))
 		identifier = String_View(&expanded_identifier);
 
+	if (dictionary != NULL)
+		*dictionary = state->macro.dictionary;
+
 	if (state->macro.dictionary != NULL)
 		dictionary_entry = Dictionary_LookUp(state->macro.dictionary, identifier);
 
 	if (dictionary_entry == NULL)
+	{
+		if (dictionary != NULL)
+			*dictionary = &state->dictionary;
+
 		dictionary_entry = Dictionary_LookUp(&state->dictionary, identifier);
+
+		if (dictionary_entry == NULL)
+			if (dictionary != NULL)
+				*dictionary = NULL;
+	}
 
 	String_Destroy(&expanded_identifier);
 
@@ -634,7 +646,8 @@ static Dictionary_Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, c
 		{
 			OutOfMemoryError(state);
 			dictionary_entry = NULL;
-			*dictionary = NULL;
+			if (dictionary != NULL)
+				*dictionary = NULL;
 		}
 	}
 
@@ -664,7 +677,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 
 	Dictionary_Entry *dictionary_entry;
 
-	dictionary_entry = LookupSymbol(state, identifier);
+	dictionary_entry = LookupSymbol(state, identifier, NULL);
 
 	if (dictionary_entry == NULL || dictionary_entry->type == -1)
 	{
@@ -1039,7 +1052,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 		}
 
 		case EXPRESSION_DEF:
-			*value = LookupSymbol(state, String_View(&expression->shared.string)) != NULL ? -1 : 0;
+			*value = LookupSymbol(state, String_View(&expression->shared.string), NULL) != NULL ? -1 : 0;
 			break;
 
 		case EXPRESSION_TYPE_WITH_IDENTIFIER:
@@ -1168,14 +1181,38 @@ static void TerminateRept(SemanticState *state)
 
 }
 
+static void PurgeMacro(SemanticState* const state, const StringView* const identifier, const cc_bool allow_undefined)
+{
+	Dictionary_State *dictionary;
+	Dictionary_Entry* const entry = LookupSymbol(state, identifier, &dictionary);
+
+	if (entry == NULL)
+	{
+		if (!allow_undefined)
+			SemanticError(state, "Cannot purge '%.*s' as it does not exist.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
+	}
+	else if (entry->type != SYMBOL_MACRO)
+	{
+		SemanticError(state, "Cannot purge '%.*s' as it is not a macro.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
+	}
+	else
+	{
+		Dictionary_Remove(dictionary, identifier);
+	}
+}
+
 static void TerminateMacro(SemanticState *state)
 {
+	const StringView* const identifier = String_View(&state->shared.macro.name);
+
 	/* Exit macro mode. */
 	state->mode = MODE_NORMAL;
 
-	if (!String_Empty(&state->shared.macro.name))
+	PurgeMacro(state, identifier, cc_true);
+
+	if (!StringView_Empty(identifier))
 	{
-		Dictionary_Entry* const symbol = CreateSymbol(state, String_View(&state->shared.macro.name));
+		Dictionary_Entry* const symbol = CreateSymbol(state, identifier);
 
 		/* Add the macro to the symbol table. */
 		if (symbol != NULL)
@@ -4807,7 +4844,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 		case STATEMENT_TYPE_EQUS_IDENTIFIER:
 		{
-			const Dictionary_Entry* const dictionary_entry = LookupSymbol(state, String_View(&statement->shared.string));
+			const Dictionary_Entry* const dictionary_entry = LookupSymbol(state, String_View(&statement->shared.string), NULL);
 
 			if (dictionary_entry == NULL || dictionary_entry->type != SYMBOL_STRING_CONSTANT)
 				SemanticError(state, "String constant can only be defined as a string or another string constant.");
@@ -5294,19 +5331,8 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			break;
 
 		case STATEMENT_TYPE_PURGE:
-		{
-			const StringView* const identifier = String_View(&statement->shared.string);
-			Dictionary_Entry* const entry = Dictionary_LookUp(&state->dictionary, identifier);
-
-			if (entry == NULL)
-				SemanticError(state, "Cannot purge '%.*s' as it does not exist.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
-			else if (entry->type != SYMBOL_MACRO)
-				SemanticError(state, "Cannot purge '%.*s' as it is not a macro.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
-			else
-				Dictionary_Remove(&state->dictionary, identifier);
-
+			PurgeMacro(state, String_View(&statement->shared.string), cc_false);
 			break;
-		}
 	}
 
 	/* Update both copies of the program counter again, so that things like WHILE statements don't use stale values in their expressions. */
@@ -5967,7 +5993,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 	/* This is either a directive, or a macro. */
 	{
 		/* Look up the directive in the dictionary to see if it's actually a macro. */
-		const Dictionary_Entry* const macro_dictionary_entry = LookupSymbol(state, &directive);
+		const Dictionary_Entry* const macro_dictionary_entry = LookupSymbol(state, &directive, NULL);
 		Macro* const macro = macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO ? macro_dictionary_entry->shared.pointer : NULL;
 
 		if (macro != NULL && macro->is_short)
