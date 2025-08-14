@@ -31,7 +31,7 @@ extern "C" {
 #include "io.h"
 #include "options.h"
 
-#define CLOWNASSEMBLER_VERSION_STRING "ClownAssembler v1.1"
+#define CLOWNASSEMBLER_VERSION_STRING "ClownAssembler v1.1.1"
 
 typedef Options ClownAssembler_Settings;
 
