@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 			" -p        - Silence pedantic warnings.\n"
 			" -v        - Include local labels in symbol file.\n"
 			" -w        - Silence warnings.\n"
-			" -.X       - Set local label signifier to the character after the dot.\n"
+			" -.X       - Set local label signifier to character after dot (default '@').\n"
 			, stdout);
 	}
 	else
