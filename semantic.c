@@ -1579,6 +1579,12 @@ static void ResolveInstructionAmbiguity(SemanticState* const state, StatementIns
 
 				break;
 
+			case OPCODE_SUBI:
+				if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
+					WARN_ALIAS_AND_LOOP(OPCODE_SUBA, "SUBI should be SUBA.")
+
+				break;
+
 			case OPCODE_SUBX_DATA_REGS:
 				if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
 					ALIAS_AND_LOOP(OPCODE_SUBX_ADDRESS_REGS)
@@ -1606,6 +1612,12 @@ static void ResolveInstructionAmbiguity(SemanticState* const state, StatementIns
 					WARN_ALIAS_AND_LOOP(OPCODE_ADDI, "ADD should be ADDI.")
 				else if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_ADD_FROM_REG)
+
+				break;
+
+			case OPCODE_ADDI:
+				if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
+					WARN_ALIAS_AND_LOOP(OPCODE_ADDA, "ADDI should be ADDA.")
 
 				break;
 
