@@ -1021,6 +1021,16 @@ statement
 		/* TODO: Make this actually do something. */
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
+	| TOKEN_DIRECTIVE_LIST '+'
+	{
+		/* TODO: Make this actually do something. */
+		statement->type = STATEMENT_TYPE_EMPTY;
+	}
+	| TOKEN_DIRECTIVE_LIST '-'
+	{
+		/* TODO: Make this actually do something. */
+		statement->type = STATEMENT_TYPE_EMPTY;
+	}
 	| TOKEN_DIRECTIVE_NOLIST
 	{
 		/* TODO: Make this actually do something. */
