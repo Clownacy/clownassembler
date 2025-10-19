@@ -6000,7 +6000,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 	{
 		/* Look up the directive in the dictionary to see if it's actually a macro. */
 		const Dictionary_Entry* const macro_dictionary_entry = LookupSymbol(state, &directive, NULL);
-		Macro* const macro = macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO ? macro_dictionary_entry->shared.pointer : NULL;
+		Macro* const macro = macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO ? (Macro*)macro_dictionary_entry->shared.pointer : NULL;
 
 		if (macro != NULL && macro->is_short)
 		{

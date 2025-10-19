@@ -43,7 +43,7 @@ void BinaryOutput_fseek(const BinaryOutput* const callbacks, const size_t positi
 
 void BinaryOutput_fwrite(const void* const buffer, const size_t size, const size_t count, const BinaryOutput* const callbacks)
 {
-	callbacks->write_characters((void*)callbacks->user_data, buffer, size * count);
+	callbacks->write_characters((void*)callbacks->user_data, (const char*)buffer, size * count);
 }
 
 cc_bool TextOutput_exists(const TextOutput* const callbacks)
