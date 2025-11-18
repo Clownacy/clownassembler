@@ -158,11 +158,11 @@ int main(int argc, char **argv)
 						{
 							if (strcmpci(option, "ae+") == 0)
 							{
-								settings.case_insensitive = cc_true;
+								settings.automatic_even = cc_true;
 							}
 							else if (strcmpci(option, "ae-") == 0)
 							{
-								settings.case_insensitive = cc_false;
+								settings.automatic_even = cc_false;
 							}
 							else if (strcmpci(option, "an+") == 0)
 							{
