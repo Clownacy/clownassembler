@@ -155,6 +155,7 @@ typedef struct SemanticState
 	unsigned int current_if_level;
 	unsigned int false_if_level;
 	cc_bool true_already_found;
+	cc_bool evaluating_if_condition; /* Flag to suppress errors for undefined symbols in if conditions */
 
 	/* OBJ directive. */
 	cc_bool obj_active;
@@ -677,18 +678,34 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 
 	Dictionary_Entry *dictionary_entry;
 
+	/* Initialize to 0 as default */
+	*value = 0;
+
 	dictionary_entry = LookupSymbol(state, identifier, NULL);
 
 	if (dictionary_entry == NULL || dictionary_entry->type == -1)
 	{
-		if (must_evaluate_on_first_pass)
+		/* For 'if' statements, undefined symbols should be treated as 0 without error (ASM68K behavior) */
+		if (state->evaluating_if_condition)
+		{
+			/* Silently treat undefined as 0 in if conditions */
+			success = cc_true;
+		}
+		else if (must_evaluate_on_first_pass)
+		{
 			SemanticError(state, "Symbol '%.*s' must be evaluable on first pass.", (int)StringView_Length(identifier), StringView_Data(identifier));
+			success = cc_false;
+		}
 		else if (state->doing_final_pass)
+		{
 			SemanticError(state, "Symbol '%.*s' does not exist.", (int)StringView_Length(identifier), StringView_Data(identifier));
+			success = cc_false;
+		}
 		else
+		{
 			state->fix_up_needed = cc_true;
-
-		success = cc_false;
+			success = cc_false;
+		}
 	}
 	else
 	{
@@ -4677,17 +4694,148 @@ static void ProcessIf(SemanticState *state, Expression *expression)
 
 	++state->current_if_level;
 
+	/* Set flag to allow undefined symbols in if conditions */
+	state->evaluating_if_condition = cc_true;
+	
+	/* Undefined symbols will be silently treated as 0 */
 	if (!ResolveExpression(state, expression, &value, cc_true))
 	{
-		SemanticError(state, "Condition must be evaluable on the first pass.");
-		value = 1;
+		/* Value is already initialized to 0 by GetSymbolInteger for undefined symbols */
+		value = 0;
 	}
+	
+	state->evaluating_if_condition = cc_false;
 
 	/* If this condition is false, then mark this as the false if-level. */
 	if (value == 0)
 		state->false_if_level = state->current_if_level;
 
 	state->true_already_found = value != 0;
+}
+
+static void ProcessIfEq(SemanticState *state, Expression *expression)
+{
+	unsigned long value;
+
+	++state->current_if_level;
+
+	/* Set flag to allow undefined symbols in if conditions */
+	state->evaluating_if_condition = cc_true;
+	
+	if (!ResolveExpression(state, expression, &value, cc_true))
+		value = 0;
+	
+	state->evaluating_if_condition = cc_false;
+
+	/* ifeq: true if value == 0 */
+	if (value != 0)
+		state->false_if_level = state->current_if_level;
+
+	state->true_already_found = (value == 0);
+}
+
+static void ProcessIfNe(SemanticState *state, Expression *expression)
+{
+	unsigned long value;
+
+	++state->current_if_level;
+
+	state->evaluating_if_condition = cc_true;
+	
+	if (!ResolveExpression(state, expression, &value, cc_true))
+		value = 0;
+	
+	state->evaluating_if_condition = cc_false;
+
+	/* ifne: true if value != 0 */
+	if (value == 0)
+		state->false_if_level = state->current_if_level;
+
+	state->true_already_found = (value != 0);
+}
+
+static void ProcessIfGt(SemanticState *state, Expression *expression)
+{
+	unsigned long value;
+
+	++state->current_if_level;
+
+	state->evaluating_if_condition = cc_true;
+	
+	if (!ResolveExpression(state, expression, &value, cc_true))
+		value = 0;
+	
+	state->evaluating_if_condition = cc_false;
+
+	/* ifgt: true if value > 0 */
+	if (value <= 0)
+		state->false_if_level = state->current_if_level;
+
+	state->true_already_found = (value > 0);
+}
+
+static void ProcessIfLt(SemanticState *state, Expression *expression)
+{
+	unsigned long value;
+
+	++state->current_if_level;
+
+	state->evaluating_if_condition = cc_true;
+	
+	if (!ResolveExpression(state, expression, &value, cc_true))
+		value = 0;
+	
+	state->evaluating_if_condition = cc_false;
+
+	/* iflt: true if value < 0 (signed comparison) */
+	/* Treat as signed: if value > 0x7FFFFFFF, it's negative */
+	long signed_value = (long)(value & 0xFFFFFFFF);
+	if (signed_value >= 0)
+		state->false_if_level = state->current_if_level;
+
+	state->true_already_found = (signed_value < 0);
+}
+
+static void ProcessIfGe(SemanticState *state, Expression *expression)
+{
+	unsigned long value;
+
+	++state->current_if_level;
+
+	state->evaluating_if_condition = cc_true;
+	
+	if (!ResolveExpression(state, expression, &value, cc_true))
+		value = 0;
+	
+	state->evaluating_if_condition = cc_false;
+
+	/* ifge: true if value >= 0 (signed comparison) */
+	long signed_value = (long)(value & 0xFFFFFFFF);
+	if (signed_value < 0)
+		state->false_if_level = state->current_if_level;
+
+	state->true_already_found = (signed_value >= 0);
+}
+
+static void ProcessIfLe(SemanticState *state, Expression *expression)
+{
+	unsigned long value;
+
+	++state->current_if_level;
+
+	state->evaluating_if_condition = cc_true;
+	
+	if (!ResolveExpression(state, expression, &value, cc_true))
+		value = 0;
+	
+	state->evaluating_if_condition = cc_false;
+
+	/* ifle: true if value <= 0 (signed comparison) */
+	long signed_value = (long)(value & 0xFFFFFFFF);
+	if (signed_value > 0)
+		state->false_if_level = state->current_if_level;
+
+	state->true_already_found = (signed_value <= 0);
 }
 
 static void ProcessStatement(SemanticState *state, Statement *statement, const StringView *label)
@@ -4708,6 +4856,12 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_INCBIN:
 		case STATEMENT_TYPE_REPT:
 		case STATEMENT_TYPE_IF:
+		case STATEMENT_TYPE_IFEQ:
+		case STATEMENT_TYPE_IFNE:
+		case STATEMENT_TYPE_IFGT:
+		case STATEMENT_TYPE_IFLT:
+		case STATEMENT_TYPE_IFGE:
+		case STATEMENT_TYPE_IFLE:
 		case STATEMENT_TYPE_WHILE:
 		case STATEMENT_TYPE_EVEN:
 		case STATEMENT_TYPE_CNOP:
@@ -4751,6 +4905,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_MACRO:
 		case STATEMENT_TYPE_MACROS:
 		case STATEMENT_TYPE_EQU:
+		case STATEMENT_TYPE_EQUR:
 		case STATEMENT_TYPE_EQUS_STRING:
 		case STATEMENT_TYPE_EQUS_IDENTIFIER:
 		case STATEMENT_TYPE_SUBSTR:
@@ -4844,6 +4999,47 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			break;
 		}
 
+		case STATEMENT_TYPE_EQUR:
+		{
+			char register_name[4];
+			unsigned long register_value;
+			String register_string;
+			size_t register_name_length;
+
+			if (Options_Get(&state->options)->equ_set_descope_local_labels)
+				SetLastGlobalLabel(state, label);
+
+			/* Register value is already encoded: 0-7 for d0-d7, 8-15 for a0-a7 */
+			register_value = statement->shared.equr.register_value;
+
+			/* Create a string substitution like "d0" or "a5" */
+			if (register_value < 8)
+			{
+				/* Data register: d0-d7 */
+				register_name_length = sprintf(register_name, "d%lu", register_value);
+			}
+			else
+			{
+				/* Address register: a0-a7 */
+				register_name_length = sprintf(register_name, "a%lu", register_value - 8);
+			}
+
+			/* Create a String to hold the register name permanently */
+			if (!String_Create(&register_string, register_name, register_name_length))
+			{
+				SemanticError(state, "Could not allocate memory for register name.");
+				break;
+			}
+
+			/* Create a string substitution so the register name is replaced textually */
+			PushSubstitute(state, label, String_View(&register_string));
+
+			/* The string data has been copied by PushSubstitute, so we can destroy our local copy */
+			String_Destroy(&register_string);
+
+			break;
+		}
+
 		case STATEMENT_TYPE_EQUS_STRING:
 			PushSubstitute(state, label, String_View(&statement->shared.string));
 			break;
@@ -4911,6 +5107,48 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			ProcessIf(state, &statement->shared.expression);
 			break;
 
+		case STATEMENT_TYPE_IFEQ:
+			if (!Options_Get(&state->options)->allow_ifeq_directives)
+				SemanticError(state, "Directive 'ifeq' requires the /k flag.");
+			else
+				ProcessIfEq(state, &statement->shared.expression);
+			break;
+
+		case STATEMENT_TYPE_IFNE:
+			if (!Options_Get(&state->options)->allow_ifeq_directives)
+				SemanticError(state, "Directive 'ifne' requires the /k flag.");
+			else
+				ProcessIfNe(state, &statement->shared.expression);
+			break;
+
+		case STATEMENT_TYPE_IFGT:
+			if (!Options_Get(&state->options)->allow_ifeq_directives)
+				SemanticError(state, "Directive 'ifgt' requires the /k flag.");
+			else
+				ProcessIfGt(state, &statement->shared.expression);
+			break;
+
+		case STATEMENT_TYPE_IFLT:
+			if (!Options_Get(&state->options)->allow_ifeq_directives)
+				SemanticError(state, "Directive 'iflt' requires the /k flag.");
+			else
+				ProcessIfLt(state, &statement->shared.expression);
+			break;
+
+		case STATEMENT_TYPE_IFGE:
+			if (!Options_Get(&state->options)->allow_ifeq_directives)
+				SemanticError(state, "Directive 'ifge' requires the /k flag.");
+			else
+				ProcessIfGe(state, &statement->shared.expression);
+			break;
+
+		case STATEMENT_TYPE_IFLE:
+			if (!Options_Get(&state->options)->allow_ifeq_directives)
+				SemanticError(state, "Directive 'ifle' requires the /k flag.");
+			else
+				ProcessIfLe(state, &statement->shared.expression);
+			break;
+
 		case STATEMENT_TYPE_ELSEIF:
 			if (state->current_if_level == 0)
 			{
@@ -4922,11 +5160,16 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				{
 					unsigned long value;
 
+					/* Set flag to allow undefined symbols in elseif conditions */
+					state->evaluating_if_condition = cc_true;
+					
 					if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
 					{
-						SemanticError(state, "Condition must be evaluable on the first pass.");
-						value = 1;
+						/* Undefined symbols default to 0 (ASM68K behavior) */
+						value = 0;
 					}
+					
+					state->evaluating_if_condition = cc_false;
 
 					/* If this condition is false, then mark this as the false if-level. */
 					if (state->true_already_found || value == 0)
@@ -5451,8 +5694,8 @@ static void ParseLine(SemanticState* const state, const StringView* const label,
 	}
 }
 
-#define DIRECTIVE_OR_MACRO_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_"
-#define LABEL_CHARS DIRECTIVE_OR_MACRO_CHARS ".@"
+#define DIRECTIVE_OR_MACRO_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_.@"
+#define LABEL_CHARS DIRECTIVE_OR_MACRO_CHARS
 
 /* TODO: When I switch to C++, make this the first thing to go... */
 typedef struct MacroCustomSubstituteSearch_Closure
