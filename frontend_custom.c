@@ -93,6 +93,7 @@ int main(int argc, char **argv)
 	settings.pedantic_warnings_enabled = cc_true;
 	settings.expand_all_macros = cc_false;
 	settings.automatic_even = cc_false;
+	settings.allow_ifeq_directives = cc_false;
 
 	for (i = 1; i < argc; ++i)
 	{

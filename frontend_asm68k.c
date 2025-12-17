@@ -102,6 +102,7 @@ int main(int argc, char **argv)
 	settings.pedantic_warnings_enabled = cc_false;
 	settings.expand_all_macros = cc_false;
 	settings.automatic_even = cc_true;
+	settings.allow_ifeq_directives = cc_false;
 
 	source_file_path = object_file_path = symbol_file_path = listing_file_path = NULL;
 	source_file = object_file = symbol_file = listing_file = NULL;
@@ -128,6 +129,10 @@ int main(int argc, char **argv)
 				case 'd':
 				case 'g':
 				case 'k':
+					/* /k flag - allow use of ifeq, ifne, etc. */
+					settings.allow_ifeq_directives = cc_true;
+					break;
+					
 				case 'l':
 				case 'w':
 				case 'z': /* And 'zd'. */

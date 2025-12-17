@@ -371,6 +371,11 @@ typedef struct StatementLocal
 	IdentifierList identifiers;
 } StatementLocal;
 
+typedef struct StatementEqur
+{
+	unsigned long register_value;
+} StatementEqur;
+
 typedef enum StatementType
 {
 	STATEMENT_TYPE_EMPTY,
@@ -386,11 +391,18 @@ typedef enum StatementType
 	STATEMENT_TYPE_MACROS,
 	STATEMENT_TYPE_ENDM,
 	STATEMENT_TYPE_EQU,
+	STATEMENT_TYPE_EQUR,
 	STATEMENT_TYPE_EQUS_STRING,
 	STATEMENT_TYPE_EQUS_IDENTIFIER,
 	STATEMENT_TYPE_SUBSTR,
 	STATEMENT_TYPE_SET,
 	STATEMENT_TYPE_IF,
+	STATEMENT_TYPE_IFEQ,
+	STATEMENT_TYPE_IFNE,
+	STATEMENT_TYPE_IFGT,
+	STATEMENT_TYPE_IFLT,
+	STATEMENT_TYPE_IFGE,
+	STATEMENT_TYPE_IFLE,
 	STATEMENT_TYPE_ELSEIF,
 	STATEMENT_TYPE_ELSE,
 	STATEMENT_TYPE_ENDC,
@@ -445,6 +457,7 @@ typedef struct Statement
 		StatementSubstr substr;
 		StatementOpt opt;
 		StatementLocal local;
+		StatementEqur equr;
 		Expression expression;
 		String string;
 	} shared;
@@ -621,10 +634,17 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %token TOKEN_DIRECTIVE_INCLUDE
 %token TOKEN_DIRECTIVE_INCBIN
 %token TOKEN_DIRECTIVE_EQU
+%token TOKEN_DIRECTIVE_EQUR
 %token TOKEN_DIRECTIVE_EQUS
 %token TOKEN_DIRECTIVE_SUBSTR
 %token TOKEN_DIRECTIVE_SET
 %token TOKEN_DIRECTIVE_IF
+%token TOKEN_DIRECTIVE_IFEQ
+%token TOKEN_DIRECTIVE_IFNE
+%token TOKEN_DIRECTIVE_IFGT
+%token TOKEN_DIRECTIVE_IFLT
+%token TOKEN_DIRECTIVE_IFGE
+%token TOKEN_DIRECTIVE_IFLE
 %token TOKEN_DIRECTIVE_ELSEIF
 %token TOKEN_DIRECTIVE_ELSE
 %token TOKEN_DIRECTIVE_ENDC
@@ -828,6 +848,11 @@ statement
 		statement->type = STATEMENT_TYPE_EQU;
 		statement->shared.expression = $2;
 	}
+	| TOKEN_DIRECTIVE_EQUR data_or_address_register
+	{
+		statement->type = STATEMENT_TYPE_EQUR;
+		statement->shared.equr.register_value = $2;
+	}
 	| TOKEN_DIRECTIVE_EQUS TOKEN_STRING
 	{
 		statement->type = STATEMENT_TYPE_EQUS_STRING;
@@ -883,6 +908,36 @@ statement
 	| TOKEN_DIRECTIVE_IF expression
 	{
 		statement->type = STATEMENT_TYPE_IF;
+		statement->shared.expression = $2;
+	}
+	| TOKEN_DIRECTIVE_IFEQ expression
+	{
+		statement->type = STATEMENT_TYPE_IFEQ;
+		statement->shared.expression = $2;
+	}
+	| TOKEN_DIRECTIVE_IFNE expression
+	{
+		statement->type = STATEMENT_TYPE_IFNE;
+		statement->shared.expression = $2;
+	}
+	| TOKEN_DIRECTIVE_IFGT expression
+	{
+		statement->type = STATEMENT_TYPE_IFGT;
+		statement->shared.expression = $2;
+	}
+	| TOKEN_DIRECTIVE_IFLT expression
+	{
+		statement->type = STATEMENT_TYPE_IFLT;
+		statement->shared.expression = $2;
+	}
+	| TOKEN_DIRECTIVE_IFGE expression
+	{
+		statement->type = STATEMENT_TYPE_IFGE;
+		statement->shared.expression = $2;
+	}
+	| TOKEN_DIRECTIVE_IFLE expression
+	{
+		statement->type = STATEMENT_TYPE_IFLE;
 		statement->shared.expression = $2;
 	}
 	| TOKEN_DIRECTIVE_ELSEIF expression
@@ -2546,12 +2601,22 @@ void DestroyStatement(Statement *statement)
 		case STATEMENT_TYPE_EQU:
 		case STATEMENT_TYPE_SET:
 		case STATEMENT_TYPE_IF:
+		case STATEMENT_TYPE_IFEQ:
+		case STATEMENT_TYPE_IFNE:
+		case STATEMENT_TYPE_IFGT:
+		case STATEMENT_TYPE_IFLT:
+		case STATEMENT_TYPE_IFGE:
+		case STATEMENT_TYPE_IFLE:
 		case STATEMENT_TYPE_ELSEIF:
 		case STATEMENT_TYPE_WHILE:
 		case STATEMENT_TYPE_RSSET:
 		case STATEMENT_TYPE_OBJ:
 		case STATEMENT_TYPE_ORG:
 			DestroyExpression(&statement->shared.expression);
+			break;
+
+		case STATEMENT_TYPE_EQUR:
+			/* Nothing to destroy for a simple unsigned long */
 			break;
 
 		case STATEMENT_TYPE_EQUS_STRING:

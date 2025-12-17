@@ -31,6 +31,7 @@ typedef struct Options
 	cc_bool pedantic_warnings_enabled;
 	cc_bool expand_all_macros;
 	cc_bool automatic_even;
+	cc_bool allow_ifeq_directives;
 } Options;
 
 typedef struct Options_ListEntry
