@@ -6471,9 +6471,9 @@ cc_bool ClownAssembler_Assemble(
 
 		if (ClownAssembler_AssembleToObjectFile(input_callbacks, &temporary_callbacks, error_callbacks, listing_callbacks, symbol_callbacks, input_file_path, initial_options, definition_callback, user_data))
 		{
-			rewind(temporary_file);
+			BinaryInputOutput_rewind(&temporary_callbacks);
 
-			if (ConvertObjectFileToFlatBinary(temporary_file, output_callbacks, error_callbacks))
+			if (ConvertObjectFileToFlatBinary(&temporary_callbacks, output_callbacks, error_callbacks))
 				success = cc_true;
 		}
 
