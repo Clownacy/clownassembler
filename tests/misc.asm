@@ -818,6 +818,12 @@ ItIsGoofyTime:
 	move.w (4, a0, d0),d0
 	move.w (4, a0, d0.w),d0
 
+	; Edgecase where '.w' is always recognised as a size specifier.
+	opt l+
+Stupid:
+.w = 0
+	lea	Stupid.w,a0
+
   ; More blank lines to test support for trailing blank statements
 
 
