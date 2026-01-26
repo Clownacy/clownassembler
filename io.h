@@ -40,21 +40,15 @@ typedef struct ClownAssembler_TextInput
 	ClownAssembler_ReadLine read_line;
 } ClownAssembler_TextInput;
 
-typedef struct ClownAssembler_BinaryInput
+typedef struct ClownAssembler_BinaryInputOutput
 {
 	const void *user_data;
 	ClownAssembler_ReadCharacter read_character;
 	ClownAssembler_ReadCharacters read_characters;
-	ClownAssembler_Seek seek;
-} ClownAssembler_BinaryInput;
-
-typedef struct ClownAssembler_BinaryOutput
-{
-	const void *user_data;
 	ClownAssembler_WriteCharacter write_character;
 	ClownAssembler_WriteCharacters write_characters;
 	ClownAssembler_Seek seek;
-} ClownAssembler_BinaryOutput;
+} ClownAssembler_BinaryInputOutput;
 
 typedef struct ClownAssembler_TextOutput
 {
@@ -69,18 +63,16 @@ cc_bool TextInput_OpenFile(ClownAssembler_TextInput *callbacks, const char *path
 void TextInput_CloseFile(const ClownAssembler_TextInput *callbacks);
 char* TextInput_fgets(char *buffer, size_t buffer_size, const ClownAssembler_TextInput *callbacks);
 
-cc_bool BinaryInput_exists(const ClownAssembler_BinaryInput *callbacks);
-int BinaryInput_fgetc(const ClownAssembler_BinaryInput *callbacks);
-void BinaryInput_fseek(const ClownAssembler_BinaryInput *callbacks, size_t position);
-size_t BinaryInput_fread(void *buffer, size_t size, size_t count, const ClownAssembler_BinaryInput *callbacks);
-
-void BinaryOutput_OpenFILE(ClownAssembler_BinaryOutput *callbacks, FILE *file);
-cc_bool BinaryOutput_OpenFile(ClownAssembler_BinaryOutput *callbacks, const char *path);
-void BinaryOutput_CloseFile(const ClownAssembler_BinaryOutput *callbacks);
-cc_bool BinaryOutput_exists(const ClownAssembler_BinaryOutput *callbacks);
-void BinaryOutput_fputc(int character, const ClownAssembler_BinaryOutput *callbacks);
-void BinaryOutput_fseek(const ClownAssembler_BinaryOutput *callbacks, size_t position);
-void BinaryOutput_fwrite(const void *buffer, size_t size, size_t count, const ClownAssembler_BinaryOutput *callbacks);
+void BinaryInputOutput_OpenFILE(ClownAssembler_BinaryInputOutput *callbacks, FILE *file);
+cc_bool BinaryInputOutput_OpenFile(ClownAssembler_BinaryInputOutput *callbacks, const char *path, const char *mode);
+void BinaryInputOutput_CloseFile(const ClownAssembler_BinaryInputOutput *callbacks);
+cc_bool BinaryInputOutput_exists(const ClownAssembler_BinaryInputOutput *callbacks);
+void BinaryInputOutput_fseek(const ClownAssembler_BinaryInputOutput *callbacks, size_t position);
+#define BinaryInputOutput_rewind(CALLBACKS) BinaryInputOutput_fseek(CALLBACKS, 0)
+int BinaryInputOutput_fgetc(const ClownAssembler_BinaryInputOutput *callbacks);
+size_t BinaryInputOutput_fread(void *buffer, size_t size, size_t count, const ClownAssembler_BinaryInputOutput *callbacks);
+void BinaryInputOutput_fputc(int character, const ClownAssembler_BinaryInputOutput *callbacks);
+void BinaryInputOutput_fwrite(const void *buffer, size_t size, size_t count, const ClownAssembler_BinaryInputOutput *callbacks);
 
 void TextOutput_OpenFILE(ClownAssembler_TextOutput *callbacks, FILE *file);
 cc_bool TextOutput_exists(const ClownAssembler_TextOutput *callbacks);

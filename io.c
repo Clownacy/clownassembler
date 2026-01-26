@@ -20,8 +20,7 @@
 #include "io.h"
 
 typedef ClownAssembler_TextInput TextInput;
-typedef ClownAssembler_BinaryInput BinaryInput;
-typedef ClownAssembler_BinaryOutput BinaryOutput;
+typedef ClownAssembler_BinaryInputOutput BinaryInputOutput;
 typedef ClownAssembler_TextOutput TextOutput;
 
 /* Default FILE-based IO callbacks */
@@ -93,66 +92,58 @@ char* TextInput_fgets(char* const buffer, const size_t buffer_size, const TextIn
 	return callbacks->read_line((void*)callbacks->user_data, buffer, buffer_size);
 }
 
-cc_bool BinaryInput_exists(const BinaryInput* const callbacks)
-{
-	return callbacks != NULL && callbacks->user_data != NULL;
-}
-
-int BinaryInput_fgetc(const BinaryInput* const callbacks)
-{
-	return callbacks->read_character((void*)callbacks->user_data);
-}
-
-void BinaryInput_fseek(const BinaryInput* const callbacks, const size_t position)
-{
-	callbacks->seek((void*)callbacks->user_data, position);
-}
-
-size_t BinaryInput_fread(void* const buffer, const size_t size, const size_t count, const BinaryInput* const callbacks)
-{
-	return callbacks->read_characters((void*)callbacks->user_data, (char*)buffer, size * count);
-}
-
-void BinaryOutput_OpenFILE(BinaryOutput* const callbacks, FILE *file)
+void BinaryInputOutput_OpenFILE(BinaryInputOutput* const callbacks, FILE *file)
 {
 	callbacks->user_data = file;
+	callbacks->read_character = ReadCharacter;
+	callbacks->read_characters = ReadCharacters;
 	callbacks->write_character = WriteCharacter;
 	callbacks->write_characters = WriteCharacters;
 	callbacks->seek = Seek;
 }
 
-cc_bool BinaryOutput_OpenFile(BinaryOutput* const callbacks, const char* const path)
+cc_bool BinaryInputOutput_OpenFile(BinaryInputOutput* const callbacks, const char* const path, const char* const mode)
 {
-	FILE* const output_file = fopen(path, "wb");
+	FILE* const output_file = fopen(path, mode);
 
 	if (output_file == NULL)
 		return cc_false;
 
-	BinaryOutput_OpenFILE(callbacks, output_file);
+	BinaryInputOutput_OpenFILE(callbacks, output_file);
 	return cc_true;
 }
 
-void BinaryOutput_CloseFile(const BinaryOutput* const callbacks)
+void BinaryInputOutput_CloseFile(const BinaryInputOutput* const callbacks)
 {
 	fclose((FILE*)callbacks->user_data);
 }
 
-cc_bool BinaryOutput_exists(const BinaryOutput* const callbacks)
+cc_bool BinaryInputOutput_exists(const BinaryInputOutput* const callbacks)
 {
 	return callbacks != NULL && callbacks->user_data != NULL;
 }
 
-void BinaryOutput_fputc(const int character, const BinaryOutput* const callbacks)
-{
-	callbacks->write_character((void*)callbacks->user_data, character);
-}
-
-void BinaryOutput_fseek(const BinaryOutput* const callbacks, const size_t position)
+void BinaryInputOutput_fseek(const BinaryInputOutput* const callbacks, const size_t position)
 {
 	callbacks->seek((void*)callbacks->user_data, position);
 }
 
-void BinaryOutput_fwrite(const void* const buffer, const size_t size, const size_t count, const BinaryOutput* const callbacks)
+int BinaryInputOutput_fgetc(const BinaryInputOutput* const callbacks)
+{
+	return callbacks->read_character((void*)callbacks->user_data);
+}
+
+size_t BinaryInputOutput_fread(void* const buffer, const size_t size, const size_t count, const BinaryInputOutput* const callbacks)
+{
+	return callbacks->read_characters((void*)callbacks->user_data, (char*)buffer, size * count);
+}
+
+void BinaryInputOutput_fputc(const int character, const BinaryInputOutput* const callbacks)
+{
+	callbacks->write_character((void*)callbacks->user_data, character);
+}
+
+void BinaryInputOutput_fwrite(const void* const buffer, const size_t size, const size_t count, const BinaryInputOutput* const callbacks)
 {
 	callbacks->write_characters((void*)callbacks->user_data, (const char*)buffer, size * count);
 }
