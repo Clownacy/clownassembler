@@ -15,12 +15,78 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <stdio.h>
+
 #include "io.h"
 
 typedef ClownAssembler_TextInput TextInput;
 typedef ClownAssembler_BinaryInput BinaryInput;
 typedef ClownAssembler_BinaryOutput BinaryOutput;
 typedef ClownAssembler_TextOutput TextOutput;
+
+/* Default FILE-based IO callbacks */
+
+static char* ReadLine(void* const user_data, char* const buffer, const size_t buffer_size)
+{
+	return fgets(buffer, buffer_size, (FILE*)user_data);
+}
+
+static void Seek(void* const user_data, const size_t position)
+{
+	fseek((FILE*)user_data, position, SEEK_SET);
+}
+
+static int ReadCharacter(void* const user_data)
+{
+	return fgetc((FILE*)user_data);
+}
+
+static size_t ReadCharacters(void* const user_data, char* const characters, const size_t total_characters)
+{
+	return fread(characters, 1, total_characters, (FILE*)user_data);
+}
+
+static void WriteCharacter(void* const user_data, const int character)
+{
+	fputc(character, (FILE*)user_data);
+}
+
+static void WriteCharacters(void* const user_data, const char* const characters, const size_t total_characters)
+{
+	fwrite(characters, 1, total_characters, (FILE*)user_data);
+}
+
+static void WriteString(void* const user_data, const char* const string)
+{
+	fputs(string, (FILE*)user_data);
+}
+
+static void PrintFormatted(void* const user_data, const char* const format, va_list args)
+{
+	vfprintf((FILE*)user_data, format, args);
+}
+
+void TextInput_OpenFILE(TextInput* const callbacks, FILE* const file)
+{
+	callbacks->user_data = file;
+	callbacks->read_line = ReadLine;
+}
+
+cc_bool TextInput_OpenFile(TextInput* const callbacks, const char* const path)
+{
+	FILE* const input_file = fopen(path, "r");
+
+	if (input_file == NULL)
+		return cc_false;
+
+	TextInput_OpenFILE(callbacks, input_file);
+	return cc_true;
+}
+
+void TextInput_CloseFile(const TextInput* const callbacks)
+{
+	fclose((FILE*)callbacks->user_data);
+}
 
 char* TextInput_fgets(char* const buffer, const size_t buffer_size, const TextInput* const callbacks)
 {
@@ -47,6 +113,30 @@ size_t BinaryInput_fread(void* const buffer, const size_t size, const size_t cou
 	return callbacks->read_characters((void*)callbacks->user_data, (char*)buffer, size * count);
 }
 
+void BinaryOutput_OpenFILE(BinaryOutput* const callbacks, FILE *file)
+{
+	callbacks->user_data = file;
+	callbacks->write_character = WriteCharacter;
+	callbacks->write_characters = WriteCharacters;
+	callbacks->seek = Seek;
+}
+
+cc_bool BinaryOutput_OpenFile(BinaryOutput* const callbacks, const char* const path)
+{
+	FILE* const output_file = fopen(path, "wb");
+
+	if (output_file == NULL)
+		return cc_false;
+
+	BinaryOutput_OpenFILE(callbacks, output_file);
+	return cc_true;
+}
+
+void BinaryOutput_CloseFile(const BinaryOutput* const callbacks)
+{
+	fclose((FILE*)callbacks->user_data);
+}
+
 cc_bool BinaryOutput_exists(const BinaryOutput* const callbacks)
 {
 	return callbacks != NULL && callbacks->user_data != NULL;
@@ -65,6 +155,14 @@ void BinaryOutput_fseek(const BinaryOutput* const callbacks, const size_t positi
 void BinaryOutput_fwrite(const void* const buffer, const size_t size, const size_t count, const BinaryOutput* const callbacks)
 {
 	callbacks->write_characters((void*)callbacks->user_data, (const char*)buffer, size * count);
+}
+
+void TextOutput_OpenFILE(TextOutput* const callbacks, FILE *file)
+{
+	callbacks->user_data = file;
+	callbacks->print_formatted = PrintFormatted;
+	callbacks->write_character = WriteCharacter;
+	callbacks->write_string = WriteString;
 }
 
 cc_bool TextOutput_exists(const TextOutput* const callbacks)

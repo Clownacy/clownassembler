@@ -23,6 +23,8 @@
 
 #include "clowncommon/clowncommon.h"
 
+struct FILE;
+
 typedef char* (*ClownAssembler_ReadLine)(void *user_data, char *buffer, size_t buffer_size);
 typedef void (*ClownAssembler_Seek)(void *user_data, size_t position);
 typedef int (*ClownAssembler_ReadCharacter)(void *user_data);
@@ -62,6 +64,9 @@ typedef struct ClownAssembler_TextOutput
 	ClownAssembler_WriteString write_string;
 } ClownAssembler_TextOutput;
 
+void TextInput_OpenFILE(ClownAssembler_TextInput *callbacks, FILE *file);
+cc_bool TextInput_OpenFile(ClownAssembler_TextInput *callbacks, const char *path);
+void TextInput_CloseFile(const ClownAssembler_TextInput *callbacks);
 char* TextInput_fgets(char *buffer, size_t buffer_size, const ClownAssembler_TextInput *callbacks);
 
 cc_bool BinaryInput_exists(const ClownAssembler_BinaryInput *callbacks);
@@ -69,11 +74,15 @@ int BinaryInput_fgetc(const ClownAssembler_BinaryInput *callbacks);
 void BinaryInput_fseek(const ClownAssembler_BinaryInput *callbacks, size_t position);
 size_t BinaryInput_fread(void *buffer, size_t size, size_t count, const ClownAssembler_BinaryInput *callbacks);
 
+void BinaryOutput_OpenFILE(ClownAssembler_BinaryOutput *callbacks, FILE *file);
+cc_bool BinaryOutput_OpenFile(ClownAssembler_BinaryOutput *callbacks, const char *path);
+void BinaryOutput_CloseFile(const ClownAssembler_BinaryOutput *callbacks);
 cc_bool BinaryOutput_exists(const ClownAssembler_BinaryOutput *callbacks);
 void BinaryOutput_fputc(int character, const ClownAssembler_BinaryOutput *callbacks);
 void BinaryOutput_fseek(const ClownAssembler_BinaryOutput *callbacks, size_t position);
 void BinaryOutput_fwrite(const void *buffer, size_t size, size_t count, const ClownAssembler_BinaryOutput *callbacks);
 
+void TextOutput_OpenFILE(ClownAssembler_TextOutput *callbacks, FILE *file);
 cc_bool TextOutput_exists(const ClownAssembler_TextOutput *callbacks);
 void TextOutput_vfprintf(const ClownAssembler_TextOutput *callbacks, const char *format, va_list args);
 CC_ATTRIBUTE_PRINTF(2, 3) void TextOutput_fprintf(const ClownAssembler_TextOutput *callbacks, const char *format, ...);

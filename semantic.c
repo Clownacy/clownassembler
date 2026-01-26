@@ -269,48 +269,6 @@ static void OutputWriteSegmentByte(SemanticState* const state, const unsigned ch
 	OutputWriteRawByte(state, byte);
 }
 
-/* Default FILE-based IO callbacks */
-
-static char* ReadLine(void* const user_data, char* const buffer, const size_t buffer_size)
-{
-	return fgets(buffer, buffer_size, (FILE*)user_data);
-}
-
-static void Seek(void* const user_data, const size_t position)
-{
-	fseek((FILE*)user_data, position, SEEK_SET);
-}
-
-static int ReadCharacter(void* const user_data)
-{
-	fgetc((FILE*)user_data);
-}
-
-static size_t ReadCharacters(void* const user_data, char* const characters, const size_t total_characters)
-{
-	return fread(characters, 1, total_characters, (FILE*)user_data);
-}
-
-static void WriteCharacter(void* const user_data, const int character)
-{
-	fputc(character, (FILE*)user_data);
-}
-
-static void WriteCharacters(void* const user_data, const char* const characters, const size_t total_characters)
-{
-	fwrite(characters, 1, total_characters, (FILE*)user_data);
-}
-
-static void WriteString(void* const user_data, const char* const string)
-{
-	fputs(string, (FILE*)user_data);
-}
-
-static void PrintFormatted(void* const user_data, const char* const format, va_list args)
-{
-	vfprintf((FILE*)user_data, format, args);
-}
-
 /* Other stuff */
 
 static void ErrorMessageCommon(SemanticState *state)
@@ -491,25 +449,32 @@ static String ComputeUniqueMacroSuffix(const SemanticState* const state)
 	return string;
 }
 
-static FILE* fopen_backslash(const StringView *path, const char *mode)
+static cc_bool ToStandardPath(const StringView *input_path, String *output_path)
 {
-	FILE *file;
-	String path_copy;
+	cc_bool success = cc_false;
 
-	if (!String_CreateCopyView(&path_copy, path))
-	{
-		file = NULL;
-	}
-	else
+	if (String_CreateCopyView(output_path, input_path))
 	{
 		size_t i;
 
-		for (i = 0; i < StringView_Length(path); ++i)
-			if (String_At(&path_copy, i) == '\\')
-				String_At(&path_copy, i) = '/';
+		for (i = 0; i < StringView_Length(input_path); ++i)
+			if (String_At(output_path, i) == '\\')
+				String_At(output_path, i) = '/';
 
+		success = cc_true;
+	}
+
+	return success;
+}
+
+static FILE* fopen_backslash(const StringView *path, const char *mode)
+{
+	FILE *file = NULL;
+	String path_copy;
+
+	if (ToStandardPath(path, &path_copy))
+	{
 		file = fopen(String_CStr(&path_copy), mode);
-
 		String_Destroy(&path_copy);
 	}
 
@@ -4449,40 +4414,47 @@ static void ProcessDs(SemanticState *state, StatementDs *ds)
 
 static void ProcessInclude(SemanticState *state, const StatementInclude *include)
 {
-	FILE* const input_file = fopen_backslash(String_View(&include->path), "r");
+	String standard_path;
 
-	if (input_file == NULL)
+	if (!ToStandardPath(String_View(&include->path), &standard_path))
 	{
-		SemanticError(state, "File '%s' could not be opened.", String_CStr(&include->path));
+		OutOfMemoryError(state);
 	}
 	else
 	{
 		TextInput input_callbacks;
-		Location location;
 
-		const TextInput* const previous_input_callbacks = state->input_callbacks;
+		if (!TextInput_OpenFile(&input_callbacks, String_CStr(&standard_path)))
+		{
+			SemanticError(state, "File '%s' could not be opened.", String_CStr(&include->path));
+		}
+		else
+		{
+			Location location;
 
-		input_callbacks.user_data = input_file;
-		input_callbacks.read_line = ReadLine;
+			const TextInput* const previous_input_callbacks = state->input_callbacks;
 
-		/* Add file path and line number to the location list. */
-		String_CreateCopy(&location.file_path, &include->path);
-		location.line_number = 0;
+			/* Add file path and line number to the location list. */
+			String_CreateCopy(&location.file_path, &include->path);
+			location.line_number = 0;
 
-		location.previous = state->location;
-		state->location = &location;
+			location.previous = state->location;
+			state->location = &location;
 
-		state->input_callbacks = &input_callbacks;
+			state->input_callbacks = &input_callbacks;
 
-		AssembleFile(state);
+			AssembleFile(state);
 
-		state->input_callbacks = previous_input_callbacks;
+			state->input_callbacks = previous_input_callbacks;
 
-		state->location = state->location->previous;
+			state->location = state->location->previous;
 
-		String_Destroy(&location.file_path);
+			String_Destroy(&location.file_path);
 
-		fclose(input_file);
+			TextInput_CloseFile(&input_callbacks);
+		}
+
+		String_Destroy(&standard_path);
 	}
 }
 
@@ -6495,10 +6467,7 @@ cc_bool ClownAssembler_Assemble(
 	}
 	else
 	{
-		temporary_callbacks.user_data = temporary_file;
-		temporary_callbacks.write_character = WriteCharacter;
-		temporary_callbacks.write_characters = WriteCharacters;
-		temporary_callbacks.seek = Seek;
+		BinaryOutput_OpenFILE(&temporary_callbacks, temporary_file);
 
 		if (ClownAssembler_AssembleToObjectFile(input_callbacks, &temporary_callbacks, error_callbacks, listing_callbacks, symbol_callbacks, input_file_path, initial_options, definition_callback, user_data))
 		{
@@ -6531,28 +6500,11 @@ cc_bool ClownAssembler_AssembleFile(
 	ClownAssembler_TextOutput listing_callbacks;
 	ClownAssembler_BinaryOutput symbol_callbacks;
 
-	input_callbacks.user_data = input_file;
-	input_callbacks.read_line = ReadLine;
-
-	output_callbacks.user_data = output_file;
-	output_callbacks.write_character = WriteCharacter;
-	output_callbacks.write_characters = WriteCharacters;
-	output_callbacks.seek = Seek;
-
-	error_callbacks.user_data = error_file;
-	error_callbacks.print_formatted = PrintFormatted;
-	error_callbacks.write_character = WriteCharacter;
-	error_callbacks.write_string = WriteString;
-
-	listing_callbacks.user_data = listing_file;
-	listing_callbacks.print_formatted = PrintFormatted;
-	listing_callbacks.write_character = WriteCharacter;
-	listing_callbacks.write_string = WriteString;
-
-	symbol_callbacks.user_data = symbol_file;
-	symbol_callbacks.write_character = WriteCharacter;
-	symbol_callbacks.write_characters = WriteCharacters;
-	symbol_callbacks.seek = Seek;
+	TextInput_OpenFILE(&input_callbacks, input_file);
+	BinaryOutput_OpenFILE(&output_callbacks, output_file);
+	TextOutput_OpenFILE(&error_callbacks, error_file);
+	TextOutput_OpenFILE(&listing_callbacks, listing_file);
+	BinaryOutput_OpenFILE(&symbol_callbacks, symbol_file);
 
 	return ClownAssembler_Assemble(&input_callbacks, &output_callbacks, &error_callbacks, &listing_callbacks, &symbol_callbacks, input_file_path, settings, definition_callback, user_data);
 }
