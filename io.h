@@ -25,6 +25,8 @@
 
 typedef char* (*ClownAssembler_ReadLine)(void *user_data, char *buffer, size_t buffer_size);
 typedef void (*ClownAssembler_Seek)(void *user_data, size_t position);
+typedef int (*ClownAssembler_ReadCharacter)(void *user_data);
+typedef size_t (*ClownAssembler_ReadCharacters)(void *user_data, char *characters, size_t total_characters);
 typedef void (*ClownAssembler_WriteCharacter)(void *user_data, int character);
 typedef void (*ClownAssembler_WriteCharacters)(void *user_data, const char *characters, size_t total_characters);
 typedef void (*ClownAssembler_WriteString)(void *user_data, const char *string);
@@ -35,6 +37,14 @@ typedef struct ClownAssembler_TextInput
 	const void *user_data;
 	ClownAssembler_ReadLine read_line;
 } ClownAssembler_TextInput;
+
+typedef struct ClownAssembler_BinaryInput
+{
+	const void *user_data;
+	ClownAssembler_ReadCharacter read_character;
+	ClownAssembler_ReadCharacters read_characters;
+	ClownAssembler_Seek seek;
+} ClownAssembler_BinaryInput;
 
 typedef struct ClownAssembler_BinaryOutput
 {
@@ -53,6 +63,11 @@ typedef struct ClownAssembler_TextOutput
 } ClownAssembler_TextOutput;
 
 char* TextInput_fgets(char *buffer, size_t buffer_size, const ClownAssembler_TextInput *callbacks);
+
+cc_bool BinaryInput_exists(const ClownAssembler_BinaryInput *callbacks);
+int BinaryInput_fgetc(const ClownAssembler_BinaryInput *callbacks);
+void BinaryInput_fseek(const ClownAssembler_BinaryInput *callbacks, size_t position);
+size_t BinaryInput_fread(void *buffer, size_t size, size_t count, const ClownAssembler_BinaryInput *callbacks);
 
 cc_bool BinaryOutput_exists(const ClownAssembler_BinaryOutput *callbacks);
 void BinaryOutput_fputc(int character, const ClownAssembler_BinaryOutput *callbacks);

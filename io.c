@@ -18,12 +18,33 @@
 #include "io.h"
 
 typedef ClownAssembler_TextInput TextInput;
+typedef ClownAssembler_BinaryInput BinaryInput;
 typedef ClownAssembler_BinaryOutput BinaryOutput;
 typedef ClownAssembler_TextOutput TextOutput;
 
 char* TextInput_fgets(char* const buffer, const size_t buffer_size, const TextInput* const callbacks)
 {
 	return callbacks->read_line((void*)callbacks->user_data, buffer, buffer_size);
+}
+
+cc_bool BinaryInput_exists(const BinaryInput* const callbacks)
+{
+	return callbacks != NULL && callbacks->user_data != NULL;
+}
+
+int BinaryInput_fgetc(const BinaryInput* const callbacks)
+{
+	return callbacks->read_character((void*)callbacks->user_data);
+}
+
+void BinaryInput_fseek(const BinaryInput* const callbacks, const size_t position)
+{
+	callbacks->seek((void*)callbacks->user_data, position);
+}
+
+size_t BinaryInput_fread(void* const buffer, const size_t size, const size_t count, const BinaryInput* const callbacks)
+{
+	return callbacks->read_characters((void*)callbacks->user_data, (char*)buffer, size * count);
 }
 
 cc_bool BinaryOutput_exists(const BinaryOutput* const callbacks)
