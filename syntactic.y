@@ -694,12 +694,18 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %type<expression_list> expression_list
 %type<identifier_list> identifier_list option_list
 %type<expression> expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 string
+%type<string> local_identifier
 
-%destructor { String_Destroy(&$$); } TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER TOKEN_STRING TOKEN_OPTION
+%destructor { String_Destroy(&$$); } TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER TOKEN_STRING TOKEN_OPTION local_identifier
 %destructor { DestroyOperand(&$$); } operand
 %destructor { DestroyExpressionList(&$$); } expression_list
 %destructor { DestroyIdentifierList(&$$); } identifier_list option_list
 %destructor { DestroyExpression(&$$); } expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 string
+
+/* Hack to resolve ambiguity around size tokens. */
+%precedence TOKEN_LOWER_PRECEDENCE_THAN_SIZE
+%precedence TOKEN_SIZE_BYTE TOKEN_SIZE_SHORT TOKEN_SIZE_WORD TOKEN_SIZE_LONGWORD
+%precedence TOKEN_HIGHER_PRECEDENCE_THAN_SIZE TOKEN_IDENTIFIER
 
 %start statement
 
@@ -1200,7 +1206,7 @@ instruction
 	;
 
 full_opcode
-	: opcode
+	: opcode %prec TOKEN_LOWER_PRECEDENCE_THAN_SIZE
 	{
 		$$ = $1;
 		$$.size = SIZE_UNDEFINED;
@@ -2213,6 +2219,34 @@ expression7
 	}
 	;
 
+local_identifier
+	: TOKEN_LOCAL_IDENTIFIER
+	| TOKEN_SIZE_BYTE
+	{
+		const StringView literal = STRING_VIEW_INITIALISER(".b");
+		if (!String_CreateCopyView(&$$, &literal))
+			YYNOMEM;
+	}
+	| TOKEN_SIZE_SHORT
+	{
+		const StringView literal = STRING_VIEW_INITIALISER(".s");
+		if (!String_CreateCopyView(&$$, &literal))
+			YYNOMEM;
+	}
+	| TOKEN_SIZE_WORD
+	{
+		const StringView literal = STRING_VIEW_INITIALISER(".w");
+		if (!String_CreateCopyView(&$$, &literal))
+			YYNOMEM;
+	}
+	| TOKEN_SIZE_LONGWORD
+	{
+		const StringView literal = STRING_VIEW_INITIALISER(".l");
+		if (!String_CreateCopyView(&$$, &literal))
+			YYNOMEM;
+	}
+	;
+
 expression8
 	: TOKEN_NUMBER
 	{
@@ -2224,12 +2258,12 @@ expression8
 		$$.type = EXPRESSION_IDENTIFIER;
 		$$.shared.string = $1;
 	}
-	| TOKEN_LOCAL_IDENTIFIER
+	| local_identifier
 	{
 		$$.type = EXPRESSION_IDENTIFIER;
 		$$.shared.string = $1;
 	}
-	| TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER
+	| TOKEN_IDENTIFIER local_identifier
 	{
 		const cc_bool success = String_CreateAppend(&$$.shared.string, &$1, &$2);
 		String_Destroy(&$1);

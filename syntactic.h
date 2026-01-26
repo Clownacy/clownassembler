@@ -677,7 +677,9 @@ typedef struct Statement
     TOKEN_DEF = 443,               /* TOKEN_DEF  */
     TOKEN_TYPE = 444,              /* TOKEN_TYPE  */
     TOKEN_FILESIZE = 445,          /* TOKEN_FILESIZE  */
-    TOKEN_OFFSET = 446             /* TOKEN_OFFSET  */
+    TOKEN_OFFSET = 446,            /* TOKEN_OFFSET  */
+    TOKEN_LOWER_PRECEDENCE_THAN_SIZE = 447, /* TOKEN_LOWER_PRECEDENCE_THAN_SIZE  */
+    TOKEN_HIGHER_PRECEDENCE_THAN_SIZE = 448 /* TOKEN_HIGHER_PRECEDENCE_THAN_SIZE  */
   };
   typedef enum m68kasm_tokentype m68kasm_token_kind_t;
 #endif
@@ -699,7 +701,7 @@ union M68KASM_STYPE
 	IdentifierList identifier_list;
 	Expression expression;
 
-#line 703 "syntactic.h"
+#line 705 "syntactic.h"
 
 };
 typedef union M68KASM_STYPE M68KASM_STYPE;
@@ -720,6 +722,6 @@ void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
 
 
-#line 724 "syntactic.h"
+#line 726 "syntactic.h"
 
 #endif /* !YY_M68KASM_SYNTACTIC_H_INCLUDED  */
