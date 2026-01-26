@@ -273,6 +273,9 @@ int main(int argc, char **argv)
 
 					success = ClownAssembler_AssembleFile(input_file, output_file, stderr, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", &settings, DefinitionCallback, NULL);
 
+					if (symbol_file != NULL)
+						fclose(symbol_file);
+
 					if (listing_file != NULL)
 						fclose(listing_file);
 
