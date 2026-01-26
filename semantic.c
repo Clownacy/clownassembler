@@ -281,6 +281,16 @@ static void Seek(void* const user_data, const size_t position)
 	fseek((FILE*)user_data, position, SEEK_SET);
 }
 
+static int ReadCharacter(void* const user_data)
+{
+	fgetc((FILE*)user_data);
+}
+
+static size_t ReadCharacters(void* const user_data, char* const characters, const size_t total_characters)
+{
+	return fread(characters, 1, total_characters, (FILE*)user_data);
+}
+
 static void WriteCharacter(void* const user_data, const int character)
 {
 	fputc(character, (FILE*)user_data);
