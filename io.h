@@ -40,7 +40,7 @@ typedef struct ClownAssembler_TextInput
 	ClownAssembler_ReadLine read_line;
 } ClownAssembler_TextInput;
 
-typedef struct ClownAssembler_BinaryInputOutput
+typedef struct ClownAssembler_BinaryStream
 {
 	const void *user_data;
 	ClownAssembler_ReadCharacter read_character;
@@ -48,7 +48,7 @@ typedef struct ClownAssembler_BinaryInputOutput
 	ClownAssembler_WriteCharacter write_character;
 	ClownAssembler_WriteCharacters write_characters;
 	ClownAssembler_Seek seek;
-} ClownAssembler_BinaryInputOutput;
+} ClownAssembler_BinaryStream;
 
 typedef struct ClownAssembler_TextOutput
 {
@@ -63,18 +63,18 @@ cc_bool TextInput_OpenFile(ClownAssembler_TextInput *callbacks, const char *path
 void TextInput_CloseFile(const ClownAssembler_TextInput *callbacks);
 char* TextInput_fgets(char *buffer, size_t buffer_size, const ClownAssembler_TextInput *callbacks);
 
-void BinaryInputOutput_OpenFILE(ClownAssembler_BinaryInputOutput *callbacks, FILE *file);
-cc_bool BinaryInputOutput_OpenFile(ClownAssembler_BinaryInputOutput *callbacks, const char *path, const char *mode);
-void BinaryInputOutput_CloseFile(const ClownAssembler_BinaryInputOutput *callbacks);
-cc_bool BinaryInputOutput_OpenMemory(ClownAssembler_BinaryInputOutput *callbacks);
-void BinaryInputOutput_CloseMemory(ClownAssembler_BinaryInputOutput *callbacks);
-cc_bool BinaryInputOutput_exists(const ClownAssembler_BinaryInputOutput *callbacks);
-void BinaryInputOutput_fseek(const ClownAssembler_BinaryInputOutput *callbacks, size_t position);
-#define BinaryInputOutput_rewind(CALLBACKS) BinaryInputOutput_fseek(CALLBACKS, 0)
-int BinaryInputOutput_fgetc(const ClownAssembler_BinaryInputOutput *callbacks);
-size_t BinaryInputOutput_fread(void *buffer, size_t size, size_t count, const ClownAssembler_BinaryInputOutput *callbacks);
-void BinaryInputOutput_fputc(int character, const ClownAssembler_BinaryInputOutput *callbacks);
-void BinaryInputOutput_fwrite(const void *buffer, size_t size, size_t count, const ClownAssembler_BinaryInputOutput *callbacks);
+void BinaryStream_OpenFILE(ClownAssembler_BinaryStream *callbacks, FILE *file);
+cc_bool BinaryStream_OpenFile(ClownAssembler_BinaryStream *callbacks, const char *path, const char *mode);
+void BinaryStream_CloseFile(const ClownAssembler_BinaryStream *callbacks);
+cc_bool BinaryStream_OpenMemory(ClownAssembler_BinaryStream *callbacks);
+void BinaryStream_CloseMemory(ClownAssembler_BinaryStream *callbacks);
+cc_bool BinaryStream_exists(const ClownAssembler_BinaryStream *callbacks);
+void BinaryStream_fseek(const ClownAssembler_BinaryStream *callbacks, size_t position);
+#define BinaryStream_rewind(CALLBACKS) BinaryStream_fseek(CALLBACKS, 0)
+int BinaryStream_fgetc(const ClownAssembler_BinaryStream *callbacks);
+size_t BinaryStream_fread(void *buffer, size_t size, size_t count, const ClownAssembler_BinaryStream *callbacks);
+void BinaryStream_fputc(int character, const ClownAssembler_BinaryStream *callbacks);
+void BinaryStream_fwrite(const void *buffer, size_t size, size_t count, const ClownAssembler_BinaryStream *callbacks);
 
 void TextOutput_OpenFILE(ClownAssembler_TextOutput *callbacks, FILE *file);
 cc_bool TextOutput_exists(const ClownAssembler_TextOutput *callbacks);

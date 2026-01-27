@@ -38,7 +38,7 @@
 #include "lexical.h"
 
 typedef ClownAssembler_TextInput TextInput;
-typedef ClownAssembler_BinaryInputOutput BinaryInputOutput;
+typedef ClownAssembler_BinaryStream BinaryStream;
 typedef ClownAssembler_TextOutput TextOutput;
 
 typedef enum SymbolType
@@ -122,7 +122,7 @@ typedef struct SemanticState
 
 	/* Callbacks. */
 	const TextInput *input_callbacks;
-	const BinaryInputOutput *output_callbacks;
+	const BinaryStream *output_callbacks;
 	const TextOutput *listing_callbacks;
 	const TextOutput *error_callbacks;
 
@@ -207,13 +207,13 @@ static const StringView string_assembler_identifier = STRING_VIEW_INITIALISER(CL
 static void OutputWriteRawByte(SemanticState* const state, const unsigned char byte)
 {
 	++state->output_position;
-	BinaryInputOutput_fputc(byte, state->output_callbacks);
+	BinaryStream_fputc(byte, state->output_callbacks);
 }
 
 static void OutputSeek(SemanticState* const state, const size_t position)
 {
 	state->output_position = position;
-	BinaryInputOutput_fseek(state->output_callbacks, position);
+	BinaryStream_fseek(state->output_callbacks, position);
 }
 
 static void TerminatePreviousRecordSegment(SemanticState *state)
@@ -6184,20 +6184,20 @@ static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const 
 		{
 			unsigned int i;
 
-			const BinaryInputOutput* const symbol_callbacks = (const BinaryInputOutput*)parameters[0];
+			const BinaryStream* const symbol_callbacks = (const BinaryStream*)parameters[0];
 
 			/* Output the address of the label. */
 			for (i = 0; i < 4; ++i)
-				BinaryInputOutput_fputc((entry->shared.unsigned_long >> (i * 8)) & 0xFF, symbol_callbacks);
+				BinaryStream_fputc((entry->shared.unsigned_long >> (i * 8)) & 0xFF, symbol_callbacks);
 
 			/* I have no idea what this means. */
-			BinaryInputOutput_fputc(is_local_label ? 6 : 2, symbol_callbacks);
+			BinaryStream_fputc(is_local_label ? 6 : 2, symbol_callbacks);
 
 			/* Output the length of the label. */
-			BinaryInputOutput_fputc(label_length, symbol_callbacks);
+			BinaryStream_fputc(label_length, symbol_callbacks);
 
 			/* Output the label itself. */
-			BinaryInputOutput_fwrite(label, 1, label_length, symbol_callbacks);
+			BinaryStream_fwrite(label, 1, label_length, symbol_callbacks);
 		}
 	}
 
@@ -6237,10 +6237,10 @@ static void AddDefinition(void* const internal, const char* const identifier_buf
 
 static cc_bool ClownAssembler_AssembleToObjectFile(
 	const TextInput* const input_callbacks,
-	const BinaryInputOutput* const output_callbacks,
+	const BinaryStream* const output_callbacks,
 	const TextOutput* const error_callbacks,
 	const TextOutput* const listing_callbacks,
-	const BinaryInputOutput* const symbol_callbacks,
+	const BinaryStream* const symbol_callbacks,
 	const char* const input_file_path,
 	const ClownAssembler_Settings* const initial_options,
 	const ClownAssembler_DefinitionCallback definition_callback,
@@ -6314,7 +6314,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 				/* Write terminating record. */
 				OutputWriteRawByte(&state, 0x00);
-				BinaryInputOutput_fwrite(StringView_Data(&string_assembler_identifier), 1, StringView_Length(&string_assembler_identifier), output_callbacks);
+				BinaryStream_fwrite(StringView_Data(&string_assembler_identifier), 1, StringView_Length(&string_assembler_identifier), output_callbacks);
 
 				/* Destroy the lexer, as we no longer need it. */
 				if (m68kasm_lex_destroy(state.flex_state) != 0)
@@ -6409,7 +6409,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 				}
 
 				/* Produce asm68k symbol file, if requested. */
-				if (BinaryInputOutput_exists(symbol_callbacks))
+				if (BinaryStream_exists(symbol_callbacks))
 				{
 					const void *parameters[2];
 
@@ -6417,14 +6417,14 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 					parameters[1] = &state;
 
 					/* Some kind of header. */
-					BinaryInputOutput_fputc('M', symbol_callbacks);
-					BinaryInputOutput_fputc('N', symbol_callbacks);
-					BinaryInputOutput_fputc('D', symbol_callbacks);
-					BinaryInputOutput_fputc(1, symbol_callbacks);
-					BinaryInputOutput_fputc(0, symbol_callbacks);
-					BinaryInputOutput_fputc(0, symbol_callbacks);
-					BinaryInputOutput_fputc(0, symbol_callbacks);
-					BinaryInputOutput_fputc(0, symbol_callbacks);
+					BinaryStream_fputc('M', symbol_callbacks);
+					BinaryStream_fputc('N', symbol_callbacks);
+					BinaryStream_fputc('D', symbol_callbacks);
+					BinaryStream_fputc(1, symbol_callbacks);
+					BinaryStream_fputc(0, symbol_callbacks);
+					BinaryStream_fputc(0, symbol_callbacks);
+					BinaryStream_fputc(0, symbol_callbacks);
+					BinaryStream_fputc(0, symbol_callbacks);
 
 					Dictionary_Filter(&state.dictionary, DictionaryFilterProduceSymbolFile, parameters);
 				}
@@ -6446,10 +6446,10 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 cc_bool ClownAssembler_Assemble(
 	const TextInput* const input_callbacks,
-	const BinaryInputOutput* const output_callbacks,
+	const BinaryStream* const output_callbacks,
 	const TextOutput* const error_callbacks,
 	const TextOutput* const listing_callbacks,
-	const BinaryInputOutput* const symbol_callbacks,
+	const BinaryStream* const symbol_callbacks,
 	const char* const input_file_path,
 	const ClownAssembler_Settings* const initial_options,
 	const ClownAssembler_DefinitionCallback definition_callback,
@@ -6457,9 +6457,9 @@ cc_bool ClownAssembler_Assemble(
 {
 	cc_bool success = cc_false;
 
-	ClownAssembler_BinaryInputOutput temporary_callbacks;
+	ClownAssembler_BinaryStream temporary_callbacks;
 
-	if (!BinaryInputOutput_OpenMemory(&temporary_callbacks))
+	if (!BinaryStream_OpenMemory(&temporary_callbacks))
 	{
 		TextOutput_fputs("Internal error: Could not open temporary file.\n", error_callbacks);
 	}
@@ -6467,13 +6467,13 @@ cc_bool ClownAssembler_Assemble(
 	{
 		if (ClownAssembler_AssembleToObjectFile(input_callbacks, &temporary_callbacks, error_callbacks, listing_callbacks, symbol_callbacks, input_file_path, initial_options, definition_callback, user_data))
 		{
-			BinaryInputOutput_rewind(&temporary_callbacks);
+			BinaryStream_rewind(&temporary_callbacks);
 
 			if (ConvertObjectFileToFlatBinary(&temporary_callbacks, output_callbacks, error_callbacks))
 				success = cc_true;
 		}
 
-		BinaryInputOutput_CloseMemory(&temporary_callbacks);
+		BinaryStream_CloseMemory(&temporary_callbacks);
 	}
 
 	return success;
@@ -6491,16 +6491,16 @@ cc_bool ClownAssembler_AssembleFile(
 	const void* const user_data)
 {
 	ClownAssembler_TextInput input_callbacks;
-	ClownAssembler_BinaryInputOutput output_callbacks;
+	ClownAssembler_BinaryStream output_callbacks;
 	ClownAssembler_TextOutput error_callbacks;
 	ClownAssembler_TextOutput listing_callbacks;
-	ClownAssembler_BinaryInputOutput symbol_callbacks;
+	ClownAssembler_BinaryStream symbol_callbacks;
 
 	TextInput_OpenFILE(&input_callbacks, input_file);
-	BinaryInputOutput_OpenFILE(&output_callbacks, output_file);
+	BinaryStream_OpenFILE(&output_callbacks, output_file);
 	TextOutput_OpenFILE(&error_callbacks, error_file);
 	TextOutput_OpenFILE(&listing_callbacks, listing_file);
-	BinaryInputOutput_OpenFILE(&symbol_callbacks, symbol_file);
+	BinaryStream_OpenFILE(&symbol_callbacks, symbol_file);
 
 	return ClownAssembler_Assemble(&input_callbacks, &output_callbacks, &error_callbacks, &listing_callbacks, &symbol_callbacks, input_file_path, settings, definition_callback, user_data);
 }

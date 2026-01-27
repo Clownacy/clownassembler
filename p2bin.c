@@ -28,8 +28,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const ClownAssembler_BinaryInputOutput *input_file;
-static const ClownAssembler_BinaryInputOutput *output_file;
+static const ClownAssembler_BinaryStream *input_file;
+static const ClownAssembler_BinaryStream *output_file;
 static const ClownAssembler_TextOutput *error_callbacks;
 static jmp_buf jump_buffer;
 static unsigned char padding_buffer[0x1000];
@@ -38,7 +38,7 @@ static unsigned int padding_value = 0;
 
 static unsigned int ReadByte(void)
 {
-	const int byte = BinaryInputOutput_fgetc(input_file);
+	const int byte = BinaryStream_fgetc(input_file);
 
 	if (byte == EOF)
 	{
@@ -51,7 +51,7 @@ static unsigned int ReadByte(void)
 
 static void ReadBytes(unsigned char* const buffer, const unsigned int total_bytes)
 {
-	if (BinaryInputOutput_fread(buffer, total_bytes, 1, input_file) == 0)
+	if (BinaryStream_fread(buffer, total_bytes, 1, input_file) == 0)
 	{
 		TextOutput_fputs("Error: File ended prematurely.\n", error_callbacks);
 		longjmp(jump_buffer, 1);
@@ -96,14 +96,14 @@ static void ProcessSegment(void)
 		/* Set padding bytes between segments. */
 		const unsigned long padding_length = start_address - maximum_address;
 
-		BinaryInputOutput_fseek(output_file, maximum_address);
+		BinaryStream_fseek(output_file, maximum_address);
 
 		for (i = 0; i < padding_length; i += sizeof(padding_buffer))
-			BinaryInputOutput_fwrite(padding_buffer, CC_MIN(sizeof(padding_buffer), padding_length - i), 1, output_file);
+			BinaryStream_fwrite(padding_buffer, CC_MIN(sizeof(padding_buffer), padding_length - i), 1, output_file);
 	}
 	else
 	{
-		BinaryInputOutput_fseek(output_file, start_address);
+		BinaryStream_fseek(output_file, start_address);
 	}
 
 	/* Copy segment data. We do some batching using a buffer to improve performance. */
@@ -112,7 +112,7 @@ static void ProcessSegment(void)
 		const unsigned long bytes_to_do = CC_MIN(sizeof(copy_buffer), length - i);
 
 		ReadBytes(copy_buffer, bytes_to_do);
-		BinaryInputOutput_fwrite(copy_buffer, bytes_to_do, 1, output_file);
+		BinaryStream_fwrite(copy_buffer, bytes_to_do, 1, output_file);
 	}
 
 	if (end_address > maximum_address)
@@ -175,7 +175,7 @@ static cc_bool ProcessRecords(void)
 	return cc_false;
 }
 
-cc_bool ConvertObjectFileToFlatBinary(const ClownAssembler_BinaryInputOutput* const input_file_parameter, const ClownAssembler_BinaryInputOutput* const output_file_parameter, const ClownAssembler_TextOutput* const error_callbacks_parameter)
+cc_bool ConvertObjectFileToFlatBinary(const ClownAssembler_BinaryStream* const input_file_parameter, const ClownAssembler_BinaryStream* const output_file_parameter, const ClownAssembler_TextOutput* const error_callbacks_parameter)
 {
 	unsigned char magic[2];
 
@@ -186,7 +186,7 @@ cc_bool ConvertObjectFileToFlatBinary(const ClownAssembler_BinaryInputOutput* co
 	error_callbacks = error_callbacks_parameter;
 
 	/* Read and check the header's magic number. */
-	if (BinaryInputOutput_fread(magic, sizeof(magic), 1, input_file) == 0)
+	if (BinaryStream_fread(magic, sizeof(magic), 1, input_file) == 0)
 		TextOutput_fputs("Error: Could not read header magic value.\n", error_callbacks);
 	else if (magic[0] != 0x89 || magic[1] != 0x14)
 		TextOutput_fprintf(error_callbacks, "Error: Invalid header magic value - expected 0x8914 but got 0x%02X%02X.\nInput file is either corrupt or not a valid AS code file.\n", magic[0], magic[1]);
