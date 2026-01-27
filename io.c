@@ -16,6 +16,8 @@
 */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "io.h"
 
@@ -64,6 +66,78 @@ static void PrintFormatted(void* const user_data, const char* const format, va_l
 {
 	vfprintf((FILE*)user_data, format, args);
 }
+
+/* Memory-based IO callbacks */
+
+typedef struct MemoryIO
+{
+	unsigned char *buffer;
+	size_t capacity, size, position;
+} MemoryIO;
+
+static void Memory_Seek(void* const user_data, const size_t position)
+{
+	MemoryIO* const state = (MemoryIO*)user_data;
+
+	state->position = CC_MIN(state->size, position);
+}
+
+static int Memory_ReadCharacter(void* const user_data)
+{
+	MemoryIO* const state = (MemoryIO*)user_data;
+
+	if (state->position >= state->size)
+		return EOF;
+
+	return state->buffer[state->position++];
+}
+
+static size_t Memory_ReadCharacters(void* const user_data, char* const characters, const size_t total_characters)
+{
+	MemoryIO* const state = (MemoryIO*)user_data;
+
+	const size_t characters_to_read = CC_MIN(total_characters, state->size - state->position);
+
+	memcpy(characters, &state->buffer[state->position], characters_to_read);
+	state->position += characters_to_read;
+
+	return characters_to_read;
+}
+
+static void Memory_WriteCharacters(void* const user_data, const char* const characters, const size_t total_characters)
+{
+	MemoryIO* const state = (MemoryIO*)user_data;
+
+	state->size = CC_MAX(state->size, state->position + total_characters);
+
+	if (state->capacity < state->size)
+	{
+		unsigned char* buffer = state->buffer;
+		size_t capacity = state->capacity;
+
+		while (capacity < state->size)
+			capacity <<= 1;
+
+		buffer = (unsigned char*)realloc(buffer, capacity);
+
+		if (buffer == NULL)
+			return;
+
+		state->buffer = buffer;
+		state->capacity = capacity;
+	}
+
+	memcpy(&state->buffer[state->position], characters, total_characters);
+	state->position += total_characters;
+}
+
+static void Memory_WriteCharacter(void* const user_data, const int character)
+{
+	const char byte = character;
+	Memory_WriteCharacters(user_data, &byte, 1);
+}
+
+/* API */
 
 void TextInput_OpenFILE(TextInput* const callbacks, FILE* const file)
 {
@@ -116,6 +190,43 @@ cc_bool BinaryInputOutput_OpenFile(BinaryInputOutput* const callbacks, const cha
 void BinaryInputOutput_CloseFile(const BinaryInputOutput* const callbacks)
 {
 	fclose((FILE*)callbacks->user_data);
+}
+
+cc_bool BinaryInputOutput_OpenMemory(BinaryInputOutput* const callbacks)
+{
+	MemoryIO* const state = (MemoryIO*)malloc(sizeof(MemoryIO));
+
+	if (state != NULL)
+	{
+		state->capacity = 0x100;
+		state->size = 0;
+		state->position = 0;
+		state->buffer = (unsigned char*)malloc(state->capacity);
+
+		if (state != NULL)
+		{
+			callbacks->user_data = state;
+			callbacks->read_character = Memory_ReadCharacter;
+			callbacks->read_characters = Memory_ReadCharacters;
+			callbacks->write_character = Memory_WriteCharacter;
+			callbacks->write_characters = Memory_WriteCharacters;
+			callbacks->seek = Memory_Seek;
+
+			return cc_true;
+		}
+
+		free(state);
+	}
+
+	return cc_false;
+}
+
+void BinaryInputOutput_CloseMemory(BinaryInputOutput* const callbacks)
+{
+	MemoryIO* const state = (MemoryIO*)callbacks->user_data;
+
+	free(state->buffer);
+	free(state);
 }
 
 cc_bool BinaryInputOutput_exists(const BinaryInputOutput* const callbacks)

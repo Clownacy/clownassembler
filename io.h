@@ -66,6 +66,8 @@ char* TextInput_fgets(char *buffer, size_t buffer_size, const ClownAssembler_Tex
 void BinaryInputOutput_OpenFILE(ClownAssembler_BinaryInputOutput *callbacks, FILE *file);
 cc_bool BinaryInputOutput_OpenFile(ClownAssembler_BinaryInputOutput *callbacks, const char *path, const char *mode);
 void BinaryInputOutput_CloseFile(const ClownAssembler_BinaryInputOutput *callbacks);
+cc_bool BinaryInputOutput_OpenMemory(ClownAssembler_BinaryInputOutput *callbacks);
+void BinaryInputOutput_CloseMemory(ClownAssembler_BinaryInputOutput *callbacks);
 cc_bool BinaryInputOutput_exists(const ClownAssembler_BinaryInputOutput *callbacks);
 void BinaryInputOutput_fseek(const ClownAssembler_BinaryInputOutput *callbacks, size_t position);
 #define BinaryInputOutput_rewind(CALLBACKS) BinaryInputOutput_fseek(CALLBACKS, 0)
