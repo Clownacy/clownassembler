@@ -42,7 +42,7 @@ static int ReadCharacter(void* const user_data)
 	return fgetc((FILE*)user_data);
 }
 
-static size_t ReadCharacters(void* const user_data, char* const characters, const size_t total_characters)
+static size_t ReadCharacters(void* const user_data, void* const characters, const size_t total_characters)
 {
 	return fread(characters, 1, total_characters, (FILE*)user_data);
 }
@@ -52,7 +52,7 @@ static void WriteCharacter(void* const user_data, const int character)
 	fputc(character, (FILE*)user_data);
 }
 
-static void WriteCharacters(void* const user_data, const char* const characters, const size_t total_characters)
+static void WriteCharacters(void* const user_data, const void* const characters, const size_t total_characters)
 {
 	fwrite(characters, 1, total_characters, (FILE*)user_data);
 }
@@ -92,7 +92,7 @@ static int Memory_ReadCharacter(void* const user_data)
 	return state->buffer[state->position++];
 }
 
-static size_t Memory_ReadCharacters(void* const user_data, char* const characters, const size_t total_characters)
+static size_t Memory_ReadCharacters(void* const user_data, void* const characters, const size_t total_characters)
 {
 	MemoryIO* const state = (MemoryIO*)user_data;
 
@@ -104,7 +104,7 @@ static size_t Memory_ReadCharacters(void* const user_data, char* const character
 	return characters_to_read;
 }
 
-static void Memory_WriteCharacters(void* const user_data, const char* const characters, const size_t total_characters)
+static void Memory_WriteCharacters(void* const user_data, const void* const characters, const size_t total_characters)
 {
 	MemoryIO* const state = (MemoryIO*)user_data;
 
@@ -133,7 +133,7 @@ static void Memory_WriteCharacters(void* const user_data, const char* const char
 
 static void Memory_WriteCharacter(void* const user_data, const int character)
 {
-	const char byte = character;
+	const unsigned char byte = character;
 	Memory_WriteCharacters(user_data, &byte, 1);
 }
 
