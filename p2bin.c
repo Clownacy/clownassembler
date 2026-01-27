@@ -24,8 +24,6 @@
 
 #include <setjmp.h>
 #include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 static const ClownAssembler_BinaryStream *input_file;
