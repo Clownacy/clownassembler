@@ -6459,16 +6459,12 @@ cc_bool ClownAssembler_Assemble(
 
 	ClownAssembler_BinaryInputOutput temporary_callbacks;
 
-	FILE* const temporary_file = tmpfile();
-
-	if (temporary_file == NULL)
+	if (!BinaryInputOutput_OpenMemory(&temporary_callbacks))
 	{
 		TextOutput_fputs("Internal error: Could not open temporary file.\n", error_callbacks);
 	}
 	else
 	{
-		BinaryInputOutput_OpenFILE(&temporary_callbacks, temporary_file);
-
 		if (ClownAssembler_AssembleToObjectFile(input_callbacks, &temporary_callbacks, error_callbacks, listing_callbacks, symbol_callbacks, input_file_path, initial_options, definition_callback, user_data))
 		{
 			BinaryInputOutput_rewind(&temporary_callbacks);
@@ -6477,7 +6473,7 @@ cc_bool ClownAssembler_Assemble(
 				success = cc_true;
 		}
 
-		fclose(temporary_file);
+		BinaryInputOutput_CloseMemory(&temporary_callbacks);
 	}
 
 	return success;
