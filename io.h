@@ -20,10 +20,9 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #include "clowncommon/clowncommon.h"
-
-struct FILE;
 
 typedef char* (*ClownAssembler_ReadLine)(void *user_data, char *buffer, size_t buffer_size);
 typedef void (*ClownAssembler_Seek)(void *user_data, size_t position);

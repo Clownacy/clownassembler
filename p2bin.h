@@ -18,8 +18,6 @@
 #ifndef P2BIN_H
 #define P2BIN_H
 
-#include <stdio.h>
-
 #include "clowncommon/clowncommon.h"
 
 #include "io.h"
