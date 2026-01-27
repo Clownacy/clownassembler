@@ -40,6 +40,14 @@ typedef struct ClownAssembler_TextInput
 	ClownAssembler_ReadLine read_line;
 } ClownAssembler_TextInput;
 
+typedef struct ClownAssembler_TextOutput
+{
+	const void *user_data;
+	ClownAssembler_PrintFormatted print_formatted;
+	ClownAssembler_WriteCharacter write_character;
+	ClownAssembler_WriteString write_string;
+} ClownAssembler_TextOutput;
+
 typedef struct ClownAssembler_BinaryStream
 {
 	const void *user_data;
@@ -50,18 +58,17 @@ typedef struct ClownAssembler_BinaryStream
 	ClownAssembler_Seek seek;
 } ClownAssembler_BinaryStream;
 
-typedef struct ClownAssembler_TextOutput
-{
-	const void *user_data;
-	ClownAssembler_PrintFormatted print_formatted;
-	ClownAssembler_WriteCharacter write_character;
-	ClownAssembler_WriteString write_string;
-} ClownAssembler_TextOutput;
-
 void TextInput_OpenFILE(ClownAssembler_TextInput *callbacks, FILE *file);
 cc_bool TextInput_OpenFile(ClownAssembler_TextInput *callbacks, const char *path);
 void TextInput_CloseFile(const ClownAssembler_TextInput *callbacks);
 char* TextInput_fgets(char *buffer, size_t buffer_size, const ClownAssembler_TextInput *callbacks);
+
+void TextOutput_OpenFILE(ClownAssembler_TextOutput *callbacks, FILE *file);
+cc_bool TextOutput_exists(const ClownAssembler_TextOutput *callbacks);
+void TextOutput_vfprintf(const ClownAssembler_TextOutput *callbacks, const char *format, va_list args);
+CC_ATTRIBUTE_PRINTF(2, 3) void TextOutput_fprintf(const ClownAssembler_TextOutput *callbacks, const char *format, ...);
+void TextOutput_fputs(const char *string, const ClownAssembler_TextOutput *callbacks);
+void TextOutput_fputc(int character, const ClownAssembler_TextOutput *callbacks);
 
 void BinaryStream_OpenFILE(ClownAssembler_BinaryStream *callbacks, FILE *file);
 cc_bool BinaryStream_OpenFile(ClownAssembler_BinaryStream *callbacks, const char *path, const char *mode);
@@ -75,12 +82,5 @@ int BinaryStream_fgetc(const ClownAssembler_BinaryStream *callbacks);
 size_t BinaryStream_fread(void *buffer, size_t size, size_t count, const ClownAssembler_BinaryStream *callbacks);
 void BinaryStream_fputc(int character, const ClownAssembler_BinaryStream *callbacks);
 void BinaryStream_fwrite(const void *buffer, size_t size, size_t count, const ClownAssembler_BinaryStream *callbacks);
-
-void TextOutput_OpenFILE(ClownAssembler_TextOutput *callbacks, FILE *file);
-cc_bool TextOutput_exists(const ClownAssembler_TextOutput *callbacks);
-void TextOutput_vfprintf(const ClownAssembler_TextOutput *callbacks, const char *format, va_list args);
-CC_ATTRIBUTE_PRINTF(2, 3) void TextOutput_fprintf(const ClownAssembler_TextOutput *callbacks, const char *format, ...);
-void TextOutput_fputs(const char *string, const ClownAssembler_TextOutput *callbacks);
-void TextOutput_fputc(int character, const ClownAssembler_TextOutput *callbacks);
 
 #endif /* IO_H */

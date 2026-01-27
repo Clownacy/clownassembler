@@ -22,47 +22,47 @@
 #include "io.h"
 
 typedef ClownAssembler_TextInput TextInput;
-typedef ClownAssembler_BinaryStream BinaryStream;
 typedef ClownAssembler_TextOutput TextOutput;
+typedef ClownAssembler_BinaryStream BinaryStream;
 
 /* Default FILE-based IO callbacks */
 
-static char* ReadLine(void* const user_data, char* const buffer, const size_t buffer_size)
+static char* File_ReadLine(void* const user_data, char* const buffer, const size_t buffer_size)
 {
 	return fgets(buffer, buffer_size, (FILE*)user_data);
 }
 
-static void Seek(void* const user_data, const size_t position)
+static void File_Seek(void* const user_data, const size_t position)
 {
 	fseek((FILE*)user_data, position, SEEK_SET);
 }
 
-static int ReadCharacter(void* const user_data)
+static int File_ReadCharacter(void* const user_data)
 {
 	return fgetc((FILE*)user_data);
 }
 
-static size_t ReadCharacters(void* const user_data, void* const characters, const size_t total_characters)
+static size_t File_ReadCharacters(void* const user_data, void* const characters, const size_t total_characters)
 {
 	return fread(characters, 1, total_characters, (FILE*)user_data);
 }
 
-static void WriteCharacter(void* const user_data, const int character)
+static void File_WriteCharacter(void* const user_data, const int character)
 {
 	fputc(character, (FILE*)user_data);
 }
 
-static void WriteCharacters(void* const user_data, const void* const characters, const size_t total_characters)
+static void File_WriteCharacters(void* const user_data, const void* const characters, const size_t total_characters)
 {
 	fwrite(characters, 1, total_characters, (FILE*)user_data);
 }
 
-static void WriteString(void* const user_data, const char* const string)
+static void File_WriteString(void* const user_data, const char* const string)
 {
 	fputs(string, (FILE*)user_data);
 }
 
-static void PrintFormatted(void* const user_data, const char* const format, va_list args)
+static void File_PrintFormatted(void* const user_data, const char* const format, va_list args)
 {
 	vfprintf((FILE*)user_data, format, args);
 }
@@ -137,12 +137,12 @@ static void Memory_WriteCharacter(void* const user_data, const int character)
 	Memory_WriteCharacters(user_data, &byte, 1);
 }
 
-/* API */
+/* TextInput */
 
 void TextInput_OpenFILE(TextInput* const callbacks, FILE* const file)
 {
 	callbacks->user_data = file;
-	callbacks->read_line = ReadLine;
+	callbacks->read_line = File_ReadLine;
 }
 
 cc_bool TextInput_OpenFile(TextInput* const callbacks, const char* const path)
@@ -166,14 +166,60 @@ char* TextInput_fgets(char* const buffer, const size_t buffer_size, const TextIn
 	return callbacks->read_line((void*)callbacks->user_data, buffer, buffer_size);
 }
 
+/* TextOutput */
+
+void TextOutput_OpenFILE(TextOutput* const callbacks, FILE *file)
+{
+	callbacks->user_data = file;
+	callbacks->print_formatted = File_PrintFormatted;
+	callbacks->write_character = File_WriteCharacter;
+	callbacks->write_string = File_WriteString;
+}
+
+cc_bool TextOutput_exists(const TextOutput* const callbacks)
+{
+	return callbacks != NULL && callbacks->user_data != NULL;
+}
+
+void TextOutput_vfprintf(const TextOutput* const callbacks, const char* const format, va_list args)
+{
+	if (TextOutput_exists(callbacks))
+		callbacks->print_formatted((void*)callbacks->user_data, format, args);
+}
+
+void TextOutput_fprintf(const TextOutput* const callbacks, const char* const format, ...)
+{
+	if (TextOutput_exists(callbacks))
+	{
+		va_list args;
+		va_start(args, format);
+		TextOutput_vfprintf(callbacks, format, args);
+		va_end(args);
+	}
+}
+
+void TextOutput_fputs(const char* const string, const TextOutput* const callbacks)
+{
+	if (TextOutput_exists(callbacks))
+		callbacks->write_string((void*)callbacks->user_data, string);
+}
+
+void TextOutput_fputc(const int character, const TextOutput* const callbacks)
+{
+	if (TextOutput_exists(callbacks))
+		callbacks->write_character((void*)callbacks->user_data, character);
+}
+
+/* BinaryStream */
+
 void BinaryStream_OpenFILE(BinaryStream* const callbacks, FILE *file)
 {
 	callbacks->user_data = file;
-	callbacks->read_character = ReadCharacter;
-	callbacks->read_characters = ReadCharacters;
-	callbacks->write_character = WriteCharacter;
-	callbacks->write_characters = WriteCharacters;
-	callbacks->seek = Seek;
+	callbacks->read_character = File_ReadCharacter;
+	callbacks->read_characters = File_ReadCharacters;
+	callbacks->write_character = File_WriteCharacter;
+	callbacks->write_characters = File_WriteCharacters;
+	callbacks->seek = File_Seek;
 }
 
 cc_bool BinaryStream_OpenFile(BinaryStream* const callbacks, const char* const path, const char* const mode)
@@ -257,46 +303,4 @@ void BinaryStream_fputc(const int character, const BinaryStream* const callbacks
 void BinaryStream_fwrite(const void* const buffer, const size_t size, const size_t count, const BinaryStream* const callbacks)
 {
 	callbacks->write_characters((void*)callbacks->user_data, (const char*)buffer, size * count);
-}
-
-void TextOutput_OpenFILE(TextOutput* const callbacks, FILE *file)
-{
-	callbacks->user_data = file;
-	callbacks->print_formatted = PrintFormatted;
-	callbacks->write_character = WriteCharacter;
-	callbacks->write_string = WriteString;
-}
-
-cc_bool TextOutput_exists(const TextOutput* const callbacks)
-{
-	return callbacks != NULL && callbacks->user_data != NULL;
-}
-
-void TextOutput_vfprintf(const TextOutput* const callbacks, const char* const format, va_list args)
-{
-	if (TextOutput_exists(callbacks))
-		callbacks->print_formatted((void*)callbacks->user_data, format, args);
-}
-
-void TextOutput_fprintf(const TextOutput* const callbacks, const char* const format, ...)
-{
-	if (TextOutput_exists(callbacks))
-	{
-		va_list args;
-		va_start(args, format);
-		TextOutput_vfprintf(callbacks, format, args);
-		va_end(args);
-	}
-}
-
-void TextOutput_fputs(const char* const string, const TextOutput* const callbacks)
-{
-	if (TextOutput_exists(callbacks))
-		callbacks->write_string((void*)callbacks->user_data, string);
-}
-
-void TextOutput_fputc(const int character, const TextOutput* const callbacks)
-{
-	if (TextOutput_exists(callbacks))
-		callbacks->write_character((void*)callbacks->user_data, character);
 }
