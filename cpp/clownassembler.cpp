@@ -48,10 +48,10 @@ static void WriteCharacter(void* const user_data, const int character)
 	data.stream->put(character);
 }
 
-static void WriteCharacters(void* const user_data, const char* const characters, const size_t total_characters)
+static void WriteCharacters(void* const user_data, const void* const characters, const size_t total_characters)
 {
 	const auto &data = *static_cast<OutputData*>(user_data);
-	data.stream->write(characters, total_characters);
+	data.stream->write(static_cast<const char*>(characters), total_characters);
 }
 
 static void Seek(void* const user_data, const size_t position)
@@ -95,7 +95,7 @@ bool ClownAssembler::Assemble(
 {
 	const ClownAssembler_TextInput input_callbacks = {&input, ReadLine};
 	const OutputData output_data = {&output, output.tellp()};
-	const ClownAssembler_BinaryOutput output_callbacks = {&output_data, WriteCharacter, WriteCharacters, Seek};
+	const ClownAssembler_BinaryStream output_callbacks = {&output_data, nullptr, nullptr, WriteCharacter, WriteCharacters, Seek};
 
 	OutputData error_data;
 	ClownAssembler_TextOutput error_callbacks = {nullptr, PrintFormatted, WriteCharacter, WriteString};
@@ -114,7 +114,7 @@ bool ClownAssembler::Assemble(
 	}
 
 	OutputData symbol_data;
-	ClownAssembler_BinaryOutput symbol_callbacks = {nullptr, WriteCharacter, WriteCharacters, Seek};
+	ClownAssembler_BinaryStream symbol_callbacks = {nullptr, nullptr, nullptr, WriteCharacter, WriteCharacters, Seek};
 	if (symbols != nullptr)
 	{
 		symbol_data = {symbols, symbols->tellp()};
