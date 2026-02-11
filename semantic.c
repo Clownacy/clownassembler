@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include "clowncommon/clowncommon.h"
 
@@ -822,11 +823,23 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 						break;
 
 					case EXPRESSION_DIVIDE:
-						*value = left_value / right_value;
+						if (right_value == 0)
+						{
+							SemanticError(state, "Cannot divide by zero.");
+							success = cc_false;
+						}
+						else
+							*value = left_value / right_value;
 						break;
 
 					case EXPRESSION_MODULO:
-						*value = left_value % right_value;
+						if (right_value == 0)
+						{
+							SemanticError(state, "Cannot modulo by zero.");
+							success = cc_false;
+						}
+						else
+							*value = left_value % right_value;
 						break;
 
 					case EXPRESSION_LOGICAL_OR:
@@ -873,12 +886,19 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 						*value = left_value >= right_value ? -1 : 0;
 						break;
 
+					/*
+					 * Not sure if we 100% want this behaviour:
+					 * - asm68k does 32-bit arithmetic, so it masks the shift amount to 0-31 (though whether this is intentional or just a side-effect of using x86 shift instructions that do this is unknown).
+					 * - ...but if `unsigned long` is 64-bit, the best we can do to match that is this, since otherwise the behavior would be comically unintuitive.
+					 *
+					 * (note: this also prevents undefined behaviour in C from shifting by an amount greater than or equal to the width of the type).
+					 */
 					case EXPRESSION_LEFT_SHIFT:
-						*value = left_value << right_value;
+						*value = left_value << (right_value % (CHAR_BIT * sizeof(*value)));
 						break;
 
 					case EXPRESSION_RIGHT_SHIFT:
-						*value = left_value >> right_value;
+						*value = left_value >> (right_value % (CHAR_BIT * sizeof(*value)));
 						break;
 				}
 
@@ -4271,6 +4291,19 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 				dictionary_entry->type = SYMBOL_STRING_CONSTANT;
 				Substitute_PushSubstitute(&state->macro.substitutions, parameter, String_View(&dictionary_entry->shared.string));
 			}
+			else if (dictionary_entry->type != SYMBOL_STRING_CONSTANT)
+			{
+				/*
+				 * TODO this is not a common case, but it can occur if e.g. someone redefines a parameter name as a normal symbol in the macro body.
+				 * See tests/previously-crashing/redefine-macro-parameter-in-macro-body.asm for an example of this.
+				 * That'll already have caused an error to be emitted, so this error might be somewhat cascading,
+				 * but I'm not certain it's not possible to hit this in other ways,
+				 * and in any case if we get here I'm pretty sure something has gone wrong, so we should emit an error in case one hasn't already been emitted.
+				 * It might also be feasible to handle this without forcing the symbol to become a string constant, but right now this seems like the simplest solution to prevent a crash
+				 */
+				SemanticError(state, "Attempted to redefined symbol '%.*s' as a string constant.", (int)StringView_Length(parameter), StringView_Data(parameter));
+				dictionary_entry->type = SYMBOL_STRING_CONSTANT;
+			}
 			else
 			{
 				String_Destroy(&dictionary_entry->shared.string);
@@ -5287,9 +5320,14 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			{
 				SemanticError(state, "SHIFT used outside of macro.");
 			}
-			else
+			else if (state->macro.total_arguments == 0)
 			{
 				/* TODO: What if there are already 0 arguments? */
+				/* This prevents crashing for now but perhaps it could be handled differently. */
+				SemanticError(state, "SHIFT used but there are no macro arguments to shift.");
+			}
+			else
+			{
 				--state->macro.total_arguments;
 				String_Destroy(&state->macro.argument_list[0]);
 				memmove(state->macro.argument_list, state->macro.argument_list + 1, sizeof(*state->macro.argument_list) * state->macro.total_arguments);
@@ -5906,7 +5944,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 	if (String_At(state->source_line, 0) == '*')
 	{
 		/* This whole line is a comment. */
-		return;
+		goto cleanup;
 	}
 
 	source_line_pointer = String_CStr(state->source_line);
@@ -6115,12 +6153,12 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 		}
 	}
 
+cleanup:
 	if (write_line_to_listing_file)
 		ListSourceLine(state);
 
 	if (state->source_line == &source_line)
 		String_Destroy(&source_line);
-
 	state->source_line = old_source_line;
 }
 
@@ -6440,6 +6478,8 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	String_Destroy(&state.last_global_label);
 
 	Options_Deinitialise(&state.options);
+
+	String_Destroy(&location.file_path);
 
 	return state.success;
 }
