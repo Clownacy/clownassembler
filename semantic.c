@@ -115,6 +115,7 @@ typedef struct SemanticState_Macro
 	size_t total_arguments, total_arguments_at_start;
 	unsigned int starting_if_level;
 	cc_bool active;
+	cc_u16l depth;
 } SemanticState_Macro;
 
 typedef struct SemanticState
@@ -5732,13 +5733,18 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 
 	const SemanticState_Macro previous_macro_state = state->macro;
 
+	if (state->macro.depth >= 2000) {
+		SemanticError(state, "Macro expansion depth exceeded.");
+		goto out;
+	}
+
 	state->macro.metadata = macro;
 	state->macro.dictionary = (Dictionary_State*)SharedMemory_Allocate(sizeof(Dictionary_State));
 
 	if (state->macro.dictionary == NULL)
 	{
 		OutOfMemoryError(state);
-		return;
+		goto out;
 	}
 
 	/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
@@ -5750,6 +5756,7 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 	state->macro.total_arguments_at_start = 0;
 	state->macro.starting_if_level = state->current_if_level;
 	state->macro.active = cc_true;
+	++state->macro.depth;
 
 	++state->current_macro_invocation;
 
@@ -5951,6 +5958,7 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 		free(state->macro.argument_list);
 	}
 
+out:
 	state->macro = previous_macro_state;
 }
 
@@ -5964,6 +5972,10 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 	StringView directive_and_operands, directive;
 
 	const String* const old_source_line = state->source_line;
+
+	/* Assert a few preconditions to ensure we're in a non-insane state */
+	assert(state->mode == MODE_NORMAL || state->mode == MODE_REPT || state->mode == MODE_WHILE || state->mode == MODE_MACRO);
+	assert(CurrentlyExpandingMacro(state) == (state->macro.depth > 0));
 
 	if (write_line_to_listing_file)
 	{

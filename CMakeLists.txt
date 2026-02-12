@@ -156,3 +156,5 @@ add_test(NAME crash_purge_macro COMMAND clownassembler -i "${CMAKE_CURRENT_SOURC
 set_property(TEST crash_purge_macro PROPERTY WILL_FAIL true)
 add_test(NAME crash_redefine_macro_as_another_macro_while_it_is_being_expanded COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-crashing/redefine-macro-as-another-macro-while-it-is-being-expanded.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
 set_property(TEST crash_redefine_macro_as_another_macro_while_it_is_being_expanded PROPERTY WILL_FAIL true)
+add_test(NAME crash_macro_infinite_recursion COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-crashing/macro-infinite-recursion.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
+set_property(TEST crash_macro_infinite_recursion PROPERTY WILL_FAIL true)
