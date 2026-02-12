@@ -1186,7 +1186,7 @@ static void TerminateRept(SemanticState *state)
 
 }
 
-static void PurgeMacro(SemanticState* const state, const StringView* const identifier, const cc_bool allow_undefined)
+static void PurgeMacro(SemanticState* const state, const StringView* identifier, const cc_bool allow_undefined)
 {
 	Dictionary_State *dictionary;
 	Dictionary_Entry* const entry = LookupSymbol(state, identifier, &dictionary);
@@ -1202,8 +1202,16 @@ static void PurgeMacro(SemanticState* const state, const StringView* const ident
 	}
 	else
 	{
+		String expanded_identifier;
+		/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
+		ExpandIdentifier(state, &expanded_identifier, identifier);
+		if (!String_Empty(&expanded_identifier))
+			identifier = String_View(&expanded_identifier);
+
 		DestroySymbol(entry);
 		Dictionary_Remove(dictionary, identifier);
+
+		String_Destroy(&expanded_identifier);
 	}
 }
 

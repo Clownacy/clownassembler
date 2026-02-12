@@ -150,3 +150,7 @@ add_test(NAME leak_label_definition_followed_by_redefinition_as_macro_with_code_
 set_property(TEST leak_label_definition_followed_by_redefinition_as_macro_with_code_line PROPERTY WILL_FAIL true)
 add_test(NAME crash_redefine_macro_in_macro_body COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-crashing/redefine-macro-in-macro-body.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
 set_property(TEST crash_redefine_macro_in_macro_body PROPERTY WILL_FAIL true)
+add_test(NAME crash_define_global_label_then_redefine_at_sign_as_macro_twice COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-crashing/define-global-label-then-redefine-at-sign-as-macro-twice.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
+set_property(TEST crash_define_global_label_then_redefine_at_sign_as_macro_twice PROPERTY WILL_FAIL true)
+add_test(NAME crash_purge_macro COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-crashing/purge-macro.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
+set_property(TEST crash_purge_macro PROPERTY WILL_FAIL true)
