@@ -752,18 +752,42 @@ static void FreeSourceLineList(SourceLineListNode *source_line_list_head)
 	}
 }
 
-static void DestroyMacro(Macro *macro)
+static void DestroySymbol(Dictionary_Entry *dictionary_entry)
 {
-	IdentifierList destroyed_list = {0};
+	switch (dictionary_entry->type)
+	{
+		case -1:
+		case SYMBOL_LABEL:
+		case SYMBOL_CONSTANT:
+		case SYMBOL_VARIABLE:
+		case SYMBOL_SPECIAL:
+			/* Nothing to free. */
+			break;
 
-	/* We make up a sort of "fake list" for the purposes of calling DestroyIdentifierList, since it doesn't take an IdentifierListNode directly. */
-	destroyed_list.head = macro->parameter_names;
-	DestroyIdentifierList(&destroyed_list);
+		case SYMBOL_STRING_CONSTANT:
+			String_Destroy(&dictionary_entry->shared.string);
+			break;
 
-	FreeSourceLineList(macro->source_line_list_head);
-	String_Destroy(&macro->name);
+		case SYMBOL_MACRO:
+		{
+			Macro *macro = (Macro*)dictionary_entry->shared.pointer;
+			IdentifierList destroyed_list = {0};
 
-	free(macro);
+			/* We make up a sort of "fake list" for the purposes of calling DestroyIdentifierList, since it doesn't take an IdentifierListNode directly. */
+			destroyed_list.head = macro->parameter_names;
+			DestroyIdentifierList(&destroyed_list);
+
+			FreeSourceLineList(macro->source_line_list_head);
+			String_Destroy(&macro->name);
+
+			free(macro);
+			break;
+		}
+
+		default:
+			assert(cc_false);
+			break;
+	}
 }
 
 /* Iterates over the guts of the dictionary to delete all of the node innards before calling Dictionary_Deinit */
@@ -779,10 +803,7 @@ static void SymbolDictionary_Deinit(Dictionary_State *state)
 
 		while (node != NULL)
 		{
-			if (node->entry.type == SYMBOL_STRING_CONSTANT)
-				String_Destroy(&node->entry.shared.string);
-			if (node->entry.type == SYMBOL_MACRO)
-				DestroyMacro((Macro*)node->entry.shared.pointer);
+			DestroySymbol(&node->entry);
 			node = node->next;
 		}
 	}
@@ -1188,7 +1209,7 @@ static void PurgeMacro(SemanticState* const state, const StringView* const ident
 	}
 	else
 	{
-		DestroyMacro((Macro*)entry->shared.pointer);
+		DestroySymbol(entry);
 		Dictionary_Remove(dictionary, identifier);
 	}
 }
@@ -1430,8 +1451,10 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const StringView *l
 
 			if (symbol != NULL)
 			{
-				if (symbol->type != -1 && (SymbolType)symbol->type != type)
+				if (symbol->type != -1 && (SymbolType)symbol->type != type) {
+					DestroySymbol(symbol);
 					SemanticError(state, "Symbol redefined as a different type.");
+				}
 				else if (type == SYMBOL_CONSTANT && symbol->type == SYMBOL_CONSTANT && symbol->shared.unsigned_long != value)
 					SemanticError(state, "Constant cannot be redefined to a different value.");
 			}
