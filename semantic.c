@@ -6243,35 +6243,36 @@ static void AssembleFile(SemanticState *state)
 		AssembleLine(state, &state->line_buffer, cc_true);
 
 	/* If we're not in normal mode when a file ends, then something is wrong. */
-	switch (state->mode)
+	while (state->mode != MODE_NORMAL)
 	{
-		case MODE_NORMAL:
-			/* All okay. */
-			break;
+		switch (state->mode)
+		{
+			case MODE_NORMAL:
+				/* We can't reach this since we just checked for it */
+				assert(cc_false);
+				break;
 
-		case MODE_REPT:
-			/* Terminate the REPT to hopefully avoid future complications. */
-			/* Do this in a loop in case there's nested unterminated REPTs */
-			while (state->mode == MODE_REPT) {
+			case MODE_REPT:
 				SemanticError(state, "REPT statement beginning at line %lu is missing its ENDR.", state->shared.rept.line_number);
+
+				/* Terminate the REPT to hopefully avoid future complications. */
 				TerminateRept(state);
-			}
+				break;
 
-			break;
+			case MODE_MACRO:
+				SemanticError(state, "MACRO statement beginning at line %lu is missing its ENDM.", state->shared.macro.line_number);
 
-		case MODE_MACRO:
-			/* Terminate the macro to hopefully avoid future complications. */
-			TerminateMacro(state);
+				/* Terminate the macro to hopefully avoid future complications. */
+				TerminateMacro(state);
+				break;
 
-			SemanticError(state, "MACRO statement beginning at line %lu is missing its ENDM.", state->shared.macro.line_number);
-			break;
+			case MODE_WHILE:
+				SemanticError(state, "WHILE statement beginning at line %lu is missing its ENDW.", state->shared.while_statement.line_number);
 
-		case MODE_WHILE:
-			/* Terminate the while-statement to hopefully avoid future complications. */
-			TerminateWhile(state);
-
-			SemanticError(state, "WHILE statement beginning at line %lu is missing its ENDW.", state->shared.while_statement.line_number);
-			break;
+				/* Terminate the while-statement to hopefully avoid future complications. */
+				TerminateWhile(state);
+				break;
+		}
 	}
 }
 
