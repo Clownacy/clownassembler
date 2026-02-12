@@ -148,3 +148,5 @@ add_test(NAME leak_label_definition_followed_by_redefinition_as_macro_with_param
 set_property(TEST leak_label_definition_followed_by_redefinition_as_macro_with_parameter PROPERTY WILL_FAIL true)
 add_test(NAME leak_label_definition_followed_by_redefinition_as_macro_with_code_line COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-leaking/label-definition-followed-by-redefinition-as-macro-with-code-line.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
 set_property(TEST leak_label_definition_followed_by_redefinition_as_macro_with_code_line PROPERTY WILL_FAIL true)
+add_test(NAME crash_redefine_macro_in_macro_body COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-crashing/redefine-macro-in-macro-body.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
+set_property(TEST crash_redefine_macro_in_macro_body PROPERTY WILL_FAIL true)

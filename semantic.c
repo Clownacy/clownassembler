@@ -791,22 +791,15 @@ static void DestroySymbol(Dictionary_Entry *dictionary_entry)
 }
 
 /* Iterates over the guts of the dictionary to delete all of the node innards before calling Dictionary_Deinit */
-/* Basically a hack until the "destructor" method put as a TODO in dictionary.h is implemented, basically */
+/* Basically a hack until the "destructor" method put as a TODO in dictionary.h is implemented, pretty much */
 static void SymbolDictionary_Deinit(Dictionary_State *state)
 {
 	Dictionary_Bucket *bucket;
+	Dictionary_Node *node;
 
 	for (bucket = state->hash_table; bucket < state->hash_table + TOTAL_HASH_TABLE_ENTRIES; ++bucket)
-	{
-		Dictionary_Node *node;
-		node = bucket->linked_list;
-
-		while (node != NULL)
-		{
+		for (node = bucket->linked_list; node != NULL; node = node->next)
 			DestroySymbol(&node->entry);
-			node = node->next;
-		}
-	}
 
 	Dictionary_Deinit(state);
 }
@@ -1463,8 +1456,8 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const StringView *l
 			if (symbol != NULL)
 			{
 				if (symbol->type != -1 && (SymbolType)symbol->type != type) {
-					DestroySymbol(symbol);
-					SemanticError(state, "Symbol redefined as a different type.");
+					symbol = NULL; /* We can't do the assignment in this case, actually doing redefinitions like this would wreck havoc - e.g. redefining a macro while it is being executed would force us to either leak it or have everything implode in a use-after-free mess */
+					SemanticError(state, "Attempted to redefine symbol as a different type.");
 				}
 				else if (type == SYMBOL_CONSTANT && symbol->type == SYMBOL_CONSTANT && symbol->shared.unsigned_long != value)
 					SemanticError(state, "Constant cannot be redefined to a different value.");
