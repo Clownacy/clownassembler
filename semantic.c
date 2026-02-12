@@ -745,10 +745,40 @@ static void FreeSourceLineList(SourceLineListNode *source_line_list_head)
 	{
 		SourceLineListNode *next_source_line_list_node = source_line_list_node->next;
 
+		String_Destroy(&source_line_list_node->source_line_buffer);
 		free(source_line_list_node);
 
 		source_line_list_node = next_source_line_list_node;
 	}
+}
+
+/* Iterates over the guts of the dictionary to delete all of the node innards before calling Dictionary_Deinit */
+/* Basically a hack until the "destructor" method put as a TODO in dictionary.h is implemented, basically */
+static void SymbolDictionary_Deinit(Dictionary_State *state)
+{
+	Dictionary_Bucket *bucket;
+
+	for (bucket = state->hash_table; bucket < state->hash_table + TOTAL_HASH_TABLE_ENTRIES; ++bucket)
+	{
+		Dictionary_Node *node;
+		node = bucket->linked_list;
+
+		while (node != NULL)
+		{
+			if (node->entry.type == SYMBOL_STRING_CONSTANT)
+				String_Destroy(&node->entry.shared.string);
+			if (node->entry.type == SYMBOL_MACRO)
+			{
+				Macro *macro = (Macro*)node->entry.shared.pointer;
+				FreeSourceLineList(macro->source_line_list_head);
+				String_Destroy(&macro->name);
+				free(macro);
+			}
+			node = node->next;
+		}
+	}
+
+	Dictionary_Deinit(state);
 }
 
 static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, cc_bool fold)
@@ -5880,10 +5910,11 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 	}
 
 	String_Destroy(&closure.symbol_value_string);
+	String_Destroy(&closure.unique_suffix);
 
 	Substitute_Deinitialise(&state->macro.substitutions);
 	if (SharedMemory_WillBeDestroyed(state->macro.dictionary))
-		Dictionary_Deinit(state->macro.dictionary);
+		SymbolDictionary_Deinit(state->macro.dictionary);
 	SharedMemory_Free(state->macro.dictionary);
 
 	/* Destroy argument list. */
@@ -5891,7 +5922,7 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 		size_t i;
 
 		for (i = 0; i < state->macro.total_arguments; ++i)
-			String_Destroy(&state->macro.argument_list[0]);
+			String_Destroy(&state->macro.argument_list[i]);
 
 		free(state->macro.argument_list);
 	}
@@ -6409,7 +6440,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 							/* We're done with this statement: delete it. */
 							DestroyStatement(&fix_up->statement);
 							if (SharedMemory_WillBeDestroyed(fix_up->macro_dictionary))
-								Dictionary_Deinit(fix_up->macro_dictionary);
+								SymbolDictionary_Deinit(fix_up->macro_dictionary);
 							SharedMemory_Free(fix_up->macro_dictionary);
 							String_Destroy(&fix_up->last_global_label);
 							String_Destroy(&fix_up->source_line);
@@ -6425,6 +6456,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 								free(location);
 								location = previous_location;
 							}
+							String_Destroy(&fix_up->location.file_path);
 
 							free(fix_up);
 
@@ -6469,7 +6501,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 			}
 		}
 
-		Dictionary_Deinit(&state.dictionary);
+		SymbolDictionary_Deinit(&state.dictionary);
 	}
 
 	StringStack_Deinitialise(&state.string_stack);
