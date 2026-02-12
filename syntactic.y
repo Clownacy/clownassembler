@@ -941,6 +941,7 @@ statement
 		statement->type = STATEMENT_TYPE_INFORM;
 		statement->shared.inform.severity = $2;
 		statement->shared.inform.message = $4;
+		DestroyExpressionList(&$6);
 	}
 	| TOKEN_DIRECTIVE_FAIL
 	{
