@@ -456,6 +456,7 @@ typedef struct Statement
 
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
+void DestroyIdentifierList(IdentifierList *list);
 
 }
 
@@ -473,7 +474,6 @@ void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
 static cc_bool DoExpressionTriple(Expression *expression, ExpressionType type, Expression *left_expression, Expression *middle_expression, Expression *right_expression);
 static cc_bool DoExpression(Expression *expression, ExpressionType type, Expression *left_expression, Expression *right_expression);
-static void DestroyIdentifierList(IdentifierList *list);
 static void DestroyExpressionList(ExpressionList *list);
 static void DestroyOperand(Operand *operand);
 static void DestroyStatementInstruction(StatementInstruction *instruction);
@@ -2449,7 +2449,7 @@ void DestroyExpression(Expression *expression)
 	}
 }
 
-static void DestroyIdentifierList(IdentifierList *list)
+void DestroyIdentifierList(IdentifierList *list)
 {
 	IdentifierListNode *node = list->head;
 

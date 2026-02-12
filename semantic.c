@@ -752,6 +752,20 @@ static void FreeSourceLineList(SourceLineListNode *source_line_list_head)
 	}
 }
 
+static void DestroyMacro(Macro *macro)
+{
+	IdentifierList destroyed_list = {0};
+
+	/* We make up a sort of "fake list" for the purposes of calling DestroyIdentifierList, since it doesn't take an IdentifierListNode directly. */
+	destroyed_list.head = macro->parameter_names;
+	DestroyIdentifierList(&destroyed_list);
+
+	FreeSourceLineList(macro->source_line_list_head);
+	String_Destroy(&macro->name);
+
+	free(macro);
+}
+
 /* Iterates over the guts of the dictionary to delete all of the node innards before calling Dictionary_Deinit */
 /* Basically a hack until the "destructor" method put as a TODO in dictionary.h is implemented, basically */
 static void SymbolDictionary_Deinit(Dictionary_State *state)
@@ -768,12 +782,7 @@ static void SymbolDictionary_Deinit(Dictionary_State *state)
 			if (node->entry.type == SYMBOL_STRING_CONSTANT)
 				String_Destroy(&node->entry.shared.string);
 			if (node->entry.type == SYMBOL_MACRO)
-			{
-				Macro *macro = (Macro*)node->entry.shared.pointer;
-				FreeSourceLineList(macro->source_line_list_head);
-				String_Destroy(&macro->name);
-				free(macro);
-			}
+				DestroyMacro((Macro*)node->entry.shared.pointer);
 			node = node->next;
 		}
 	}
@@ -1114,50 +1123,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 	/* This is especially useful for fix-ups, which may otherwise depend on identifiers that no longer exist at the time is value is resolved again. */
 	if (success && fold)
 	{
-		switch (expression->type)
-		{
-			case EXPRESSION_SUBTRACT:
-			case EXPRESSION_ADD:
-			case EXPRESSION_MULTIPLY:
-			case EXPRESSION_DIVIDE:
-			case EXPRESSION_MODULO:
-			case EXPRESSION_LOGICAL_OR:
-			case EXPRESSION_LOGICAL_AND:
-			case EXPRESSION_BITWISE_OR:
-			case EXPRESSION_BITWISE_XOR:
-			case EXPRESSION_BITWISE_AND:
-			case EXPRESSION_EQUALITY:
-			case EXPRESSION_INEQUALITY:
-			case EXPRESSION_LESS_THAN:
-			case EXPRESSION_LESS_OR_EQUAL:
-			case EXPRESSION_MORE_THAN:
-			case EXPRESSION_MORE_OR_EQUAL:
-			case EXPRESSION_LEFT_SHIFT:
-			case EXPRESSION_RIGHT_SHIFT:
-			case EXPRESSION_NEGATE:
-			case EXPRESSION_BITWISE_NOT:
-			case EXPRESSION_LOGICAL_NOT:
-			case EXPRESSION_STRCMP:
-			case EXPRESSION_INSTR:
-				free(expression->shared.subexpressions);
-				break;
-
-			case EXPRESSION_IDENTIFIER:
-			case EXPRESSION_STRING:
-			case EXPRESSION_STRLEN:
-			case EXPRESSION_DEF:
-			case EXPRESSION_TYPE_WITH_IDENTIFIER:
-			case EXPRESSION_FILESIZE:
-				String_Destroy(&expression->shared.string);
-				break;
-
-			case EXPRESSION_NUMBER:
-			case EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT:
-			case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
-			case EXPRESSION_TYPE_WITH_NUMBER:
-				break;
-		}
-
+		DestroyExpression(expression);
 		expression->type = EXPRESSION_NUMBER;
 		expression->shared.unsigned_long = *value;
 	}
@@ -1222,6 +1188,7 @@ static void PurgeMacro(SemanticState* const state, const StringView* const ident
 	}
 	else
 	{
+		DestroyMacro((Macro*)entry->shared.pointer);
 		Dictionary_Remove(dictionary, identifier);
 	}
 }
