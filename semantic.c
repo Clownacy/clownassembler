@@ -6506,6 +6506,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 		SymbolDictionary_Deinit(&state.dictionary);
 	}
 
+	String_Destroy(&state.shared.macro.name);
 	StringStack_Deinitialise(&state.string_stack);
 	Substitute_Deinitialise(&state.substitutions);
 	String_Destroy(&state.line_buffer);

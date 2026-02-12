@@ -142,3 +142,5 @@ add_test(NAME crash_shift_no_args COMMAND clownassembler -i "${CMAKE_CURRENT_SOU
 set_property(TEST crash_shift_no_args PROPERTY WILL_FAIL true)
 add_test(NAME leak_equal_with_trailing_garbage_identifier COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-leaking/equal-with-trailing-garbage-identifier.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
 set_property(TEST leak_equal_with_trailing_garbage_identifier PROPERTY WILL_FAIL true)
+add_test(NAME leak_label_definition_followed_by_redefinition_as_macro COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-leaking/label-definition-followed-by-redefinition-as-macro.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
+set_property(TEST leak_label_definition_followed_by_redefinition_as_macro PROPERTY WILL_FAIL true)
