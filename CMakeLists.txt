@@ -161,3 +161,5 @@ set_property(TEST crash_redefine_macro_as_another_macro_while_it_is_being_expand
 add_test(NAME crash_macro_infinite_recursion COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-crashing/macro-infinite-recursion.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
 set_property(TEST crash_macro_infinite_recursion PROPERTY WILL_FAIL true)
 add_test(NAME crash_substr_out_of_bounds COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-crashing/substr-out-of-bounds.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
+add_test(NAME leak_multiple_unterminated_repts COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-leaking/multiple-unterminated-repts.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
+set_property(TEST leak_multiple_unterminated_repts PROPERTY WILL_FAIL true)

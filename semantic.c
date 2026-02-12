@@ -6251,9 +6251,12 @@ static void AssembleFile(SemanticState *state)
 
 		case MODE_REPT:
 			/* Terminate the REPT to hopefully avoid future complications. */
-			TerminateRept(state);
+			/* Do this in a loop in case there's nested unterminated REPTs */
+			while (state->mode == MODE_REPT) {
+				SemanticError(state, "REPT statement beginning at line %lu is missing its ENDR.", state->shared.rept.line_number);
+				TerminateRept(state);
+			}
 
-			SemanticError(state, "REPT statement beginning at line %lu is missing its ENDR.", state->shared.rept.line_number);
 			break;
 
 		case MODE_MACRO:
