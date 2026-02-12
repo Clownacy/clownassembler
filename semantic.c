@@ -1243,12 +1243,19 @@ static void TerminateMacro(SemanticState *state)
 				state->shared.macro.parameter_names.tail = NULL;
 
 				macro->source_line_list_head = state->shared.macro.source_line_list.head;
+				state->shared.macro.source_line_list.head = NULL;
+				state->shared.macro.source_line_list.tail = NULL;
 
 				symbol->type = SYMBOL_MACRO;
 				symbol->shared.pointer = macro;
 			}
 		}
 	}
+
+	/* Free all of this, in case we didn't get all the way to creating the Macro and moving everything over */
+	FreeSourceLineList(state->shared.macro.source_line_list.head);
+	DestroyIdentifierList(&state->shared.macro.parameter_names);
+	String_Destroy(&state->shared.macro.name);
 }
 
 static void TerminateWhile(SemanticState *state)
@@ -6509,9 +6516,6 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 		SymbolDictionary_Deinit(&state.dictionary);
 	}
-
-	DestroyIdentifierList(&state.shared.macro.parameter_names);
-	String_Destroy(&state.shared.macro.name);
 
 	StringStack_Deinitialise(&state.string_stack);
 	Substitute_Deinitialise(&state.substitutions);
