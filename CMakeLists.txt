@@ -144,3 +144,5 @@ add_test(NAME leak_equal_with_trailing_garbage_identifier COMMAND clownassembler
 set_property(TEST leak_equal_with_trailing_garbage_identifier PROPERTY WILL_FAIL true)
 add_test(NAME leak_label_definition_followed_by_redefinition_as_macro COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-leaking/label-definition-followed-by-redefinition-as-macro.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
 set_property(TEST leak_label_definition_followed_by_redefinition_as_macro PROPERTY WILL_FAIL true)
+add_test(NAME leak_label_definition_followed_by_redefinition_as_macro_with_parameter COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-leaking/label-definition-followed-by-redefinition-as-macro-with-parameter.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
+set_property(TEST leak_label_definition_followed_by_redefinition_as_macro_with_parameter PROPERTY WILL_FAIL true)

@@ -1237,7 +1237,11 @@ static void TerminateMacro(SemanticState *state)
 				macro->is_short = state->shared.macro.is_short;
 				macro->uses_label = state->shared.macro.uses_label;
 				String_CreateMove(&macro->name, &state->shared.macro.name);
+
 				macro->parameter_names = state->shared.macro.parameter_names.head;
+				state->shared.macro.parameter_names.head = NULL;
+				state->shared.macro.parameter_names.tail = NULL;
+
 				macro->source_line_list_head = state->shared.macro.source_line_list.head;
 
 				symbol->type = SYMBOL_MACRO;
@@ -6506,7 +6510,9 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 		SymbolDictionary_Deinit(&state.dictionary);
 	}
 
+	DestroyIdentifierList(&state.shared.macro.parameter_names);
 	String_Destroy(&state.shared.macro.name);
+
 	StringStack_Deinitialise(&state.string_stack);
 	Substitute_Deinitialise(&state.substitutions);
 	String_Destroy(&state.line_buffer);
