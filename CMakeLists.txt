@@ -154,3 +154,5 @@ add_test(NAME crash_define_global_label_then_redefine_at_sign_as_macro_twice COM
 set_property(TEST crash_define_global_label_then_redefine_at_sign_as_macro_twice PROPERTY WILL_FAIL true)
 add_test(NAME crash_purge_macro COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-crashing/purge-macro.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
 set_property(TEST crash_purge_macro PROPERTY WILL_FAIL true)
+add_test(NAME crash_redefine_macro_as_another_macro_while_it_is_being_expanded COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-crashing/redefine-macro-as-another-macro-while-it-is-being-expanded.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
+set_property(TEST crash_redefine_macro_as_another_macro_while_it_is_being_expanded PROPERTY WILL_FAIL true)

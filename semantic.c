@@ -1200,6 +1200,11 @@ static void PurgeMacro(SemanticState* const state, const StringView* identifier,
 	{
 		SemanticError(state, "Cannot purge '%.*s' as it is not a macro.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
 	}
+	else if (CurrentlyExpandingMacro(state) && StringView_Compare(identifier, String_View(&state->macro.metadata->name)))
+	{
+		/* TODO idk if that could be meaningfully supported in some way but for now this just seems like a "how to crash and burn into UAF/double free" without a bunch of changes to support it, for not much benefit */
+		SemanticError(state, "Cannot purge '%.*s' as it is currently being expanded.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
+	}
 	else
 	{
 		String expanded_identifier;
@@ -1224,7 +1229,12 @@ static void TerminateMacro(SemanticState *state)
 
 	PurgeMacro(state, identifier, cc_true);
 
-	if (!StringView_Empty(identifier))
+	if (CurrentlyExpandingMacro(state) && StringView_Compare(identifier, String_View(&state->macro.metadata->name)))
+	{
+		/* TODO idk if that could be meaningfully supported in some way but for now this just seems like a "how to crash and burn into UAF/double free" without a bunch of changes to support it, for not much benefit */
+		SemanticError(state, "Cannot redefine macro '%.*s' while it is currently being expanded.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
+	}
+	else if (!StringView_Empty(identifier))
 	{
 		Dictionary_Entry* const symbol = CreateSymbol(state, identifier);
 
