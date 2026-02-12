@@ -4944,6 +4944,13 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			if (end < start)
 				end = start - 1;
 
+			/* Clamp start and end to make it so that, if the string would go beyond the end, it is truncated appropriately instead of going out-of-bounds */
+			/* (this matches asm68k, as far as I can see) */
+			if (start > String_Length(&statement->shared.substr.string))
+				start = String_Length(&statement->shared.substr.string) + 1;
+			if (end > String_Length(&statement->shared.substr.string))
+				end = String_Length(&statement->shared.substr.string);
+
 			StringView_SubStr(&substring, String_View(&statement->shared.substr.string), start - 1, end - start + 1);
 			PushSubstitute(state, label, &substring);
 			break;

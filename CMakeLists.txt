@@ -129,6 +129,8 @@ add_test(NAME z80_westone_assemble COMMAND clownassembler -c -p -i "TEST.ASM" -o
 add_test(NAME z80_westone_compare COMMAND clownassembler_hash "${CMAKE_CURRENT_BINARY_DIR}/z80-westone.bin" "ee34bb568b2590632d4837fbe1531f06")
 set_tests_properties(z80_westone_compare PROPERTIES DEPENDS z80_westone_assemble)
 
+# Test a bunch of cases that would previously cause crashes/leaks
+# (these often are intended to still fail, but not crash, given the crash was is often in how erroneous code is handled, though a few do actually succeed compilation)
 add_test(NAME crash_comment_line_followed_by_erroring_line COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-crashing/comment-line-followed-by-erroring-line.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
 set_property(TEST crash_comment_line_followed_by_erroring_line PROPERTY WILL_FAIL true)
 add_test(NAME crash_div_by_0 COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-crashing/div-by-0.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
@@ -158,3 +160,4 @@ add_test(NAME crash_redefine_macro_as_another_macro_while_it_is_being_expanded C
 set_property(TEST crash_redefine_macro_as_another_macro_while_it_is_being_expanded PROPERTY WILL_FAIL true)
 add_test(NAME crash_macro_infinite_recursion COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-crashing/macro-infinite-recursion.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
 set_property(TEST crash_macro_infinite_recursion PROPERTY WILL_FAIL true)
+add_test(NAME crash_substr_out_of_bounds COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-crashing/substr-out-of-bounds.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
