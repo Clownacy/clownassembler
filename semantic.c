@@ -5854,6 +5854,7 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 				String_CreateCopy(&source_line, &source_line_list_node->source_line_buffer);
 				PerformSubstitutions(state, &source_line, cc_false);
 				AssembleLine(state, &source_line, Options_Get(&state->options)->expand_all_macros);
+				String_Destroy(&source_line);
 			}
 			else
 			{
