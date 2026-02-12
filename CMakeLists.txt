@@ -140,3 +140,5 @@ set_property(TEST crash_redefine_macro_parameter_in_macro_body PROPERTY WILL_FAI
 add_test(NAME crash_shift_by_massive_val COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-crashing/shift-by-massive-val.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
 add_test(NAME crash_shift_no_args COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-crashing/shift-no-args.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
 set_property(TEST crash_shift_no_args PROPERTY WILL_FAIL true)
+add_test(NAME leak_equal_with_trailing_garbage_identifier COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-leaking/equal-with-trailing-garbage-identifier.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
+set_property(TEST leak_equal_with_trailing_garbage_identifier PROPERTY WILL_FAIL true)

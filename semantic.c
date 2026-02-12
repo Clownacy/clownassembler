@@ -5392,14 +5392,23 @@ static cc_bool ParseStatement(SemanticState* const state, Statement* const state
 {
 	/* Parse the source line with Flex and Bison (Lex and Yacc). */
 	const YY_BUFFER_STATE buffer = m68kasm__scan_bytes(StringView_Data(view), StringView_Length(view), state->flex_state);
-	const int parse_result = m68kasm_parse(state->flex_state, statement);
+	const Statement empty_statement = {0};
+	int parse_result;
+
+	*statement = empty_statement; /* We need to be able to call DestroyStatement if we fail, even if m68kasm_parse didn't parse shit - without this it would be left uninitialized */
+	parse_result = m68kasm_parse(state->flex_state, statement);
 	m68kasm__delete_buffer(buffer, state->flex_state);
+
+	if (parse_result == 0)
+		return cc_true;
 
 	/* Out of memory. */
 	if (parse_result == 2)
 		OutOfMemoryError(state);
 
-	return parse_result == 0;
+	/* We need to free `statement`, given that a statement may have been meaningfully formed into it even on error, if e.g. the error was due to trailing garbage on a line */
+	DestroyStatement(statement);
+	return cc_false;
 }
 
 static void ParseLine(SemanticState* const state, const StringView* const label, const StringView* const directive_and_operands)
