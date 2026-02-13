@@ -2609,6 +2609,7 @@ void DestroyStatement(Statement *statement)
 			break;
 
 		case STATEMENT_TYPE_INFORM:
+			DestroyExpression(&statement->shared.inform.severity);
 			String_Destroy(&statement->shared.inform.message);
 			break;
 
