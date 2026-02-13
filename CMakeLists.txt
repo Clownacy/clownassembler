@@ -165,3 +165,5 @@ add_test(NAME leak_multiple_unterminated_repts COMMAND clownassembler -i "${CMAK
 set_property(TEST leak_multiple_unterminated_repts PROPERTY WILL_FAIL true)
 add_test(NAME leak_unterminated_rept_and_while COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-leaking/unterminated-rept-and-while.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
 set_property(TEST leak_unterminated_rept_and_while PROPERTY WILL_FAIL true)
+add_test(NAME crash_cnop_size_boundary_0 COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-crashing/cnop-size-boundary-0.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/output.bin")
+set_property(TEST crash_cnop_size_boundary_0 PROPERTY WILL_FAIL true)

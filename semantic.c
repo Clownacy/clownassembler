@@ -5091,6 +5091,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				{
 					SemanticError(state, "Size boundary must be evaluable on the first pass.");
 				}
+				else if (size_boundary == 0)
+				{
+					/* Idk if there's a way to make this have meaningfully useful semantics. asm68k errors on this, so for now we will too. */
+					SemanticError(state, "Size boundary cannot be zero.");
+				}
 				else
 				{
 					unsigned long target;
