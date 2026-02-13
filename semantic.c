@@ -1201,10 +1201,11 @@ static void PurgeMacro(SemanticState* const state, const StringView* identifier,
 	{
 		SemanticError(state, "Cannot purge '%.*s' as it is not a macro.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
 	}
-	else if (CurrentlyExpandingMacro(state) && StringView_Compare(identifier, String_View(&state->macro.metadata->name)))
+	else if (CurrentlyExpandingMacro(state))
 	{
 		/* TODO idk if that could be meaningfully supported in some way but for now this just seems like a "how to crash and burn into UAF/double free" without a bunch of changes to support it, for not much benefit */
-		SemanticError(state, "Cannot purge '%.*s' as it is currently being expanded.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
+		/* We don't check for the name of the currently-expanded macro because one could e.g. invoke a, which invokes b, which redefines a, and there is currently no simple wey to check the entire macro expansion stack. */
+		SemanticError(state, "Cannot purge '%.*s' during macro expansion.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
 	}
 	else
 	{
@@ -1230,10 +1231,10 @@ static void TerminateMacro(SemanticState *state)
 
 	PurgeMacro(state, identifier, cc_true);
 
-	if (CurrentlyExpandingMacro(state) && StringView_Compare(identifier, String_View(&state->macro.metadata->name)))
+	if (CurrentlyExpandingMacro(state))
 	{
-		/* TODO idk if that could be meaningfully supported in some way but for now this just seems like a "how to crash and burn into UAF/double free" without a bunch of changes to support it, for not much benefit */
-		SemanticError(state, "Cannot redefine macro '%.*s' while it is currently being expanded.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
+		/* See comment in PurgeMacro after the check for the same condition for more details */
+		SemanticError(state, "Cannot define macro '%.*s' during macro expansion.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
 	}
 	else if (!StringView_Empty(identifier))
 	{
@@ -4881,6 +4882,8 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			/* Exit MACRO mode. */
 			if (state->mode != MODE_MACRO)
 				SemanticError(state, "This stray ENDM has no preceeding MACRO.");
+			else if (state->shared.macro.is_short)
+				SemanticError(state, "ENDM cannot be used in a short macro.");
 			else
 				TerminateMacro(state);
 
@@ -6179,10 +6182,10 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 				if (StringView_CompareCStrCaseInsensitive(&directive, "endm"))
 				{
 					/* TODO - Detect code after the keyword and error if any is found. */
-					ParseLine(state, &label, &directive_and_operands);
-
 					if (state->shared.macro.is_short)
 						SemanticError(state, "Short macros shouldn't use ENDM.");
+					else
+						ParseLine(state, &label, &directive_and_operands);
 				}
 				else
 				{

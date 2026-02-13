@@ -175,3 +175,4 @@ add_regression_test_expected_to_error("leaking" "multiple-unterminated-repts.asm
 add_regression_test_expected_to_error("leaking" "unterminated-rept-and-while.asm")
 add_regression_test_expected_to_error("crashing" "cnop-size-boundary-0.asm")
 add_regression_test_expected_to_error("leaking" "inform-with-complex-severity-expression.asm")
+add_regression_test_expected_to_error("crashing" "redefinition-during-mutually-recursive-infinite-macro-expansion.asm")
