@@ -941,18 +941,15 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 						break;
 
 					/*
-					 * Not sure if we 100% want this behaviour:
-					 * - asm68k does 32-bit arithmetic, so it masks the shift amount to 0-31 (though whether this is intentional or just a side-effect of using x86 shift instructions that do this is unknown).
-					 * - ...but if `unsigned long` is 64-bit, the best we can do to match that is this, since otherwise the behavior would be comically unintuitive.
-					 *
-					 * (note: this also prevents undefined behaviour in C from shifting by an amount greater than or equal to the width of the type).
+					 * asm68k does 32-bit arithmetic, so it masks the shift amount to 0-31 (though whether this is intentional or just a side-effect of using x86 shift instructions that do this is unknown).
+					 * (note: this is also needed to prevent undefined behaviour in C from shifting by an amount greater than or equal to the width of the type)
 					 */
 					case EXPRESSION_LEFT_SHIFT:
-						*value = left_value << (right_value % (CHAR_BIT * sizeof(*value)));
+						*value = left_value << (right_value % 32);
 						break;
 
 					case EXPRESSION_RIGHT_SHIFT:
-						*value = left_value >> (right_value % (CHAR_BIT * sizeof(*value)));
+						*value = left_value >> (right_value % 32);
 						break;
 				}
 
