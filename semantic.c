@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include "clowncommon/clowncommon.h"
 
@@ -114,6 +115,7 @@ typedef struct SemanticState_Macro
 	size_t total_arguments, total_arguments_at_start;
 	unsigned int starting_if_level;
 	cc_bool active;
+	cc_u16l depth;
 } SemanticState_Macro;
 
 typedef struct SemanticState
@@ -744,10 +746,63 @@ static void FreeSourceLineList(SourceLineListNode *source_line_list_head)
 	{
 		SourceLineListNode *next_source_line_list_node = source_line_list_node->next;
 
+		String_Destroy(&source_line_list_node->source_line_buffer);
 		free(source_line_list_node);
 
 		source_line_list_node = next_source_line_list_node;
 	}
+}
+
+static void DestroySymbol(Dictionary_Entry *dictionary_entry)
+{
+	switch (dictionary_entry->type)
+	{
+		case -1:
+		case SYMBOL_LABEL:
+		case SYMBOL_CONSTANT:
+		case SYMBOL_VARIABLE:
+		case SYMBOL_SPECIAL:
+			/* Nothing to free. */
+			break;
+
+		case SYMBOL_STRING_CONSTANT:
+			String_Destroy(&dictionary_entry->shared.string);
+			break;
+
+		case SYMBOL_MACRO:
+		{
+			Macro *macro = (Macro*)dictionary_entry->shared.pointer;
+			IdentifierList destroyed_list = {0};
+
+			/* We make up a sort of "fake list" for the purposes of calling DestroyIdentifierList, since it doesn't take an IdentifierListNode directly. */
+			destroyed_list.head = macro->parameter_names;
+			DestroyIdentifierList(&destroyed_list);
+
+			FreeSourceLineList(macro->source_line_list_head);
+			String_Destroy(&macro->name);
+
+			free(macro);
+			break;
+		}
+
+		default:
+			assert(cc_false);
+			break;
+	}
+}
+
+/* Iterates over the guts of the dictionary to delete all of the node innards before calling Dictionary_Deinit */
+/* Basically a hack until the "destructor" method put as a TODO in dictionary.h is implemented, pretty much */
+static void SymbolDictionary_Deinit(Dictionary_State *state)
+{
+	Dictionary_Bucket *bucket;
+	Dictionary_Node *node;
+
+	for (bucket = state->hash_table; bucket < state->hash_table + TOTAL_HASH_TABLE_ENTRIES; ++bucket)
+		for (node = bucket->linked_list; node != NULL; node = node->next)
+			DestroySymbol(&node->entry);
+
+	Dictionary_Deinit(state);
 }
 
 static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, cc_bool fold)
@@ -822,11 +877,23 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 						break;
 
 					case EXPRESSION_DIVIDE:
-						*value = left_value / right_value;
+						if (right_value == 0)
+						{
+							SemanticError(state, "Cannot divide by zero.");
+							success = cc_false;
+						}
+						else
+							*value = left_value / right_value;
 						break;
 
 					case EXPRESSION_MODULO:
-						*value = left_value % right_value;
+						if (right_value == 0)
+						{
+							SemanticError(state, "Cannot modulo by zero.");
+							success = cc_false;
+						}
+						else
+							*value = left_value % right_value;
 						break;
 
 					case EXPRESSION_LOGICAL_OR:
@@ -873,12 +940,16 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 						*value = left_value >= right_value ? -1 : 0;
 						break;
 
+					/*
+					 * asm68k does 32-bit arithmetic, so it masks the shift amount to 0-31 (though whether this is intentional or just a side-effect of using x86 shift instructions that do this is unknown).
+					 * (note: this is also needed to prevent undefined behaviour in C from shifting by an amount greater than or equal to the width of the type)
+					 */
 					case EXPRESSION_LEFT_SHIFT:
-						*value = left_value << right_value;
+						*value = left_value << (right_value % 32);
 						break;
 
 					case EXPRESSION_RIGHT_SHIFT:
-						*value = left_value >> right_value;
+						*value = left_value >> (right_value % 32);
 						break;
 				}
 
@@ -1064,50 +1135,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 	/* This is especially useful for fix-ups, which may otherwise depend on identifiers that no longer exist at the time is value is resolved again. */
 	if (success && fold)
 	{
-		switch (expression->type)
-		{
-			case EXPRESSION_SUBTRACT:
-			case EXPRESSION_ADD:
-			case EXPRESSION_MULTIPLY:
-			case EXPRESSION_DIVIDE:
-			case EXPRESSION_MODULO:
-			case EXPRESSION_LOGICAL_OR:
-			case EXPRESSION_LOGICAL_AND:
-			case EXPRESSION_BITWISE_OR:
-			case EXPRESSION_BITWISE_XOR:
-			case EXPRESSION_BITWISE_AND:
-			case EXPRESSION_EQUALITY:
-			case EXPRESSION_INEQUALITY:
-			case EXPRESSION_LESS_THAN:
-			case EXPRESSION_LESS_OR_EQUAL:
-			case EXPRESSION_MORE_THAN:
-			case EXPRESSION_MORE_OR_EQUAL:
-			case EXPRESSION_LEFT_SHIFT:
-			case EXPRESSION_RIGHT_SHIFT:
-			case EXPRESSION_NEGATE:
-			case EXPRESSION_BITWISE_NOT:
-			case EXPRESSION_LOGICAL_NOT:
-			case EXPRESSION_STRCMP:
-			case EXPRESSION_INSTR:
-				free(expression->shared.subexpressions);
-				break;
-
-			case EXPRESSION_IDENTIFIER:
-			case EXPRESSION_STRING:
-			case EXPRESSION_STRLEN:
-			case EXPRESSION_DEF:
-			case EXPRESSION_TYPE_WITH_IDENTIFIER:
-			case EXPRESSION_FILESIZE:
-				String_Destroy(&expression->shared.string);
-				break;
-
-			case EXPRESSION_NUMBER:
-			case EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT:
-			case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
-			case EXPRESSION_TYPE_WITH_NUMBER:
-				break;
-		}
-
+		DestroyExpression(expression);
 		expression->type = EXPRESSION_NUMBER;
 		expression->shared.unsigned_long = *value;
 	}
@@ -1156,7 +1184,7 @@ static void TerminateRept(SemanticState *state)
 
 }
 
-static void PurgeMacro(SemanticState* const state, const StringView* const identifier, const cc_bool allow_undefined)
+static void PurgeMacro(SemanticState* const state, const StringView* identifier, const cc_bool allow_undefined)
 {
 	Dictionary_State *dictionary;
 	Dictionary_Entry* const entry = LookupSymbol(state, identifier, &dictionary);
@@ -1170,9 +1198,24 @@ static void PurgeMacro(SemanticState* const state, const StringView* const ident
 	{
 		SemanticError(state, "Cannot purge '%.*s' as it is not a macro.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
 	}
+	else if (CurrentlyExpandingMacro(state))
+	{
+		/* TODO idk if that could be meaningfully supported in some way but for now this just seems like a "how to crash and burn into UAF/double free" without a bunch of changes to support it, for not much benefit */
+		/* We don't check for the name of the currently-expanded macro because one could e.g. invoke a, which invokes b, which redefines a, and there is currently no simple wey to check the entire macro expansion stack. */
+		SemanticError(state, "Cannot purge '%.*s' during macro expansion.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
+	}
 	else
 	{
+		String expanded_identifier;
+		/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
+		ExpandIdentifier(state, &expanded_identifier, identifier);
+		if (!String_Empty(&expanded_identifier))
+			identifier = String_View(&expanded_identifier);
+
+		DestroySymbol(entry);
 		Dictionary_Remove(dictionary, identifier);
+
+		String_Destroy(&expanded_identifier);
 	}
 }
 
@@ -1185,7 +1228,12 @@ static void TerminateMacro(SemanticState *state)
 
 	PurgeMacro(state, identifier, cc_true);
 
-	if (!StringView_Empty(identifier))
+	if (CurrentlyExpandingMacro(state))
+	{
+		/* See comment in PurgeMacro after the check for the same condition for more details */
+		SemanticError(state, "Cannot define macro '%.*s' during macro expansion.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
+	}
+	else if (!StringView_Empty(identifier))
 	{
 		Dictionary_Entry* const symbol = CreateSymbol(state, identifier);
 
@@ -1199,14 +1247,25 @@ static void TerminateMacro(SemanticState *state)
 				macro->is_short = state->shared.macro.is_short;
 				macro->uses_label = state->shared.macro.uses_label;
 				String_CreateMove(&macro->name, &state->shared.macro.name);
+
 				macro->parameter_names = state->shared.macro.parameter_names.head;
+				state->shared.macro.parameter_names.head = NULL;
+				state->shared.macro.parameter_names.tail = NULL;
+
 				macro->source_line_list_head = state->shared.macro.source_line_list.head;
+				state->shared.macro.source_line_list.head = NULL;
+				state->shared.macro.source_line_list.tail = NULL;
 
 				symbol->type = SYMBOL_MACRO;
 				symbol->shared.pointer = macro;
 			}
 		}
 	}
+
+	/* Free all of this, in case we didn't get all the way to creating the Macro and moving everything over */
+	FreeSourceLineList(state->shared.macro.source_line_list.head);
+	DestroyIdentifierList(&state->shared.macro.parameter_names);
+	String_Destroy(&state->shared.macro.name);
 }
 
 static void TerminateWhile(SemanticState *state)
@@ -1413,8 +1472,10 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const StringView *l
 
 			if (symbol != NULL)
 			{
-				if (symbol->type != -1 && (SymbolType)symbol->type != type)
-					SemanticError(state, "Symbol redefined as a different type.");
+				if (symbol->type != -1 && (SymbolType)symbol->type != type) {
+					symbol = NULL; /* We can't do the assignment in this case, actually doing redefinitions like this would wreck havoc - e.g. redefining a macro while it is being executed would force us to either leak it or have everything implode in a use-after-free mess */
+					SemanticError(state, "Attempted to redefine symbol as a different type.");
+				}
 				else if (type == SYMBOL_CONSTANT && symbol->type == SYMBOL_CONSTANT && symbol->shared.unsigned_long != value)
 					SemanticError(state, "Constant cannot be redefined to a different value.");
 			}
@@ -4271,6 +4332,19 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 				dictionary_entry->type = SYMBOL_STRING_CONSTANT;
 				Substitute_PushSubstitute(&state->macro.substitutions, parameter, String_View(&dictionary_entry->shared.string));
 			}
+			else if (dictionary_entry->type != SYMBOL_STRING_CONSTANT)
+			{
+				/*
+				 * TODO this is not a common case, but it can occur if e.g. someone redefines a parameter name as a normal symbol in the macro body.
+				 * See tests/previously-crashing/redefine-macro-parameter-in-macro-body.asm for an example of this.
+				 * That'll already have caused an error to be emitted, so this error might be somewhat cascading,
+				 * but I'm not certain it's not possible to hit this in other ways,
+				 * and in any case if we get here I'm pretty sure something has gone wrong, so we should emit an error in case one hasn't already been emitted.
+				 * It might also be feasible to handle this without forcing the symbol to become a string constant, but right now this seems like the simplest solution to prevent a crash
+				 */
+				SemanticError(state, "Attempted to redefined symbol '%.*s' as a string constant.", (int)StringView_Length(parameter), StringView_Data(parameter));
+				dictionary_entry->type = SYMBOL_STRING_CONSTANT;
+			}
 			else
 			{
 				String_Destroy(&dictionary_entry->shared.string);
@@ -4805,6 +4879,8 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			/* Exit MACRO mode. */
 			if (state->mode != MODE_MACRO)
 				SemanticError(state, "This stray ENDM has no preceeding MACRO.");
+			else if (state->shared.macro.is_short)
+				SemanticError(state, "ENDM cannot be used in a short macro.");
 			else
 				TerminateMacro(state);
 
@@ -4867,6 +4943,13 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 			if (end < start)
 				end = start - 1;
+
+			/* Clamp start and end to make it so that, if the string would go beyond the end, it is truncated appropriately instead of going out-of-bounds */
+			/* (this matches asm68k, as far as I can see) */
+			if (start > String_Length(&statement->shared.substr.string))
+				start = String_Length(&statement->shared.substr.string) + 1;
+			if (end > String_Length(&statement->shared.substr.string))
+				end = String_Length(&statement->shared.substr.string);
 
 			StringView_SubStr(&substring, String_View(&statement->shared.substr.string), start - 1, end - start + 1);
 			PushSubstitute(state, label, &substring);
@@ -5007,6 +5090,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				if (!ResolveExpression(state, &statement->shared.cnop.size_boundary, &size_boundary, cc_true))
 				{
 					SemanticError(state, "Size boundary must be evaluable on the first pass.");
+				}
+				else if (size_boundary == 0)
+				{
+					/* Idk if there's a way to make this have meaningfully useful semantics. asm68k errors on this, so for now we will too. */
+					SemanticError(state, "Size boundary cannot be zero.");
 				}
 				else
 				{
@@ -5275,9 +5363,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			String string;
 
 			if (!StringStack_Pop(&state->string_stack, &string))
-				SemanticError(state, "POPO used but the string stack was empty.");
-			else
+				SemanticError(state, "POPP used but the string stack was empty.");
+			else {
 				PushSubstitute(state, String_View(&statement->shared.string), String_View(&string));
+				String_Destroy(&string);
+			}
 
 			break;
 		}
@@ -5287,9 +5377,14 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			{
 				SemanticError(state, "SHIFT used outside of macro.");
 			}
-			else
+			else if (state->macro.total_arguments == 0)
 			{
 				/* TODO: What if there are already 0 arguments? */
+				/* This prevents crashing for now but perhaps it could be handled differently. */
+				SemanticError(state, "SHIFT used but there are no macro arguments to shift.");
+			}
+			else
+			{
 				--state->macro.total_arguments;
 				String_Destroy(&state->macro.argument_list[0]);
 				memmove(state->macro.argument_list, state->macro.argument_list + 1, sizeof(*state->macro.argument_list) * state->macro.total_arguments);
@@ -5332,14 +5427,23 @@ static cc_bool ParseStatement(SemanticState* const state, Statement* const state
 {
 	/* Parse the source line with Flex and Bison (Lex and Yacc). */
 	const YY_BUFFER_STATE buffer = m68kasm__scan_bytes(StringView_Data(view), StringView_Length(view), state->flex_state);
-	const int parse_result = m68kasm_parse(state->flex_state, statement);
+	const Statement empty_statement = {0};
+	int parse_result;
+
+	*statement = empty_statement; /* We need to be able to call DestroyStatement if we fail, even if m68kasm_parse didn't parse shit - without this it would be left uninitialized */
+	parse_result = m68kasm_parse(state->flex_state, statement);
 	m68kasm__delete_buffer(buffer, state->flex_state);
+
+	if (parse_result == 0)
+		return cc_true;
 
 	/* Out of memory. */
 	if (parse_result == 2)
 		OutOfMemoryError(state);
 
-	return parse_result == 0;
+	/* We need to free `statement`, given that a statement may have been meaningfully formed into it even on error, if e.g. the error was due to trailing garbage on a line */
+	DestroyStatement(statement);
+	return cc_false;
 }
 
 static void ParseLine(SemanticState* const state, const StringView* const label, const StringView* const directive_and_operands)
@@ -5641,13 +5745,18 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 
 	const SemanticState_Macro previous_macro_state = state->macro;
 
+	if (state->macro.depth >= 2000) {
+		SemanticError(state, "Macro expansion depth exceeded.");
+		goto out;
+	}
+
 	state->macro.metadata = macro;
 	state->macro.dictionary = (Dictionary_State*)SharedMemory_Allocate(sizeof(Dictionary_State));
 
 	if (state->macro.dictionary == NULL)
 	{
 		OutOfMemoryError(state);
-		return;
+		goto out;
 	}
 
 	/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
@@ -5659,6 +5768,7 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 	state->macro.total_arguments_at_start = 0;
 	state->macro.starting_if_level = state->current_if_level;
 	state->macro.active = cc_true;
+	++state->macro.depth;
 
 	++state->current_macro_invocation;
 
@@ -5819,6 +5929,7 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 				String_CreateCopy(&source_line, &source_line_list_node->source_line_buffer);
 				PerformSubstitutions(state, &source_line, cc_false);
 				AssembleLine(state, &source_line, Options_Get(&state->options)->expand_all_macros);
+				String_Destroy(&source_line);
 			}
 			else
 			{
@@ -5842,10 +5953,11 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 	}
 
 	String_Destroy(&closure.symbol_value_string);
+	String_Destroy(&closure.unique_suffix);
 
 	Substitute_Deinitialise(&state->macro.substitutions);
 	if (SharedMemory_WillBeDestroyed(state->macro.dictionary))
-		Dictionary_Deinit(state->macro.dictionary);
+		SymbolDictionary_Deinit(state->macro.dictionary);
 	SharedMemory_Free(state->macro.dictionary);
 
 	/* Destroy argument list. */
@@ -5853,11 +5965,12 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 		size_t i;
 
 		for (i = 0; i < state->macro.total_arguments; ++i)
-			String_Destroy(&state->macro.argument_list[0]);
+			String_Destroy(&state->macro.argument_list[i]);
 
 		free(state->macro.argument_list);
 	}
 
+out:
 	state->macro = previous_macro_state;
 }
 
@@ -5871,6 +5984,10 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 	StringView directive_and_operands, directive;
 
 	const String* const old_source_line = state->source_line;
+
+	/* Assert a few preconditions to ensure we're in a non-insane state */
+	assert(state->mode == MODE_NORMAL || state->mode == MODE_REPT || state->mode == MODE_WHILE || state->mode == MODE_MACRO);
+	assert(CurrentlyExpandingMacro(state) == (state->macro.depth > 0));
 
 	if (write_line_to_listing_file)
 	{
@@ -5906,7 +6023,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 	if (String_At(state->source_line, 0) == '*')
 	{
 		/* This whole line is a comment. */
-		return;
+		goto cleanup;
 	}
 
 	source_line_pointer = String_CStr(state->source_line);
@@ -6062,10 +6179,10 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 				if (StringView_CompareCStrCaseInsensitive(&directive, "endm"))
 				{
 					/* TODO - Detect code after the keyword and error if any is found. */
-					ParseLine(state, &label, &directive_and_operands);
-
 					if (state->shared.macro.is_short)
 						SemanticError(state, "Short macros shouldn't use ENDM.");
+					else
+						ParseLine(state, &label, &directive_and_operands);
 				}
 				else
 				{
@@ -6115,12 +6232,12 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 		}
 	}
 
+cleanup:
 	if (write_line_to_listing_file)
 		ListSourceLine(state);
 
 	if (state->source_line == &source_line)
 		String_Destroy(&source_line);
-
 	state->source_line = old_source_line;
 }
 
@@ -6131,32 +6248,36 @@ static void AssembleFile(SemanticState *state)
 		AssembleLine(state, &state->line_buffer, cc_true);
 
 	/* If we're not in normal mode when a file ends, then something is wrong. */
-	switch (state->mode)
+	while (state->mode != MODE_NORMAL)
 	{
-		case MODE_NORMAL:
-			/* All okay. */
-			break;
+		switch (state->mode)
+		{
+			case MODE_NORMAL:
+				/* We can't reach this since we just checked for it */
+				assert(cc_false);
+				break;
 
-		case MODE_REPT:
-			/* Terminate the REPT to hopefully avoid future complications. */
-			TerminateRept(state);
+			case MODE_REPT:
+				SemanticError(state, "REPT statement beginning at line %lu is missing its ENDR.", state->shared.rept.line_number);
 
-			SemanticError(state, "REPT statement beginning at line %lu is missing its ENDR.", state->shared.rept.line_number);
-			break;
+				/* Terminate the REPT to hopefully avoid future complications. */
+				TerminateRept(state);
+				break;
 
-		case MODE_MACRO:
-			/* Terminate the macro to hopefully avoid future complications. */
-			TerminateMacro(state);
+			case MODE_MACRO:
+				SemanticError(state, "MACRO statement beginning at line %lu is missing its ENDM.", state->shared.macro.line_number);
 
-			SemanticError(state, "MACRO statement beginning at line %lu is missing its ENDM.", state->shared.macro.line_number);
-			break;
+				/* Terminate the macro to hopefully avoid future complications. */
+				TerminateMacro(state);
+				break;
 
-		case MODE_WHILE:
-			/* Terminate the while-statement to hopefully avoid future complications. */
-			TerminateWhile(state);
+			case MODE_WHILE:
+				SemanticError(state, "WHILE statement beginning at line %lu is missing its ENDW.", state->shared.while_statement.line_number);
 
-			SemanticError(state, "WHILE statement beginning at line %lu is missing its ENDW.", state->shared.while_statement.line_number);
-			break;
+				/* Terminate the while-statement to hopefully avoid future complications. */
+				TerminateWhile(state);
+				break;
+		}
 	}
 }
 
@@ -6371,7 +6492,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 							/* We're done with this statement: delete it. */
 							DestroyStatement(&fix_up->statement);
 							if (SharedMemory_WillBeDestroyed(fix_up->macro_dictionary))
-								Dictionary_Deinit(fix_up->macro_dictionary);
+								SymbolDictionary_Deinit(fix_up->macro_dictionary);
 							SharedMemory_Free(fix_up->macro_dictionary);
 							String_Destroy(&fix_up->last_global_label);
 							String_Destroy(&fix_up->source_line);
@@ -6387,6 +6508,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 								free(location);
 								location = previous_location;
 							}
+							String_Destroy(&fix_up->location.file_path);
 
 							free(fix_up);
 
@@ -6431,7 +6553,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 			}
 		}
 
-		Dictionary_Deinit(&state.dictionary);
+		SymbolDictionary_Deinit(&state.dictionary);
 	}
 
 	StringStack_Deinitialise(&state.string_stack);
@@ -6440,6 +6562,8 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	String_Destroy(&state.last_global_label);
 
 	Options_Deinitialise(&state.options);
+
+	String_Destroy(&location.file_path);
 
 	return state.success;
 }

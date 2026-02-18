@@ -720,8 +720,9 @@ int m68kasm_parse (void *scanner, Statement *statement);
 
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
+void DestroyIdentifierList(IdentifierList *list);
 
 
-#line 726 "syntactic.h"
+#line 727 "syntactic.h"
 
 #endif /* !YY_M68KASM_SYNTACTIC_H_INCLUDED  */
