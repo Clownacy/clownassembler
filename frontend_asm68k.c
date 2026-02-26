@@ -198,9 +198,9 @@ int main(int argc, char **argv)
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (tolower(argv[i][0]) == 'l')
+							else if (tolower(option[0]) == 'l')
 							{
-								const char signifier = tolower(argv[i][1]);
+								const char signifier = tolower(option[1]);
 
 								switch (signifier)
 								{
