@@ -170,7 +170,7 @@ int main(int argc, char **argv)
 							}
 							else if (strcmpci(option, "an-") == 0)
 							{
-								fprintf(stderr, "Warning: Option '%s' has no effect, as alternate numeric specifiers are always enabled.\n", argv[i]);
+								fprintf(stderr, "Warning: Option '%s' has no effect, as alternate numeric specifiers are always enabled.\n", option);
 							}
 							else if (strcmpci(option, "c+") == 0)
 							{
@@ -190,12 +190,12 @@ int main(int argc, char **argv)
 							}
 							else if (strcmpci(option, "e+") == 0)
 							{
-								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
+								fprintf(stderr, "Error: Unsupported option: '%s'.\n", option);
 								exit_code = EXIT_FAILURE;
 							}
 							else if (strcmpci(option, "e-") == 0)
 							{
-								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
+								fprintf(stderr, "Error: Unsupported option: '%s'.\n", option);
 								exit_code = EXIT_FAILURE;
 							}
 							else if (tolower(option[0]) == 'l')
@@ -219,7 +219,7 @@ int main(int argc, char **argv)
 							}
 							else if (strcmpci(option, "s+") == 0)
 							{
-								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
+								fprintf(stderr, "Error: Unsupported option: '%s'.\n", option);
 								exit_code = EXIT_FAILURE;
 							}
 							else if (strcmpci(option, "s-") == 0)
@@ -256,12 +256,12 @@ int main(int argc, char **argv)
 							}
 							else if (strcmpci(option, "ws-") == 0)
 							{
-								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
+								fprintf(stderr, "Error: Unsupported option: '%s'.\n", option);
 								exit_code = EXIT_FAILURE;
 							}
 							else if (strcmpci(option, "x+") == 0)
 							{
-								fprintf(stderr, "Error: Unsupported option: '%s'.\n", argv[i]);
+								fprintf(stderr, "Error: Unsupported option: '%s'.\n", option);
 								exit_code = EXIT_FAILURE;
 							}
 							else if (strcmpci(option, "x-") == 0)
@@ -270,7 +270,7 @@ int main(int argc, char **argv)
 							}
 							else if (strcmpci(option, "op+") == 0)
 							{
-								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", argv[i]);
+								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
 							}
 							else if (strcmpci(option, "op-") == 0)
 							{
@@ -278,7 +278,7 @@ int main(int argc, char **argv)
 							}
 							else if (strcmpci(option, "os+") == 0)
 							{
-								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", argv[i]);
+								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
 							}
 							else if (strcmpci(option, "os-") == 0)
 							{
@@ -286,7 +286,7 @@ int main(int argc, char **argv)
 							}
 							else if (strcmpci(option, "ow+") == 0)
 							{
-								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", argv[i]);
+								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
 							}
 							else if (strcmpci(option, "ow-") == 0)
 							{
@@ -294,7 +294,7 @@ int main(int argc, char **argv)
 							}
 							else if (strcmpci(option, "oz+") == 0)
 							{
-								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", argv[i]);
+								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
 							}
 							else if (strcmpci(option, "oz-") == 0)
 							{
@@ -302,7 +302,7 @@ int main(int argc, char **argv)
 							}
 							else if (strcmpci(option, "oaq+") == 0)
 							{
-								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", argv[i]);
+								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
 							}
 							else if (strcmpci(option, "oaq-") == 0)
 							{
@@ -310,7 +310,7 @@ int main(int argc, char **argv)
 							}
 							else if (strcmpci(option, "osq+") == 0)
 							{
-								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", argv[i]);
+								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
 							}
 							else if (strcmpci(option, "osq-") == 0)
 							{
@@ -318,7 +318,7 @@ int main(int argc, char **argv)
 							}
 							else if (strcmpci(option, "omq+") == 0)
 							{
-								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", argv[i]);
+								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
 							}
 							else if (strcmpci(option, "omq-") == 0)
 							{
@@ -326,7 +326,7 @@ int main(int argc, char **argv)
 							}
 							else
 							{
-								fprintf(stderr, "Warning: Unrecognised option: '%s'.\n", argv[i]);
+								fprintf(stderr, "Warning: Unrecognised option: '%s'.\n", option);
 							}
 						}
 					}
