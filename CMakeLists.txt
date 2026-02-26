@@ -78,7 +78,7 @@ add_test(NAME valid_instructions_compare COMMAND clownassembler_hash "${CMAKE_CU
 set_tests_properties(valid_instructions_compare PROPERTIES DEPENDS valid_instructions_assemble)
 
 # Test that the Sonic 1 disassembly assembles.
-add_test(NAME sonic_1_assemble COMMAND clownassembler -p -.. -i "sonic.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/s1built.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/s1disasm")
+add_test(NAME sonic_1_assemble COMMAND clownassembler_asm68k /k /m /p /o "ae-,oz+,c+,l+" "sonic.asm" , "${CMAKE_CURRENT_BINARY_DIR}/s1built.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/s1disasm")
 
 # Test that the Sonic 1 disassembly produces the correct machine code.
 add_test(NAME sonic_1_compare COMMAND clownassembler_hash "${CMAKE_CURRENT_BINARY_DIR}/s1built.bin" "09dadb5071eb35050067a32462e39c5f")
