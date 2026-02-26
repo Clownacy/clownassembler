@@ -1731,6 +1731,27 @@ static void ResolveInstructionAmbiguity(SemanticState* const state, StatementIns
 	}
 }
 
+static void OptimiseInstruction(SemanticState* const state, StatementInstruction* const instruction)
+{
+	if (Options_Get(&state->options)->optimisation.zero_displacement)
+	{
+		unsigned int i;
+
+		for (i = 0; i < CC_COUNT_OF(instruction->operands); ++i)
+		{
+			Operand* const operand = &instruction->operands[i];
+
+			if (operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT)
+			{
+				unsigned long value;
+
+				if (ResolveExpression(state, &operand->literal, &value, cc_false) && value == 0)
+					operand->type = OPERAND_ADDRESS_REGISTER_INDIRECT;
+			}
+		}
+	}
+}
+
 typedef struct InstructionMetadata
 {
 	const char *name;
@@ -2842,6 +2863,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 	state->program_counter += 2;
 
 	ResolveInstructionAmbiguity(state, instruction);
+	OptimiseInstruction(state, instruction);
 
 	instruction_metadata = &instruction_metadata_all[instruction->opcode.type];
 
@@ -4817,7 +4839,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			if (Options_Get(&state->options)->equ_set_descope_local_labels)
 				SetLastGlobalLabel(state, label);
 
-			if (ResolveExpression(state, &statement->shared.expression, &value, cc_true))
+			if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
+			{
+				/* TODO: Add this to the symbol table as an expression instead of a value! */
+			}
+			else
 			{
 				AddIdentifierToSymbolTable(state, label, value, SYMBOL_CONSTANT);
 				ListIdentifierValue(state, value);
@@ -5241,6 +5267,10 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					Options_Get(&state->options)->expand_all_macros = cc_true;
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "m-"))
 					Options_Get(&state->options)->expand_all_macros = cc_false;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "oz+"))
+					Options_Get(&state->options)->optimisation.zero_displacement = cc_true;
+				else if (String_CompareCStrCaseInsensitive(&option->identifier, "oz-"))
+					Options_Get(&state->options)->optimisation.zero_displacement = cc_false;
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "v+"))
 					Options_Get(&state->options)->output_local_labels_to_sym_file = cc_true;
 				else if (String_CompareCStrCaseInsensitive(&option->identifier, "v-"))

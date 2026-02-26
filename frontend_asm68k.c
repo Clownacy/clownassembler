@@ -102,6 +102,7 @@ int main(int argc, char **argv)
 	settings.pedantic_warnings_enabled = cc_false;
 	settings.expand_all_macros = cc_false;
 	settings.automatic_even = cc_true;
+	settings.optimisation.zero_displacement = cc_false;
 
 	source_file_path = object_file_path = symbol_file_path = listing_file_path = NULL;
 	source_file = object_file = symbol_file = listing_file = NULL;
@@ -294,11 +295,11 @@ int main(int argc, char **argv)
 							}
 							else if (strcmpci(option, "oz+") == 0)
 							{
-								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
+								settings.optimisation.zero_displacement = cc_true;
 							}
 							else if (strcmpci(option, "oz-") == 0)
 							{
-								/* This is always disabled. */
+								settings.optimisation.zero_displacement = cc_false;
 							}
 							else if (strcmpci(option, "oaq+") == 0)
 							{
