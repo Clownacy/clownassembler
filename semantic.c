@@ -48,7 +48,8 @@ typedef enum SymbolType
 	SYMBOL_MACRO,
 	SYMBOL_LABEL,
 	SYMBOL_SPECIAL,
-	SYMBOL_STRING_CONSTANT
+	SYMBOL_STRING_CONSTANT,
+	SYMBOL_EXPRESSION_CONSTANT
 } SymbolType;
 
 typedef struct Location
@@ -646,6 +647,8 @@ static Dictionary_Entry* CreateSymbol(SemanticState *state, const StringView *id
 	return dictionary_entry;
 }
 
+static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, cc_bool fold);
+
 static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifier, const cc_bool must_evaluate_on_first_pass, unsigned long* const value)
 {
 	cc_bool success = cc_true;
@@ -702,6 +705,12 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 					SemanticWarning(state, "Symbol '%.*s' forward-referenced despite being a redefineable variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
 
 				*value = dictionary_entry->shared.unsigned_long;
+				break;
+
+			case SYMBOL_EXPRESSION_CONSTANT:
+				if (!ResolveExpression(state, (Expression*)dictionary_entry->shared.pointer, value, cc_false))
+					success = cc_false;
+
 				break;
 
 			default:
@@ -1398,7 +1407,7 @@ static void SetLastGlobalLabel(SemanticState *state, const StringView *label)
 	}
 }
 
-static void AddIdentifierToSymbolTable(SemanticState *state, const StringView *label, unsigned long value, SymbolType type)
+static void AddIdentifierToSymbolTable(SemanticState *state, const StringView *label, unsigned long value, Expression *expression_value, SymbolType type)
 {
 	Dictionary_Entry *symbol;
 
@@ -1409,6 +1418,7 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const StringView *l
 	{
 		case SYMBOL_VARIABLE:
 		case SYMBOL_CONSTANT:
+		case SYMBOL_EXPRESSION_CONSTANT:
 			symbol = LookupSymbolAndCreateIfNotExist(state, label, NULL);
 
 			if (symbol != NULL)
@@ -1436,7 +1446,11 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const StringView *l
 	if (symbol != NULL)
 	{
 		symbol->type = type;
-		symbol->shared.unsigned_long = value;
+
+		if (type == SYMBOL_EXPRESSION_CONSTANT)
+			symbol->shared.pointer = expression_value;
+		else
+			symbol->shared.unsigned_long = value;
 	}
 }
 
@@ -4731,7 +4745,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			{
 				/* Handle the label here, instead of passing it onto a later function. */
 				SetLastGlobalLabel(state, label);
-				AddIdentifierToSymbolTable(state, label, state->program_counter, SYMBOL_LABEL);
+				AddIdentifierToSymbolTable(state, label, state->program_counter, NULL, SYMBOL_LABEL);
 			}
 
 			break;
@@ -4839,15 +4853,29 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			if (Options_Get(&state->options)->equ_set_descope_local_labels)
 				SetLastGlobalLabel(state, label);
 
-			if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
+			if (!ResolveExpression(state, &statement->shared.expression, &value, cc_false))
 			{
-				/* TODO: Add this to the symbol table as an expression instead of a value! */
+				/* Separate the expression from the statement, so that it is not freed along with the statement. */
+				Expression *expression_copy = (Expression*)MallocAndHandleError(state, sizeof(Expression));
+
+				if (expression_copy != NULL)
+				{
+					*expression_copy = statement->shared.expression;
+
+					/* Prevent subexpressions from being freed. */
+					statement->shared.expression.type = EXPRESSION_NUMBER;
+
+					AddIdentifierToSymbolTable(state, label, 0, expression_copy, SYMBOL_EXPRESSION_CONSTANT);
+				}
 			}
 			else
 			{
-				AddIdentifierToSymbolTable(state, label, value, SYMBOL_CONSTANT);
+				AddIdentifierToSymbolTable(state, label, value, NULL, SYMBOL_CONSTANT);
 				ListIdentifierValue(state, value);
 			}
+
+			/* Hack: We ABSOLUTELY DO NOT want this line adding to the fix-up list!!! */
+			state->fix_up_needed = cc_false;
 
 			break;
 		}
@@ -4908,7 +4936,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 			if (ResolveExpression(state, &statement->shared.expression, &value, cc_true))
 			{
-				AddIdentifierToSymbolTable(state, label, value, SYMBOL_VARIABLE);
+				AddIdentifierToSymbolTable(state, label, value, NULL, SYMBOL_VARIABLE);
 				ListIdentifierValue(state, value);
 			}
 
@@ -5114,7 +5142,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				/* Add label to symbol table. */
 				if (!StringView_Empty(label))
 				{
-					AddIdentifierToSymbolTable(state, label, state->rs, SYMBOL_CONSTANT);
+					AddIdentifierToSymbolTable(state, label, state->rs, NULL, SYMBOL_CONSTANT);
 					ListIdentifierValue(state, state->rs);
 				}
 
@@ -5703,7 +5731,7 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 		SetLastGlobalLabel(state, label);
 
 		if (!macro->uses_label)
-			AddIdentifierToSymbolTable(state, label, state->program_counter, SYMBOL_LABEL);
+			AddIdentifierToSymbolTable(state, label, state->program_counter, NULL, SYMBOL_LABEL);
 	}
 
 	/* Extract and store the macro size specifier, if one exists. */
