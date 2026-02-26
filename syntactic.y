@@ -694,9 +694,9 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %type<expression_list> expression_list
 %type<identifier_list> identifier_list option_list
 %type<expression> expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 string
-%type<string> local_identifier
+%type<string> local_identifier identifier
 
-%destructor { String_Destroy(&$$); } TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER TOKEN_STRING TOKEN_OPTION local_identifier
+%destructor { String_Destroy(&$$); } TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER TOKEN_STRING TOKEN_OPTION local_identifier identifier
 %destructor { DestroyOperand(&$$); } operand
 %destructor { DestroyExpressionList(&$$); } expression_list
 %destructor { DestroyIdentifierList(&$$); } identifier_list option_list
@@ -2247,32 +2247,30 @@ local_identifier
 	}
 	;
 
+identifier
+	: TOKEN_IDENTIFIER
+	| local_identifier
+	| identifier local_identifier
+	{
+		const cc_bool success = String_CreateAppend(&$$, &$1, &$2);
+		String_Destroy(&$1);
+		String_Destroy(&$2);
+
+		if (!success)
+			YYNOMEM;
+	}
+	;
+
 expression8
 	: TOKEN_NUMBER
 	{
 		$$.type = EXPRESSION_NUMBER;
 		$$.shared.unsigned_long = $1;
 	}
-	| TOKEN_IDENTIFIER
+	| identifier %prec TOKEN_HIGHER_PRECEDENCE_THAN_SIZE
 	{
 		$$.type = EXPRESSION_IDENTIFIER;
 		$$.shared.string = $1;
-	}
-	| local_identifier
-	{
-		$$.type = EXPRESSION_IDENTIFIER;
-		$$.shared.string = $1;
-	}
-	| TOKEN_IDENTIFIER local_identifier
-	{
-		const cc_bool success = String_CreateAppend(&$$.shared.string, &$1, &$2);
-		String_Destroy(&$1);
-		String_Destroy(&$2);
-
-		if (!success)
-			YYNOMEM;
-
-		$$.type = EXPRESSION_IDENTIFIER;
 	}
 	| string
 	{
