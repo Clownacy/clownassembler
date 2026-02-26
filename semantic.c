@@ -4137,7 +4137,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 									bytes_to_write = 2;
 
 									if (value >= 0x8000 && value < 0xFFFF8000)
-										SemanticError(state, "Word-sized addresses cannot be higher than $7FFF or lower than $FFFF8000.");
+										SemanticError(state, "Word-sized addresses cannot be higher than $7FFF or lower than $FFFF8000, but was $%lX.", value);
 
 									break;
 
@@ -4157,7 +4157,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 									bytes_to_write = 2;
 
 									if (value >= 0x100 && value < 0xFFFFFF00)
-										SemanticError(state, "Byte-sized literals cannot be larger than $FF or smaller than -$100.");
+										SemanticError(state, "Byte-sized literals cannot be larger than $FF or smaller than -$100, but was $%lX.", value);
 
 									value &= 0xFF;
 
@@ -4168,7 +4168,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 									bytes_to_write = 2;
 
 									if (value >= 0x10000 && value < 0xFFFF0000)
-										SemanticError(state, "Word-sized literals cannot be larger than $FFFF or smaller than -$10000.");
+										SemanticError(state, "Word-sized literals cannot be larger than $FFFF or smaller than -$10000, but was $%lX.", value);
 
 									break;
 
