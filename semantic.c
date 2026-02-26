@@ -149,8 +149,7 @@ typedef struct SemanticState
 	FixUp *fix_up_list_head;
 	FixUp *fix_up_list_tail;
 	cc_bool fix_up_needed;
-	cc_bool doing_fix_up;
-	cc_bool doing_final_pass;
+	cc_bool doing_fix_up_pass;
 
 	/* If-statements. */
 	unsigned int current_if_level;
@@ -257,7 +256,7 @@ static void OutputWriteSegmentByte(SemanticState* const state, const unsigned ch
 
 		/* Avoid rewriting the record header when doing fix-ups,
 		   as the length field will be left blank. */
-		if (state->doing_fix_up)
+		if (state->doing_fix_up_pass)
 			OutputSeek(state, state->output_position + 1 + 4 + 2);
 		else
 			WriteRecordSegment(state);
@@ -506,7 +505,7 @@ static void ListSourceLine(SemanticState *state)
 static void ListIdentifierValue(SemanticState *state, unsigned long value)
 {
 	/* Output line to listing file. */
-	if (TextOutput_exists(state->listing_callbacks) && !state->doing_fix_up && !state->suppress_listing)
+	if (TextOutput_exists(state->listing_callbacks) && !state->doing_fix_up_pass && !state->suppress_listing)
 	{
 		TextOutput_fprintf(state->listing_callbacks, " =%08lX", value);
 
@@ -518,7 +517,7 @@ static void ListIdentifierValue(SemanticState *state, unsigned long value)
 static void OutputByte(SemanticState *state, unsigned int byte)
 {
 	/* Write to listing file. */
-	if (TextOutput_exists(state->listing_callbacks) && !state->doing_fix_up && !state->suppress_listing)
+	if (TextOutput_exists(state->listing_callbacks) && !state->doing_fix_up_pass && !state->suppress_listing)
 	{
 		/* We can only write up to 10 bytes. */
 		if (state->listing_counter <= 25)
@@ -661,7 +660,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 	{
 		if (must_evaluate_on_first_pass)
 			SemanticError(state, "Symbol '%.*s' must be evaluable on first pass.", (int)StringView_Length(identifier), StringView_Data(identifier));
-		else if (state->doing_final_pass)
+		else if (state->doing_fix_up_pass)
 			SemanticError(state, "Symbol '%.*s' does not exist.", (int)StringView_Length(identifier), StringView_Data(identifier));
 		else
 			state->fix_up_needed = cc_true;
@@ -701,7 +700,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 			case SYMBOL_LABEL:
 			case SYMBOL_CONSTANT:
 			case SYMBOL_VARIABLE:
-				if (state->doing_fix_up && dictionary_entry->type == SYMBOL_VARIABLE)
+				if (state->doing_fix_up_pass && dictionary_entry->type == SYMBOL_VARIABLE)
 					SemanticWarning(state, "Symbol '%.*s' forward-referenced despite being a redefineable variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
 
 				*value = dictionary_entry->shared.unsigned_long;
@@ -4741,7 +4740,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_MEXIT:
 		case STATEMENT_TYPE_LOCAL:
 		case STATEMENT_TYPE_PURGE:
-			if (!StringView_Empty(label) && !state->doing_fix_up)
+			if (!StringView_Empty(label) && !state->doing_fix_up_pass)
 			{
 				/* Handle the label here, instead of passing it onto a later function. */
 				SetLastGlobalLabel(state, label);
@@ -6386,84 +6385,51 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 				/* Process the fix-ups: reassemble instructions and reprocess
 				   directives that could not be completed in the first pass. */
-				state.doing_fix_up = cc_true;
+				state.doing_fix_up_pass = cc_true;
 
-				for (;;)
+				while (state.fix_up_list_head != NULL)
 				{
-					cc_bool a_fix_up_has_been_fixed;
-					FixUp **fix_up_pointer;
+					Location *location;
 
-					a_fix_up_has_been_fixed = cc_false;
+					/* Pop fix-up from list. */
+					FixUp* const fix_up = state.fix_up_list_head;
+					state.fix_up_list_head = fix_up->next;
 
-					fix_up_pointer = &state.fix_up_list_head;
+					/* Reset some state to how it was at the time the statement was first processed. */
+					state.macro.dictionary = fix_up->macro_dictionary;
+					state.program_counter = fix_up->program_counter;
+					OutputSeek(&state, fix_up->output_position);
+					state.segment_length = fix_up->segment_length;
+					String_Destroy(&state.last_global_label);
+					String_CreateCopy(&state.last_global_label, &fix_up->last_global_label);
+					state.source_line = &fix_up->source_line;
+					state.location = &fix_up->location;
+					*Options_Get(&state.options) = fix_up->options;
 
-					while (*fix_up_pointer != NULL)
+					/* Re-process statement. */
+					ProcessStatement(&state, &fix_up->statement, String_View(&fix_up->label));
+
+					/* We're done with this statement: delete it. */
+					DestroyStatement(&fix_up->statement);
+					if (SharedMemory_WillBeDestroyed(fix_up->macro_dictionary))
+						Dictionary_Deinit(fix_up->macro_dictionary);
+					SharedMemory_Free(fix_up->macro_dictionary);
+					String_Destroy(&fix_up->last_global_label);
+					String_Destroy(&fix_up->source_line);
+					String_Destroy(&fix_up->label);
+
+					/* Pop one location from the list. */
+					location = fix_up->location.previous;
+
+					while (location != NULL)
 					{
-						FixUp *fix_up = *fix_up_pointer;
-
-						/* Reset some state to how it was at the time the statement was first processed. */
-						state.macro.dictionary = fix_up->macro_dictionary;
-						state.program_counter = fix_up->program_counter;
-						OutputSeek(&state, fix_up->output_position);
-						state.segment_length = fix_up->segment_length;
-						String_Destroy(&state.last_global_label);
-						String_CreateCopy(&state.last_global_label, &fix_up->last_global_label);
-						state.source_line = &fix_up->source_line;
-						state.location = &fix_up->location;
-						*Options_Get(&state.options) = fix_up->options;
-
-						state.fix_up_needed = cc_false;
-
-						/* Re-process statement. */
-						ProcessStatement(&state, &fix_up->statement, String_View(&fix_up->label));
-
-						/* If this fix-up has been fixed, then we are done with it and free to delete it.
-						   Alternatively, if this is the final pass, then just delete the fix-ups anyway
-						   since they won't be needed anymore. */
-						if (!state.fix_up_needed || state.doing_final_pass)
-						{
-							Location *location;
-
-							*fix_up_pointer = fix_up->next;
-
-							/* We're done with this statement: delete it. */
-							DestroyStatement(&fix_up->statement);
-							if (SharedMemory_WillBeDestroyed(fix_up->macro_dictionary))
-								Dictionary_Deinit(fix_up->macro_dictionary);
-							SharedMemory_Free(fix_up->macro_dictionary);
-							String_Destroy(&fix_up->last_global_label);
-							String_Destroy(&fix_up->source_line);
-							String_Destroy(&fix_up->label);
-
-							/* Pop one location from the list. */
-							location = fix_up->location.previous;
-
-							while (location != NULL)
-							{
-								Location *previous_location = location->previous;
-								String_Destroy(&location->file_path);
-								free(location);
-								location = previous_location;
-							}
-
-							free(fix_up);
-
-							a_fix_up_has_been_fixed = cc_true;
-						}
-						else
-						{
-							fix_up_pointer = &fix_up->next;
-						}
+						Location *previous_location = location->previous;
+						String_Destroy(&location->file_path);
+						free(location);
+						location = previous_location;
 					}
 
-					/* Once the final pass has ended, we can exit this infinite loop. */
-					if (state.doing_final_pass)
-						break;
-
-					/* If no more fix-ups can be fixed, then something has gone wrong
-					   and we should do one final pass to print error messages. */
-					if (!a_fix_up_has_been_fixed)
-						state.doing_final_pass = cc_true;
+					free(fix_up);
 				}
 
 				/* Produce asm68k symbol file, if requested. */
