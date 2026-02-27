@@ -146,10 +146,10 @@ typedef struct SemanticState
 	cc_bool end;
 
 	/* Fix-ups. */
-	FixUp *fix_up_list_head;
-	FixUp *fix_up_list_tail;
-	cc_bool fix_up_needed;
-	cc_bool doing_fix_up_pass;
+	FixUp *fixup_list_head;
+	FixUp *fixup_list_tail;
+	cc_bool fixup_needed;
+	cc_bool doing_fixup_pass;
 
 	/* If-statements. */
 	unsigned int current_if_level;
@@ -256,7 +256,7 @@ static void OutputWriteSegmentByte(SemanticState* const state, const unsigned ch
 
 		/* Avoid rewriting the record header when doing fix-ups,
 		   as the length field will be left blank. */
-		if (state->doing_fix_up_pass)
+		if (state->doing_fixup_pass)
 			OutputSeek(state, state->output_position + 1 + 4 + 2);
 		else
 			WriteRecordSegment(state);
@@ -505,7 +505,7 @@ static void ListSourceLine(SemanticState *state)
 static void ListIdentifierValue(SemanticState *state, unsigned long value)
 {
 	/* Output line to listing file. */
-	if (TextOutput_exists(state->listing_callbacks) && !state->doing_fix_up_pass && !state->suppress_listing)
+	if (TextOutput_exists(state->listing_callbacks) && !state->doing_fixup_pass && !state->suppress_listing)
 	{
 		TextOutput_fprintf(state->listing_callbacks, " =%08lX", value);
 
@@ -517,7 +517,7 @@ static void ListIdentifierValue(SemanticState *state, unsigned long value)
 static void OutputByte(SemanticState *state, unsigned int byte)
 {
 	/* Write to listing file. */
-	if (TextOutput_exists(state->listing_callbacks) && !state->doing_fix_up_pass && !state->suppress_listing)
+	if (TextOutput_exists(state->listing_callbacks) && !state->doing_fixup_pass && !state->suppress_listing)
 	{
 		/* We can only write up to 10 bytes. */
 		if (state->listing_counter <= 25)
@@ -660,10 +660,10 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 	{
 		if (must_evaluate_on_first_pass)
 			SemanticError(state, "Symbol '%.*s' must be evaluable on first pass.", (int)StringView_Length(identifier), StringView_Data(identifier));
-		else if (state->doing_fix_up_pass)
+		else if (state->doing_fixup_pass)
 			SemanticError(state, "Symbol '%.*s' does not exist.", (int)StringView_Length(identifier), StringView_Data(identifier));
 		else
-			state->fix_up_needed = cc_true;
+			state->fixup_needed = cc_true;
 
 		success = cc_false;
 	}
@@ -700,7 +700,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 			case SYMBOL_LABEL:
 			case SYMBOL_CONSTANT:
 			case SYMBOL_VARIABLE:
-				if (state->doing_fix_up_pass && dictionary_entry->type == SYMBOL_VARIABLE)
+				if (state->doing_fixup_pass && dictionary_entry->type == SYMBOL_VARIABLE)
 					SemanticWarning(state, "Symbol '%.*s' forward-referenced despite being a redefineable variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
 
 				*value = dictionary_entry->shared.unsigned_long;
@@ -4740,7 +4740,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		case STATEMENT_TYPE_MEXIT:
 		case STATEMENT_TYPE_LOCAL:
 		case STATEMENT_TYPE_PURGE:
-			if (!StringView_Empty(label) && !state->doing_fix_up_pass)
+			if (!StringView_Empty(label) && !state->doing_fixup_pass)
 			{
 				/* Handle the label here, instead of passing it onto a later function. */
 				SetLastGlobalLabel(state, label);
@@ -4874,7 +4874,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			}
 
 			/* Hack: We ABSOLUTELY DO NOT want this line adding to the fix-up list!!! */
-			state->fix_up_needed = cc_false;
+			state->fixup_needed = cc_false;
 
 			break;
 		}
@@ -5416,11 +5416,11 @@ static void ParseLine(SemanticState* const state, const StringView* const label,
 	}
 	else
 	{
-		state->fix_up_needed = cc_false;
+		state->fixup_needed = cc_false;
 
 		ProcessStatement(state, &statement, label);
 
-		if (!state->fix_up_needed)
+		if (!state->fixup_needed)
 		{
 			/* We're done with this statement: delete it. */
 			DestroyStatement(&statement);
@@ -5429,9 +5429,9 @@ static void ParseLine(SemanticState* const state, const StringView* const label,
 		{
 			/* If the statement cannot currently be processed because of undefined symbols,
 			   add it to the fix-up list so we can try again later. */
-			FixUp *fix_up = (FixUp*)MallocAndHandleError(state, sizeof(FixUp));
+			FixUp *fixup = (FixUp*)MallocAndHandleError(state, sizeof(FixUp));
 
-			if (fix_up == NULL)
+			if (fixup == NULL)
 			{
 				/* Might as well delete this, since there's no fix-up to take ownership of it. */
 				DestroyStatement(&statement);
@@ -5439,20 +5439,20 @@ static void ParseLine(SemanticState* const state, const StringView* const label,
 			else
 			{
 				const Location *source_location = state->location;
-				Location *destination_location = &fix_up->location;
+				Location *destination_location = &fixup->location;
 
 				/* Backup the statement. */
-				fix_up->statement = statement;
+				fixup->statement = statement;
 
 				/* Backup some state. */
-				fix_up->macro_dictionary = (Dictionary_State*)SharedMemory_Copy(state->macro.dictionary);
-				fix_up->program_counter = starting_program_counter;
-				fix_up->output_position = starting_output_position;
-				fix_up->segment_length = starting_segment_length;
-				String_CreateCopy(&fix_up->last_global_label, &state->last_global_label);
-				String_CreateCopy(&fix_up->source_line, state->source_line);
-				String_CreateCopyView(&fix_up->label, label);
-				fix_up->options = *Options_Get(&state->options);
+				fixup->macro_dictionary = (Dictionary_State*)SharedMemory_Copy(state->macro.dictionary);
+				fixup->program_counter = starting_program_counter;
+				fixup->output_position = starting_output_position;
+				fixup->segment_length = starting_segment_length;
+				String_CreateCopy(&fixup->last_global_label, &state->last_global_label);
+				String_CreateCopy(&fixup->source_line, state->source_line);
+				String_CreateCopyView(&fixup->label, label);
+				fixup->options = *Options_Get(&state->options);
 
 				/* Clone the location. */
 				*destination_location = *source_location;
@@ -5475,17 +5475,17 @@ static void ParseLine(SemanticState* const state, const StringView* const label,
 				}
 
 				/* Add the new fix-up to the list. */
-				if (state->fix_up_list_head == NULL)
-					state->fix_up_list_head = fix_up;
+				if (state->fixup_list_head == NULL)
+					state->fixup_list_head = fixup;
 				else
-					state->fix_up_list_tail->next = fix_up;
+					state->fixup_list_tail->next = fixup;
 
-				state->fix_up_list_tail = fix_up;
+				state->fixup_list_tail = fixup;
 
-				fix_up->next = NULL;
+				fixup->next = NULL;
 			}
 
-			state->fix_up_needed = cc_false;
+			state->fixup_needed = cc_false;
 		}
 	}
 }
@@ -6385,41 +6385,41 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 				/* Process the fix-ups: reassemble instructions and reprocess
 				   directives that could not be completed in the first pass. */
-				state.doing_fix_up_pass = cc_true;
+				state.doing_fixup_pass = cc_true;
 
-				while (state.fix_up_list_head != NULL)
+				while (state.fixup_list_head != NULL)
 				{
 					Location *location;
 
 					/* Pop fix-up from list. */
-					FixUp* const fix_up = state.fix_up_list_head;
-					state.fix_up_list_head = fix_up->next;
+					FixUp* const fixup = state.fixup_list_head;
+					state.fixup_list_head = fixup->next;
 
 					/* Reset some state to how it was at the time the statement was first processed. */
-					state.macro.dictionary = fix_up->macro_dictionary;
-					state.program_counter = fix_up->program_counter;
-					OutputSeek(&state, fix_up->output_position);
-					state.segment_length = fix_up->segment_length;
+					state.macro.dictionary = fixup->macro_dictionary;
+					state.program_counter = fixup->program_counter;
+					OutputSeek(&state, fixup->output_position);
+					state.segment_length = fixup->segment_length;
 					String_Destroy(&state.last_global_label);
-					String_CreateCopy(&state.last_global_label, &fix_up->last_global_label);
-					state.source_line = &fix_up->source_line;
-					state.location = &fix_up->location;
-					*Options_Get(&state.options) = fix_up->options;
+					String_CreateCopy(&state.last_global_label, &fixup->last_global_label);
+					state.source_line = &fixup->source_line;
+					state.location = &fixup->location;
+					*Options_Get(&state.options) = fixup->options;
 
 					/* Re-process statement. */
-					ProcessStatement(&state, &fix_up->statement, String_View(&fix_up->label));
+					ProcessStatement(&state, &fixup->statement, String_View(&fixup->label));
 
 					/* We're done with this statement: delete it. */
-					DestroyStatement(&fix_up->statement);
-					if (SharedMemory_WillBeDestroyed(fix_up->macro_dictionary))
-						Dictionary_Deinit(fix_up->macro_dictionary);
-					SharedMemory_Free(fix_up->macro_dictionary);
-					String_Destroy(&fix_up->last_global_label);
-					String_Destroy(&fix_up->source_line);
-					String_Destroy(&fix_up->label);
+					DestroyStatement(&fixup->statement);
+					if (SharedMemory_WillBeDestroyed(fixup->macro_dictionary))
+						Dictionary_Deinit(fixup->macro_dictionary);
+					SharedMemory_Free(fixup->macro_dictionary);
+					String_Destroy(&fixup->last_global_label);
+					String_Destroy(&fixup->source_line);
+					String_Destroy(&fixup->label);
 
 					/* Pop one location from the list. */
-					location = fix_up->location.previous;
+					location = fixup->location.previous;
 
 					while (location != NULL)
 					{
@@ -6429,7 +6429,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 						location = previous_location;
 					}
 
-					free(fix_up);
+					free(fixup);
 				}
 
 				/* Produce asm68k symbol file, if requested. */
