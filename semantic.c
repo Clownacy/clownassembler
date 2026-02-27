@@ -4933,11 +4933,14 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			if (Options_Get(&state->options)->equ_set_descope_local_labels)
 				SetLastGlobalLabel(state, label);
 
-			if (ResolveExpression(state, &statement->shared.expression, &value, cc_true))
+			if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
 			{
-				AddIdentifierToSymbolTable(state, label, value, NULL, SYMBOL_VARIABLE);
-				ListIdentifierValue(state, value);
+				SemanticError(state, "Value must be evaluable on the first pass.");
+				break;
 			}
+
+			AddIdentifierToSymbolTable(state, label, value, NULL, SYMBOL_VARIABLE);
+			ListIdentifierValue(state, value);
 
 			break;
 		}
