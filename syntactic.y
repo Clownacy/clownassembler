@@ -1789,6 +1789,12 @@ operand
 		$$.literal = $2;
 		$$.main_register = $4;
 	}
+	| '(' TOKEN_ADDRESS_REGISTER ',' expression ')'
+	{
+		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
+		$$.literal = $4;
+		$$.main_register = $2;
+	}
 	| '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register size ')'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -1857,6 +1863,11 @@ operand
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		$$.literal = $2;
+	}
+	| '(' TOKEN_PROGRAM_COUNTER ',' expression ')'
+	{
+		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
+		$$.literal = $4;
 	}
 	| '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register size ')'
 	{
