@@ -2929,6 +2929,18 @@ static const InstructionMetadata instruction_metadata_all[] = {
 	},
 };
 
+static void AdvanceProgramCounter(SemanticState* const state, const unsigned long delta)
+{
+	state->program_counter += delta;
+	state->program_counter &= 0xFFFFFFFF;
+}
+
+static void RegressProgramCounter(SemanticState* const state, const unsigned long delta)
+{
+	state->program_counter -= delta;
+	state->program_counter &= 0xFFFFFFFF;
+}
+
 static void ProcessInstruction(SemanticState *state, StatementInstruction *instruction)
 {
 	unsigned int machine_code;
@@ -2949,7 +2961,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 	if ((state->program_counter & 1) != 0)
 		SemanticWarning(state, "Instruction is at an odd address.");
 
-	state->program_counter += 2;
+	AdvanceProgramCounter(state, 2);
 
 	ResolveInstructionAmbiguity(state, instruction);
 	OptimiseInstruction(state, instruction);
@@ -4305,7 +4317,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							break;
 					}
 
-					state->program_counter += bytes_to_write;
+					AdvanceProgramCounter(state, bytes_to_write);
 
 					while (bytes_to_write-- > 0)
 						OutputByte(state, (value >> (8 * bytes_to_write)) & 0xFF);
@@ -4317,7 +4329,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 				{
 					unsigned int bytes_to_write;
 
-					state->program_counter += 2;
+					AdvanceProgramCounter(state, 2);
 
 					for (bytes_to_write = 2; bytes_to_write-- > 0; )
 						OutputByte(state, (operand->main_register >> (8 * bytes_to_write)) & 0xFF);
@@ -4437,7 +4449,7 @@ static void OutputDcValue(SemanticState *state, const Size size, unsigned long v
 			break;
 	}
 
-	state->program_counter += bytes_to_write;
+	AdvanceProgramCounter(state, bytes_to_write);
 
 	while (bytes_to_write-- != 0)
 		OutputByte(state, (value >> (bytes_to_write * 8)) & 0xFF);
@@ -4448,7 +4460,7 @@ static void PerformEven(SemanticState* const state)
 	/* Pad to the nearest even address. */
 	if (state->program_counter & 1)
 	{
-		++state->program_counter;
+		AdvanceProgramCounter(state, 1);
 		OutputByte(state, 0);
 	}
 }
@@ -4623,7 +4635,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 					break;
 				}
 
-				++state->program_counter;
+				AdvanceProgramCounter(state, 1);
 				OutputWriteSegmentByte(state, character);
 			}
 		}
@@ -4634,7 +4646,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 			/* TODO: Batch bytes to make this faster? */
 			while ((character = fgetc(input_file)) != EOF)
 			{
-				++state->program_counter;
+				AdvanceProgramCounter(state, 1);
 				OutputWriteSegmentByte(state, character);
 			}
 		}
@@ -5181,7 +5193,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					while (state->program_counter != target)
 					{
 						OutputByte(state, 0);
-						++state->program_counter;
+						AdvanceProgramCounter(state, 1);
 					}
 				}
 			}
@@ -5311,7 +5323,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					state->obj_delta = value - state->program_counter;
 
 				state->obj_active = cc_true;
-				state->program_counter += state->obj_delta;
+				AdvanceProgramCounter(state, state->obj_delta);
 			}
 
 			break;
@@ -5323,7 +5335,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			}
 			else
 			{
-				state->program_counter -= state->obj_delta;
+				RegressProgramCounter(state, state->obj_delta);
 				state->obj_active = cc_false;
 			}
 
@@ -5336,6 +5348,10 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
 			{
 				SemanticError(state, "Value must be evaluable on the first pass.");
+			}
+			else if (value > 0xFFFFFFFF)
+			{
+				SemanticError(state, "Value cannot be larger than 0xFFFFFFFF (was 0x%lX).", value);
 			}
 			else
 			{
