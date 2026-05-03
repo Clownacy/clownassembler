@@ -777,6 +777,10 @@ static void DestroySymbol(Dictionary_Entry *dictionary_entry)
 			String_Destroy(&dictionary_entry->shared.string);
 			break;
 
+		case SYMBOL_EXPRESSION_CONSTANT:
+			DestroyExpression((Expression*)dictionary_entry->shared.pointer);
+			break;
+
 		case SYMBOL_MACRO:
 		{
 			Macro *macro = (Macro*)dictionary_entry->shared.pointer;
