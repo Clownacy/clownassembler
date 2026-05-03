@@ -780,6 +780,7 @@ static void DestroySymbol(Dictionary_Entry *dictionary_entry)
 
 		case SYMBOL_EXPRESSION_CONSTANT:
 			DestroyExpression((Expression*)dictionary_entry->shared.pointer);
+			free(dictionary_entry->shared.pointer);
 			return;
 
 		case SYMBOL_MACRO:
@@ -1500,6 +1501,11 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const StringView *l
 				else if (type == SYMBOL_CONSTANT && symbol->type == SYMBOL_CONSTANT && symbol->shared.unsigned_long != value)
 				{
 					SemanticError(state, "Constant cannot be redefined to a different value.");
+				}
+				else
+				{
+					/* Free the old symbol, to prevent a leak. */
+					DestroySymbol(symbol);
 				}
 			}
 
