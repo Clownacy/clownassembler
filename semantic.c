@@ -20,11 +20,11 @@
 #include "semantic.h"
 
 #include <assert.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 
 #include "clowncommon/clowncommon.h"
 
@@ -114,8 +114,8 @@ typedef struct SemanticState_Macro
 	String *argument_list;
 	size_t total_arguments, total_arguments_at_start;
 	unsigned int starting_if_level;
+	unsigned int depth;
 	cc_bool active;
-	cc_u16l depth;
 } SemanticState_Macro;
 
 typedef struct SemanticState
@@ -883,7 +883,9 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 							success = cc_false;
 						}
 						else
+						{
 							*value = left_value / right_value;
+						}
 						break;
 
 					case EXPRESSION_MODULO:
@@ -893,7 +895,9 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 							success = cc_false;
 						}
 						else
+						{
 							*value = left_value % right_value;
+						}
 						break;
 
 					case EXPRESSION_LOGICAL_OR:
@@ -940,10 +944,9 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 						*value = left_value >= right_value ? -1 : 0;
 						break;
 
-					/*
-					 * asm68k does 32-bit arithmetic, so it masks the shift amount to 0-31 (though whether this is intentional or just a side-effect of using x86 shift instructions that do this is unknown).
-					 * (note: this is also needed to prevent undefined behaviour in C from shifting by an amount greater than or equal to the width of the type)
-					 */
+					/* asm68k does 32-bit arithmetic, so it masks the shift amount to 0-31 (though whether this is intentional or just a side-effect of using x86 shift instructions that do this is unknown).
+					   (note: this is also needed to prevent undefined behaviour in C from shifting by an amount greater than or equal to the width of the type). */#
+					/* TODO: Print a warning here. */
 					case EXPRESSION_LEFT_SHIFT:
 						*value = left_value << (right_value % 32);
 						break;
@@ -1200,8 +1203,10 @@ static void PurgeMacro(SemanticState* const state, const StringView* identifier,
 	}
 	else if (CurrentlyExpandingMacro(state))
 	{
-		/* TODO idk if that could be meaningfully supported in some way but for now this just seems like a "how to crash and burn into UAF/double free" without a bunch of changes to support it, for not much benefit */
-		/* We don't check for the name of the currently-expanded macro because one could e.g. invoke a, which invokes b, which redefines a, and there is currently no simple wey to check the entire macro expansion stack. */
+		/* TODO: I don't know if that could be meaningfully supported in some way but for now this just seems like a
+		   "how to crash and burn into UAF/double free" without a bunch of changes to support it, for not much benefit.
+		   We don't check for the name of the currently-expanded macro because one could e.g. invoke a, which invokes b,
+		   which redefines a, and there is currently no simple wey to check the entire macro expansion stack. */
 		SemanticError(state, "Cannot purge '%.*s' during macro expansion.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
 	}
 	else
@@ -1262,7 +1267,7 @@ static void TerminateMacro(SemanticState *state)
 		}
 	}
 
-	/* Free all of this, in case we didn't get all the way to creating the Macro and moving everything over */
+	/* Free all of this, in case we didn't get all the way to creating the macro and moving everything over. */
 	FreeSourceLineList(state->shared.macro.source_line_list.head);
 	DestroyIdentifierList(&state->shared.macro.parameter_names);
 	String_Destroy(&state->shared.macro.name);
@@ -1472,12 +1477,18 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const StringView *l
 
 			if (symbol != NULL)
 			{
-				if (symbol->type != -1 && (SymbolType)symbol->type != type) {
-					symbol = NULL; /* We can't do the assignment in this case, actually doing redefinitions like this would wreck havoc - e.g. redefining a macro while it is being executed would force us to either leak it or have everything implode in a use-after-free mess */
+				if (symbol->type != -1 && (SymbolType)symbol->type != type)
+				{
+					/* We can't do the assignment in this case, actually doing redefinitions like this would wreck havoc -
+					   e.g. redefining a macro while it is being executed would force us to either leak it or have everything
+					   implode in a use-after-free mess. */
+					symbol = NULL;
 					SemanticError(state, "Attempted to redefine symbol as a different type.");
 				}
 				else if (type == SYMBOL_CONSTANT && symbol->type == SYMBOL_CONSTANT && symbol->shared.unsigned_long != value)
+				{
 					SemanticError(state, "Constant cannot be redefined to a different value.");
+				}
 			}
 
 			break;
@@ -4334,14 +4345,13 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 			}
 			else if (dictionary_entry->type != SYMBOL_STRING_CONSTANT)
 			{
-				/*
-				 * TODO this is not a common case, but it can occur if e.g. someone redefines a parameter name as a normal symbol in the macro body.
-				 * See tests/previously-crashing/redefine-macro-parameter-in-macro-body.asm for an example of this.
-				 * That'll already have caused an error to be emitted, so this error might be somewhat cascading,
-				 * but I'm not certain it's not possible to hit this in other ways,
-				 * and in any case if we get here I'm pretty sure something has gone wrong, so we should emit an error in case one hasn't already been emitted.
-				 * It might also be feasible to handle this without forcing the symbol to become a string constant, but right now this seems like the simplest solution to prevent a crash
-				 */
+				/* TODO: this is not a common case, but it can occur if e.g. someone redefines a parameter name as a normal symbol in the macro body.
+				   See tests/previously-crashing/redefine-macro-parameter-in-macro-body.asm for an example of this.
+				   That'll already have caused an error to be emitted, so this error might be somewhat cascading,
+				   but I'm not certain it's not possible to hit this in other ways,
+				   and in any case if we get here I'm pretty sure something has gone wrong, so we should emit an error in case one hasn't already been emitted.
+				   It might also be feasible to handle this without forcing the symbol to become a string constant, but right now this seems like the simplest
+				   solution to prevent a crash. */
 				SemanticError(state, "Attempted to redefined symbol '%.*s' as a string constant.", (int)StringView_Length(parameter), StringView_Data(parameter));
 				dictionary_entry->type = SYMBOL_STRING_CONSTANT;
 			}
@@ -4945,7 +4955,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				end = start - 1;
 
 			/* Clamp start and end to make it so that, if the string would go beyond the end, it is truncated appropriately instead of going out-of-bounds */
-			/* (this matches asm68k, as far as I can see) */
+			/* (this matches asm68k, as far as I can see). */
 			if (start > String_Length(&statement->shared.substr.string))
 				start = String_Length(&statement->shared.substr.string) + 1;
 			if (end > String_Length(&statement->shared.substr.string))
@@ -5093,7 +5103,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				}
 				else if (size_boundary == 0)
 				{
-					/* Idk if there's a way to make this have meaningfully useful semantics. asm68k errors on this, so for now we will too. */
+					/* I don't know if there's a way to make this have meaningfully useful semantics. asm68k errors on this, so for now we will too. */
 					SemanticError(state, "Size boundary cannot be zero.");
 				}
 				else
@@ -5363,8 +5373,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			String string;
 
 			if (!StringStack_Pop(&state->string_stack, &string))
+			{
 				SemanticError(state, "POPP used but the string stack was empty.");
-			else {
+			}
+			else
+			{
 				PushSubstitute(state, String_View(&statement->shared.string), String_View(&string));
 				String_Destroy(&string);
 			}
@@ -5743,232 +5756,234 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 
 	const SemanticState_Macro previous_macro_state = state->macro;
 
-	if (state->macro.depth >= 2000) {
+	if (state->macro.depth >= 2000)
+	{
 		SemanticError(state, "Macro expansion depth exceeded.");
-		goto out;
-	}
-
-	state->macro.metadata = macro;
-	state->macro.dictionary = (Dictionary_State*)SharedMemory_Allocate(sizeof(Dictionary_State));
-
-	if (state->macro.dictionary == NULL)
-	{
-		OutOfMemoryError(state);
-		goto out;
-	}
-
-	/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
-	Dictionary_Init(state->macro.dictionary, Options_Get(&state->options)->case_insensitive);
-	Substitute_Initialise(&state->macro.substitutions);
-	state->macro.closure = &closure;
-	state->macro.argument_list = NULL;
-	state->macro.total_arguments = 0;
-	state->macro.total_arguments_at_start = 0;
-	state->macro.starting_if_level = state->current_if_level;
-	state->macro.active = cc_true;
-	++state->macro.depth;
-
-	++state->current_macro_invocation;
-
-	closure.state = state;
-
-	state->suppress_listing = cc_true;
-
-	source_line_pointer += strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
-
-	if (!StringView_Empty(label))
-	{
-		SetLastGlobalLabel(state, label);
-
-		if (!macro->uses_label)
-			AddIdentifierToSymbolTable(state, label, state->program_counter, SYMBOL_LABEL);
-	}
-
-	/* Extract and store the macro size specifier, if one exists. */
-	if (source_line_pointer[0] == '.')
-	{
-		/* Skip the '.' character. */
-		++source_line_pointer;
-
-		StringView_Create(&closure.size, source_line_pointer, strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS));
-
-		/* Advance past the size specifier. */
-		source_line_pointer += StringView_Length(&closure.size);
 	}
 	else
 	{
-		StringView_CreateBlank(&closure.size);
-	}
+		state->macro.metadata = macro;
+		state->macro.dictionary = (Dictionary_State*)SharedMemory_Allocate(sizeof(Dictionary_State));
 
-	/* Extract combined arguments string. */
-	{
-		const char* const arguments_string_start = source_line_pointer + strspn(source_line_pointer, " \t");
-		const char *arguments_string_end = strchr(arguments_string_start, ';');
-
-		if (arguments_string_end == NULL)
-			arguments_string_end = String_Data(state->source_line) + String_Length(state->source_line);
-
-		/* Remove trailing whitespace. */
-		while (arguments_string_end > arguments_string_start && (arguments_string_end[-1] == ' ' || arguments_string_end[-1] == '\t'))
-			--arguments_string_end;
-
-		StringView_Create(&closure.arguments, arguments_string_start, arguments_string_end - arguments_string_start);
-	}
-
-	closure.label = *label;
-	closure.unique_suffix = ComputeUniqueMacroSuffix(state);
-	String_CreateBlank(&closure.symbol_value_string);
-
-	/* Extract and store the individual macro arguments, if they exist. */
-	{
-		char character;
-
-		do
+		if (state->macro.dictionary == NULL)
 		{
-			const char* const argument_string_start = source_line_pointer += strspn(source_line_pointer, " \t");
-
-			do
-			{
-				character = *source_line_pointer++;
-
-				/* If commas appear between parentheses, then we shouldn't separate on them. */
-				/* This is because of the possibility of code such as '(a0,d0.w)' being passed as an argument. */
-				/* To do this, manually skip characters until we find a closing parenthesis. */
-				if (character == '(')
-				{
-					unsigned int argument_depth = 1;
-
-					while (argument_depth != 0)
-					{
-						character = *source_line_pointer++;
-
-						if (character == '(')
-							++argument_depth;
-						else if (character == ')')
-							--argument_depth;
-						else if (character == ';' || character == '\0')
-							break;
-					}
-				}
-
-				/* If we encounter a comma, a comment, or the end of the line, then split this off as a macro argument. */
-				if (character == ',' || character == ';' || character == '\0')
-				{
-					/* Extract argument. */
-					StringView argument;
-					StringView_Create(&argument, argument_string_start, source_line_pointer - argument_string_start - 1);
-
-					/* Remove trailing whitespace. */
-					while (StringView_Length(&argument) != 0)
-					{
-						const char character = StringView_Back(&argument);
-
-						if (character != ' ' && character != '\t')
-							break;
-
-						StringView_SubStr(&argument, &argument, 0, StringView_Length(&argument) - 1);
-					}
-
-					/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
-					if (StringView_Length(&argument) == 0 && (character == ';' || character == '\0') && state->macro.total_arguments == 0)
-						break;
-
-					/* Add to argument list. */
-					{
-						String* const new_argument_list = (String*)realloc(state->macro.argument_list, sizeof(*state->macro.argument_list) * (state->macro.total_arguments + 1));
-
-						if (new_argument_list != NULL)
-						{
-							state->macro.argument_list = new_argument_list;
-							String_CreateCopyView(&state->macro.argument_list[state->macro.total_arguments], &argument);
-
-							if (StringView_Length(&argument) != 0 && StringView_At(&argument, 0) != '"' && StringView_At(&argument, 0) != '\'' && Options_Get(&state->options)->case_insensitive)
-								String_ToLower(&state->macro.argument_list[state->macro.total_arguments]);
-
-							++state->macro.total_arguments;
-							++state->macro.total_arguments_at_start;
-						}
-					}
-
-					break;
-				}
-			} while (character != ';' && character != '\0');
-		} while (character != ';' && character != '\0');
-
-		/* Add identifier substitute. */
-		PushMacroArgumentSubstitutions(state);
-	}
-
-	/* Finally, invoke the macro. */
-	{
-		Location location;
-		const SourceLineListNode *source_line_list_node;
-
-		const cc_bool previous_listing_macro = state->listing_macro;
-
-		/* Flush line before changing this state, so that the macro line is not given the 'M' label. */
-		ListSourceLine(state);
-		state->listing_macro = cc_true;
-
-		/* Push a new location (this macro).*/
-		String_CreateCopy(&location.file_path, &macro->name);
-		location.line_number = 0;
-
-		location.previous = state->location;
-		state->location = &location;
-
-		/* Iterate over each line of the macro, sending it to be processed. */
-		for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL && CurrentlyExpandingMacro(state); source_line_list_node = source_line_list_node->next)
+			OutOfMemoryError(state);
+		}
+		else
 		{
-			/* TODO: This is redundant and wrong: these substitutions are already done later, and this should only be doing the macro arguments! */
-			if (macro->is_short)
+			/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
+			Dictionary_Init(state->macro.dictionary, Options_Get(&state->options)->case_insensitive);
+			Substitute_Initialise(&state->macro.substitutions);
+			state->macro.closure = &closure;
+			state->macro.argument_list = NULL;
+			state->macro.total_arguments = 0;
+			state->macro.total_arguments_at_start = 0;
+			state->macro.starting_if_level = state->current_if_level;
+			state->macro.active = cc_true;
+			++state->macro.depth;
+
+			++state->current_macro_invocation;
+
+			closure.state = state;
+
+			state->suppress_listing = cc_true;
+
+			source_line_pointer += strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
+
+			if (!StringView_Empty(label))
 			{
-				String source_line;
-				String_CreateCopy(&source_line, &source_line_list_node->source_line_buffer);
-				PerformSubstitutions(state, &source_line, cc_false);
-				AssembleLine(state, &source_line, Options_Get(&state->options)->expand_all_macros);
-				String_Destroy(&source_line);
+				SetLastGlobalLabel(state, label);
+
+				if (!macro->uses_label)
+					AddIdentifierToSymbolTable(state, label, state->program_counter, SYMBOL_LABEL);
+			}
+
+			/* Extract and store the macro size specifier, if one exists. */
+			if (source_line_pointer[0] == '.')
+			{
+				/* Skip the '.' character. */
+				++source_line_pointer;
+
+				StringView_Create(&closure.size, source_line_pointer, strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS));
+
+				/* Advance past the size specifier. */
+				source_line_pointer += StringView_Length(&closure.size);
 			}
 			else
 			{
-				AssembleLine(state, &source_line_list_node->source_line_buffer, Options_Get(&state->options)->expand_all_macros);
+				StringView_CreateBlank(&closure.size);
+			}
+
+			/* Extract combined arguments string. */
+			{
+				const char* const arguments_string_start = source_line_pointer + strspn(source_line_pointer, " \t");
+				const char *arguments_string_end = strchr(arguments_string_start, ';');
+
+				if (arguments_string_end == NULL)
+					arguments_string_end = String_Data(state->source_line) + String_Length(state->source_line);
+
+				/* Remove trailing whitespace. */
+				while (arguments_string_end > arguments_string_start && (arguments_string_end[-1] == ' ' || arguments_string_end[-1] == '\t'))
+					--arguments_string_end;
+
+				StringView_Create(&closure.arguments, arguments_string_start, arguments_string_end - arguments_string_start);
+			}
+
+			closure.label = *label;
+			closure.unique_suffix = ComputeUniqueMacroSuffix(state);
+			String_CreateBlank(&closure.symbol_value_string);
+
+			/* Extract and store the individual macro arguments, if they exist. */
+			{
+				char character;
+
+				do
+				{
+					const char* const argument_string_start = source_line_pointer += strspn(source_line_pointer, " \t");
+
+					do
+					{
+						character = *source_line_pointer++;
+
+						/* If commas appear between parentheses, then we shouldn't separate on them. */
+						/* This is because of the possibility of code such as '(a0,d0.w)' being passed as an argument. */
+						/* To do this, manually skip characters until we find a closing parenthesis. */
+						if (character == '(')
+						{
+							unsigned int argument_depth = 1;
+
+							while (argument_depth != 0)
+							{
+								character = *source_line_pointer++;
+
+								if (character == '(')
+									++argument_depth;
+								else if (character == ')')
+									--argument_depth;
+								else if (character == ';' || character == '\0')
+									break;
+							}
+						}
+
+						/* If we encounter a comma, a comment, or the end of the line, then split this off as a macro argument. */
+						if (character == ',' || character == ';' || character == '\0')
+						{
+							/* Extract argument. */
+							StringView argument;
+							StringView_Create(&argument, argument_string_start, source_line_pointer - argument_string_start - 1);
+
+							/* Remove trailing whitespace. */
+							while (StringView_Length(&argument) != 0)
+							{
+								const char character = StringView_Back(&argument);
+
+								if (character != ' ' && character != '\t')
+									break;
+
+								StringView_SubStr(&argument, &argument, 0, StringView_Length(&argument) - 1);
+							}
+
+							/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
+							if (StringView_Length(&argument) == 0 && (character == ';' || character == '\0') && state->macro.total_arguments == 0)
+								break;
+
+							/* Add to argument list. */
+							{
+								String* const new_argument_list = (String*)realloc(state->macro.argument_list, sizeof(*state->macro.argument_list) * (state->macro.total_arguments + 1));
+
+								if (new_argument_list != NULL)
+								{
+									state->macro.argument_list = new_argument_list;
+									String_CreateCopyView(&state->macro.argument_list[state->macro.total_arguments], &argument);
+
+									if (StringView_Length(&argument) != 0 && StringView_At(&argument, 0) != '"' && StringView_At(&argument, 0) != '\'' && Options_Get(&state->options)->case_insensitive)
+										String_ToLower(&state->macro.argument_list[state->macro.total_arguments]);
+
+									++state->macro.total_arguments;
+									++state->macro.total_arguments_at_start;
+								}
+							}
+
+							break;
+						}
+					} while (character != ';' && character != '\0');
+				} while (character != ';' && character != '\0');
+
+				/* Add identifier substitute. */
+				PushMacroArgumentSubstitutions(state);
+			}
+
+			/* Finally, invoke the macro. */
+			{
+				Location location;
+				const SourceLineListNode *source_line_list_node;
+
+				const cc_bool previous_listing_macro = state->listing_macro;
+
+				/* Flush line before changing this state, so that the macro line is not given the 'M' label. */
+				ListSourceLine(state);
+				state->listing_macro = cc_true;
+
+				/* Push a new location (this macro).*/
+				String_CreateCopy(&location.file_path, &macro->name);
+				location.line_number = 0;
+
+				location.previous = state->location;
+				state->location = &location;
+
+				/* Iterate over each line of the macro, sending it to be processed. */
+				for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL && CurrentlyExpandingMacro(state); source_line_list_node = source_line_list_node->next)
+				{
+					/* TODO: This is redundant and wrong: these substitutions are already done later, and this should only be doing the macro arguments! */
+					if (macro->is_short)
+					{
+						String source_line;
+						String_CreateCopy(&source_line, &source_line_list_node->source_line_buffer);
+						PerformSubstitutions(state, &source_line, cc_false);
+						AssembleLine(state, &source_line, Options_Get(&state->options)->expand_all_macros);
+						String_Destroy(&source_line);
+					}
+					else
+					{
+						AssembleLine(state, &source_line_list_node->source_line_buffer, Options_Get(&state->options)->expand_all_macros);
+					}
+				}
+
+				if (!macro->is_short)
+				{
+					/* 'MEXIT' may have ended us midway through an if-statement, so unwind to the original if-level here. */
+					while (state->current_if_level != state->macro.starting_if_level)
+						TerminateIf(state);
+				}
+
+				/* Pop location. */
+				state->location = state->location->previous;
+
+				String_Destroy(&location.file_path);
+
+				state->listing_macro = previous_listing_macro;
+			}
+
+			String_Destroy(&closure.symbol_value_string);
+			String_Destroy(&closure.unique_suffix);
+
+			Substitute_Deinitialise(&state->macro.substitutions);
+			if (SharedMemory_WillBeDestroyed(state->macro.dictionary))
+				SymbolDictionary_Deinit(state->macro.dictionary);
+			SharedMemory_Free(state->macro.dictionary);
+
+			/* Destroy argument list. */
+			{
+				size_t i;
+
+				for (i = 0; i < state->macro.total_arguments; ++i)
+					String_Destroy(&state->macro.argument_list[i]);
+
+				free(state->macro.argument_list);
 			}
 		}
-
-		if (!macro->is_short)
-		{
-			/* 'MEXIT' may have ended us midway through an if-statement, so unwind to the original if-level here. */
-			while (state->current_if_level != state->macro.starting_if_level)
-				TerminateIf(state);
-		}
-
-		/* Pop location. */
-		state->location = state->location->previous;
-
-		String_Destroy(&location.file_path);
-
-		state->listing_macro = previous_listing_macro;
 	}
 
-	String_Destroy(&closure.symbol_value_string);
-	String_Destroy(&closure.unique_suffix);
-
-	Substitute_Deinitialise(&state->macro.substitutions);
-	if (SharedMemory_WillBeDestroyed(state->macro.dictionary))
-		SymbolDictionary_Deinit(state->macro.dictionary);
-	SharedMemory_Free(state->macro.dictionary);
-
-	/* Destroy argument list. */
-	{
-		size_t i;
-
-		for (i = 0; i < state->macro.total_arguments; ++i)
-			String_Destroy(&state->macro.argument_list[i]);
-
-		free(state->macro.argument_list);
-	}
-
-out:
 	state->macro = previous_macro_state;
 }
 
@@ -6021,221 +6036,222 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 	if (String_At(state->source_line, 0) == '*')
 	{
 		/* This whole line is a comment. */
-		goto cleanup;
-	}
-
-	source_line_pointer = String_CStr(state->source_line);
-
-	/* Despite the fact that we're using Flex and Bison to parse the
-	   language for us, we unfortunately have to do quite a bit of
-	   parsing manually because of inconsistent whitespace sensitivity
-	   (label recognision) and manipulation of the input string
-	   (macro expansion). */
-
-	/* Let's begin by parsing the label (if there is one). */
-
-	/* Determine the length of the label. */
-	label_length = strspn(source_line_pointer, LABEL_CHARS);
-
-	if (label_length != 0)
-	{
-		/* We've found a label! */
 	}
 	else
 	{
-		/* Maybe the label has some whitespace before it: check again. */
+		source_line_pointer = String_CStr(state->source_line);
 
-		/* Skip whitespace. */
-		source_line_pointer += strspn(source_line_pointer, " \t");
+		/* Despite the fact that we're using Flex and Bison to parse the
+		   language for us, we unfortunately have to do quite a bit of
+		   parsing manually because of inconsistent whitespace sensitivity
+		   (label recognision) and manipulation of the input string
+		   (macro expansion). */
 
-		/* Determine the length of the label again. */
+		/* Let's begin by parsing the label (if there is one). */
+
+		/* Determine the length of the label. */
 		label_length = strspn(source_line_pointer, LABEL_CHARS);
 
 		if (label_length != 0)
 		{
-			/* Since we've encountered whitespace, it's ambiguous whether this is a label or a statement.
-			   To figure it out, we have to rely on the label having a ':' after it. */
-			if (source_line_pointer[label_length] == ':')
-			{
-				/* We've found the label. */
-			}
-			else
-			{
-				/* Not a label. Set 'label_length' to 0 so that later code knows that no label was found. */
-				label_length = 0;
-			}
-		}
-	}
-
-	/* Duplicate the label (if any) for later. */
-	StringView_Create(&label, source_line_pointer, label_length);
-
-	if (label_length != 0)
-	{
-		/* Advance past the label in the source string. */
-		source_line_pointer += label_length;
-
-		/* Skip past the colon at the end, if one exists. */
-		if (source_line_pointer[0] == ':')
-			++source_line_pointer;
-	}
-
-	/* Skip the whitespace between the label and the directive. */
-	source_line_pointer += strspn(source_line_pointer, " \t");
-
-	/* Next let's process the directive. If it's an if-statement or a macro
-	   invocation, then we'll need to handle it manually. If not, then we
-	   can pass it to Flex and Bison. */
-
-	/* Determine the length of the directive. */
-	directive_length = strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
-
-	StringView_Create(&directive_and_operands, source_line_pointer, (String_Data(state->source_line) + String_Length(state->source_line)) - source_line_pointer);
-	StringView_SubStr(&directive, &directive_and_operands, 0, directive_length);
-
-	/* This is either a directive, or a macro. */
-	{
-		/* Look up the directive in the dictionary to see if it's actually a macro. */
-		const Dictionary_Entry* const macro_dictionary_entry = LookupSymbol(state, &directive, NULL);
-		Macro* const macro = macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO ? (Macro*)macro_dictionary_entry->shared.pointer : NULL;
-
-		if (macro != NULL && macro->is_short)
-		{
-			/* Short macros are always expanded, in case they're hiding an 'if' or an 'endr' or some other special directive; */
-			/* the alternate modes explicitly search for these directives, so they must be visible. */
-			InvokeMacro(state, macro, &label, source_line_pointer);
+			/* We've found a label! */
 		}
 		else
 		{
-			switch (state->mode)
+			/* Maybe the label has some whitespace before it: check again. */
+
+			/* Skip whitespace. */
+			source_line_pointer += strspn(source_line_pointer, " \t");
+
+			/* Determine the length of the label again. */
+			label_length = strspn(source_line_pointer, LABEL_CHARS);
+
+			if (label_length != 0)
 			{
-				case MODE_NORMAL:
+				/* Since we've encountered whitespace, it's ambiguous whether this is a label or a statement.
+				   To figure it out, we have to rely on the label having a ':' after it. */
+				if (source_line_pointer[label_length] == ':')
 				{
-					/* If we are in the false part of an if-statement, then manually parse the
-					   source code until we encounter an IF, ELSEIF, ELSE, ENDC, or ENDIF.
-					   The reason for this is that the false part of an if-statement may contain
-					   invalid code and we do not want it to cause errors.
-					   This can get pretty complicated because we need to account for nesting. */
-					if (state->false_if_level != 0)
+					/* We've found the label. */
+				}
+				else
+				{
+					/* Not a label. Set 'label_length' to 0 so that later code knows that no label was found. */
+					label_length = 0;
+				}
+			}
+		}
+
+		/* Duplicate the label (if any) for later. */
+		StringView_Create(&label, source_line_pointer, label_length);
+
+		if (label_length != 0)
+		{
+			/* Advance past the label in the source string. */
+			source_line_pointer += label_length;
+
+			/* Skip past the colon at the end, if one exists. */
+			if (source_line_pointer[0] == ':')
+				++source_line_pointer;
+		}
+
+		/* Skip the whitespace between the label and the directive. */
+		source_line_pointer += strspn(source_line_pointer, " \t");
+
+		/* Next let's process the directive. If it's an if-statement or a macro
+		   invocation, then we'll need to handle it manually. If not, then we
+		   can pass it to Flex and Bison. */
+
+		/* Determine the length of the directive. */
+		directive_length = strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
+
+		StringView_Create(&directive_and_operands, source_line_pointer, (String_Data(state->source_line) + String_Length(state->source_line)) - source_line_pointer);
+		StringView_SubStr(&directive, &directive_and_operands, 0, directive_length);
+
+		/* This is either a directive, or a macro. */
+		{
+			/* Look up the directive in the dictionary to see if it's actually a macro. */
+			const Dictionary_Entry* const macro_dictionary_entry = LookupSymbol(state, &directive, NULL);
+			Macro* const macro = macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO ? (Macro*)macro_dictionary_entry->shared.pointer : NULL;
+
+			if (macro != NULL && macro->is_short)
+			{
+				/* Short macros are always expanded, in case they're hiding an 'if' or an 'endr' or some other special directive; */
+				/* the alternate modes explicitly search for these directives, so they must be visible. */
+				InvokeMacro(state, macro, &label, source_line_pointer);
+			}
+			else
+			{
+				switch (state->mode)
+				{
+					case MODE_NORMAL:
+					{
+						/* If we are in the false part of an if-statement, then manually parse the
+						   source code until we encounter an IF, ELSEIF, ELSE, ENDC, or ENDIF.
+						   The reason for this is that the false part of an if-statement may contain
+						   invalid code and we do not want it to cause errors.
+						   This can get pretty complicated because we need to account for nesting. */
+						if (state->false_if_level != 0)
+						{
+							/* TODO - Detect code after the keyword and error if any is found. */
+							if (StringView_CompareCStrCaseInsensitive(&directive, "if"))
+							{
+								/* If-statements that are nested within the false part of another if-statement
+								   are themselves false, so create a false if-statement here and process it. */
+								++state->current_if_level;
+							}
+							else if (StringView_CompareCStrCaseInsensitive(&directive, "elseif")
+							      || StringView_CompareCStrCaseInsensitive(&directive, "else"  )
+							      || StringView_CompareCStrCaseInsensitive(&directive, "endc"  )
+							      || StringView_CompareCStrCaseInsensitive(&directive, "endif" ))
+							{
+								/* These can be processed normally too. */
+								SubstituteAndParseLine(state, &label, &directive_and_operands, &directive);
+							}
+							else
+							{
+								/* Drop the line completely, since it's inside the false half of an if statement and should be ignored. */
+							}
+						}
+						else
+						{
+							if (macro != NULL /*&& !macro->is_short*/)
+							{
+								/* Regular macros are only expanded when needed. */
+								InvokeMacro(state, macro, &label, source_line_pointer);
+							}
+							else
+							{
+								/* This is not a macro invocation: it's just a regular line that can be assembled as-is. */
+								SubstituteAndParseLine(state, &label, &directive_and_operands, &directive);
+							}
+						}
+					}
+
+					break;
+
+				case MODE_REPT:
+					/* If this line is an 'ENDR' directive, then exit REPT mode. Otherwise, add the line to the REPT. */
+					if (StringView_CompareCStrCaseInsensitive(&directive, "endr") && state->shared.rept.nesting-- == 0)
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
-						if (StringView_CompareCStrCaseInsensitive(&directive, "if"))
-						{
-							/* If-statements that are nested within the false part of another if-statement
-							   are themselves false, so create a false if-statement here and process it. */
-							++state->current_if_level;
-						}
-						else if (StringView_CompareCStrCaseInsensitive(&directive, "elseif")
-						      || StringView_CompareCStrCaseInsensitive(&directive, "else"  )
-						      || StringView_CompareCStrCaseInsensitive(&directive, "endc"  )
-						      || StringView_CompareCStrCaseInsensitive(&directive, "endif" ))
-						{
-							/* These can be processed normally too. */
-							SubstituteAndParseLine(state, &label, &directive_and_operands, &directive);
-						}
-						else
-						{
-							/* Drop the line completely, since it's inside the false half of an if statement and should be ignored. */
-						}
-					}
-					else
-					{
-						if (macro != NULL /*&& !macro->is_short*/)
-						{
-							/* Regular macros are only expanded when needed. */
-							InvokeMacro(state, macro, &label, source_line_pointer);
-						}
-						else
-						{
-							/* This is not a macro invocation: it's just a regular line that can be assembled as-is. */
-							SubstituteAndParseLine(state, &label, &directive_and_operands, &directive);
-						}
-					}
-				}
-
-				break;
-
-			case MODE_REPT:
-				/* If this line is an 'ENDR' directive, then exit REPT mode. Otherwise, add the line to the REPT. */
-				if (StringView_CompareCStrCaseInsensitive(&directive, "endr") && state->shared.rept.nesting-- == 0)
-				{
-					/* TODO - Detect code after the keyword and error if any is found. */
-					ParseLine(state, &label, &directive_and_operands);
-				}
-				else
-				{
-					if (StringView_CompareCStrCaseInsensitive(&directive, "rept"))
-						++state->shared.rept.nesting;
-
-					AddToSourceLineList(state, &state->shared.rept.source_line_list, state->source_line);
-				}
-
-				break;
-
-			case MODE_MACRO:
-				/* If this line is an 'ENDM' directive, then exit macro mode. Otherwise, add the line to the macro. */
-				if (StringView_CompareCStrCaseInsensitive(&directive, "endm"))
-				{
-					/* TODO - Detect code after the keyword and error if any is found. */
-					if (state->shared.macro.is_short)
-						SemanticError(state, "Short macros shouldn't use ENDM.");
-					else
 						ParseLine(state, &label, &directive_and_operands);
-				}
-				else
-				{
-					if (state->shared.macro.is_short)
+					}
+					else
 					{
-						/* Short macros automatically terminate after one statement. */
-						const char first_nonwhitespace_character = String_At(state->source_line, strspn(String_CStr(state->source_line), " \t"));
+						if (StringView_CompareCStrCaseInsensitive(&directive, "rept"))
+							++state->shared.rept.nesting;
 
-						if (!StringView_Empty(&label))
-							SemanticError(state, "Short macros shouldn't create labels.");
+						AddToSourceLineList(state, &state->shared.rept.source_line_list, state->source_line);
+					}
 
-						if (first_nonwhitespace_character == '\0' || first_nonwhitespace_character == ';')
+					break;
+
+				case MODE_MACRO:
+					/* If this line is an 'ENDM' directive, then exit macro mode. Otherwise, add the line to the macro. */
+					if (StringView_CompareCStrCaseInsensitive(&directive, "endm"))
+					{
+						/* TODO - Detect code after the keyword and error if any is found. */
+						if (state->shared.macro.is_short)
+							SemanticError(state, "Short macros shouldn't use ENDM.");
+						else
+							ParseLine(state, &label, &directive_and_operands);
+					}
+					else
+					{
+						if (state->shared.macro.is_short)
 						{
-							/* This line is an empty statement: ignore it. */
+							/* Short macros automatically terminate after one statement. */
+							const char first_nonwhitespace_character = String_At(state->source_line, strspn(String_CStr(state->source_line), " \t"));
+
+							if (!StringView_Empty(&label))
+								SemanticError(state, "Short macros shouldn't create labels.");
+
+							if (first_nonwhitespace_character == '\0' || first_nonwhitespace_character == ';')
+							{
+								/* This line is an empty statement: ignore it. */
+							}
+							else
+							{
+								AddToSourceLineList(state, &state->shared.macro.source_line_list, state->source_line);
+								TerminateMacro(state);
+							}
 						}
 						else
 						{
 							AddToSourceLineList(state, &state->shared.macro.source_line_list, state->source_line);
-							TerminateMacro(state);
 						}
+					}
+
+					break;
+
+				case MODE_WHILE:
+					/* If this line is an 'ENDW' directive, then exit 'WHILE' mode. Otherwise, add the line to the 'WHILE'. */
+					if (StringView_CompareCStrCaseInsensitive(&directive, "endw") && state->shared.while_statement.nesting-- == 0)
+					{
+						/* TODO - Detect code after the keyword and error if any is found. */
+						ParseLine(state, &label, &directive_and_operands);
 					}
 					else
 					{
-						AddToSourceLineList(state, &state->shared.macro.source_line_list, state->source_line);
+						if (StringView_CompareCStrCaseInsensitive(&directive, "while"))
+							++state->shared.while_statement.nesting;
+
+						AddToSourceLineList(state, &state->shared.while_statement.source_line_list, state->source_line);
 					}
+
+					break;
 				}
-
-				break;
-
-			case MODE_WHILE:
-				/* If this line is an 'ENDW' directive, then exit 'WHILE' mode. Otherwise, add the line to the 'WHILE'. */
-				if (StringView_CompareCStrCaseInsensitive(&directive, "endw") && state->shared.while_statement.nesting-- == 0)
-				{
-					/* TODO - Detect code after the keyword and error if any is found. */
-					ParseLine(state, &label, &directive_and_operands);
-				}
-				else
-				{
-					if (StringView_CompareCStrCaseInsensitive(&directive, "while"))
-						++state->shared.while_statement.nesting;
-
-					AddToSourceLineList(state, &state->shared.while_statement.source_line_list, state->source_line);
-				}
-
-				break;
 			}
 		}
 	}
 
-cleanup:
 	if (write_line_to_listing_file)
 		ListSourceLine(state);
 
 	if (state->source_line == &source_line)
 		String_Destroy(&source_line);
+
 	state->source_line = old_source_line;
 }
 

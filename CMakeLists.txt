@@ -130,9 +130,9 @@ add_test(NAME z80_westone_compare COMMAND clownassembler_hash "${CMAKE_CURRENT_B
 set_tests_properties(z80_westone_compare PROPERTIES DEPENDS z80_westone_assemble)
 
 # Test a bunch of cases that would previously cause crashes/leaks
-# (these often are intended to still fail, but not crash, given the crash was is often in how erroneous code is handled, though a few do actually succeed compilation)
+# (these often are intended to still fail, but not crash, given the crash is often in how erroneous code is handled, though a few do actually succeed compilation).
 
-# The hash parameter is meaningless if will_fail is true
+# The hash parameter is meaningless if will_fail is true.
 function(add_regression_test kind source_file will_fail hash)
 	set(test_name "${kind}_${source_file}")
 
