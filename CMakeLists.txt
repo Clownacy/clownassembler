@@ -128,3 +128,51 @@ set_tests_properties(z80_sonic1_compare PROPERTIES DEPENDS z80_sonic1_assemble)
 add_test(NAME z80_westone_assemble COMMAND clownassembler -c -p -i "TEST.ASM" -o "${CMAKE_CURRENT_BINARY_DIR}/z80-westone.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/ASM68K-Z80-extension/Westone")
 add_test(NAME z80_westone_compare COMMAND clownassembler_hash "${CMAKE_CURRENT_BINARY_DIR}/z80-westone.bin" "ee34bb568b2590632d4837fbe1531f06")
 set_tests_properties(z80_westone_compare PROPERTIES DEPENDS z80_westone_assemble)
+
+# Test a bunch of cases that would previously cause crashes/leaks
+# (these often are intended to still fail, but not crash, given the crash is often in how erroneous code is handled, though a few do actually succeed compilation).
+
+# The hash parameter is meaningless if will_fail is true.
+function(add_regression_test kind source_file will_fail hash)
+	set(test_name "${kind}_${source_file}")
+
+	add_test(NAME "${test_name}" COMMAND clownassembler -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/previously-${kind}/${source_file}" -o "${CMAKE_CURRENT_BINARY_DIR}/${test_name}.bin")
+
+	if (will_fail)
+		set_property(TEST "${test_name}" PROPERTY WILL_FAIL true)
+	else()
+		add_test(NAME "${test_name}_compare" COMMAND clownassembler_hash "${CMAKE_CURRENT_BINARY_DIR}/${test_name}.bin" "${hash}")
+		set_tests_properties("${test_name}_compare" PROPERTIES DEPENDS "${test_name}")
+	endif()
+endfunction()
+
+function(add_regression_test_expected_to_error kind source_file)
+	add_regression_test("${kind}" "${source_file}" true "")
+endfunction()
+
+function(add_regression_test_expected_to_succeed kind source_file hash)
+	add_regression_test("${kind}" "${source_file}" false "${hash}")
+endfunction()
+
+add_regression_test_expected_to_error("crashing" "comment-line-followed-by-erroring-line.asm")
+add_regression_test_expected_to_error("crashing" "div-by-0.asm")
+add_regression_test_expected_to_error("crashing" "mod-by-0.asm")
+add_regression_test_expected_to_error("crashing" "redefine-macro-parameter-in-macro-body.asm")
+add_regression_test_expected_to_error("crashing" "redefine-macro-parameter-in-macro-body-within-macro.asm")
+add_regression_test_expected_to_succeed("crashing" "shift-by-massive-val.asm" "f1d3ff8443297732862df21dc4e57262")
+add_regression_test_expected_to_error("crashing" "shift-no-args.asm")
+add_regression_test_expected_to_error("leaking" "equal-with-trailing-garbage-identifier.asm")
+add_regression_test_expected_to_error("leaking" "label-definition-followed-by-redefinition-as-macro.asm")
+add_regression_test_expected_to_error("leaking" "label-definition-followed-by-redefinition-as-macro-with-parameter.asm")
+add_regression_test_expected_to_error("leaking" "label-definition-followed-by-redefinition-as-macro-with-code-line.asm")
+add_regression_test_expected_to_error("crashing" "redefine-macro-in-macro-body.asm")
+add_regression_test_expected_to_error("crashing" "define-global-label-then-redefine-at-sign-as-macro-twice.asm")
+add_regression_test_expected_to_error("crashing" "purge-macro.asm")
+add_regression_test_expected_to_error("crashing" "redefine-macro-as-another-macro-while-it-is-being-expanded.asm")
+add_regression_test_expected_to_error("crashing" "macro-infinite-recursion.asm")
+add_regression_test_expected_to_succeed("crashing" "substr-out-of-bounds.asm" "d41d8cd98f00b204e9800998ecf8427e")
+add_regression_test_expected_to_error("leaking" "multiple-unterminated-repts.asm")
+add_regression_test_expected_to_error("leaking" "unterminated-rept-and-while.asm")
+add_regression_test_expected_to_error("crashing" "cnop-size-boundary-0.asm")
+add_regression_test_expected_to_error("leaking" "inform-with-complex-severity-expression.asm")
+add_regression_test_expected_to_error("crashing" "redefinition-during-mutually-recursive-infinite-macro-expansion.asm")

@@ -456,6 +456,7 @@ typedef struct Statement
 
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
+void DestroyIdentifierList(IdentifierList *list);
 
 }
 
@@ -473,7 +474,6 @@ void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
 static cc_bool DoExpressionTriple(Expression *expression, ExpressionType type, Expression *left_expression, Expression *middle_expression, Expression *right_expression);
 static cc_bool DoExpression(Expression *expression, ExpressionType type, Expression *left_expression, Expression *right_expression);
-static void DestroyIdentifierList(IdentifierList *list);
 static void DestroyExpressionList(ExpressionList *list);
 static void DestroyOperand(Operand *operand);
 static void DestroyStatementInstruction(StatementInstruction *instruction);
@@ -941,6 +941,7 @@ statement
 		statement->type = STATEMENT_TYPE_INFORM;
 		statement->shared.inform.severity = $2;
 		statement->shared.inform.message = $4;
+		DestroyExpressionList(&$6);
 	}
 	| TOKEN_DIRECTIVE_FAIL
 	{
@@ -2458,7 +2459,7 @@ void DestroyExpression(Expression *expression)
 	}
 }
 
-static void DestroyIdentifierList(IdentifierList *list)
+void DestroyIdentifierList(IdentifierList *list)
 {
 	IdentifierListNode *node = list->head;
 
@@ -2617,6 +2618,7 @@ void DestroyStatement(Statement *statement)
 			break;
 
 		case STATEMENT_TYPE_INFORM:
+			DestroyExpression(&statement->shared.inform.severity);
 			String_Destroy(&statement->shared.inform.message);
 			break;
 
