@@ -6109,140 +6109,129 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 		StringView_SubStr(&directive, &directive_and_operands, 0, directive_length);
 
 		/* This is either a directive, or a macro. */
+		switch (state->mode)
 		{
-			/* Look up the directive in the dictionary to see if it's actually a macro. */
-			const Dictionary_Entry* const macro_dictionary_entry = LookupSymbol(state, &directive, NULL);
-			Macro* const macro = macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO ? (Macro*)macro_dictionary_entry->shared.pointer : NULL;
-
-			if (macro != NULL && macro->is_short)
+			case MODE_NORMAL:
 			{
-				/* Short macros are always expanded, in case they're hiding an 'if' or an 'endr' or some other special directive; */
-				/* the alternate modes explicitly search for these directives, so they must be visible. */
-				InvokeMacro(state, macro, &label, source_line_pointer);
+				/* If we are in the false part of an if-statement, then manually parse the
+				   source code until we encounter an IF, ELSEIF, ELSE, ENDC, or ENDIF.
+				   The reason for this is that the false part of an if-statement may contain
+				   invalid code and we do not want it to cause errors.
+				   This can get pretty complicated because we need to account for nesting. */
+				if (state->false_if_level != 0)
+				{
+					/* TODO - Detect code after the keyword and error if any is found. */
+					if (StringView_CompareCStrCaseInsensitive(&directive, "if"))
+					{
+						/* If-statements that are nested within the false part of another if-statement
+						   are themselves false, so create a false if-statement here and process it. */
+						++state->current_if_level;
+					}
+					else if (StringView_CompareCStrCaseInsensitive(&directive, "elseif")
+					      || StringView_CompareCStrCaseInsensitive(&directive, "else"  )
+					      || StringView_CompareCStrCaseInsensitive(&directive, "endc"  )
+					      || StringView_CompareCStrCaseInsensitive(&directive, "endif" ))
+					{
+						/* These can be processed normally too. */
+						SubstituteAndParseLine(state, &label, &directive_and_operands, &directive);
+					}
+					else
+					{
+						/* Drop the line completely, since it's inside the false half of an if statement and should be ignored. */
+					}
+				}
+				else
+				{
+					/* Look up the directive in the dictionary to see if it's actually a macro. */
+					const Dictionary_Entry* const macro_dictionary_entry = LookupSymbol(state, &directive, NULL);
+					Macro* const macro = macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO ? (Macro*)macro_dictionary_entry->shared.pointer : NULL;
+
+					if (macro != NULL /*&& !macro->is_short*/)
+					{
+						/* Regular macros are only expanded when needed. */
+						InvokeMacro(state, macro, &label, source_line_pointer);
+					}
+					else
+					{
+						/* This is not a macro invocation: it's just a regular line that can be assembled as-is. */
+						SubstituteAndParseLine(state, &label, &directive_and_operands, &directive);
+					}
+				}
+			}
+
+			break;
+
+		case MODE_REPT:
+			/* If this line is an 'ENDR' directive, then exit REPT mode. Otherwise, add the line to the REPT. */
+			if (StringView_CompareCStrCaseInsensitive(&directive, "endr") && state->shared.rept.nesting-- == 0)
+			{
+				/* TODO - Detect code after the keyword and error if any is found. */
+				ParseLine(state, &label, &directive_and_operands);
 			}
 			else
 			{
-				switch (state->mode)
+				if (StringView_CompareCStrCaseInsensitive(&directive, "rept"))
+					++state->shared.rept.nesting;
+
+				AddToSourceLineList(state, &state->shared.rept.source_line_list, state->source_line);
+			}
+
+			break;
+
+		case MODE_MACRO:
+			/* If this line is an 'ENDM' directive, then exit macro mode. Otherwise, add the line to the macro. */
+			if (StringView_CompareCStrCaseInsensitive(&directive, "endm"))
+			{
+				/* TODO - Detect code after the keyword and error if any is found. */
+				if (state->shared.macro.is_short)
+					SemanticError(state, "Short macros shouldn't use ENDM.");
+				else
+					ParseLine(state, &label, &directive_and_operands);
+			}
+			else
+			{
+				if (state->shared.macro.is_short)
 				{
-					case MODE_NORMAL:
-					{
-						/* If we are in the false part of an if-statement, then manually parse the
-						   source code until we encounter an IF, ELSEIF, ELSE, ENDC, or ENDIF.
-						   The reason for this is that the false part of an if-statement may contain
-						   invalid code and we do not want it to cause errors.
-						   This can get pretty complicated because we need to account for nesting. */
-						if (state->false_if_level != 0)
-						{
-							/* TODO - Detect code after the keyword and error if any is found. */
-							if (StringView_CompareCStrCaseInsensitive(&directive, "if"))
-							{
-								/* If-statements that are nested within the false part of another if-statement
-								   are themselves false, so create a false if-statement here and process it. */
-								++state->current_if_level;
-							}
-							else if (StringView_CompareCStrCaseInsensitive(&directive, "elseif")
-							      || StringView_CompareCStrCaseInsensitive(&directive, "else"  )
-							      || StringView_CompareCStrCaseInsensitive(&directive, "endc"  )
-							      || StringView_CompareCStrCaseInsensitive(&directive, "endif" ))
-							{
-								/* These can be processed normally too. */
-								SubstituteAndParseLine(state, &label, &directive_and_operands, &directive);
-							}
-							else
-							{
-								/* Drop the line completely, since it's inside the false half of an if statement and should be ignored. */
-							}
-						}
-						else
-						{
-							if (macro != NULL /*&& !macro->is_short*/)
-							{
-								/* Regular macros are only expanded when needed. */
-								InvokeMacro(state, macro, &label, source_line_pointer);
-							}
-							else
-							{
-								/* This is not a macro invocation: it's just a regular line that can be assembled as-is. */
-								SubstituteAndParseLine(state, &label, &directive_and_operands, &directive);
-							}
-						}
-					}
+					/* Short macros automatically terminate after one statement. */
+					const char first_nonwhitespace_character = String_At(state->source_line, strspn(String_CStr(state->source_line), " \t"));
 
-					break;
+					if (!StringView_Empty(&label))
+						SemanticError(state, "Short macros shouldn't create labels.");
 
-				case MODE_REPT:
-					/* If this line is an 'ENDR' directive, then exit REPT mode. Otherwise, add the line to the REPT. */
-					if (StringView_CompareCStrCaseInsensitive(&directive, "endr") && state->shared.rept.nesting-- == 0)
+					if (first_nonwhitespace_character == '\0' || first_nonwhitespace_character == ';')
 					{
-						/* TODO - Detect code after the keyword and error if any is found. */
-						ParseLine(state, &label, &directive_and_operands);
+						/* This line is an empty statement: ignore it. */
 					}
 					else
 					{
-						if (StringView_CompareCStrCaseInsensitive(&directive, "rept"))
-							++state->shared.rept.nesting;
-
-						AddToSourceLineList(state, &state->shared.rept.source_line_list, state->source_line);
+						AddToSourceLineList(state, &state->shared.macro.source_line_list, state->source_line);
+						TerminateMacro(state);
 					}
-
-					break;
-
-				case MODE_MACRO:
-					/* If this line is an 'ENDM' directive, then exit macro mode. Otherwise, add the line to the macro. */
-					if (StringView_CompareCStrCaseInsensitive(&directive, "endm"))
-					{
-						/* TODO - Detect code after the keyword and error if any is found. */
-						if (state->shared.macro.is_short)
-							SemanticError(state, "Short macros shouldn't use ENDM.");
-						else
-							ParseLine(state, &label, &directive_and_operands);
-					}
-					else
-					{
-						if (state->shared.macro.is_short)
-						{
-							/* Short macros automatically terminate after one statement. */
-							const char first_nonwhitespace_character = String_At(state->source_line, strspn(String_CStr(state->source_line), " \t"));
-
-							if (!StringView_Empty(&label))
-								SemanticError(state, "Short macros shouldn't create labels.");
-
-							if (first_nonwhitespace_character == '\0' || first_nonwhitespace_character == ';')
-							{
-								/* This line is an empty statement: ignore it. */
-							}
-							else
-							{
-								AddToSourceLineList(state, &state->shared.macro.source_line_list, state->source_line);
-								TerminateMacro(state);
-							}
-						}
-						else
-						{
-							AddToSourceLineList(state, &state->shared.macro.source_line_list, state->source_line);
-						}
-					}
-
-					break;
-
-				case MODE_WHILE:
-					/* If this line is an 'ENDW' directive, then exit 'WHILE' mode. Otherwise, add the line to the 'WHILE'. */
-					if (StringView_CompareCStrCaseInsensitive(&directive, "endw") && state->shared.while_statement.nesting-- == 0)
-					{
-						/* TODO - Detect code after the keyword and error if any is found. */
-						ParseLine(state, &label, &directive_and_operands);
-					}
-					else
-					{
-						if (StringView_CompareCStrCaseInsensitive(&directive, "while"))
-							++state->shared.while_statement.nesting;
-
-						AddToSourceLineList(state, &state->shared.while_statement.source_line_list, state->source_line);
-					}
-
-					break;
+				}
+				else
+				{
+					AddToSourceLineList(state, &state->shared.macro.source_line_list, state->source_line);
 				}
 			}
+
+			break;
+
+		case MODE_WHILE:
+			/* If this line is an 'ENDW' directive, then exit 'WHILE' mode. Otherwise, add the line to the 'WHILE'. */
+			if (StringView_CompareCStrCaseInsensitive(&directive, "endw") && state->shared.while_statement.nesting-- == 0)
+			{
+				/* TODO - Detect code after the keyword and error if any is found. */
+				ParseLine(state, &label, &directive_and_operands);
+			}
+			else
+			{
+				if (StringView_CompareCStrCaseInsensitive(&directive, "while"))
+					++state->shared.while_statement.nesting;
+
+				AddToSourceLineList(state, &state->shared.while_statement.source_line_list, state->source_line);
+			}
+
+			break;
 		}
 	}
 
