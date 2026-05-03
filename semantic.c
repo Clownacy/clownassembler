@@ -5756,7 +5756,7 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 
 	const SemanticState_Macro previous_macro_state = state->macro;
 
-	if (state->macro.depth >= 2000)
+	if (state->macro.depth >= 0x100)
 	{
 		SemanticError(state, "Macro expansion depth exceeded.");
 	}
