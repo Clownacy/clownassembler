@@ -73,10 +73,10 @@ int main(int argc, char **argv)
 	int i;
 	char *combined_arguments;
 	ClownAssembler_Settings settings = {0};
-	const char *source_file_path;
-	const char *object_file_path;
-	const char *symbol_file_path;
-	const char *listing_file_path;
+	char *source_file_path;
+	char *object_file_path;
+	char *symbol_file_path;
+	char *listing_file_path;
 	FILE *source_file;
 	FILE *object_file;
 	FILE *symbol_file;
