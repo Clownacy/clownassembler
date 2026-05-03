@@ -44,6 +44,7 @@ typedef ClownAssembler_TextOutput TextOutput;
 
 typedef enum SymbolType
 {
+	SYMBOL_NONE = -1,
 	SYMBOL_CONSTANT,
 	SYMBOL_VARIABLE,
 	SYMBOL_MACRO,
@@ -639,7 +640,7 @@ static Dictionary_Entry* CreateSymbol(SemanticState *state, const StringView *id
 
 	dictionary_entry = LookupSymbolAndCreateIfNotExist(state, identifier, NULL);
 
-	if (dictionary_entry != NULL && dictionary_entry->type != -1)
+	if (dictionary_entry != NULL && dictionary_entry->type != SYMBOL_NONE)
 	{
 		SemanticError(state, "Symbol '%.*s' cannot be redefined.", (int)StringView_Length(identifier), StringView_Data(identifier));
 		dictionary_entry = NULL;
@@ -658,7 +659,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 
 	dictionary_entry = LookupSymbol(state, identifier, NULL);
 
-	if (dictionary_entry == NULL || dictionary_entry->type == -1)
+	if (dictionary_entry == NULL || dictionary_entry->type == SYMBOL_NONE)
 	{
 		if (must_evaluate_on_first_pass)
 			SemanticError(state, "Symbol '%.*s' must be evaluable on first pass.", (int)StringView_Length(identifier), StringView_Data(identifier));
@@ -763,23 +764,23 @@ static void FreeSourceLineList(SourceLineListNode *source_line_list_head)
 
 static void DestroySymbol(Dictionary_Entry *dictionary_entry)
 {
-	switch (dictionary_entry->type)
+	switch ((SymbolType)dictionary_entry->type)
 	{
-		case -1:
+		case SYMBOL_NONE:
 		case SYMBOL_LABEL:
 		case SYMBOL_CONSTANT:
 		case SYMBOL_VARIABLE:
 		case SYMBOL_SPECIAL:
 			/* Nothing to free. */
-			break;
+			return;
 
 		case SYMBOL_STRING_CONSTANT:
 			String_Destroy(&dictionary_entry->shared.string);
-			break;
+			return;
 
 		case SYMBOL_EXPRESSION_CONSTANT:
 			DestroyExpression((Expression*)dictionary_entry->shared.pointer);
-			break;
+			return;
 
 		case SYMBOL_MACRO:
 		{
@@ -794,13 +795,11 @@ static void DestroySymbol(Dictionary_Entry *dictionary_entry)
 			String_Destroy(&macro->name);
 
 			free(macro);
-			break;
+			return;
 		}
-
-		default:
-			assert(cc_false);
-			break;
 	}
+
+	assert(cc_false);
 }
 
 /* Iterates over the guts of the dictionary to delete all of the node innards before calling Dictionary_Deinit */
@@ -1490,7 +1489,7 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const StringView *l
 
 			if (symbol != NULL)
 			{
-				if (symbol->type != -1 && (SymbolType)symbol->type != type)
+				if (symbol->type != SYMBOL_NONE && (SymbolType)symbol->type != type)
 				{
 					/* We can't do the assignment in this case, actually doing redefinitions like this would wreck havoc -
 					   e.g. redefining a macro while it is being executed would force us to either leak it or have everything
@@ -1510,6 +1509,7 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const StringView *l
 			symbol = CreateSymbol(state, label);
 			break;
 
+		case SYMBOL_NONE:
 		case SYMBOL_MACRO:
 		case SYMBOL_SPECIAL:
 		case SYMBOL_STRING_CONSTANT:
@@ -4338,7 +4338,7 @@ static void PushSubstitute(SemanticState* const state, const StringView* const i
 	{
 		switch (dictionary_entry->type)
 		{
-			case -1:
+			case SYMBOL_NONE:
 				dictionary_entry->type = SYMBOL_STRING_CONSTANT;
 				Substitute_PushSubstitute(dictionary == &state->dictionary ? &state->substitutions : &state->macro.substitutions, identifier, String_View(&dictionary_entry->shared.string));
 				break;
@@ -4377,7 +4377,7 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 		else
 		{
 			/* TODO: De-duplicate this with the 'PushSubstitute' function. */
-			if (dictionary_entry->type == -1)
+			if (dictionary_entry->type == SYMBOL_NONE)
 			{
 				dictionary_entry->type = SYMBOL_STRING_CONSTANT;
 				Substitute_PushSubstitute(&state->macro.substitutions, parameter, String_View(&dictionary_entry->shared.string));
