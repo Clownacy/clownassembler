@@ -957,7 +957,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 						break;
 
 					/* asm68k does 32-bit arithmetic, so it masks the shift amount to 0-31 (though whether this is intentional or just a side-effect of using x86 shift instructions that do this is unknown).
-					   (note: this is also needed to prevent undefined behaviour in C from shifting by an amount greater than or equal to the width of the type). */#
+					   (note: this is also needed to prevent undefined behaviour in C from shifting by an amount greater than or equal to the width of the type). */
 					/* TODO: Print a warning here. */
 					case EXPRESSION_LEFT_SHIFT:
 						*value = left_value << (right_value % 32);
