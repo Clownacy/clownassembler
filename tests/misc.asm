@@ -824,6 +824,27 @@ Stupid:
 .w = 0
 	lea	Stupid.w,a0
 
+	; Signed muliplication
+	dc.l	2*2
+	dc.l	2*-2
+	dc.l	-2*2
+	dc.l	-2*-2
+	; Signed division
+	dc.l	2/2
+	dc.l	2/-2
+	dc.l	-2/2
+	dc.l	-2/-2
+	; Signed modulo
+	dc.l	3%2
+	dc.l	3%-2
+	dc.l	-3%2
+	dc.l	-3%-2
+	; Signed comparison
+	dc.l	2>-2
+	dc.l	2>=-2
+	dc.l	2<-2
+	dc.l	2<=-2
+
   ; More blank lines to test support for trailing blank statements
 
 
