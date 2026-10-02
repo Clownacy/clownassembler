@@ -941,19 +941,36 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 						break;
 
 					case EXPRESSION_LESS_THAN:
-						*value = left_value < right_value ? -1 : 0;
-						break;
-
 					case EXPRESSION_LESS_OR_EQUAL:
-						*value = left_value <= right_value ? -1 : 0;
-						break;
-
 					case EXPRESSION_MORE_THAN:
-						*value = left_value > right_value ? -1 : 0;
-						break;
-
 					case EXPRESSION_MORE_OR_EQUAL:
-						*value = left_value >= right_value ? -1 : 0;
+						/* Flip the sign bit so we can emulate signed comparisons with unsigned integers. */
+						left_value  ^= 0x80000000;
+						right_value ^= 0x80000000;
+
+						switch (expression->type)
+						{
+							default:
+								assert(cc_false);
+								/* Fallthrough */
+							case EXPRESSION_LESS_THAN:
+								*value = left_value < right_value;
+								break;
+
+							case EXPRESSION_LESS_OR_EQUAL:
+								*value = left_value <= right_value;
+								break;
+
+							case EXPRESSION_MORE_THAN:
+								*value = left_value > right_value;
+								break;
+
+							case EXPRESSION_MORE_OR_EQUAL:
+								*value = left_value >= right_value;
+								break;
+						}
+
+						*value = -*value;
 						break;
 
 					/* asm68k does 32-bit arithmetic, so it masks the shift amount to 0-31 (though whether this is intentional or just a side-effect of using x86 shift instructions that do this is unknown).
