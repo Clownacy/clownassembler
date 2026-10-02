@@ -885,32 +885,61 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 						break;
 
 					case EXPRESSION_MULTIPLY:
-						*value = left_value * right_value;
-						break;
-
 					case EXPRESSION_DIVIDE:
-						if (right_value == 0)
-						{
-							SemanticError(state, "Cannot divide by zero.");
-							success = cc_false;
-						}
-						else
-						{
-							*value = left_value / right_value;
-						}
-						break;
-
 					case EXPRESSION_MODULO:
-						if (right_value == 0)
+					{
+						const cc_bool left_value_was_negative  = left_value  >= 0x80000000;
+						const cc_bool right_value_was_negative = right_value >= 0x80000000;
+
+						/* Make inputs absolute, so we can emulate signed arithmetic with unsigned arithmetic. */
+						left_value  = (left_value  ^ (-(unsigned long)left_value_was_negative  & 0xFFFFFFFF)) + left_value_was_negative;
+						right_value = (right_value ^ (-(unsigned long)right_value_was_negative & 0xFFFFFFFF)) + right_value_was_negative;
+
+						switch (expression->type)
 						{
-							SemanticError(state, "Cannot modulo by zero.");
-							success = cc_false;
+							default:
+								assert(cc_false);
+								/* Fallthrough */
+							case EXPRESSION_MULTIPLY:
+								*value = left_value * right_value;
+
+								if (left_value_was_negative != right_value_was_negative)
+									*value = -*value;
+								break;
+
+							case EXPRESSION_DIVIDE:
+								if (right_value == 0)
+								{
+									SemanticError(state, "Cannot divide by zero.");
+									success = cc_false;
+								}
+								else
+								{
+									*value = left_value / right_value;
+
+									if (left_value_was_negative != right_value_was_negative)
+										*value = -*value;
+								}
+								break;
+
+							case EXPRESSION_MODULO:
+								if (right_value == 0)
+								{
+									SemanticError(state, "Cannot modulo by zero.");
+									success = cc_false;
+								}
+								else
+								{
+									*value = left_value % right_value;
+
+									if (left_value_was_negative)
+										*value = -*value;
+								}
+								break;
 						}
-						else
-						{
-							*value = left_value % right_value;
-						}
+
 						break;
+					}
 
 					case EXPRESSION_LOGICAL_OR:
 						*value = left_value != 0 || right_value != 0 ? -1 : 0;
