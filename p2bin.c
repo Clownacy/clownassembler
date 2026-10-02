@@ -31,6 +31,8 @@ static const ClownAssembler_BinaryStream *output_file;
 static const ClownAssembler_TextOutput *error_callbacks;
 static jmp_buf jump_buffer;
 static unsigned char padding_buffer[0x1000];
+static cc_bool base_address_found = cc_false;
+static unsigned long base_address;
 static unsigned long maximum_address = 0;
 static unsigned int padding_value = 0;
 
@@ -81,6 +83,7 @@ static unsigned long ReadLongInt(void)
 
 static void ProcessSegment(void)
 {
+	/* TODO: 'malloc' this? */
 	static unsigned char copy_buffer[0x1000];
 
 	unsigned long i;
@@ -89,19 +92,30 @@ static void ProcessSegment(void)
 	const unsigned int length = ReadWord();
 	const unsigned long end_address = start_address + length;
 
-	if (start_address > maximum_address)
+	if (!base_address_found)
+	{
+		base_address_found = cc_true;
+		base_address = start_address;
+		maximum_address = start_address;
+	}
+	else if (start_address < base_address)
+	{
+		TextOutput_fputs("Error: Segment located before start of file.\n", error_callbacks);
+		longjmp(jump_buffer, 1);
+	}
+	else if (start_address > maximum_address)
 	{
 		/* Set padding bytes between segments. */
 		const unsigned long padding_length = start_address - maximum_address;
 
-		BinaryStream_fseek(output_file, maximum_address);
+		BinaryStream_fseek(output_file, maximum_address - base_address);
 
 		for (i = 0; i < padding_length; i += sizeof(padding_buffer))
 			BinaryStream_fwrite(padding_buffer, CC_MIN(sizeof(padding_buffer), padding_length - i), 1, output_file);
 	}
 	else
 	{
-		BinaryStream_fseek(output_file, start_address);
+		BinaryStream_fseek(output_file, start_address - base_address);
 	}
 
 	/* Copy segment data. We do some batching using a buffer to improve performance. */

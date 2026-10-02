@@ -223,13 +223,20 @@ static void TerminatePreviousRecordSegment(SemanticState *state)
 {
 	if (state->previous_segment_length_output_position != 0)
 	{
-		const size_t previous_output_position = state->output_position;
-
-		/* Write length of previous record. */
-		OutputSeek(state, state->previous_segment_length_output_position);
-		OutputWriteRawByte(state, state->segment_length >> (8 * 0) & 0xFF);
-		OutputWriteRawByte(state, state->segment_length >> (8 * 1) & 0xFF);
-		OutputSeek(state, previous_output_position);
+		if (state->segment_length == 0)
+		{
+			/* Previous segment contained nothing; make the new segment overwrite it. */
+			OutputSeek(state, state->previous_segment_length_output_position - 5);
+		}
+		else
+		{
+			/* Write length of previous record. */
+			const size_t previous_output_position = state->output_position;
+			OutputSeek(state, state->previous_segment_length_output_position);
+			OutputWriteRawByte(state, state->segment_length >> (8 * 0) & 0xFF);
+			OutputWriteRawByte(state, state->segment_length >> (8 * 1) & 0xFF);
+			OutputSeek(state, previous_output_position);
+		}
 	}
 }
 
