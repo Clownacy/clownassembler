@@ -1,45 +1,45 @@
 cmake_minimum_required(VERSION 3.16.3)
 
-project(clownassembler VERSION 1.1.3 LANGUAGES C)
+project(clownassembler VERSION 1.1.3 LANGUAGES C CXX)
 
 # Core
 add_library(clownassembler_core STATIC
-	"dictionary.c"
+	"dictionary.cpp"
 	"dictionary.h"
-	"io.c"
+	"io.cpp"
 	"io.h"
-	"lexical.c"
+	"lexical.cpp"
 	"lexical.h"
-	"options.c"
+	"options.cpp"
 	"options.h"
-	"p2bin.c"
+	"p2bin.cpp"
 	"p2bin.h"
-	"semantic.c"
+	"semantic.cpp"
 	"semantic.h"
-	"shared-memory.c"
+	"shared-memory.cpp"
 	"shared-memory.h"
-	"strcmpci.c"
+	"strcmpci.cpp"
 	"strcmpci.h"
-	"string.c"
+	"string.cpp"
 	"string.h"
-	"string-stack.c"
+	"string-stack.cpp"
 	"string-stack.h"
-	"substitute.c"
+	"substitute.cpp"
 	"substitute.h"
-	"syntactic.c"
+	"syntactic.cpp"
 	"syntactic.h"
 )
 
 # Custom frontend
 add_executable(clownassembler
-	"frontend-custom.c"
+	"frontend-custom.cpp"
 )
 
 target_link_libraries(clownassembler clownassembler_core)
 
 # asm68k frontend
 add_executable(clownassembler_asm68k
-	"frontend-asm68k.c"
+	"frontend-asm68k.cpp"
 )
 
 target_link_libraries(clownassembler_asm68k clownassembler_core)

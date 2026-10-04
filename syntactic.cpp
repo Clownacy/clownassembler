@@ -363,7 +363,7 @@ static void DestroyOperand(Operand *operand);
 static void DestroyStatementInstruction(StatementInstruction *instruction);
 
 
-#line 367 "syntactic.c"
+#line 367 "syntactic.cpp"
 
 #ifdef short
 # undef short
@@ -1774,121 +1774,121 @@ yydestruct (const char *yymsg,
     case YYSYMBOL_IDENTIFIER: /* IDENTIFIER  */
 #line 701 "syntactic.y"
             { String_Destroy(&((*yyvaluep).string)); }
-#line 1778 "syntactic.c"
+#line 1778 "syntactic.cpp"
         break;
 
     case YYSYMBOL_LOCAL_IDENTIFIER: /* LOCAL_IDENTIFIER  */
 #line 701 "syntactic.y"
             { String_Destroy(&((*yyvaluep).string)); }
-#line 1784 "syntactic.c"
+#line 1784 "syntactic.cpp"
         break;
 
     case YYSYMBOL_STRING: /* STRING  */
 #line 701 "syntactic.y"
             { String_Destroy(&((*yyvaluep).string)); }
-#line 1790 "syntactic.c"
+#line 1790 "syntactic.cpp"
         break;
 
     case YYSYMBOL_OPTION: /* OPTION  */
 #line 701 "syntactic.y"
             { String_Destroy(&((*yyvaluep).string)); }
-#line 1796 "syntactic.c"
+#line 1796 "syntactic.cpp"
         break;
 
     case YYSYMBOL_expression_list: /* expression_list  */
 #line 703 "syntactic.y"
             { DestroyExpressionList(&((*yyvaluep).expression_list)); }
-#line 1802 "syntactic.c"
+#line 1802 "syntactic.cpp"
         break;
 
     case YYSYMBOL_identifier_list: /* identifier_list  */
 #line 704 "syntactic.y"
             { DestroyIdentifierList(&((*yyvaluep).identifier_list)); }
-#line 1808 "syntactic.c"
+#line 1808 "syntactic.cpp"
         break;
 
     case YYSYMBOL_option_list: /* option_list  */
 #line 704 "syntactic.y"
             { DestroyIdentifierList(&((*yyvaluep).identifier_list)); }
-#line 1814 "syntactic.c"
+#line 1814 "syntactic.cpp"
         break;
 
     case YYSYMBOL_operand: /* operand  */
 #line 702 "syntactic.y"
             { DestroyOperand(&((*yyvaluep).operand)); }
-#line 1820 "syntactic.c"
+#line 1820 "syntactic.cpp"
         break;
 
     case YYSYMBOL_expression: /* expression  */
 #line 705 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1826 "syntactic.c"
+#line 1826 "syntactic.cpp"
         break;
 
     case YYSYMBOL_expression1: /* expression1  */
 #line 705 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1832 "syntactic.c"
+#line 1832 "syntactic.cpp"
         break;
 
     case YYSYMBOL_expression2: /* expression2  */
 #line 705 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1838 "syntactic.c"
+#line 1838 "syntactic.cpp"
         break;
 
     case YYSYMBOL_expression3: /* expression3  */
 #line 705 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1844 "syntactic.c"
+#line 1844 "syntactic.cpp"
         break;
 
     case YYSYMBOL_expression4: /* expression4  */
 #line 705 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1850 "syntactic.c"
+#line 1850 "syntactic.cpp"
         break;
 
     case YYSYMBOL_expression5: /* expression5  */
 #line 705 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1856 "syntactic.c"
+#line 1856 "syntactic.cpp"
         break;
 
     case YYSYMBOL_expression6: /* expression6  */
 #line 705 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1862 "syntactic.c"
+#line 1862 "syntactic.cpp"
         break;
 
     case YYSYMBOL_expression7: /* expression7  */
 #line 705 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1868 "syntactic.c"
+#line 1868 "syntactic.cpp"
         break;
 
     case YYSYMBOL_local_identifier: /* local_identifier  */
 #line 701 "syntactic.y"
             { String_Destroy(&((*yyvaluep).string)); }
-#line 1874 "syntactic.c"
+#line 1874 "syntactic.cpp"
         break;
 
     case YYSYMBOL_identifier: /* identifier  */
 #line 701 "syntactic.y"
             { String_Destroy(&((*yyvaluep).string)); }
-#line 1880 "syntactic.c"
+#line 1880 "syntactic.cpp"
         break;
 
     case YYSYMBOL_expression8: /* expression8  */
 #line 705 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1886 "syntactic.c"
+#line 1886 "syntactic.cpp"
         break;
 
     case YYSYMBOL_string: /* string  */
 #line 705 "syntactic.y"
             { DestroyExpression(&((*yyvaluep).expression)); }
-#line 1892 "syntactic.c"
+#line 1892 "syntactic.cpp"
         break;
 
       default:
@@ -2169,7 +2169,7 @@ yyreduce:
         {
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
-#line 2173 "syntactic.c"
+#line 2173 "syntactic.cpp"
     break;
 
   case 3: /* statement: instruction  */
@@ -2178,7 +2178,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_INSTRUCTION;
 		statement->shared.instruction = (yyvsp[0].instruction);
 	}
-#line 2182 "syntactic.c"
+#line 2182 "syntactic.cpp"
     break;
 
   case 4: /* statement: DIRECTIVE_DC size expression_list  */
@@ -2188,7 +2188,7 @@ yyreduce:
 		statement->shared.dc.size = (yyvsp[-1].size);
 		statement->shared.dc.values = (yyvsp[0].expression_list);
 	}
-#line 2192 "syntactic.c"
+#line 2192 "syntactic.cpp"
     break;
 
   case 5: /* statement: DIRECTIVE_DCB size expression ',' expression  */
@@ -2199,7 +2199,7 @@ yyreduce:
 		statement->shared.dcb.repetitions = (yyvsp[-2].expression);
 		statement->shared.dcb.value = (yyvsp[0].expression);
 	}
-#line 2203 "syntactic.c"
+#line 2203 "syntactic.cpp"
     break;
 
   case 6: /* statement: DIRECTIVE_DS size expression  */
@@ -2209,7 +2209,7 @@ yyreduce:
 		statement->shared.ds.size = (yyvsp[-1].size);
 		statement->shared.ds.length = (yyvsp[0].expression);
 	}
-#line 2213 "syntactic.c"
+#line 2213 "syntactic.cpp"
     break;
 
   case 7: /* statement: DIRECTIVE_INCLUDE STRING  */
@@ -2218,7 +2218,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_INCLUDE;
 		statement->shared.include.path = (yyvsp[0].string);
 	}
-#line 2222 "syntactic.c"
+#line 2222 "syntactic.cpp"
     break;
 
   case 8: /* statement: DIRECTIVE_INCBIN STRING  */
@@ -2230,7 +2230,7 @@ yyreduce:
 		statement->shared.incbin.start.shared.unsigned_long = 0;
 		statement->shared.incbin.has_length = cc_false;
 	}
-#line 2234 "syntactic.c"
+#line 2234 "syntactic.cpp"
     break;
 
   case 9: /* statement: DIRECTIVE_INCBIN STRING ',' expression  */
@@ -2241,7 +2241,7 @@ yyreduce:
 		statement->shared.incbin.start = (yyvsp[0].expression);
 		statement->shared.incbin.has_length = cc_false;
 	}
-#line 2245 "syntactic.c"
+#line 2245 "syntactic.cpp"
     break;
 
   case 10: /* statement: DIRECTIVE_INCBIN STRING ',' ',' expression  */
@@ -2254,7 +2254,7 @@ yyreduce:
 		statement->shared.incbin.has_length = cc_true;
 		statement->shared.incbin.length = (yyvsp[0].expression);
 	}
-#line 2258 "syntactic.c"
+#line 2258 "syntactic.cpp"
     break;
 
   case 11: /* statement: DIRECTIVE_INCBIN STRING ',' expression ',' expression  */
@@ -2266,7 +2266,7 @@ yyreduce:
 		statement->shared.incbin.has_length = cc_true;
 		statement->shared.incbin.length = (yyvsp[0].expression);
 	}
-#line 2270 "syntactic.c"
+#line 2270 "syntactic.cpp"
     break;
 
   case 12: /* statement: DIRECTIVE_REPT expression  */
@@ -2275,7 +2275,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_REPT;
 		statement->shared.rept.repetitions = (yyvsp[0].expression);
 	}
-#line 2279 "syntactic.c"
+#line 2279 "syntactic.cpp"
     break;
 
   case 13: /* statement: DIRECTIVE_ENDR  */
@@ -2283,7 +2283,7 @@ yyreduce:
         {
 		statement->type = STATEMENT_TYPE_ENDR;
 	}
-#line 2287 "syntactic.c"
+#line 2287 "syntactic.cpp"
     break;
 
   case 14: /* statement: DIRECTIVE_MACRO  */
@@ -2294,7 +2294,7 @@ yyreduce:
 		statement->shared.macro.parameter_names.head = NULL;
 		statement->shared.macro.parameter_names.tail = NULL;
 	}
-#line 2298 "syntactic.c"
+#line 2298 "syntactic.cpp"
     break;
 
   case 15: /* statement: DIRECTIVE_MACRO '*'  */
@@ -2305,7 +2305,7 @@ yyreduce:
 		statement->shared.macro.parameter_names.head = NULL;
 		statement->shared.macro.parameter_names.tail = NULL;
 	}
-#line 2309 "syntactic.c"
+#line 2309 "syntactic.cpp"
     break;
 
   case 16: /* statement: DIRECTIVE_MACRO identifier_list  */
@@ -2315,7 +2315,7 @@ yyreduce:
 		statement->shared.macro.uses_label = cc_false;
 		statement->shared.macro.parameter_names = (yyvsp[0].identifier_list);
 	}
-#line 2319 "syntactic.c"
+#line 2319 "syntactic.cpp"
     break;
 
   case 17: /* statement: DIRECTIVE_MACRO '*' ',' identifier_list  */
@@ -2325,7 +2325,7 @@ yyreduce:
 		statement->shared.macro.uses_label = cc_true;
 		statement->shared.macro.parameter_names = (yyvsp[0].identifier_list);
 	}
-#line 2329 "syntactic.c"
+#line 2329 "syntactic.cpp"
     break;
 
   case 18: /* statement: DIRECTIVE_MACROS  */
@@ -2336,7 +2336,7 @@ yyreduce:
 		statement->shared.macro.parameter_names.head = NULL;
 		statement->shared.macro.parameter_names.tail = NULL;
 	}
-#line 2340 "syntactic.c"
+#line 2340 "syntactic.cpp"
     break;
 
   case 19: /* statement: DIRECTIVE_MACROS identifier_list  */
@@ -2346,7 +2346,7 @@ yyreduce:
 		statement->shared.macro.uses_label = cc_false;
 		statement->shared.macro.parameter_names = (yyvsp[0].identifier_list);
 	}
-#line 2350 "syntactic.c"
+#line 2350 "syntactic.cpp"
     break;
 
   case 20: /* statement: DIRECTIVE_ENDM  */
@@ -2354,7 +2354,7 @@ yyreduce:
         {
 		statement->type = STATEMENT_TYPE_ENDM;
 	}
-#line 2358 "syntactic.c"
+#line 2358 "syntactic.cpp"
     break;
 
   case 21: /* statement: DIRECTIVE_EQU expression  */
@@ -2363,7 +2363,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_EQU;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2367 "syntactic.c"
+#line 2367 "syntactic.cpp"
     break;
 
   case 22: /* statement: DIRECTIVE_EQUS STRING  */
@@ -2372,7 +2372,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_EQUS_STRING;
 		statement->shared.string = (yyvsp[0].string);
 	}
-#line 2376 "syntactic.c"
+#line 2376 "syntactic.cpp"
     break;
 
   case 23: /* statement: DIRECTIVE_EQUS IDENTIFIER  */
@@ -2381,7 +2381,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_EQUS_IDENTIFIER;
 		statement->shared.string = (yyvsp[0].string);
 	}
-#line 2385 "syntactic.c"
+#line 2385 "syntactic.cpp"
     break;
 
   case 24: /* statement: DIRECTIVE_SUBSTR ',' ',' STRING  */
@@ -2394,7 +2394,7 @@ yyreduce:
 		statement->shared.substr.end.shared.unsigned_long = String_Length(&(yyvsp[0].string));
 		statement->shared.substr.string = (yyvsp[0].string);
 	}
-#line 2398 "syntactic.c"
+#line 2398 "syntactic.cpp"
     break;
 
   case 25: /* statement: DIRECTIVE_SUBSTR expression ',' ',' STRING  */
@@ -2406,7 +2406,7 @@ yyreduce:
 		statement->shared.substr.end.shared.unsigned_long = String_Length(&(yyvsp[0].string));
 		statement->shared.substr.string = (yyvsp[0].string);
 	}
-#line 2410 "syntactic.c"
+#line 2410 "syntactic.cpp"
     break;
 
   case 26: /* statement: DIRECTIVE_SUBSTR ',' expression ',' STRING  */
@@ -2418,7 +2418,7 @@ yyreduce:
 		statement->shared.substr.end = (yyvsp[-2].expression);
 		statement->shared.substr.string = (yyvsp[0].string);
 	}
-#line 2422 "syntactic.c"
+#line 2422 "syntactic.cpp"
     break;
 
   case 27: /* statement: DIRECTIVE_SUBSTR expression ',' expression ',' STRING  */
@@ -2429,7 +2429,7 @@ yyreduce:
 		statement->shared.substr.end = (yyvsp[-2].expression);
 		statement->shared.substr.string = (yyvsp[0].string);
 	}
-#line 2433 "syntactic.c"
+#line 2433 "syntactic.cpp"
     break;
 
   case 28: /* statement: DIRECTIVE_SET expression  */
@@ -2438,7 +2438,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_SET;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2442 "syntactic.c"
+#line 2442 "syntactic.cpp"
     break;
 
   case 29: /* statement: '=' expression  */
@@ -2447,7 +2447,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_SET;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2451 "syntactic.c"
+#line 2451 "syntactic.cpp"
     break;
 
   case 30: /* statement: DIRECTIVE_IF expression  */
@@ -2456,7 +2456,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_IF;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2460 "syntactic.c"
+#line 2460 "syntactic.cpp"
     break;
 
   case 31: /* statement: DIRECTIVE_ELSEIF expression  */
@@ -2465,7 +2465,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_ELSEIF;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2469 "syntactic.c"
+#line 2469 "syntactic.cpp"
     break;
 
   case 32: /* statement: DIRECTIVE_ELSEIF  */
@@ -2473,7 +2473,7 @@ yyreduce:
         {
 		statement->type = STATEMENT_TYPE_ELSE;
 	}
-#line 2477 "syntactic.c"
+#line 2477 "syntactic.cpp"
     break;
 
   case 33: /* statement: DIRECTIVE_ELSE  */
@@ -2481,7 +2481,7 @@ yyreduce:
         {
 		statement->type = STATEMENT_TYPE_ELSE;
 	}
-#line 2485 "syntactic.c"
+#line 2485 "syntactic.cpp"
     break;
 
   case 34: /* statement: DIRECTIVE_ENDC  */
@@ -2489,7 +2489,7 @@ yyreduce:
         {
 		statement->type = STATEMENT_TYPE_ENDC;
 	}
-#line 2493 "syntactic.c"
+#line 2493 "syntactic.cpp"
     break;
 
   case 35: /* statement: DIRECTIVE_WHILE expression  */
@@ -2498,7 +2498,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_WHILE;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2502 "syntactic.c"
+#line 2502 "syntactic.cpp"
     break;
 
   case 36: /* statement: DIRECTIVE_ENDW  */
@@ -2506,7 +2506,7 @@ yyreduce:
         {
 		statement->type = STATEMENT_TYPE_ENDW;
 	}
-#line 2510 "syntactic.c"
+#line 2510 "syntactic.cpp"
     break;
 
   case 37: /* statement: DIRECTIVE_EVEN  */
@@ -2514,7 +2514,7 @@ yyreduce:
         {
 		statement->type = STATEMENT_TYPE_EVEN;
 	}
-#line 2518 "syntactic.c"
+#line 2518 "syntactic.cpp"
     break;
 
   case 38: /* statement: DIRECTIVE_CNOP expression ',' expression  */
@@ -2524,7 +2524,7 @@ yyreduce:
 		statement->shared.cnop.offset = (yyvsp[-2].expression);
 		statement->shared.cnop.size_boundary = (yyvsp[0].expression);
 	}
-#line 2528 "syntactic.c"
+#line 2528 "syntactic.cpp"
     break;
 
   case 39: /* statement: DIRECTIVE_INFORM expression ',' STRING  */
@@ -2534,7 +2534,7 @@ yyreduce:
 		statement->shared.inform.severity = (yyvsp[-2].expression);
 		statement->shared.inform.message = (yyvsp[0].string);
 	}
-#line 2538 "syntactic.c"
+#line 2538 "syntactic.cpp"
     break;
 
   case 40: /* statement: DIRECTIVE_INFORM expression ',' STRING ',' expression_list  */
@@ -2548,7 +2548,7 @@ yyreduce:
 		statement->shared.inform.message = (yyvsp[-2].string);
 		DestroyExpressionList(&(yyvsp[0].expression_list));
 	}
-#line 2552 "syntactic.c"
+#line 2552 "syntactic.cpp"
     break;
 
   case 41: /* statement: DIRECTIVE_FAIL  */
@@ -2556,7 +2556,7 @@ yyreduce:
         {
 		statement->type = STATEMENT_TYPE_FAIL;
 	}
-#line 2560 "syntactic.c"
+#line 2560 "syntactic.cpp"
     break;
 
   case 42: /* statement: DIRECTIVE_END  */
@@ -2564,7 +2564,7 @@ yyreduce:
         {
 		statement->type = STATEMENT_TYPE_END;
 	}
-#line 2568 "syntactic.c"
+#line 2568 "syntactic.cpp"
     break;
 
   case 43: /* statement: DIRECTIVE_RS size expression  */
@@ -2574,7 +2574,7 @@ yyreduce:
 		statement->shared.rs.size = (yyvsp[-1].size);
 		statement->shared.rs.length = (yyvsp[0].expression);
 	}
-#line 2578 "syntactic.c"
+#line 2578 "syntactic.cpp"
     break;
 
   case 44: /* statement: DIRECTIVE_RSSET expression  */
@@ -2583,7 +2583,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_RSSET;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2587 "syntactic.c"
+#line 2587 "syntactic.cpp"
     break;
 
   case 45: /* statement: DIRECTIVE_RSRESET expression  */
@@ -2594,7 +2594,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_RSSET;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2598 "syntactic.c"
+#line 2598 "syntactic.cpp"
     break;
 
   case 46: /* statement: DIRECTIVE_RSRESET  */
@@ -2602,7 +2602,7 @@ yyreduce:
         {
 		statement->type = STATEMENT_TYPE_RSRESET;
 	}
-#line 2606 "syntactic.c"
+#line 2606 "syntactic.cpp"
     break;
 
   case 47: /* statement: DIRECTIVE_OBJ expression  */
@@ -2611,7 +2611,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_OBJ;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2615 "syntactic.c"
+#line 2615 "syntactic.cpp"
     break;
 
   case 48: /* statement: DIRECTIVE_OBJEND  */
@@ -2619,7 +2619,7 @@ yyreduce:
         {
 		statement->type = STATEMENT_TYPE_OBJEND;
 	}
-#line 2623 "syntactic.c"
+#line 2623 "syntactic.cpp"
     break;
 
   case 49: /* statement: DIRECTIVE_ORG expression  */
@@ -2628,7 +2628,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_ORG;
 		statement->shared.expression = (yyvsp[0].expression);
 	}
-#line 2632 "syntactic.c"
+#line 2632 "syntactic.cpp"
     break;
 
   case 50: /* statement: DIRECTIVE_PUSHO  */
@@ -2636,7 +2636,7 @@ yyreduce:
         {
 		statement->type = STATEMENT_TYPE_PUSHO;
 	}
-#line 2640 "syntactic.c"
+#line 2640 "syntactic.cpp"
     break;
 
   case 51: /* statement: DIRECTIVE_POPO  */
@@ -2644,7 +2644,7 @@ yyreduce:
         {
 		statement->type = STATEMENT_TYPE_POPO;
 	}
-#line 2648 "syntactic.c"
+#line 2648 "syntactic.cpp"
     break;
 
   case 52: /* statement: DIRECTIVE_OPT option_list  */
@@ -2653,7 +2653,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_OPT;
 		statement->shared.opt.options = (yyvsp[0].identifier_list);
 	}
-#line 2657 "syntactic.c"
+#line 2657 "syntactic.cpp"
     break;
 
   case 53: /* statement: DIRECTIVE_PUSHP STRING  */
@@ -2662,7 +2662,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_PUSHP;
 		statement->shared.string = (yyvsp[0].string);
 	}
-#line 2666 "syntactic.c"
+#line 2666 "syntactic.cpp"
     break;
 
   case 54: /* statement: DIRECTIVE_POPP IDENTIFIER  */
@@ -2671,7 +2671,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_POPP;
 		statement->shared.string = (yyvsp[0].string);
 	}
-#line 2675 "syntactic.c"
+#line 2675 "syntactic.cpp"
     break;
 
   case 55: /* statement: DIRECTIVE_SHIFT  */
@@ -2679,7 +2679,7 @@ yyreduce:
         {
 		statement->type = STATEMENT_TYPE_SHIFT;
 	}
-#line 2683 "syntactic.c"
+#line 2683 "syntactic.cpp"
     break;
 
   case 56: /* statement: DIRECTIVE_MEXIT  */
@@ -2687,7 +2687,7 @@ yyreduce:
         {
 		statement->type = STATEMENT_TYPE_MEXIT;
 	}
-#line 2691 "syntactic.c"
+#line 2691 "syntactic.cpp"
     break;
 
   case 57: /* statement: DIRECTIVE_LOCAL identifier_list  */
@@ -2696,7 +2696,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_LOCAL;
 		statement->shared.local.identifiers = (yyvsp[0].identifier_list);
 	}
-#line 2700 "syntactic.c"
+#line 2700 "syntactic.cpp"
     break;
 
   case 58: /* statement: DIRECTIVE_LIST  */
@@ -2705,7 +2705,7 @@ yyreduce:
 		/* TODO: Make this actually do something. */
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
-#line 2709 "syntactic.c"
+#line 2709 "syntactic.cpp"
     break;
 
   case 59: /* statement: DIRECTIVE_LIST '+'  */
@@ -2714,7 +2714,7 @@ yyreduce:
 		/* TODO: Make this actually do something. */
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
-#line 2718 "syntactic.c"
+#line 2718 "syntactic.cpp"
     break;
 
   case 60: /* statement: DIRECTIVE_LIST '-'  */
@@ -2723,7 +2723,7 @@ yyreduce:
 		/* TODO: Make this actually do something. */
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
-#line 2727 "syntactic.c"
+#line 2727 "syntactic.cpp"
     break;
 
   case 61: /* statement: DIRECTIVE_NOLIST  */
@@ -2732,7 +2732,7 @@ yyreduce:
 		/* TODO: Make this actually do something. */
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
-#line 2736 "syntactic.c"
+#line 2736 "syntactic.cpp"
     break;
 
   case 62: /* statement: DIRECTIVE_PURGE IDENTIFIER  */
@@ -2741,7 +2741,7 @@ yyreduce:
 		statement->type = STATEMENT_TYPE_PURGE;
 		statement->shared.string = (yyvsp[0].string);
 	}
-#line 2745 "syntactic.c"
+#line 2745 "syntactic.cpp"
     break;
 
   case 63: /* expression_list: expression  */
@@ -2762,7 +2762,7 @@ yyreduce:
 
 		(yyval.expression_list).head = (yyval.expression_list).tail = node;
 	}
-#line 2766 "syntactic.c"
+#line 2766 "syntactic.cpp"
     break;
 
   case 64: /* expression_list: expression_list ',' expression  */
@@ -2791,7 +2791,7 @@ yyreduce:
 			(yyval.expression_list).tail = node;
 		}
 	}
-#line 2795 "syntactic.c"
+#line 2795 "syntactic.cpp"
     break;
 
   case 65: /* identifier_list: IDENTIFIER  */
@@ -2812,7 +2812,7 @@ yyreduce:
 
 		(yyval.identifier_list).head = (yyval.identifier_list).tail = node;
 	}
-#line 2816 "syntactic.c"
+#line 2816 "syntactic.cpp"
     break;
 
   case 66: /* identifier_list: identifier_list ',' IDENTIFIER  */
@@ -2841,7 +2841,7 @@ yyreduce:
 			(yyval.identifier_list).tail = node;
 		}
 	}
-#line 2845 "syntactic.c"
+#line 2845 "syntactic.cpp"
     break;
 
   case 67: /* option_list: OPTION  */
@@ -2862,7 +2862,7 @@ yyreduce:
 
 		(yyval.identifier_list).head = (yyval.identifier_list).tail = node;
 	}
-#line 2866 "syntactic.c"
+#line 2866 "syntactic.cpp"
     break;
 
   case 68: /* option_list: option_list ',' OPTION  */
@@ -2891,7 +2891,7 @@ yyreduce:
 			(yyval.identifier_list).tail = node;
 		}
 	}
-#line 2895 "syntactic.c"
+#line 2895 "syntactic.cpp"
     break;
 
   case 69: /* instruction: full_opcode  */
@@ -2901,7 +2901,7 @@ yyreduce:
 		(yyval.instruction).operands[0].type = OPERAND_NONE;
 		(yyval.instruction).operands[1].type = OPERAND_NONE;
 	}
-#line 2905 "syntactic.c"
+#line 2905 "syntactic.cpp"
     break;
 
   case 70: /* instruction: full_opcode operand  */
@@ -2911,7 +2911,7 @@ yyreduce:
 		(yyval.instruction).operands[0] = (yyvsp[0].operand);
 		(yyval.instruction).operands[1].type = OPERAND_NONE;
 	}
-#line 2915 "syntactic.c"
+#line 2915 "syntactic.cpp"
     break;
 
   case 71: /* instruction: full_opcode operand ',' operand  */
@@ -2921,7 +2921,7 @@ yyreduce:
 		(yyval.instruction).operands[0] = (yyvsp[-2].operand);
 		(yyval.instruction).operands[1] = (yyvsp[0].operand);
 	}
-#line 2925 "syntactic.c"
+#line 2925 "syntactic.cpp"
     break;
 
   case 72: /* full_opcode: opcode  */
@@ -2930,7 +2930,7 @@ yyreduce:
 		(yyval.opcode) = (yyvsp[0].opcode);
 		(yyval.opcode).size = SIZE_UNDEFINED;
 	}
-#line 2934 "syntactic.c"
+#line 2934 "syntactic.cpp"
     break;
 
   case 73: /* full_opcode: opcode '.'  */
@@ -2940,7 +2940,7 @@ yyreduce:
 		(yyval.opcode).size = SIZE_UNDEFINED;
 		m68kasm_warning_pedantic(scanner, statement, "Opcode has a dot but no size; either remove the dot or add an explicit size.");
 	}
-#line 2944 "syntactic.c"
+#line 2944 "syntactic.cpp"
     break;
 
   case 74: /* full_opcode: opcode size  */
@@ -2949,7 +2949,7 @@ yyreduce:
 		(yyval.opcode) = (yyvsp[-1].opcode);
 		(yyval.opcode).size = (yyvsp[0].size);
 	}
-#line 2953 "syntactic.c"
+#line 2953 "syntactic.cpp"
     break;
 
   case 75: /* opcode: DIRECTIVE_ORI  */
@@ -2957,7 +2957,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_ORI;
 	}
-#line 2961 "syntactic.c"
+#line 2961 "syntactic.cpp"
     break;
 
   case 76: /* opcode: DIRECTIVE_ANDI  */
@@ -2965,7 +2965,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_ANDI;
 	}
-#line 2969 "syntactic.c"
+#line 2969 "syntactic.cpp"
     break;
 
   case 77: /* opcode: DIRECTIVE_SUBI  */
@@ -2973,7 +2973,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_SUBI;
 	}
-#line 2977 "syntactic.c"
+#line 2977 "syntactic.cpp"
     break;
 
   case 78: /* opcode: DIRECTIVE_ADDI  */
@@ -2981,7 +2981,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_ADDI;
 	}
-#line 2985 "syntactic.c"
+#line 2985 "syntactic.cpp"
     break;
 
   case 79: /* opcode: DIRECTIVE_EORI  */
@@ -2989,7 +2989,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_EORI;
 	}
-#line 2993 "syntactic.c"
+#line 2993 "syntactic.cpp"
     break;
 
   case 80: /* opcode: DIRECTIVE_CMPI  */
@@ -2997,7 +2997,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_CMPI;
 	}
-#line 3001 "syntactic.c"
+#line 3001 "syntactic.cpp"
     break;
 
   case 81: /* opcode: DIRECTIVE_BTST  */
@@ -3005,7 +3005,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_BTST_STATIC;
 	}
-#line 3009 "syntactic.c"
+#line 3009 "syntactic.cpp"
     break;
 
   case 82: /* opcode: DIRECTIVE_BCHG  */
@@ -3013,7 +3013,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_BCHG_STATIC;
 	}
-#line 3017 "syntactic.c"
+#line 3017 "syntactic.cpp"
     break;
 
   case 83: /* opcode: DIRECTIVE_BCLR  */
@@ -3021,7 +3021,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_BCLR_STATIC;
 	}
-#line 3025 "syntactic.c"
+#line 3025 "syntactic.cpp"
     break;
 
   case 84: /* opcode: DIRECTIVE_BSET  */
@@ -3029,7 +3029,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_BSET_STATIC;
 	}
-#line 3033 "syntactic.c"
+#line 3033 "syntactic.cpp"
     break;
 
   case 85: /* opcode: DIRECTIVE_MOVEP  */
@@ -3037,7 +3037,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_MOVEP_TO_REG;
 	}
-#line 3041 "syntactic.c"
+#line 3041 "syntactic.cpp"
     break;
 
   case 86: /* opcode: DIRECTIVE_MOVEA  */
@@ -3045,7 +3045,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_MOVEA;
 	}
-#line 3049 "syntactic.c"
+#line 3049 "syntactic.cpp"
     break;
 
   case 87: /* opcode: DIRECTIVE_MOVE  */
@@ -3053,7 +3053,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_MOVE;
 	}
-#line 3057 "syntactic.c"
+#line 3057 "syntactic.cpp"
     break;
 
   case 88: /* opcode: DIRECTIVE_NEGX  */
@@ -3061,7 +3061,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_NEGX;
 	}
-#line 3065 "syntactic.c"
+#line 3065 "syntactic.cpp"
     break;
 
   case 89: /* opcode: DIRECTIVE_CLR  */
@@ -3069,7 +3069,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_CLR;
 	}
-#line 3073 "syntactic.c"
+#line 3073 "syntactic.cpp"
     break;
 
   case 90: /* opcode: DIRECTIVE_NEG  */
@@ -3077,7 +3077,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_NEG;
 	}
-#line 3081 "syntactic.c"
+#line 3081 "syntactic.cpp"
     break;
 
   case 91: /* opcode: DIRECTIVE_NOT  */
@@ -3085,7 +3085,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_NOT;
 	}
-#line 3089 "syntactic.c"
+#line 3089 "syntactic.cpp"
     break;
 
   case 92: /* opcode: DIRECTIVE_EXT  */
@@ -3093,7 +3093,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_EXT;
 	}
-#line 3097 "syntactic.c"
+#line 3097 "syntactic.cpp"
     break;
 
   case 93: /* opcode: DIRECTIVE_NBCD  */
@@ -3101,7 +3101,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_NBCD;
 	}
-#line 3105 "syntactic.c"
+#line 3105 "syntactic.cpp"
     break;
 
   case 94: /* opcode: DIRECTIVE_SWAP  */
@@ -3109,7 +3109,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_SWAP;
 	}
-#line 3113 "syntactic.c"
+#line 3113 "syntactic.cpp"
     break;
 
   case 95: /* opcode: DIRECTIVE_PEA  */
@@ -3117,7 +3117,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_PEA;
 	}
-#line 3121 "syntactic.c"
+#line 3121 "syntactic.cpp"
     break;
 
   case 96: /* opcode: DIRECTIVE_ILLEGAL  */
@@ -3125,7 +3125,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_ILLEGAL;
 	}
-#line 3129 "syntactic.c"
+#line 3129 "syntactic.cpp"
     break;
 
   case 97: /* opcode: DIRECTIVE_TAS  */
@@ -3133,7 +3133,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_TAS;
 	}
-#line 3137 "syntactic.c"
+#line 3137 "syntactic.cpp"
     break;
 
   case 98: /* opcode: DIRECTIVE_TST  */
@@ -3141,7 +3141,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_TST;
 	}
-#line 3145 "syntactic.c"
+#line 3145 "syntactic.cpp"
     break;
 
   case 99: /* opcode: DIRECTIVE_TRAP  */
@@ -3149,7 +3149,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_TRAP;
 	}
-#line 3153 "syntactic.c"
+#line 3153 "syntactic.cpp"
     break;
 
   case 100: /* opcode: DIRECTIVE_LINK  */
@@ -3157,7 +3157,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_LINK;
 	}
-#line 3161 "syntactic.c"
+#line 3161 "syntactic.cpp"
     break;
 
   case 101: /* opcode: DIRECTIVE_UNLK  */
@@ -3165,7 +3165,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_UNLK;
 	}
-#line 3169 "syntactic.c"
+#line 3169 "syntactic.cpp"
     break;
 
   case 102: /* opcode: DIRECTIVE_RESET  */
@@ -3173,7 +3173,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_RESET;
 	}
-#line 3177 "syntactic.c"
+#line 3177 "syntactic.cpp"
     break;
 
   case 103: /* opcode: DIRECTIVE_NOP  */
@@ -3181,7 +3181,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_NOP;
 	}
-#line 3185 "syntactic.c"
+#line 3185 "syntactic.cpp"
     break;
 
   case 104: /* opcode: DIRECTIVE_STOP  */
@@ -3189,7 +3189,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_STOP;
 	}
-#line 3193 "syntactic.c"
+#line 3193 "syntactic.cpp"
     break;
 
   case 105: /* opcode: DIRECTIVE_RTE  */
@@ -3197,7 +3197,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_RTE;
 	}
-#line 3201 "syntactic.c"
+#line 3201 "syntactic.cpp"
     break;
 
   case 106: /* opcode: DIRECTIVE_RTS  */
@@ -3205,7 +3205,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_RTS;
 	}
-#line 3209 "syntactic.c"
+#line 3209 "syntactic.cpp"
     break;
 
   case 107: /* opcode: DIRECTIVE_TRAPV  */
@@ -3213,7 +3213,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_TRAPV;
 	}
-#line 3217 "syntactic.c"
+#line 3217 "syntactic.cpp"
     break;
 
   case 108: /* opcode: DIRECTIVE_RTR  */
@@ -3221,7 +3221,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_RTR;
 	}
-#line 3225 "syntactic.c"
+#line 3225 "syntactic.cpp"
     break;
 
   case 109: /* opcode: DIRECTIVE_JSR  */
@@ -3229,7 +3229,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_JSR;
 	}
-#line 3233 "syntactic.c"
+#line 3233 "syntactic.cpp"
     break;
 
   case 110: /* opcode: DIRECTIVE_JMP  */
@@ -3237,7 +3237,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_JMP;
 	}
-#line 3241 "syntactic.c"
+#line 3241 "syntactic.cpp"
     break;
 
   case 111: /* opcode: DIRECTIVE_MOVEM  */
@@ -3245,7 +3245,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_MOVEM_TO_REGS;
 	}
-#line 3249 "syntactic.c"
+#line 3249 "syntactic.cpp"
     break;
 
   case 112: /* opcode: DIRECTIVE_LEA  */
@@ -3253,7 +3253,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_LEA;
 	}
-#line 3257 "syntactic.c"
+#line 3257 "syntactic.cpp"
     break;
 
   case 113: /* opcode: DIRECTIVE_CHK  */
@@ -3261,7 +3261,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_CHK;
 	}
-#line 3265 "syntactic.c"
+#line 3265 "syntactic.cpp"
     break;
 
   case 114: /* opcode: DIRECTIVE_ADDQ  */
@@ -3269,7 +3269,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_ADDQ;
 	}
-#line 3273 "syntactic.c"
+#line 3273 "syntactic.cpp"
     break;
 
   case 115: /* opcode: DIRECTIVE_SUBQ  */
@@ -3277,7 +3277,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_SUBQ;
 	}
-#line 3281 "syntactic.c"
+#line 3281 "syntactic.cpp"
     break;
 
   case 116: /* opcode: DIRECTIVE_ST  */
@@ -3286,7 +3286,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_TRUE;
 	}
-#line 3290 "syntactic.c"
+#line 3290 "syntactic.cpp"
     break;
 
   case 117: /* opcode: DIRECTIVE_SF  */
@@ -3295,7 +3295,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_FALSE;
 	}
-#line 3299 "syntactic.c"
+#line 3299 "syntactic.cpp"
     break;
 
   case 118: /* opcode: DIRECTIVE_SHI  */
@@ -3304,7 +3304,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_HIGHER;
 	}
-#line 3308 "syntactic.c"
+#line 3308 "syntactic.cpp"
     break;
 
   case 119: /* opcode: DIRECTIVE_SLS  */
@@ -3313,7 +3313,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_LOWER_OR_SAME;
 	}
-#line 3317 "syntactic.c"
+#line 3317 "syntactic.cpp"
     break;
 
   case 120: /* opcode: DIRECTIVE_SCC  */
@@ -3322,7 +3322,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_CARRY_CLEAR;
 	}
-#line 3326 "syntactic.c"
+#line 3326 "syntactic.cpp"
     break;
 
   case 121: /* opcode: DIRECTIVE_SCS  */
@@ -3331,7 +3331,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_CARRY_SET;
 	}
-#line 3335 "syntactic.c"
+#line 3335 "syntactic.cpp"
     break;
 
   case 122: /* opcode: DIRECTIVE_SNE  */
@@ -3340,7 +3340,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_NOT_EQUAL;
 	}
-#line 3344 "syntactic.c"
+#line 3344 "syntactic.cpp"
     break;
 
   case 123: /* opcode: DIRECTIVE_SEQ  */
@@ -3349,7 +3349,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_EQUAL;
 	}
-#line 3353 "syntactic.c"
+#line 3353 "syntactic.cpp"
     break;
 
   case 124: /* opcode: DIRECTIVE_SVC  */
@@ -3358,7 +3358,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_OVERFLOW_CLEAR;
 	}
-#line 3362 "syntactic.c"
+#line 3362 "syntactic.cpp"
     break;
 
   case 125: /* opcode: DIRECTIVE_SVS  */
@@ -3367,7 +3367,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_OVERFLOW_SET;
 	}
-#line 3371 "syntactic.c"
+#line 3371 "syntactic.cpp"
     break;
 
   case 126: /* opcode: DIRECTIVE_SPL  */
@@ -3376,7 +3376,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_PLUS;
 	}
-#line 3380 "syntactic.c"
+#line 3380 "syntactic.cpp"
     break;
 
   case 127: /* opcode: DIRECTIVE_SMI  */
@@ -3385,7 +3385,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_MINUS;
 	}
-#line 3389 "syntactic.c"
+#line 3389 "syntactic.cpp"
     break;
 
   case 128: /* opcode: DIRECTIVE_SGE  */
@@ -3394,7 +3394,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_GREATER_OR_EQUAL;
 	}
-#line 3398 "syntactic.c"
+#line 3398 "syntactic.cpp"
     break;
 
   case 129: /* opcode: DIRECTIVE_SLT  */
@@ -3403,7 +3403,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_LESS_THAN;
 	}
-#line 3407 "syntactic.c"
+#line 3407 "syntactic.cpp"
     break;
 
   case 130: /* opcode: DIRECTIVE_SGT  */
@@ -3412,7 +3412,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_GREATER_THAN;
 	}
-#line 3416 "syntactic.c"
+#line 3416 "syntactic.cpp"
     break;
 
   case 131: /* opcode: DIRECTIVE_SLE  */
@@ -3421,7 +3421,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Scc;
 		(yyval.opcode).condition = CONDITION_LESS_OR_EQUAL;
 	}
-#line 3425 "syntactic.c"
+#line 3425 "syntactic.cpp"
     break;
 
   case 132: /* opcode: DIRECTIVE_DBT  */
@@ -3430,7 +3430,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_TRUE;
 	}
-#line 3434 "syntactic.c"
+#line 3434 "syntactic.cpp"
     break;
 
   case 133: /* opcode: DIRECTIVE_DBF  */
@@ -3439,7 +3439,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_FALSE;
 	}
-#line 3443 "syntactic.c"
+#line 3443 "syntactic.cpp"
     break;
 
   case 134: /* opcode: DIRECTIVE_DBHI  */
@@ -3448,7 +3448,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_HIGHER;
 	}
-#line 3452 "syntactic.c"
+#line 3452 "syntactic.cpp"
     break;
 
   case 135: /* opcode: DIRECTIVE_DBLS  */
@@ -3457,7 +3457,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_LOWER_OR_SAME;
 	}
-#line 3461 "syntactic.c"
+#line 3461 "syntactic.cpp"
     break;
 
   case 136: /* opcode: DIRECTIVE_DBCC  */
@@ -3466,7 +3466,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_CARRY_CLEAR;
 	}
-#line 3470 "syntactic.c"
+#line 3470 "syntactic.cpp"
     break;
 
   case 137: /* opcode: DIRECTIVE_DBCS  */
@@ -3475,7 +3475,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_CARRY_SET;
 	}
-#line 3479 "syntactic.c"
+#line 3479 "syntactic.cpp"
     break;
 
   case 138: /* opcode: DIRECTIVE_DBNE  */
@@ -3484,7 +3484,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_NOT_EQUAL;
 	}
-#line 3488 "syntactic.c"
+#line 3488 "syntactic.cpp"
     break;
 
   case 139: /* opcode: DIRECTIVE_DBEQ  */
@@ -3493,7 +3493,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_EQUAL;
 	}
-#line 3497 "syntactic.c"
+#line 3497 "syntactic.cpp"
     break;
 
   case 140: /* opcode: DIRECTIVE_DBVC  */
@@ -3502,7 +3502,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_OVERFLOW_CLEAR;
 	}
-#line 3506 "syntactic.c"
+#line 3506 "syntactic.cpp"
     break;
 
   case 141: /* opcode: DIRECTIVE_DBVS  */
@@ -3511,7 +3511,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_OVERFLOW_SET;
 	}
-#line 3515 "syntactic.c"
+#line 3515 "syntactic.cpp"
     break;
 
   case 142: /* opcode: DIRECTIVE_DBPL  */
@@ -3520,7 +3520,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_PLUS;
 	}
-#line 3524 "syntactic.c"
+#line 3524 "syntactic.cpp"
     break;
 
   case 143: /* opcode: DIRECTIVE_DBMI  */
@@ -3529,7 +3529,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_MINUS;
 	}
-#line 3533 "syntactic.c"
+#line 3533 "syntactic.cpp"
     break;
 
   case 144: /* opcode: DIRECTIVE_DBGE  */
@@ -3538,7 +3538,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_GREATER_OR_EQUAL;
 	}
-#line 3542 "syntactic.c"
+#line 3542 "syntactic.cpp"
     break;
 
   case 145: /* opcode: DIRECTIVE_DBLT  */
@@ -3547,7 +3547,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_LESS_THAN;
 	}
-#line 3551 "syntactic.c"
+#line 3551 "syntactic.cpp"
     break;
 
   case 146: /* opcode: DIRECTIVE_DBGT  */
@@ -3556,7 +3556,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_GREATER_THAN;
 	}
-#line 3560 "syntactic.c"
+#line 3560 "syntactic.cpp"
     break;
 
   case 147: /* opcode: DIRECTIVE_DBLE  */
@@ -3565,7 +3565,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_DBcc;
 		(yyval.opcode).condition = CONDITION_LESS_OR_EQUAL;
 	}
-#line 3569 "syntactic.c"
+#line 3569 "syntactic.cpp"
     break;
 
   case 148: /* opcode: DIRECTIVE_BRA  */
@@ -3573,7 +3573,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_BRA;
 	}
-#line 3577 "syntactic.c"
+#line 3577 "syntactic.cpp"
     break;
 
   case 149: /* opcode: DIRECTIVE_BSR  */
@@ -3581,7 +3581,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_BSR;
 	}
-#line 3585 "syntactic.c"
+#line 3585 "syntactic.cpp"
     break;
 
   case 150: /* opcode: DIRECTIVE_BHI  */
@@ -3590,7 +3590,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_HIGHER;
 	}
-#line 3594 "syntactic.c"
+#line 3594 "syntactic.cpp"
     break;
 
   case 151: /* opcode: DIRECTIVE_BLS  */
@@ -3599,7 +3599,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_LOWER_OR_SAME;
 	}
-#line 3603 "syntactic.c"
+#line 3603 "syntactic.cpp"
     break;
 
   case 152: /* opcode: DIRECTIVE_BCC  */
@@ -3608,7 +3608,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_CARRY_CLEAR;
 	}
-#line 3612 "syntactic.c"
+#line 3612 "syntactic.cpp"
     break;
 
   case 153: /* opcode: DIRECTIVE_BCS  */
@@ -3617,7 +3617,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_CARRY_SET;
 	}
-#line 3621 "syntactic.c"
+#line 3621 "syntactic.cpp"
     break;
 
   case 154: /* opcode: DIRECTIVE_BNE  */
@@ -3626,7 +3626,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_NOT_EQUAL;
 	}
-#line 3630 "syntactic.c"
+#line 3630 "syntactic.cpp"
     break;
 
   case 155: /* opcode: DIRECTIVE_BEQ  */
@@ -3635,7 +3635,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_EQUAL;
 	}
-#line 3639 "syntactic.c"
+#line 3639 "syntactic.cpp"
     break;
 
   case 156: /* opcode: DIRECTIVE_BVC  */
@@ -3644,7 +3644,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_OVERFLOW_CLEAR;
 	}
-#line 3648 "syntactic.c"
+#line 3648 "syntactic.cpp"
     break;
 
   case 157: /* opcode: DIRECTIVE_BVS  */
@@ -3653,7 +3653,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_OVERFLOW_SET;
 	}
-#line 3657 "syntactic.c"
+#line 3657 "syntactic.cpp"
     break;
 
   case 158: /* opcode: DIRECTIVE_BPL  */
@@ -3662,7 +3662,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_PLUS;
 	}
-#line 3666 "syntactic.c"
+#line 3666 "syntactic.cpp"
     break;
 
   case 159: /* opcode: DIRECTIVE_BMI  */
@@ -3671,7 +3671,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_MINUS;
 	}
-#line 3675 "syntactic.c"
+#line 3675 "syntactic.cpp"
     break;
 
   case 160: /* opcode: DIRECTIVE_BGE  */
@@ -3680,7 +3680,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_GREATER_OR_EQUAL;
 	}
-#line 3684 "syntactic.c"
+#line 3684 "syntactic.cpp"
     break;
 
   case 161: /* opcode: DIRECTIVE_BLT  */
@@ -3689,7 +3689,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_LESS_THAN;
 	}
-#line 3693 "syntactic.c"
+#line 3693 "syntactic.cpp"
     break;
 
   case 162: /* opcode: DIRECTIVE_BGT  */
@@ -3698,7 +3698,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_GREATER_THAN;
 	}
-#line 3702 "syntactic.c"
+#line 3702 "syntactic.cpp"
     break;
 
   case 163: /* opcode: DIRECTIVE_BLE  */
@@ -3707,7 +3707,7 @@ yyreduce:
 		(yyval.opcode).type = OPCODE_Bcc;
 		(yyval.opcode).condition = CONDITION_LESS_OR_EQUAL;
 	}
-#line 3711 "syntactic.c"
+#line 3711 "syntactic.cpp"
     break;
 
   case 164: /* opcode: DIRECTIVE_MOVEQ  */
@@ -3715,7 +3715,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_MOVEQ;
 	}
-#line 3719 "syntactic.c"
+#line 3719 "syntactic.cpp"
     break;
 
   case 165: /* opcode: DIRECTIVE_DIVU  */
@@ -3723,7 +3723,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_DIVU;
 	}
-#line 3727 "syntactic.c"
+#line 3727 "syntactic.cpp"
     break;
 
   case 166: /* opcode: DIRECTIVE_DIVS  */
@@ -3731,7 +3731,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_DIVS;
 	}
-#line 3735 "syntactic.c"
+#line 3735 "syntactic.cpp"
     break;
 
   case 167: /* opcode: DIRECTIVE_SBCD  */
@@ -3739,7 +3739,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_SBCD_DATA_REGS;
 	}
-#line 3743 "syntactic.c"
+#line 3743 "syntactic.cpp"
     break;
 
   case 168: /* opcode: DIRECTIVE_OR  */
@@ -3747,7 +3747,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_OR_TO_REG;
 	}
-#line 3751 "syntactic.c"
+#line 3751 "syntactic.cpp"
     break;
 
   case 169: /* opcode: DIRECTIVE_SUB  */
@@ -3755,7 +3755,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_SUB_TO_REG;
 	}
-#line 3759 "syntactic.c"
+#line 3759 "syntactic.cpp"
     break;
 
   case 170: /* opcode: DIRECTIVE_SUBX  */
@@ -3763,7 +3763,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_SUBX_DATA_REGS;
 	}
-#line 3767 "syntactic.c"
+#line 3767 "syntactic.cpp"
     break;
 
   case 171: /* opcode: DIRECTIVE_SUBA  */
@@ -3771,7 +3771,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_SUBA;
 	}
-#line 3775 "syntactic.c"
+#line 3775 "syntactic.cpp"
     break;
 
   case 172: /* opcode: DIRECTIVE_EOR  */
@@ -3779,7 +3779,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_EOR;
 	}
-#line 3783 "syntactic.c"
+#line 3783 "syntactic.cpp"
     break;
 
   case 173: /* opcode: DIRECTIVE_CMPM  */
@@ -3787,7 +3787,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_CMPM;
 	}
-#line 3791 "syntactic.c"
+#line 3791 "syntactic.cpp"
     break;
 
   case 174: /* opcode: DIRECTIVE_CMP  */
@@ -3795,7 +3795,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_CMP;
 	}
-#line 3799 "syntactic.c"
+#line 3799 "syntactic.cpp"
     break;
 
   case 175: /* opcode: DIRECTIVE_CMPA  */
@@ -3803,7 +3803,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_CMPA;
 	}
-#line 3807 "syntactic.c"
+#line 3807 "syntactic.cpp"
     break;
 
   case 176: /* opcode: DIRECTIVE_MULU  */
@@ -3811,7 +3811,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_MULU;
 	}
-#line 3815 "syntactic.c"
+#line 3815 "syntactic.cpp"
     break;
 
   case 177: /* opcode: DIRECTIVE_MULS  */
@@ -3819,7 +3819,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_MULS;
 	}
-#line 3823 "syntactic.c"
+#line 3823 "syntactic.cpp"
     break;
 
   case 178: /* opcode: DIRECTIVE_ABCD  */
@@ -3827,7 +3827,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_ABCD_DATA_REGS;
 	}
-#line 3831 "syntactic.c"
+#line 3831 "syntactic.cpp"
     break;
 
   case 179: /* opcode: DIRECTIVE_EXG  */
@@ -3835,7 +3835,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_EXG;
 	}
-#line 3839 "syntactic.c"
+#line 3839 "syntactic.cpp"
     break;
 
   case 180: /* opcode: DIRECTIVE_AND  */
@@ -3843,7 +3843,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_AND_TO_REG;
 	}
-#line 3847 "syntactic.c"
+#line 3847 "syntactic.cpp"
     break;
 
   case 181: /* opcode: DIRECTIVE_ADD  */
@@ -3851,7 +3851,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_ADD_TO_REG;
 	}
-#line 3855 "syntactic.c"
+#line 3855 "syntactic.cpp"
     break;
 
   case 182: /* opcode: DIRECTIVE_ADDX  */
@@ -3859,7 +3859,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_ADDX_DATA_REGS;
 	}
-#line 3863 "syntactic.c"
+#line 3863 "syntactic.cpp"
     break;
 
   case 183: /* opcode: DIRECTIVE_ADDA  */
@@ -3867,7 +3867,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_ADDA;
 	}
-#line 3871 "syntactic.c"
+#line 3871 "syntactic.cpp"
     break;
 
   case 184: /* opcode: DIRECTIVE_ASL  */
@@ -3875,7 +3875,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_ASL_STATIC;
 	}
-#line 3879 "syntactic.c"
+#line 3879 "syntactic.cpp"
     break;
 
   case 185: /* opcode: DIRECTIVE_ASR  */
@@ -3883,7 +3883,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_ASR_STATIC;
 	}
-#line 3887 "syntactic.c"
+#line 3887 "syntactic.cpp"
     break;
 
   case 186: /* opcode: DIRECTIVE_LSL  */
@@ -3891,7 +3891,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_LSL_STATIC;
 	}
-#line 3895 "syntactic.c"
+#line 3895 "syntactic.cpp"
     break;
 
   case 187: /* opcode: DIRECTIVE_LSR  */
@@ -3899,7 +3899,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_LSR_STATIC;
 	}
-#line 3903 "syntactic.c"
+#line 3903 "syntactic.cpp"
     break;
 
   case 188: /* opcode: DIRECTIVE_ROXL  */
@@ -3907,7 +3907,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_ROXL_STATIC;
 	}
-#line 3911 "syntactic.c"
+#line 3911 "syntactic.cpp"
     break;
 
   case 189: /* opcode: DIRECTIVE_ROXR  */
@@ -3915,7 +3915,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_ROXR_STATIC;
 	}
-#line 3919 "syntactic.c"
+#line 3919 "syntactic.cpp"
     break;
 
   case 190: /* opcode: DIRECTIVE_ROL  */
@@ -3923,7 +3923,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_ROL_STATIC;
 	}
-#line 3927 "syntactic.c"
+#line 3927 "syntactic.cpp"
     break;
 
   case 191: /* opcode: DIRECTIVE_ROR  */
@@ -3931,7 +3931,7 @@ yyreduce:
         {
 		(yyval.opcode).type = OPCODE_ROR_STATIC;
 	}
-#line 3935 "syntactic.c"
+#line 3935 "syntactic.cpp"
     break;
 
   case 192: /* size: SIZE_BYTE  */
@@ -3939,7 +3939,7 @@ yyreduce:
         {
 		(yyval.size) = SIZE_BYTE;
 	}
-#line 3943 "syntactic.c"
+#line 3943 "syntactic.cpp"
     break;
 
   case 193: /* size: SIZE_SHORT  */
@@ -3947,7 +3947,7 @@ yyreduce:
         {
 		(yyval.size) = SIZE_SHORT;
 	}
-#line 3951 "syntactic.c"
+#line 3951 "syntactic.cpp"
     break;
 
   case 194: /* size: SIZE_WORD  */
@@ -3955,7 +3955,7 @@ yyreduce:
         {
 		(yyval.size) = SIZE_WORD;
 	}
-#line 3959 "syntactic.c"
+#line 3959 "syntactic.cpp"
     break;
 
   case 195: /* size: SIZE_LONGWORD  */
@@ -3963,7 +3963,7 @@ yyreduce:
         {
 		(yyval.size) = SIZE_LONGWORD;
 	}
-#line 3967 "syntactic.c"
+#line 3967 "syntactic.cpp"
     break;
 
   case 196: /* operand: '(' ADDRESS_REGISTER ')'  */
@@ -3972,7 +3972,7 @@ yyreduce:
 		(yyval.operand).type = OPERAND_ADDRESS_REGISTER_INDIRECT;
 		(yyval.operand).main_register = (yyvsp[-1].unsigned_long);
 	}
-#line 3976 "syntactic.c"
+#line 3976 "syntactic.cpp"
     break;
 
   case 197: /* operand: '(' ADDRESS_REGISTER ')' '+'  */
@@ -3981,7 +3981,7 @@ yyreduce:
 		(yyval.operand).type = OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT;
 		(yyval.operand).main_register = (yyvsp[-2].unsigned_long);
 	}
-#line 3985 "syntactic.c"
+#line 3985 "syntactic.cpp"
     break;
 
   case 198: /* operand: '-' '(' ADDRESS_REGISTER ')'  */
@@ -3990,7 +3990,7 @@ yyreduce:
 		(yyval.operand).type = OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT;
 		(yyval.operand).main_register = (yyvsp[-1].unsigned_long);
 	}
-#line 3994 "syntactic.c"
+#line 3994 "syntactic.cpp"
     break;
 
   case 199: /* operand: expression '(' ADDRESS_REGISTER ')'  */
@@ -4000,7 +4000,7 @@ yyreduce:
 		(yyval.operand).literal = (yyvsp[-3].expression);
 		(yyval.operand).main_register = (yyvsp[-1].unsigned_long);
 	}
-#line 4004 "syntactic.c"
+#line 4004 "syntactic.cpp"
     break;
 
   case 200: /* operand: '(' expression ',' ADDRESS_REGISTER ')'  */
@@ -4010,7 +4010,7 @@ yyreduce:
 		(yyval.operand).literal = (yyvsp[-3].expression);
 		(yyval.operand).main_register = (yyvsp[-1].unsigned_long);
 	}
-#line 4014 "syntactic.c"
+#line 4014 "syntactic.cpp"
     break;
 
   case 201: /* operand: '(' ADDRESS_REGISTER ',' expression ')'  */
@@ -4020,7 +4020,7 @@ yyreduce:
 		(yyval.operand).literal = (yyvsp[-1].expression);
 		(yyval.operand).main_register = (yyvsp[-3].unsigned_long);
 	}
-#line 4024 "syntactic.c"
+#line 4024 "syntactic.cpp"
     break;
 
   case 202: /* operand: '(' ADDRESS_REGISTER ',' data_or_address_register size ')'  */
@@ -4034,7 +4034,7 @@ yyreduce:
 		(yyval.operand).size = (yyvsp[-1].size);
 		(yyval.operand).index_register_is_address_register = (yyvsp[-2].unsigned_long) / 8 != 0;
 	}
-#line 4038 "syntactic.c"
+#line 4038 "syntactic.cpp"
     break;
 
   case 203: /* operand: expression '(' ADDRESS_REGISTER ',' data_or_address_register size ')'  */
@@ -4047,7 +4047,7 @@ yyreduce:
 		(yyval.operand).size = (yyvsp[-1].size);
 		(yyval.operand).index_register_is_address_register = (yyvsp[-2].unsigned_long) / 8 !=0;
 	}
-#line 4051 "syntactic.c"
+#line 4051 "syntactic.cpp"
     break;
 
   case 204: /* operand: '(' expression ',' ADDRESS_REGISTER ',' data_or_address_register size ')'  */
@@ -4060,7 +4060,7 @@ yyreduce:
 		(yyval.operand).size = (yyvsp[-1].size);
 		(yyval.operand).index_register_is_address_register = (yyvsp[-2].unsigned_long) / 8 !=0;
 	}
-#line 4064 "syntactic.c"
+#line 4064 "syntactic.cpp"
     break;
 
   case 205: /* operand: '(' ADDRESS_REGISTER ',' data_or_address_register ')'  */
@@ -4075,7 +4075,7 @@ yyreduce:
 		(yyval.operand).size = SIZE_WORD;
 		(yyval.operand).index_register_is_address_register = (yyvsp[-1].unsigned_long) / 8 != 0;
 	}
-#line 4079 "syntactic.c"
+#line 4079 "syntactic.cpp"
     break;
 
   case 206: /* operand: expression '(' ADDRESS_REGISTER ',' data_or_address_register ')'  */
@@ -4089,7 +4089,7 @@ yyreduce:
 		(yyval.operand).size = SIZE_WORD;
 		(yyval.operand).index_register_is_address_register = (yyvsp[-1].unsigned_long) / 8 !=0;
 	}
-#line 4093 "syntactic.c"
+#line 4093 "syntactic.cpp"
     break;
 
   case 207: /* operand: '(' expression ',' ADDRESS_REGISTER ',' data_or_address_register ')'  */
@@ -4103,7 +4103,7 @@ yyreduce:
 		(yyval.operand).size = SIZE_WORD;
 		(yyval.operand).index_register_is_address_register = (yyvsp[-1].unsigned_long) / 8 !=0;
 	}
-#line 4107 "syntactic.c"
+#line 4107 "syntactic.cpp"
     break;
 
   case 208: /* operand: expression '(' PROGRAM_COUNTER ')'  */
@@ -4112,7 +4112,7 @@ yyreduce:
 		(yyval.operand).type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		(yyval.operand).literal = (yyvsp[-3].expression);
 	}
-#line 4116 "syntactic.c"
+#line 4116 "syntactic.cpp"
     break;
 
   case 209: /* operand: '(' expression ',' PROGRAM_COUNTER ')'  */
@@ -4121,7 +4121,7 @@ yyreduce:
 		(yyval.operand).type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		(yyval.operand).literal = (yyvsp[-3].expression);
 	}
-#line 4125 "syntactic.c"
+#line 4125 "syntactic.cpp"
     break;
 
   case 210: /* operand: '(' PROGRAM_COUNTER ',' expression ')'  */
@@ -4130,7 +4130,7 @@ yyreduce:
 		(yyval.operand).type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		(yyval.operand).literal = (yyvsp[-1].expression);
 	}
-#line 4134 "syntactic.c"
+#line 4134 "syntactic.cpp"
     break;
 
   case 211: /* operand: '(' PROGRAM_COUNTER ',' data_or_address_register size ')'  */
@@ -4143,7 +4143,7 @@ yyreduce:
 		(yyval.operand).size = (yyvsp[-1].size);
 		(yyval.operand).index_register_is_address_register = (yyvsp[-2].unsigned_long) / 8 != 0;
 	}
-#line 4147 "syntactic.c"
+#line 4147 "syntactic.cpp"
     break;
 
   case 212: /* operand: expression '(' PROGRAM_COUNTER ',' data_or_address_register size ')'  */
@@ -4155,7 +4155,7 @@ yyreduce:
 		(yyval.operand).size = (yyvsp[-1].size);
 		(yyval.operand).index_register_is_address_register = (yyvsp[-2].unsigned_long) / 8 != 0;
 	}
-#line 4159 "syntactic.c"
+#line 4159 "syntactic.cpp"
     break;
 
   case 213: /* operand: '(' expression ',' PROGRAM_COUNTER ',' data_or_address_register size ')'  */
@@ -4167,7 +4167,7 @@ yyreduce:
 		(yyval.operand).size = (yyvsp[-1].size);
 		(yyval.operand).index_register_is_address_register = (yyvsp[-2].unsigned_long) / 8 != 0;
 	}
-#line 4171 "syntactic.c"
+#line 4171 "syntactic.cpp"
     break;
 
   case 214: /* operand: '(' PROGRAM_COUNTER ',' data_or_address_register ')'  */
@@ -4181,7 +4181,7 @@ yyreduce:
 		(yyval.operand).size = SIZE_WORD;
 		(yyval.operand).index_register_is_address_register = (yyvsp[-1].unsigned_long) / 8 != 0;
 	}
-#line 4185 "syntactic.c"
+#line 4185 "syntactic.cpp"
     break;
 
   case 215: /* operand: expression '(' PROGRAM_COUNTER ',' data_or_address_register ')'  */
@@ -4194,7 +4194,7 @@ yyreduce:
 		(yyval.operand).size = SIZE_WORD;
 		(yyval.operand).index_register_is_address_register = (yyvsp[-1].unsigned_long) / 8 != 0;
 	}
-#line 4198 "syntactic.c"
+#line 4198 "syntactic.cpp"
     break;
 
   case 216: /* operand: '(' expression ',' PROGRAM_COUNTER ',' data_or_address_register ')'  */
@@ -4207,7 +4207,7 @@ yyreduce:
 		(yyval.operand).size = SIZE_WORD;
 		(yyval.operand).index_register_is_address_register = (yyvsp[-1].unsigned_long) / 8 != 0;
 	}
-#line 4211 "syntactic.c"
+#line 4211 "syntactic.cpp"
     break;
 
   case 217: /* operand: '#' expression  */
@@ -4216,7 +4216,7 @@ yyreduce:
 		(yyval.operand).type = OPERAND_LITERAL;
 		(yyval.operand).literal = (yyvsp[0].expression);
 	}
-#line 4220 "syntactic.c"
+#line 4220 "syntactic.cpp"
     break;
 
   case 218: /* operand: STATUS_REGISTER  */
@@ -4224,7 +4224,7 @@ yyreduce:
         {
 		(yyval.operand).type = OPERAND_STATUS_REGISTER;
 	}
-#line 4228 "syntactic.c"
+#line 4228 "syntactic.cpp"
     break;
 
   case 219: /* operand: CONDITION_CODE_REGISTER  */
@@ -4232,7 +4232,7 @@ yyreduce:
         {
 		(yyval.operand).type = OPERAND_CONDITION_CODE_REGISTER;
 	}
-#line 4236 "syntactic.c"
+#line 4236 "syntactic.cpp"
     break;
 
   case 220: /* operand: USER_STACK_POINTER_REGISTER  */
@@ -4240,7 +4240,7 @@ yyreduce:
         {
 		(yyval.operand).type = OPERAND_USER_STACK_POINTER_REGISTER;
 	}
-#line 4244 "syntactic.c"
+#line 4244 "syntactic.cpp"
     break;
 
   case 221: /* operand: expression  */
@@ -4250,7 +4250,7 @@ yyreduce:
 		(yyval.operand).literal = (yyvsp[0].expression);
 		(yyval.operand).size = SIZE_UNDEFINED;
 	}
-#line 4254 "syntactic.c"
+#line 4254 "syntactic.cpp"
     break;
 
   case 222: /* operand: expression size  */
@@ -4260,7 +4260,7 @@ yyreduce:
 		(yyval.operand).literal = (yyvsp[-1].expression);
 		(yyval.operand).size = (yyvsp[0].size);
 	}
-#line 4264 "syntactic.c"
+#line 4264 "syntactic.cpp"
     break;
 
   case 223: /* operand: register_list  */
@@ -4292,7 +4292,7 @@ yyreduce:
 			(yyval.operand).main_register = (yyvsp[0].unsigned_long); /* Such a hack... */
 		}
 	}
-#line 4296 "syntactic.c"
+#line 4296 "syntactic.cpp"
     break;
 
   case 224: /* register_list: register_span  */
@@ -4300,7 +4300,7 @@ yyreduce:
         {
 		(yyval.unsigned_long) = (yyvsp[0].unsigned_long);
 	}
-#line 4304 "syntactic.c"
+#line 4304 "syntactic.cpp"
     break;
 
   case 225: /* register_list: register_span '/' register_list  */
@@ -4308,7 +4308,7 @@ yyreduce:
         {
 		(yyval.unsigned_long) = (yyvsp[-2].unsigned_long) | (yyvsp[0].unsigned_long);
 	}
-#line 4312 "syntactic.c"
+#line 4312 "syntactic.cpp"
     break;
 
   case 226: /* register_span: data_or_address_register  */
@@ -4316,7 +4316,7 @@ yyreduce:
         {
 		(yyval.unsigned_long) = 1 << (yyvsp[0].unsigned_long);
 	}
-#line 4320 "syntactic.c"
+#line 4320 "syntactic.cpp"
     break;
 
   case 227: /* register_span: data_or_address_register '-' data_or_address_register  */
@@ -4342,7 +4342,7 @@ yyreduce:
 		for (i = start; i <= end; ++i)
 			(yyval.unsigned_long) |= 1 << i;
 	}
-#line 4346 "syntactic.c"
+#line 4346 "syntactic.cpp"
     break;
 
   case 228: /* data_or_address_register: DATA_REGISTER  */
@@ -4350,7 +4350,7 @@ yyreduce:
         {
 		(yyval.unsigned_long) = 0 + (yyvsp[0].unsigned_long);
 	}
-#line 4354 "syntactic.c"
+#line 4354 "syntactic.cpp"
     break;
 
   case 229: /* data_or_address_register: ADDRESS_REGISTER  */
@@ -4358,7 +4358,7 @@ yyreduce:
         {
 		(yyval.unsigned_long) = 8 + (yyvsp[0].unsigned_long);
 	}
-#line 4362 "syntactic.c"
+#line 4362 "syntactic.cpp"
     break;
 
   case 230: /* expression: expression1  */
@@ -4366,7 +4366,7 @@ yyreduce:
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4370 "syntactic.c"
+#line 4370 "syntactic.cpp"
     break;
 
   case 231: /* expression: expression LOGICAL_AND expression1  */
@@ -4375,7 +4375,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_LOGICAL_AND, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4379 "syntactic.c"
+#line 4379 "syntactic.cpp"
     break;
 
   case 232: /* expression: expression LOGICAL_OR expression1  */
@@ -4384,7 +4384,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_LOGICAL_OR, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4388 "syntactic.c"
+#line 4388 "syntactic.cpp"
     break;
 
   case 233: /* expression1: expression2  */
@@ -4392,7 +4392,7 @@ yyreduce:
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4396 "syntactic.c"
+#line 4396 "syntactic.cpp"
     break;
 
   case 234: /* expression1: expression1 '=' expression2  */
@@ -4401,7 +4401,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_EQUALITY, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4405 "syntactic.c"
+#line 4405 "syntactic.cpp"
     break;
 
   case 235: /* expression1: expression1 EQUALITY expression2  */
@@ -4410,7 +4410,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_EQUALITY, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4414 "syntactic.c"
+#line 4414 "syntactic.cpp"
     break;
 
   case 236: /* expression1: expression1 INEQUALITY expression2  */
@@ -4419,7 +4419,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_INEQUALITY, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4423 "syntactic.c"
+#line 4423 "syntactic.cpp"
     break;
 
   case 237: /* expression2: expression3  */
@@ -4427,7 +4427,7 @@ yyreduce:
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4431 "syntactic.c"
+#line 4431 "syntactic.cpp"
     break;
 
   case 238: /* expression2: expression2 '<' expression3  */
@@ -4436,7 +4436,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_LESS_THAN, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4440 "syntactic.c"
+#line 4440 "syntactic.cpp"
     break;
 
   case 239: /* expression2: expression2 LESS_OR_EQUAL expression3  */
@@ -4445,7 +4445,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_LESS_OR_EQUAL, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4449 "syntactic.c"
+#line 4449 "syntactic.cpp"
     break;
 
   case 240: /* expression2: expression2 '>' expression3  */
@@ -4454,7 +4454,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_MORE_THAN, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4458 "syntactic.c"
+#line 4458 "syntactic.cpp"
     break;
 
   case 241: /* expression2: expression2 MORE_OR_EQUAL expression3  */
@@ -4463,7 +4463,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_MORE_OR_EQUAL, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4467 "syntactic.c"
+#line 4467 "syntactic.cpp"
     break;
 
   case 242: /* expression3: expression4  */
@@ -4471,7 +4471,7 @@ yyreduce:
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4475 "syntactic.c"
+#line 4475 "syntactic.cpp"
     break;
 
   case 243: /* expression3: expression3 '+' expression4  */
@@ -4480,7 +4480,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_ADD, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4484 "syntactic.c"
+#line 4484 "syntactic.cpp"
     break;
 
   case 244: /* expression3: expression3 '-' expression4  */
@@ -4489,7 +4489,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_SUBTRACT, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4493 "syntactic.c"
+#line 4493 "syntactic.cpp"
     break;
 
   case 245: /* expression4: expression5  */
@@ -4497,7 +4497,7 @@ yyreduce:
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4501 "syntactic.c"
+#line 4501 "syntactic.cpp"
     break;
 
   case 246: /* expression4: expression4 '*' expression5  */
@@ -4506,7 +4506,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_MULTIPLY, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4510 "syntactic.c"
+#line 4510 "syntactic.cpp"
     break;
 
   case 247: /* expression4: expression4 '/' expression5  */
@@ -4515,7 +4515,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_DIVIDE, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4519 "syntactic.c"
+#line 4519 "syntactic.cpp"
     break;
 
   case 248: /* expression4: expression4 '%' expression5  */
@@ -4524,7 +4524,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_MODULO, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4528 "syntactic.c"
+#line 4528 "syntactic.cpp"
     break;
 
   case 249: /* expression5: expression6  */
@@ -4532,7 +4532,7 @@ yyreduce:
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4536 "syntactic.c"
+#line 4536 "syntactic.cpp"
     break;
 
   case 250: /* expression5: expression5 '&' expression6  */
@@ -4541,7 +4541,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_BITWISE_AND, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4545 "syntactic.c"
+#line 4545 "syntactic.cpp"
     break;
 
   case 251: /* expression5: expression5 '!' expression6  */
@@ -4550,7 +4550,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_BITWISE_OR, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4554 "syntactic.c"
+#line 4554 "syntactic.cpp"
     break;
 
   case 252: /* expression5: expression5 '|' expression6  */
@@ -4559,7 +4559,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_BITWISE_OR, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4563 "syntactic.c"
+#line 4563 "syntactic.cpp"
     break;
 
   case 253: /* expression5: expression5 '^' expression6  */
@@ -4568,7 +4568,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_BITWISE_XOR, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4572 "syntactic.c"
+#line 4572 "syntactic.cpp"
     break;
 
   case 254: /* expression6: expression7  */
@@ -4576,7 +4576,7 @@ yyreduce:
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4580 "syntactic.c"
+#line 4580 "syntactic.cpp"
     break;
 
   case 255: /* expression6: expression6 LEFT_SHIFT expression7  */
@@ -4585,7 +4585,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_LEFT_SHIFT, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4589 "syntactic.c"
+#line 4589 "syntactic.cpp"
     break;
 
   case 256: /* expression6: expression6 RIGHT_SHIFT expression7  */
@@ -4594,7 +4594,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_RIGHT_SHIFT, &(yyvsp[-2].expression), &(yyvsp[0].expression)))
 			YYNOMEM;
 	}
-#line 4598 "syntactic.c"
+#line 4598 "syntactic.cpp"
     break;
 
   case 257: /* expression7: expression8  */
@@ -4602,7 +4602,7 @@ yyreduce:
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4606 "syntactic.c"
+#line 4606 "syntactic.cpp"
     break;
 
   case 258: /* expression7: '+' expression7  */
@@ -4610,7 +4610,7 @@ yyreduce:
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4614 "syntactic.c"
+#line 4614 "syntactic.cpp"
     break;
 
   case 259: /* expression7: '-' expression7  */
@@ -4619,7 +4619,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_NEGATE, &(yyvsp[0].expression), NULL))
 			YYNOMEM;
 	}
-#line 4623 "syntactic.c"
+#line 4623 "syntactic.cpp"
     break;
 
   case 260: /* expression7: '~' expression7  */
@@ -4628,7 +4628,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_BITWISE_NOT, &(yyvsp[0].expression), NULL))
 			YYNOMEM;
 	}
-#line 4632 "syntactic.c"
+#line 4632 "syntactic.cpp"
     break;
 
   case 261: /* expression7: '!' expression7  */
@@ -4637,7 +4637,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_LOGICAL_NOT, &(yyvsp[0].expression), NULL))
 			YYNOMEM;
 	}
-#line 4641 "syntactic.c"
+#line 4641 "syntactic.cpp"
     break;
 
   case 263: /* local_identifier: SIZE_BYTE  */
@@ -4647,7 +4647,7 @@ yyreduce:
 		if (!String_CreateCopyView(&(yyval.string), &literal))
 			YYNOMEM;
 	}
-#line 4651 "syntactic.c"
+#line 4651 "syntactic.cpp"
     break;
 
   case 264: /* local_identifier: SIZE_SHORT  */
@@ -4657,7 +4657,7 @@ yyreduce:
 		if (!String_CreateCopyView(&(yyval.string), &literal))
 			YYNOMEM;
 	}
-#line 4661 "syntactic.c"
+#line 4661 "syntactic.cpp"
     break;
 
   case 265: /* local_identifier: SIZE_WORD  */
@@ -4667,7 +4667,7 @@ yyreduce:
 		if (!String_CreateCopyView(&(yyval.string), &literal))
 			YYNOMEM;
 	}
-#line 4671 "syntactic.c"
+#line 4671 "syntactic.cpp"
     break;
 
   case 266: /* local_identifier: SIZE_LONGWORD  */
@@ -4677,7 +4677,7 @@ yyreduce:
 		if (!String_CreateCopyView(&(yyval.string), &literal))
 			YYNOMEM;
 	}
-#line 4681 "syntactic.c"
+#line 4681 "syntactic.cpp"
     break;
 
   case 269: /* identifier: identifier local_identifier  */
@@ -4690,7 +4690,7 @@ yyreduce:
 		if (!success)
 			YYNOMEM;
 	}
-#line 4694 "syntactic.c"
+#line 4694 "syntactic.cpp"
     break;
 
   case 270: /* expression8: NUMBER  */
@@ -4699,7 +4699,7 @@ yyreduce:
 		(yyval.expression).type = EXPRESSION_NUMBER;
 		(yyval.expression).shared.unsigned_long = (yyvsp[0].unsigned_long);
 	}
-#line 4703 "syntactic.c"
+#line 4703 "syntactic.cpp"
     break;
 
   case 271: /* expression8: identifier  */
@@ -4708,7 +4708,7 @@ yyreduce:
 		(yyval.expression).type = EXPRESSION_IDENTIFIER;
 		(yyval.expression).shared.string = (yyvsp[0].string);
 	}
-#line 4712 "syntactic.c"
+#line 4712 "syntactic.cpp"
     break;
 
   case 272: /* expression8: string  */
@@ -4716,7 +4716,7 @@ yyreduce:
         {
 		(yyval.expression) = (yyvsp[0].expression);
 	}
-#line 4720 "syntactic.c"
+#line 4720 "syntactic.cpp"
     break;
 
   case 273: /* expression8: '*'  */
@@ -4724,7 +4724,7 @@ yyreduce:
         {
 		(yyval.expression).type = EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT;
 	}
-#line 4728 "syntactic.c"
+#line 4728 "syntactic.cpp"
     break;
 
   case 274: /* expression8: '@'  */
@@ -4732,7 +4732,7 @@ yyreduce:
         {
 		(yyval.expression).type = EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION;
 	}
-#line 4736 "syntactic.c"
+#line 4736 "syntactic.cpp"
     break;
 
   case 275: /* expression8: '(' expression ')'  */
@@ -4740,7 +4740,7 @@ yyreduce:
         {
 		(yyval.expression) = (yyvsp[-1].expression);
 	}
-#line 4744 "syntactic.c"
+#line 4744 "syntactic.cpp"
     break;
 
   case 276: /* expression8: STRLEN '(' STRING ')'  */
@@ -4749,7 +4749,7 @@ yyreduce:
 		(yyval.expression).type = EXPRESSION_STRLEN;
 		(yyval.expression).shared.string = (yyvsp[-1].string);
 	}
-#line 4753 "syntactic.c"
+#line 4753 "syntactic.cpp"
     break;
 
   case 277: /* expression8: STRCMP '(' string ',' string ')'  */
@@ -4758,7 +4758,7 @@ yyreduce:
 		if (!DoExpression(&(yyval.expression), EXPRESSION_STRCMP, &(yyvsp[-3].expression), &(yyvsp[-1].expression)))
 			YYNOMEM;
 	}
-#line 4762 "syntactic.c"
+#line 4762 "syntactic.cpp"
     break;
 
   case 278: /* expression8: INSTR '(' expression ',' expression ')'  */
@@ -4772,7 +4772,7 @@ yyreduce:
 		if (!DoExpressionTriple(&(yyval.expression), EXPRESSION_INSTR, &expression, &(yyvsp[-3].expression), &(yyvsp[-1].expression)))
 			YYNOMEM;
 	}
-#line 4776 "syntactic.c"
+#line 4776 "syntactic.cpp"
     break;
 
   case 279: /* expression8: INSTR '(' expression ',' expression ',' expression ')'  */
@@ -4781,7 +4781,7 @@ yyreduce:
 		if (!DoExpressionTriple(&(yyval.expression), EXPRESSION_INSTR, &(yyvsp[-5].expression), &(yyvsp[-3].expression), &(yyvsp[-1].expression)))
 			YYNOMEM;
 	}
-#line 4785 "syntactic.c"
+#line 4785 "syntactic.cpp"
     break;
 
   case 280: /* expression8: DEF '(' IDENTIFIER ')'  */
@@ -4790,7 +4790,7 @@ yyreduce:
 		(yyval.expression).type = EXPRESSION_DEF;
 		(yyval.expression).shared.string = (yyvsp[-1].string);
 	}
-#line 4794 "syntactic.c"
+#line 4794 "syntactic.cpp"
     break;
 
   case 281: /* expression8: TYPE '(' IDENTIFIER ')'  */
@@ -4799,7 +4799,7 @@ yyreduce:
 		(yyval.expression).type = EXPRESSION_TYPE_WITH_IDENTIFIER;
 		(yyval.expression).shared.string = (yyvsp[-1].string);
 	}
-#line 4803 "syntactic.c"
+#line 4803 "syntactic.cpp"
     break;
 
   case 282: /* expression8: TYPE '(' NUMBER ')'  */
@@ -4808,7 +4808,7 @@ yyreduce:
 		(yyval.expression).type = EXPRESSION_TYPE_WITH_NUMBER;
 		(yyval.expression).shared.unsigned_long = (yyvsp[-1].unsigned_long);
 	}
-#line 4812 "syntactic.c"
+#line 4812 "syntactic.cpp"
     break;
 
   case 283: /* expression8: FILESIZE '(' STRING ')'  */
@@ -4817,7 +4817,7 @@ yyreduce:
 		(yyval.expression).type = EXPRESSION_FILESIZE;
 		(yyval.expression).shared.string = (yyvsp[-1].string);
 	}
-#line 4821 "syntactic.c"
+#line 4821 "syntactic.cpp"
     break;
 
   case 284: /* expression8: OFFSET '(' expression ')'  */
@@ -4826,7 +4826,7 @@ yyreduce:
 		/* TODO: Make this actually do something besides pass the expression through. */
 		(yyval.expression) = (yyvsp[-1].expression);
 	}
-#line 4830 "syntactic.c"
+#line 4830 "syntactic.cpp"
     break;
 
   case 285: /* string: STRING  */
@@ -4835,11 +4835,11 @@ yyreduce:
 		(yyval.expression).type = EXPRESSION_STRING;
 		(yyval.expression).shared.string = (yyvsp[0].string);
 	}
-#line 4839 "syntactic.c"
+#line 4839 "syntactic.cpp"
     break;
 
 
-#line 4843 "syntactic.c"
+#line 4843 "syntactic.cpp"
 
       default: break;
     }

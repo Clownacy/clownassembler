@@ -1,6 +1,6 @@
-#line 1 "lexical.c"
+#line 1 "lexical.cpp"
 
-#line 3 "lexical.c"
+#line 3 "lexical.cpp"
 
 #define  YY_INT_ALIGNED short int
 
@@ -1424,10 +1424,10 @@ static cc_bool ParseNumber(unsigned long* const value, void* const scanner, cons
 	return cc_true;
 }
 
-#line 1427 "lexical.c"
+#line 1427 "lexical.cpp"
 /* Regular expression. */
 
-#line 1430 "lexical.c"
+#line 1430 "lexical.cpp"
 
 #define INITIAL 0
 #define OPERANDS 1
@@ -1708,7 +1708,7 @@ YY_DECL
 
 #line 109 "lexical.l"
  /* Ignore whitespace */
-#line 1711 "lexical.c"
+#line 1711 "lexical.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -3106,7 +3106,7 @@ YY_RULE_SETUP
 #line 514 "lexical.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 3109 "lexical.c"
+#line 3109 "lexical.cpp"
 
 	case YY_END_OF_BUFFER:
 		{

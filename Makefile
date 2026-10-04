@@ -14,18 +14,18 @@ endif
 
 all: generators
 
-generators: lexical.c lexical.h syntactic.c syntactic.h
+generators: lexical.cpp lexical.h syntactic.cpp syntactic.h
 
-lexical.c lexical.h: lexical.l syntactic.h
-	$(LEX) --outfile=lexical.c --header-file=lexical.h $<
+lexical.cpp lexical.h: lexical.l syntactic.h
+	$(LEX) --outfile=lexical.cpp --header-file=lexical.h $<
 
-syntactic.c syntactic.h: syntactic.y
-	$(YACC) --output=syntactic.c --defines=syntactic.h $(YFLAGS) $<
+syntactic.cpp syntactic.h: syntactic.y
+	$(YACC) --output=syntactic.cpp --defines=syntactic.h $(YFLAGS) $<
 
 assemblers: clownassembler clownassembler_asm68k
 
-clownassembler_asm68k: frontend-asm68k.c dictionary.c io.c lexical.c options.c p2bin.c semantic.c shared-memory.c strcmpci.c string.c string-stack.c substitute.c syntactic.c
+clownassembler_asm68k: frontend-asm68k.cpp dictionary.cpp io.cpp lexical.cpp options.cpp p2bin.cpp semantic.cpp shared-memory.cpp strcmpci.cpp string.cpp string-stack.cpp substitute.cpp syntactic.cpp
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
 
-clownassembler: frontend-custom.c dictionary.c io.c lexical.c options.c p2bin.c semantic.c shared-memory.c strcmpci.c string.c string-stack.c substitute.c syntactic.c
+clownassembler: frontend-custom.cpp dictionary.cpp io.cpp lexical.cpp options.cpp p2bin.cpp semantic.cpp shared-memory.cpp strcmpci.cpp string.cpp string-stack.cpp substitute.cpp syntactic.cpp
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)

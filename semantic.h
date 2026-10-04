@@ -24,10 +24,6 @@
 
 #include "clowncommon/clowncommon.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "io.h"
 #include "options.h"
 
@@ -59,9 +55,5 @@ cc_bool ClownAssembler_Assemble(
 	const ClownAssembler_Settings *settings,
 	ClownAssembler_DefinitionCallback definition_callback,
 	const void *user_data);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* SEMANTIC_H */
