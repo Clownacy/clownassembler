@@ -353,7 +353,7 @@ pc              return TOKEN_PROGRAM_COUNTER;
  /* Decimal number. */
 {decimal} {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng, 10))
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 
 	return TOKEN_NUMBER;
 }
@@ -361,7 +361,7 @@ pc              return TOKEN_PROGRAM_COUNTER;
  /* Hexadecimal number (68k). */
 \${hexadecimal} {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, yyleng - 1, 16))
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 
 	return TOKEN_NUMBER;
 }
@@ -369,7 +369,7 @@ pc              return TOKEN_PROGRAM_COUNTER;
  /* Binary number (68k). */
 \%{binary} {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, yyleng - 1, 2))
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 
 	return TOKEN_NUMBER;
 }
@@ -377,7 +377,7 @@ pc              return TOKEN_PROGRAM_COUNTER;
  /* Hexadecimal number (Z80). */
 [0-9]{hexadecimal}?h {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng - 1, 16))
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 
 	return TOKEN_NUMBER;
 }
@@ -385,7 +385,7 @@ pc              return TOKEN_PROGRAM_COUNTER;
  /* Binary number (Z80). */
 {binary}b {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng - 1, 2))
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 
 	return TOKEN_NUMBER;
 }
@@ -393,7 +393,7 @@ pc              return TOKEN_PROGRAM_COUNTER;
  /* Hexadecimal number (C). */
 0x{hexadecimal} {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, yyleng - 2, 16))
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 
 	return TOKEN_NUMBER;
 }
@@ -401,7 +401,7 @@ pc              return TOKEN_PROGRAM_COUNTER;
  /* Binary number (GNU C). */
 0b{binary} {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, yyleng - 2, 2))
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 
 	return TOKEN_NUMBER;
 }
@@ -424,7 +424,7 @@ pc              return TOKEN_PROGRAM_COUNTER;
 	if (!String_ResizeNoFill(&yylval->string, StringView_Length(&view)))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 	}
 
 	/* Copy string, turning escaped (paired) quotes into regular (lone) quotes. */
@@ -458,7 +458,7 @@ pc              return TOKEN_PROGRAM_COUNTER;
 	if (!String_Create(&yylval->string, yytext, yyleng))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 	}
 
 	return TOKEN_STRING;
@@ -478,7 +478,7 @@ pc              return TOKEN_PROGRAM_COUNTER;
 		if (!String_Create(&yylval->string, yytext, yyleng))
 		{
 			m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-			return M68KASM_error;
+			return TOKEN_M68KASM_error;
 		}
 
 		return TOKEN_IDENTIFIER;
@@ -490,7 +490,7 @@ pc              return TOKEN_PROGRAM_COUNTER;
 	if (!String_Create(&yylval->string, yytext, yyleng))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 	}
 
 	return TOKEN_LOCAL_IDENTIFIER;
@@ -501,7 +501,7 @@ pc              return TOKEN_PROGRAM_COUNTER;
 	if (!String_Create(&yylval->string, yytext, yyleng))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 	}
 
 	return TOKEN_OPTION;

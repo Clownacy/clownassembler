@@ -2904,7 +2904,7 @@ YY_RULE_SETUP
 #line 355 "lexical.l"
 {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng, 10))
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 
 	return TOKEN_NUMBER;
 }
@@ -2915,7 +2915,7 @@ YY_RULE_SETUP
 #line 363 "lexical.l"
 {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, yyleng - 1, 16))
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 
 	return TOKEN_NUMBER;
 }
@@ -2926,7 +2926,7 @@ YY_RULE_SETUP
 #line 371 "lexical.l"
 {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, yyleng - 1, 2))
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 
 	return TOKEN_NUMBER;
 }
@@ -2937,7 +2937,7 @@ YY_RULE_SETUP
 #line 379 "lexical.l"
 {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng - 1, 16))
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 
 	return TOKEN_NUMBER;
 }
@@ -2948,7 +2948,7 @@ YY_RULE_SETUP
 #line 387 "lexical.l"
 {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng - 1, 2))
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 
 	return TOKEN_NUMBER;
 }
@@ -2959,7 +2959,7 @@ YY_RULE_SETUP
 #line 395 "lexical.l"
 {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, yyleng - 2, 16))
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 
 	return TOKEN_NUMBER;
 }
@@ -2970,7 +2970,7 @@ YY_RULE_SETUP
 #line 403 "lexical.l"
 {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, yyleng - 2, 2))
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 
 	return TOKEN_NUMBER;
 }
@@ -2999,7 +2999,7 @@ YY_RULE_SETUP
 	if (!String_ResizeNoFill(&yylval->string, StringView_Length(&view)))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 	}
 
 	/* Copy string, turning escaped (paired) quotes into regular (lone) quotes. */
@@ -3037,7 +3037,7 @@ YY_RULE_SETUP
 	if (!String_Create(&yylval->string, yytext, yyleng))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 	}
 
 	return TOKEN_STRING;
@@ -3060,7 +3060,7 @@ YY_RULE_SETUP
 		if (!String_Create(&yylval->string, yytext, yyleng))
 		{
 			m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-			return M68KASM_error;
+			return TOKEN_M68KASM_error;
 		}
 
 		return TOKEN_IDENTIFIER;
@@ -3075,7 +3075,7 @@ YY_RULE_SETUP
 	if (!String_Create(&yylval->string, yytext, yyleng))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 	}
 
 	return TOKEN_LOCAL_IDENTIFIER;
@@ -3089,7 +3089,7 @@ YY_RULE_SETUP
 	if (!String_Create(&yylval->string, yytext, yyleng))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return M68KASM_error;
+		return TOKEN_M68KASM_error;
 	}
 
 	return TOKEN_OPTION;

@@ -493,195 +493,197 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 	Expression expression;
 }
 
-%token TOKEN_DIRECTIVE_ORI
-%token TOKEN_DIRECTIVE_ANDI
-%token TOKEN_DIRECTIVE_SUBI
-%token TOKEN_DIRECTIVE_ADDI
-%token TOKEN_DIRECTIVE_EORI
-%token TOKEN_DIRECTIVE_CMPI
-%token TOKEN_DIRECTIVE_BTST
-%token TOKEN_DIRECTIVE_BCHG
-%token TOKEN_DIRECTIVE_BCLR
-%token TOKEN_DIRECTIVE_BSET
-%token TOKEN_DIRECTIVE_MOVEP
-%token TOKEN_DIRECTIVE_MOVEA
-%token TOKEN_DIRECTIVE_MOVE
-%token TOKEN_DIRECTIVE_NEGX
-%token TOKEN_DIRECTIVE_CLR
-%token TOKEN_DIRECTIVE_NEG
-%token TOKEN_DIRECTIVE_NOT
-%token TOKEN_DIRECTIVE_EXT
-%token TOKEN_DIRECTIVE_NBCD
-%token TOKEN_DIRECTIVE_SWAP
-%token TOKEN_DIRECTIVE_PEA
-%token TOKEN_DIRECTIVE_ILLEGAL
-%token TOKEN_DIRECTIVE_TAS
-%token TOKEN_DIRECTIVE_TST
-%token TOKEN_DIRECTIVE_TRAP
-%token TOKEN_DIRECTIVE_LINK
-%token TOKEN_DIRECTIVE_UNLK
-%token TOKEN_DIRECTIVE_RESET
-%token TOKEN_DIRECTIVE_NOP
-%token TOKEN_DIRECTIVE_STOP
-%token TOKEN_DIRECTIVE_RTE
-%token TOKEN_DIRECTIVE_RTS
-%token TOKEN_DIRECTIVE_TRAPV
-%token TOKEN_DIRECTIVE_RTR
-%token TOKEN_DIRECTIVE_JSR
-%token TOKEN_DIRECTIVE_JMP
-%token TOKEN_DIRECTIVE_MOVEM
-%token TOKEN_DIRECTIVE_LEA
-%token TOKEN_DIRECTIVE_CHK
-%token TOKEN_DIRECTIVE_ADDQ
-%token TOKEN_DIRECTIVE_SUBQ
-%token TOKEN_DIRECTIVE_ST
-%token TOKEN_DIRECTIVE_SF
-%token TOKEN_DIRECTIVE_SHI
-%token TOKEN_DIRECTIVE_SLS
-%token TOKEN_DIRECTIVE_SCC
-%token TOKEN_DIRECTIVE_SCS
-%token TOKEN_DIRECTIVE_SNE
-%token TOKEN_DIRECTIVE_SEQ
-%token TOKEN_DIRECTIVE_SVC
-%token TOKEN_DIRECTIVE_SVS
-%token TOKEN_DIRECTIVE_SPL
-%token TOKEN_DIRECTIVE_SMI
-%token TOKEN_DIRECTIVE_SGE
-%token TOKEN_DIRECTIVE_SLT
-%token TOKEN_DIRECTIVE_SGT
-%token TOKEN_DIRECTIVE_SLE
-%token TOKEN_DIRECTIVE_DBT
-%token TOKEN_DIRECTIVE_DBF
-%token TOKEN_DIRECTIVE_DBHI
-%token TOKEN_DIRECTIVE_DBLS
-%token TOKEN_DIRECTIVE_DBCC
-%token TOKEN_DIRECTIVE_DBCS
-%token TOKEN_DIRECTIVE_DBNE
-%token TOKEN_DIRECTIVE_DBEQ
-%token TOKEN_DIRECTIVE_DBVC
-%token TOKEN_DIRECTIVE_DBVS
-%token TOKEN_DIRECTIVE_DBPL
-%token TOKEN_DIRECTIVE_DBMI
-%token TOKEN_DIRECTIVE_DBGE
-%token TOKEN_DIRECTIVE_DBLT
-%token TOKEN_DIRECTIVE_DBGT
-%token TOKEN_DIRECTIVE_DBLE
-%token TOKEN_DIRECTIVE_BRA
-%token TOKEN_DIRECTIVE_BSR
-%token TOKEN_DIRECTIVE_BHI
-%token TOKEN_DIRECTIVE_BLS
-%token TOKEN_DIRECTIVE_BCC
-%token TOKEN_DIRECTIVE_BCS
-%token TOKEN_DIRECTIVE_BNE
-%token TOKEN_DIRECTIVE_BEQ
-%token TOKEN_DIRECTIVE_BVC
-%token TOKEN_DIRECTIVE_BVS
-%token TOKEN_DIRECTIVE_BPL
-%token TOKEN_DIRECTIVE_BMI
-%token TOKEN_DIRECTIVE_BGE
-%token TOKEN_DIRECTIVE_BLT
-%token TOKEN_DIRECTIVE_BGT
-%token TOKEN_DIRECTIVE_BLE
-%token TOKEN_DIRECTIVE_MOVEQ
-%token TOKEN_DIRECTIVE_DIVU
-%token TOKEN_DIRECTIVE_DIVS
-%token TOKEN_DIRECTIVE_SBCD
-%token TOKEN_DIRECTIVE_OR
-%token TOKEN_DIRECTIVE_SUB
-%token TOKEN_DIRECTIVE_SUBX
-%token TOKEN_DIRECTIVE_SUBA
-%token TOKEN_DIRECTIVE_EOR
-%token TOKEN_DIRECTIVE_CMPM
-%token TOKEN_DIRECTIVE_CMP
-%token TOKEN_DIRECTIVE_CMPA
-%token TOKEN_DIRECTIVE_MULU
-%token TOKEN_DIRECTIVE_MULS
-%token TOKEN_DIRECTIVE_ABCD
-%token TOKEN_DIRECTIVE_EXG
-%token TOKEN_DIRECTIVE_AND
-%token TOKEN_DIRECTIVE_ADD
-%token TOKEN_DIRECTIVE_ADDX
-%token TOKEN_DIRECTIVE_ADDA
-%token TOKEN_DIRECTIVE_ASL
-%token TOKEN_DIRECTIVE_ASR
-%token TOKEN_DIRECTIVE_LSL
-%token TOKEN_DIRECTIVE_LSR
-%token TOKEN_DIRECTIVE_ROXL
-%token TOKEN_DIRECTIVE_ROXR
-%token TOKEN_DIRECTIVE_ROL
-%token TOKEN_DIRECTIVE_ROR
-%token TOKEN_DIRECTIVE_DC
-%token TOKEN_DIRECTIVE_DCB
-%token TOKEN_DIRECTIVE_DS
-%token TOKEN_DIRECTIVE_REPT
-%token TOKEN_DIRECTIVE_ENDR
-%token TOKEN_DIRECTIVE_MACRO
-%token TOKEN_DIRECTIVE_MACROS
-%token TOKEN_DIRECTIVE_ENDM
-%token TOKEN_DIRECTIVE_INCLUDE
-%token TOKEN_DIRECTIVE_INCBIN
-%token TOKEN_DIRECTIVE_EQU
-%token TOKEN_DIRECTIVE_EQUS
-%token TOKEN_DIRECTIVE_SUBSTR
-%token TOKEN_DIRECTIVE_SET
-%token TOKEN_DIRECTIVE_IF
-%token TOKEN_DIRECTIVE_ELSEIF
-%token TOKEN_DIRECTIVE_ELSE
-%token TOKEN_DIRECTIVE_ENDC
-%token TOKEN_DIRECTIVE_WHILE
-%token TOKEN_DIRECTIVE_ENDW
-%token TOKEN_DIRECTIVE_EVEN
-%token TOKEN_DIRECTIVE_CNOP
-%token TOKEN_DIRECTIVE_INFORM
-%token TOKEN_DIRECTIVE_FAIL
-%token TOKEN_DIRECTIVE_END
-%token TOKEN_DIRECTIVE_RS
-%token TOKEN_DIRECTIVE_RSSET
-%token TOKEN_DIRECTIVE_RSRESET
-%token TOKEN_DIRECTIVE_OBJ
-%token TOKEN_DIRECTIVE_OBJEND
-%token TOKEN_DIRECTIVE_ORG
-%token TOKEN_DIRECTIVE_PUSHO
-%token TOKEN_DIRECTIVE_POPO
-%token TOKEN_DIRECTIVE_OPT
-%token TOKEN_DIRECTIVE_PUSHP
-%token TOKEN_DIRECTIVE_POPP
-%token TOKEN_DIRECTIVE_SHIFT
-%token TOKEN_DIRECTIVE_MEXIT
-%token TOKEN_DIRECTIVE_LOCAL
-%token TOKEN_DIRECTIVE_LIST
-%token TOKEN_DIRECTIVE_NOLIST
-%token TOKEN_DIRECTIVE_PURGE
-%token TOKEN_SIZE_BYTE
-%token TOKEN_SIZE_SHORT
-%token TOKEN_SIZE_WORD
-%token TOKEN_SIZE_LONGWORD
-%token<unsigned_long> TOKEN_DATA_REGISTER
-%token<unsigned_long> TOKEN_ADDRESS_REGISTER
-%token<unsigned_long> TOKEN_NUMBER
-%token<string> TOKEN_IDENTIFIER
-%token<string> TOKEN_LOCAL_IDENTIFIER
-%token<string> TOKEN_STRING
-%token<string> TOKEN_OPTION
-%token TOKEN_STATUS_REGISTER
-%token TOKEN_CONDITION_CODE_REGISTER
-%token TOKEN_USER_STACK_POINTER_REGISTER
-%token TOKEN_PROGRAM_COUNTER
-%token TOKEN_LOGICAL_AND
-%token TOKEN_LOGICAL_OR
-%token TOKEN_EQUALITY
-%token TOKEN_INEQUALITY
-%token TOKEN_LESS_OR_EQUAL
-%token TOKEN_MORE_OR_EQUAL
-%token TOKEN_LEFT_SHIFT
-%token TOKEN_RIGHT_SHIFT
-%token TOKEN_STRLEN
-%token TOKEN_STRCMP
-%token TOKEN_INSTR
-%token TOKEN_DEF
-%token TOKEN_TYPE
-%token TOKEN_FILESIZE
-%token TOKEN_OFFSET
+%define api.token.prefix {TOKEN_}
+
+%token DIRECTIVE_ORI
+%token DIRECTIVE_ANDI
+%token DIRECTIVE_SUBI
+%token DIRECTIVE_ADDI
+%token DIRECTIVE_EORI
+%token DIRECTIVE_CMPI
+%token DIRECTIVE_BTST
+%token DIRECTIVE_BCHG
+%token DIRECTIVE_BCLR
+%token DIRECTIVE_BSET
+%token DIRECTIVE_MOVEP
+%token DIRECTIVE_MOVEA
+%token DIRECTIVE_MOVE
+%token DIRECTIVE_NEGX
+%token DIRECTIVE_CLR
+%token DIRECTIVE_NEG
+%token DIRECTIVE_NOT
+%token DIRECTIVE_EXT
+%token DIRECTIVE_NBCD
+%token DIRECTIVE_SWAP
+%token DIRECTIVE_PEA
+%token DIRECTIVE_ILLEGAL
+%token DIRECTIVE_TAS
+%token DIRECTIVE_TST
+%token DIRECTIVE_TRAP
+%token DIRECTIVE_LINK
+%token DIRECTIVE_UNLK
+%token DIRECTIVE_RESET
+%token DIRECTIVE_NOP
+%token DIRECTIVE_STOP
+%token DIRECTIVE_RTE
+%token DIRECTIVE_RTS
+%token DIRECTIVE_TRAPV
+%token DIRECTIVE_RTR
+%token DIRECTIVE_JSR
+%token DIRECTIVE_JMP
+%token DIRECTIVE_MOVEM
+%token DIRECTIVE_LEA
+%token DIRECTIVE_CHK
+%token DIRECTIVE_ADDQ
+%token DIRECTIVE_SUBQ
+%token DIRECTIVE_ST
+%token DIRECTIVE_SF
+%token DIRECTIVE_SHI
+%token DIRECTIVE_SLS
+%token DIRECTIVE_SCC
+%token DIRECTIVE_SCS
+%token DIRECTIVE_SNE
+%token DIRECTIVE_SEQ
+%token DIRECTIVE_SVC
+%token DIRECTIVE_SVS
+%token DIRECTIVE_SPL
+%token DIRECTIVE_SMI
+%token DIRECTIVE_SGE
+%token DIRECTIVE_SLT
+%token DIRECTIVE_SGT
+%token DIRECTIVE_SLE
+%token DIRECTIVE_DBT
+%token DIRECTIVE_DBF
+%token DIRECTIVE_DBHI
+%token DIRECTIVE_DBLS
+%token DIRECTIVE_DBCC
+%token DIRECTIVE_DBCS
+%token DIRECTIVE_DBNE
+%token DIRECTIVE_DBEQ
+%token DIRECTIVE_DBVC
+%token DIRECTIVE_DBVS
+%token DIRECTIVE_DBPL
+%token DIRECTIVE_DBMI
+%token DIRECTIVE_DBGE
+%token DIRECTIVE_DBLT
+%token DIRECTIVE_DBGT
+%token DIRECTIVE_DBLE
+%token DIRECTIVE_BRA
+%token DIRECTIVE_BSR
+%token DIRECTIVE_BHI
+%token DIRECTIVE_BLS
+%token DIRECTIVE_BCC
+%token DIRECTIVE_BCS
+%token DIRECTIVE_BNE
+%token DIRECTIVE_BEQ
+%token DIRECTIVE_BVC
+%token DIRECTIVE_BVS
+%token DIRECTIVE_BPL
+%token DIRECTIVE_BMI
+%token DIRECTIVE_BGE
+%token DIRECTIVE_BLT
+%token DIRECTIVE_BGT
+%token DIRECTIVE_BLE
+%token DIRECTIVE_MOVEQ
+%token DIRECTIVE_DIVU
+%token DIRECTIVE_DIVS
+%token DIRECTIVE_SBCD
+%token DIRECTIVE_OR
+%token DIRECTIVE_SUB
+%token DIRECTIVE_SUBX
+%token DIRECTIVE_SUBA
+%token DIRECTIVE_EOR
+%token DIRECTIVE_CMPM
+%token DIRECTIVE_CMP
+%token DIRECTIVE_CMPA
+%token DIRECTIVE_MULU
+%token DIRECTIVE_MULS
+%token DIRECTIVE_ABCD
+%token DIRECTIVE_EXG
+%token DIRECTIVE_AND
+%token DIRECTIVE_ADD
+%token DIRECTIVE_ADDX
+%token DIRECTIVE_ADDA
+%token DIRECTIVE_ASL
+%token DIRECTIVE_ASR
+%token DIRECTIVE_LSL
+%token DIRECTIVE_LSR
+%token DIRECTIVE_ROXL
+%token DIRECTIVE_ROXR
+%token DIRECTIVE_ROL
+%token DIRECTIVE_ROR
+%token DIRECTIVE_DC
+%token DIRECTIVE_DCB
+%token DIRECTIVE_DS
+%token DIRECTIVE_REPT
+%token DIRECTIVE_ENDR
+%token DIRECTIVE_MACRO
+%token DIRECTIVE_MACROS
+%token DIRECTIVE_ENDM
+%token DIRECTIVE_INCLUDE
+%token DIRECTIVE_INCBIN
+%token DIRECTIVE_EQU
+%token DIRECTIVE_EQUS
+%token DIRECTIVE_SUBSTR
+%token DIRECTIVE_SET
+%token DIRECTIVE_IF
+%token DIRECTIVE_ELSEIF
+%token DIRECTIVE_ELSE
+%token DIRECTIVE_ENDC
+%token DIRECTIVE_WHILE
+%token DIRECTIVE_ENDW
+%token DIRECTIVE_EVEN
+%token DIRECTIVE_CNOP
+%token DIRECTIVE_INFORM
+%token DIRECTIVE_FAIL
+%token DIRECTIVE_END
+%token DIRECTIVE_RS
+%token DIRECTIVE_RSSET
+%token DIRECTIVE_RSRESET
+%token DIRECTIVE_OBJ
+%token DIRECTIVE_OBJEND
+%token DIRECTIVE_ORG
+%token DIRECTIVE_PUSHO
+%token DIRECTIVE_POPO
+%token DIRECTIVE_OPT
+%token DIRECTIVE_PUSHP
+%token DIRECTIVE_POPP
+%token DIRECTIVE_SHIFT
+%token DIRECTIVE_MEXIT
+%token DIRECTIVE_LOCAL
+%token DIRECTIVE_LIST
+%token DIRECTIVE_NOLIST
+%token DIRECTIVE_PURGE
+%token SIZE_BYTE
+%token SIZE_SHORT
+%token SIZE_WORD
+%token SIZE_LONGWORD
+%token<unsigned_long> DATA_REGISTER
+%token<unsigned_long> ADDRESS_REGISTER
+%token<unsigned_long> NUMBER
+%token<string> IDENTIFIER
+%token<string> LOCAL_IDENTIFIER
+%token<string> STRING
+%token<string> OPTION
+%token STATUS_REGISTER
+%token CONDITION_CODE_REGISTER
+%token USER_STACK_POINTER_REGISTER
+%token PROGRAM_COUNTER
+%token LOGICAL_AND
+%token LOGICAL_OR
+%token EQUALITY
+%token INEQUALITY
+%token LESS_OR_EQUAL
+%token MORE_OR_EQUAL
+%token LEFT_SHIFT
+%token RIGHT_SHIFT
+%token STRLEN
+%token STRCMP
+%token INSTR
+%token DEF
+%token TYPE
+%token FILESIZE
+%token OFFSET
 
 %type<instruction> instruction
 %type<opcode> opcode
@@ -696,16 +698,16 @@ static void DestroyStatementInstruction(StatementInstruction *instruction);
 %type<expression> expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 string
 %type<string> local_identifier identifier
 
-%destructor { String_Destroy(&$$); } TOKEN_IDENTIFIER TOKEN_LOCAL_IDENTIFIER TOKEN_STRING TOKEN_OPTION local_identifier identifier
+%destructor { String_Destroy(&$$); } IDENTIFIER LOCAL_IDENTIFIER STRING OPTION local_identifier identifier
 %destructor { DestroyOperand(&$$); } operand
 %destructor { DestroyExpressionList(&$$); } expression_list
 %destructor { DestroyIdentifierList(&$$); } identifier_list option_list
 %destructor { DestroyExpression(&$$); } expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 string
 
 /* Hack to resolve ambiguity around size tokens. */
-%precedence TOKEN_LOWER_PRECEDENCE_THAN_SIZE
-%precedence TOKEN_SIZE_BYTE TOKEN_SIZE_SHORT TOKEN_SIZE_WORD TOKEN_SIZE_LONGWORD
-%precedence TOKEN_HIGHER_PRECEDENCE_THAN_SIZE TOKEN_IDENTIFIER
+%precedence LOWER_PRECEDENCE_THAN_SIZE
+%precedence SIZE_BYTE SIZE_SHORT SIZE_WORD SIZE_LONGWORD
+%precedence HIGHER_PRECEDENCE_THAN_SIZE IDENTIFIER
 
 %start statement
 
@@ -721,31 +723,31 @@ statement
 		statement->type = STATEMENT_TYPE_INSTRUCTION;
 		statement->shared.instruction = $1;
 	}
-	| TOKEN_DIRECTIVE_DC size expression_list
+	| DIRECTIVE_DC size expression_list
 	{
 		statement->type = STATEMENT_TYPE_DC;
 		statement->shared.dc.size = $2;
 		statement->shared.dc.values = $3;
 	}
-	| TOKEN_DIRECTIVE_DCB size expression ',' expression
+	| DIRECTIVE_DCB size expression ',' expression
 	{
 		statement->type = STATEMENT_TYPE_DCB;
 		statement->shared.dcb.size = $2;
 		statement->shared.dcb.repetitions = $3;
 		statement->shared.dcb.value = $5;
 	}
-	| TOKEN_DIRECTIVE_DS size expression
+	| DIRECTIVE_DS size expression
 	{
 		statement->type = STATEMENT_TYPE_DS;
 		statement->shared.ds.size = $2;
 		statement->shared.ds.length = $3;
 	}
-	| TOKEN_DIRECTIVE_INCLUDE TOKEN_STRING
+	| DIRECTIVE_INCLUDE STRING
 	{
 		statement->type = STATEMENT_TYPE_INCLUDE;
 		statement->shared.include.path = $2;
 	}
-	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING
+	| DIRECTIVE_INCBIN STRING
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = $2;
@@ -753,14 +755,14 @@ statement
 		statement->shared.incbin.start.shared.unsigned_long = 0;
 		statement->shared.incbin.has_length = cc_false;
 	}
-	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' expression
+	| DIRECTIVE_INCBIN STRING ',' expression
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = $2;
 		statement->shared.incbin.start = $4;
 		statement->shared.incbin.has_length = cc_false;
 	}
-	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' ',' expression
+	| DIRECTIVE_INCBIN STRING ',' ',' expression
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = $2;
@@ -769,7 +771,7 @@ statement
 		statement->shared.incbin.has_length = cc_true;
 		statement->shared.incbin.length = $5;
 	}
-	| TOKEN_DIRECTIVE_INCBIN TOKEN_STRING ',' expression ',' expression
+	| DIRECTIVE_INCBIN STRING ',' expression ',' expression
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = $2;
@@ -777,74 +779,74 @@ statement
 		statement->shared.incbin.has_length = cc_true;
 		statement->shared.incbin.length = $6;
 	}
-	| TOKEN_DIRECTIVE_REPT expression
+	| DIRECTIVE_REPT expression
 	{
 		statement->type = STATEMENT_TYPE_REPT;
 		statement->shared.rept.repetitions = $2;
 	}
-	| TOKEN_DIRECTIVE_ENDR
+	| DIRECTIVE_ENDR
 	{
 		statement->type = STATEMENT_TYPE_ENDR;
 	}
-	| TOKEN_DIRECTIVE_MACRO
+	| DIRECTIVE_MACRO
 	{
 		statement->type = STATEMENT_TYPE_MACRO;
 		statement->shared.macro.uses_label = cc_false;
 		statement->shared.macro.parameter_names.head = NULL;
 		statement->shared.macro.parameter_names.tail = NULL;
 	}
-	| TOKEN_DIRECTIVE_MACRO '*'
+	| DIRECTIVE_MACRO '*'
 	{
 		statement->type = STATEMENT_TYPE_MACRO;
 		statement->shared.macro.uses_label = cc_true;
 		statement->shared.macro.parameter_names.head = NULL;
 		statement->shared.macro.parameter_names.tail = NULL;
 	}
-	| TOKEN_DIRECTIVE_MACRO identifier_list
+	| DIRECTIVE_MACRO identifier_list
 	{
 		statement->type = STATEMENT_TYPE_MACRO;
 		statement->shared.macro.uses_label = cc_false;
 		statement->shared.macro.parameter_names = $2;
 	}
-	| TOKEN_DIRECTIVE_MACRO '*' ',' identifier_list
+	| DIRECTIVE_MACRO '*' ',' identifier_list
 	{
 		statement->type = STATEMENT_TYPE_MACRO;
 		statement->shared.macro.uses_label = cc_true;
 		statement->shared.macro.parameter_names = $4;
 	}
-	| TOKEN_DIRECTIVE_MACROS
+	| DIRECTIVE_MACROS
 	{
 		statement->type = STATEMENT_TYPE_MACROS;
 		statement->shared.macro.uses_label = cc_false;
 		statement->shared.macro.parameter_names.head = NULL;
 		statement->shared.macro.parameter_names.tail = NULL;
 	}
-	| TOKEN_DIRECTIVE_MACROS identifier_list
+	| DIRECTIVE_MACROS identifier_list
 	{
 		statement->type = STATEMENT_TYPE_MACROS;
 		statement->shared.macro.uses_label = cc_false;
 		statement->shared.macro.parameter_names = $2;
 	}
-	| TOKEN_DIRECTIVE_ENDM
+	| DIRECTIVE_ENDM
 	{
 		statement->type = STATEMENT_TYPE_ENDM;
 	}
-	| TOKEN_DIRECTIVE_EQU expression
+	| DIRECTIVE_EQU expression
 	{
 		statement->type = STATEMENT_TYPE_EQU;
 		statement->shared.expression = $2;
 	}
-	| TOKEN_DIRECTIVE_EQUS TOKEN_STRING
+	| DIRECTIVE_EQUS STRING
 	{
 		statement->type = STATEMENT_TYPE_EQUS_STRING;
 		statement->shared.string = $2;
 	}
-	| TOKEN_DIRECTIVE_EQUS TOKEN_IDENTIFIER
+	| DIRECTIVE_EQUS IDENTIFIER
 	{
 		statement->type = STATEMENT_TYPE_EQUS_IDENTIFIER;
 		statement->shared.string = $2;
 	}
-	| TOKEN_DIRECTIVE_SUBSTR ',' ',' TOKEN_STRING
+	| DIRECTIVE_SUBSTR ',' ',' STRING
 	{
 		statement->type = STATEMENT_TYPE_SUBSTR;
 		statement->shared.substr.start.type = EXPRESSION_NUMBER;
@@ -853,7 +855,7 @@ statement
 		statement->shared.substr.end.shared.unsigned_long = String_Length(&$4);
 		statement->shared.substr.string = $4;
 	}
-	| TOKEN_DIRECTIVE_SUBSTR expression ',' ',' TOKEN_STRING
+	| DIRECTIVE_SUBSTR expression ',' ',' STRING
 	{
 		statement->type = STATEMENT_TYPE_SUBSTR;
 		statement->shared.substr.start = $2;
@@ -861,7 +863,7 @@ statement
 		statement->shared.substr.end.shared.unsigned_long = String_Length(&$5);
 		statement->shared.substr.string = $5;
 	}
-	| TOKEN_DIRECTIVE_SUBSTR ',' expression ',' TOKEN_STRING
+	| DIRECTIVE_SUBSTR ',' expression ',' STRING
 	{
 		statement->type = STATEMENT_TYPE_SUBSTR;
 		statement->shared.substr.start.type = EXPRESSION_NUMBER;
@@ -869,14 +871,14 @@ statement
 		statement->shared.substr.end = $3;
 		statement->shared.substr.string = $5;
 	}
-	| TOKEN_DIRECTIVE_SUBSTR expression ',' expression ',' TOKEN_STRING
+	| DIRECTIVE_SUBSTR expression ',' expression ',' STRING
 	{
 		statement->type = STATEMENT_TYPE_SUBSTR;
 		statement->shared.substr.start = $2;
 		statement->shared.substr.end = $4;
 		statement->shared.substr.string = $6;
 	}
-	| TOKEN_DIRECTIVE_SET expression
+	| DIRECTIVE_SET expression
 	{
 		statement->type = STATEMENT_TYPE_SET;
 		statement->shared.expression = $2;
@@ -886,54 +888,54 @@ statement
 		statement->type = STATEMENT_TYPE_SET;
 		statement->shared.expression = $2;
 	}
-	| TOKEN_DIRECTIVE_IF expression
+	| DIRECTIVE_IF expression
 	{
 		statement->type = STATEMENT_TYPE_IF;
 		statement->shared.expression = $2;
 	}
-	| TOKEN_DIRECTIVE_ELSEIF expression
+	| DIRECTIVE_ELSEIF expression
 	{
 		statement->type = STATEMENT_TYPE_ELSEIF;
 		statement->shared.expression = $2;
 	}
-	| TOKEN_DIRECTIVE_ELSEIF
+	| DIRECTIVE_ELSEIF
 	{
 		statement->type = STATEMENT_TYPE_ELSE;
 	}
-	| TOKEN_DIRECTIVE_ELSE
+	| DIRECTIVE_ELSE
 	{
 		statement->type = STATEMENT_TYPE_ELSE;
 	}
-	| TOKEN_DIRECTIVE_ENDC
+	| DIRECTIVE_ENDC
 	{
 		statement->type = STATEMENT_TYPE_ENDC;
 	}
-	| TOKEN_DIRECTIVE_WHILE expression
+	| DIRECTIVE_WHILE expression
 	{
 		statement->type = STATEMENT_TYPE_WHILE;
 		statement->shared.expression = $2;
 	}
-	| TOKEN_DIRECTIVE_ENDW
+	| DIRECTIVE_ENDW
 	{
 		statement->type = STATEMENT_TYPE_ENDW;
 	}
-	| TOKEN_DIRECTIVE_EVEN
+	| DIRECTIVE_EVEN
 	{
 		statement->type = STATEMENT_TYPE_EVEN;
 	}
-	| TOKEN_DIRECTIVE_CNOP expression ',' expression
+	| DIRECTIVE_CNOP expression ',' expression
 	{
 		statement->type = STATEMENT_TYPE_CNOP;
 		statement->shared.cnop.offset = $2;
 		statement->shared.cnop.size_boundary = $4;
 	}
-	| TOKEN_DIRECTIVE_INFORM expression ',' TOKEN_STRING
+	| DIRECTIVE_INFORM expression ',' STRING
 	{
 		statement->type = STATEMENT_TYPE_INFORM;
 		statement->shared.inform.severity = $2;
 		statement->shared.inform.message = $4;
 	}
-	| TOKEN_DIRECTIVE_INFORM expression ',' TOKEN_STRING ',' expression_list
+	| DIRECTIVE_INFORM expression ',' STRING ',' expression_list
 	{
 		(void)$6;
 
@@ -943,107 +945,107 @@ statement
 		statement->shared.inform.message = $4;
 		DestroyExpressionList(&$6);
 	}
-	| TOKEN_DIRECTIVE_FAIL
+	| DIRECTIVE_FAIL
 	{
 		statement->type = STATEMENT_TYPE_FAIL;
 	}
-	| TOKEN_DIRECTIVE_END
+	| DIRECTIVE_END
 	{
 		statement->type = STATEMENT_TYPE_END;
 	}
-	| TOKEN_DIRECTIVE_RS size expression
+	| DIRECTIVE_RS size expression
 	{
 		statement->type = STATEMENT_TYPE_RS;
 		statement->shared.rs.size = $2;
 		statement->shared.rs.length = $3;
 	}
-	| TOKEN_DIRECTIVE_RSSET expression
+	| DIRECTIVE_RSSET expression
 	{
 		statement->type = STATEMENT_TYPE_RSSET;
 		statement->shared.expression = $2;
 	}
-	| TOKEN_DIRECTIVE_RSRESET expression
+	| DIRECTIVE_RSRESET expression
 	{
 		/* As mentioned in S.N. 68k's manual, this odd hack
 		   is necessary for compatibility with other assemblers. */
 		statement->type = STATEMENT_TYPE_RSSET;
 		statement->shared.expression = $2;
 	}
-	| TOKEN_DIRECTIVE_RSRESET
+	| DIRECTIVE_RSRESET
 	{
 		statement->type = STATEMENT_TYPE_RSRESET;
 	}
-	| TOKEN_DIRECTIVE_OBJ expression
+	| DIRECTIVE_OBJ expression
 	{
 		statement->type = STATEMENT_TYPE_OBJ;
 		statement->shared.expression = $2;
 	}
-	| TOKEN_DIRECTIVE_OBJEND
+	| DIRECTIVE_OBJEND
 	{
 		statement->type = STATEMENT_TYPE_OBJEND;
 	}
-	| TOKEN_DIRECTIVE_ORG expression
+	| DIRECTIVE_ORG expression
 	{
 		statement->type = STATEMENT_TYPE_ORG;
 		statement->shared.expression = $2;
 	}
-	| TOKEN_DIRECTIVE_PUSHO
+	| DIRECTIVE_PUSHO
 	{
 		statement->type = STATEMENT_TYPE_PUSHO;
 	}
-	| TOKEN_DIRECTIVE_POPO
+	| DIRECTIVE_POPO
 	{
 		statement->type = STATEMENT_TYPE_POPO;
 	}
-	| TOKEN_DIRECTIVE_OPT option_list
+	| DIRECTIVE_OPT option_list
 	{
 		statement->type = STATEMENT_TYPE_OPT;
 		statement->shared.opt.options = $2;
 	}
-	| TOKEN_DIRECTIVE_PUSHP TOKEN_STRING
+	| DIRECTIVE_PUSHP STRING
 	{
 		statement->type = STATEMENT_TYPE_PUSHP;
 		statement->shared.string = $2;
 	}
-	| TOKEN_DIRECTIVE_POPP TOKEN_IDENTIFIER
+	| DIRECTIVE_POPP IDENTIFIER
 	{
 		statement->type = STATEMENT_TYPE_POPP;
 		statement->shared.string = $2;
 	}
-	| TOKEN_DIRECTIVE_SHIFT
+	| DIRECTIVE_SHIFT
 	{
 		statement->type = STATEMENT_TYPE_SHIFT;
 	}
-	| TOKEN_DIRECTIVE_MEXIT
+	| DIRECTIVE_MEXIT
 	{
 		statement->type = STATEMENT_TYPE_MEXIT;
 	}
-	| TOKEN_DIRECTIVE_LOCAL identifier_list
+	| DIRECTIVE_LOCAL identifier_list
 	{
 		statement->type = STATEMENT_TYPE_LOCAL;
 		statement->shared.local.identifiers = $2;
 	}
-	| TOKEN_DIRECTIVE_LIST
+	| DIRECTIVE_LIST
 	{
 		/* TODO: Make this actually do something. */
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
-	| TOKEN_DIRECTIVE_LIST '+'
+	| DIRECTIVE_LIST '+'
 	{
 		/* TODO: Make this actually do something. */
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
-	| TOKEN_DIRECTIVE_LIST '-'
+	| DIRECTIVE_LIST '-'
 	{
 		/* TODO: Make this actually do something. */
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
-	| TOKEN_DIRECTIVE_NOLIST
+	| DIRECTIVE_NOLIST
 	{
 		/* TODO: Make this actually do something. */
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
-	| TOKEN_DIRECTIVE_PURGE TOKEN_IDENTIFIER
+	| DIRECTIVE_PURGE IDENTIFIER
 	{
 		statement->type = STATEMENT_TYPE_PURGE;
 		statement->shared.string = $2;
@@ -1096,7 +1098,7 @@ expression_list
 	;
 
 identifier_list
-	: TOKEN_IDENTIFIER
+	: IDENTIFIER
 	{
 		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
 
@@ -1113,7 +1115,7 @@ identifier_list
 
 		$$.head = $$.tail = node;
 	}
-	| identifier_list ',' TOKEN_IDENTIFIER
+	| identifier_list ',' IDENTIFIER
 	{
 		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
 
@@ -1141,7 +1143,7 @@ identifier_list
 	;
 
 option_list
-	: TOKEN_OPTION
+	: OPTION
 	{
 		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
 
@@ -1158,7 +1160,7 @@ option_list
 
 		$$.head = $$.tail = node;
 	}
-	| option_list ',' TOKEN_OPTION
+	| option_list ',' OPTION
 	{
 		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
 
@@ -1207,7 +1209,7 @@ instruction
 	;
 
 full_opcode
-	: opcode %prec TOKEN_LOWER_PRECEDENCE_THAN_SIZE
+	: opcode %prec LOWER_PRECEDENCE_THAN_SIZE
 	{
 		$$ = $1;
 		$$.size = SIZE_UNDEFINED;
@@ -1226,536 +1228,536 @@ full_opcode
 	;
 
 opcode
-	: TOKEN_DIRECTIVE_ORI
+	: DIRECTIVE_ORI
 	{
 		$$.type = OPCODE_ORI;
 	}
-	| TOKEN_DIRECTIVE_ANDI
+	| DIRECTIVE_ANDI
 	{
 		$$.type = OPCODE_ANDI;
 	}
-	| TOKEN_DIRECTIVE_SUBI
+	| DIRECTIVE_SUBI
 	{
 		$$.type = OPCODE_SUBI;
 	}
-	| TOKEN_DIRECTIVE_ADDI
+	| DIRECTIVE_ADDI
 	{
 		$$.type = OPCODE_ADDI;
 	}
-	| TOKEN_DIRECTIVE_EORI
+	| DIRECTIVE_EORI
 	{
 		$$.type = OPCODE_EORI;
 	}
-	| TOKEN_DIRECTIVE_CMPI
+	| DIRECTIVE_CMPI
 	{
 		$$.type = OPCODE_CMPI;
 	}
-	| TOKEN_DIRECTIVE_BTST
+	| DIRECTIVE_BTST
 	{
 		$$.type = OPCODE_BTST_STATIC;
 	}
-	| TOKEN_DIRECTIVE_BCHG
+	| DIRECTIVE_BCHG
 	{
 		$$.type = OPCODE_BCHG_STATIC;
 	}
-	| TOKEN_DIRECTIVE_BCLR
+	| DIRECTIVE_BCLR
 	{
 		$$.type = OPCODE_BCLR_STATIC;
 	}
-	| TOKEN_DIRECTIVE_BSET
+	| DIRECTIVE_BSET
 	{
 		$$.type = OPCODE_BSET_STATIC;
 	}
-	| TOKEN_DIRECTIVE_MOVEP
+	| DIRECTIVE_MOVEP
 	{
 		$$.type = OPCODE_MOVEP_TO_REG;
 	}
-	| TOKEN_DIRECTIVE_MOVEA
+	| DIRECTIVE_MOVEA
 	{
 		$$.type = OPCODE_MOVEA;
 	}
-	| TOKEN_DIRECTIVE_MOVE
+	| DIRECTIVE_MOVE
 	{
 		$$.type = OPCODE_MOVE;
 	}
-	| TOKEN_DIRECTIVE_NEGX
+	| DIRECTIVE_NEGX
 	{
 		$$.type = OPCODE_NEGX;
 	}
-	| TOKEN_DIRECTIVE_CLR
+	| DIRECTIVE_CLR
 	{
 		$$.type = OPCODE_CLR;
 	}
-	| TOKEN_DIRECTIVE_NEG
+	| DIRECTIVE_NEG
 	{
 		$$.type = OPCODE_NEG;
 	}
-	| TOKEN_DIRECTIVE_NOT
+	| DIRECTIVE_NOT
 	{
 		$$.type = OPCODE_NOT;
 	}
-	| TOKEN_DIRECTIVE_EXT
+	| DIRECTIVE_EXT
 	{
 		$$.type = OPCODE_EXT;
 	}
-	| TOKEN_DIRECTIVE_NBCD
+	| DIRECTIVE_NBCD
 	{
 		$$.type = OPCODE_NBCD;
 	}
-	| TOKEN_DIRECTIVE_SWAP
+	| DIRECTIVE_SWAP
 	{
 		$$.type = OPCODE_SWAP;
 	}
-	| TOKEN_DIRECTIVE_PEA
+	| DIRECTIVE_PEA
 	{
 		$$.type = OPCODE_PEA;
 	}
-	| TOKEN_DIRECTIVE_ILLEGAL
+	| DIRECTIVE_ILLEGAL
 	{
 		$$.type = OPCODE_ILLEGAL;
 	}
-	| TOKEN_DIRECTIVE_TAS
+	| DIRECTIVE_TAS
 	{
 		$$.type = OPCODE_TAS;
 	}
-	| TOKEN_DIRECTIVE_TST
+	| DIRECTIVE_TST
 	{
 		$$.type = OPCODE_TST;
 	}
-	| TOKEN_DIRECTIVE_TRAP
+	| DIRECTIVE_TRAP
 	{
 		$$.type = OPCODE_TRAP;
 	}
-	| TOKEN_DIRECTIVE_LINK
+	| DIRECTIVE_LINK
 	{
 		$$.type = OPCODE_LINK;
 	}
-	| TOKEN_DIRECTIVE_UNLK
+	| DIRECTIVE_UNLK
 	{
 		$$.type = OPCODE_UNLK;
 	}
-	| TOKEN_DIRECTIVE_RESET
+	| DIRECTIVE_RESET
 	{
 		$$.type = OPCODE_RESET;
 	}
-	| TOKEN_DIRECTIVE_NOP
+	| DIRECTIVE_NOP
 	{
 		$$.type = OPCODE_NOP;
 	}
-	| TOKEN_DIRECTIVE_STOP
+	| DIRECTIVE_STOP
 	{
 		$$.type = OPCODE_STOP;
 	}
-	| TOKEN_DIRECTIVE_RTE
+	| DIRECTIVE_RTE
 	{
 		$$.type = OPCODE_RTE;
 	}
-	| TOKEN_DIRECTIVE_RTS
+	| DIRECTIVE_RTS
 	{
 		$$.type = OPCODE_RTS;
 	}
-	| TOKEN_DIRECTIVE_TRAPV
+	| DIRECTIVE_TRAPV
 	{
 		$$.type = OPCODE_TRAPV;
 	}
-	| TOKEN_DIRECTIVE_RTR
+	| DIRECTIVE_RTR
 	{
 		$$.type = OPCODE_RTR;
 	}
-	| TOKEN_DIRECTIVE_JSR
+	| DIRECTIVE_JSR
 	{
 		$$.type = OPCODE_JSR;
 	}
-	| TOKEN_DIRECTIVE_JMP
+	| DIRECTIVE_JMP
 	{
 		$$.type = OPCODE_JMP;
 	}
-	| TOKEN_DIRECTIVE_MOVEM
+	| DIRECTIVE_MOVEM
 	{
 		$$.type = OPCODE_MOVEM_TO_REGS;
 	}
-	| TOKEN_DIRECTIVE_LEA
+	| DIRECTIVE_LEA
 	{
 		$$.type = OPCODE_LEA;
 	}
-	| TOKEN_DIRECTIVE_CHK
+	| DIRECTIVE_CHK
 	{
 		$$.type = OPCODE_CHK;
 	}
-	| TOKEN_DIRECTIVE_ADDQ
+	| DIRECTIVE_ADDQ
 	{
 		$$.type = OPCODE_ADDQ;
 	}
-	| TOKEN_DIRECTIVE_SUBQ
+	| DIRECTIVE_SUBQ
 	{
 		$$.type = OPCODE_SUBQ;
 	}
-	| TOKEN_DIRECTIVE_ST
+	| DIRECTIVE_ST
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_TRUE;
 	}
-	| TOKEN_DIRECTIVE_SF
+	| DIRECTIVE_SF
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_FALSE;
 	}
-	| TOKEN_DIRECTIVE_SHI
+	| DIRECTIVE_SHI
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_HIGHER;
 	}
-	| TOKEN_DIRECTIVE_SLS
+	| DIRECTIVE_SLS
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_LOWER_OR_SAME;
 	}
-	| TOKEN_DIRECTIVE_SCC
+	| DIRECTIVE_SCC
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_CARRY_CLEAR;
 	}
-	| TOKEN_DIRECTIVE_SCS
+	| DIRECTIVE_SCS
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_CARRY_SET;
 	}
-	| TOKEN_DIRECTIVE_SNE
+	| DIRECTIVE_SNE
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_NOT_EQUAL;
 	}
-	| TOKEN_DIRECTIVE_SEQ
+	| DIRECTIVE_SEQ
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_EQUAL;
 	}
-	| TOKEN_DIRECTIVE_SVC
+	| DIRECTIVE_SVC
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_OVERFLOW_CLEAR;
 	}
-	| TOKEN_DIRECTIVE_SVS
+	| DIRECTIVE_SVS
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_OVERFLOW_SET;
 	}
-	| TOKEN_DIRECTIVE_SPL
+	| DIRECTIVE_SPL
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_PLUS;
 	}
-	| TOKEN_DIRECTIVE_SMI
+	| DIRECTIVE_SMI
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_MINUS;
 	}
-	| TOKEN_DIRECTIVE_SGE
+	| DIRECTIVE_SGE
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_GREATER_OR_EQUAL;
 	}
-	| TOKEN_DIRECTIVE_SLT
+	| DIRECTIVE_SLT
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_LESS_THAN;
 	}
-	| TOKEN_DIRECTIVE_SGT
+	| DIRECTIVE_SGT
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_GREATER_THAN;
 	}
-	| TOKEN_DIRECTIVE_SLE
+	| DIRECTIVE_SLE
 	{
 		$$.type = OPCODE_Scc;
 		$$.condition = CONDITION_LESS_OR_EQUAL;
 	}
-	| TOKEN_DIRECTIVE_DBT
+	| DIRECTIVE_DBT
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_TRUE;
 	}
-	| TOKEN_DIRECTIVE_DBF
+	| DIRECTIVE_DBF
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_FALSE;
 	}
-	| TOKEN_DIRECTIVE_DBHI
+	| DIRECTIVE_DBHI
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_HIGHER;
 	}
-	| TOKEN_DIRECTIVE_DBLS
+	| DIRECTIVE_DBLS
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_LOWER_OR_SAME;
 	}
-	| TOKEN_DIRECTIVE_DBCC
+	| DIRECTIVE_DBCC
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_CARRY_CLEAR;
 	}
-	| TOKEN_DIRECTIVE_DBCS
+	| DIRECTIVE_DBCS
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_CARRY_SET;
 	}
-	| TOKEN_DIRECTIVE_DBNE
+	| DIRECTIVE_DBNE
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_NOT_EQUAL;
 	}
-	| TOKEN_DIRECTIVE_DBEQ
+	| DIRECTIVE_DBEQ
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_EQUAL;
 	}
-	| TOKEN_DIRECTIVE_DBVC
+	| DIRECTIVE_DBVC
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_OVERFLOW_CLEAR;
 	}
-	| TOKEN_DIRECTIVE_DBVS
+	| DIRECTIVE_DBVS
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_OVERFLOW_SET;
 	}
-	| TOKEN_DIRECTIVE_DBPL
+	| DIRECTIVE_DBPL
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_PLUS;
 	}
-	| TOKEN_DIRECTIVE_DBMI
+	| DIRECTIVE_DBMI
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_MINUS;
 	}
-	| TOKEN_DIRECTIVE_DBGE
+	| DIRECTIVE_DBGE
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_GREATER_OR_EQUAL;
 	}
-	| TOKEN_DIRECTIVE_DBLT
+	| DIRECTIVE_DBLT
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_LESS_THAN;
 	}
-	| TOKEN_DIRECTIVE_DBGT
+	| DIRECTIVE_DBGT
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_GREATER_THAN;
 	}
-	| TOKEN_DIRECTIVE_DBLE
+	| DIRECTIVE_DBLE
 	{
 		$$.type = OPCODE_DBcc;
 		$$.condition = CONDITION_LESS_OR_EQUAL;
 	}
-	| TOKEN_DIRECTIVE_BRA
+	| DIRECTIVE_BRA
 	{
 		$$.type = OPCODE_BRA;
 	}
-	| TOKEN_DIRECTIVE_BSR
+	| DIRECTIVE_BSR
 	{
 		$$.type = OPCODE_BSR;
 	}
-	| TOKEN_DIRECTIVE_BHI
+	| DIRECTIVE_BHI
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_HIGHER;
 	}
-	| TOKEN_DIRECTIVE_BLS
+	| DIRECTIVE_BLS
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_LOWER_OR_SAME;
 	}
-	| TOKEN_DIRECTIVE_BCC
+	| DIRECTIVE_BCC
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_CARRY_CLEAR;
 	}
-	| TOKEN_DIRECTIVE_BCS
+	| DIRECTIVE_BCS
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_CARRY_SET;
 	}
-	| TOKEN_DIRECTIVE_BNE
+	| DIRECTIVE_BNE
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_NOT_EQUAL;
 	}
-	| TOKEN_DIRECTIVE_BEQ
+	| DIRECTIVE_BEQ
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_EQUAL;
 	}
-	| TOKEN_DIRECTIVE_BVC
+	| DIRECTIVE_BVC
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_OVERFLOW_CLEAR;
 	}
-	| TOKEN_DIRECTIVE_BVS
+	| DIRECTIVE_BVS
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_OVERFLOW_SET;
 	}
-	| TOKEN_DIRECTIVE_BPL
+	| DIRECTIVE_BPL
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_PLUS;
 	}
-	| TOKEN_DIRECTIVE_BMI
+	| DIRECTIVE_BMI
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_MINUS;
 	}
-	| TOKEN_DIRECTIVE_BGE
+	| DIRECTIVE_BGE
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_GREATER_OR_EQUAL;
 	}
-	| TOKEN_DIRECTIVE_BLT
+	| DIRECTIVE_BLT
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_LESS_THAN;
 	}
-	| TOKEN_DIRECTIVE_BGT
+	| DIRECTIVE_BGT
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_GREATER_THAN;
 	}
-	| TOKEN_DIRECTIVE_BLE
+	| DIRECTIVE_BLE
 	{
 		$$.type = OPCODE_Bcc;
 		$$.condition = CONDITION_LESS_OR_EQUAL;
 	}
-	| TOKEN_DIRECTIVE_MOVEQ
+	| DIRECTIVE_MOVEQ
 	{
 		$$.type = OPCODE_MOVEQ;
 	}
-	| TOKEN_DIRECTIVE_DIVU
+	| DIRECTIVE_DIVU
 	{
 		$$.type = OPCODE_DIVU;
 	}
-	| TOKEN_DIRECTIVE_DIVS
+	| DIRECTIVE_DIVS
 	{
 		$$.type = OPCODE_DIVS;
 	}
-	| TOKEN_DIRECTIVE_SBCD
+	| DIRECTIVE_SBCD
 	{
 		$$.type = OPCODE_SBCD_DATA_REGS;
 	}
-	| TOKEN_DIRECTIVE_OR
+	| DIRECTIVE_OR
 	{
 		$$.type = OPCODE_OR_TO_REG;
 	}
-	| TOKEN_DIRECTIVE_SUB
+	| DIRECTIVE_SUB
 	{
 		$$.type = OPCODE_SUB_TO_REG;
 	}
-	| TOKEN_DIRECTIVE_SUBX
+	| DIRECTIVE_SUBX
 	{
 		$$.type = OPCODE_SUBX_DATA_REGS;
 	}
-	| TOKEN_DIRECTIVE_SUBA
+	| DIRECTIVE_SUBA
 	{
 		$$.type = OPCODE_SUBA;
 	}
-	| TOKEN_DIRECTIVE_EOR
+	| DIRECTIVE_EOR
 	{
 		$$.type = OPCODE_EOR;
 	}
-	| TOKEN_DIRECTIVE_CMPM
+	| DIRECTIVE_CMPM
 	{
 		$$.type = OPCODE_CMPM;
 	}
-	| TOKEN_DIRECTIVE_CMP
+	| DIRECTIVE_CMP
 	{
 		$$.type = OPCODE_CMP;
 	}
-	| TOKEN_DIRECTIVE_CMPA
+	| DIRECTIVE_CMPA
 	{
 		$$.type = OPCODE_CMPA;
 	}
-	| TOKEN_DIRECTIVE_MULU
+	| DIRECTIVE_MULU
 	{
 		$$.type = OPCODE_MULU;
 	}
-	| TOKEN_DIRECTIVE_MULS
+	| DIRECTIVE_MULS
 	{
 		$$.type = OPCODE_MULS;
 	}
-	| TOKEN_DIRECTIVE_ABCD
+	| DIRECTIVE_ABCD
 	{
 		$$.type = OPCODE_ABCD_DATA_REGS;
 	}
-	| TOKEN_DIRECTIVE_EXG
+	| DIRECTIVE_EXG
 	{
 		$$.type = OPCODE_EXG;
 	}
-	| TOKEN_DIRECTIVE_AND
+	| DIRECTIVE_AND
 	{
 		$$.type = OPCODE_AND_TO_REG;
 	}
-	| TOKEN_DIRECTIVE_ADD
+	| DIRECTIVE_ADD
 	{
 		$$.type = OPCODE_ADD_TO_REG;
 	}
-	| TOKEN_DIRECTIVE_ADDX
+	| DIRECTIVE_ADDX
 	{
 		$$.type = OPCODE_ADDX_DATA_REGS;
 	}
-	| TOKEN_DIRECTIVE_ADDA
+	| DIRECTIVE_ADDA
 	{
 		$$.type = OPCODE_ADDA;
 	}
-	| TOKEN_DIRECTIVE_ASL
+	| DIRECTIVE_ASL
 	{
 		$$.type = OPCODE_ASL_STATIC;
 	}
-	| TOKEN_DIRECTIVE_ASR
+	| DIRECTIVE_ASR
 	{
 		$$.type = OPCODE_ASR_STATIC;
 	}
-	| TOKEN_DIRECTIVE_LSL
+	| DIRECTIVE_LSL
 	{
 		$$.type = OPCODE_LSL_STATIC;
 	}
-	| TOKEN_DIRECTIVE_LSR
+	| DIRECTIVE_LSR
 	{
 		$$.type = OPCODE_LSR_STATIC;
 	}
-	| TOKEN_DIRECTIVE_ROXL
+	| DIRECTIVE_ROXL
 	{
 		$$.type = OPCODE_ROXL_STATIC;
 	}
-	| TOKEN_DIRECTIVE_ROXR
+	| DIRECTIVE_ROXR
 	{
 		$$.type = OPCODE_ROXR_STATIC;
 	}
-	| TOKEN_DIRECTIVE_ROL
+	| DIRECTIVE_ROL
 	{
 		$$.type = OPCODE_ROL_STATIC;
 	}
-	| TOKEN_DIRECTIVE_ROR
+	| DIRECTIVE_ROR
 	{
 		$$.type = OPCODE_ROR_STATIC;
 	}
 	;
 
 size
-	: TOKEN_SIZE_BYTE
+	: SIZE_BYTE
 	{
 		$$ = SIZE_BYTE;
 	}
-	| TOKEN_SIZE_SHORT
+	| SIZE_SHORT
 	{
 		$$ = SIZE_SHORT;
 	}
-	| TOKEN_SIZE_WORD
+	| SIZE_WORD
 	{
 		$$ = SIZE_WORD;
 	}
-	| TOKEN_SIZE_LONGWORD
+	| SIZE_LONGWORD
 	{
 		$$ = SIZE_LONGWORD;
 	}
@@ -1763,40 +1765,40 @@ size
 
 	/* Indirect address register */
 operand
-	: '(' TOKEN_ADDRESS_REGISTER ')'
+	: '(' ADDRESS_REGISTER ')'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT;
 		$$.main_register = $2;
 	}
-	| '(' TOKEN_ADDRESS_REGISTER ')' '+'
+	| '(' ADDRESS_REGISTER ')' '+'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT;
 		$$.main_register = $2;
 	}
-	| '-' '(' TOKEN_ADDRESS_REGISTER ')'
+	| '-' '(' ADDRESS_REGISTER ')'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT;
 		$$.main_register = $3;
 	}
-	| expression '(' TOKEN_ADDRESS_REGISTER ')'
+	| expression '(' ADDRESS_REGISTER ')'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
 		$$.literal = $1;
 		$$.main_register = $3;
 	}
-	| '(' expression ',' TOKEN_ADDRESS_REGISTER ')'
+	| '(' expression ',' ADDRESS_REGISTER ')'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
 		$$.literal = $2;
 		$$.main_register = $4;
 	}
-	| '(' TOKEN_ADDRESS_REGISTER ',' expression ')'
+	| '(' ADDRESS_REGISTER ',' expression ')'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
 		$$.literal = $4;
 		$$.main_register = $2;
 	}
-	| '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register size ')'
+	| '(' ADDRESS_REGISTER ',' data_or_address_register size ')'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = EXPRESSION_NUMBER;
@@ -1806,7 +1808,7 @@ operand
 		$$.size = $5;
 		$$.index_register_is_address_register = $4 / 8 != 0;
 	}
-	| expression '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register size ')'
+	| expression '(' ADDRESS_REGISTER ',' data_or_address_register size ')'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
@@ -1815,7 +1817,7 @@ operand
 		$$.size = $6;
 		$$.index_register_is_address_register = $5 / 8 !=0;
 	}
-	| '(' expression ',' TOKEN_ADDRESS_REGISTER ',' data_or_address_register size ')'
+	| '(' expression ',' ADDRESS_REGISTER ',' data_or_address_register size ')'
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $2;
@@ -1824,7 +1826,7 @@ operand
 		$$.size = $7;
 		$$.index_register_is_address_register = $6 / 8 !=0;
 	}
-	| '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'
+	| '(' ADDRESS_REGISTER ',' data_or_address_register ')'
 	{
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -1835,7 +1837,7 @@ operand
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $4 / 8 != 0;
 	}
-	| expression '(' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'
+	| expression '(' ADDRESS_REGISTER ',' data_or_address_register ')'
 	{
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -1845,7 +1847,7 @@ operand
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $5 / 8 !=0;
 	}
-	| '(' expression ',' TOKEN_ADDRESS_REGISTER ',' data_or_address_register ')'
+	| '(' expression ',' ADDRESS_REGISTER ',' data_or_address_register ')'
 	{
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -1855,22 +1857,22 @@ operand
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $6 / 8 !=0;
 	}
-	| expression '(' TOKEN_PROGRAM_COUNTER ')'
+	| expression '(' PROGRAM_COUNTER ')'
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		$$.literal = $1;
 	}
-	| '(' expression ',' TOKEN_PROGRAM_COUNTER ')'
+	| '(' expression ',' PROGRAM_COUNTER ')'
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		$$.literal = $2;
 	}
-	| '(' TOKEN_PROGRAM_COUNTER ',' expression ')'
+	| '(' PROGRAM_COUNTER ',' expression ')'
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		$$.literal = $4;
 	}
-	| '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register size ')'
+	| '(' PROGRAM_COUNTER ',' data_or_address_register size ')'
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = EXPRESSION_NUMBER;
@@ -1879,7 +1881,7 @@ operand
 		$$.size = $5;
 		$$.index_register_is_address_register = $4 / 8 != 0;
 	}
-	| expression '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register size ')'
+	| expression '(' PROGRAM_COUNTER ',' data_or_address_register size ')'
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
@@ -1887,7 +1889,7 @@ operand
 		$$.size = $6;
 		$$.index_register_is_address_register = $5 / 8 != 0;
 	}
-	| '(' expression ',' TOKEN_PROGRAM_COUNTER ',' data_or_address_register size ')'
+	| '(' expression ',' PROGRAM_COUNTER ',' data_or_address_register size ')'
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $2;
@@ -1895,7 +1897,7 @@ operand
 		$$.size = $7;
 		$$.index_register_is_address_register = $6 / 8 != 0;
 	}
-	| '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'
+	| '(' PROGRAM_COUNTER ',' data_or_address_register ')'
 	{
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -1905,7 +1907,7 @@ operand
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $4 / 8 != 0;
 	}
-	| expression '(' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'
+	| expression '(' PROGRAM_COUNTER ',' data_or_address_register ')'
 	{
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -1914,7 +1916,7 @@ operand
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $5 / 8 != 0;
 	}
-	| '(' expression ',' TOKEN_PROGRAM_COUNTER ',' data_or_address_register ')'
+	| '(' expression ',' PROGRAM_COUNTER ',' data_or_address_register ')'
 	{
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -1930,25 +1932,25 @@ operand
 		$$.literal = $2;
 	}
 	/* Registers */
-/*	| TOKEN_DATA_REGISTER
+/*	| DATA_REGISTER
 	{
 		$$.type = OPERAND_DATA_REGISTER;
 		$$.main_register = $1;
 	}
-	| TOKEN_ADDRESS_REGISTER
+	| ADDRESS_REGISTER
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER;
 		$$.main_register = $1;
 	}
-*/	| TOKEN_STATUS_REGISTER
+*/	| STATUS_REGISTER
 	{
 		$$.type = OPERAND_STATUS_REGISTER;
 	}
-	| TOKEN_CONDITION_CODE_REGISTER
+	| CONDITION_CODE_REGISTER
 	{
 		$$.type = OPERAND_CONDITION_CODE_REGISTER;
 	}
-	| TOKEN_USER_STACK_POINTER_REGISTER
+	| USER_STACK_POINTER_REGISTER
 	{
 		$$.type = OPERAND_USER_STACK_POINTER_REGISTER;
 	}
@@ -2037,11 +2039,11 @@ register_span
 	;
 
 data_or_address_register
-	: TOKEN_DATA_REGISTER
+	: DATA_REGISTER
 	{
 		$$ = 0 + $1;
 	}
-	| TOKEN_ADDRESS_REGISTER
+	| ADDRESS_REGISTER
 	{
 		$$ = 8 + $1;
 	}
@@ -2049,8 +2051,8 @@ data_or_address_register
 
 /*
 number
-	: TOKEN_NUMBER
-	| '$' TOKEN_NUMBER
+	: NUMBER
+	| '$' NUMBER
 	;
 */
 expression
@@ -2059,13 +2061,13 @@ expression
 		$$ = $1;
 	}
 	/* This is an assembler extension: asm68k doesn't support this. */
-	| expression TOKEN_LOGICAL_AND expression1
+	| expression LOGICAL_AND expression1
 	{
 		if (!DoExpression(&$$, EXPRESSION_LOGICAL_AND, &$1, &$3))
 			YYNOMEM;
 	}
 	/* This is an assembler extension: asm68k doesn't support this. */
-	| expression TOKEN_LOGICAL_OR expression1
+	| expression LOGICAL_OR expression1
 	{
 		if (!DoExpression(&$$, EXPRESSION_LOGICAL_OR, &$1, &$3))
 			YYNOMEM;
@@ -2082,12 +2084,12 @@ expression1
 		if (!DoExpression(&$$, EXPRESSION_EQUALITY, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression1 TOKEN_EQUALITY expression2
+	| expression1 EQUALITY expression2
 	{
 		if (!DoExpression(&$$, EXPRESSION_EQUALITY, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression1 TOKEN_INEQUALITY expression2
+	| expression1 INEQUALITY expression2
 	{
 		if (!DoExpression(&$$, EXPRESSION_INEQUALITY, &$1, &$3))
 			YYNOMEM;
@@ -2104,7 +2106,7 @@ expression2
 		if (!DoExpression(&$$, EXPRESSION_LESS_THAN, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression2 TOKEN_LESS_OR_EQUAL expression3
+	| expression2 LESS_OR_EQUAL expression3
 	{
 		if (!DoExpression(&$$, EXPRESSION_LESS_OR_EQUAL, &$1, &$3))
 			YYNOMEM;
@@ -2114,7 +2116,7 @@ expression2
 		if (!DoExpression(&$$, EXPRESSION_MORE_THAN, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression2 TOKEN_MORE_OR_EQUAL expression3
+	| expression2 MORE_OR_EQUAL expression3
 	{
 		if (!DoExpression(&$$, EXPRESSION_MORE_OR_EQUAL, &$1, &$3))
 			YYNOMEM;
@@ -2192,12 +2194,12 @@ expression6
 	{
 		$$ = $1;
 	}
-	| expression6 TOKEN_LEFT_SHIFT expression7
+	| expression6 LEFT_SHIFT expression7
 	{
 		if (!DoExpression(&$$, EXPRESSION_LEFT_SHIFT, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression6 TOKEN_RIGHT_SHIFT expression7
+	| expression6 RIGHT_SHIFT expression7
 	{
 		if (!DoExpression(&$$, EXPRESSION_RIGHT_SHIFT, &$1, &$3))
 			YYNOMEM;
@@ -2232,26 +2234,26 @@ expression7
 	;
 
 local_identifier
-	: TOKEN_LOCAL_IDENTIFIER
-	| TOKEN_SIZE_BYTE
+	: LOCAL_IDENTIFIER
+	| SIZE_BYTE
 	{
 		const StringView literal = STRING_VIEW_INITIALISER(".b");
 		if (!String_CreateCopyView(&$$, &literal))
 			YYNOMEM;
 	}
-	| TOKEN_SIZE_SHORT
+	| SIZE_SHORT
 	{
 		const StringView literal = STRING_VIEW_INITIALISER(".s");
 		if (!String_CreateCopyView(&$$, &literal))
 			YYNOMEM;
 	}
-	| TOKEN_SIZE_WORD
+	| SIZE_WORD
 	{
 		const StringView literal = STRING_VIEW_INITIALISER(".w");
 		if (!String_CreateCopyView(&$$, &literal))
 			YYNOMEM;
 	}
-	| TOKEN_SIZE_LONGWORD
+	| SIZE_LONGWORD
 	{
 		const StringView literal = STRING_VIEW_INITIALISER(".l");
 		if (!String_CreateCopyView(&$$, &literal))
@@ -2260,7 +2262,7 @@ local_identifier
 	;
 
 identifier
-	: TOKEN_IDENTIFIER
+	: IDENTIFIER
 	| local_identifier
 	| identifier local_identifier
 	{
@@ -2274,12 +2276,12 @@ identifier
 	;
 
 expression8
-	: TOKEN_NUMBER
+	: NUMBER
 	{
 		$$.type = EXPRESSION_NUMBER;
 		$$.shared.unsigned_long = $1;
 	}
-	| identifier %prec TOKEN_HIGHER_PRECEDENCE_THAN_SIZE
+	| identifier %prec HIGHER_PRECEDENCE_THAN_SIZE
 	{
 		$$.type = EXPRESSION_IDENTIFIER;
 		$$.shared.string = $1;
@@ -2300,17 +2302,17 @@ expression8
 	{
 		$$ = $2;
 	}
-	| TOKEN_STRLEN '(' TOKEN_STRING ')'
+	| STRLEN '(' STRING ')'
 	{
 		$$.type = EXPRESSION_STRLEN;
 		$$.shared.string = $3;
 	}
-	| TOKEN_STRCMP '(' string ',' string ')'
+	| STRCMP '(' string ',' string ')'
 	{
 		if (!DoExpression(&$$, EXPRESSION_STRCMP, &$3, &$5))
 			YYNOMEM;
 	}
-	| TOKEN_INSTR '(' expression ',' expression ')'
+	| INSTR '(' expression ',' expression ')'
 	{
 		Expression expression;
 
@@ -2320,32 +2322,32 @@ expression8
 		if (!DoExpressionTriple(&$$, EXPRESSION_INSTR, &expression, &$3, &$5))
 			YYNOMEM;
 	}
-	| TOKEN_INSTR '(' expression ',' expression ',' expression ')'
+	| INSTR '(' expression ',' expression ',' expression ')'
 	{
 		if (!DoExpressionTriple(&$$, EXPRESSION_INSTR, &$3, &$5, &$7))
 			YYNOMEM;
 	}
-	| TOKEN_DEF '(' TOKEN_IDENTIFIER ')'
+	| DEF '(' IDENTIFIER ')'
 	{
 		$$.type = EXPRESSION_DEF;
 		$$.shared.string = $3;
 	}
-	| TOKEN_TYPE '(' TOKEN_IDENTIFIER ')'
+	| TYPE '(' IDENTIFIER ')'
 	{
 		$$.type = EXPRESSION_TYPE_WITH_IDENTIFIER;
 		$$.shared.string = $3;
 	}
-	| TOKEN_TYPE '(' TOKEN_NUMBER ')'
+	| TYPE '(' NUMBER ')'
 	{
 		$$.type = EXPRESSION_TYPE_WITH_NUMBER;
 		$$.shared.unsigned_long = $3;
 	}
-	| TOKEN_FILESIZE '(' TOKEN_STRING ')'
+	| FILESIZE '(' STRING ')'
 	{
 		$$.type = EXPRESSION_FILESIZE;
 		$$.shared.string = $3;
 	}
-	| TOKEN_OFFSET '(' expression ')'
+	| OFFSET '(' expression ')'
 	{
 		/* TODO: Make this actually do something besides pass the expression through. */
 		$$ = $3;
@@ -2353,7 +2355,7 @@ expression8
 	;
 
 string
-	: TOKEN_STRING
+	: STRING
 	{
 		$$.type = EXPRESSION_STRING;
 		$$.shared.string = $1;
