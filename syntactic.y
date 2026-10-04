@@ -351,11 +351,30 @@ typedef struct StatementMacro
 	IdentifierList parameter_names;
 } StatementMacro;
 
-typedef struct StatementInform
+typedef struct StatementMacroS
 {
-	Expression severity;
-	String message;
-} StatementInform;
+	cc_bool uses_label;
+	IdentifierList parameter_names;
+} StatementMacroS;
+
+typedef struct StatementEndM
+{
+} StatementEndM;
+
+typedef struct StatementEqu
+{
+	Expression expression;
+} StatementEqu;
+
+typedef struct StatementEquSString
+{
+	String string;
+} StatementEquSString;
+
+typedef struct StatementEquSIdentifier
+{
+	String string;
+} StatementEquSIdentifier;
 
 typedef struct StatementSubstr
 {
@@ -363,15 +382,131 @@ typedef struct StatementSubstr
 	String string;
 } StatementSubstr;
 
+typedef struct StatementSet
+{
+	Expression expression;
+} StatementSet;
+
+typedef struct StatementIf
+{
+	Expression expression;
+} StatementIf;
+
+typedef struct StatementElseIf
+{
+	Expression expression;
+} StatementElseIf;
+
+typedef struct StatementElse
+{
+} StatementElse;
+
+typedef struct StatementEndC
+{
+} StatementEndC;
+
+typedef struct StatementWhile
+{
+	Expression expression;
+} StatementWhile;
+
+typedef struct StatementEndW
+{
+} StatementEndW;
+
+typedef struct StatementEven
+{
+} StatementEven;
+
+typedef struct StatementCnop
+{
+	Expression offset;
+	Expression size_boundary;
+} StatementCnop;
+
+typedef struct StatementInform
+{
+	Expression severity;
+	String message;
+} StatementInform;
+
+typedef struct StatementFail
+{
+} StatementFail;
+
+typedef struct StatementEnd
+{
+} StatementEnd;
+
+typedef struct StatementRS
+{
+	Size size;
+	Expression length;
+} StatementRS;
+
+typedef struct StatementRSSet
+{
+	Expression expression;
+} StatementRSSet;
+
+typedef struct StatementRSReset
+{
+} StatementRSReset;
+
+typedef struct StatementObj
+{
+	Expression expression;
+} StatementObj;
+
+typedef struct StatementObjEnd
+{
+} StatementObjEnd;
+
+typedef struct StatementOrg
+{
+	Expression expression;
+} StatementOrg;
+
+typedef struct StatementPushO
+{
+} StatementPushO;
+
+typedef struct StatementPopO
+{
+} StatementPopO;
+
 typedef struct StatementOpt
 {
 	IdentifierList options;
 } StatementOpt;
 
+typedef struct StatementPushP
+{
+	String string;
+} StatementPushP;
+
+typedef struct StatementPopP
+{
+	String string;
+} StatementPopP;
+
+typedef struct StatementShift
+{
+} StatementShift;
+
+typedef struct StatementMExit
+{
+} StatementMExit;
+
 typedef struct StatementLocal
 {
 	IdentifierList identifiers;
 } StatementLocal;
+
+typedef struct StatementPurge
+{
+	String string;
+} StatementPurge;
 
 typedef enum StatementType
 {
@@ -433,22 +568,39 @@ typedef struct Statement
 		StatementIncbin incbin;
 		StatementRept rept;
 		StatementMacro macro;
-		struct
-		{
-			Expression offset;
-			Expression size_boundary;
-		} cnop;
-		StatementInform inform;
-		struct
-		{
-			Size size;
-			Expression length;
-		} rs;
+		StatementMacroS macros;
+		StatementEndM endm;
+		StatementEqu equ;
+		StatementEquSString equs_string;
+		StatementEquSIdentifier equs_identifier;
 		StatementSubstr substr;
+		StatementSet set;
+		StatementIf if_statement;
+		StatementElseIf elseif;
+		StatementElse else_statement;
+		StatementEndC endc;
+		StatementWhile while_statement;
+		StatementEndW endw;
+		StatementEven even;
+		StatementCnop cnop;
+		StatementInform inform;
+		StatementFail fail;
+		StatementEnd end;
+		StatementRS rs;
+		StatementRSSet rsset;
+		StatementRSReset rsreset;
+		StatementObj obj;
+		StatementObjEnd objend;
+		StatementOrg org;
+		StatementPushO pusho;
+		StatementPopO popo;
 		StatementOpt opt;
+		StatementPushP pushp;
+		StatementPopP popp;
+		StatementShift shift;
+		StatementMExit mexit;
 		StatementLocal local;
-		Expression expression;
-		String string;
+		StatementPurge purge;
 	} shared;
 } Statement;
 
@@ -844,17 +996,17 @@ statement
 	| DIRECTIVE_EQU expression
 	{
 		statement->type = STATEMENT_TYPE_EQU;
-		statement->shared.expression = $2;
+		statement->shared.equ.expression = $2;
 	}
 	| DIRECTIVE_EQUS STRING
 	{
 		statement->type = STATEMENT_TYPE_EQUS_STRING;
-		statement->shared.string = $2;
+		statement->shared.equs_string.string = $2;
 	}
 	| DIRECTIVE_EQUS IDENTIFIER
 	{
 		statement->type = STATEMENT_TYPE_EQUS_IDENTIFIER;
-		statement->shared.string = $2;
+		statement->shared.equs_identifier.string = $2;
 	}
 	| DIRECTIVE_SUBSTR "," "," STRING
 	{
@@ -891,22 +1043,22 @@ statement
 	| DIRECTIVE_SET expression
 	{
 		statement->type = STATEMENT_TYPE_SET;
-		statement->shared.expression = $2;
+		statement->shared.set.expression = $2;
 	}
 	| "=" expression
 	{
 		statement->type = STATEMENT_TYPE_SET;
-		statement->shared.expression = $2;
+		statement->shared.set.expression = $2;
 	}
 	| DIRECTIVE_IF expression
 	{
 		statement->type = STATEMENT_TYPE_IF;
-		statement->shared.expression = $2;
+		statement->shared.if_statement.expression = $2;
 	}
 	| DIRECTIVE_ELSEIF expression
 	{
 		statement->type = STATEMENT_TYPE_ELSEIF;
-		statement->shared.expression = $2;
+		statement->shared.elseif.expression = $2;
 	}
 	| DIRECTIVE_ELSEIF
 	{
@@ -923,7 +1075,7 @@ statement
 	| DIRECTIVE_WHILE expression
 	{
 		statement->type = STATEMENT_TYPE_WHILE;
-		statement->shared.expression = $2;
+		statement->shared.while_statement.expression = $2;
 	}
 	| DIRECTIVE_ENDW
 	{
@@ -972,14 +1124,14 @@ statement
 	| DIRECTIVE_RSSET expression
 	{
 		statement->type = STATEMENT_TYPE_RSSET;
-		statement->shared.expression = $2;
+		statement->shared.rsset.expression = $2;
 	}
 	| DIRECTIVE_RSRESET expression
 	{
 		/* As mentioned in S.N. 68k's manual, this odd hack
 		   is necessary for compatibility with other assemblers. */
 		statement->type = STATEMENT_TYPE_RSSET;
-		statement->shared.expression = $2;
+		statement->shared.rsset.expression = $2;
 	}
 	| DIRECTIVE_RSRESET
 	{
@@ -988,7 +1140,7 @@ statement
 	| DIRECTIVE_OBJ expression
 	{
 		statement->type = STATEMENT_TYPE_OBJ;
-		statement->shared.expression = $2;
+		statement->shared.obj.expression = $2;
 	}
 	| DIRECTIVE_OBJEND
 	{
@@ -997,7 +1149,7 @@ statement
 	| DIRECTIVE_ORG expression
 	{
 		statement->type = STATEMENT_TYPE_ORG;
-		statement->shared.expression = $2;
+		statement->shared.org.expression = $2;
 	}
 	| DIRECTIVE_PUSHO
 	{
@@ -1015,12 +1167,12 @@ statement
 	| DIRECTIVE_PUSHP STRING
 	{
 		statement->type = STATEMENT_TYPE_PUSHP;
-		statement->shared.string = $2;
+		statement->shared.pushp.string = $2;
 	}
 	| DIRECTIVE_POPP IDENTIFIER
 	{
 		statement->type = STATEMENT_TYPE_POPP;
-		statement->shared.string = $2;
+		statement->shared.popp.string = $2;
 	}
 	| DIRECTIVE_SHIFT
 	{
@@ -1058,7 +1210,7 @@ statement
 	| DIRECTIVE_PURGE IDENTIFIER
 	{
 		statement->type = STATEMENT_TYPE_PURGE;
-		statement->shared.string = $2;
+		statement->shared.purge.string = $2;
 	}
 	;
 
@@ -2595,27 +2747,63 @@ void DestroyStatement(Statement *statement)
 			break;
 
 		case STATEMENT_TYPE_MACRO:
-		case STATEMENT_TYPE_MACROS:
 			DestroyIdentifierList(&statement->shared.macro.parameter_names);
 			break;
 
+		case STATEMENT_TYPE_MACROS:
+			DestroyIdentifierList(&statement->shared.macros.parameter_names);
+			break;
+
 		case STATEMENT_TYPE_EQU:
+			DestroyExpression(&statement->shared.equ.expression);
+			break;
+
 		case STATEMENT_TYPE_SET:
+			DestroyExpression(&statement->shared.set.expression);
+			break;
+
 		case STATEMENT_TYPE_IF:
+			DestroyExpression(&statement->shared.if_statement.expression);
+			break;
+
 		case STATEMENT_TYPE_ELSEIF:
+			DestroyExpression(&statement->shared.elseif.expression);
+			break;
+
 		case STATEMENT_TYPE_WHILE:
+			DestroyExpression(&statement->shared.while_statement.expression);
+			break;
+
 		case STATEMENT_TYPE_RSSET:
+			DestroyExpression(&statement->shared.rsset.expression);
+			break;
+
 		case STATEMENT_TYPE_OBJ:
+			DestroyExpression(&statement->shared.obj.expression);
+			break;
+
 		case STATEMENT_TYPE_ORG:
-			DestroyExpression(&statement->shared.expression);
+			DestroyExpression(&statement->shared.org.expression);
 			break;
 
 		case STATEMENT_TYPE_EQUS_STRING:
+			String_Destroy(&statement->shared.equs_string.string);
+			break;
+
 		case STATEMENT_TYPE_EQUS_IDENTIFIER:
+			String_Destroy(&statement->shared.equs_identifier.string);
+			break;
+
 		case STATEMENT_TYPE_PUSHP:
+			String_Destroy(&statement->shared.pushp.string);
+			break;
+
 		case STATEMENT_TYPE_POPP:
+			String_Destroy(&statement->shared.popp.string);
+			break;
+
 		case STATEMENT_TYPE_PURGE:
-			String_Destroy(&statement->shared.string);
+			String_Destroy(&statement->shared.purge.string);
 			break;
 
 		case STATEMENT_TYPE_SUBSTR:

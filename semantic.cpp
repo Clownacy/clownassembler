@@ -5013,17 +5013,17 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			if (Options_Get(&state->options)->equ_set_descope_local_labels)
 				SetLastGlobalLabel(state, label);
 
-			if (!ResolveExpression(state, &statement->shared.expression, &value, cc_false))
+			if (!ResolveExpression(state, &statement->shared.equ.expression, &value, cc_false))
 			{
 				/* Separate the expression from the statement, so that it is not freed along with the statement. */
 				Expression *expression_copy = (Expression*)MallocAndHandleError(state, sizeof(Expression));
 
 				if (expression_copy != NULL)
 				{
-					*expression_copy = statement->shared.expression;
+					*expression_copy = statement->shared.equ.expression;
 
 					/* Prevent subexpressions from being freed. */
-					statement->shared.expression.type = EXPRESSION_NUMBER;
+					statement->shared.equ.expression.type = EXPRESSION_NUMBER;
 
 					AddIdentifierToSymbolTable(state, label, 0, expression_copy, SYMBOL_EXPRESSION_CONSTANT);
 				}
@@ -5041,12 +5041,12 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		}
 
 		case STATEMENT_TYPE_EQUS_STRING:
-			PushSubstitute(state, label, String_View(&statement->shared.string));
+			PushSubstitute(state, label, String_View(&statement->shared.equs_string.string));
 			break;
 
 		case STATEMENT_TYPE_EQUS_IDENTIFIER:
 		{
-			const Dictionary_Entry* const dictionary_entry = LookupSymbol(state, String_View(&statement->shared.string), NULL);
+			const Dictionary_Entry* const dictionary_entry = LookupSymbol(state, String_View(&statement->shared.equs_string.string), NULL);
 
 			if (dictionary_entry == NULL || dictionary_entry->type != SYMBOL_STRING_CONSTANT)
 				SemanticError(state, "String constant can only be defined as a string or another string constant.");
@@ -5101,7 +5101,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			if (Options_Get(&state->options)->equ_set_descope_local_labels)
 				SetLastGlobalLabel(state, label);
 
-			if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
+			if (!ResolveExpression(state, &statement->shared.set.expression, &value, cc_true))
 			{
 				SemanticError(state, "Value must be evaluable on the first pass.");
 				break;
@@ -5114,7 +5114,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		}
 
 		case STATEMENT_TYPE_IF:
-			ProcessIf(state, &statement->shared.expression);
+			ProcessIf(state, &statement->shared.if_statement.expression);
 			break;
 
 		case STATEMENT_TYPE_ELSEIF:
@@ -5128,7 +5128,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				{
 					unsigned long value;
 
-					if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
+					if (!ResolveExpression(state, &statement->shared.elseif.expression, &value, cc_true))
 					{
 						SemanticError(state, "Condition must be evaluable on the first pass.");
 						value = 1;
@@ -5188,7 +5188,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			/* Enter WHILE mode. */
 			state->mode = MODE_WHILE;
 
-			state->shared.while_statement.expression = statement->shared.expression;
+			state->shared.while_statement.expression = statement->shared.while_statement.expression;
 			String_CreateCopy(&state->shared.while_statement.source_line, state->source_line);
 
 			state->shared.while_statement.line_number = state->location->line_number;
@@ -5199,7 +5199,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 			/* Dummy-out the statement's expression, since the state now owns it, and we don't
 			   want its sub-expressions to be automatically freed when the statement is freed. */
-			statement->shared.expression.type = EXPRESSION_NUMBER;
+			statement->shared.while_statement.expression.type = EXPRESSION_NUMBER;
 
 			break;
 
@@ -5354,7 +5354,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			/* Set '__rs' to value. */
 			unsigned long value;
 
-			if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
+			if (!ResolveExpression(state, &statement->shared.rsset.expression, &value, cc_true))
 				SemanticError(state, "Value must be evaluable on the first pass.");
 			else
 				state->rs = value;
@@ -5376,7 +5376,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			{
 				unsigned long value;
 
-				if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
+				if (!ResolveExpression(state, &statement->shared.obj.expression, &value, cc_true))
 					SemanticError(state, "Value must be evaluable on the first pass.");
 				else
 					state->obj_delta = value - state->program_counter;
@@ -5404,7 +5404,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		{
 			unsigned long value;
 
-			if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
+			if (!ResolveExpression(state, &statement->shared.org.expression, &value, cc_true))
 			{
 				SemanticError(state, "Value must be evaluable on the first pass.");
 			}
@@ -5502,7 +5502,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		}
 
 		case STATEMENT_TYPE_PUSHP:
-			if (!StringStack_Push(&state->string_stack, String_View(&statement->shared.string)))
+			if (!StringStack_Push(&state->string_stack, String_View(&statement->shared.pushp.string)))
 				InternalError(state, "Failed to allocate memory for the string stack.");
 
 			break;
@@ -5517,7 +5517,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			}
 			else
 			{
-				PushSubstitute(state, String_View(&statement->shared.string), String_View(&string));
+				PushSubstitute(state, String_View(&statement->shared.popp.string), String_View(&string));
 				String_Destroy(&string);
 			}
 
@@ -5566,7 +5566,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			break;
 
 		case STATEMENT_TYPE_PURGE:
-			PurgeMacro(state, String_View(&statement->shared.string), cc_false);
+			PurgeMacro(state, String_View(&statement->shared.purge.string), cc_false);
 			break;
 	}
 

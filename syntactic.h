@@ -363,11 +363,30 @@ typedef struct StatementMacro
 	IdentifierList parameter_names;
 } StatementMacro;
 
-typedef struct StatementInform
+typedef struct StatementMacroS
 {
-	Expression severity;
-	String message;
-} StatementInform;
+	cc_bool uses_label;
+	IdentifierList parameter_names;
+} StatementMacroS;
+
+typedef struct StatementEndM
+{
+} StatementEndM;
+
+typedef struct StatementEqu
+{
+	Expression expression;
+} StatementEqu;
+
+typedef struct StatementEquSString
+{
+	String string;
+} StatementEquSString;
+
+typedef struct StatementEquSIdentifier
+{
+	String string;
+} StatementEquSIdentifier;
 
 typedef struct StatementSubstr
 {
@@ -375,15 +394,131 @@ typedef struct StatementSubstr
 	String string;
 } StatementSubstr;
 
+typedef struct StatementSet
+{
+	Expression expression;
+} StatementSet;
+
+typedef struct StatementIf
+{
+	Expression expression;
+} StatementIf;
+
+typedef struct StatementElseIf
+{
+	Expression expression;
+} StatementElseIf;
+
+typedef struct StatementElse
+{
+} StatementElse;
+
+typedef struct StatementEndC
+{
+} StatementEndC;
+
+typedef struct StatementWhile
+{
+	Expression expression;
+} StatementWhile;
+
+typedef struct StatementEndW
+{
+} StatementEndW;
+
+typedef struct StatementEven
+{
+} StatementEven;
+
+typedef struct StatementCnop
+{
+	Expression offset;
+	Expression size_boundary;
+} StatementCnop;
+
+typedef struct StatementInform
+{
+	Expression severity;
+	String message;
+} StatementInform;
+
+typedef struct StatementFail
+{
+} StatementFail;
+
+typedef struct StatementEnd
+{
+} StatementEnd;
+
+typedef struct StatementRS
+{
+	Size size;
+	Expression length;
+} StatementRS;
+
+typedef struct StatementRSSet
+{
+	Expression expression;
+} StatementRSSet;
+
+typedef struct StatementRSReset
+{
+} StatementRSReset;
+
+typedef struct StatementObj
+{
+	Expression expression;
+} StatementObj;
+
+typedef struct StatementObjEnd
+{
+} StatementObjEnd;
+
+typedef struct StatementOrg
+{
+	Expression expression;
+} StatementOrg;
+
+typedef struct StatementPushO
+{
+} StatementPushO;
+
+typedef struct StatementPopO
+{
+} StatementPopO;
+
 typedef struct StatementOpt
 {
 	IdentifierList options;
 } StatementOpt;
 
+typedef struct StatementPushP
+{
+	String string;
+} StatementPushP;
+
+typedef struct StatementPopP
+{
+	String string;
+} StatementPopP;
+
+typedef struct StatementShift
+{
+} StatementShift;
+
+typedef struct StatementMExit
+{
+} StatementMExit;
+
 typedef struct StatementLocal
 {
 	IdentifierList identifiers;
 } StatementLocal;
+
+typedef struct StatementPurge
+{
+	String string;
+} StatementPurge;
 
 typedef enum StatementType
 {
@@ -445,27 +580,44 @@ typedef struct Statement
 		StatementIncbin incbin;
 		StatementRept rept;
 		StatementMacro macro;
-		struct
-		{
-			Expression offset;
-			Expression size_boundary;
-		} cnop;
-		StatementInform inform;
-		struct
-		{
-			Size size;
-			Expression length;
-		} rs;
+		StatementMacroS macros;
+		StatementEndM endm;
+		StatementEqu equ;
+		StatementEquSString equs_string;
+		StatementEquSIdentifier equs_identifier;
 		StatementSubstr substr;
+		StatementSet set;
+		StatementIf if_statement;
+		StatementElseIf elseif;
+		StatementElse else_statement;
+		StatementEndC endc;
+		StatementWhile while_statement;
+		StatementEndW endw;
+		StatementEven even;
+		StatementCnop cnop;
+		StatementInform inform;
+		StatementFail fail;
+		StatementEnd end;
+		StatementRS rs;
+		StatementRSSet rsset;
+		StatementRSReset rsreset;
+		StatementObj obj;
+		StatementObjEnd objend;
+		StatementOrg org;
+		StatementPushO pusho;
+		StatementPopO popo;
 		StatementOpt opt;
+		StatementPushP pushp;
+		StatementPopP popp;
+		StatementShift shift;
+		StatementMExit mexit;
 		StatementLocal local;
-		Expression expression;
-		String string;
+		StatementPurge purge;
 	} shared;
 } Statement;
 
 
-#line 469 "syntactic.h"
+#line 621 "syntactic.h"
 
 
 # include <cstdlib> // std::abort
@@ -609,7 +761,7 @@ typedef struct Statement
 
 #line 25 "syntactic.y"
 namespace m68kasm {
-#line 613 "syntactic.h"
+#line 765 "syntactic.h"
 
 
 
@@ -5596,11 +5748,11 @@ switch (yykind)
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 5600 "syntactic.h"
+#line 5752 "syntactic.h"
 
 
 // "%code provides" blocks.
-#line 457 "syntactic.y"
+#line 609 "syntactic.y"
 
 
 void DestroyExpression(Expression *expression);
@@ -5610,7 +5762,7 @@ void DestroyIdentifierList(IdentifierList *list);
 #define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner)
 
 
-#line 5614 "syntactic.h"
+#line 5766 "syntactic.h"
 
 
 #endif // !YY_M68KASM_SYNTACTIC_H_INCLUDED
