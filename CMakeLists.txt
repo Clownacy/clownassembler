@@ -32,14 +32,14 @@ add_library(clownassembler_core STATIC
 
 # Custom frontend
 add_executable(clownassembler
-	"frontend_custom.c"
+	"frontend-custom.c"
 )
 
 target_link_libraries(clownassembler clownassembler_core)
 
 # asm68k frontend
 add_executable(clownassembler_asm68k
-	"frontend_asm68k.c"
+	"frontend-asm68k.c"
 )
 
 target_link_libraries(clownassembler_asm68k clownassembler_core)
