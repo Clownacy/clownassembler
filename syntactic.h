@@ -48,6 +48,8 @@
 #line 37 "syntactic.y"
 
 
+#include <variant>
+
 #include "clowncommon/clowncommon.h"
 #include "string.h"
 
@@ -314,6 +316,10 @@ typedef struct Operand
 	cc_bool index_register_is_address_register;
 } Operand;
 
+typedef struct StatementEmpty
+{
+} StatementEmpty;
+
 typedef struct StatementInstruction
 {
 	Opcode opcode;
@@ -357,6 +363,10 @@ typedef struct StatementRept
 	Expression repetitions;
 } StatementRept;
 
+typedef struct StatementEndR
+{
+} StatementEndR;
+
 typedef struct StatementMacro
 {
 	cc_bool uses_label;
@@ -365,8 +375,7 @@ typedef struct StatementMacro
 
 typedef struct StatementMacroS
 {
-	cc_bool uses_label;
-	IdentifierList parameter_names;
+	StatementMacro macro;
 } StatementMacroS;
 
 typedef struct StatementEndM
@@ -567,57 +576,54 @@ typedef enum StatementType
 	STATEMENT_TYPE_PURGE
 } StatementType;
 
-typedef struct Statement
-{
-	StatementType type;
-	union
-	{
-		StatementInstruction instruction;
-		StatementDc dc;
-		StatementDcb dcb;
-		StatementDs ds;
-		StatementInclude include;
-		StatementIncbin incbin;
-		StatementRept rept;
-		StatementMacro macro;
-		StatementMacroS macros;
-		StatementEndM endm;
-		StatementEqu equ;
-		StatementEquSString equs_string;
-		StatementEquSIdentifier equs_identifier;
-		StatementSubstr substr;
-		StatementSet set;
-		StatementIf if_statement;
-		StatementElseIf elseif;
-		StatementElse else_statement;
-		StatementEndC endc;
-		StatementWhile while_statement;
-		StatementEndW endw;
-		StatementEven even;
-		StatementCnop cnop;
-		StatementInform inform;
-		StatementFail fail;
-		StatementEnd end;
-		StatementRS rs;
-		StatementRSSet rsset;
-		StatementRSReset rsreset;
-		StatementObj obj;
-		StatementObjEnd objend;
-		StatementOrg org;
-		StatementPushO pusho;
-		StatementPopO popo;
-		StatementOpt opt;
-		StatementPushP pushp;
-		StatementPopP popp;
-		StatementShift shift;
-		StatementMExit mexit;
-		StatementLocal local;
-		StatementPurge purge;
-	} shared;
-} Statement;
+using Statement = std::variant<
+	StatementEmpty,
+	StatementInstruction,
+	StatementDc,
+	StatementDcb,
+	StatementDs,
+	StatementInclude,
+	StatementIncbin,
+	StatementRept,
+	StatementEndR,
+	StatementMacro,
+	StatementMacroS,
+	StatementEndM,
+	StatementEqu,
+	StatementEquSString,
+	StatementEquSIdentifier,
+	StatementSubstr,
+	StatementSet,
+	StatementIf,
+	StatementElseIf,
+	StatementElse,
+	StatementEndC,
+	StatementWhile,
+	StatementEndW,
+	StatementEven,
+	StatementCnop,
+	StatementInform,
+	StatementFail,
+	StatementEnd,
+	StatementRS,
+	StatementRSSet,
+	StatementRSReset,
+	StatementObj,
+	StatementObjEnd,
+	StatementOrg,
+	StatementPushO,
+	StatementPopO,
+	StatementOpt,
+	StatementPushP,
+	StatementPopP,
+	StatementShift,
+	StatementMExit,
+	StatementLocal,
+	StatementPurge
+>;
 
 
-#line 621 "syntactic.h"
+#line 627 "syntactic.h"
 
 
 # include <cstdlib> // std::abort
@@ -761,7 +767,7 @@ typedef struct Statement
 
 #line 25 "syntactic.y"
 namespace m68kasm {
-#line 765 "syntactic.h"
+#line 771 "syntactic.h"
 
 
 
@@ -5748,11 +5754,11 @@ switch (yykind)
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 5752 "syntactic.h"
+#line 5758 "syntactic.h"
 
 
 // "%code provides" blocks.
-#line 609 "syntactic.y"
+#line 615 "syntactic.y"
 
 
 void DestroyExpression(Expression *expression);
@@ -5762,7 +5768,7 @@ void DestroyIdentifierList(IdentifierList *list);
 #define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner)
 
 
-#line 5766 "syntactic.h"
+#line 5772 "syntactic.h"
 
 
 #endif // !YY_M68KASM_SYNTACTIC_H_INCLUDED

@@ -36,6 +36,8 @@
 
 %code requires {
 
+#include <variant>
+
 #include "clowncommon/clowncommon.h"
 #include "string.h"
 
@@ -302,6 +304,10 @@ typedef struct Operand
 	cc_bool index_register_is_address_register;
 } Operand;
 
+typedef struct StatementEmpty
+{
+} StatementEmpty;
+
 typedef struct StatementInstruction
 {
 	Opcode opcode;
@@ -345,6 +351,10 @@ typedef struct StatementRept
 	Expression repetitions;
 } StatementRept;
 
+typedef struct StatementEndR
+{
+} StatementEndR;
+
 typedef struct StatementMacro
 {
 	cc_bool uses_label;
@@ -353,8 +363,7 @@ typedef struct StatementMacro
 
 typedef struct StatementMacroS
 {
-	cc_bool uses_label;
-	IdentifierList parameter_names;
+	StatementMacro macro;
 } StatementMacroS;
 
 typedef struct StatementEndM
@@ -555,54 +564,51 @@ typedef enum StatementType
 	STATEMENT_TYPE_PURGE
 } StatementType;
 
-typedef struct Statement
-{
-	StatementType type;
-	union
-	{
-		StatementInstruction instruction;
-		StatementDc dc;
-		StatementDcb dcb;
-		StatementDs ds;
-		StatementInclude include;
-		StatementIncbin incbin;
-		StatementRept rept;
-		StatementMacro macro;
-		StatementMacroS macros;
-		StatementEndM endm;
-		StatementEqu equ;
-		StatementEquSString equs_string;
-		StatementEquSIdentifier equs_identifier;
-		StatementSubstr substr;
-		StatementSet set;
-		StatementIf if_statement;
-		StatementElseIf elseif;
-		StatementElse else_statement;
-		StatementEndC endc;
-		StatementWhile while_statement;
-		StatementEndW endw;
-		StatementEven even;
-		StatementCnop cnop;
-		StatementInform inform;
-		StatementFail fail;
-		StatementEnd end;
-		StatementRS rs;
-		StatementRSSet rsset;
-		StatementRSReset rsreset;
-		StatementObj obj;
-		StatementObjEnd objend;
-		StatementOrg org;
-		StatementPushO pusho;
-		StatementPopO popo;
-		StatementOpt opt;
-		StatementPushP pushp;
-		StatementPopP popp;
-		StatementShift shift;
-		StatementMExit mexit;
-		StatementLocal local;
-		StatementPurge purge;
-	} shared;
-} Statement;
+using Statement = std::variant<
+	StatementEmpty,
+	StatementInstruction,
+	StatementDc,
+	StatementDcb,
+	StatementDs,
+	StatementInclude,
+	StatementIncbin,
+	StatementRept,
+	StatementEndR,
+	StatementMacro,
+	StatementMacroS,
+	StatementEndM,
+	StatementEqu,
+	StatementEquSString,
+	StatementEquSIdentifier,
+	StatementSubstr,
+	StatementSet,
+	StatementIf,
+	StatementElseIf,
+	StatementElse,
+	StatementEndC,
+	StatementWhile,
+	StatementEndW,
+	StatementEven,
+	StatementCnop,
+	StatementInform,
+	StatementFail,
+	StatementEnd,
+	StatementRS,
+	StatementRSSet,
+	StatementRSReset,
+	StatementObj,
+	StatementObjEnd,
+	StatementOrg,
+	StatementPushO,
+	StatementPopO,
+	StatementOpt,
+	StatementPushP,
+	StatementPopP,
+	StatementShift,
+	StatementMExit,
+	StatementLocal,
+	StatementPurge
+>;
 
 }
 
@@ -878,339 +884,288 @@ void m68kasm::parser::error(const std::string &message)
 statement
 	:
 	{
-		statement->type = STATEMENT_TYPE_EMPTY;
+		statement->emplace<StatementEmpty>();
 	}
 	| instruction
 	{
-		statement->type = STATEMENT_TYPE_INSTRUCTION;
-		statement->shared.instruction = $1;
+		statement->emplace<StatementInstruction>($1);
 	}
 	| DIRECTIVE_DC size expression_list
 	{
-		statement->type = STATEMENT_TYPE_DC;
-		statement->shared.dc.size = $2;
-		statement->shared.dc.values = $3;
+		statement->emplace<StatementDc>($2, $3);
 	}
 	| DIRECTIVE_DCB size expression "," expression
 	{
-		statement->type = STATEMENT_TYPE_DCB;
-		statement->shared.dcb.size = $2;
-		statement->shared.dcb.repetitions = $3;
-		statement->shared.dcb.value = $5;
+		statement->emplace<StatementDcb>($2, $3, $5);
 	}
 	| DIRECTIVE_DS size expression
 	{
-		statement->type = STATEMENT_TYPE_DS;
-		statement->shared.ds.size = $2;
-		statement->shared.ds.length = $3;
+		statement->emplace<StatementDs>($2, $3);
 	}
 	| DIRECTIVE_INCLUDE STRING
 	{
-		statement->type = STATEMENT_TYPE_INCLUDE;
-		statement->shared.include.path = $2;
+		statement->emplace<StatementInclude>($2);
 	}
 	| DIRECTIVE_INCBIN STRING
 	{
-		statement->type = STATEMENT_TYPE_INCBIN;
-		statement->shared.incbin.path = $2;
-		statement->shared.incbin.start.type = EXPRESSION_NUMBER;
-		statement->shared.incbin.start.shared.unsigned_long = 0;
-		statement->shared.incbin.has_length = cc_false;
+		// TODO: Get rid of this...
+		Expression start;
+		start.type = EXPRESSION_NUMBER;
+		start.shared.unsigned_long = 0;
+		
+		statement->emplace<StatementIncbin>($2, start, cc_false);
 	}
 	| DIRECTIVE_INCBIN STRING "," expression
 	{
-		statement->type = STATEMENT_TYPE_INCBIN;
-		statement->shared.incbin.path = $2;
-		statement->shared.incbin.start = $4;
-		statement->shared.incbin.has_length = cc_false;
+		statement->emplace<StatementIncbin>($2, $4, cc_false);
 	}
 	| DIRECTIVE_INCBIN STRING "," "," expression
 	{
-		statement->type = STATEMENT_TYPE_INCBIN;
-		statement->shared.incbin.path = $2;
-		statement->shared.incbin.start.type = EXPRESSION_NUMBER;
-		statement->shared.incbin.start.shared.unsigned_long = 0;
-		statement->shared.incbin.has_length = cc_true;
-		statement->shared.incbin.length = $5;
+		// TODO: Get rid of this...
+		Expression start;
+		start.type = EXPRESSION_NUMBER;
+		start.shared.unsigned_long = 0;
+		
+		statement->emplace<StatementIncbin>($2, start, cc_true, $5);
 	}
 	| DIRECTIVE_INCBIN STRING "," expression "," expression
 	{
-		statement->type = STATEMENT_TYPE_INCBIN;
-		statement->shared.incbin.path = $2;
-		statement->shared.incbin.start = $4;
-		statement->shared.incbin.has_length = cc_true;
-		statement->shared.incbin.length = $6;
+		statement->emplace<StatementIncbin>($2, $4, cc_true, $6);
 	}
 	| DIRECTIVE_REPT expression
 	{
-		statement->type = STATEMENT_TYPE_REPT;
-		statement->shared.rept.repetitions = $2;
+		statement->emplace<StatementRept>($2);
 	}
 	| DIRECTIVE_ENDR
 	{
-		statement->type = STATEMENT_TYPE_ENDR;
+		statement->emplace<StatementEndR>();
 	}
 	| DIRECTIVE_MACRO
 	{
-		statement->type = STATEMENT_TYPE_MACRO;
-		statement->shared.macro.uses_label = cc_false;
-		statement->shared.macro.parameter_names.head = NULL;
-		statement->shared.macro.parameter_names.tail = NULL;
+		statement->emplace<StatementMacro>(cc_false);
 	}
 	| DIRECTIVE_MACRO "*"
 	{
-		statement->type = STATEMENT_TYPE_MACRO;
-		statement->shared.macro.uses_label = cc_true;
-		statement->shared.macro.parameter_names.head = NULL;
-		statement->shared.macro.parameter_names.tail = NULL;
+		statement->emplace<StatementMacro>(cc_true);
 	}
 	| DIRECTIVE_MACRO identifier_list
 	{
-		statement->type = STATEMENT_TYPE_MACRO;
-		statement->shared.macro.uses_label = cc_false;
-		statement->shared.macro.parameter_names = $2;
+		statement->emplace<StatementMacro>(cc_false, $2);
 	}
 	| DIRECTIVE_MACRO "*" "," identifier_list
 	{
-		statement->type = STATEMENT_TYPE_MACRO;
-		statement->shared.macro.uses_label = cc_true;
-		statement->shared.macro.parameter_names = $4;
+		statement->emplace<StatementMacro>(cc_true, $4);
 	}
 	| DIRECTIVE_MACROS
 	{
-		statement->type = STATEMENT_TYPE_MACROS;
-		statement->shared.macro.uses_label = cc_false;
-		statement->shared.macro.parameter_names.head = NULL;
-		statement->shared.macro.parameter_names.tail = NULL;
+		// TODO: Is there a way to make this tidier?
+		statement->emplace<StatementMacroS>(StatementMacro{cc_false});
 	}
 	| DIRECTIVE_MACROS identifier_list
 	{
-		statement->type = STATEMENT_TYPE_MACROS;
-		statement->shared.macro.uses_label = cc_false;
-		statement->shared.macro.parameter_names = $2;
+		// TODO: Is there a way to make this tidier?
+		statement->emplace<StatementMacroS>(StatementMacro{cc_false, $2});
 	}
 	| DIRECTIVE_ENDM
 	{
-		statement->type = STATEMENT_TYPE_ENDM;
+		statement->emplace<StatementEndM>();
 	}
 	| DIRECTIVE_EQU expression
 	{
-		statement->type = STATEMENT_TYPE_EQU;
-		statement->shared.equ.expression = $2;
+		statement->emplace<StatementEqu>($2);
 	}
 	| DIRECTIVE_EQUS STRING
 	{
-		statement->type = STATEMENT_TYPE_EQUS_STRING;
-		statement->shared.equs_string.string = $2;
+		statement->emplace<StatementEquSString>($2);
 	}
 	| DIRECTIVE_EQUS IDENTIFIER
 	{
-		statement->type = STATEMENT_TYPE_EQUS_IDENTIFIER;
-		statement->shared.equs_identifier.string = $2;
+		statement->emplace<StatementEquSIdentifier>($2);
 	}
 	| DIRECTIVE_SUBSTR "," "," STRING
 	{
-		statement->type = STATEMENT_TYPE_SUBSTR;
-		statement->shared.substr.start.type = EXPRESSION_NUMBER;
-		statement->shared.substr.start.shared.unsigned_long = 1;
-		statement->shared.substr.end.type = EXPRESSION_NUMBER;
-		statement->shared.substr.end.shared.unsigned_long = String_Length(&$4);
-		statement->shared.substr.string = $4;
+		// TODO: Get rid of this...
+		Expression start;
+		start.type = EXPRESSION_NUMBER;
+		start.shared.unsigned_long = 1;
+
+		// TODO: Get rid of this...
+		Expression end;
+		end.type = EXPRESSION_NUMBER;
+		end.shared.unsigned_long = String_Length(&$4);
+
+		statement->emplace<StatementSubstr>(start, end, $4);
 	}
 	| DIRECTIVE_SUBSTR expression "," "," STRING
 	{
-		statement->type = STATEMENT_TYPE_SUBSTR;
-		statement->shared.substr.start = $2;
-		statement->shared.substr.end.type = EXPRESSION_NUMBER;
-		statement->shared.substr.end.shared.unsigned_long = String_Length(&$5);
-		statement->shared.substr.string = $5;
+		// TODO: Get rid of this...
+		Expression end;
+		end.type = EXPRESSION_NUMBER;
+		end.shared.unsigned_long = String_Length(&$5);
+
+		statement->emplace<StatementSubstr>($2, end, $5);
 	}
 	| DIRECTIVE_SUBSTR "," expression "," STRING
 	{
-		statement->type = STATEMENT_TYPE_SUBSTR;
-		statement->shared.substr.start.type = EXPRESSION_NUMBER;
-		statement->shared.substr.start.shared.unsigned_long = 1;
-		statement->shared.substr.end = $3;
-		statement->shared.substr.string = $5;
+		// TODO: Get rid of this...
+		Expression start;
+		start.type = EXPRESSION_NUMBER;
+		start.shared.unsigned_long = 1;
+
+		statement->emplace<StatementSubstr>(start, $3, $5);
 	}
 	| DIRECTIVE_SUBSTR expression "," expression "," STRING
 	{
-		statement->type = STATEMENT_TYPE_SUBSTR;
-		statement->shared.substr.start = $2;
-		statement->shared.substr.end = $4;
-		statement->shared.substr.string = $6;
+		statement->emplace<StatementSubstr>($2, $4, $6);
 	}
 	| DIRECTIVE_SET expression
 	{
-		statement->type = STATEMENT_TYPE_SET;
-		statement->shared.set.expression = $2;
+		statement->emplace<StatementSet>($2);
 	}
 	| "=" expression
 	{
-		statement->type = STATEMENT_TYPE_SET;
-		statement->shared.set.expression = $2;
+		statement->emplace<StatementSet>($2);
 	}
 	| DIRECTIVE_IF expression
 	{
-		statement->type = STATEMENT_TYPE_IF;
-		statement->shared.if_statement.expression = $2;
+		statement->emplace<StatementIf>($2);
 	}
 	| DIRECTIVE_ELSEIF expression
 	{
-		statement->type = STATEMENT_TYPE_ELSEIF;
-		statement->shared.elseif.expression = $2;
+		statement->emplace<StatementElseIf>($2);
 	}
 	| DIRECTIVE_ELSEIF
 	{
-		statement->type = STATEMENT_TYPE_ELSE;
+		statement->emplace<StatementElse>();
 	}
 	| DIRECTIVE_ELSE
 	{
-		statement->type = STATEMENT_TYPE_ELSE;
+		statement->emplace<StatementElse>();
 	}
 	| DIRECTIVE_ENDC
 	{
-		statement->type = STATEMENT_TYPE_ENDC;
+		statement->emplace<StatementEndC>();
 	}
 	| DIRECTIVE_WHILE expression
 	{
-		statement->type = STATEMENT_TYPE_WHILE;
-		statement->shared.while_statement.expression = $2;
+		statement->emplace<StatementWhile>($2);
 	}
 	| DIRECTIVE_ENDW
 	{
-		statement->type = STATEMENT_TYPE_ENDW;
+		statement->emplace<StatementEndW>();
 	}
 	| DIRECTIVE_EVEN
 	{
-		statement->type = STATEMENT_TYPE_EVEN;
+		statement->emplace<StatementEven>();
 	}
 	| DIRECTIVE_CNOP expression "," expression
 	{
-		statement->type = STATEMENT_TYPE_CNOP;
-		statement->shared.cnop.offset = $2;
-		statement->shared.cnop.size_boundary = $4;
+		statement->emplace<StatementCnop>($2, $4);
 	}
 	| DIRECTIVE_INFORM expression "," STRING
 	{
-		statement->type = STATEMENT_TYPE_INFORM;
-		statement->shared.inform.severity = $2;
-		statement->shared.inform.message = $4;
+		statement->emplace<StatementInform>($2, $4);
 	}
 	| DIRECTIVE_INFORM expression "," STRING "," expression_list
 	{
-		(void)$6;
-
 		/* TODO - parameters */
-		statement->type = STATEMENT_TYPE_INFORM;
-		statement->shared.inform.severity = $2;
-		statement->shared.inform.message = $4;
 		DestroyExpressionList(&$6);
+
+		statement->emplace<StatementInform>($2, $4);
 	}
 	| DIRECTIVE_FAIL
 	{
-		statement->type = STATEMENT_TYPE_FAIL;
+		statement->emplace<StatementFail>();
 	}
 	| DIRECTIVE_END
 	{
-		statement->type = STATEMENT_TYPE_END;
+		statement->emplace<StatementEnd>();
 	}
 	| DIRECTIVE_RS size expression
 	{
-		statement->type = STATEMENT_TYPE_RS;
-		statement->shared.rs.size = $2;
-		statement->shared.rs.length = $3;
+		statement->emplace<StatementRS>($2, $3);
 	}
 	| DIRECTIVE_RSSET expression
 	{
-		statement->type = STATEMENT_TYPE_RSSET;
-		statement->shared.rsset.expression = $2;
+		statement->emplace<StatementRSSet>($2);
 	}
 	| DIRECTIVE_RSRESET expression
 	{
 		/* As mentioned in S.N. 68k's manual, this odd hack
 		   is necessary for compatibility with other assemblers. */
-		statement->type = STATEMENT_TYPE_RSSET;
-		statement->shared.rsset.expression = $2;
+		statement->emplace<StatementRSSet>($2);
 	}
 	| DIRECTIVE_RSRESET
 	{
-		statement->type = STATEMENT_TYPE_RSRESET;
+		statement->emplace<StatementRSReset>();
 	}
 	| DIRECTIVE_OBJ expression
 	{
-		statement->type = STATEMENT_TYPE_OBJ;
-		statement->shared.obj.expression = $2;
+		statement->emplace<StatementObj>($2);
 	}
 	| DIRECTIVE_OBJEND
 	{
-		statement->type = STATEMENT_TYPE_OBJEND;
+		statement->emplace<StatementObjEnd>();
 	}
 	| DIRECTIVE_ORG expression
 	{
-		statement->type = STATEMENT_TYPE_ORG;
-		statement->shared.org.expression = $2;
+		statement->emplace<StatementOrg>($2);
 	}
 	| DIRECTIVE_PUSHO
 	{
-		statement->type = STATEMENT_TYPE_PUSHO;
+		statement->emplace<StatementPushO>();
 	}
 	| DIRECTIVE_POPO
 	{
-		statement->type = STATEMENT_TYPE_POPO;
+		statement->emplace<StatementPopO>();
 	}
 	| DIRECTIVE_OPT option_list
 	{
-		statement->type = STATEMENT_TYPE_OPT;
-		statement->shared.opt.options = $2;
+		statement->emplace<StatementOpt>($2);
 	}
 	| DIRECTIVE_PUSHP STRING
 	{
-		statement->type = STATEMENT_TYPE_PUSHP;
-		statement->shared.pushp.string = $2;
+		statement->emplace<StatementPushP>($2);
 	}
 	| DIRECTIVE_POPP IDENTIFIER
 	{
-		statement->type = STATEMENT_TYPE_POPP;
-		statement->shared.popp.string = $2;
+		statement->emplace<StatementPopP>($2);
 	}
 	| DIRECTIVE_SHIFT
 	{
-		statement->type = STATEMENT_TYPE_SHIFT;
+		statement->emplace<StatementShift>();
 	}
 	| DIRECTIVE_MEXIT
 	{
-		statement->type = STATEMENT_TYPE_MEXIT;
+		statement->emplace<StatementMExit>();
 	}
 	| DIRECTIVE_LOCAL identifier_list
 	{
-		statement->type = STATEMENT_TYPE_LOCAL;
-		statement->shared.local.identifiers = $2;
+		statement->emplace<StatementLocal>($2);
 	}
 	| DIRECTIVE_LIST
 	{
 		/* TODO: Make this actually do something. */
-		statement->type = STATEMENT_TYPE_EMPTY;
+		statement->emplace<StatementEmpty>();
 	}
 	| DIRECTIVE_LIST "+"
 	{
 		/* TODO: Make this actually do something. */
-		statement->type = STATEMENT_TYPE_EMPTY;
+		statement->emplace<StatementEmpty>();
 	}
 	| DIRECTIVE_LIST "-"
 	{
 		/* TODO: Make this actually do something. */
-		statement->type = STATEMENT_TYPE_EMPTY;
+		statement->emplace<StatementEmpty>();
 	}
 	| DIRECTIVE_NOLIST
 	{
 		/* TODO: Make this actually do something. */
-		statement->type = STATEMENT_TYPE_EMPTY;
+		statement->emplace<StatementEmpty>();
 	}
 	| DIRECTIVE_PURGE IDENTIFIER
 	{
-		statement->type = STATEMENT_TYPE_PURGE;
-		statement->shared.purge.string = $2;
+		statement->emplace<StatementPurge>($2);
 	}
 	;
 
@@ -2693,7 +2648,7 @@ static void DestroyStatementInstruction(StatementInstruction *instruction)
 
 void DestroyStatement(Statement *statement)
 {
-	switch (statement->type)
+	switch (statement->index())
 	{
 		case STATEMENT_TYPE_EMPTY:
 		case STATEMENT_TYPE_ENDR:
@@ -2713,125 +2668,125 @@ void DestroyStatement(Statement *statement)
 			break;
 
 		case STATEMENT_TYPE_INSTRUCTION:
-			DestroyStatementInstruction(&statement->shared.instruction);
+			DestroyStatementInstruction(&std::get<StatementInstruction>(*statement));
 			break;
 
 		case STATEMENT_TYPE_DC:
-			DestroyExpressionList(&statement->shared.dc.values);
+			DestroyExpressionList(&std::get<StatementDc>(*statement).values);
 			break;
 
 		case STATEMENT_TYPE_DCB:
-			DestroyExpression(&statement->shared.dcb.repetitions);
-			DestroyExpression(&statement->shared.dcb.value);
+			DestroyExpression(&std::get<StatementDcb>(*statement).repetitions);
+			DestroyExpression(&std::get<StatementDcb>(*statement).value);
 			break;
 
 		case STATEMENT_TYPE_DS:
-			DestroyExpression(&statement->shared.ds.length);
+			DestroyExpression(&std::get<StatementDs>(*statement).length);
 			break;
 
 		case STATEMENT_TYPE_INCLUDE:
-			String_Destroy(&statement->shared.include.path);
+			String_Destroy(&std::get<StatementInclude>(*statement).path);
 			break;
 
 		case STATEMENT_TYPE_INCBIN:
-			String_Destroy(&statement->shared.incbin.path);
-			DestroyExpression(&statement->shared.incbin.start);
+			String_Destroy(&std::get<StatementIncbin>(*statement).path);
+			DestroyExpression(&std::get<StatementIncbin>(*statement).start);
 
-			if (statement->shared.incbin.has_length)
-				DestroyExpression(&statement->shared.incbin.length);
+			if (std::get<StatementIncbin>(*statement).has_length)
+				DestroyExpression(&std::get<StatementIncbin>(*statement).length);
 
 			break;
 
 		case STATEMENT_TYPE_REPT:
-			DestroyExpression(&statement->shared.rept.repetitions);
+			DestroyExpression(&std::get<StatementRept>(*statement).repetitions);
 			break;
 
 		case STATEMENT_TYPE_MACRO:
-			DestroyIdentifierList(&statement->shared.macro.parameter_names);
+			DestroyIdentifierList(&std::get<StatementMacro>(*statement).parameter_names);
 			break;
 
 		case STATEMENT_TYPE_MACROS:
-			DestroyIdentifierList(&statement->shared.macros.parameter_names);
+			DestroyIdentifierList(&std::get<StatementMacroS>(*statement).macro.parameter_names);
 			break;
 
 		case STATEMENT_TYPE_EQU:
-			DestroyExpression(&statement->shared.equ.expression);
+			DestroyExpression(&std::get<StatementEqu>(*statement).expression);
 			break;
 
 		case STATEMENT_TYPE_SET:
-			DestroyExpression(&statement->shared.set.expression);
+			DestroyExpression(&std::get<StatementSet>(*statement).expression);
 			break;
 
 		case STATEMENT_TYPE_IF:
-			DestroyExpression(&statement->shared.if_statement.expression);
+			DestroyExpression(&std::get<StatementIf>(*statement).expression);
 			break;
 
 		case STATEMENT_TYPE_ELSEIF:
-			DestroyExpression(&statement->shared.elseif.expression);
+			DestroyExpression(&std::get<StatementElseIf>(*statement).expression);
 			break;
 
 		case STATEMENT_TYPE_WHILE:
-			DestroyExpression(&statement->shared.while_statement.expression);
+			DestroyExpression(&std::get<StatementWhile>(*statement).expression);
 			break;
 
 		case STATEMENT_TYPE_RSSET:
-			DestroyExpression(&statement->shared.rsset.expression);
+			DestroyExpression(&std::get<StatementRSSet>(*statement).expression);
 			break;
 
 		case STATEMENT_TYPE_OBJ:
-			DestroyExpression(&statement->shared.obj.expression);
+			DestroyExpression(&std::get<StatementObj>(*statement).expression);
 			break;
 
 		case STATEMENT_TYPE_ORG:
-			DestroyExpression(&statement->shared.org.expression);
+			DestroyExpression(&std::get<StatementOrg>(*statement).expression);
 			break;
 
 		case STATEMENT_TYPE_EQUS_STRING:
-			String_Destroy(&statement->shared.equs_string.string);
+			String_Destroy(&std::get<StatementEquSString>(*statement).string);
 			break;
 
 		case STATEMENT_TYPE_EQUS_IDENTIFIER:
-			String_Destroy(&statement->shared.equs_identifier.string);
+			String_Destroy(&std::get<StatementEquSIdentifier>(*statement).string);
 			break;
 
 		case STATEMENT_TYPE_PUSHP:
-			String_Destroy(&statement->shared.pushp.string);
+			String_Destroy(&std::get<StatementPushP>(*statement).string);
 			break;
 
 		case STATEMENT_TYPE_POPP:
-			String_Destroy(&statement->shared.popp.string);
+			String_Destroy(&std::get<StatementPopP>(*statement).string);
 			break;
 
 		case STATEMENT_TYPE_PURGE:
-			String_Destroy(&statement->shared.purge.string);
+			String_Destroy(&std::get<StatementPurge>(*statement).string);
 			break;
 
 		case STATEMENT_TYPE_SUBSTR:
-			DestroyExpression(&statement->shared.substr.start);
-			DestroyExpression(&statement->shared.substr.end);
-			String_Destroy(&statement->shared.substr.string);
+			DestroyExpression(&std::get<StatementSubstr>(*statement).start);
+			DestroyExpression(&std::get<StatementSubstr>(*statement).end);
+			String_Destroy(&std::get<StatementSubstr>(*statement).string);
 			break;
 
 		case STATEMENT_TYPE_CNOP:
-			DestroyExpression(&statement->shared.cnop.offset);
-			DestroyExpression(&statement->shared.cnop.size_boundary);
+			DestroyExpression(&std::get<StatementCnop>(*statement).offset);
+			DestroyExpression(&std::get<StatementCnop>(*statement).size_boundary);
 			break;
 
 		case STATEMENT_TYPE_INFORM:
-			DestroyExpression(&statement->shared.inform.severity);
-			String_Destroy(&statement->shared.inform.message);
+			DestroyExpression(&std::get<StatementInform>(*statement).severity);
+			String_Destroy(&std::get<StatementInform>(*statement).message);
 			break;
 
 		case STATEMENT_TYPE_RS:
-			DestroyExpression(&statement->shared.rs.length);
+			DestroyExpression(&std::get<StatementRS>(*statement).length);
 			break;
 
 		case STATEMENT_TYPE_OPT:
-			DestroyIdentifierList(&statement->shared.opt.options);
+			DestroyIdentifierList(&std::get<StatementOpt>(*statement).options);
 			break;
 
 		case STATEMENT_TYPE_LOCAL:
-			DestroyIdentifierList(&statement->shared.local.identifiers);
+			DestroyIdentifierList(&std::get<StatementLocal>(*statement).identifiers);
 			break;
 	}
 }

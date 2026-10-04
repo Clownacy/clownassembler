@@ -4873,7 +4873,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 	state->program_counter_of_statement = state->program_counter;
 	state->program_counter_of_expression = state->program_counter;
 
-	switch (statement->type)
+	switch (statement->index())
 	{
 		case STATEMENT_TYPE_EMPTY:
 		case STATEMENT_TYPE_INSTRUCTION:
@@ -4945,37 +4945,37 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			break;
 	}
 
-	switch (statement->type)
+	switch (statement->index())
 	{
 		case STATEMENT_TYPE_EMPTY:
 			break;
 
 		case STATEMENT_TYPE_INSTRUCTION:
-			ProcessInstruction(state, &statement->shared.instruction);
+			ProcessInstruction(state, &std::get<StatementInstruction>(*statement));
 			break;
 
 		case STATEMENT_TYPE_DC:
-			ProcessDc(state, &statement->shared.dc);
+			ProcessDc(state, &std::get<StatementDc>(*statement));
 			break;
 
 		case STATEMENT_TYPE_DCB:
-			ProcessDcb(state, &statement->shared.dcb);
+			ProcessDcb(state, &std::get<StatementDcb>(*statement));
 			break;
 
 		case STATEMENT_TYPE_DS:
-			ProcessDs(state, &statement->shared.ds);
+			ProcessDs(state, &std::get<StatementDs>(*statement));
 			break;
 
 		case STATEMENT_TYPE_INCLUDE:
-			ProcessInclude(state, &statement->shared.include);
+			ProcessInclude(state, &std::get<StatementInclude>(*statement));
 			break;
 
 		case STATEMENT_TYPE_INCBIN:
-			ProcessIncbin(state, &statement->shared.incbin);
+			ProcessIncbin(state, &std::get<StatementIncbin>(*statement));
 			break;
 
 		case STATEMENT_TYPE_REPT:
-			ProcessRept(state, &statement->shared.rept);
+			ProcessRept(state, &std::get<StatementRept>(*statement));
 			break;
 
 		case STATEMENT_TYPE_ENDR:
@@ -4988,11 +4988,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			break;
 
 		case STATEMENT_TYPE_MACRO:
-			ProcessMacro(state, &statement->shared.macro, label, cc_false);
+			ProcessMacro(state, &std::get<StatementMacro>(*statement), label, cc_false);
 			break;
 
 		case STATEMENT_TYPE_MACROS:
-			ProcessMacro(state, &statement->shared.macro, label, cc_true);
+			ProcessMacro(state, &std::get<StatementMacroS>(*statement).macro, label, cc_true);
 			break;
 
 		case STATEMENT_TYPE_ENDM:
@@ -5013,17 +5013,19 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			if (Options_Get(&state->options)->equ_set_descope_local_labels)
 				SetLastGlobalLabel(state, label);
 
-			if (!ResolveExpression(state, &statement->shared.equ.expression, &value, cc_false))
+			auto &equ = std::get<StatementEqu>(*statement);
+
+			if (!ResolveExpression(state, &equ.expression, &value, cc_false))
 			{
 				/* Separate the expression from the statement, so that it is not freed along with the statement. */
 				Expression *expression_copy = (Expression*)MallocAndHandleError(state, sizeof(Expression));
 
 				if (expression_copy != NULL)
 				{
-					*expression_copy = statement->shared.equ.expression;
+					*expression_copy = equ.expression;
 
 					/* Prevent subexpressions from being freed. */
-					statement->shared.equ.expression.type = EXPRESSION_NUMBER;
+					equ.expression.type = EXPRESSION_NUMBER;
 
 					AddIdentifierToSymbolTable(state, label, 0, expression_copy, SYMBOL_EXPRESSION_CONSTANT);
 				}
@@ -5041,12 +5043,12 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		}
 
 		case STATEMENT_TYPE_EQUS_STRING:
-			PushSubstitute(state, label, String_View(&statement->shared.equs_string.string));
+			PushSubstitute(state, label, String_View(&std::get<StatementEquSString>(*statement).string));
 			break;
 
 		case STATEMENT_TYPE_EQUS_IDENTIFIER:
 		{
-			const Dictionary_Entry* const dictionary_entry = LookupSymbol(state, String_View(&statement->shared.equs_string.string), NULL);
+			const Dictionary_Entry* const dictionary_entry = LookupSymbol(state, String_View(&std::get<StatementEquSIdentifier>(*statement).string), NULL);
 
 			if (dictionary_entry == NULL || dictionary_entry->type != SYMBOL_STRING_CONSTANT)
 				SemanticError(state, "String constant can only be defined as a string or another string constant.");
@@ -5061,13 +5063,15 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			unsigned long start, end;
 			StringView substring;
 
-			if (!ResolveExpression(state, &statement->shared.substr.start, &start, cc_true))
+			auto &substr = std::get<StatementSubstr>(*statement);
+
+			if (!ResolveExpression(state, &substr.start, &start, cc_true))
 			{
 				SemanticError(state, "Start must be evaluable on the first pass.");
 				break;
 			}
 
-			if (!ResolveExpression(state, &statement->shared.substr.end, &end, cc_true))
+			if (!ResolveExpression(state, &substr.end, &end, cc_true))
 			{
 				SemanticError(state, "End must be evaluable on the first pass.");
 				break;
@@ -5084,12 +5088,12 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 			/* Clamp start and end to make it so that, if the string would go beyond the end, it is truncated appropriately instead of going out-of-bounds */
 			/* (this matches asm68k, as far as I can see). */
-			if (start > String_Length(&statement->shared.substr.string))
-				start = String_Length(&statement->shared.substr.string) + 1;
-			if (end > String_Length(&statement->shared.substr.string))
-				end = String_Length(&statement->shared.substr.string);
+			if (start > String_Length(&substr.string))
+				start = String_Length(&substr.string) + 1;
+			if (end > String_Length(&substr.string))
+				end = String_Length(&substr.string);
 
-			StringView_SubStr(&substring, String_View(&statement->shared.substr.string), start - 1, end - start + 1);
+			StringView_SubStr(&substring, String_View(&substr.string), start - 1, end - start + 1);
 			PushSubstitute(state, label, &substring);
 			break;
 		}
@@ -5101,7 +5105,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			if (Options_Get(&state->options)->equ_set_descope_local_labels)
 				SetLastGlobalLabel(state, label);
 
-			if (!ResolveExpression(state, &statement->shared.set.expression, &value, cc_true))
+			if (!ResolveExpression(state, &std::get<StatementSet>(*statement).expression, &value, cc_true))
 			{
 				SemanticError(state, "Value must be evaluable on the first pass.");
 				break;
@@ -5114,7 +5118,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		}
 
 		case STATEMENT_TYPE_IF:
-			ProcessIf(state, &statement->shared.if_statement.expression);
+			ProcessIf(state, &std::get<StatementIf>(*statement).expression);
 			break;
 
 		case STATEMENT_TYPE_ELSEIF:
@@ -5128,7 +5132,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				{
 					unsigned long value;
 
-					if (!ResolveExpression(state, &statement->shared.elseif.expression, &value, cc_true))
+					if (!ResolveExpression(state, &std::get<StatementElseIf>(*statement).expression, &value, cc_true))
 					{
 						SemanticError(state, "Condition must be evaluable on the first pass.");
 						value = 1;
@@ -5185,10 +5189,13 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			break;
 
 		case STATEMENT_TYPE_WHILE:
+		{
 			/* Enter WHILE mode. */
 			state->mode = MODE_WHILE;
 
-			state->shared.while_statement.expression = statement->shared.while_statement.expression;
+			auto &while_statement = std::get<StatementWhile>(*statement);
+
+			state->shared.while_statement.expression = while_statement.expression;
 			String_CreateCopy(&state->shared.while_statement.source_line, state->source_line);
 
 			state->shared.while_statement.line_number = state->location->line_number;
@@ -5199,9 +5206,10 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 			/* Dummy-out the statement's expression, since the state now owns it, and we don't
 			   want its sub-expressions to be automatically freed when the statement is freed. */
-			statement->shared.while_statement.expression.type = EXPRESSION_NUMBER;
+			while_statement.expression.type = EXPRESSION_NUMBER;
 
 			break;
+		}
 
 		case STATEMENT_TYPE_ENDW:
 			/* Exit WHILE mode. */
@@ -5218,9 +5226,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 		case STATEMENT_TYPE_CNOP:
 		{
+			auto &cnop = std::get<StatementCnop>(*statement);
+
 			unsigned long offset;
 
-			if (!ResolveExpression(state, &statement->shared.cnop.offset, &offset, cc_true))
+			if (!ResolveExpression(state, &cnop.offset, &offset, cc_true))
 			{
 				SemanticError(state, "Offset must be evaluable on the first pass.");
 			}
@@ -5228,7 +5238,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			{
 				unsigned long size_boundary;
 
-				if (!ResolveExpression(state, &statement->shared.cnop.size_boundary, &size_boundary, cc_true))
+				if (!ResolveExpression(state, &cnop.size_boundary, &size_boundary, cc_true))
 				{
 					SemanticError(state, "Size boundary must be evaluable on the first pass.");
 				}
@@ -5262,10 +5272,12 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 		case STATEMENT_TYPE_INFORM:
 		{
+			auto &inform = std::get<StatementInform>(*statement);
+
 			unsigned long severity;
 
 			/* Definitely an 'INFORM'... */
-			if (!ResolveExpression(state, &statement->shared.inform.severity, &severity, cc_true))
+			if (!ResolveExpression(state, &inform.severity, &severity, cc_true))
 			{
 				SemanticError(state, "Severity must be evaluable on the first pass.");
 				severity = 0;
@@ -5275,16 +5287,16 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			switch (severity)
 			{
 				case 0:
-					TextOutput_fprintf(state->error_callbacks, "INFORM: '%s'\n", String_CStr(&statement->shared.inform.message));
+					TextOutput_fprintf(state->error_callbacks, "INFORM: '%s'\n", String_CStr(&inform.message));
 					break;
 
 				case 1:
-					SemanticWarning(state, "INFORM: '%s'", String_CStr(&statement->shared.inform.message));
+					SemanticWarning(state, "INFORM: '%s'", String_CStr(&inform.message));
 					break;
 
 				case 2:
 				case 3: /* TODO: Halt assembly. */
-					SemanticError(state, "INFORM: '%s'", String_CStr(&statement->shared.inform.message));
+					SemanticError(state, "INFORM: '%s'", String_CStr(&inform.message));
 					break;
 			}
 
@@ -5302,13 +5314,15 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 		case STATEMENT_TYPE_RS:
 		{
+			auto &rs = std::get<StatementRS>(*statement);
+
 			unsigned long length;
 
-			if (ShouldPerformAutomaticEven(state, statement->shared.rs.size))
+			if (ShouldPerformAutomaticEven(state, rs.size))
 				if ((state->rs & 1) != 0)
 					++state->rs;
 
-			if (!ResolveExpression(state, &statement->shared.rs.length, &length, cc_true))
+			if (!ResolveExpression(state, &rs.length, &length, cc_true))
 			{
 				SemanticError(state, "Length must be evaluable on the first pass.");
 			}
@@ -5322,7 +5336,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				}
 
 				/* Advance '__rs' by the specified amount. */
-				switch (statement->shared.rs.size)
+				switch (rs.size)
 				{
 					case SIZE_BYTE:
 					case SIZE_SHORT:
@@ -5354,7 +5368,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			/* Set '__rs' to value. */
 			unsigned long value;
 
-			if (!ResolveExpression(state, &statement->shared.rsset.expression, &value, cc_true))
+			if (!ResolveExpression(state, &std::get<StatementRSSet>(*statement).expression, &value, cc_true))
 				SemanticError(state, "Value must be evaluable on the first pass.");
 			else
 				state->rs = value;
@@ -5376,7 +5390,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			{
 				unsigned long value;
 
-				if (!ResolveExpression(state, &statement->shared.obj.expression, &value, cc_true))
+				if (!ResolveExpression(state, &std::get<StatementObj>(*statement).expression, &value, cc_true))
 					SemanticError(state, "Value must be evaluable on the first pass.");
 				else
 					state->obj_delta = value - state->program_counter;
@@ -5404,7 +5418,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		{
 			unsigned long value;
 
-			if (!ResolveExpression(state, &statement->shared.org.expression, &value, cc_true))
+			if (!ResolveExpression(state, &std::get<StatementOrg>(*statement).expression, &value, cc_true))
 			{
 				SemanticError(state, "Value must be evaluable on the first pass.");
 			}
@@ -5437,7 +5451,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		{
 			const IdentifierListNode *option;
 
-			for (option = statement->shared.opt.options.head; option != NULL; option = option->next)
+			for (option = std::get<StatementOpt>(*statement).options.head; option != NULL; option = option->next)
 			{
 				/* TODO: A lot of these are unimplemented... */
 				if (String_CompareCStrCaseInsensitive(&option->identifier, "ae+"))
@@ -5502,7 +5516,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		}
 
 		case STATEMENT_TYPE_PUSHP:
-			if (!StringStack_Push(&state->string_stack, String_View(&statement->shared.pushp.string)))
+			if (!StringStack_Push(&state->string_stack, String_View(&std::get<StatementPushP>(*statement).string)))
 				InternalError(state, "Failed to allocate memory for the string stack.");
 
 			break;
@@ -5517,7 +5531,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			}
 			else
 			{
-				PushSubstitute(state, String_View(&statement->shared.popp.string), String_View(&string));
+				PushSubstitute(state, String_View(&std::get<StatementPopP>(*statement).string), String_View(&string));
 				String_Destroy(&string);
 			}
 
@@ -5558,7 +5572,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			{
 				const IdentifierListNode *list_entry;
 
-				for (list_entry = statement->shared.local.identifiers.head; list_entry != NULL; list_entry = list_entry->next)
+				for (list_entry = std::get<StatementLocal>(*statement).identifiers.head; list_entry != NULL; list_entry = list_entry->next)
 					if (!Dictionary_LookUpAndCreateIfNotExist(state->macro.dictionary, String_View(&list_entry->identifier), NULL))
 						OutOfMemoryError(state);
 			}
@@ -5566,7 +5580,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			break;
 
 		case STATEMENT_TYPE_PURGE:
-			PurgeMacro(state, String_View(&statement->shared.purge.string), cc_false);
+			PurgeMacro(state, String_View(&std::get<StatementPurge>(*statement).string), cc_false);
 			break;
 	}
 
@@ -5581,7 +5595,7 @@ static cc_bool ParseStatement(SemanticState* const state, Statement* const state
 	const YY_BUFFER_STATE buffer = m68kasm__scan_bytes(StringView_Data(view), StringView_Length(view), state->flex_state);
 	int parse_result;
 
-	statement->type = STATEMENT_TYPE_EMPTY;
+	*statement = {};
 	m68kasm::parser parser(state->flex_state, statement);
 	parse_result = parser.parse();
 	m68kasm__delete_buffer(buffer, state->flex_state);
