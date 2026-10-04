@@ -529,53 +529,6 @@ typedef struct StatementPurge
 	String string;
 } StatementPurge;
 
-typedef enum StatementType
-{
-	STATEMENT_TYPE_EMPTY,
-	STATEMENT_TYPE_INSTRUCTION,
-	STATEMENT_TYPE_DC,
-	STATEMENT_TYPE_DCB,
-	STATEMENT_TYPE_DS,
-	STATEMENT_TYPE_INCLUDE,
-	STATEMENT_TYPE_INCBIN,
-	STATEMENT_TYPE_REPT,
-	STATEMENT_TYPE_ENDR,
-	STATEMENT_TYPE_MACRO,
-	STATEMENT_TYPE_MACROS,
-	STATEMENT_TYPE_ENDM,
-	STATEMENT_TYPE_EQU,
-	STATEMENT_TYPE_EQUS_STRING,
-	STATEMENT_TYPE_EQUS_IDENTIFIER,
-	STATEMENT_TYPE_SUBSTR,
-	STATEMENT_TYPE_SET,
-	STATEMENT_TYPE_IF,
-	STATEMENT_TYPE_ELSEIF,
-	STATEMENT_TYPE_ELSE,
-	STATEMENT_TYPE_ENDC,
-	STATEMENT_TYPE_WHILE,
-	STATEMENT_TYPE_ENDW,
-	STATEMENT_TYPE_EVEN,
-	STATEMENT_TYPE_CNOP,
-	STATEMENT_TYPE_INFORM,
-	STATEMENT_TYPE_FAIL,
-	STATEMENT_TYPE_END,
-	STATEMENT_TYPE_RS,
-	STATEMENT_TYPE_RSSET,
-	STATEMENT_TYPE_RSRESET,
-	STATEMENT_TYPE_OBJ,
-	STATEMENT_TYPE_OBJEND,
-	STATEMENT_TYPE_ORG,
-	STATEMENT_TYPE_PUSHO,
-	STATEMENT_TYPE_POPO,
-	STATEMENT_TYPE_OPT,
-	STATEMENT_TYPE_PUSHP,
-	STATEMENT_TYPE_POPP,
-	STATEMENT_TYPE_SHIFT,
-	STATEMENT_TYPE_MEXIT,
-	STATEMENT_TYPE_LOCAL,
-	STATEMENT_TYPE_PURGE
-} StatementType;
-
 using Statement = std::variant<
 	StatementEmpty,
 	StatementInstruction,
@@ -623,7 +576,7 @@ using Statement = std::variant<
 >;
 
 
-#line 627 "syntactic.h"
+#line 580 "syntactic.h"
 
 
 # include <cstdlib> // std::abort
@@ -767,7 +720,7 @@ using Statement = std::variant<
 
 #line 25 "syntactic.y"
 namespace m68kasm {
-#line 771 "syntactic.h"
+#line 724 "syntactic.h"
 
 
 
@@ -5754,11 +5707,11 @@ switch (yykind)
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 5758 "syntactic.h"
+#line 5711 "syntactic.h"
 
 
 // "%code provides" blocks.
-#line 615 "syntactic.y"
+#line 568 "syntactic.y"
 
 
 void DestroyExpression(Expression *expression);
@@ -5768,7 +5721,7 @@ void DestroyIdentifierList(IdentifierList *list);
 #define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner)
 
 
-#line 5772 "syntactic.h"
+#line 5725 "syntactic.h"
 
 
 #endif // !YY_M68KASM_SYNTACTIC_H_INCLUDED

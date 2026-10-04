@@ -517,53 +517,6 @@ typedef struct StatementPurge
 	String string;
 } StatementPurge;
 
-typedef enum StatementType
-{
-	STATEMENT_TYPE_EMPTY,
-	STATEMENT_TYPE_INSTRUCTION,
-	STATEMENT_TYPE_DC,
-	STATEMENT_TYPE_DCB,
-	STATEMENT_TYPE_DS,
-	STATEMENT_TYPE_INCLUDE,
-	STATEMENT_TYPE_INCBIN,
-	STATEMENT_TYPE_REPT,
-	STATEMENT_TYPE_ENDR,
-	STATEMENT_TYPE_MACRO,
-	STATEMENT_TYPE_MACROS,
-	STATEMENT_TYPE_ENDM,
-	STATEMENT_TYPE_EQU,
-	STATEMENT_TYPE_EQUS_STRING,
-	STATEMENT_TYPE_EQUS_IDENTIFIER,
-	STATEMENT_TYPE_SUBSTR,
-	STATEMENT_TYPE_SET,
-	STATEMENT_TYPE_IF,
-	STATEMENT_TYPE_ELSEIF,
-	STATEMENT_TYPE_ELSE,
-	STATEMENT_TYPE_ENDC,
-	STATEMENT_TYPE_WHILE,
-	STATEMENT_TYPE_ENDW,
-	STATEMENT_TYPE_EVEN,
-	STATEMENT_TYPE_CNOP,
-	STATEMENT_TYPE_INFORM,
-	STATEMENT_TYPE_FAIL,
-	STATEMENT_TYPE_END,
-	STATEMENT_TYPE_RS,
-	STATEMENT_TYPE_RSSET,
-	STATEMENT_TYPE_RSRESET,
-	STATEMENT_TYPE_OBJ,
-	STATEMENT_TYPE_OBJEND,
-	STATEMENT_TYPE_ORG,
-	STATEMENT_TYPE_PUSHO,
-	STATEMENT_TYPE_POPO,
-	STATEMENT_TYPE_OPT,
-	STATEMENT_TYPE_PUSHP,
-	STATEMENT_TYPE_POPP,
-	STATEMENT_TYPE_SHIFT,
-	STATEMENT_TYPE_MEXIT,
-	STATEMENT_TYPE_LOCAL,
-	STATEMENT_TYPE_PURGE
-} StatementType;
-
 using Statement = std::variant<
 	StatementEmpty,
 	StatementInstruction,
@@ -2648,145 +2601,144 @@ static void DestroyStatementInstruction(StatementInstruction *instruction)
 
 void DestroyStatement(Statement *statement)
 {
-	switch (statement->index())
-	{
-		case STATEMENT_TYPE_EMPTY:
-		case STATEMENT_TYPE_ENDR:
-		case STATEMENT_TYPE_ENDM:
-		case STATEMENT_TYPE_ELSE:
-		case STATEMENT_TYPE_ENDC:
-		case STATEMENT_TYPE_ENDW:
-		case STATEMENT_TYPE_EVEN:
-		case STATEMENT_TYPE_END:
-		case STATEMENT_TYPE_FAIL:
-		case STATEMENT_TYPE_RSRESET:
-		case STATEMENT_TYPE_OBJEND:
-		case STATEMENT_TYPE_PUSHO:
-		case STATEMENT_TYPE_POPO:
-		case STATEMENT_TYPE_SHIFT:
-		case STATEMENT_TYPE_MEXIT:
-			break;
+	std::visit(
+		CC_VisitHelper{
+			[](StatementEmpty &statement) {},
+			[](StatementEndR &statement) {},
+			[](StatementEndM &statement) {},
+			[](StatementElse &statement) {},
+			[](StatementEndC &statement) {},
+			[](StatementEndW &statement) {},
+			[](StatementEven &statement) {},
+			[](StatementEnd &statement) {},
+			[](StatementFail &statement) {},
+			[](StatementRSReset &statement) {},
+			[](StatementObjEnd &statement) {},
+			[](StatementPushO &statement) {},
+			[](StatementPopO &statement) {},
+			[](StatementShift &statement) {},
+			[](StatementMExit &statement) {},
+			[](StatementInstruction &statement)
+			{
+				DestroyStatementInstruction(&statement);
+			},
+			[](StatementDc &statement)
+			{
+				DestroyExpressionList(&statement.values);
+			},
+			[](StatementDcb &statement)
+			{
+				DestroyExpression(&statement.repetitions);
+				DestroyExpression(&statement.value);
+			},
+			[](StatementDs &statement)
+			{
+				DestroyExpression(&statement.length);
+			},
+			[](StatementInclude &statement)
+			{
+				String_Destroy(&statement.path);
+			},
+			[](StatementIncbin &statement)
+			{
+				String_Destroy(&statement.path);
+				DestroyExpression(&statement.start);
 
-		case STATEMENT_TYPE_INSTRUCTION:
-			DestroyStatementInstruction(&std::get<StatementInstruction>(*statement));
-			break;
-
-		case STATEMENT_TYPE_DC:
-			DestroyExpressionList(&std::get<StatementDc>(*statement).values);
-			break;
-
-		case STATEMENT_TYPE_DCB:
-			DestroyExpression(&std::get<StatementDcb>(*statement).repetitions);
-			DestroyExpression(&std::get<StatementDcb>(*statement).value);
-			break;
-
-		case STATEMENT_TYPE_DS:
-			DestroyExpression(&std::get<StatementDs>(*statement).length);
-			break;
-
-		case STATEMENT_TYPE_INCLUDE:
-			String_Destroy(&std::get<StatementInclude>(*statement).path);
-			break;
-
-		case STATEMENT_TYPE_INCBIN:
-			String_Destroy(&std::get<StatementIncbin>(*statement).path);
-			DestroyExpression(&std::get<StatementIncbin>(*statement).start);
-
-			if (std::get<StatementIncbin>(*statement).has_length)
-				DestroyExpression(&std::get<StatementIncbin>(*statement).length);
-
-			break;
-
-		case STATEMENT_TYPE_REPT:
-			DestroyExpression(&std::get<StatementRept>(*statement).repetitions);
-			break;
-
-		case STATEMENT_TYPE_MACRO:
-			DestroyIdentifierList(&std::get<StatementMacro>(*statement).parameter_names);
-			break;
-
-		case STATEMENT_TYPE_MACROS:
-			DestroyIdentifierList(&std::get<StatementMacroS>(*statement).macro.parameter_names);
-			break;
-
-		case STATEMENT_TYPE_EQU:
-			DestroyExpression(&std::get<StatementEqu>(*statement).expression);
-			break;
-
-		case STATEMENT_TYPE_SET:
-			DestroyExpression(&std::get<StatementSet>(*statement).expression);
-			break;
-
-		case STATEMENT_TYPE_IF:
-			DestroyExpression(&std::get<StatementIf>(*statement).expression);
-			break;
-
-		case STATEMENT_TYPE_ELSEIF:
-			DestroyExpression(&std::get<StatementElseIf>(*statement).expression);
-			break;
-
-		case STATEMENT_TYPE_WHILE:
-			DestroyExpression(&std::get<StatementWhile>(*statement).expression);
-			break;
-
-		case STATEMENT_TYPE_RSSET:
-			DestroyExpression(&std::get<StatementRSSet>(*statement).expression);
-			break;
-
-		case STATEMENT_TYPE_OBJ:
-			DestroyExpression(&std::get<StatementObj>(*statement).expression);
-			break;
-
-		case STATEMENT_TYPE_ORG:
-			DestroyExpression(&std::get<StatementOrg>(*statement).expression);
-			break;
-
-		case STATEMENT_TYPE_EQUS_STRING:
-			String_Destroy(&std::get<StatementEquSString>(*statement).string);
-			break;
-
-		case STATEMENT_TYPE_EQUS_IDENTIFIER:
-			String_Destroy(&std::get<StatementEquSIdentifier>(*statement).string);
-			break;
-
-		case STATEMENT_TYPE_PUSHP:
-			String_Destroy(&std::get<StatementPushP>(*statement).string);
-			break;
-
-		case STATEMENT_TYPE_POPP:
-			String_Destroy(&std::get<StatementPopP>(*statement).string);
-			break;
-
-		case STATEMENT_TYPE_PURGE:
-			String_Destroy(&std::get<StatementPurge>(*statement).string);
-			break;
-
-		case STATEMENT_TYPE_SUBSTR:
-			DestroyExpression(&std::get<StatementSubstr>(*statement).start);
-			DestroyExpression(&std::get<StatementSubstr>(*statement).end);
-			String_Destroy(&std::get<StatementSubstr>(*statement).string);
-			break;
-
-		case STATEMENT_TYPE_CNOP:
-			DestroyExpression(&std::get<StatementCnop>(*statement).offset);
-			DestroyExpression(&std::get<StatementCnop>(*statement).size_boundary);
-			break;
-
-		case STATEMENT_TYPE_INFORM:
-			DestroyExpression(&std::get<StatementInform>(*statement).severity);
-			String_Destroy(&std::get<StatementInform>(*statement).message);
-			break;
-
-		case STATEMENT_TYPE_RS:
-			DestroyExpression(&std::get<StatementRS>(*statement).length);
-			break;
-
-		case STATEMENT_TYPE_OPT:
-			DestroyIdentifierList(&std::get<StatementOpt>(*statement).options);
-			break;
-
-		case STATEMENT_TYPE_LOCAL:
-			DestroyIdentifierList(&std::get<StatementLocal>(*statement).identifiers);
-			break;
-	}
+				if (statement.has_length)
+					DestroyExpression(&statement.length);
+			},
+			[](StatementRept &statement)
+			{
+				DestroyExpression(&statement.repetitions);
+			},
+			[](StatementMacro &statement)
+			{
+				DestroyIdentifierList(&statement.parameter_names);
+			},
+			[](StatementMacroS &statement)
+			{
+				DestroyIdentifierList(&statement.macro.parameter_names);
+			},
+			[](StatementEqu &statement)
+			{
+				DestroyExpression(&statement.expression);
+			},
+			[](StatementSet &statement)
+			{
+				DestroyExpression(&statement.expression);
+			},
+			[](StatementIf &statement)
+			{
+				DestroyExpression(&statement.expression);
+			},
+			[](StatementElseIf &statement)
+			{
+				DestroyExpression(&statement.expression);
+			},
+			[](StatementWhile &statement)
+			{
+				DestroyExpression(&statement.expression);
+			},
+			[](StatementRSSet &statement)
+			{
+				DestroyExpression(&statement.expression);
+			},
+			[](StatementObj &statement)
+			{
+				DestroyExpression(&statement.expression);
+			},
+			[](StatementOrg &statement)
+			{
+				DestroyExpression(&statement.expression);
+			},
+			[](StatementEquSString &statement)
+			{
+				String_Destroy(&statement.string);
+			},
+			[](StatementEquSIdentifier &statement)
+			{
+				String_Destroy(&statement.string);
+			},
+			[](StatementPushP &statement)
+			{
+				String_Destroy(&statement.string);
+			},
+			[](StatementPopP &statement)
+			{
+				String_Destroy(&statement.string);
+			},
+			[](StatementPurge &statement)
+			{
+				String_Destroy(&statement.string);
+			},
+			[](StatementSubstr &statement)
+			{
+				DestroyExpression(&statement.start);
+				DestroyExpression(&statement.end);
+				String_Destroy(&statement.string);
+			},
+			[](StatementCnop &statement)
+			{
+				DestroyExpression(&statement.offset);
+				DestroyExpression(&statement.size_boundary);
+			},
+			[](StatementInform &statement)
+			{
+				DestroyExpression(&statement.severity);
+				String_Destroy(&statement.message);
+			},
+			[](StatementRS &statement)
+			{
+				DestroyExpression(&statement.length);
+			},
+			[](StatementOpt &statement)
+			{
+				DestroyIdentifierList(&statement.options);
+			},
+			[](StatementLocal &statement)
+			{
+				DestroyIdentifierList(&statement.identifiers);
+			}
+		}, *statement
+	);
 }

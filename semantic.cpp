@@ -4873,716 +4873,673 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 	state->program_counter_of_statement = state->program_counter;
 	state->program_counter_of_expression = state->program_counter;
 
-	switch (statement->index())
+	if (CC_VariantHoldsAnyOf<
+		StatementEmpty,
+		StatementInstruction,
+		StatementDc,
+		StatementDcb,
+		StatementDs,
+		StatementInclude,
+		StatementIncbin,
+		StatementRept,
+		StatementIf,
+		StatementWhile,
+		StatementEven,
+		StatementCnop,
+		StatementInform,
+		StatementFail,
+		StatementEnd,
+		StatementPushO,
+		StatementPopO,
+		StatementOpt,
+		StatementPushP,
+		StatementPopP,
+		StatementShift,
+		StatementMExit,
+		StatementLocal,
+		StatementPurge
+	>(*statement))
 	{
-		case STATEMENT_TYPE_EMPTY:
-		case STATEMENT_TYPE_INSTRUCTION:
-		case STATEMENT_TYPE_DC:
-		case STATEMENT_TYPE_DCB:
-		case STATEMENT_TYPE_DS:
-		case STATEMENT_TYPE_INCLUDE:
-		case STATEMENT_TYPE_INCBIN:
-		case STATEMENT_TYPE_REPT:
-		case STATEMENT_TYPE_IF:
-		case STATEMENT_TYPE_WHILE:
-		case STATEMENT_TYPE_EVEN:
-		case STATEMENT_TYPE_CNOP:
-		case STATEMENT_TYPE_INFORM:
-		case STATEMENT_TYPE_FAIL:
-		case STATEMENT_TYPE_END:
-		case STATEMENT_TYPE_PUSHO:
-		case STATEMENT_TYPE_POPO:
-		case STATEMENT_TYPE_OPT:
-		case STATEMENT_TYPE_PUSHP:
-		case STATEMENT_TYPE_POPP:
-		case STATEMENT_TYPE_SHIFT:
-		case STATEMENT_TYPE_MEXIT:
-		case STATEMENT_TYPE_LOCAL:
-		case STATEMENT_TYPE_PURGE:
-			if (!StringView_Empty(label) && !state->doing_fixup_pass)
-			{
-				/* Handle the label here, instead of passing it onto a later function. */
-				SetLastGlobalLabel(state, label);
-				AddIdentifierToSymbolTable(state, label, state->program_counter, NULL, SYMBOL_LABEL);
-			}
-
-			break;
-
-		case STATEMENT_TYPE_ENDR:
-		case STATEMENT_TYPE_ENDM:
-		case STATEMENT_TYPE_ELSEIF:
-		case STATEMENT_TYPE_ELSE:
-		case STATEMENT_TYPE_ENDC:
-		case STATEMENT_TYPE_ENDW:
-		case STATEMENT_TYPE_RSSET:
-		case STATEMENT_TYPE_RSRESET:
-		case STATEMENT_TYPE_OBJ:
-		case STATEMENT_TYPE_OBJEND:
-		case STATEMENT_TYPE_ORG:
-			if (!StringView_Empty(label))
-				SemanticError(state, "There cannot be a label on this type of statement.");
-
-			break;
-
-		case STATEMENT_TYPE_MACRO:
-		case STATEMENT_TYPE_MACROS:
-		case STATEMENT_TYPE_EQU:
-		case STATEMENT_TYPE_EQUS_STRING:
-		case STATEMENT_TYPE_EQUS_IDENTIFIER:
-		case STATEMENT_TYPE_SUBSTR:
-		case STATEMENT_TYPE_SET:
-			if (StringView_Empty(label))
-			{
-				SemanticError(state, "This type of statement must have a label.");
-				/* Bail, to avoid null pointer dereferences. */
-				return;
-			}
-
-			break;
-
-		case STATEMENT_TYPE_RS:
-			/* Handled later. */
-			break;
+		if (!StringView_Empty(label) && !state->doing_fixup_pass)
+		{
+			/* Handle the label here, instead of passing it onto a later function. */
+			SetLastGlobalLabel(state, label);
+			AddIdentifierToSymbolTable(state, label, state->program_counter, NULL, SYMBOL_LABEL);
+		}
+	}
+	else if (CC_VariantHoldsAnyOf<
+		StatementEndR,
+		StatementEndM,
+		StatementElseIf,
+		StatementElse,
+		StatementEndC,
+		StatementEndW,
+		StatementRSSet,
+		StatementRSReset,
+		StatementObj,
+		StatementObjEnd,
+		StatementOrg
+	>(*statement))
+	{
+		if (!StringView_Empty(label))
+			SemanticError(state, "There cannot be a label on this type of statement.");
+	}
+	else if (CC_VariantHoldsAnyOf<
+		StatementMacro,
+		StatementMacroS,
+		StatementEqu,
+		StatementEquSString,
+		StatementEquSIdentifier,
+		StatementSubstr,
+		StatementSet
+	>(*statement))
+	{
+		if (StringView_Empty(label))
+		{
+			SemanticError(state, "This type of statement must have a label.");
+			/* Bail, to avoid null pointer dereferences. */
+			return;
+		}
+	}
+	else if (CC_VariantHoldsAnyOf<
+		StatementRS
+	>(*statement))
+	{
+		/* Handled later. */
 	}
 
-	switch (statement->index())
-	{
-		case STATEMENT_TYPE_EMPTY:
-			break;
-
-		case STATEMENT_TYPE_INSTRUCTION:
-			ProcessInstruction(state, &std::get<StatementInstruction>(*statement));
-			break;
-
-		case STATEMENT_TYPE_DC:
-			ProcessDc(state, &std::get<StatementDc>(*statement));
-			break;
-
-		case STATEMENT_TYPE_DCB:
-			ProcessDcb(state, &std::get<StatementDcb>(*statement));
-			break;
-
-		case STATEMENT_TYPE_DS:
-			ProcessDs(state, &std::get<StatementDs>(*statement));
-			break;
-
-		case STATEMENT_TYPE_INCLUDE:
-			ProcessInclude(state, &std::get<StatementInclude>(*statement));
-			break;
-
-		case STATEMENT_TYPE_INCBIN:
-			ProcessIncbin(state, &std::get<StatementIncbin>(*statement));
-			break;
-
-		case STATEMENT_TYPE_REPT:
-			ProcessRept(state, &std::get<StatementRept>(*statement));
-			break;
-
-		case STATEMENT_TYPE_ENDR:
-			/* Exit REPT mode. */
-			if (state->mode != MODE_REPT)
-				SemanticError(state, "This stray ENDR has no preceeding REPT.");
-			else
-				TerminateRept(state);
-
-			break;
-
-		case STATEMENT_TYPE_MACRO:
-			ProcessMacro(state, &std::get<StatementMacro>(*statement), label, cc_false);
-			break;
-
-		case STATEMENT_TYPE_MACROS:
-			ProcessMacro(state, &std::get<StatementMacroS>(*statement).macro, label, cc_true);
-			break;
-
-		case STATEMENT_TYPE_ENDM:
-			/* Exit MACRO mode. */
-			if (state->mode != MODE_MACRO)
-				SemanticError(state, "This stray ENDM has no preceeding MACRO.");
-			else if (state->shared.macro.is_short)
-				SemanticError(state, "ENDM cannot be used in a short macro.");
-			else
-				TerminateMacro(state);
-
-			break;
-
-		case STATEMENT_TYPE_EQU:
-		{
-			unsigned long value;
-
-			if (Options_Get(&state->options)->equ_set_descope_local_labels)
-				SetLastGlobalLabel(state, label);
-
-			auto &equ = std::get<StatementEqu>(*statement);
-
-			if (!ResolveExpression(state, &equ.expression, &value, cc_false))
+	std::visit(
+		CC_VisitHelper{
+			[&](StatementEmpty &statement) {},
+			[&](StatementInstruction &statement)
 			{
-				/* Separate the expression from the statement, so that it is not freed along with the statement. */
-				Expression *expression_copy = (Expression*)MallocAndHandleError(state, sizeof(Expression));
-
-				if (expression_copy != NULL)
-				{
-					*expression_copy = equ.expression;
-
-					/* Prevent subexpressions from being freed. */
-					equ.expression.type = EXPRESSION_NUMBER;
-
-					AddIdentifierToSymbolTable(state, label, 0, expression_copy, SYMBOL_EXPRESSION_CONSTANT);
-				}
-			}
-			else
+				ProcessInstruction(state, &statement);
+			},
+			[&](StatementDc &statement)
 			{
-				AddIdentifierToSymbolTable(state, label, value, NULL, SYMBOL_CONSTANT);
-				ListIdentifierValue(state, value);
-			}
-
-			/* Hack: We ABSOLUTELY DO NOT want this line adding to the fix-up list!!! */
-			state->fixup_needed = cc_false;
-
-			break;
-		}
-
-		case STATEMENT_TYPE_EQUS_STRING:
-			PushSubstitute(state, label, String_View(&std::get<StatementEquSString>(*statement).string));
-			break;
-
-		case STATEMENT_TYPE_EQUS_IDENTIFIER:
-		{
-			const Dictionary_Entry* const dictionary_entry = LookupSymbol(state, String_View(&std::get<StatementEquSIdentifier>(*statement).string), NULL);
-
-			if (dictionary_entry == NULL || dictionary_entry->type != SYMBOL_STRING_CONSTANT)
-				SemanticError(state, "String constant can only be defined as a string or another string constant.");
-			else
-				PushSubstitute(state, label, String_View(&dictionary_entry->shared.string));
-
-			break;
-		}
-
-		case STATEMENT_TYPE_SUBSTR:
-		{
-			unsigned long start, end;
-			StringView substring;
-
-			auto &substr = std::get<StatementSubstr>(*statement);
-
-			if (!ResolveExpression(state, &substr.start, &start, cc_true))
+				ProcessDc(state, &statement);
+			},
+			[&](StatementDcb &statement)
 			{
-				SemanticError(state, "Start must be evaluable on the first pass.");
-				break;
-			}
-
-			if (!ResolveExpression(state, &substr.end, &end, cc_true))
+				ProcessDcb(state, &statement);
+			},
+			[&](StatementDs &statement)
 			{
-				SemanticError(state, "End must be evaluable on the first pass.");
-				break;
-			}
-
-			if (start == 0)
+				ProcessDs(state, &statement);
+			},
+			[&](StatementInclude &statement)
 			{
-				SemanticError(state, "Start cannot be zero.");
-				break;
-			}
-
-			if (end < start)
-				end = start - 1;
-
-			/* Clamp start and end to make it so that, if the string would go beyond the end, it is truncated appropriately instead of going out-of-bounds */
-			/* (this matches asm68k, as far as I can see). */
-			if (start > String_Length(&substr.string))
-				start = String_Length(&substr.string) + 1;
-			if (end > String_Length(&substr.string))
-				end = String_Length(&substr.string);
-
-			StringView_SubStr(&substring, String_View(&substr.string), start - 1, end - start + 1);
-			PushSubstitute(state, label, &substring);
-			break;
-		}
-
-		case STATEMENT_TYPE_SET:
-		{
-			unsigned long value;
-
-			if (Options_Get(&state->options)->equ_set_descope_local_labels)
-				SetLastGlobalLabel(state, label);
-
-			if (!ResolveExpression(state, &std::get<StatementSet>(*statement).expression, &value, cc_true))
+				ProcessInclude(state, &statement);
+			},
+			[&](StatementIncbin &statement)
 			{
-				SemanticError(state, "Value must be evaluable on the first pass.");
-				break;
-			}
-
-			AddIdentifierToSymbolTable(state, label, value, NULL, SYMBOL_VARIABLE);
-			ListIdentifierValue(state, value);
-
-			break;
-		}
-
-		case STATEMENT_TYPE_IF:
-			ProcessIf(state, &std::get<StatementIf>(*statement).expression);
-			break;
-
-		case STATEMENT_TYPE_ELSEIF:
-			if (state->current_if_level == 0)
+				ProcessIncbin(state, &statement);
+			},
+			[&](StatementRept &statement)
 			{
-				SemanticError(state, "This stray ELSEIF has no preceeding IF.");
-			}
-			else
+				ProcessRept(state, &statement);
+			},
+			[&](StatementEndR &statement)
 			{
-				if (state->false_if_level == state->current_if_level || state->false_if_level == 0)
-				{
-					unsigned long value;
-
-					if (!ResolveExpression(state, &std::get<StatementElseIf>(*statement).expression, &value, cc_true))
-					{
-						SemanticError(state, "Condition must be evaluable on the first pass.");
-						value = 1;
-					}
-
-					/* If this condition is false, then mark this as the false if-level. */
-					if (state->true_already_found || value == 0)
-					{
-						state->false_if_level = state->current_if_level;
-					}
-					else
-					{
-						state->false_if_level = 0;
-						state->true_already_found = cc_true;
-					}
-				}
-			}
-
-			break;
-
-		case STATEMENT_TYPE_ELSE:
-			if (state->current_if_level == 0)
-			{
-				SemanticError(state, "This stray ELSE has no preceeding IF.");
-			}
-			else
-			{
-				if (state->false_if_level == state->current_if_level || state->false_if_level == 0)
-				{
-					if (state->true_already_found)
-					{
-						state->false_if_level = state->current_if_level;
-					}
-					else
-					{
-						/* If this is the false if-level, then it isn't anymore. */
-						/* Likewise, if there is no false if-level, then there is now. */
-						if (state->false_if_level == state->current_if_level)
-							state->false_if_level = 0;
-						else /*if (state->false_if_level == 0)*/
-							state->false_if_level = state->current_if_level;
-					}
-				}
-			}
-
-			break;
-
-		case STATEMENT_TYPE_ENDC:
-			if (state->current_if_level == 0)
-				SemanticError(state, "This stray ENDC/ENDIF has no preceeding IF.");
-			else
-				TerminateIf(state);
-
-			break;
-
-		case STATEMENT_TYPE_WHILE:
-		{
-			/* Enter WHILE mode. */
-			state->mode = MODE_WHILE;
-
-			auto &while_statement = std::get<StatementWhile>(*statement);
-
-			state->shared.while_statement.expression = while_statement.expression;
-			String_CreateCopy(&state->shared.while_statement.source_line, state->source_line);
-
-			state->shared.while_statement.line_number = state->location->line_number;
-			state->shared.while_statement.nesting = 0;
-
-			state->shared.while_statement.source_line_list.head = NULL;
-			state->shared.while_statement.source_line_list.tail = NULL;
-
-			/* Dummy-out the statement's expression, since the state now owns it, and we don't
-			   want its sub-expressions to be automatically freed when the statement is freed. */
-			while_statement.expression.type = EXPRESSION_NUMBER;
-
-			break;
-		}
-
-		case STATEMENT_TYPE_ENDW:
-			/* Exit WHILE mode. */
-			if (state->mode != MODE_WHILE)
-				SemanticError(state, "This stray ENDW has no preceeding WHILE.");
-			else
-				TerminateWhile(state);
-
-			break;
-
-		case STATEMENT_TYPE_EVEN:
-			PerformEven(state);
-			break;
-
-		case STATEMENT_TYPE_CNOP:
-		{
-			auto &cnop = std::get<StatementCnop>(*statement);
-
-			unsigned long offset;
-
-			if (!ResolveExpression(state, &cnop.offset, &offset, cc_true))
-			{
-				SemanticError(state, "Offset must be evaluable on the first pass.");
-			}
-			else
-			{
-				unsigned long size_boundary;
-
-				if (!ResolveExpression(state, &cnop.size_boundary, &size_boundary, cc_true))
-				{
-					SemanticError(state, "Size boundary must be evaluable on the first pass.");
-				}
-				else if (size_boundary == 0)
-				{
-					/* I don't know if there's a way to make this have meaningfully useful semantics. asm68k errors on this, so for now we will too. */
-					SemanticError(state, "Size boundary cannot be zero.");
-				}
+				/* Exit REPT mode. */
+				if (state->mode != MODE_REPT)
+					SemanticError(state, "This stray ENDR has no preceeding REPT.");
 				else
-				{
-					unsigned long target;
-
-					const unsigned long position_within_boundary = state->program_counter % size_boundary;
-
-					target = state->program_counter - position_within_boundary + offset;
-
-					if (position_within_boundary > offset)
-						target += size_boundary;
-
-					/* Pad to the desired offset. */
-					while (state->program_counter != target)
-					{
-						OutputByte(state, 0);
-						AdvanceProgramCounter(state, 1);
-					}
-				}
-			}
-
-			break;
-		}
-
-		case STATEMENT_TYPE_INFORM:
-		{
-			auto &inform = std::get<StatementInform>(*statement);
-
-			unsigned long severity;
-
-			/* Definitely an 'INFORM'... */
-			if (!ResolveExpression(state, &inform.severity, &severity, cc_true))
+					TerminateRept(state);
+			},
+			[&](StatementMacro &statement)
 			{
-				SemanticError(state, "Severity must be evaluable on the first pass.");
-				severity = 0;
-			}
-
-			/* TODO - Everything... */
-			switch (severity)
+				ProcessMacro(state, &statement, label, cc_false);
+			},
+			[&](StatementMacroS &statement)
 			{
-				case 0:
-					TextOutput_fprintf(state->error_callbacks, "INFORM: '%s'\n", String_CStr(&inform.message));
-					break;
-
-				case 1:
-					SemanticWarning(state, "INFORM: '%s'", String_CStr(&inform.message));
-					break;
-
-				case 2:
-				case 3: /* TODO: Halt assembly. */
-					SemanticError(state, "INFORM: '%s'", String_CStr(&inform.message));
-					break;
-			}
-
-			break;
-		}
-
-		case STATEMENT_TYPE_FAIL:
-			/* TODO: Halt assembly. */
-			SemanticError(state, "Assembly Failed");
-			break;
-
-		case STATEMENT_TYPE_END:
-			state->end = cc_true;
-			break;
-
-		case STATEMENT_TYPE_RS:
-		{
-			auto &rs = std::get<StatementRS>(*statement);
-
-			unsigned long length;
-
-			if (ShouldPerformAutomaticEven(state, rs.size))
-				if ((state->rs & 1) != 0)
-					++state->rs;
-
-			if (!ResolveExpression(state, &rs.length, &length, cc_true))
+				ProcessMacro(state, &statement.macro, label, cc_true);
+			},
+			[&](StatementEndM &statement)
 			{
-				SemanticError(state, "Length must be evaluable on the first pass.");
-			}
-			else
-			{
-				/* Add label to symbol table. */
-				if (!StringView_Empty(label))
-				{
-					AddIdentifierToSymbolTable(state, label, state->rs, NULL, SYMBOL_CONSTANT);
-					ListIdentifierValue(state, state->rs);
-				}
-
-				/* Advance '__rs' by the specified amount. */
-				switch (rs.size)
-				{
-					case SIZE_BYTE:
-					case SIZE_SHORT:
-						length *= 1;
-						break;
-
-					case SIZE_WORD:
-						length *= 2;
-						break;
-
-					case SIZE_LONGWORD:
-						length *= 4;
-						break;
-
-					case SIZE_UNDEFINED:
-						/* Should never happen. */
-						assert(cc_false);
-						break;
-				}
-
-				state->rs += length;
-			}
-
-			break;
-		}
-
-		case STATEMENT_TYPE_RSSET:
-		{
-			/* Set '__rs' to value. */
-			unsigned long value;
-
-			if (!ResolveExpression(state, &std::get<StatementRSSet>(*statement).expression, &value, cc_true))
-				SemanticError(state, "Value must be evaluable on the first pass.");
-			else
-				state->rs = value;
-
-			break;
-		}
-
-		case STATEMENT_TYPE_RSRESET:
-			/* Set '__rs' to 0. */
-			state->rs = 0;
-			break;
-
-		case STATEMENT_TYPE_OBJ:
-			if (state->obj_active)
-			{
-				SemanticError(state, "OBJ statements cannot be nested.");
-			}
-			else
+				/* Exit MACRO mode. */
+				if (state->mode != MODE_MACRO)
+					SemanticError(state, "This stray ENDM has no preceeding MACRO.");
+				else if (state->shared.macro.is_short)
+					SemanticError(state, "ENDM cannot be used in a short macro.");
+				else
+					TerminateMacro(state);
+			},
+			[&](StatementEqu &statement)
 			{
 				unsigned long value;
 
-				if (!ResolveExpression(state, &std::get<StatementObj>(*statement).expression, &value, cc_true))
+				if (Options_Get(&state->options)->equ_set_descope_local_labels)
+					SetLastGlobalLabel(state, label);
+
+				auto &equ = statement;
+
+				if (!ResolveExpression(state, &equ.expression, &value, cc_false))
+				{
+					/* Separate the expression from the statement, so that it is not freed along with the statement. */
+					Expression *expression_copy = (Expression*)MallocAndHandleError(state, sizeof(Expression));
+
+					if (expression_copy != NULL)
+					{
+						*expression_copy = equ.expression;
+
+						/* Prevent subexpressions from being freed. */
+						equ.expression.type = EXPRESSION_NUMBER;
+
+						AddIdentifierToSymbolTable(state, label, 0, expression_copy, SYMBOL_EXPRESSION_CONSTANT);
+					}
+				}
+				else
+				{
+					AddIdentifierToSymbolTable(state, label, value, NULL, SYMBOL_CONSTANT);
+					ListIdentifierValue(state, value);
+				}
+
+				/* Hack: We ABSOLUTELY DO NOT want this line adding to the fix-up list!!! */
+				state->fixup_needed = cc_false;
+			},
+			[&](StatementEquSString &statement)
+			{
+				PushSubstitute(state, label, String_View(&statement.string));
+			},
+			[&](StatementEquSIdentifier &statement)
+			{
+				const Dictionary_Entry* const dictionary_entry = LookupSymbol(state, String_View(&statement.string), NULL);
+
+				if (dictionary_entry == NULL || dictionary_entry->type != SYMBOL_STRING_CONSTANT)
+					SemanticError(state, "String constant can only be defined as a string or another string constant.");
+				else
+					PushSubstitute(state, label, String_View(&dictionary_entry->shared.string));
+			},
+			[&](StatementSubstr &statement)
+			{
+				unsigned long start, end;
+				StringView substring;
+
+				auto &substr = statement;
+
+				if (!ResolveExpression(state, &substr.start, &start, cc_true))
+				{
+					SemanticError(state, "Start must be evaluable on the first pass.");
+					return;
+				}
+
+				if (!ResolveExpression(state, &substr.end, &end, cc_true))
+				{
+					SemanticError(state, "End must be evaluable on the first pass.");
+					return;
+				}
+
+				if (start == 0)
+				{
+					SemanticError(state, "Start cannot be zero.");
+					return;
+				}
+
+				if (end < start)
+					end = start - 1;
+
+				/* Clamp start and end to make it so that, if the string would go beyond the end, it is truncated appropriately instead of going out-of-bounds */
+				/* (this matches asm68k, as far as I can see). */
+				if (start > String_Length(&substr.string))
+					start = String_Length(&substr.string) + 1;
+				if (end > String_Length(&substr.string))
+					end = String_Length(&substr.string);
+
+				StringView_SubStr(&substring, String_View(&substr.string), start - 1, end - start + 1);
+				PushSubstitute(state, label, &substring);
+			},
+			[&](StatementSet &statement)
+			{
+				unsigned long value;
+
+				if (Options_Get(&state->options)->equ_set_descope_local_labels)
+					SetLastGlobalLabel(state, label);
+
+				if (!ResolveExpression(state, &statement.expression, &value, cc_true))
+				{
+					SemanticError(state, "Value must be evaluable on the first pass.");
+					return;
+				}
+
+				AddIdentifierToSymbolTable(state, label, value, NULL, SYMBOL_VARIABLE);
+				ListIdentifierValue(state, value);
+			},
+			[&](StatementIf &statement)
+			{
+				ProcessIf(state, &statement.expression);
+			},
+			[&](StatementElseIf &statement)
+			{
+				if (state->current_if_level == 0)
+				{
+					SemanticError(state, "This stray ELSEIF has no preceeding IF.");
+				}
+				else
+				{
+					if (state->false_if_level == state->current_if_level || state->false_if_level == 0)
+					{
+						unsigned long value;
+
+						if (!ResolveExpression(state, &statement.expression, &value, cc_true))
+						{
+							SemanticError(state, "Condition must be evaluable on the first pass.");
+							value = 1;
+						}
+
+						/* If this condition is false, then mark this as the false if-level. */
+						if (state->true_already_found || value == 0)
+						{
+							state->false_if_level = state->current_if_level;
+						}
+						else
+						{
+							state->false_if_level = 0;
+							state->true_already_found = cc_true;
+						}
+					}
+				}
+			},
+			[&](StatementElse &statement)
+			{
+				if (state->current_if_level == 0)
+				{
+					SemanticError(state, "This stray ELSE has no preceeding IF.");
+				}
+				else
+				{
+					if (state->false_if_level == state->current_if_level || state->false_if_level == 0)
+					{
+						if (state->true_already_found)
+						{
+							state->false_if_level = state->current_if_level;
+						}
+						else
+						{
+							/* If this is the false if-level, then it isn't anymore. */
+							/* Likewise, if there is no false if-level, then there is now. */
+							if (state->false_if_level == state->current_if_level)
+								state->false_if_level = 0;
+							else /*if (state->false_if_level == 0)*/
+								state->false_if_level = state->current_if_level;
+						}
+					}
+				}
+			},
+			[&](StatementEndC &statement)
+			{
+				if (state->current_if_level == 0)
+					SemanticError(state, "This stray ENDC/ENDIF has no preceeding IF.");
+				else
+					TerminateIf(state);
+			},
+			[&](StatementWhile &statement)
+			{
+				/* Enter WHILE mode. */
+				state->mode = MODE_WHILE;
+
+				auto &while_statement = statement;
+
+				state->shared.while_statement.expression = while_statement.expression;
+				String_CreateCopy(&state->shared.while_statement.source_line, state->source_line);
+
+				state->shared.while_statement.line_number = state->location->line_number;
+				state->shared.while_statement.nesting = 0;
+
+				state->shared.while_statement.source_line_list.head = NULL;
+				state->shared.while_statement.source_line_list.tail = NULL;
+
+				/* Dummy-out the statement's expression, since the state now owns it, and we don't
+				   want its sub-expressions to be automatically freed when the statement is freed. */
+				while_statement.expression.type = EXPRESSION_NUMBER;
+			},
+			[&](StatementEndW &statement)
+			{
+				/* Exit WHILE mode. */
+				if (state->mode != MODE_WHILE)
+					SemanticError(state, "This stray ENDW has no preceeding WHILE.");
+				else
+					TerminateWhile(state);
+			},
+			[&](StatementEven &statement)
+			{
+				PerformEven(state);
+			},
+			[&](StatementCnop &statement)
+			{
+				auto &cnop = statement;
+
+				unsigned long offset;
+
+				if (!ResolveExpression(state, &cnop.offset, &offset, cc_true))
+				{
+					SemanticError(state, "Offset must be evaluable on the first pass.");
+				}
+				else
+				{
+					unsigned long size_boundary;
+
+					if (!ResolveExpression(state, &cnop.size_boundary, &size_boundary, cc_true))
+					{
+						SemanticError(state, "Size boundary must be evaluable on the first pass.");
+					}
+					else if (size_boundary == 0)
+					{
+						/* I don't know if there's a way to make this have meaningfully useful semantics. asm68k errors on this, so for now we will too. */
+						SemanticError(state, "Size boundary cannot be zero.");
+					}
+					else
+					{
+						unsigned long target;
+
+						const unsigned long position_within_boundary = state->program_counter % size_boundary;
+
+						target = state->program_counter - position_within_boundary + offset;
+
+						if (position_within_boundary > offset)
+							target += size_boundary;
+
+						/* Pad to the desired offset. */
+						while (state->program_counter != target)
+						{
+							OutputByte(state, 0);
+							AdvanceProgramCounter(state, 1);
+						}
+					}
+				}
+			},
+			[&](StatementInform &statement)
+			{
+				auto &inform = statement;
+
+				unsigned long severity;
+
+				/* Definitely an 'INFORM'... */
+				if (!ResolveExpression(state, &inform.severity, &severity, cc_true))
+				{
+					SemanticError(state, "Severity must be evaluable on the first pass.");
+					severity = 0;
+				}
+
+				/* TODO - Everything... */
+				switch (severity)
+				{
+					case 0:
+						TextOutput_fprintf(state->error_callbacks, "INFORM: '%s'\n", String_CStr(&inform.message));
+						break;
+
+					case 1:
+						SemanticWarning(state, "INFORM: '%s'", String_CStr(&inform.message));
+						break;
+
+					case 2:
+					case 3: /* TODO: Halt assembly. */
+						SemanticError(state, "INFORM: '%s'", String_CStr(&inform.message));
+						break;
+				}
+			},
+			[&](StatementFail &statement)
+			{
+				/* TODO: Halt assembly. */
+				SemanticError(state, "Assembly Failed");
+			},
+			[&](StatementEnd &statement)
+			{
+				state->end = cc_true;
+			},
+			[&](StatementRS &statement)
+			{
+				auto &rs = statement;
+
+				unsigned long length;
+
+				if (ShouldPerformAutomaticEven(state, rs.size))
+					if ((state->rs & 1) != 0)
+						++state->rs;
+
+				if (!ResolveExpression(state, &rs.length, &length, cc_true))
+				{
+					SemanticError(state, "Length must be evaluable on the first pass.");
+				}
+				else
+				{
+					/* Add label to symbol table. */
+					if (!StringView_Empty(label))
+					{
+						AddIdentifierToSymbolTable(state, label, state->rs, NULL, SYMBOL_CONSTANT);
+						ListIdentifierValue(state, state->rs);
+					}
+
+					/* Advance '__rs' by the specified amount. */
+					switch (rs.size)
+					{
+						case SIZE_BYTE:
+						case SIZE_SHORT:
+							length *= 1;
+							break;
+
+						case SIZE_WORD:
+							length *= 2;
+							break;
+
+						case SIZE_LONGWORD:
+							length *= 4;
+							break;
+
+						case SIZE_UNDEFINED:
+							/* Should never happen. */
+							assert(cc_false);
+							break;
+					}
+
+					state->rs += length;
+				}
+			},
+			[&](StatementRSSet &statement)
+			{
+				/* Set '__rs' to value. */
+				unsigned long value;
+
+				if (!ResolveExpression(state, &statement.expression, &value, cc_true))
 					SemanticError(state, "Value must be evaluable on the first pass.");
 				else
-					state->obj_delta = value - state->program_counter;
-
-				state->obj_active = cc_true;
-				AdvanceProgramCounter(state, state->obj_delta);
-			}
-
-			break;
-
-		case STATEMENT_TYPE_OBJEND:
-			if (!state->obj_active)
+					state->rs = value;
+			},
+			[&](StatementRSReset &statement)
 			{
-				SemanticError(state, "This stray OBJEND has no preceeding OBJ.");
-			}
-			else
+				/* Set '__rs' to 0. */
+				state->rs = 0;
+			},
+			[&](StatementObj &statement)
 			{
-				RegressProgramCounter(state, state->obj_delta);
-				state->obj_active = cc_false;
-			}
-
-			break;
-
-		case STATEMENT_TYPE_ORG:
-		{
-			unsigned long value;
-
-			if (!ResolveExpression(state, &std::get<StatementOrg>(*statement).expression, &value, cc_true))
-			{
-				SemanticError(state, "Value must be evaluable on the first pass.");
-			}
-			else if (value > 0xFFFFFFFF)
-			{
-				SemanticError(state, "Value cannot be larger than 0xFFFFFFFF (was 0x%lX).", value);
-			}
-			else
-			{
-				/* Begin a new segment! */
-				state->segment_position = value;
-				WriteRecordSegment(state);
-				state->segment_length = 0;
-
-				state->program_counter = value;
-			}
-
-			break;
-		}
-
-		case STATEMENT_TYPE_PUSHO:
-			Options_Push(&state->options);
-			break;
-
-		case STATEMENT_TYPE_POPO:
-			Options_Pop(&state->options);
-			break;
-
-		case STATEMENT_TYPE_OPT:
-		{
-			const IdentifierListNode *option;
-
-			for (option = std::get<StatementOpt>(*statement).options.head; option != NULL; option = option->next)
-			{
-				/* TODO: A lot of these are unimplemented... */
-				if (String_CompareCStrCaseInsensitive(&option->identifier, "ae+"))
-					Options_Get(&state->options)->automatic_even = cc_true;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "ae-"))
-					Options_Get(&state->options)->automatic_even = cc_false;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "an+"))
-					;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "an-"))
-					;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "c+"))
-					Options_Get(&state->options)->case_insensitive = cc_false;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "c-"))
-					Options_Get(&state->options)->case_insensitive = cc_true;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "d+"))
-					Options_Get(&state->options)->equ_set_descope_local_labels = cc_true;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "d-"))
-					Options_Get(&state->options)->equ_set_descope_local_labels = cc_false;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "e+"))
-					;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "e-"))
-					;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "l+"))
-					Options_Get(&state->options)->local_signifier = '.';
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "l-"))
-					Options_Get(&state->options)->local_signifier = '@';
-				else if (String_Length(&option->identifier) == 2 && (String_At(&option->identifier, 0) == 'l' || String_At(&option->identifier, 0) == 'L'))
-					Options_Get(&state->options)->local_signifier = String_At(&option->identifier, 1);
-				/*else if (String_CompareCStrCaseInsensitive(&option->identifier, "s+"))
-					;*/
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "s-"))
-					;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "m+"))
-					Options_Get(&state->options)->expand_all_macros = cc_true;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "m-"))
-					Options_Get(&state->options)->expand_all_macros = cc_false;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "oz+"))
-					Options_Get(&state->options)->optimisation.zero_displacement = cc_true;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "oz-"))
-					Options_Get(&state->options)->optimisation.zero_displacement = cc_false;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "v+"))
-					Options_Get(&state->options)->output_local_labels_to_sym_file = cc_true;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "v-"))
-					Options_Get(&state->options)->output_local_labels_to_sym_file = cc_false;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "w+"))
-					Options_Get(&state->options)->warnings_enabled = cc_true;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "w-"))
-					Options_Get(&state->options)->warnings_enabled = cc_false;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "wp+"))
-					Options_Get(&state->options)->pedantic_warnings_enabled = cc_true;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "wp-"))
-					Options_Get(&state->options)->pedantic_warnings_enabled = cc_false;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "ws+"))
-					;
-				else if (String_CompareCStrCaseInsensitive(&option->identifier, "ws-"))
-					;
+				if (state->obj_active)
+				{
+					SemanticError(state, "OBJ statements cannot be nested.");
+				}
 				else
-					SemanticWarning(state, "Unrecognised option '%s'.", String_CStr(&option->identifier));
-			}			
+				{
+					unsigned long value;
 
-			break;
-		}
+					if (!ResolveExpression(state, &statement.expression, &value, cc_true))
+						SemanticError(state, "Value must be evaluable on the first pass.");
+					else
+						state->obj_delta = value - state->program_counter;
 
-		case STATEMENT_TYPE_PUSHP:
-			if (!StringStack_Push(&state->string_stack, String_View(&std::get<StatementPushP>(*statement).string)))
-				InternalError(state, "Failed to allocate memory for the string stack.");
-
-			break;
-
-		case STATEMENT_TYPE_POPP:
-		{
-			String string;
-
-			if (!StringStack_Pop(&state->string_stack, &string))
+					state->obj_active = cc_true;
+					AdvanceProgramCounter(state, state->obj_delta);
+				}
+			},
+			[&](StatementObjEnd &statement)
 			{
-				SemanticError(state, "POPP used but the string stack was empty.");
-			}
-			else
+				if (!state->obj_active)
+				{
+					SemanticError(state, "This stray OBJEND has no preceeding OBJ.");
+				}
+				else
+				{
+					RegressProgramCounter(state, state->obj_delta);
+					state->obj_active = cc_false;
+				}
+			},
+			[&](StatementOrg &statement)
 			{
-				PushSubstitute(state, String_View(&std::get<StatementPopP>(*statement).string), String_View(&string));
-				String_Destroy(&string);
-			}
+				unsigned long value;
 
-			break;
-		}
+				if (!ResolveExpression(state, &statement.expression, &value, cc_true))
+				{
+					SemanticError(state, "Value must be evaluable on the first pass.");
+				}
+				else if (value > 0xFFFFFFFF)
+				{
+					SemanticError(state, "Value cannot be larger than 0xFFFFFFFF (was 0x%lX).", value);
+				}
+				else
+				{
+					/* Begin a new segment! */
+					state->segment_position = value;
+					WriteRecordSegment(state);
+					state->segment_length = 0;
 
-		case STATEMENT_TYPE_SHIFT:
-			if (!CurrentlyExpandingMacro(state))
+					state->program_counter = value;
+				}
+			},
+			[&](StatementPushO &statement)
 			{
-				SemanticError(state, "SHIFT used outside of macro.");
-			}
-			else if (state->macro.total_arguments == 0)
+				Options_Push(&state->options);
+			},
+			[&](StatementPopO &statement)
 			{
-				/* TODO: What if there are already 0 arguments? */
-				/* This prevents crashing for now but perhaps it could be handled differently. */
-				SemanticError(state, "SHIFT used but there are no macro arguments to shift.");
-			}
-			else
+				Options_Pop(&state->options);
+			},
+			[&](StatementOpt &statement)
 			{
-				--state->macro.total_arguments;
-				String_Destroy(&state->macro.argument_list[0]);
-				memmove(state->macro.argument_list, state->macro.argument_list + 1, sizeof(*state->macro.argument_list) * state->macro.total_arguments);
-				PushMacroArgumentSubstitutions(state);
-			}
+				const IdentifierListNode *option;
 
-			break;
-
-		case STATEMENT_TYPE_MEXIT:
-			state->macro.active = cc_false;
-			break;
-
-		case STATEMENT_TYPE_LOCAL:
-			if (!CurrentlyExpandingMacro(state))
+				for (option = statement.options.head; option != NULL; option = option->next)
+				{
+					/* TODO: A lot of these are unimplemented... */
+					if (String_CompareCStrCaseInsensitive(&option->identifier, "ae+"))
+						Options_Get(&state->options)->automatic_even = cc_true;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "ae-"))
+						Options_Get(&state->options)->automatic_even = cc_false;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "an+"))
+						;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "an-"))
+						;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "c+"))
+						Options_Get(&state->options)->case_insensitive = cc_false;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "c-"))
+						Options_Get(&state->options)->case_insensitive = cc_true;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "d+"))
+						Options_Get(&state->options)->equ_set_descope_local_labels = cc_true;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "d-"))
+						Options_Get(&state->options)->equ_set_descope_local_labels = cc_false;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "e+"))
+						;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "e-"))
+						;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "l+"))
+						Options_Get(&state->options)->local_signifier = '.';
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "l-"))
+						Options_Get(&state->options)->local_signifier = '@';
+					else if (String_Length(&option->identifier) == 2 && (String_At(&option->identifier, 0) == 'l' || String_At(&option->identifier, 0) == 'L'))
+						Options_Get(&state->options)->local_signifier = String_At(&option->identifier, 1);
+					/*else if (String_CompareCStrCaseInsensitive(&option->identifier, "s+"))
+						;*/
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "s-"))
+						;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "m+"))
+						Options_Get(&state->options)->expand_all_macros = cc_true;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "m-"))
+						Options_Get(&state->options)->expand_all_macros = cc_false;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "oz+"))
+						Options_Get(&state->options)->optimisation.zero_displacement = cc_true;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "oz-"))
+						Options_Get(&state->options)->optimisation.zero_displacement = cc_false;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "v+"))
+						Options_Get(&state->options)->output_local_labels_to_sym_file = cc_true;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "v-"))
+						Options_Get(&state->options)->output_local_labels_to_sym_file = cc_false;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "w+"))
+						Options_Get(&state->options)->warnings_enabled = cc_true;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "w-"))
+						Options_Get(&state->options)->warnings_enabled = cc_false;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "wp+"))
+						Options_Get(&state->options)->pedantic_warnings_enabled = cc_true;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "wp-"))
+						Options_Get(&state->options)->pedantic_warnings_enabled = cc_false;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "ws+"))
+						;
+					else if (String_CompareCStrCaseInsensitive(&option->identifier, "ws-"))
+						;
+					else
+						SemanticWarning(state, "Unrecognised option '%s'.", String_CStr(&option->identifier));
+				}
+			},
+			[&](StatementPushP &statement)
 			{
-				SemanticError(state, "LOCAL used outside of macro.");
-			}
-			else
+				if (!StringStack_Push(&state->string_stack, String_View(&statement.string)))
+					InternalError(state, "Failed to allocate memory for the string stack.");
+			},
+			[&](StatementPopP &statement)
 			{
-				const IdentifierListNode *list_entry;
+				String string;
 
-				for (list_entry = std::get<StatementLocal>(*statement).identifiers.head; list_entry != NULL; list_entry = list_entry->next)
-					if (!Dictionary_LookUpAndCreateIfNotExist(state->macro.dictionary, String_View(&list_entry->identifier), NULL))
-						OutOfMemoryError(state);
+				if (!StringStack_Pop(&state->string_stack, &string))
+				{
+					SemanticError(state, "POPP used but the string stack was empty.");
+				}
+				else
+				{
+					PushSubstitute(state, String_View(&statement.string), String_View(&string));
+					String_Destroy(&string);
+				}
+			},
+			[&](StatementShift &statement)
+			{
+				if (!CurrentlyExpandingMacro(state))
+				{
+					SemanticError(state, "SHIFT used outside of macro.");
+				}
+				else if (state->macro.total_arguments == 0)
+				{
+					/* TODO: What if there are already 0 arguments? */
+					/* This prevents crashing for now but perhaps it could be handled differently. */
+					SemanticError(state, "SHIFT used but there are no macro arguments to shift.");
+				}
+				else
+				{
+					--state->macro.total_arguments;
+					String_Destroy(&state->macro.argument_list[0]);
+					memmove(state->macro.argument_list, state->macro.argument_list + 1, sizeof(*state->macro.argument_list) * state->macro.total_arguments);
+					PushMacroArgumentSubstitutions(state);
+				}
+			},
+			[&](StatementMExit &statement)
+			{
+				state->macro.active = cc_false;
+			},
+			[&](StatementLocal &statement)
+			{
+				if (!CurrentlyExpandingMacro(state))
+				{
+					SemanticError(state, "LOCAL used outside of macro.");
+				}
+				else
+				{
+					const IdentifierListNode *list_entry;
+
+					for (list_entry = statement.identifiers.head; list_entry != NULL; list_entry = list_entry->next)
+						if (!Dictionary_LookUpAndCreateIfNotExist(state->macro.dictionary, String_View(&list_entry->identifier), NULL))
+							OutOfMemoryError(state);
+				}
+			},
+			[&](StatementPurge &statement)
+			{
+				PurgeMacro(state, String_View(&statement.string), cc_false);
 			}
-
-			break;
-
-		case STATEMENT_TYPE_PURGE:
-			PurgeMacro(state, String_View(&std::get<StatementPurge>(*statement).string), cc_false);
-			break;
-	}
+		}, *statement
+	);
 
 	/* Update both copies of the program counter again, so that things like WHILE statements don't use stale values in their expressions. */
 	state->program_counter_of_statement = state->program_counter;
