@@ -113,200 +113,200 @@ hexadecimal       {hexadecimal_digit}+
 [;\r\n]         BEGIN(INITIAL); yyterminate();
 
  /* Directives. */
-<INITIAL>ori             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ORI;
-<INITIAL>andi            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ANDI;
-<INITIAL>subi            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBI;
-<INITIAL>addi            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDI;
-<INITIAL>eori            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EORI;
-<INITIAL>cmpi            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_CMPI;
-<INITIAL>btst            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BTST;
-<INITIAL>bchg            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BCHG;
-<INITIAL>bclr            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BCLR;
-<INITIAL>bset            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BSET;
-<INITIAL>movep           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MOVEP;
-<INITIAL>movea           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MOVEA;
-<INITIAL>move            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MOVE;
-<INITIAL>negx            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NEGX;
-<INITIAL>clr             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_CLR;
-<INITIAL>neg             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NEG;
-<INITIAL>not             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NOT;
-<INITIAL>ext             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EXT;
-<INITIAL>nbcd            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NBCD;
-<INITIAL>swap            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SWAP;
-<INITIAL>pea             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_PEA;
-<INITIAL>illegal         BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ILLEGAL;
-<INITIAL>tas             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_TAS;
-<INITIAL>tst             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_TST;
-<INITIAL>trap            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_TRAP;
-<INITIAL>link            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LINK;
-<INITIAL>unlk            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_UNLK;
-<INITIAL>reset           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RESET;
-<INITIAL>nop             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NOP;
-<INITIAL>stop            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_STOP;
-<INITIAL>rte             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RTE;
-<INITIAL>rts             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RTS;
-<INITIAL>trapv           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_TRAPV;
-<INITIAL>rtr             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RTR;
-<INITIAL>jsr             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_JSR;
-<INITIAL>jmp             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_JMP;
-<INITIAL>movem           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MOVEM;
-<INITIAL>lea             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LEA;
-<INITIAL>chk             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_CHK;
-<INITIAL>addq            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDQ;
-<INITIAL>subq            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBQ;
-<INITIAL>st              BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ST;
-<INITIAL>sf              BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SF;
-<INITIAL>shi             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SHI;
-<INITIAL>sls             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SLS;
-<INITIAL>scc             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SCC;
-<INITIAL>scs             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SCS;
-<INITIAL>sne             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SNE;
-<INITIAL>seq             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SEQ;
-<INITIAL>svc             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SVC;
-<INITIAL>svs             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SVS;
-<INITIAL>spl             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SPL;
-<INITIAL>smi             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SMI;
-<INITIAL>sge             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SGE;
-<INITIAL>slt             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SLT;
-<INITIAL>sgt             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SGT;
-<INITIAL>sle             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SLE;
-<INITIAL>shs             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SCC;
-<INITIAL>slo             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SCS;
-<INITIAL>dbt             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBT;
-<INITIAL>dbf             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBF;
-<INITIAL>dbhi            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBHI;
-<INITIAL>dbls            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBLS;
-<INITIAL>dbcc            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBCC;
-<INITIAL>dbcs            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBCS;
-<INITIAL>dbne            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBNE;
-<INITIAL>dbeq            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBEQ;
-<INITIAL>dbvc            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBVC;
-<INITIAL>dbvs            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBVS;
-<INITIAL>dbpl            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBPL;
-<INITIAL>dbmi            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBMI;
-<INITIAL>dbge            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBGE;
-<INITIAL>dblt            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBLT;
-<INITIAL>dbgt            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBGT;
-<INITIAL>dble            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBLE;
-<INITIAL>dbhs            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBCC;
-<INITIAL>dblo            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBCS;
-<INITIAL>dbra            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBF;
-<INITIAL>bra             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BRA;
-<INITIAL>bsr             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BSR;
-<INITIAL>bhi             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BHI;
-<INITIAL>bls             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BLS;
-<INITIAL>bcc             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BCC;
-<INITIAL>bcs             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BCS;
-<INITIAL>bne             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BNE;
-<INITIAL>beq             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BEQ;
-<INITIAL>bvc             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BVC;
-<INITIAL>bvs             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BVS;
-<INITIAL>bpl             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BPL;
-<INITIAL>bmi             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BMI;
-<INITIAL>bge             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BGE;
-<INITIAL>blt             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BLT;
-<INITIAL>bgt             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BGT;
-<INITIAL>ble             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BLE;
-<INITIAL>bhs             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BCC;
-<INITIAL>blo             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BCS;
-<INITIAL>moveq           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MOVEQ;
-<INITIAL>divu            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DIVU;
-<INITIAL>divs            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DIVS;
-<INITIAL>sbcd            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SBCD;
-<INITIAL>or              BEGIN(OPERANDS); return TOKEN_DIRECTIVE_OR;
-<INITIAL>sub             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUB;
-<INITIAL>subx            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBX;
-<INITIAL>suba            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBA;
-<INITIAL>eor             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EOR;
-<INITIAL>cmpm            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_CMPM;
-<INITIAL>cmp             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_CMP;
-<INITIAL>cmpa            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_CMPA;
-<INITIAL>mulu            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MULU;
-<INITIAL>muls            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MULS;
-<INITIAL>abcd            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ABCD;
-<INITIAL>exg             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EXG;
-<INITIAL>and             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_AND;
-<INITIAL>add             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADD;
-<INITIAL>addx            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDX;
-<INITIAL>adda            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDA;
-<INITIAL>asl             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ASL;
-<INITIAL>asr             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ASR;
-<INITIAL>lsl             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LSL;
-<INITIAL>lsr             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LSR;
-<INITIAL>roxl            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ROXL;
-<INITIAL>roxr            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ROXR;
-<INITIAL>rol             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ROL;
-<INITIAL>ror             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ROR;
-<INITIAL>dc              BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DC;
-<INITIAL>dcb             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DCB;
-<INITIAL>ds              BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DS;
-<INITIAL>rept            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_REPT;
-<INITIAL>endr            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDR;
-<INITIAL>macro           BEGIN(MACRO_PARAMETERS); return TOKEN_DIRECTIVE_MACRO;
-<INITIAL>macros          BEGIN(MACRO_PARAMETERS); return TOKEN_DIRECTIVE_MACROS;
-<INITIAL>endm            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDM;
-<INITIAL>include         BEGIN(PATH); return TOKEN_DIRECTIVE_INCLUDE;
-<INITIAL>incbin          BEGIN(PATH); return TOKEN_DIRECTIVE_INCBIN;
-<INITIAL>binclude        BEGIN(PATH); return TOKEN_DIRECTIVE_INCBIN;
-<INITIAL>equ             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EQU;
-<INITIAL>equs            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EQUS;
-<INITIAL>substr          BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBSTR;
-<INITIAL>set             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SET;
-<INITIAL>if              BEGIN(OPERANDS); return TOKEN_DIRECTIVE_IF;
-<INITIAL>elseif          BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ELSEIF;
-<INITIAL>else            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ELSE;
-<INITIAL>endc            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDC;
-<INITIAL>endif           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDC;
-<INITIAL>while           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_WHILE;
-<INITIAL>endw            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDW;
-<INITIAL>even            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EVEN;
-<INITIAL>cnop            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_CNOP;
-<INITIAL>inform          BEGIN(OPERANDS); return TOKEN_DIRECTIVE_INFORM;
-<INITIAL>end             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_END;
-<INITIAL>rs              BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RS;
-<INITIAL>rsset           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RSSET;
-<INITIAL>rsreset         BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RSRESET;
-<INITIAL>obj             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_OBJ;
-<INITIAL>objend          BEGIN(OPERANDS); return TOKEN_DIRECTIVE_OBJEND;
-<INITIAL>org             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ORG;
-<INITIAL>pusho           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_PUSHO;
-<INITIAL>popo            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_POPO;
-<INITIAL>opt             BEGIN(OPTIONS);  return TOKEN_DIRECTIVE_OPT;
-<INITIAL>pushp           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_PUSHP;
-<INITIAL>popp            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_POPP;
-<INITIAL>shift           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SHIFT;
-<INITIAL>mexit           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MEXIT;
-<INITIAL>local           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LOCAL;
+<INITIAL>ori             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ORI;
+<INITIAL>andi            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ANDI;
+<INITIAL>subi            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBI;
+<INITIAL>addi            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADDI;
+<INITIAL>eori            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_EORI;
+<INITIAL>cmpi            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_CMPI;
+<INITIAL>btst            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BTST;
+<INITIAL>bchg            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BCHG;
+<INITIAL>bclr            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BCLR;
+<INITIAL>bset            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BSET;
+<INITIAL>movep           BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MOVEP;
+<INITIAL>movea           BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MOVEA;
+<INITIAL>move            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MOVE;
+<INITIAL>negx            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_NEGX;
+<INITIAL>clr             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_CLR;
+<INITIAL>neg             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_NEG;
+<INITIAL>not             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_NOT;
+<INITIAL>ext             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_EXT;
+<INITIAL>nbcd            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_NBCD;
+<INITIAL>swap            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SWAP;
+<INITIAL>pea             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_PEA;
+<INITIAL>illegal         BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ILLEGAL;
+<INITIAL>tas             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_TAS;
+<INITIAL>tst             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_TST;
+<INITIAL>trap            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_TRAP;
+<INITIAL>link            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_LINK;
+<INITIAL>unlk            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_UNLK;
+<INITIAL>reset           BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_RESET;
+<INITIAL>nop             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_NOP;
+<INITIAL>stop            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_STOP;
+<INITIAL>rte             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_RTE;
+<INITIAL>rts             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_RTS;
+<INITIAL>trapv           BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_TRAPV;
+<INITIAL>rtr             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_RTR;
+<INITIAL>jsr             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_JSR;
+<INITIAL>jmp             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_JMP;
+<INITIAL>movem           BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MOVEM;
+<INITIAL>lea             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_LEA;
+<INITIAL>chk             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_CHK;
+<INITIAL>addq            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADDQ;
+<INITIAL>subq            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBQ;
+<INITIAL>st              BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ST;
+<INITIAL>sf              BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SF;
+<INITIAL>shi             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SHI;
+<INITIAL>sls             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SLS;
+<INITIAL>scc             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SCC;
+<INITIAL>scs             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SCS;
+<INITIAL>sne             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SNE;
+<INITIAL>seq             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SEQ;
+<INITIAL>svc             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SVC;
+<INITIAL>svs             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SVS;
+<INITIAL>spl             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SPL;
+<INITIAL>smi             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SMI;
+<INITIAL>sge             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SGE;
+<INITIAL>slt             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SLT;
+<INITIAL>sgt             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SGT;
+<INITIAL>sle             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SLE;
+<INITIAL>shs             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SCC;
+<INITIAL>slo             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SCS;
+<INITIAL>dbt             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBT;
+<INITIAL>dbf             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBF;
+<INITIAL>dbhi            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBHI;
+<INITIAL>dbls            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBLS;
+<INITIAL>dbcc            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBCC;
+<INITIAL>dbcs            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBCS;
+<INITIAL>dbne            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBNE;
+<INITIAL>dbeq            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBEQ;
+<INITIAL>dbvc            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBVC;
+<INITIAL>dbvs            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBVS;
+<INITIAL>dbpl            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBPL;
+<INITIAL>dbmi            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBMI;
+<INITIAL>dbge            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBGE;
+<INITIAL>dblt            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBLT;
+<INITIAL>dbgt            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBGT;
+<INITIAL>dble            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBLE;
+<INITIAL>dbhs            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBCC;
+<INITIAL>dblo            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBCS;
+<INITIAL>dbra            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBF;
+<INITIAL>bra             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BRA;
+<INITIAL>bsr             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BSR;
+<INITIAL>bhi             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BHI;
+<INITIAL>bls             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BLS;
+<INITIAL>bcc             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BCC;
+<INITIAL>bcs             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BCS;
+<INITIAL>bne             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BNE;
+<INITIAL>beq             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BEQ;
+<INITIAL>bvc             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BVC;
+<INITIAL>bvs             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BVS;
+<INITIAL>bpl             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BPL;
+<INITIAL>bmi             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BMI;
+<INITIAL>bge             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BGE;
+<INITIAL>blt             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BLT;
+<INITIAL>bgt             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BGT;
+<INITIAL>ble             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BLE;
+<INITIAL>bhs             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BCC;
+<INITIAL>blo             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BCS;
+<INITIAL>moveq           BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MOVEQ;
+<INITIAL>divu            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DIVU;
+<INITIAL>divs            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DIVS;
+<INITIAL>sbcd            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SBCD;
+<INITIAL>or              BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_OR;
+<INITIAL>sub             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUB;
+<INITIAL>subx            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBX;
+<INITIAL>suba            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBA;
+<INITIAL>eor             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_EOR;
+<INITIAL>cmpm            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_CMPM;
+<INITIAL>cmp             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_CMP;
+<INITIAL>cmpa            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_CMPA;
+<INITIAL>mulu            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MULU;
+<INITIAL>muls            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MULS;
+<INITIAL>abcd            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ABCD;
+<INITIAL>exg             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_EXG;
+<INITIAL>and             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_AND;
+<INITIAL>add             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADD;
+<INITIAL>addx            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADDX;
+<INITIAL>adda            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADDA;
+<INITIAL>asl             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ASL;
+<INITIAL>asr             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ASR;
+<INITIAL>lsl             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_LSL;
+<INITIAL>lsr             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_LSR;
+<INITIAL>roxl            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ROXL;
+<INITIAL>roxr            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ROXR;
+<INITIAL>rol             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ROL;
+<INITIAL>ror             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ROR;
+<INITIAL>dc              BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DC;
+<INITIAL>dcb             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DCB;
+<INITIAL>ds              BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DS;
+<INITIAL>rept            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_REPT;
+<INITIAL>endr            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ENDR;
+<INITIAL>macro           BEGIN(MACRO_PARAMETERS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MACRO;
+<INITIAL>macros          BEGIN(MACRO_PARAMETERS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MACROS;
+<INITIAL>endm            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ENDM;
+<INITIAL>include         BEGIN(PATH); return m68kasm::parser::token::TOKEN_DIRECTIVE_INCLUDE;
+<INITIAL>incbin          BEGIN(PATH); return m68kasm::parser::token::TOKEN_DIRECTIVE_INCBIN;
+<INITIAL>binclude        BEGIN(PATH); return m68kasm::parser::token::TOKEN_DIRECTIVE_INCBIN;
+<INITIAL>equ             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_EQU;
+<INITIAL>equs            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_EQUS;
+<INITIAL>substr          BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBSTR;
+<INITIAL>set             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SET;
+<INITIAL>if              BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_IF;
+<INITIAL>elseif          BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ELSEIF;
+<INITIAL>else            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ELSE;
+<INITIAL>endc            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ENDC;
+<INITIAL>endif           BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ENDC;
+<INITIAL>while           BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_WHILE;
+<INITIAL>endw            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ENDW;
+<INITIAL>even            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_EVEN;
+<INITIAL>cnop            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_CNOP;
+<INITIAL>inform          BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_INFORM;
+<INITIAL>end             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_END;
+<INITIAL>rs              BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_RS;
+<INITIAL>rsset           BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_RSSET;
+<INITIAL>rsreset         BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_RSRESET;
+<INITIAL>obj             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_OBJ;
+<INITIAL>objend          BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_OBJEND;
+<INITIAL>org             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ORG;
+<INITIAL>pusho           BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_PUSHO;
+<INITIAL>popo            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_POPO;
+<INITIAL>opt             BEGIN(OPTIONS);  return m68kasm::parser::token::TOKEN_DIRECTIVE_OPT;
+<INITIAL>pushp           BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_PUSHP;
+<INITIAL>popp            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_POPP;
+<INITIAL>shift           BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SHIFT;
+<INITIAL>mexit           BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MEXIT;
+<INITIAL>local           BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_LOCAL;
 <INITIAL>"="             BEGIN(OPERANDS); return yytext[0];
-<INITIAL>list            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LIST;
-<INITIAL>nolist          BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NOLIST;
-<INITIAL>purge           BEGIN(OPERANDS); return TOKEN_DIRECTIVE_PURGE;
+<INITIAL>list            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_LIST;
+<INITIAL>nolist          BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_NOLIST;
+<INITIAL>purge           BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_PURGE;
 
  /* axm68k opcodes. */
  /* axm68k is a modified version of asm68k with renamed opcodes, so that
     it could better-support Z80 macros. */
-<INITIAL>axd             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADD;
-<INITIAL>axda            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDA;
-<INITIAL>axdi            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDI;
-<INITIAL>axdq            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDQ;
-<INITIAL>axdx            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDX;
-<INITIAL>anx             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_AND;
-<INITIAL>anxi            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ANDI;
-<INITIAL>nxg             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NEG;
-<INITIAL>nxp             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NOP;
-<INITIAL>ox              BEGIN(OPERANDS); return TOKEN_DIRECTIVE_OR;
-<INITIAL>oxi             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ORI;
-<INITIAL>sxb             BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUB;
-<INITIAL>sxba            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBA;
-<INITIAL>sxbi            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBI;
-<INITIAL>sxbq            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBQ;
-<INITIAL>sxbx            BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBX;
+<INITIAL>axd             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADD;
+<INITIAL>axda            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADDA;
+<INITIAL>axdi            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADDI;
+<INITIAL>axdq            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADDQ;
+<INITIAL>axdx            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADDX;
+<INITIAL>anx             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_AND;
+<INITIAL>anxi            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ANDI;
+<INITIAL>nxg             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_NEG;
+<INITIAL>nxp             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_NOP;
+<INITIAL>ox              BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_OR;
+<INITIAL>oxi             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ORI;
+<INITIAL>sxb             BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUB;
+<INITIAL>sxba            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBA;
+<INITIAL>sxbi            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBI;
+<INITIAL>sxbq            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBQ;
+<INITIAL>sxbx            BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBX;
 
  /* Sizes. */
-".b"            return TOKEN_SIZE_BYTE;
-".s"            return TOKEN_SIZE_SHORT;
-".w"            return TOKEN_SIZE_WORD;
-".l"            return TOKEN_SIZE_LONGWORD;
+".b"            return m68kasm::parser::token::TOKEN_SIZE_BYTE;
+".s"            return m68kasm::parser::token::TOKEN_SIZE_SHORT;
+".w"            return m68kasm::parser::token::TOKEN_SIZE_WORD;
+".l"            return m68kasm::parser::token::TOKEN_SIZE_LONGWORD;
 
  /* Misc. symbols. */
 "."             return yytext[0];
@@ -322,88 +322,88 @@ hexadecimal       {hexadecimal_digit}+
 "@"             return yytext[0];
 
  /* Operators. */
-"&&"            return TOKEN_LOGICAL_AND;
-"||"            return TOKEN_LOGICAL_OR;
-"=="            return TOKEN_EQUALITY;   /* An assembler extension, for programmers that are familiar with C. */
-"!="            return TOKEN_INEQUALITY; /* An assembler extension, for programmers that are familiar with C. */
-"<>"            return TOKEN_INEQUALITY;
-"><"            return TOKEN_INEQUALITY;
-"<="            return TOKEN_LESS_OR_EQUAL;
-">="            return TOKEN_MORE_OR_EQUAL;
-"<<"            return TOKEN_LEFT_SHIFT;
-">>"            return TOKEN_RIGHT_SHIFT;
+"&&"            return m68kasm::parser::token::TOKEN_LOGICAL_AND;
+"||"            return m68kasm::parser::token::TOKEN_LOGICAL_OR;
+"=="            return m68kasm::parser::token::TOKEN_EQUALITY;   /* An assembler extension, for programmers that are familiar with C. */
+"!="            return m68kasm::parser::token::TOKEN_INEQUALITY; /* An assembler extension, for programmers that are familiar with C. */
+"<>"            return m68kasm::parser::token::TOKEN_INEQUALITY;
+"><"            return m68kasm::parser::token::TOKEN_INEQUALITY;
+"<="            return m68kasm::parser::token::TOKEN_LESS_OR_EQUAL;
+">="            return m68kasm::parser::token::TOKEN_MORE_OR_EQUAL;
+"<<"            return m68kasm::parser::token::TOKEN_LEFT_SHIFT;
+">>"            return m68kasm::parser::token::TOKEN_RIGHT_SHIFT;
 
  /* Operands. */
-sr              return TOKEN_STATUS_REGISTER;
-ccr             return TOKEN_CONDITION_CODE_REGISTER;
-sp              yylval->unsigned_long = 7; return TOKEN_ADDRESS_REGISTER;
-usp             return TOKEN_USER_STACK_POINTER_REGISTER;
-pc              return TOKEN_PROGRAM_COUNTER;
+sr              return m68kasm::parser::token::TOKEN_STATUS_REGISTER;
+ccr             return m68kasm::parser::token::TOKEN_CONDITION_CODE_REGISTER;
+sp              yylval->unsigned_long = 7; return m68kasm::parser::token::TOKEN_ADDRESS_REGISTER;
+usp             return m68kasm::parser::token::TOKEN_USER_STACK_POINTER_REGISTER;
+pc              return m68kasm::parser::token::TOKEN_PROGRAM_COUNTER;
 
  /* Functions. */
-<OPERANDS>strlen          return TOKEN_STRLEN;
-<OPERANDS>strcmp          return TOKEN_STRCMP;
-<OPERANDS>instr           return TOKEN_INSTR;
-<OPERANDS>def             return TOKEN_DEF;
-<OPERANDS>type            return TOKEN_TYPE;
-<OPERANDS>filesize        return TOKEN_FILESIZE;
-<OPERANDS>offset          return TOKEN_OFFSET;
-<OPERANDS>sectoff         return TOKEN_OFFSET;
+<OPERANDS>strlen          return m68kasm::parser::token::TOKEN_STRLEN;
+<OPERANDS>strcmp          return m68kasm::parser::token::TOKEN_STRCMP;
+<OPERANDS>instr           return m68kasm::parser::token::TOKEN_INSTR;
+<OPERANDS>def             return m68kasm::parser::token::TOKEN_DEF;
+<OPERANDS>type            return m68kasm::parser::token::TOKEN_TYPE;
+<OPERANDS>filesize        return m68kasm::parser::token::TOKEN_FILESIZE;
+<OPERANDS>offset          return m68kasm::parser::token::TOKEN_OFFSET;
+<OPERANDS>sectoff         return m68kasm::parser::token::TOKEN_OFFSET;
 
  /* Decimal number. */
 {decimal} {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng, 10))
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 
-	return TOKEN_NUMBER;
+	return m68kasm::parser::token::TOKEN_NUMBER;
 }
 
  /* Hexadecimal number (68k). */
 \${hexadecimal} {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, yyleng - 1, 16))
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 
-	return TOKEN_NUMBER;
+	return m68kasm::parser::token::TOKEN_NUMBER;
 }
 
  /* Binary number (68k). */
 \%{binary} {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, yyleng - 1, 2))
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 
-	return TOKEN_NUMBER;
+	return m68kasm::parser::token::TOKEN_NUMBER;
 }
 
  /* Hexadecimal number (Z80). */
 [0-9]{hexadecimal}?h {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng - 1, 16))
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 
-	return TOKEN_NUMBER;
+	return m68kasm::parser::token::TOKEN_NUMBER;
 }
 
  /* Binary number (Z80). */
 {binary}b {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng - 1, 2))
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 
-	return TOKEN_NUMBER;
+	return m68kasm::parser::token::TOKEN_NUMBER;
 }
 
  /* Hexadecimal number (C). */
 0x{hexadecimal} {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, yyleng - 2, 16))
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 
-	return TOKEN_NUMBER;
+	return m68kasm::parser::token::TOKEN_NUMBER;
 }
 
  /* Binary number (GNU C). */
 0b{binary} {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, yyleng - 2, 2))
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 
-	return TOKEN_NUMBER;
+	return m68kasm::parser::token::TOKEN_NUMBER;
 }
 
  /* String. */
@@ -424,7 +424,7 @@ pc              return TOKEN_PROGRAM_COUNTER;
 	if (!String_ResizeNoFill(&yylval->string, StringView_Length(&view)))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 	}
 
 	/* Copy string, turning escaped (paired) quotes into regular (lone) quotes. */
@@ -447,7 +447,7 @@ pc              return TOKEN_PROGRAM_COUNTER;
 
 	String_ResizeNoFill(&yylval->string, output_size);
 
-	return TOKEN_STRING;
+	return m68kasm::parser::token::TOKEN_STRING;
 }
 
  /* File path (like a string, but it doesn't need to be wrapped in quotation marks). */
@@ -458,10 +458,10 @@ pc              return TOKEN_PROGRAM_COUNTER;
 	if (!String_Create(&yylval->string, yytext, yyleng))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 	}
 
-	return TOKEN_STRING;
+	return m68kasm::parser::token::TOKEN_STRING;
 }
 
  /* Identifier, data register, or address register. */
@@ -470,7 +470,7 @@ pc              return TOKEN_PROGRAM_COUNTER;
 	{
 		/* Data register or address register. */
 		yylval->unsigned_long = yytext[1] - '0';
-		return yytext[0] == 'd' || yytext[0] == 'D' ? TOKEN_DATA_REGISTER : TOKEN_ADDRESS_REGISTER;
+		return yytext[0] == 'd' || yytext[0] == 'D' ? m68kasm::parser::token::TOKEN_DATA_REGISTER : m68kasm::parser::token::TOKEN_ADDRESS_REGISTER;
 	}
 	else
 	{
@@ -478,10 +478,10 @@ pc              return TOKEN_PROGRAM_COUNTER;
 		if (!String_Create(&yylval->string, yytext, yyleng))
 		{
 			m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-			return TOKEN_M68KASM_error;
+			return m68kasm::parser::token::TOKEN_M68KASM_error;
 		}
 
-		return TOKEN_IDENTIFIER;
+		return m68kasm::parser::token::TOKEN_IDENTIFIER;
 	}
 }
 
@@ -490,10 +490,10 @@ pc              return TOKEN_PROGRAM_COUNTER;
 	if (!String_Create(&yylval->string, yytext, yyleng))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 	}
 
-	return TOKEN_LOCAL_IDENTIFIER;
+	return m68kasm::parser::token::TOKEN_LOCAL_IDENTIFIER;
 }
 
  /* Option. */
@@ -501,10 +501,10 @@ pc              return TOKEN_PROGRAM_COUNTER;
 	if (!String_Create(&yylval->string, yytext, yyleng))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 	}
 
-	return TOKEN_OPTION;
+	return m68kasm::parser::token::TOKEN_OPTION;
 }
 
  /* Make Bison signal a syntax error for unrecognised symbols */

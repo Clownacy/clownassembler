@@ -1783,822 +1783,822 @@ BEGIN(INITIAL); yyterminate();
 case 3:
 YY_RULE_SETUP
 #line 117 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ORI;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ORI;
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
 #line 118 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ANDI;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ANDI;
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
 #line 119 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBI;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBI;
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
 #line 120 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDI;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADDI;
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
 #line 121 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EORI;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_EORI;
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
 #line 122 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_CMPI;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_CMPI;
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
 #line 123 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BTST;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BTST;
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
 #line 124 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BCHG;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BCHG;
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
 #line 125 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BCLR;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BCLR;
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
 #line 126 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BSET;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BSET;
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
 #line 127 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MOVEP;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MOVEP;
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
 #line 128 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MOVEA;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MOVEA;
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
 #line 129 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MOVE;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MOVE;
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
 #line 130 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NEGX;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_NEGX;
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
 #line 131 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_CLR;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_CLR;
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
 #line 132 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NEG;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_NEG;
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
 #line 133 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NOT;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_NOT;
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
 #line 134 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EXT;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_EXT;
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
 #line 135 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NBCD;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_NBCD;
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
 #line 136 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SWAP;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SWAP;
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
 #line 137 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_PEA;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_PEA;
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
 #line 138 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ILLEGAL;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ILLEGAL;
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
 #line 139 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_TAS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_TAS;
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
 #line 140 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_TST;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_TST;
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
 #line 141 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_TRAP;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_TRAP;
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
 #line 142 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LINK;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_LINK;
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
 #line 143 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_UNLK;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_UNLK;
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
 #line 144 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RESET;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_RESET;
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
 #line 145 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NOP;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_NOP;
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
 #line 146 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_STOP;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_STOP;
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
 #line 147 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RTE;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_RTE;
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
 #line 148 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RTS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_RTS;
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
 #line 149 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_TRAPV;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_TRAPV;
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
 #line 150 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RTR;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_RTR;
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
 #line 151 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_JSR;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_JSR;
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
 #line 152 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_JMP;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_JMP;
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
 #line 153 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MOVEM;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MOVEM;
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
 #line 154 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LEA;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_LEA;
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
 #line 155 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_CHK;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_CHK;
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
 #line 156 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDQ;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADDQ;
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
 #line 157 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBQ;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBQ;
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
 #line 158 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ST;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ST;
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
 #line 159 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SF;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SF;
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
 #line 160 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SHI;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SHI;
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
 #line 161 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SLS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SLS;
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
 #line 162 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SCC;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SCC;
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
 #line 163 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SCS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SCS;
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
 #line 164 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SNE;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SNE;
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
 #line 165 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SEQ;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SEQ;
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
 #line 166 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SVC;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SVC;
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
 #line 167 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SVS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SVS;
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
 #line 168 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SPL;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SPL;
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
 #line 169 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SMI;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SMI;
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
 #line 170 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SGE;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SGE;
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
 #line 171 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SLT;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SLT;
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
 #line 172 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SGT;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SGT;
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
 #line 173 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SLE;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SLE;
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
 #line 174 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SCC;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SCC;
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
 #line 175 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SCS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SCS;
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
 #line 176 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBT;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBT;
 	YY_BREAK
 case 63:
 YY_RULE_SETUP
 #line 177 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBF;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBF;
 	YY_BREAK
 case 64:
 YY_RULE_SETUP
 #line 178 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBHI;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBHI;
 	YY_BREAK
 case 65:
 YY_RULE_SETUP
 #line 179 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBLS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBLS;
 	YY_BREAK
 case 66:
 YY_RULE_SETUP
 #line 180 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBCC;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBCC;
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
 #line 181 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBCS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBCS;
 	YY_BREAK
 case 68:
 YY_RULE_SETUP
 #line 182 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBNE;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBNE;
 	YY_BREAK
 case 69:
 YY_RULE_SETUP
 #line 183 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBEQ;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBEQ;
 	YY_BREAK
 case 70:
 YY_RULE_SETUP
 #line 184 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBVC;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBVC;
 	YY_BREAK
 case 71:
 YY_RULE_SETUP
 #line 185 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBVS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBVS;
 	YY_BREAK
 case 72:
 YY_RULE_SETUP
 #line 186 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBPL;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBPL;
 	YY_BREAK
 case 73:
 YY_RULE_SETUP
 #line 187 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBMI;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBMI;
 	YY_BREAK
 case 74:
 YY_RULE_SETUP
 #line 188 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBGE;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBGE;
 	YY_BREAK
 case 75:
 YY_RULE_SETUP
 #line 189 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBLT;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBLT;
 	YY_BREAK
 case 76:
 YY_RULE_SETUP
 #line 190 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBGT;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBGT;
 	YY_BREAK
 case 77:
 YY_RULE_SETUP
 #line 191 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBLE;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBLE;
 	YY_BREAK
 case 78:
 YY_RULE_SETUP
 #line 192 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBCC;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBCC;
 	YY_BREAK
 case 79:
 YY_RULE_SETUP
 #line 193 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBCS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBCS;
 	YY_BREAK
 case 80:
 YY_RULE_SETUP
 #line 194 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DBF;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DBF;
 	YY_BREAK
 case 81:
 YY_RULE_SETUP
 #line 195 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BRA;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BRA;
 	YY_BREAK
 case 82:
 YY_RULE_SETUP
 #line 196 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BSR;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BSR;
 	YY_BREAK
 case 83:
 YY_RULE_SETUP
 #line 197 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BHI;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BHI;
 	YY_BREAK
 case 84:
 YY_RULE_SETUP
 #line 198 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BLS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BLS;
 	YY_BREAK
 case 85:
 YY_RULE_SETUP
 #line 199 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BCC;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BCC;
 	YY_BREAK
 case 86:
 YY_RULE_SETUP
 #line 200 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BCS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BCS;
 	YY_BREAK
 case 87:
 YY_RULE_SETUP
 #line 201 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BNE;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BNE;
 	YY_BREAK
 case 88:
 YY_RULE_SETUP
 #line 202 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BEQ;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BEQ;
 	YY_BREAK
 case 89:
 YY_RULE_SETUP
 #line 203 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BVC;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BVC;
 	YY_BREAK
 case 90:
 YY_RULE_SETUP
 #line 204 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BVS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BVS;
 	YY_BREAK
 case 91:
 YY_RULE_SETUP
 #line 205 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BPL;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BPL;
 	YY_BREAK
 case 92:
 YY_RULE_SETUP
 #line 206 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BMI;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BMI;
 	YY_BREAK
 case 93:
 YY_RULE_SETUP
 #line 207 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BGE;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BGE;
 	YY_BREAK
 case 94:
 YY_RULE_SETUP
 #line 208 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BLT;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BLT;
 	YY_BREAK
 case 95:
 YY_RULE_SETUP
 #line 209 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BGT;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BGT;
 	YY_BREAK
 case 96:
 YY_RULE_SETUP
 #line 210 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BLE;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BLE;
 	YY_BREAK
 case 97:
 YY_RULE_SETUP
 #line 211 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BCC;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BCC;
 	YY_BREAK
 case 98:
 YY_RULE_SETUP
 #line 212 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_BCS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_BCS;
 	YY_BREAK
 case 99:
 YY_RULE_SETUP
 #line 213 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MOVEQ;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MOVEQ;
 	YY_BREAK
 case 100:
 YY_RULE_SETUP
 #line 214 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DIVU;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DIVU;
 	YY_BREAK
 case 101:
 YY_RULE_SETUP
 #line 215 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DIVS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DIVS;
 	YY_BREAK
 case 102:
 YY_RULE_SETUP
 #line 216 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SBCD;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SBCD;
 	YY_BREAK
 case 103:
 YY_RULE_SETUP
 #line 217 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_OR;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_OR;
 	YY_BREAK
 case 104:
 YY_RULE_SETUP
 #line 218 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUB;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUB;
 	YY_BREAK
 case 105:
 YY_RULE_SETUP
 #line 219 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBX;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBX;
 	YY_BREAK
 case 106:
 YY_RULE_SETUP
 #line 220 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBA;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBA;
 	YY_BREAK
 case 107:
 YY_RULE_SETUP
 #line 221 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EOR;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_EOR;
 	YY_BREAK
 case 108:
 YY_RULE_SETUP
 #line 222 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_CMPM;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_CMPM;
 	YY_BREAK
 case 109:
 YY_RULE_SETUP
 #line 223 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_CMP;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_CMP;
 	YY_BREAK
 case 110:
 YY_RULE_SETUP
 #line 224 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_CMPA;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_CMPA;
 	YY_BREAK
 case 111:
 YY_RULE_SETUP
 #line 225 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MULU;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MULU;
 	YY_BREAK
 case 112:
 YY_RULE_SETUP
 #line 226 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MULS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MULS;
 	YY_BREAK
 case 113:
 YY_RULE_SETUP
 #line 227 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ABCD;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ABCD;
 	YY_BREAK
 case 114:
 YY_RULE_SETUP
 #line 228 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EXG;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_EXG;
 	YY_BREAK
 case 115:
 YY_RULE_SETUP
 #line 229 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_AND;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_AND;
 	YY_BREAK
 case 116:
 YY_RULE_SETUP
 #line 230 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADD;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADD;
 	YY_BREAK
 case 117:
 YY_RULE_SETUP
 #line 231 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDX;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADDX;
 	YY_BREAK
 case 118:
 YY_RULE_SETUP
 #line 232 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDA;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADDA;
 	YY_BREAK
 case 119:
 YY_RULE_SETUP
 #line 233 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ASL;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ASL;
 	YY_BREAK
 case 120:
 YY_RULE_SETUP
 #line 234 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ASR;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ASR;
 	YY_BREAK
 case 121:
 YY_RULE_SETUP
 #line 235 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LSL;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_LSL;
 	YY_BREAK
 case 122:
 YY_RULE_SETUP
 #line 236 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LSR;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_LSR;
 	YY_BREAK
 case 123:
 YY_RULE_SETUP
 #line 237 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ROXL;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ROXL;
 	YY_BREAK
 case 124:
 YY_RULE_SETUP
 #line 238 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ROXR;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ROXR;
 	YY_BREAK
 case 125:
 YY_RULE_SETUP
 #line 239 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ROL;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ROL;
 	YY_BREAK
 case 126:
 YY_RULE_SETUP
 #line 240 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ROR;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ROR;
 	YY_BREAK
 case 127:
 YY_RULE_SETUP
 #line 241 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DC;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DC;
 	YY_BREAK
 case 128:
 YY_RULE_SETUP
 #line 242 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DCB;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DCB;
 	YY_BREAK
 case 129:
 YY_RULE_SETUP
 #line 243 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_DS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_DS;
 	YY_BREAK
 case 130:
 YY_RULE_SETUP
 #line 244 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_REPT;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_REPT;
 	YY_BREAK
 case 131:
 YY_RULE_SETUP
 #line 245 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDR;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ENDR;
 	YY_BREAK
 case 132:
 YY_RULE_SETUP
 #line 246 "lexical.l"
-BEGIN(MACRO_PARAMETERS); return TOKEN_DIRECTIVE_MACRO;
+BEGIN(MACRO_PARAMETERS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MACRO;
 	YY_BREAK
 case 133:
 YY_RULE_SETUP
 #line 247 "lexical.l"
-BEGIN(MACRO_PARAMETERS); return TOKEN_DIRECTIVE_MACROS;
+BEGIN(MACRO_PARAMETERS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MACROS;
 	YY_BREAK
 case 134:
 YY_RULE_SETUP
 #line 248 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDM;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ENDM;
 	YY_BREAK
 case 135:
 YY_RULE_SETUP
 #line 249 "lexical.l"
-BEGIN(PATH); return TOKEN_DIRECTIVE_INCLUDE;
+BEGIN(PATH); return m68kasm::parser::token::TOKEN_DIRECTIVE_INCLUDE;
 	YY_BREAK
 case 136:
 YY_RULE_SETUP
 #line 250 "lexical.l"
-BEGIN(PATH); return TOKEN_DIRECTIVE_INCBIN;
+BEGIN(PATH); return m68kasm::parser::token::TOKEN_DIRECTIVE_INCBIN;
 	YY_BREAK
 case 137:
 YY_RULE_SETUP
 #line 251 "lexical.l"
-BEGIN(PATH); return TOKEN_DIRECTIVE_INCBIN;
+BEGIN(PATH); return m68kasm::parser::token::TOKEN_DIRECTIVE_INCBIN;
 	YY_BREAK
 case 138:
 YY_RULE_SETUP
 #line 252 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EQU;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_EQU;
 	YY_BREAK
 case 139:
 YY_RULE_SETUP
 #line 253 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EQUS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_EQUS;
 	YY_BREAK
 case 140:
 YY_RULE_SETUP
 #line 254 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBSTR;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBSTR;
 	YY_BREAK
 case 141:
 YY_RULE_SETUP
 #line 255 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SET;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SET;
 	YY_BREAK
 case 142:
 YY_RULE_SETUP
 #line 256 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_IF;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_IF;
 	YY_BREAK
 case 143:
 YY_RULE_SETUP
 #line 257 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ELSEIF;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ELSEIF;
 	YY_BREAK
 case 144:
 YY_RULE_SETUP
 #line 258 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ELSE;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ELSE;
 	YY_BREAK
 case 145:
 YY_RULE_SETUP
 #line 259 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDC;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ENDC;
 	YY_BREAK
 case 146:
 YY_RULE_SETUP
 #line 260 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDC;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ENDC;
 	YY_BREAK
 case 147:
 YY_RULE_SETUP
 #line 261 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_WHILE;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_WHILE;
 	YY_BREAK
 case 148:
 YY_RULE_SETUP
 #line 262 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ENDW;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ENDW;
 	YY_BREAK
 case 149:
 YY_RULE_SETUP
 #line 263 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_EVEN;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_EVEN;
 	YY_BREAK
 case 150:
 YY_RULE_SETUP
 #line 264 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_CNOP;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_CNOP;
 	YY_BREAK
 case 151:
 YY_RULE_SETUP
 #line 265 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_INFORM;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_INFORM;
 	YY_BREAK
 case 152:
 YY_RULE_SETUP
 #line 266 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_END;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_END;
 	YY_BREAK
 case 153:
 YY_RULE_SETUP
 #line 267 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RS;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_RS;
 	YY_BREAK
 case 154:
 YY_RULE_SETUP
 #line 268 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RSSET;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_RSSET;
 	YY_BREAK
 case 155:
 YY_RULE_SETUP
 #line 269 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_RSRESET;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_RSRESET;
 	YY_BREAK
 case 156:
 YY_RULE_SETUP
 #line 270 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_OBJ;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_OBJ;
 	YY_BREAK
 case 157:
 YY_RULE_SETUP
 #line 271 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_OBJEND;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_OBJEND;
 	YY_BREAK
 case 158:
 YY_RULE_SETUP
 #line 272 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ORG;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ORG;
 	YY_BREAK
 case 159:
 YY_RULE_SETUP
 #line 273 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_PUSHO;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_PUSHO;
 	YY_BREAK
 case 160:
 YY_RULE_SETUP
 #line 274 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_POPO;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_POPO;
 	YY_BREAK
 case 161:
 YY_RULE_SETUP
 #line 275 "lexical.l"
-BEGIN(OPTIONS);  return TOKEN_DIRECTIVE_OPT;
+BEGIN(OPTIONS);  return m68kasm::parser::token::TOKEN_DIRECTIVE_OPT;
 	YY_BREAK
 case 162:
 YY_RULE_SETUP
 #line 276 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_PUSHP;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_PUSHP;
 	YY_BREAK
 case 163:
 YY_RULE_SETUP
 #line 277 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_POPP;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_POPP;
 	YY_BREAK
 case 164:
 YY_RULE_SETUP
 #line 278 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SHIFT;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SHIFT;
 	YY_BREAK
 case 165:
 YY_RULE_SETUP
 #line 279 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_MEXIT;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_MEXIT;
 	YY_BREAK
 case 166:
 YY_RULE_SETUP
 #line 280 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LOCAL;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_LOCAL;
 	YY_BREAK
 case 167:
 YY_RULE_SETUP
@@ -2608,17 +2608,17 @@ BEGIN(OPERANDS); return yytext[0];
 case 168:
 YY_RULE_SETUP
 #line 282 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_LIST;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_LIST;
 	YY_BREAK
 case 169:
 YY_RULE_SETUP
 #line 283 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NOLIST;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_NOLIST;
 	YY_BREAK
 case 170:
 YY_RULE_SETUP
 #line 284 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_PURGE;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_PURGE;
 	YY_BREAK
 /* axm68k opcodes. */
 /* axm68k is a modified version of asm68k with renamed opcodes, so that
@@ -2626,103 +2626,103 @@ BEGIN(OPERANDS); return TOKEN_DIRECTIVE_PURGE;
 case 171:
 YY_RULE_SETUP
 #line 289 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADD;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADD;
 	YY_BREAK
 case 172:
 YY_RULE_SETUP
 #line 290 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDA;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADDA;
 	YY_BREAK
 case 173:
 YY_RULE_SETUP
 #line 291 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDI;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADDI;
 	YY_BREAK
 case 174:
 YY_RULE_SETUP
 #line 292 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDQ;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADDQ;
 	YY_BREAK
 case 175:
 YY_RULE_SETUP
 #line 293 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ADDX;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ADDX;
 	YY_BREAK
 case 176:
 YY_RULE_SETUP
 #line 294 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_AND;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_AND;
 	YY_BREAK
 case 177:
 YY_RULE_SETUP
 #line 295 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ANDI;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ANDI;
 	YY_BREAK
 case 178:
 YY_RULE_SETUP
 #line 296 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NEG;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_NEG;
 	YY_BREAK
 case 179:
 YY_RULE_SETUP
 #line 297 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_NOP;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_NOP;
 	YY_BREAK
 case 180:
 YY_RULE_SETUP
 #line 298 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_OR;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_OR;
 	YY_BREAK
 case 181:
 YY_RULE_SETUP
 #line 299 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_ORI;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_ORI;
 	YY_BREAK
 case 182:
 YY_RULE_SETUP
 #line 300 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUB;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUB;
 	YY_BREAK
 case 183:
 YY_RULE_SETUP
 #line 301 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBA;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBA;
 	YY_BREAK
 case 184:
 YY_RULE_SETUP
 #line 302 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBI;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBI;
 	YY_BREAK
 case 185:
 YY_RULE_SETUP
 #line 303 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBQ;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBQ;
 	YY_BREAK
 case 186:
 YY_RULE_SETUP
 #line 304 "lexical.l"
-BEGIN(OPERANDS); return TOKEN_DIRECTIVE_SUBX;
+BEGIN(OPERANDS); return m68kasm::parser::token::TOKEN_DIRECTIVE_SUBX;
 	YY_BREAK
 /* Sizes. */
 case 187:
 YY_RULE_SETUP
 #line 307 "lexical.l"
-return TOKEN_SIZE_BYTE;
+return m68kasm::parser::token::TOKEN_SIZE_BYTE;
 	YY_BREAK
 case 188:
 YY_RULE_SETUP
 #line 308 "lexical.l"
-return TOKEN_SIZE_SHORT;
+return m68kasm::parser::token::TOKEN_SIZE_SHORT;
 	YY_BREAK
 case 189:
 YY_RULE_SETUP
 #line 309 "lexical.l"
-return TOKEN_SIZE_WORD;
+return m68kasm::parser::token::TOKEN_SIZE_WORD;
 	YY_BREAK
 case 190:
 YY_RULE_SETUP
 #line 310 "lexical.l"
-return TOKEN_SIZE_LONGWORD;
+return m68kasm::parser::token::TOKEN_SIZE_LONGWORD;
 	YY_BREAK
 /* Misc. symbols. */
 case 191:
@@ -2784,119 +2784,119 @@ return yytext[0];
 case 202:
 YY_RULE_SETUP
 #line 326 "lexical.l"
-return TOKEN_LOGICAL_AND;
+return m68kasm::parser::token::TOKEN_LOGICAL_AND;
 	YY_BREAK
 case 203:
 YY_RULE_SETUP
 #line 327 "lexical.l"
-return TOKEN_LOGICAL_OR;
+return m68kasm::parser::token::TOKEN_LOGICAL_OR;
 	YY_BREAK
 case 204:
 YY_RULE_SETUP
 #line 328 "lexical.l"
-return TOKEN_EQUALITY;   /* An assembler extension, for programmers that are familiar with C. */
+return m68kasm::parser::token::TOKEN_EQUALITY;   /* An assembler extension, for programmers that are familiar with C. */
 	YY_BREAK
 case 205:
 YY_RULE_SETUP
 #line 329 "lexical.l"
-return TOKEN_INEQUALITY; /* An assembler extension, for programmers that are familiar with C. */
+return m68kasm::parser::token::TOKEN_INEQUALITY; /* An assembler extension, for programmers that are familiar with C. */
 	YY_BREAK
 case 206:
 YY_RULE_SETUP
 #line 330 "lexical.l"
-return TOKEN_INEQUALITY;
+return m68kasm::parser::token::TOKEN_INEQUALITY;
 	YY_BREAK
 case 207:
 YY_RULE_SETUP
 #line 331 "lexical.l"
-return TOKEN_INEQUALITY;
+return m68kasm::parser::token::TOKEN_INEQUALITY;
 	YY_BREAK
 case 208:
 YY_RULE_SETUP
 #line 332 "lexical.l"
-return TOKEN_LESS_OR_EQUAL;
+return m68kasm::parser::token::TOKEN_LESS_OR_EQUAL;
 	YY_BREAK
 case 209:
 YY_RULE_SETUP
 #line 333 "lexical.l"
-return TOKEN_MORE_OR_EQUAL;
+return m68kasm::parser::token::TOKEN_MORE_OR_EQUAL;
 	YY_BREAK
 case 210:
 YY_RULE_SETUP
 #line 334 "lexical.l"
-return TOKEN_LEFT_SHIFT;
+return m68kasm::parser::token::TOKEN_LEFT_SHIFT;
 	YY_BREAK
 case 211:
 YY_RULE_SETUP
 #line 335 "lexical.l"
-return TOKEN_RIGHT_SHIFT;
+return m68kasm::parser::token::TOKEN_RIGHT_SHIFT;
 	YY_BREAK
 /* Operands. */
 case 212:
 YY_RULE_SETUP
 #line 338 "lexical.l"
-return TOKEN_STATUS_REGISTER;
+return m68kasm::parser::token::TOKEN_STATUS_REGISTER;
 	YY_BREAK
 case 213:
 YY_RULE_SETUP
 #line 339 "lexical.l"
-return TOKEN_CONDITION_CODE_REGISTER;
+return m68kasm::parser::token::TOKEN_CONDITION_CODE_REGISTER;
 	YY_BREAK
 case 214:
 YY_RULE_SETUP
 #line 340 "lexical.l"
-yylval->unsigned_long = 7; return TOKEN_ADDRESS_REGISTER;
+yylval->unsigned_long = 7; return m68kasm::parser::token::TOKEN_ADDRESS_REGISTER;
 	YY_BREAK
 case 215:
 YY_RULE_SETUP
 #line 341 "lexical.l"
-return TOKEN_USER_STACK_POINTER_REGISTER;
+return m68kasm::parser::token::TOKEN_USER_STACK_POINTER_REGISTER;
 	YY_BREAK
 case 216:
 YY_RULE_SETUP
 #line 342 "lexical.l"
-return TOKEN_PROGRAM_COUNTER;
+return m68kasm::parser::token::TOKEN_PROGRAM_COUNTER;
 	YY_BREAK
 /* Functions. */
 case 217:
 YY_RULE_SETUP
 #line 345 "lexical.l"
-return TOKEN_STRLEN;
+return m68kasm::parser::token::TOKEN_STRLEN;
 	YY_BREAK
 case 218:
 YY_RULE_SETUP
 #line 346 "lexical.l"
-return TOKEN_STRCMP;
+return m68kasm::parser::token::TOKEN_STRCMP;
 	YY_BREAK
 case 219:
 YY_RULE_SETUP
 #line 347 "lexical.l"
-return TOKEN_INSTR;
+return m68kasm::parser::token::TOKEN_INSTR;
 	YY_BREAK
 case 220:
 YY_RULE_SETUP
 #line 348 "lexical.l"
-return TOKEN_DEF;
+return m68kasm::parser::token::TOKEN_DEF;
 	YY_BREAK
 case 221:
 YY_RULE_SETUP
 #line 349 "lexical.l"
-return TOKEN_TYPE;
+return m68kasm::parser::token::TOKEN_TYPE;
 	YY_BREAK
 case 222:
 YY_RULE_SETUP
 #line 350 "lexical.l"
-return TOKEN_FILESIZE;
+return m68kasm::parser::token::TOKEN_FILESIZE;
 	YY_BREAK
 case 223:
 YY_RULE_SETUP
 #line 351 "lexical.l"
-return TOKEN_OFFSET;
+return m68kasm::parser::token::TOKEN_OFFSET;
 	YY_BREAK
 case 224:
 YY_RULE_SETUP
 #line 352 "lexical.l"
-return TOKEN_OFFSET;
+return m68kasm::parser::token::TOKEN_OFFSET;
 	YY_BREAK
 /* Decimal number. */
 case 225:
@@ -2904,9 +2904,9 @@ YY_RULE_SETUP
 #line 355 "lexical.l"
 {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng, 10))
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 
-	return TOKEN_NUMBER;
+	return m68kasm::parser::token::TOKEN_NUMBER;
 }
 	YY_BREAK
 /* Hexadecimal number (68k). */
@@ -2915,9 +2915,9 @@ YY_RULE_SETUP
 #line 363 "lexical.l"
 {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, yyleng - 1, 16))
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 
-	return TOKEN_NUMBER;
+	return m68kasm::parser::token::TOKEN_NUMBER;
 }
 	YY_BREAK
 /* Binary number (68k). */
@@ -2926,9 +2926,9 @@ YY_RULE_SETUP
 #line 371 "lexical.l"
 {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 1, yyleng - 1, 2))
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 
-	return TOKEN_NUMBER;
+	return m68kasm::parser::token::TOKEN_NUMBER;
 }
 	YY_BREAK
 /* Hexadecimal number (Z80). */
@@ -2937,9 +2937,9 @@ YY_RULE_SETUP
 #line 379 "lexical.l"
 {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng - 1, 16))
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 
-	return TOKEN_NUMBER;
+	return m68kasm::parser::token::TOKEN_NUMBER;
 }
 	YY_BREAK
 /* Binary number (Z80). */
@@ -2948,9 +2948,9 @@ YY_RULE_SETUP
 #line 387 "lexical.l"
 {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext, yyleng - 1, 2))
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 
-	return TOKEN_NUMBER;
+	return m68kasm::parser::token::TOKEN_NUMBER;
 }
 	YY_BREAK
 /* Hexadecimal number (C). */
@@ -2959,9 +2959,9 @@ YY_RULE_SETUP
 #line 395 "lexical.l"
 {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, yyleng - 2, 16))
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 
-	return TOKEN_NUMBER;
+	return m68kasm::parser::token::TOKEN_NUMBER;
 }
 	YY_BREAK
 /* Binary number (GNU C). */
@@ -2970,9 +2970,9 @@ YY_RULE_SETUP
 #line 403 "lexical.l"
 {
 	if (!ParseNumber(&yylval->unsigned_long, yyscanner, yytext + 2, yyleng - 2, 2))
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 
-	return TOKEN_NUMBER;
+	return m68kasm::parser::token::TOKEN_NUMBER;
 }
 	YY_BREAK
 /* String. */
@@ -2999,7 +2999,7 @@ YY_RULE_SETUP
 	if (!String_ResizeNoFill(&yylval->string, StringView_Length(&view)))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 	}
 
 	/* Copy string, turning escaped (paired) quotes into regular (lone) quotes. */
@@ -3022,7 +3022,7 @@ YY_RULE_SETUP
 
 	String_ResizeNoFill(&yylval->string, output_size);
 
-	return TOKEN_STRING;
+	return m68kasm::parser::token::TOKEN_STRING;
 }
 	YY_BREAK
 /* File path (like a string, but it doesn't need to be wrapped in quotation marks). */
@@ -3037,10 +3037,10 @@ YY_RULE_SETUP
 	if (!String_Create(&yylval->string, yytext, yyleng))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 	}
 
-	return TOKEN_STRING;
+	return m68kasm::parser::token::TOKEN_STRING;
 }
 	YY_BREAK
 /* Identifier, data register, or address register. */
@@ -3052,7 +3052,7 @@ YY_RULE_SETUP
 	{
 		/* Data register or address register. */
 		yylval->unsigned_long = yytext[1] - '0';
-		return yytext[0] == 'd' || yytext[0] == 'D' ? TOKEN_DATA_REGISTER : TOKEN_ADDRESS_REGISTER;
+		return yytext[0] == 'd' || yytext[0] == 'D' ? m68kasm::parser::token::TOKEN_DATA_REGISTER : m68kasm::parser::token::TOKEN_ADDRESS_REGISTER;
 	}
 	else
 	{
@@ -3060,10 +3060,10 @@ YY_RULE_SETUP
 		if (!String_Create(&yylval->string, yytext, yyleng))
 		{
 			m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-			return TOKEN_M68KASM_error;
+			return m68kasm::parser::token::TOKEN_M68KASM_error;
 		}
 
-		return TOKEN_IDENTIFIER;
+		return m68kasm::parser::token::TOKEN_IDENTIFIER;
 	}
 }
 	YY_BREAK
@@ -3075,10 +3075,10 @@ YY_RULE_SETUP
 	if (!String_Create(&yylval->string, yytext, yyleng))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 	}
 
-	return TOKEN_LOCAL_IDENTIFIER;
+	return m68kasm::parser::token::TOKEN_LOCAL_IDENTIFIER;
 }
 	YY_BREAK
 /* Option. */
@@ -3089,10 +3089,10 @@ YY_RULE_SETUP
 	if (!String_Create(&yylval->string, yytext, yyleng))
 	{
 		m68kasm_error(yyscanner, NULL, "Could not allocate memory for generic string.");
-		return TOKEN_M68KASM_error;
+		return m68kasm::parser::token::TOKEN_M68KASM_error;
 	}
 
-	return TOKEN_OPTION;
+	return m68kasm::parser::token::TOKEN_OPTION;
 }
 	YY_BREAK
 /* Make Bison signal a syntax error for unrecognised symbols */

@@ -17,9 +17,12 @@
 
 /*%define parse.trace*/
 
-%define api.pure
+%language "c++"
+
+%require "3.2"
 
 %define api.prefix {m68kasm_}
+%define api.namespace {m68kasm}
 
 %param {void *scanner}
 
@@ -32,13 +35,10 @@
 #include "clowncommon/clowncommon.h"
 #include "string.h"
 
-/* A hack for older versions of Bison. */
-/* Should probably be removed when they go out of circulation. */
-#if defined(YYBISON) && YYBISON < 30802 && !defined(YYNOMEM)
-#define YYNOMEM goto yyexhaustedlab;
-#endif
+/* Temporary junk! */
+#define YYNOMEM YYERROR
 
-#define YYSTYPE M68KASM_STYPE
+#define YYSTYPE m68kasm::parser::semantic_type
 
 #define CREATE_LIST_TYPE(TYPE)\
 typedef struct TYPE\
@@ -467,7 +467,7 @@ void DestroyIdentifierList(IdentifierList *list);
 #include <stdlib.h>
 #include <string.h>
 
-int m68kasm_lex(M68KASM_STYPE *yylval_param, void *yyscanner);
+int m68kasm_lex(YYSTYPE *yylval_param, void *yyscanner);
 void m68kasm_warning(void *scanner, Statement *statement, const char *message);
 void m68kasm_warning_pedantic(void *scanner, Statement *statement, const char *message);
 void m68kasm_error(void *scanner, Statement *statement, const char *message);
@@ -477,6 +477,11 @@ static cc_bool DoExpression(Expression *expression, ExpressionType type, Express
 static void DestroyExpressionList(ExpressionList *list);
 static void DestroyOperand(Operand *operand);
 static void DestroyStatementInstruction(StatementInstruction *instruction);
+
+void m68kasm::parser::error(const std::string &message)
+{
+	m68kasm_error(scanner, statement, message.c_str());
+}
 
 }
 

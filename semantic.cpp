@@ -5582,7 +5582,8 @@ static cc_bool ParseStatement(SemanticState* const state, Statement* const state
 	int parse_result;
 
 	statement->type = STATEMENT_TYPE_EMPTY;
-	parse_result = m68kasm_parse(state->flex_state, statement);
+	m68kasm::parser parser(state->flex_state, statement);
+	parse_result = parser.parse();
 	m68kasm__delete_buffer(buffer, state->flex_state);
 
 	if (parse_result == 0)
