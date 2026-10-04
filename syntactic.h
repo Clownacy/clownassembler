@@ -45,7 +45,7 @@
 #ifndef YY_M68KASM_SYNTACTIC_H_INCLUDED
 # define YY_M68KASM_SYNTACTIC_H_INCLUDED
 // "%code requires" blocks.
-#line 33 "syntactic.y"
+#line 37 "syntactic.y"
 
 
 #include "clowncommon/clowncommon.h"
@@ -53,8 +53,6 @@
 
 /* Temporary junk! */
 #define YYNOMEM YYERROR
-
-#define YYSTYPE m68kasm::parser::semantic_type
 
 #define CREATE_LIST_TYPE(TYPE)\
 typedef struct TYPE\
@@ -467,7 +465,7 @@ typedef struct Statement
 } Statement;
 
 
-#line 471 "syntactic.h"
+#line 469 "syntactic.h"
 
 
 # include <cstdlib> // std::abort
@@ -611,7 +609,7 @@ typedef struct Statement
 
 #line 25 "syntactic.y"
 namespace m68kasm {
-#line 615 "syntactic.h"
+#line 613 "syntactic.h"
 
 
 
@@ -626,25 +624,249 @@ namespace m68kasm {
 # endif
     typedef M68KASM_STYPE value_type;
 #else
-    /// Symbol semantic values.
-    union value_type
+  /// A buffer to store and retrieve objects.
+  ///
+  /// Sort of a variant, but does not keep track of the nature
+  /// of the stored data, since that knowledge is available
+  /// via the current parser state.
+  class value_type
+  {
+  public:
+    /// Type of *this.
+    typedef value_type self_type;
+
+    /// Empty construction.
+    value_type () YY_NOEXCEPT
+      : yyraw_ ()
+    {}
+
+    /// Construct and fill.
+    template <typename T>
+    value_type (YY_RVREF (T) t)
     {
-#line 488 "syntactic.y"
+      new (yyas_<T> ()) T (YY_MOVE (t));
+    }
 
-	unsigned long unsigned_long;
-	String string;
-	Opcode opcode;
-	Size size;
-	Operand operand;
-	StatementInstruction instruction;
-	Statement statement;
-	ExpressionList expression_list;
-	IdentifierList identifier_list;
-	Expression expression;
+#if 201103L <= YY_CPLUSPLUS
+    /// Non copyable.
+    value_type (const self_type&) = delete;
+    /// Non copyable.
+    self_type& operator= (const self_type&) = delete;
+#endif
 
-#line 646 "syntactic.h"
+    /// Destruction, allowed only if empty.
+    ~value_type () YY_NOEXCEPT
+    {}
 
+# if 201103L <= YY_CPLUSPLUS
+    /// Instantiate a \a T in here from \a t.
+    template <typename T, typename... U>
+    T&
+    emplace (U&&... u)
+    {
+      return *new (yyas_<T> ()) T (std::forward <U>(u)...);
+    }
+# else
+    /// Instantiate an empty \a T in here.
+    template <typename T>
+    T&
+    emplace ()
+    {
+      return *new (yyas_<T> ()) T ();
+    }
+
+    /// Instantiate a \a T in here from \a t.
+    template <typename T>
+    T&
+    emplace (const T& t)
+    {
+      return *new (yyas_<T> ()) T (t);
+    }
+# endif
+
+    /// Instantiate an empty \a T in here.
+    /// Obsolete, use emplace.
+    template <typename T>
+    T&
+    build ()
+    {
+      return emplace<T> ();
+    }
+
+    /// Instantiate a \a T in here from \a t.
+    /// Obsolete, use emplace.
+    template <typename T>
+    T&
+    build (const T& t)
+    {
+      return emplace<T> (t);
+    }
+
+    /// Accessor to a built \a T.
+    template <typename T>
+    T&
+    as () YY_NOEXCEPT
+    {
+      return *yyas_<T> ();
+    }
+
+    /// Const accessor to a built \a T (for %printer).
+    template <typename T>
+    const T&
+    as () const YY_NOEXCEPT
+    {
+      return *yyas_<T> ();
+    }
+
+    /// Swap the content with \a that, of same type.
+    ///
+    /// Both variants must be built beforehand, because swapping the actual
+    /// data requires reading it (with as()), and this is not possible on
+    /// unconstructed variants: it would require some dynamic testing, which
+    /// should not be the variant's responsibility.
+    /// Swapping between built and (possibly) non-built is done with
+    /// self_type::move ().
+    template <typename T>
+    void
+    swap (self_type& that) YY_NOEXCEPT
+    {
+      std::swap (as<T> (), that.as<T> ());
+    }
+
+    /// Move the content of \a that to this.
+    ///
+    /// Destroys \a that.
+    template <typename T>
+    void
+    move (self_type& that)
+    {
+# if 201103L <= YY_CPLUSPLUS
+      emplace<T> (std::move (that.as<T> ()));
+# else
+      emplace<T> ();
+      swap<T> (that);
+# endif
+      that.destroy<T> ();
+    }
+
+# if 201103L <= YY_CPLUSPLUS
+    /// Move the content of \a that to this.
+    template <typename T>
+    void
+    move (self_type&& that)
+    {
+      emplace<T> (std::move (that.as<T> ()));
+      that.destroy<T> ();
+    }
+#endif
+
+    /// Copy the content of \a that to this.
+    template <typename T>
+    void
+    copy (const self_type& that)
+    {
+      emplace<T> (that.as<T> ());
+    }
+
+    /// Destroy the stored \a T.
+    template <typename T>
+    void
+    destroy ()
+    {
+      as<T> ().~T ();
+    }
+
+  private:
+#if YY_CPLUSPLUS < 201103L
+    /// Non copyable.
+    value_type (const self_type&);
+    /// Non copyable.
+    self_type& operator= (const self_type&);
+#endif
+
+    /// Accessor to raw memory as \a T.
+    template <typename T>
+    T*
+    yyas_ () YY_NOEXCEPT
+    {
+      void *yyp = yyraw_;
+      return static_cast<T*> (yyp);
+     }
+
+    /// Const accessor to raw memory as \a T.
+    template <typename T>
+    const T*
+    yyas_ () const YY_NOEXCEPT
+    {
+      const void *yyp = yyraw_;
+      return static_cast<const T*> (yyp);
+     }
+
+    /// An auxiliary type to compute the largest semantic type.
+    union union_type
+    {
+      // expression
+      // expression1
+      // expression2
+      // expression3
+      // expression4
+      // expression5
+      // expression6
+      // expression7
+      // expression8
+      // string
+      char dummy1[sizeof (Expression)];
+
+      // expression_list
+      char dummy2[sizeof (ExpressionList)];
+
+      // identifier_list
+      // option_list
+      char dummy3[sizeof (IdentifierList)];
+
+      // full_opcode
+      // opcode
+      char dummy4[sizeof (Opcode)];
+
+      // operand
+      char dummy5[sizeof (Operand)];
+
+      // size
+      char dummy6[sizeof (Size)];
+
+      // instruction
+      char dummy7[sizeof (StatementInstruction)];
+
+      // IDENTIFIER
+      // LOCAL_IDENTIFIER
+      // STRING
+      // OPTION
+      // local_identifier
+      // identifier
+      char dummy8[sizeof (String)];
+
+      // DATA_REGISTER
+      // ADDRESS_REGISTER
+      // NUMBER
+      // register_list
+      // register_span
+      // data_or_address_register
+      char dummy9[sizeof (unsigned long)];
     };
+
+    /// The size of the largest semantic type.
+    enum { size = sizeof (union_type) };
+
+    /// A buffer to store semantic values.
+    union
+    {
+      /// Strongest alignment constraints.
+      long double yyalign_me_;
+      /// A buffer large enough to store any of the semantic values.
+      char yyraw_[size];
+    };
+  };
+
 #endif
     /// Backward compatibility (Bison 3.8).
     typedef value_type semantic_type;
@@ -671,199 +893,219 @@ namespace m68kasm {
       {
         TOKEN_M68KASM_EMPTY = -2,
     TOKEN_YYEOF = 0,               // "end of file"
-    TOKEN_M68KASM_error = 256,     // error
-    TOKEN_M68KASM_UNDEF = 257,     // "invalid token"
-    TOKEN_DIRECTIVE_ORI = 258,     // DIRECTIVE_ORI
-    TOKEN_DIRECTIVE_ANDI = 259,    // DIRECTIVE_ANDI
-    TOKEN_DIRECTIVE_SUBI = 260,    // DIRECTIVE_SUBI
-    TOKEN_DIRECTIVE_ADDI = 261,    // DIRECTIVE_ADDI
-    TOKEN_DIRECTIVE_EORI = 262,    // DIRECTIVE_EORI
-    TOKEN_DIRECTIVE_CMPI = 263,    // DIRECTIVE_CMPI
-    TOKEN_DIRECTIVE_BTST = 264,    // DIRECTIVE_BTST
-    TOKEN_DIRECTIVE_BCHG = 265,    // DIRECTIVE_BCHG
-    TOKEN_DIRECTIVE_BCLR = 266,    // DIRECTIVE_BCLR
-    TOKEN_DIRECTIVE_BSET = 267,    // DIRECTIVE_BSET
-    TOKEN_DIRECTIVE_MOVEP = 268,   // DIRECTIVE_MOVEP
-    TOKEN_DIRECTIVE_MOVEA = 269,   // DIRECTIVE_MOVEA
-    TOKEN_DIRECTIVE_MOVE = 270,    // DIRECTIVE_MOVE
-    TOKEN_DIRECTIVE_NEGX = 271,    // DIRECTIVE_NEGX
-    TOKEN_DIRECTIVE_CLR = 272,     // DIRECTIVE_CLR
-    TOKEN_DIRECTIVE_NEG = 273,     // DIRECTIVE_NEG
-    TOKEN_DIRECTIVE_NOT = 274,     // DIRECTIVE_NOT
-    TOKEN_DIRECTIVE_EXT = 275,     // DIRECTIVE_EXT
-    TOKEN_DIRECTIVE_NBCD = 276,    // DIRECTIVE_NBCD
-    TOKEN_DIRECTIVE_SWAP = 277,    // DIRECTIVE_SWAP
-    TOKEN_DIRECTIVE_PEA = 278,     // DIRECTIVE_PEA
-    TOKEN_DIRECTIVE_ILLEGAL = 279, // DIRECTIVE_ILLEGAL
-    TOKEN_DIRECTIVE_TAS = 280,     // DIRECTIVE_TAS
-    TOKEN_DIRECTIVE_TST = 281,     // DIRECTIVE_TST
-    TOKEN_DIRECTIVE_TRAP = 282,    // DIRECTIVE_TRAP
-    TOKEN_DIRECTIVE_LINK = 283,    // DIRECTIVE_LINK
-    TOKEN_DIRECTIVE_UNLK = 284,    // DIRECTIVE_UNLK
-    TOKEN_DIRECTIVE_RESET = 285,   // DIRECTIVE_RESET
-    TOKEN_DIRECTIVE_NOP = 286,     // DIRECTIVE_NOP
-    TOKEN_DIRECTIVE_STOP = 287,    // DIRECTIVE_STOP
-    TOKEN_DIRECTIVE_RTE = 288,     // DIRECTIVE_RTE
-    TOKEN_DIRECTIVE_RTS = 289,     // DIRECTIVE_RTS
-    TOKEN_DIRECTIVE_TRAPV = 290,   // DIRECTIVE_TRAPV
-    TOKEN_DIRECTIVE_RTR = 291,     // DIRECTIVE_RTR
-    TOKEN_DIRECTIVE_JSR = 292,     // DIRECTIVE_JSR
-    TOKEN_DIRECTIVE_JMP = 293,     // DIRECTIVE_JMP
-    TOKEN_DIRECTIVE_MOVEM = 294,   // DIRECTIVE_MOVEM
-    TOKEN_DIRECTIVE_LEA = 295,     // DIRECTIVE_LEA
-    TOKEN_DIRECTIVE_CHK = 296,     // DIRECTIVE_CHK
-    TOKEN_DIRECTIVE_ADDQ = 297,    // DIRECTIVE_ADDQ
-    TOKEN_DIRECTIVE_SUBQ = 298,    // DIRECTIVE_SUBQ
-    TOKEN_DIRECTIVE_ST = 299,      // DIRECTIVE_ST
-    TOKEN_DIRECTIVE_SF = 300,      // DIRECTIVE_SF
-    TOKEN_DIRECTIVE_SHI = 301,     // DIRECTIVE_SHI
-    TOKEN_DIRECTIVE_SLS = 302,     // DIRECTIVE_SLS
-    TOKEN_DIRECTIVE_SCC = 303,     // DIRECTIVE_SCC
-    TOKEN_DIRECTIVE_SCS = 304,     // DIRECTIVE_SCS
-    TOKEN_DIRECTIVE_SNE = 305,     // DIRECTIVE_SNE
-    TOKEN_DIRECTIVE_SEQ = 306,     // DIRECTIVE_SEQ
-    TOKEN_DIRECTIVE_SVC = 307,     // DIRECTIVE_SVC
-    TOKEN_DIRECTIVE_SVS = 308,     // DIRECTIVE_SVS
-    TOKEN_DIRECTIVE_SPL = 309,     // DIRECTIVE_SPL
-    TOKEN_DIRECTIVE_SMI = 310,     // DIRECTIVE_SMI
-    TOKEN_DIRECTIVE_SGE = 311,     // DIRECTIVE_SGE
-    TOKEN_DIRECTIVE_SLT = 312,     // DIRECTIVE_SLT
-    TOKEN_DIRECTIVE_SGT = 313,     // DIRECTIVE_SGT
-    TOKEN_DIRECTIVE_SLE = 314,     // DIRECTIVE_SLE
-    TOKEN_DIRECTIVE_DBT = 315,     // DIRECTIVE_DBT
-    TOKEN_DIRECTIVE_DBF = 316,     // DIRECTIVE_DBF
-    TOKEN_DIRECTIVE_DBHI = 317,    // DIRECTIVE_DBHI
-    TOKEN_DIRECTIVE_DBLS = 318,    // DIRECTIVE_DBLS
-    TOKEN_DIRECTIVE_DBCC = 319,    // DIRECTIVE_DBCC
-    TOKEN_DIRECTIVE_DBCS = 320,    // DIRECTIVE_DBCS
-    TOKEN_DIRECTIVE_DBNE = 321,    // DIRECTIVE_DBNE
-    TOKEN_DIRECTIVE_DBEQ = 322,    // DIRECTIVE_DBEQ
-    TOKEN_DIRECTIVE_DBVC = 323,    // DIRECTIVE_DBVC
-    TOKEN_DIRECTIVE_DBVS = 324,    // DIRECTIVE_DBVS
-    TOKEN_DIRECTIVE_DBPL = 325,    // DIRECTIVE_DBPL
-    TOKEN_DIRECTIVE_DBMI = 326,    // DIRECTIVE_DBMI
-    TOKEN_DIRECTIVE_DBGE = 327,    // DIRECTIVE_DBGE
-    TOKEN_DIRECTIVE_DBLT = 328,    // DIRECTIVE_DBLT
-    TOKEN_DIRECTIVE_DBGT = 329,    // DIRECTIVE_DBGT
-    TOKEN_DIRECTIVE_DBLE = 330,    // DIRECTIVE_DBLE
-    TOKEN_DIRECTIVE_BRA = 331,     // DIRECTIVE_BRA
-    TOKEN_DIRECTIVE_BSR = 332,     // DIRECTIVE_BSR
-    TOKEN_DIRECTIVE_BHI = 333,     // DIRECTIVE_BHI
-    TOKEN_DIRECTIVE_BLS = 334,     // DIRECTIVE_BLS
-    TOKEN_DIRECTIVE_BCC = 335,     // DIRECTIVE_BCC
-    TOKEN_DIRECTIVE_BCS = 336,     // DIRECTIVE_BCS
-    TOKEN_DIRECTIVE_BNE = 337,     // DIRECTIVE_BNE
-    TOKEN_DIRECTIVE_BEQ = 338,     // DIRECTIVE_BEQ
-    TOKEN_DIRECTIVE_BVC = 339,     // DIRECTIVE_BVC
-    TOKEN_DIRECTIVE_BVS = 340,     // DIRECTIVE_BVS
-    TOKEN_DIRECTIVE_BPL = 341,     // DIRECTIVE_BPL
-    TOKEN_DIRECTIVE_BMI = 342,     // DIRECTIVE_BMI
-    TOKEN_DIRECTIVE_BGE = 343,     // DIRECTIVE_BGE
-    TOKEN_DIRECTIVE_BLT = 344,     // DIRECTIVE_BLT
-    TOKEN_DIRECTIVE_BGT = 345,     // DIRECTIVE_BGT
-    TOKEN_DIRECTIVE_BLE = 346,     // DIRECTIVE_BLE
-    TOKEN_DIRECTIVE_MOVEQ = 347,   // DIRECTIVE_MOVEQ
-    TOKEN_DIRECTIVE_DIVU = 348,    // DIRECTIVE_DIVU
-    TOKEN_DIRECTIVE_DIVS = 349,    // DIRECTIVE_DIVS
-    TOKEN_DIRECTIVE_SBCD = 350,    // DIRECTIVE_SBCD
-    TOKEN_DIRECTIVE_OR = 351,      // DIRECTIVE_OR
-    TOKEN_DIRECTIVE_SUB = 352,     // DIRECTIVE_SUB
-    TOKEN_DIRECTIVE_SUBX = 353,    // DIRECTIVE_SUBX
-    TOKEN_DIRECTIVE_SUBA = 354,    // DIRECTIVE_SUBA
-    TOKEN_DIRECTIVE_EOR = 355,     // DIRECTIVE_EOR
-    TOKEN_DIRECTIVE_CMPM = 356,    // DIRECTIVE_CMPM
-    TOKEN_DIRECTIVE_CMP = 357,     // DIRECTIVE_CMP
-    TOKEN_DIRECTIVE_CMPA = 358,    // DIRECTIVE_CMPA
-    TOKEN_DIRECTIVE_MULU = 359,    // DIRECTIVE_MULU
-    TOKEN_DIRECTIVE_MULS = 360,    // DIRECTIVE_MULS
-    TOKEN_DIRECTIVE_ABCD = 361,    // DIRECTIVE_ABCD
-    TOKEN_DIRECTIVE_EXG = 362,     // DIRECTIVE_EXG
-    TOKEN_DIRECTIVE_AND = 363,     // DIRECTIVE_AND
-    TOKEN_DIRECTIVE_ADD = 364,     // DIRECTIVE_ADD
-    TOKEN_DIRECTIVE_ADDX = 365,    // DIRECTIVE_ADDX
-    TOKEN_DIRECTIVE_ADDA = 366,    // DIRECTIVE_ADDA
-    TOKEN_DIRECTIVE_ASL = 367,     // DIRECTIVE_ASL
-    TOKEN_DIRECTIVE_ASR = 368,     // DIRECTIVE_ASR
-    TOKEN_DIRECTIVE_LSL = 369,     // DIRECTIVE_LSL
-    TOKEN_DIRECTIVE_LSR = 370,     // DIRECTIVE_LSR
-    TOKEN_DIRECTIVE_ROXL = 371,    // DIRECTIVE_ROXL
-    TOKEN_DIRECTIVE_ROXR = 372,    // DIRECTIVE_ROXR
-    TOKEN_DIRECTIVE_ROL = 373,     // DIRECTIVE_ROL
-    TOKEN_DIRECTIVE_ROR = 374,     // DIRECTIVE_ROR
-    TOKEN_DIRECTIVE_DC = 375,      // DIRECTIVE_DC
-    TOKEN_DIRECTIVE_DCB = 376,     // DIRECTIVE_DCB
-    TOKEN_DIRECTIVE_DS = 377,      // DIRECTIVE_DS
-    TOKEN_DIRECTIVE_REPT = 378,    // DIRECTIVE_REPT
-    TOKEN_DIRECTIVE_ENDR = 379,    // DIRECTIVE_ENDR
-    TOKEN_DIRECTIVE_MACRO = 380,   // DIRECTIVE_MACRO
-    TOKEN_DIRECTIVE_MACROS = 381,  // DIRECTIVE_MACROS
-    TOKEN_DIRECTIVE_ENDM = 382,    // DIRECTIVE_ENDM
-    TOKEN_DIRECTIVE_INCLUDE = 383, // DIRECTIVE_INCLUDE
-    TOKEN_DIRECTIVE_INCBIN = 384,  // DIRECTIVE_INCBIN
-    TOKEN_DIRECTIVE_EQU = 385,     // DIRECTIVE_EQU
-    TOKEN_DIRECTIVE_EQUS = 386,    // DIRECTIVE_EQUS
-    TOKEN_DIRECTIVE_SUBSTR = 387,  // DIRECTIVE_SUBSTR
-    TOKEN_DIRECTIVE_SET = 388,     // DIRECTIVE_SET
-    TOKEN_DIRECTIVE_IF = 389,      // DIRECTIVE_IF
-    TOKEN_DIRECTIVE_ELSEIF = 390,  // DIRECTIVE_ELSEIF
-    TOKEN_DIRECTIVE_ELSE = 391,    // DIRECTIVE_ELSE
-    TOKEN_DIRECTIVE_ENDC = 392,    // DIRECTIVE_ENDC
-    TOKEN_DIRECTIVE_WHILE = 393,   // DIRECTIVE_WHILE
-    TOKEN_DIRECTIVE_ENDW = 394,    // DIRECTIVE_ENDW
-    TOKEN_DIRECTIVE_EVEN = 395,    // DIRECTIVE_EVEN
-    TOKEN_DIRECTIVE_CNOP = 396,    // DIRECTIVE_CNOP
-    TOKEN_DIRECTIVE_INFORM = 397,  // DIRECTIVE_INFORM
-    TOKEN_DIRECTIVE_FAIL = 398,    // DIRECTIVE_FAIL
-    TOKEN_DIRECTIVE_END = 399,     // DIRECTIVE_END
-    TOKEN_DIRECTIVE_RS = 400,      // DIRECTIVE_RS
-    TOKEN_DIRECTIVE_RSSET = 401,   // DIRECTIVE_RSSET
-    TOKEN_DIRECTIVE_RSRESET = 402, // DIRECTIVE_RSRESET
-    TOKEN_DIRECTIVE_OBJ = 403,     // DIRECTIVE_OBJ
-    TOKEN_DIRECTIVE_OBJEND = 404,  // DIRECTIVE_OBJEND
-    TOKEN_DIRECTIVE_ORG = 405,     // DIRECTIVE_ORG
-    TOKEN_DIRECTIVE_PUSHO = 406,   // DIRECTIVE_PUSHO
-    TOKEN_DIRECTIVE_POPO = 407,    // DIRECTIVE_POPO
-    TOKEN_DIRECTIVE_OPT = 408,     // DIRECTIVE_OPT
-    TOKEN_DIRECTIVE_PUSHP = 409,   // DIRECTIVE_PUSHP
-    TOKEN_DIRECTIVE_POPP = 410,    // DIRECTIVE_POPP
-    TOKEN_DIRECTIVE_SHIFT = 411,   // DIRECTIVE_SHIFT
-    TOKEN_DIRECTIVE_MEXIT = 412,   // DIRECTIVE_MEXIT
-    TOKEN_DIRECTIVE_LOCAL = 413,   // DIRECTIVE_LOCAL
-    TOKEN_DIRECTIVE_LIST = 414,    // DIRECTIVE_LIST
-    TOKEN_DIRECTIVE_NOLIST = 415,  // DIRECTIVE_NOLIST
-    TOKEN_DIRECTIVE_PURGE = 416,   // DIRECTIVE_PURGE
-    TOKEN_SIZE_BYTE = 417,         // SIZE_BYTE
-    TOKEN_SIZE_SHORT = 418,        // SIZE_SHORT
-    TOKEN_SIZE_WORD = 419,         // SIZE_WORD
-    TOKEN_SIZE_LONGWORD = 420,     // SIZE_LONGWORD
-    TOKEN_DATA_REGISTER = 421,     // DATA_REGISTER
-    TOKEN_ADDRESS_REGISTER = 422,  // ADDRESS_REGISTER
-    TOKEN_NUMBER = 423,            // NUMBER
-    TOKEN_IDENTIFIER = 424,        // IDENTIFIER
-    TOKEN_LOCAL_IDENTIFIER = 425,  // LOCAL_IDENTIFIER
-    TOKEN_STRING = 426,            // STRING
-    TOKEN_OPTION = 427,            // OPTION
-    TOKEN_STATUS_REGISTER = 428,   // STATUS_REGISTER
-    TOKEN_CONDITION_CODE_REGISTER = 429, // CONDITION_CODE_REGISTER
-    TOKEN_USER_STACK_POINTER_REGISTER = 430, // USER_STACK_POINTER_REGISTER
-    TOKEN_PROGRAM_COUNTER = 431,   // PROGRAM_COUNTER
-    TOKEN_LOGICAL_AND = 432,       // LOGICAL_AND
-    TOKEN_LOGICAL_OR = 433,        // LOGICAL_OR
-    TOKEN_EQUALITY = 434,          // EQUALITY
-    TOKEN_INEQUALITY = 435,        // INEQUALITY
-    TOKEN_LESS_OR_EQUAL = 436,     // LESS_OR_EQUAL
-    TOKEN_MORE_OR_EQUAL = 437,     // MORE_OR_EQUAL
-    TOKEN_LEFT_SHIFT = 438,        // LEFT_SHIFT
-    TOKEN_RIGHT_SHIFT = 439,       // RIGHT_SHIFT
-    TOKEN_STRLEN = 440,            // STRLEN
-    TOKEN_STRCMP = 441,            // STRCMP
-    TOKEN_INSTR = 442,             // INSTR
-    TOKEN_DEF = 443,               // DEF
-    TOKEN_TYPE = 444,              // TYPE
-    TOKEN_FILESIZE = 445,          // FILESIZE
-    TOKEN_OFFSET = 446,            // OFFSET
-    TOKEN_LOWER_PRECEDENCE_THAN_SIZE = 447, // LOWER_PRECEDENCE_THAN_SIZE
-    TOKEN_HIGHER_PRECEDENCE_THAN_SIZE = 448 // HIGHER_PRECEDENCE_THAN_SIZE
+    TOKEN_M68KASM_error = 1,       // error
+    TOKEN_M68KASM_UNDEF = 2,       // "invalid token"
+    TOKEN_DIRECTIVE_ORI = 3,       // DIRECTIVE_ORI
+    TOKEN_DIRECTIVE_ANDI = 4,      // DIRECTIVE_ANDI
+    TOKEN_DIRECTIVE_SUBI = 5,      // DIRECTIVE_SUBI
+    TOKEN_DIRECTIVE_ADDI = 6,      // DIRECTIVE_ADDI
+    TOKEN_DIRECTIVE_EORI = 7,      // DIRECTIVE_EORI
+    TOKEN_DIRECTIVE_CMPI = 8,      // DIRECTIVE_CMPI
+    TOKEN_DIRECTIVE_BTST = 9,      // DIRECTIVE_BTST
+    TOKEN_DIRECTIVE_BCHG = 10,     // DIRECTIVE_BCHG
+    TOKEN_DIRECTIVE_BCLR = 11,     // DIRECTIVE_BCLR
+    TOKEN_DIRECTIVE_BSET = 12,     // DIRECTIVE_BSET
+    TOKEN_DIRECTIVE_MOVEP = 13,    // DIRECTIVE_MOVEP
+    TOKEN_DIRECTIVE_MOVEA = 14,    // DIRECTIVE_MOVEA
+    TOKEN_DIRECTIVE_MOVE = 15,     // DIRECTIVE_MOVE
+    TOKEN_DIRECTIVE_NEGX = 16,     // DIRECTIVE_NEGX
+    TOKEN_DIRECTIVE_CLR = 17,      // DIRECTIVE_CLR
+    TOKEN_DIRECTIVE_NEG = 18,      // DIRECTIVE_NEG
+    TOKEN_DIRECTIVE_NOT = 19,      // DIRECTIVE_NOT
+    TOKEN_DIRECTIVE_EXT = 20,      // DIRECTIVE_EXT
+    TOKEN_DIRECTIVE_NBCD = 21,     // DIRECTIVE_NBCD
+    TOKEN_DIRECTIVE_SWAP = 22,     // DIRECTIVE_SWAP
+    TOKEN_DIRECTIVE_PEA = 23,      // DIRECTIVE_PEA
+    TOKEN_DIRECTIVE_ILLEGAL = 24,  // DIRECTIVE_ILLEGAL
+    TOKEN_DIRECTIVE_TAS = 25,      // DIRECTIVE_TAS
+    TOKEN_DIRECTIVE_TST = 26,      // DIRECTIVE_TST
+    TOKEN_DIRECTIVE_TRAP = 27,     // DIRECTIVE_TRAP
+    TOKEN_DIRECTIVE_LINK = 28,     // DIRECTIVE_LINK
+    TOKEN_DIRECTIVE_UNLK = 29,     // DIRECTIVE_UNLK
+    TOKEN_DIRECTIVE_RESET = 30,    // DIRECTIVE_RESET
+    TOKEN_DIRECTIVE_NOP = 31,      // DIRECTIVE_NOP
+    TOKEN_DIRECTIVE_STOP = 32,     // DIRECTIVE_STOP
+    TOKEN_DIRECTIVE_RTE = 33,      // DIRECTIVE_RTE
+    TOKEN_DIRECTIVE_RTS = 34,      // DIRECTIVE_RTS
+    TOKEN_DIRECTIVE_TRAPV = 35,    // DIRECTIVE_TRAPV
+    TOKEN_DIRECTIVE_RTR = 36,      // DIRECTIVE_RTR
+    TOKEN_DIRECTIVE_JSR = 37,      // DIRECTIVE_JSR
+    TOKEN_DIRECTIVE_JMP = 38,      // DIRECTIVE_JMP
+    TOKEN_DIRECTIVE_MOVEM = 39,    // DIRECTIVE_MOVEM
+    TOKEN_DIRECTIVE_LEA = 40,      // DIRECTIVE_LEA
+    TOKEN_DIRECTIVE_CHK = 41,      // DIRECTIVE_CHK
+    TOKEN_DIRECTIVE_ADDQ = 42,     // DIRECTIVE_ADDQ
+    TOKEN_DIRECTIVE_SUBQ = 43,     // DIRECTIVE_SUBQ
+    TOKEN_DIRECTIVE_ST = 44,       // DIRECTIVE_ST
+    TOKEN_DIRECTIVE_SF = 45,       // DIRECTIVE_SF
+    TOKEN_DIRECTIVE_SHI = 46,      // DIRECTIVE_SHI
+    TOKEN_DIRECTIVE_SLS = 47,      // DIRECTIVE_SLS
+    TOKEN_DIRECTIVE_SCC = 48,      // DIRECTIVE_SCC
+    TOKEN_DIRECTIVE_SCS = 49,      // DIRECTIVE_SCS
+    TOKEN_DIRECTIVE_SNE = 50,      // DIRECTIVE_SNE
+    TOKEN_DIRECTIVE_SEQ = 51,      // DIRECTIVE_SEQ
+    TOKEN_DIRECTIVE_SVC = 52,      // DIRECTIVE_SVC
+    TOKEN_DIRECTIVE_SVS = 53,      // DIRECTIVE_SVS
+    TOKEN_DIRECTIVE_SPL = 54,      // DIRECTIVE_SPL
+    TOKEN_DIRECTIVE_SMI = 55,      // DIRECTIVE_SMI
+    TOKEN_DIRECTIVE_SGE = 56,      // DIRECTIVE_SGE
+    TOKEN_DIRECTIVE_SLT = 57,      // DIRECTIVE_SLT
+    TOKEN_DIRECTIVE_SGT = 58,      // DIRECTIVE_SGT
+    TOKEN_DIRECTIVE_SLE = 59,      // DIRECTIVE_SLE
+    TOKEN_DIRECTIVE_DBT = 60,      // DIRECTIVE_DBT
+    TOKEN_DIRECTIVE_DBF = 61,      // DIRECTIVE_DBF
+    TOKEN_DIRECTIVE_DBHI = 62,     // DIRECTIVE_DBHI
+    TOKEN_DIRECTIVE_DBLS = 63,     // DIRECTIVE_DBLS
+    TOKEN_DIRECTIVE_DBCC = 64,     // DIRECTIVE_DBCC
+    TOKEN_DIRECTIVE_DBCS = 65,     // DIRECTIVE_DBCS
+    TOKEN_DIRECTIVE_DBNE = 66,     // DIRECTIVE_DBNE
+    TOKEN_DIRECTIVE_DBEQ = 67,     // DIRECTIVE_DBEQ
+    TOKEN_DIRECTIVE_DBVC = 68,     // DIRECTIVE_DBVC
+    TOKEN_DIRECTIVE_DBVS = 69,     // DIRECTIVE_DBVS
+    TOKEN_DIRECTIVE_DBPL = 70,     // DIRECTIVE_DBPL
+    TOKEN_DIRECTIVE_DBMI = 71,     // DIRECTIVE_DBMI
+    TOKEN_DIRECTIVE_DBGE = 72,     // DIRECTIVE_DBGE
+    TOKEN_DIRECTIVE_DBLT = 73,     // DIRECTIVE_DBLT
+    TOKEN_DIRECTIVE_DBGT = 74,     // DIRECTIVE_DBGT
+    TOKEN_DIRECTIVE_DBLE = 75,     // DIRECTIVE_DBLE
+    TOKEN_DIRECTIVE_BRA = 76,      // DIRECTIVE_BRA
+    TOKEN_DIRECTIVE_BSR = 77,      // DIRECTIVE_BSR
+    TOKEN_DIRECTIVE_BHI = 78,      // DIRECTIVE_BHI
+    TOKEN_DIRECTIVE_BLS = 79,      // DIRECTIVE_BLS
+    TOKEN_DIRECTIVE_BCC = 80,      // DIRECTIVE_BCC
+    TOKEN_DIRECTIVE_BCS = 81,      // DIRECTIVE_BCS
+    TOKEN_DIRECTIVE_BNE = 82,      // DIRECTIVE_BNE
+    TOKEN_DIRECTIVE_BEQ = 83,      // DIRECTIVE_BEQ
+    TOKEN_DIRECTIVE_BVC = 84,      // DIRECTIVE_BVC
+    TOKEN_DIRECTIVE_BVS = 85,      // DIRECTIVE_BVS
+    TOKEN_DIRECTIVE_BPL = 86,      // DIRECTIVE_BPL
+    TOKEN_DIRECTIVE_BMI = 87,      // DIRECTIVE_BMI
+    TOKEN_DIRECTIVE_BGE = 88,      // DIRECTIVE_BGE
+    TOKEN_DIRECTIVE_BLT = 89,      // DIRECTIVE_BLT
+    TOKEN_DIRECTIVE_BGT = 90,      // DIRECTIVE_BGT
+    TOKEN_DIRECTIVE_BLE = 91,      // DIRECTIVE_BLE
+    TOKEN_DIRECTIVE_MOVEQ = 92,    // DIRECTIVE_MOVEQ
+    TOKEN_DIRECTIVE_DIVU = 93,     // DIRECTIVE_DIVU
+    TOKEN_DIRECTIVE_DIVS = 94,     // DIRECTIVE_DIVS
+    TOKEN_DIRECTIVE_SBCD = 95,     // DIRECTIVE_SBCD
+    TOKEN_DIRECTIVE_OR = 96,       // DIRECTIVE_OR
+    TOKEN_DIRECTIVE_SUB = 97,      // DIRECTIVE_SUB
+    TOKEN_DIRECTIVE_SUBX = 98,     // DIRECTIVE_SUBX
+    TOKEN_DIRECTIVE_SUBA = 99,     // DIRECTIVE_SUBA
+    TOKEN_DIRECTIVE_EOR = 100,     // DIRECTIVE_EOR
+    TOKEN_DIRECTIVE_CMPM = 101,    // DIRECTIVE_CMPM
+    TOKEN_DIRECTIVE_CMP = 102,     // DIRECTIVE_CMP
+    TOKEN_DIRECTIVE_CMPA = 103,    // DIRECTIVE_CMPA
+    TOKEN_DIRECTIVE_MULU = 104,    // DIRECTIVE_MULU
+    TOKEN_DIRECTIVE_MULS = 105,    // DIRECTIVE_MULS
+    TOKEN_DIRECTIVE_ABCD = 106,    // DIRECTIVE_ABCD
+    TOKEN_DIRECTIVE_EXG = 107,     // DIRECTIVE_EXG
+    TOKEN_DIRECTIVE_AND = 108,     // DIRECTIVE_AND
+    TOKEN_DIRECTIVE_ADD = 109,     // DIRECTIVE_ADD
+    TOKEN_DIRECTIVE_ADDX = 110,    // DIRECTIVE_ADDX
+    TOKEN_DIRECTIVE_ADDA = 111,    // DIRECTIVE_ADDA
+    TOKEN_DIRECTIVE_ASL = 112,     // DIRECTIVE_ASL
+    TOKEN_DIRECTIVE_ASR = 113,     // DIRECTIVE_ASR
+    TOKEN_DIRECTIVE_LSL = 114,     // DIRECTIVE_LSL
+    TOKEN_DIRECTIVE_LSR = 115,     // DIRECTIVE_LSR
+    TOKEN_DIRECTIVE_ROXL = 116,    // DIRECTIVE_ROXL
+    TOKEN_DIRECTIVE_ROXR = 117,    // DIRECTIVE_ROXR
+    TOKEN_DIRECTIVE_ROL = 118,     // DIRECTIVE_ROL
+    TOKEN_DIRECTIVE_ROR = 119,     // DIRECTIVE_ROR
+    TOKEN_DIRECTIVE_DC = 120,      // DIRECTIVE_DC
+    TOKEN_DIRECTIVE_DCB = 121,     // DIRECTIVE_DCB
+    TOKEN_DIRECTIVE_DS = 122,      // DIRECTIVE_DS
+    TOKEN_DIRECTIVE_REPT = 123,    // DIRECTIVE_REPT
+    TOKEN_DIRECTIVE_ENDR = 124,    // DIRECTIVE_ENDR
+    TOKEN_DIRECTIVE_MACRO = 125,   // DIRECTIVE_MACRO
+    TOKEN_DIRECTIVE_MACROS = 126,  // DIRECTIVE_MACROS
+    TOKEN_DIRECTIVE_ENDM = 127,    // DIRECTIVE_ENDM
+    TOKEN_DIRECTIVE_INCLUDE = 128, // DIRECTIVE_INCLUDE
+    TOKEN_DIRECTIVE_INCBIN = 129,  // DIRECTIVE_INCBIN
+    TOKEN_DIRECTIVE_EQU = 130,     // DIRECTIVE_EQU
+    TOKEN_DIRECTIVE_EQUS = 131,    // DIRECTIVE_EQUS
+    TOKEN_DIRECTIVE_SUBSTR = 132,  // DIRECTIVE_SUBSTR
+    TOKEN_DIRECTIVE_SET = 133,     // DIRECTIVE_SET
+    TOKEN_DIRECTIVE_IF = 134,      // DIRECTIVE_IF
+    TOKEN_DIRECTIVE_ELSEIF = 135,  // DIRECTIVE_ELSEIF
+    TOKEN_DIRECTIVE_ELSE = 136,    // DIRECTIVE_ELSE
+    TOKEN_DIRECTIVE_ENDC = 137,    // DIRECTIVE_ENDC
+    TOKEN_DIRECTIVE_WHILE = 138,   // DIRECTIVE_WHILE
+    TOKEN_DIRECTIVE_ENDW = 139,    // DIRECTIVE_ENDW
+    TOKEN_DIRECTIVE_EVEN = 140,    // DIRECTIVE_EVEN
+    TOKEN_DIRECTIVE_CNOP = 141,    // DIRECTIVE_CNOP
+    TOKEN_DIRECTIVE_INFORM = 142,  // DIRECTIVE_INFORM
+    TOKEN_DIRECTIVE_FAIL = 143,    // DIRECTIVE_FAIL
+    TOKEN_DIRECTIVE_END = 144,     // DIRECTIVE_END
+    TOKEN_DIRECTIVE_RS = 145,      // DIRECTIVE_RS
+    TOKEN_DIRECTIVE_RSSET = 146,   // DIRECTIVE_RSSET
+    TOKEN_DIRECTIVE_RSRESET = 147, // DIRECTIVE_RSRESET
+    TOKEN_DIRECTIVE_OBJ = 148,     // DIRECTIVE_OBJ
+    TOKEN_DIRECTIVE_OBJEND = 149,  // DIRECTIVE_OBJEND
+    TOKEN_DIRECTIVE_ORG = 150,     // DIRECTIVE_ORG
+    TOKEN_DIRECTIVE_PUSHO = 151,   // DIRECTIVE_PUSHO
+    TOKEN_DIRECTIVE_POPO = 152,    // DIRECTIVE_POPO
+    TOKEN_DIRECTIVE_OPT = 153,     // DIRECTIVE_OPT
+    TOKEN_DIRECTIVE_PUSHP = 154,   // DIRECTIVE_PUSHP
+    TOKEN_DIRECTIVE_POPP = 155,    // DIRECTIVE_POPP
+    TOKEN_DIRECTIVE_SHIFT = 156,   // DIRECTIVE_SHIFT
+    TOKEN_DIRECTIVE_MEXIT = 157,   // DIRECTIVE_MEXIT
+    TOKEN_DIRECTIVE_LOCAL = 158,   // DIRECTIVE_LOCAL
+    TOKEN_DIRECTIVE_LIST = 159,    // DIRECTIVE_LIST
+    TOKEN_DIRECTIVE_NOLIST = 160,  // DIRECTIVE_NOLIST
+    TOKEN_DIRECTIVE_PURGE = 161,   // DIRECTIVE_PURGE
+    TOKEN_SIZE_BYTE = 162,         // SIZE_BYTE
+    TOKEN_SIZE_SHORT = 163,        // SIZE_SHORT
+    TOKEN_SIZE_WORD = 164,         // SIZE_WORD
+    TOKEN_SIZE_LONGWORD = 165,     // SIZE_LONGWORD
+    TOKEN_DATA_REGISTER = 166,     // DATA_REGISTER
+    TOKEN_ADDRESS_REGISTER = 167,  // ADDRESS_REGISTER
+    TOKEN_NUMBER = 168,            // NUMBER
+    TOKEN_IDENTIFIER = 169,        // IDENTIFIER
+    TOKEN_LOCAL_IDENTIFIER = 170,  // LOCAL_IDENTIFIER
+    TOKEN_STRING = 171,            // STRING
+    TOKEN_OPTION = 172,            // OPTION
+    TOKEN_STATUS_REGISTER = 173,   // STATUS_REGISTER
+    TOKEN_CONDITION_CODE_REGISTER = 174, // CONDITION_CODE_REGISTER
+    TOKEN_USER_STACK_POINTER_REGISTER = 175, // USER_STACK_POINTER_REGISTER
+    TOKEN_PROGRAM_COUNTER = 176,   // PROGRAM_COUNTER
+    TOKEN_LOGICAL_AND = 177,       // LOGICAL_AND
+    TOKEN_LOGICAL_OR = 178,        // LOGICAL_OR
+    TOKEN_EQUALITY = 179,          // EQUALITY
+    TOKEN_INEQUALITY = 180,        // INEQUALITY
+    TOKEN_LESS_OR_EQUAL = 181,     // LESS_OR_EQUAL
+    TOKEN_MORE_OR_EQUAL = 182,     // MORE_OR_EQUAL
+    TOKEN_LEFT_SHIFT = 183,        // LEFT_SHIFT
+    TOKEN_RIGHT_SHIFT = 184,       // RIGHT_SHIFT
+    TOKEN_STRLEN = 185,            // STRLEN
+    TOKEN_STRCMP = 186,            // STRCMP
+    TOKEN_INSTR = 187,             // INSTR
+    TOKEN_DEF = 188,               // DEF
+    TOKEN_TYPE = 189,              // TYPE
+    TOKEN_FILESIZE = 190,          // FILESIZE
+    TOKEN_OFFSET = 191,            // OFFSET
+    TOKEN_PERIOD = 192,            // "."
+    TOKEN_COMMA = 193,             // ","
+    TOKEN_PARENTHESIS_LEFT = 194,  // "("
+    TOKEN_PARENTHESIS_RIGHT = 195, // ")"
+    TOKEN_DOLLAR = 196,            // "$"
+    TOKEN_PLUS = 197,              // "+"
+    TOKEN_MINUS = 198,             // "-"
+    TOKEN_ASTERIX = 199,           // "*"
+    TOKEN_FORWARD_SLASH = 200,     // "/"
+    TOKEN_EQUAL = 201,             // "="
+    TOKEN_AT = 202,                // "@"
+    TOKEN_HASH = 203,              // "#"
+    TOKEN_AMPERSAND = 204,         // "&"
+    TOKEN_CARET = 205,             // "^"
+    TOKEN_EXCLAMATION = 206,       // "!"
+    TOKEN_VERTICAL_BAR = 207,      // "|"
+    TOKEN_ANGLE_LEFT = 208,        // "<"
+    TOKEN_ANGLE_RIGHT = 209,       // ">"
+    TOKEN_PERCENTAGE = 210,        // "%"
+    TOKEN_TILDE = 211,             // "~"
+    TOKEN_LOWER_PRECEDENCE_THAN_SIZE = 212, // LOWER_PRECEDENCE_THAN_SIZE
+    TOKEN_HIGHER_PRECEDENCE_THAN_SIZE = 213 // HIGHER_PRECEDENCE_THAN_SIZE
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -880,7 +1122,7 @@ namespace m68kasm {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 213, ///< Number of tokens.
+        YYNTOKENS = 214, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -1074,52 +1316,53 @@ namespace m68kasm {
         S_TYPE = 189,                            // TYPE
         S_FILESIZE = 190,                        // FILESIZE
         S_OFFSET = 191,                          // OFFSET
-        S_LOWER_PRECEDENCE_THAN_SIZE = 192,      // LOWER_PRECEDENCE_THAN_SIZE
-        S_HIGHER_PRECEDENCE_THAN_SIZE = 193,     // HIGHER_PRECEDENCE_THAN_SIZE
-        S_194_ = 194,                            // ','
-        S_195_ = 195,                            // '*'
-        S_196_ = 196,                            // '='
-        S_197_ = 197,                            // '+'
-        S_198_ = 198,                            // '-'
-        S_199_ = 199,                            // '.'
-        S_200_ = 200,                            // '('
-        S_201_ = 201,                            // ')'
-        S_202_ = 202,                            // '#'
-        S_203_ = 203,                            // '/'
-        S_204_ = 204,                            // '<'
-        S_205_ = 205,                            // '>'
-        S_206_ = 206,                            // '%'
-        S_207_ = 207,                            // '&'
-        S_208_ = 208,                            // '!'
-        S_209_ = 209,                            // '|'
-        S_210_ = 210,                            // '^'
-        S_211_ = 211,                            // '~'
-        S_212_ = 212,                            // '@'
-        S_YYACCEPT = 213,                        // $accept
-        S_statement = 214,                       // statement
-        S_expression_list = 215,                 // expression_list
-        S_identifier_list = 216,                 // identifier_list
-        S_option_list = 217,                     // option_list
-        S_instruction = 218,                     // instruction
-        S_full_opcode = 219,                     // full_opcode
-        S_opcode = 220,                          // opcode
-        S_size = 221,                            // size
-        S_operand = 222,                         // operand
-        S_register_list = 223,                   // register_list
-        S_register_span = 224,                   // register_span
-        S_data_or_address_register = 225,        // data_or_address_register
-        S_expression = 226,                      // expression
-        S_expression1 = 227,                     // expression1
-        S_expression2 = 228,                     // expression2
-        S_expression3 = 229,                     // expression3
-        S_expression4 = 230,                     // expression4
-        S_expression5 = 231,                     // expression5
-        S_expression6 = 232,                     // expression6
-        S_expression7 = 233,                     // expression7
-        S_local_identifier = 234,                // local_identifier
-        S_identifier = 235,                      // identifier
-        S_expression8 = 236,                     // expression8
-        S_string = 237                           // string
+        S_PERIOD = 192,                          // "."
+        S_COMMA = 193,                           // ","
+        S_PARENTHESIS_LEFT = 194,                // "("
+        S_PARENTHESIS_RIGHT = 195,               // ")"
+        S_DOLLAR = 196,                          // "$"
+        S_PLUS = 197,                            // "+"
+        S_MINUS = 198,                           // "-"
+        S_ASTERIX = 199,                         // "*"
+        S_FORWARD_SLASH = 200,                   // "/"
+        S_EQUAL = 201,                           // "="
+        S_AT = 202,                              // "@"
+        S_HASH = 203,                            // "#"
+        S_AMPERSAND = 204,                       // "&"
+        S_CARET = 205,                           // "^"
+        S_EXCLAMATION = 206,                     // "!"
+        S_VERTICAL_BAR = 207,                    // "|"
+        S_ANGLE_LEFT = 208,                      // "<"
+        S_ANGLE_RIGHT = 209,                     // ">"
+        S_PERCENTAGE = 210,                      // "%"
+        S_TILDE = 211,                           // "~"
+        S_LOWER_PRECEDENCE_THAN_SIZE = 212,      // LOWER_PRECEDENCE_THAN_SIZE
+        S_HIGHER_PRECEDENCE_THAN_SIZE = 213,     // HIGHER_PRECEDENCE_THAN_SIZE
+        S_YYACCEPT = 214,                        // $accept
+        S_statement = 215,                       // statement
+        S_expression_list = 216,                 // expression_list
+        S_identifier_list = 217,                 // identifier_list
+        S_option_list = 218,                     // option_list
+        S_instruction = 219,                     // instruction
+        S_full_opcode = 220,                     // full_opcode
+        S_opcode = 221,                          // opcode
+        S_size = 222,                            // size
+        S_operand = 223,                         // operand
+        S_register_list = 224,                   // register_list
+        S_register_span = 225,                   // register_span
+        S_data_or_address_register = 226,        // data_or_address_register
+        S_expression = 227,                      // expression
+        S_expression1 = 228,                     // expression1
+        S_expression2 = 229,                     // expression2
+        S_expression3 = 230,                     // expression3
+        S_expression4 = 231,                     // expression4
+        S_expression5 = 232,                     // expression5
+        S_expression6 = 233,                     // expression6
+        S_expression7 = 234,                     // expression7
+        S_local_identifier = 235,                // local_identifier
+        S_identifier = 236,                      // identifier
+        S_expression8 = 237,                     // expression8
+        S_string = 238                           // string
       };
     };
 
@@ -1150,18 +1393,195 @@ namespace m68kasm {
       /// Move constructor.
       basic_symbol (basic_symbol&& that)
         : Base (std::move (that))
-        , value (std::move (that.value))
-      {}
+        , value ()
+      {
+        switch (this->kind ())
+    {
+      case symbol_kind::S_expression: // expression
+      case symbol_kind::S_expression1: // expression1
+      case symbol_kind::S_expression2: // expression2
+      case symbol_kind::S_expression3: // expression3
+      case symbol_kind::S_expression4: // expression4
+      case symbol_kind::S_expression5: // expression5
+      case symbol_kind::S_expression6: // expression6
+      case symbol_kind::S_expression7: // expression7
+      case symbol_kind::S_expression8: // expression8
+      case symbol_kind::S_string: // string
+        value.move< Expression > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_expression_list: // expression_list
+        value.move< ExpressionList > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_identifier_list: // identifier_list
+      case symbol_kind::S_option_list: // option_list
+        value.move< IdentifierList > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_full_opcode: // full_opcode
+      case symbol_kind::S_opcode: // opcode
+        value.move< Opcode > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_operand: // operand
+        value.move< Operand > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_size: // size
+        value.move< Size > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_instruction: // instruction
+        value.move< StatementInstruction > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_LOCAL_IDENTIFIER: // LOCAL_IDENTIFIER
+      case symbol_kind::S_STRING: // STRING
+      case symbol_kind::S_OPTION: // OPTION
+      case symbol_kind::S_local_identifier: // local_identifier
+      case symbol_kind::S_identifier: // identifier
+        value.move< String > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_DATA_REGISTER: // DATA_REGISTER
+      case symbol_kind::S_ADDRESS_REGISTER: // ADDRESS_REGISTER
+      case symbol_kind::S_NUMBER: // NUMBER
+      case symbol_kind::S_register_list: // register_list
+      case symbol_kind::S_register_span: // register_span
+      case symbol_kind::S_data_or_address_register: // data_or_address_register
+        value.move< unsigned long > (std::move (that.value));
+        break;
+
+      default:
+        break;
+    }
+
+      }
 #endif
 
       /// Copy constructor.
       basic_symbol (const basic_symbol& that);
-      /// Constructor for valueless symbols.
-      basic_symbol (typename Base::kind_type t);
 
-      /// Constructor for symbols with semantic value.
-      basic_symbol (typename Base::kind_type t,
-                    YY_RVREF (value_type) v);
+      /// Constructors for typed symbols.
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t)
+        : Base (t)
+      {}
+#else
+      basic_symbol (typename Base::kind_type t)
+        : Base (t)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, Expression&& v)
+        : Base (t)
+        , value (std::move (v))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const Expression& v)
+        : Base (t)
+        , value (v)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, ExpressionList&& v)
+        : Base (t)
+        , value (std::move (v))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const ExpressionList& v)
+        : Base (t)
+        , value (v)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, IdentifierList&& v)
+        : Base (t)
+        , value (std::move (v))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const IdentifierList& v)
+        : Base (t)
+        , value (v)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, Opcode&& v)
+        : Base (t)
+        , value (std::move (v))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const Opcode& v)
+        : Base (t)
+        , value (v)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, Operand&& v)
+        : Base (t)
+        , value (std::move (v))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const Operand& v)
+        : Base (t)
+        , value (v)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, Size&& v)
+        : Base (t)
+        , value (std::move (v))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const Size& v)
+        : Base (t)
+        , value (v)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, StatementInstruction&& v)
+        : Base (t)
+        , value (std::move (v))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const StatementInstruction& v)
+        : Base (t)
+        , value (v)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, String&& v)
+        : Base (t)
+        , value (std::move (v))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const String& v)
+        : Base (t)
+        , value (v)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, unsigned long&& v)
+        : Base (t)
+        , value (std::move (v))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const unsigned long& v)
+        : Base (t)
+        , value (v)
+      {}
+#endif
 
       /// Destroy the symbol.
       ~basic_symbol ()
@@ -1174,6 +1594,80 @@ namespace m68kasm {
       /// Destroy contents, and record that is empty.
       void clear () YY_NOEXCEPT
       {
+        // User destructor.
+        symbol_kind_type yykind = this->kind ();
+        basic_symbol<Base>& yysym = *this;
+        (void) yysym;
+        switch (yykind)
+        {
+       default:
+          break;
+        }
+
+        // Value type destructor.
+switch (yykind)
+    {
+      case symbol_kind::S_expression: // expression
+      case symbol_kind::S_expression1: // expression1
+      case symbol_kind::S_expression2: // expression2
+      case symbol_kind::S_expression3: // expression3
+      case symbol_kind::S_expression4: // expression4
+      case symbol_kind::S_expression5: // expression5
+      case symbol_kind::S_expression6: // expression6
+      case symbol_kind::S_expression7: // expression7
+      case symbol_kind::S_expression8: // expression8
+      case symbol_kind::S_string: // string
+        value.template destroy< Expression > ();
+        break;
+
+      case symbol_kind::S_expression_list: // expression_list
+        value.template destroy< ExpressionList > ();
+        break;
+
+      case symbol_kind::S_identifier_list: // identifier_list
+      case symbol_kind::S_option_list: // option_list
+        value.template destroy< IdentifierList > ();
+        break;
+
+      case symbol_kind::S_full_opcode: // full_opcode
+      case symbol_kind::S_opcode: // opcode
+        value.template destroy< Opcode > ();
+        break;
+
+      case symbol_kind::S_operand: // operand
+        value.template destroy< Operand > ();
+        break;
+
+      case symbol_kind::S_size: // size
+        value.template destroy< Size > ();
+        break;
+
+      case symbol_kind::S_instruction: // instruction
+        value.template destroy< StatementInstruction > ();
+        break;
+
+      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_LOCAL_IDENTIFIER: // LOCAL_IDENTIFIER
+      case symbol_kind::S_STRING: // STRING
+      case symbol_kind::S_OPTION: // OPTION
+      case symbol_kind::S_local_identifier: // local_identifier
+      case symbol_kind::S_identifier: // identifier
+        value.template destroy< String > ();
+        break;
+
+      case symbol_kind::S_DATA_REGISTER: // DATA_REGISTER
+      case symbol_kind::S_ADDRESS_REGISTER: // ADDRESS_REGISTER
+      case symbol_kind::S_NUMBER: // NUMBER
+      case symbol_kind::S_register_list: // register_list
+      case symbol_kind::S_register_span: // register_span
+      case symbol_kind::S_data_or_address_register: // data_or_address_register
+        value.template destroy< unsigned long > ();
+        break;
+
+      default:
+        break;
+    }
+
         Base::clear ();
       }
 
@@ -1247,7 +1741,39 @@ namespace m68kasm {
 
     /// "External" symbols: returned by the scanner.
     struct symbol_type : basic_symbol<by_kind>
-    {};
+    {
+      /// Superclass.
+      typedef basic_symbol<by_kind> super_type;
+
+      /// Empty symbol.
+      symbol_type () YY_NOEXCEPT {}
+
+      /// Constructor for valueless symbols, and symbols from each type.
+#if 201103L <= YY_CPLUSPLUS
+      symbol_type (int tok)
+        : super_type (token_kind_type (tok))
+#else
+      symbol_type (int tok)
+        : super_type (token_kind_type (tok))
+#endif
+      {}
+#if 201103L <= YY_CPLUSPLUS
+      symbol_type (int tok, String v)
+        : super_type (token_kind_type (tok), std::move (v))
+#else
+      symbol_type (int tok, const String& v)
+        : super_type (token_kind_type (tok), v)
+#endif
+      {}
+#if 201103L <= YY_CPLUSPLUS
+      symbol_type (int tok, unsigned long v)
+        : super_type (token_kind_type (tok), std::move (v))
+#else
+      symbol_type (int tok, const unsigned long& v)
+        : super_type (token_kind_type (tok), v)
+#endif
+      {}
+    };
 
     /// Build a parser object.
     parser (void *scanner_yyarg, Statement *statement_yyarg);
@@ -1293,6 +1819,3217 @@ namespace m68kasm {
     /// YYSYMBOL.  No bounds checking.
     static std::string symbol_name (symbol_kind_type yysymbol);
 
+    // Implementation of make_symbol for each token kind.
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_YYEOF ()
+      {
+        return symbol_type (token::TOKEN_YYEOF);
+      }
+#else
+      static
+      symbol_type
+      make_YYEOF ()
+      {
+        return symbol_type (token::TOKEN_YYEOF);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_M68KASM_error ()
+      {
+        return symbol_type (token::TOKEN_M68KASM_error);
+      }
+#else
+      static
+      symbol_type
+      make_M68KASM_error ()
+      {
+        return symbol_type (token::TOKEN_M68KASM_error);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_M68KASM_UNDEF ()
+      {
+        return symbol_type (token::TOKEN_M68KASM_UNDEF);
+      }
+#else
+      static
+      symbol_type
+      make_M68KASM_UNDEF ()
+      {
+        return symbol_type (token::TOKEN_M68KASM_UNDEF);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ORI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ORI);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ORI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ORI);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ANDI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ANDI);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ANDI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ANDI);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SUBI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SUBI);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SUBI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SUBI);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ADDI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ADDI);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ADDI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ADDI);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_EORI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_EORI);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_EORI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_EORI);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_CMPI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_CMPI);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_CMPI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_CMPI);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BTST ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BTST);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BTST ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BTST);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BCHG ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BCHG);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BCHG ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BCHG);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BCLR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BCLR);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BCLR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BCLR);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BSET ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BSET);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BSET ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BSET);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_MOVEP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MOVEP);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_MOVEP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MOVEP);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_MOVEA ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MOVEA);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_MOVEA ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MOVEA);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_MOVE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MOVE);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_MOVE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MOVE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_NEGX ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_NEGX);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_NEGX ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_NEGX);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_CLR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_CLR);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_CLR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_CLR);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_NEG ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_NEG);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_NEG ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_NEG);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_NOT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_NOT);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_NOT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_NOT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_EXT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_EXT);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_EXT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_EXT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_NBCD ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_NBCD);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_NBCD ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_NBCD);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SWAP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SWAP);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SWAP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SWAP);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_PEA ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_PEA);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_PEA ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_PEA);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ILLEGAL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ILLEGAL);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ILLEGAL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ILLEGAL);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_TAS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_TAS);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_TAS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_TAS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_TST ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_TST);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_TST ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_TST);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_TRAP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_TRAP);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_TRAP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_TRAP);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_LINK ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_LINK);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_LINK ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_LINK);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_UNLK ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_UNLK);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_UNLK ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_UNLK);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_RESET ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_RESET);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_RESET ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_RESET);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_NOP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_NOP);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_NOP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_NOP);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_STOP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_STOP);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_STOP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_STOP);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_RTE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_RTE);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_RTE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_RTE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_RTS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_RTS);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_RTS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_RTS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_TRAPV ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_TRAPV);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_TRAPV ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_TRAPV);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_RTR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_RTR);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_RTR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_RTR);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_JSR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_JSR);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_JSR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_JSR);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_JMP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_JMP);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_JMP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_JMP);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_MOVEM ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MOVEM);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_MOVEM ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MOVEM);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_LEA ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_LEA);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_LEA ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_LEA);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_CHK ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_CHK);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_CHK ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_CHK);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ADDQ ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ADDQ);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ADDQ ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ADDQ);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SUBQ ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SUBQ);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SUBQ ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SUBQ);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ST ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ST);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ST ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ST);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SF ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SF);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SF ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SF);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SHI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SHI);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SHI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SHI);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SLS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SLS);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SLS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SLS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SCC ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SCC);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SCC ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SCC);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SCS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SCS);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SCS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SCS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SNE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SNE);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SNE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SNE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SEQ ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SEQ);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SEQ ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SEQ);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SVC ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SVC);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SVC ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SVC);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SVS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SVS);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SVS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SVS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SPL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SPL);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SPL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SPL);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SMI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SMI);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SMI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SMI);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SGE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SGE);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SGE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SGE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SLT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SLT);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SLT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SLT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SGT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SGT);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SGT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SGT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SLE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SLE);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SLE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SLE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DBT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBT);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DBT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DBF ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBF);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DBF ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBF);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DBHI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBHI);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DBHI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBHI);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DBLS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBLS);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DBLS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBLS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DBCC ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBCC);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DBCC ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBCC);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DBCS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBCS);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DBCS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBCS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DBNE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBNE);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DBNE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBNE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DBEQ ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBEQ);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DBEQ ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBEQ);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DBVC ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBVC);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DBVC ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBVC);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DBVS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBVS);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DBVS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBVS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DBPL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBPL);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DBPL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBPL);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DBMI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBMI);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DBMI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBMI);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DBGE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBGE);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DBGE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBGE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DBLT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBLT);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DBLT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBLT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DBGT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBGT);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DBGT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBGT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DBLE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBLE);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DBLE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DBLE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BRA ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BRA);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BRA ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BRA);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BSR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BSR);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BSR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BSR);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BHI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BHI);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BHI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BHI);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BLS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BLS);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BLS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BLS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BCC ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BCC);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BCC ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BCC);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BCS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BCS);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BCS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BCS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BNE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BNE);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BNE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BNE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BEQ ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BEQ);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BEQ ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BEQ);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BVC ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BVC);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BVC ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BVC);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BVS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BVS);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BVS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BVS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BPL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BPL);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BPL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BPL);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BMI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BMI);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BMI ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BMI);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BGE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BGE);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BGE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BGE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BLT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BLT);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BLT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BLT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BGT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BGT);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BGT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BGT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_BLE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BLE);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_BLE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_BLE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_MOVEQ ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MOVEQ);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_MOVEQ ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MOVEQ);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DIVU ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DIVU);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DIVU ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DIVU);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DIVS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DIVS);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DIVS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DIVS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SBCD ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SBCD);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SBCD ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SBCD);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_OR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_OR);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_OR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_OR);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SUB ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SUB);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SUB ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SUB);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SUBX ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SUBX);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SUBX ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SUBX);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SUBA ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SUBA);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SUBA ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SUBA);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_EOR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_EOR);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_EOR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_EOR);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_CMPM ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_CMPM);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_CMPM ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_CMPM);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_CMP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_CMP);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_CMP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_CMP);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_CMPA ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_CMPA);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_CMPA ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_CMPA);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_MULU ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MULU);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_MULU ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MULU);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_MULS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MULS);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_MULS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MULS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ABCD ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ABCD);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ABCD ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ABCD);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_EXG ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_EXG);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_EXG ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_EXG);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_AND ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_AND);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_AND ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_AND);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ADD ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ADD);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ADD ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ADD);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ADDX ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ADDX);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ADDX ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ADDX);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ADDA ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ADDA);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ADDA ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ADDA);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ASL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ASL);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ASL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ASL);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ASR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ASR);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ASR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ASR);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_LSL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_LSL);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_LSL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_LSL);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_LSR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_LSR);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_LSR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_LSR);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ROXL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ROXL);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ROXL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ROXL);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ROXR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ROXR);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ROXR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ROXR);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ROL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ROL);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ROL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ROL);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ROR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ROR);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ROR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ROR);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DC ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DC);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DC ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DC);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DCB ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DCB);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DCB ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DCB);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_DS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DS);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_DS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_DS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_REPT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_REPT);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_REPT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_REPT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ENDR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ENDR);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ENDR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ENDR);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_MACRO ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MACRO);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_MACRO ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MACRO);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_MACROS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MACROS);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_MACROS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MACROS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ENDM ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ENDM);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ENDM ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ENDM);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_INCLUDE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_INCLUDE);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_INCLUDE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_INCLUDE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_INCBIN ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_INCBIN);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_INCBIN ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_INCBIN);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_EQU ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_EQU);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_EQU ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_EQU);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_EQUS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_EQUS);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_EQUS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_EQUS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SUBSTR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SUBSTR);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SUBSTR ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SUBSTR);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SET ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SET);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SET ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SET);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_IF ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_IF);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_IF ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_IF);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ELSEIF ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ELSEIF);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ELSEIF ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ELSEIF);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ELSE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ELSE);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ELSE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ELSE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ENDC ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ENDC);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ENDC ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ENDC);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_WHILE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_WHILE);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_WHILE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_WHILE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ENDW ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ENDW);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ENDW ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ENDW);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_EVEN ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_EVEN);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_EVEN ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_EVEN);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_CNOP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_CNOP);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_CNOP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_CNOP);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_INFORM ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_INFORM);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_INFORM ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_INFORM);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_FAIL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_FAIL);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_FAIL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_FAIL);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_END ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_END);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_END ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_END);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_RS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_RS);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_RS ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_RS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_RSSET ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_RSSET);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_RSSET ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_RSSET);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_RSRESET ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_RSRESET);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_RSRESET ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_RSRESET);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_OBJ ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_OBJ);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_OBJ ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_OBJ);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_OBJEND ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_OBJEND);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_OBJEND ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_OBJEND);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_ORG ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ORG);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ORG ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ORG);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_PUSHO ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_PUSHO);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_PUSHO ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_PUSHO);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_POPO ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_POPO);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_POPO ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_POPO);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_OPT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_OPT);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_OPT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_OPT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_PUSHP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_PUSHP);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_PUSHP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_PUSHP);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_POPP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_POPP);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_POPP ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_POPP);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_SHIFT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SHIFT);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_SHIFT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_SHIFT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_MEXIT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MEXIT);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_MEXIT ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_MEXIT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_LOCAL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_LOCAL);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_LOCAL ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_LOCAL);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_LIST ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_LIST);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_LIST ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_LIST);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_NOLIST ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_NOLIST);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_NOLIST ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_NOLIST);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIRECTIVE_PURGE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_PURGE);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_PURGE ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_PURGE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_SIZE_BYTE ()
+      {
+        return symbol_type (token::TOKEN_SIZE_BYTE);
+      }
+#else
+      static
+      symbol_type
+      make_SIZE_BYTE ()
+      {
+        return symbol_type (token::TOKEN_SIZE_BYTE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_SIZE_SHORT ()
+      {
+        return symbol_type (token::TOKEN_SIZE_SHORT);
+      }
+#else
+      static
+      symbol_type
+      make_SIZE_SHORT ()
+      {
+        return symbol_type (token::TOKEN_SIZE_SHORT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_SIZE_WORD ()
+      {
+        return symbol_type (token::TOKEN_SIZE_WORD);
+      }
+#else
+      static
+      symbol_type
+      make_SIZE_WORD ()
+      {
+        return symbol_type (token::TOKEN_SIZE_WORD);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_SIZE_LONGWORD ()
+      {
+        return symbol_type (token::TOKEN_SIZE_LONGWORD);
+      }
+#else
+      static
+      symbol_type
+      make_SIZE_LONGWORD ()
+      {
+        return symbol_type (token::TOKEN_SIZE_LONGWORD);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DATA_REGISTER (unsigned long v)
+      {
+        return symbol_type (token::TOKEN_DATA_REGISTER, std::move (v));
+      }
+#else
+      static
+      symbol_type
+      make_DATA_REGISTER (const unsigned long& v)
+      {
+        return symbol_type (token::TOKEN_DATA_REGISTER, v);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_ADDRESS_REGISTER (unsigned long v)
+      {
+        return symbol_type (token::TOKEN_ADDRESS_REGISTER, std::move (v));
+      }
+#else
+      static
+      symbol_type
+      make_ADDRESS_REGISTER (const unsigned long& v)
+      {
+        return symbol_type (token::TOKEN_ADDRESS_REGISTER, v);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_NUMBER (unsigned long v)
+      {
+        return symbol_type (token::TOKEN_NUMBER, std::move (v));
+      }
+#else
+      static
+      symbol_type
+      make_NUMBER (const unsigned long& v)
+      {
+        return symbol_type (token::TOKEN_NUMBER, v);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_IDENTIFIER (String v)
+      {
+        return symbol_type (token::TOKEN_IDENTIFIER, std::move (v));
+      }
+#else
+      static
+      symbol_type
+      make_IDENTIFIER (const String& v)
+      {
+        return symbol_type (token::TOKEN_IDENTIFIER, v);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LOCAL_IDENTIFIER (String v)
+      {
+        return symbol_type (token::TOKEN_LOCAL_IDENTIFIER, std::move (v));
+      }
+#else
+      static
+      symbol_type
+      make_LOCAL_IDENTIFIER (const String& v)
+      {
+        return symbol_type (token::TOKEN_LOCAL_IDENTIFIER, v);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_STRING (String v)
+      {
+        return symbol_type (token::TOKEN_STRING, std::move (v));
+      }
+#else
+      static
+      symbol_type
+      make_STRING (const String& v)
+      {
+        return symbol_type (token::TOKEN_STRING, v);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_OPTION (String v)
+      {
+        return symbol_type (token::TOKEN_OPTION, std::move (v));
+      }
+#else
+      static
+      symbol_type
+      make_OPTION (const String& v)
+      {
+        return symbol_type (token::TOKEN_OPTION, v);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_STATUS_REGISTER ()
+      {
+        return symbol_type (token::TOKEN_STATUS_REGISTER);
+      }
+#else
+      static
+      symbol_type
+      make_STATUS_REGISTER ()
+      {
+        return symbol_type (token::TOKEN_STATUS_REGISTER);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_CONDITION_CODE_REGISTER ()
+      {
+        return symbol_type (token::TOKEN_CONDITION_CODE_REGISTER);
+      }
+#else
+      static
+      symbol_type
+      make_CONDITION_CODE_REGISTER ()
+      {
+        return symbol_type (token::TOKEN_CONDITION_CODE_REGISTER);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_USER_STACK_POINTER_REGISTER ()
+      {
+        return symbol_type (token::TOKEN_USER_STACK_POINTER_REGISTER);
+      }
+#else
+      static
+      symbol_type
+      make_USER_STACK_POINTER_REGISTER ()
+      {
+        return symbol_type (token::TOKEN_USER_STACK_POINTER_REGISTER);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_PROGRAM_COUNTER ()
+      {
+        return symbol_type (token::TOKEN_PROGRAM_COUNTER);
+      }
+#else
+      static
+      symbol_type
+      make_PROGRAM_COUNTER ()
+      {
+        return symbol_type (token::TOKEN_PROGRAM_COUNTER);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LOGICAL_AND ()
+      {
+        return symbol_type (token::TOKEN_LOGICAL_AND);
+      }
+#else
+      static
+      symbol_type
+      make_LOGICAL_AND ()
+      {
+        return symbol_type (token::TOKEN_LOGICAL_AND);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LOGICAL_OR ()
+      {
+        return symbol_type (token::TOKEN_LOGICAL_OR);
+      }
+#else
+      static
+      symbol_type
+      make_LOGICAL_OR ()
+      {
+        return symbol_type (token::TOKEN_LOGICAL_OR);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_EQUALITY ()
+      {
+        return symbol_type (token::TOKEN_EQUALITY);
+      }
+#else
+      static
+      symbol_type
+      make_EQUALITY ()
+      {
+        return symbol_type (token::TOKEN_EQUALITY);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_INEQUALITY ()
+      {
+        return symbol_type (token::TOKEN_INEQUALITY);
+      }
+#else
+      static
+      symbol_type
+      make_INEQUALITY ()
+      {
+        return symbol_type (token::TOKEN_INEQUALITY);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LESS_OR_EQUAL ()
+      {
+        return symbol_type (token::TOKEN_LESS_OR_EQUAL);
+      }
+#else
+      static
+      symbol_type
+      make_LESS_OR_EQUAL ()
+      {
+        return symbol_type (token::TOKEN_LESS_OR_EQUAL);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_MORE_OR_EQUAL ()
+      {
+        return symbol_type (token::TOKEN_MORE_OR_EQUAL);
+      }
+#else
+      static
+      symbol_type
+      make_MORE_OR_EQUAL ()
+      {
+        return symbol_type (token::TOKEN_MORE_OR_EQUAL);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LEFT_SHIFT ()
+      {
+        return symbol_type (token::TOKEN_LEFT_SHIFT);
+      }
+#else
+      static
+      symbol_type
+      make_LEFT_SHIFT ()
+      {
+        return symbol_type (token::TOKEN_LEFT_SHIFT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_RIGHT_SHIFT ()
+      {
+        return symbol_type (token::TOKEN_RIGHT_SHIFT);
+      }
+#else
+      static
+      symbol_type
+      make_RIGHT_SHIFT ()
+      {
+        return symbol_type (token::TOKEN_RIGHT_SHIFT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_STRLEN ()
+      {
+        return symbol_type (token::TOKEN_STRLEN);
+      }
+#else
+      static
+      symbol_type
+      make_STRLEN ()
+      {
+        return symbol_type (token::TOKEN_STRLEN);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_STRCMP ()
+      {
+        return symbol_type (token::TOKEN_STRCMP);
+      }
+#else
+      static
+      symbol_type
+      make_STRCMP ()
+      {
+        return symbol_type (token::TOKEN_STRCMP);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_INSTR ()
+      {
+        return symbol_type (token::TOKEN_INSTR);
+      }
+#else
+      static
+      symbol_type
+      make_INSTR ()
+      {
+        return symbol_type (token::TOKEN_INSTR);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DEF ()
+      {
+        return symbol_type (token::TOKEN_DEF);
+      }
+#else
+      static
+      symbol_type
+      make_DEF ()
+      {
+        return symbol_type (token::TOKEN_DEF);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_TYPE ()
+      {
+        return symbol_type (token::TOKEN_TYPE);
+      }
+#else
+      static
+      symbol_type
+      make_TYPE ()
+      {
+        return symbol_type (token::TOKEN_TYPE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_FILESIZE ()
+      {
+        return symbol_type (token::TOKEN_FILESIZE);
+      }
+#else
+      static
+      symbol_type
+      make_FILESIZE ()
+      {
+        return symbol_type (token::TOKEN_FILESIZE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_OFFSET ()
+      {
+        return symbol_type (token::TOKEN_OFFSET);
+      }
+#else
+      static
+      symbol_type
+      make_OFFSET ()
+      {
+        return symbol_type (token::TOKEN_OFFSET);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_PERIOD ()
+      {
+        return symbol_type (token::TOKEN_PERIOD);
+      }
+#else
+      static
+      symbol_type
+      make_PERIOD ()
+      {
+        return symbol_type (token::TOKEN_PERIOD);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_COMMA ()
+      {
+        return symbol_type (token::TOKEN_COMMA);
+      }
+#else
+      static
+      symbol_type
+      make_COMMA ()
+      {
+        return symbol_type (token::TOKEN_COMMA);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_PARENTHESIS_LEFT ()
+      {
+        return symbol_type (token::TOKEN_PARENTHESIS_LEFT);
+      }
+#else
+      static
+      symbol_type
+      make_PARENTHESIS_LEFT ()
+      {
+        return symbol_type (token::TOKEN_PARENTHESIS_LEFT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_PARENTHESIS_RIGHT ()
+      {
+        return symbol_type (token::TOKEN_PARENTHESIS_RIGHT);
+      }
+#else
+      static
+      symbol_type
+      make_PARENTHESIS_RIGHT ()
+      {
+        return symbol_type (token::TOKEN_PARENTHESIS_RIGHT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DOLLAR ()
+      {
+        return symbol_type (token::TOKEN_DOLLAR);
+      }
+#else
+      static
+      symbol_type
+      make_DOLLAR ()
+      {
+        return symbol_type (token::TOKEN_DOLLAR);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_PLUS ()
+      {
+        return symbol_type (token::TOKEN_PLUS);
+      }
+#else
+      static
+      symbol_type
+      make_PLUS ()
+      {
+        return symbol_type (token::TOKEN_PLUS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_MINUS ()
+      {
+        return symbol_type (token::TOKEN_MINUS);
+      }
+#else
+      static
+      symbol_type
+      make_MINUS ()
+      {
+        return symbol_type (token::TOKEN_MINUS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_ASTERIX ()
+      {
+        return symbol_type (token::TOKEN_ASTERIX);
+      }
+#else
+      static
+      symbol_type
+      make_ASTERIX ()
+      {
+        return symbol_type (token::TOKEN_ASTERIX);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_FORWARD_SLASH ()
+      {
+        return symbol_type (token::TOKEN_FORWARD_SLASH);
+      }
+#else
+      static
+      symbol_type
+      make_FORWARD_SLASH ()
+      {
+        return symbol_type (token::TOKEN_FORWARD_SLASH);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_EQUAL ()
+      {
+        return symbol_type (token::TOKEN_EQUAL);
+      }
+#else
+      static
+      symbol_type
+      make_EQUAL ()
+      {
+        return symbol_type (token::TOKEN_EQUAL);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_AT ()
+      {
+        return symbol_type (token::TOKEN_AT);
+      }
+#else
+      static
+      symbol_type
+      make_AT ()
+      {
+        return symbol_type (token::TOKEN_AT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_HASH ()
+      {
+        return symbol_type (token::TOKEN_HASH);
+      }
+#else
+      static
+      symbol_type
+      make_HASH ()
+      {
+        return symbol_type (token::TOKEN_HASH);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_AMPERSAND ()
+      {
+        return symbol_type (token::TOKEN_AMPERSAND);
+      }
+#else
+      static
+      symbol_type
+      make_AMPERSAND ()
+      {
+        return symbol_type (token::TOKEN_AMPERSAND);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_CARET ()
+      {
+        return symbol_type (token::TOKEN_CARET);
+      }
+#else
+      static
+      symbol_type
+      make_CARET ()
+      {
+        return symbol_type (token::TOKEN_CARET);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_EXCLAMATION ()
+      {
+        return symbol_type (token::TOKEN_EXCLAMATION);
+      }
+#else
+      static
+      symbol_type
+      make_EXCLAMATION ()
+      {
+        return symbol_type (token::TOKEN_EXCLAMATION);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_VERTICAL_BAR ()
+      {
+        return symbol_type (token::TOKEN_VERTICAL_BAR);
+      }
+#else
+      static
+      symbol_type
+      make_VERTICAL_BAR ()
+      {
+        return symbol_type (token::TOKEN_VERTICAL_BAR);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_ANGLE_LEFT ()
+      {
+        return symbol_type (token::TOKEN_ANGLE_LEFT);
+      }
+#else
+      static
+      symbol_type
+      make_ANGLE_LEFT ()
+      {
+        return symbol_type (token::TOKEN_ANGLE_LEFT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_ANGLE_RIGHT ()
+      {
+        return symbol_type (token::TOKEN_ANGLE_RIGHT);
+      }
+#else
+      static
+      symbol_type
+      make_ANGLE_RIGHT ()
+      {
+        return symbol_type (token::TOKEN_ANGLE_RIGHT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_PERCENTAGE ()
+      {
+        return symbol_type (token::TOKEN_PERCENTAGE);
+      }
+#else
+      static
+      symbol_type
+      make_PERCENTAGE ()
+      {
+        return symbol_type (token::TOKEN_PERCENTAGE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_TILDE ()
+      {
+        return symbol_type (token::TOKEN_TILDE);
+      }
+#else
+      static
+      symbol_type
+      make_TILDE ()
+      {
+        return symbol_type (token::TOKEN_TILDE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LOWER_PRECEDENCE_THAN_SIZE ()
+      {
+        return symbol_type (token::TOKEN_LOWER_PRECEDENCE_THAN_SIZE);
+      }
+#else
+      static
+      symbol_type
+      make_LOWER_PRECEDENCE_THAN_SIZE ()
+      {
+        return symbol_type (token::TOKEN_LOWER_PRECEDENCE_THAN_SIZE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_HIGHER_PRECEDENCE_THAN_SIZE ()
+      {
+        return symbol_type (token::TOKEN_HIGHER_PRECEDENCE_THAN_SIZE);
+      }
+#else
+      static
+      symbol_type
+      make_HIGHER_PRECEDENCE_THAN_SIZE ()
+      {
+        return symbol_type (token::TOKEN_HIGHER_PRECEDENCE_THAN_SIZE);
+      }
+#endif
 
 
     class context
@@ -1621,7 +5358,7 @@ namespace m68kasm {
     /// Constants.
     enum
     {
-      yylast_ = 863,     ///< Last index in yytable_.
+      yylast_ = 869,     ///< Last index in yytable_.
       yynnts_ = 25,  ///< Number of nonterminal symbols.
       yyfinal_ = 237 ///< Termination state number.
     };
@@ -1633,22 +5370,247 @@ namespace m68kasm {
 
   };
 
+  inline
+  parser::symbol_kind_type
+  parser::yytranslate_ (int t) YY_NOEXCEPT
+  {
+    return static_cast<symbol_kind_type> (t);
+  }
+
+  // basic_symbol.
+  template <typename Base>
+  parser::basic_symbol<Base>::basic_symbol (const basic_symbol& that)
+    : Base (that)
+    , value ()
+  {
+    switch (this->kind ())
+    {
+      case symbol_kind::S_expression: // expression
+      case symbol_kind::S_expression1: // expression1
+      case symbol_kind::S_expression2: // expression2
+      case symbol_kind::S_expression3: // expression3
+      case symbol_kind::S_expression4: // expression4
+      case symbol_kind::S_expression5: // expression5
+      case symbol_kind::S_expression6: // expression6
+      case symbol_kind::S_expression7: // expression7
+      case symbol_kind::S_expression8: // expression8
+      case symbol_kind::S_string: // string
+        value.copy< Expression > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_expression_list: // expression_list
+        value.copy< ExpressionList > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_identifier_list: // identifier_list
+      case symbol_kind::S_option_list: // option_list
+        value.copy< IdentifierList > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_full_opcode: // full_opcode
+      case symbol_kind::S_opcode: // opcode
+        value.copy< Opcode > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_operand: // operand
+        value.copy< Operand > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_size: // size
+        value.copy< Size > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_instruction: // instruction
+        value.copy< StatementInstruction > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_LOCAL_IDENTIFIER: // LOCAL_IDENTIFIER
+      case symbol_kind::S_STRING: // STRING
+      case symbol_kind::S_OPTION: // OPTION
+      case symbol_kind::S_local_identifier: // local_identifier
+      case symbol_kind::S_identifier: // identifier
+        value.copy< String > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_DATA_REGISTER: // DATA_REGISTER
+      case symbol_kind::S_ADDRESS_REGISTER: // ADDRESS_REGISTER
+      case symbol_kind::S_NUMBER: // NUMBER
+      case symbol_kind::S_register_list: // register_list
+      case symbol_kind::S_register_span: // register_span
+      case symbol_kind::S_data_or_address_register: // data_or_address_register
+        value.copy< unsigned long > (YY_MOVE (that.value));
+        break;
+
+      default:
+        break;
+    }
+
+  }
+
+
+
+
+  template <typename Base>
+  parser::symbol_kind_type
+  parser::basic_symbol<Base>::type_get () const YY_NOEXCEPT
+  {
+    return this->kind ();
+  }
+
+
+  template <typename Base>
+  bool
+  parser::basic_symbol<Base>::empty () const YY_NOEXCEPT
+  {
+    return this->kind () == symbol_kind::S_YYEMPTY;
+  }
+
+  template <typename Base>
+  void
+  parser::basic_symbol<Base>::move (basic_symbol& s)
+  {
+    super_type::move (s);
+    switch (this->kind ())
+    {
+      case symbol_kind::S_expression: // expression
+      case symbol_kind::S_expression1: // expression1
+      case symbol_kind::S_expression2: // expression2
+      case symbol_kind::S_expression3: // expression3
+      case symbol_kind::S_expression4: // expression4
+      case symbol_kind::S_expression5: // expression5
+      case symbol_kind::S_expression6: // expression6
+      case symbol_kind::S_expression7: // expression7
+      case symbol_kind::S_expression8: // expression8
+      case symbol_kind::S_string: // string
+        value.move< Expression > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_expression_list: // expression_list
+        value.move< ExpressionList > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_identifier_list: // identifier_list
+      case symbol_kind::S_option_list: // option_list
+        value.move< IdentifierList > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_full_opcode: // full_opcode
+      case symbol_kind::S_opcode: // opcode
+        value.move< Opcode > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_operand: // operand
+        value.move< Operand > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_size: // size
+        value.move< Size > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_instruction: // instruction
+        value.move< StatementInstruction > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_LOCAL_IDENTIFIER: // LOCAL_IDENTIFIER
+      case symbol_kind::S_STRING: // STRING
+      case symbol_kind::S_OPTION: // OPTION
+      case symbol_kind::S_local_identifier: // local_identifier
+      case symbol_kind::S_identifier: // identifier
+        value.move< String > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_DATA_REGISTER: // DATA_REGISTER
+      case symbol_kind::S_ADDRESS_REGISTER: // ADDRESS_REGISTER
+      case symbol_kind::S_NUMBER: // NUMBER
+      case symbol_kind::S_register_list: // register_list
+      case symbol_kind::S_register_span: // register_span
+      case symbol_kind::S_data_or_address_register: // data_or_address_register
+        value.move< unsigned long > (YY_MOVE (s.value));
+        break;
+
+      default:
+        break;
+    }
+
+  }
+
+  // by_kind.
+  inline
+  parser::by_kind::by_kind () YY_NOEXCEPT
+    : kind_ (symbol_kind::S_YYEMPTY)
+  {}
+
+#if 201103L <= YY_CPLUSPLUS
+  inline
+  parser::by_kind::by_kind (by_kind&& that) YY_NOEXCEPT
+    : kind_ (that.kind_)
+  {
+    that.clear ();
+  }
+#endif
+
+  inline
+  parser::by_kind::by_kind (const by_kind& that) YY_NOEXCEPT
+    : kind_ (that.kind_)
+  {}
+
+  inline
+  parser::by_kind::by_kind (token_kind_type t) YY_NOEXCEPT
+    : kind_ (yytranslate_ (t))
+  {}
+
+
+
+  inline
+  void
+  parser::by_kind::clear () YY_NOEXCEPT
+  {
+    kind_ = symbol_kind::S_YYEMPTY;
+  }
+
+  inline
+  void
+  parser::by_kind::move (by_kind& that)
+  {
+    kind_ = that.kind_;
+    that.clear ();
+  }
+
+  inline
+  parser::symbol_kind_type
+  parser::by_kind::kind () const YY_NOEXCEPT
+  {
+    return kind_;
+  }
+
+
+  inline
+  parser::symbol_kind_type
+  parser::by_kind::type_get () const YY_NOEXCEPT
+  {
+    return this->kind ();
+  }
+
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 1640 "syntactic.h"
+#line 5600 "syntactic.h"
 
 
 // "%code provides" blocks.
-#line 455 "syntactic.y"
+#line 457 "syntactic.y"
 
 
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
 void DestroyIdentifierList(IdentifierList *list);
 
+#define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner)
 
-#line 1652 "syntactic.h"
+
+#line 5614 "syntactic.h"
 
 
 #endif // !YY_M68KASM_SYNTACTIC_H_INCLUDED

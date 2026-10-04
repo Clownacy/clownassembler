@@ -210,18 +210,6 @@
 #define yywrap m68kasm_wrap
 #endif
 
-#ifdef yyget_lval
-#define m68kasm_get_lval_ALREADY_DEFINED
-#else
-#define yyget_lval m68kasm_get_lval
-#endif
-
-#ifdef yyset_lval
-#define m68kasm_set_lval_ALREADY_DEFINED
-#else
-#define yyset_lval m68kasm_set_lval
-#endif
-
 #ifdef yyalloc
 #define m68kasm_alloc_ALREADY_DEFINED
 #else
@@ -501,10 +489,6 @@ int yyget_column  ( yyscan_t yyscanner );
 
 void yyset_column ( int _column_no , yyscan_t yyscanner );
 
-YYSTYPE * yyget_lval ( yyscan_t yyscanner );
-
-void yyset_lval ( YYSTYPE * yylval_param , yyscan_t yyscanner );
-
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
  */
@@ -550,11 +534,9 @@ static int yy_flex_strlen ( const char * , yyscan_t yyscanner);
 #ifndef YY_DECL
 #define YY_DECL_IS_OURS 1
 
-extern int yylex \
-               (YYSTYPE * yylval_param , yyscan_t yyscanner);
+extern int yylex (yyscan_t yyscanner);
 
-#define YY_DECL int yylex \
-               (YYSTYPE * yylval_param , yyscan_t yyscanner)
+#define YY_DECL int yylex (yyscan_t yyscanner)
 #endif /* !YY_DECL */
 
 /* yy_get_previous_state - get the state just before the EOB char was reached */
@@ -716,9 +698,9 @@ extern int yylex \
 #undef yyTABLES_NAME
 #endif
 
-#line 514 "lexical.l"
+#line 494 "lexical.l"
 
 
-#line 722 "lexical.h"
+#line 704 "lexical.h"
 #undef m68kasm_IN_HEADER
 #endif /* m68kasm_HEADER_H */

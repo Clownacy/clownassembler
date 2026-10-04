@@ -24,6 +24,10 @@
 %define api.prefix {m68kasm_}
 %define api.namespace {m68kasm}
 
+%define api.token.raw
+%define api.token.constructor
+%define api.value.type variant
+
 %param {void *scanner}
 
 %parse-param {Statement *statement}
@@ -37,8 +41,6 @@
 
 /* Temporary junk! */
 #define YYNOMEM YYERROR
-
-#define YYSTYPE m68kasm::parser::semantic_type
 
 #define CREATE_LIST_TYPE(TYPE)\
 typedef struct TYPE\
@@ -458,6 +460,8 @@ void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
 void DestroyIdentifierList(IdentifierList *list);
 
+#define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner)
+
 }
 
 %code {
@@ -467,7 +471,7 @@ void DestroyIdentifierList(IdentifierList *list);
 #include <stdlib.h>
 #include <string.h>
 
-int m68kasm_lex(YYSTYPE *yylval_param, void *yyscanner);
+YY_DECL;
 void m68kasm_warning(void *scanner, Statement *statement, const char *message);
 void m68kasm_warning_pedantic(void *scanner, Statement *statement, const char *message);
 void m68kasm_error(void *scanner, Statement *statement, const char *message);
@@ -483,19 +487,6 @@ void m68kasm::parser::error(const std::string &message)
 	m68kasm_error(scanner, statement, message.c_str());
 }
 
-}
-
-%union {
-	unsigned long unsigned_long;
-	String string;
-	Opcode opcode;
-	Size size;
-	Operand operand;
-	StatementInstruction instruction;
-	Statement statement;
-	ExpressionList expression_list;
-	IdentifierList identifier_list;
-	Expression expression;
 }
 
 %define api.token.prefix {TOKEN_}
@@ -663,13 +654,13 @@ void m68kasm::parser::error(const std::string &message)
 %token SIZE_SHORT
 %token SIZE_WORD
 %token SIZE_LONGWORD
-%token<unsigned_long> DATA_REGISTER
-%token<unsigned_long> ADDRESS_REGISTER
-%token<unsigned_long> NUMBER
-%token<string> IDENTIFIER
-%token<string> LOCAL_IDENTIFIER
-%token<string> STRING
-%token<string> OPTION
+%token<unsigned long> DATA_REGISTER
+%token<unsigned long> ADDRESS_REGISTER
+%token<unsigned long> NUMBER
+%token<String> IDENTIFIER
+%token<String> LOCAL_IDENTIFIER
+%token<String> STRING
+%token<String> OPTION
 %token STATUS_REGISTER
 %token CONDITION_CODE_REGISTER
 %token USER_STACK_POINTER_REGISTER
@@ -689,25 +680,39 @@ void m68kasm::parser::error(const std::string &message)
 %token TYPE
 %token FILESIZE
 %token OFFSET
+%token PERIOD "."
+%token COMMA ","
+%token PARENTHESIS_LEFT "("
+%token PARENTHESIS_RIGHT ")"
+%token DOLLAR "$"
+%token PLUS "+"
+%token MINUS "-"
+%token ASTERIX "*"
+%token FORWARD_SLASH "/"
+%token EQUAL "="
+%token AT "@"
+%token HASH "#"
+%token AMPERSAND "&"
+%token CARET "^"
+%token EXCLAMATION "!"
+%token VERTICAL_BAR "|"
+%token ANGLE_LEFT "<"
+%token ANGLE_RIGHT ">"
+%token PERCENTAGE "%"
+%token TILDE "~"
 
-%type<instruction> instruction
-%type<opcode> opcode
-%type<size> size
-%type<opcode> full_opcode
-%type<operand> operand
-%type<unsigned_long> register_list
-%type<unsigned_long> register_span
-%type<unsigned_long> data_or_address_register
-%type<expression_list> expression_list
-%type<identifier_list> identifier_list option_list
-%type<expression> expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 string
-%type<string> local_identifier identifier
-
-%destructor { String_Destroy(&$$); } IDENTIFIER LOCAL_IDENTIFIER STRING OPTION local_identifier identifier
-%destructor { DestroyOperand(&$$); } operand
-%destructor { DestroyExpressionList(&$$); } expression_list
-%destructor { DestroyIdentifierList(&$$); } identifier_list option_list
-%destructor { DestroyExpression(&$$); } expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 string
+%type<StatementInstruction> instruction
+%type<Opcode> opcode
+%type<Size> size
+%type<Opcode> full_opcode
+%type<Operand> operand
+%type<unsigned long> register_list
+%type<unsigned long> register_span
+%type<unsigned long> data_or_address_register
+%type<ExpressionList> expression_list
+%type<IdentifierList> identifier_list option_list
+%type<Expression> expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 string
+%type<String> local_identifier identifier
 
 /* Hack to resolve ambiguity around size tokens. */
 %precedence LOWER_PRECEDENCE_THAN_SIZE
@@ -734,7 +739,7 @@ statement
 		statement->shared.dc.size = $2;
 		statement->shared.dc.values = $3;
 	}
-	| DIRECTIVE_DCB size expression ',' expression
+	| DIRECTIVE_DCB size expression "," expression
 	{
 		statement->type = STATEMENT_TYPE_DCB;
 		statement->shared.dcb.size = $2;
@@ -760,14 +765,14 @@ statement
 		statement->shared.incbin.start.shared.unsigned_long = 0;
 		statement->shared.incbin.has_length = cc_false;
 	}
-	| DIRECTIVE_INCBIN STRING ',' expression
+	| DIRECTIVE_INCBIN STRING "," expression
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = $2;
 		statement->shared.incbin.start = $4;
 		statement->shared.incbin.has_length = cc_false;
 	}
-	| DIRECTIVE_INCBIN STRING ',' ',' expression
+	| DIRECTIVE_INCBIN STRING "," "," expression
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = $2;
@@ -776,7 +781,7 @@ statement
 		statement->shared.incbin.has_length = cc_true;
 		statement->shared.incbin.length = $5;
 	}
-	| DIRECTIVE_INCBIN STRING ',' expression ',' expression
+	| DIRECTIVE_INCBIN STRING "," expression "," expression
 	{
 		statement->type = STATEMENT_TYPE_INCBIN;
 		statement->shared.incbin.path = $2;
@@ -800,7 +805,7 @@ statement
 		statement->shared.macro.parameter_names.head = NULL;
 		statement->shared.macro.parameter_names.tail = NULL;
 	}
-	| DIRECTIVE_MACRO '*'
+	| DIRECTIVE_MACRO "*"
 	{
 		statement->type = STATEMENT_TYPE_MACRO;
 		statement->shared.macro.uses_label = cc_true;
@@ -813,7 +818,7 @@ statement
 		statement->shared.macro.uses_label = cc_false;
 		statement->shared.macro.parameter_names = $2;
 	}
-	| DIRECTIVE_MACRO '*' ',' identifier_list
+	| DIRECTIVE_MACRO "*" "," identifier_list
 	{
 		statement->type = STATEMENT_TYPE_MACRO;
 		statement->shared.macro.uses_label = cc_true;
@@ -851,7 +856,7 @@ statement
 		statement->type = STATEMENT_TYPE_EQUS_IDENTIFIER;
 		statement->shared.string = $2;
 	}
-	| DIRECTIVE_SUBSTR ',' ',' STRING
+	| DIRECTIVE_SUBSTR "," "," STRING
 	{
 		statement->type = STATEMENT_TYPE_SUBSTR;
 		statement->shared.substr.start.type = EXPRESSION_NUMBER;
@@ -860,7 +865,7 @@ statement
 		statement->shared.substr.end.shared.unsigned_long = String_Length(&$4);
 		statement->shared.substr.string = $4;
 	}
-	| DIRECTIVE_SUBSTR expression ',' ',' STRING
+	| DIRECTIVE_SUBSTR expression "," "," STRING
 	{
 		statement->type = STATEMENT_TYPE_SUBSTR;
 		statement->shared.substr.start = $2;
@@ -868,7 +873,7 @@ statement
 		statement->shared.substr.end.shared.unsigned_long = String_Length(&$5);
 		statement->shared.substr.string = $5;
 	}
-	| DIRECTIVE_SUBSTR ',' expression ',' STRING
+	| DIRECTIVE_SUBSTR "," expression "," STRING
 	{
 		statement->type = STATEMENT_TYPE_SUBSTR;
 		statement->shared.substr.start.type = EXPRESSION_NUMBER;
@@ -876,7 +881,7 @@ statement
 		statement->shared.substr.end = $3;
 		statement->shared.substr.string = $5;
 	}
-	| DIRECTIVE_SUBSTR expression ',' expression ',' STRING
+	| DIRECTIVE_SUBSTR expression "," expression "," STRING
 	{
 		statement->type = STATEMENT_TYPE_SUBSTR;
 		statement->shared.substr.start = $2;
@@ -888,7 +893,7 @@ statement
 		statement->type = STATEMENT_TYPE_SET;
 		statement->shared.expression = $2;
 	}
-	| '=' expression
+	| "=" expression
 	{
 		statement->type = STATEMENT_TYPE_SET;
 		statement->shared.expression = $2;
@@ -928,19 +933,19 @@ statement
 	{
 		statement->type = STATEMENT_TYPE_EVEN;
 	}
-	| DIRECTIVE_CNOP expression ',' expression
+	| DIRECTIVE_CNOP expression "," expression
 	{
 		statement->type = STATEMENT_TYPE_CNOP;
 		statement->shared.cnop.offset = $2;
 		statement->shared.cnop.size_boundary = $4;
 	}
-	| DIRECTIVE_INFORM expression ',' STRING
+	| DIRECTIVE_INFORM expression "," STRING
 	{
 		statement->type = STATEMENT_TYPE_INFORM;
 		statement->shared.inform.severity = $2;
 		statement->shared.inform.message = $4;
 	}
-	| DIRECTIVE_INFORM expression ',' STRING ',' expression_list
+	| DIRECTIVE_INFORM expression "," STRING "," expression_list
 	{
 		(void)$6;
 
@@ -1035,12 +1040,12 @@ statement
 		/* TODO: Make this actually do something. */
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
-	| DIRECTIVE_LIST '+'
+	| DIRECTIVE_LIST "+"
 	{
 		/* TODO: Make this actually do something. */
 		statement->type = STATEMENT_TYPE_EMPTY;
 	}
-	| DIRECTIVE_LIST '-'
+	| DIRECTIVE_LIST "-"
 	{
 		/* TODO: Make this actually do something. */
 		statement->type = STATEMENT_TYPE_EMPTY;
@@ -1075,7 +1080,7 @@ expression_list
 
 		$$.head = $$.tail = node;
 	}
-	| expression_list ',' expression
+	| expression_list "," expression
 	{
 		ExpressionListNode *node = (ExpressionListNode*)malloc(sizeof(ExpressionListNode));
 
@@ -1120,7 +1125,7 @@ identifier_list
 
 		$$.head = $$.tail = node;
 	}
-	| identifier_list ',' IDENTIFIER
+	| identifier_list "," IDENTIFIER
 	{
 		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
 
@@ -1165,7 +1170,7 @@ option_list
 
 		$$.head = $$.tail = node;
 	}
-	| option_list ',' OPTION
+	| option_list "," OPTION
 	{
 		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
 
@@ -1205,7 +1210,7 @@ instruction
 		$$.operands[0] = $2;
 		$$.operands[1].type = OPERAND_NONE;
 	}
-	| full_opcode operand ',' operand
+	| full_opcode operand "," operand
 	{
 		$$.opcode = $1;
 		$$.operands[0] = $2;
@@ -1219,7 +1224,7 @@ full_opcode
 		$$ = $1;
 		$$.size = SIZE_UNDEFINED;
 	}
-	| opcode '.'
+	| opcode "."
 	{
 		$$ = $1;
 		$$.size = SIZE_UNDEFINED;
@@ -1770,40 +1775,40 @@ size
 
 	/* Indirect address register */
 operand
-	: '(' ADDRESS_REGISTER ')'
+	: "(" ADDRESS_REGISTER ")"
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT;
 		$$.main_register = $2;
 	}
-	| '(' ADDRESS_REGISTER ')' '+'
+	| "(" ADDRESS_REGISTER ")" "+"
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT;
 		$$.main_register = $2;
 	}
-	| '-' '(' ADDRESS_REGISTER ')'
+	| "-" "(" ADDRESS_REGISTER ")"
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT;
 		$$.main_register = $3;
 	}
-	| expression '(' ADDRESS_REGISTER ')'
+	| expression "(" ADDRESS_REGISTER ")"
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
 		$$.literal = $1;
 		$$.main_register = $3;
 	}
-	| '(' expression ',' ADDRESS_REGISTER ')'
+	| "(" expression "," ADDRESS_REGISTER ")"
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
 		$$.literal = $2;
 		$$.main_register = $4;
 	}
-	| '(' ADDRESS_REGISTER ',' expression ')'
+	| "(" ADDRESS_REGISTER "," expression ")"
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
 		$$.literal = $4;
 		$$.main_register = $2;
 	}
-	| '(' ADDRESS_REGISTER ',' data_or_address_register size ')'
+	| "(" ADDRESS_REGISTER "," data_or_address_register size ")"
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = EXPRESSION_NUMBER;
@@ -1813,7 +1818,7 @@ operand
 		$$.size = $5;
 		$$.index_register_is_address_register = $4 / 8 != 0;
 	}
-	| expression '(' ADDRESS_REGISTER ',' data_or_address_register size ')'
+	| expression "(" ADDRESS_REGISTER "," data_or_address_register size ")"
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
@@ -1822,7 +1827,7 @@ operand
 		$$.size = $6;
 		$$.index_register_is_address_register = $5 / 8 !=0;
 	}
-	| '(' expression ',' ADDRESS_REGISTER ',' data_or_address_register size ')'
+	| "(" expression "," ADDRESS_REGISTER "," data_or_address_register size ")"
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $2;
@@ -1831,7 +1836,7 @@ operand
 		$$.size = $7;
 		$$.index_register_is_address_register = $6 / 8 !=0;
 	}
-	| '(' ADDRESS_REGISTER ',' data_or_address_register ')'
+	| "(" ADDRESS_REGISTER "," data_or_address_register ")"
 	{
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -1842,7 +1847,7 @@ operand
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $4 / 8 != 0;
 	}
-	| expression '(' ADDRESS_REGISTER ',' data_or_address_register ')'
+	| expression "(" ADDRESS_REGISTER "," data_or_address_register ")"
 	{
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -1852,7 +1857,7 @@ operand
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $5 / 8 !=0;
 	}
-	| '(' expression ',' ADDRESS_REGISTER ',' data_or_address_register ')'
+	| "(" expression "," ADDRESS_REGISTER "," data_or_address_register ")"
 	{
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -1862,22 +1867,22 @@ operand
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $6 / 8 !=0;
 	}
-	| expression '(' PROGRAM_COUNTER ')'
+	| expression "(" PROGRAM_COUNTER ")"
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		$$.literal = $1;
 	}
-	| '(' expression ',' PROGRAM_COUNTER ')'
+	| "(" expression "," PROGRAM_COUNTER ")"
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		$$.literal = $2;
 	}
-	| '(' PROGRAM_COUNTER ',' expression ')'
+	| "(" PROGRAM_COUNTER "," expression ")"
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		$$.literal = $4;
 	}
-	| '(' PROGRAM_COUNTER ',' data_or_address_register size ')'
+	| "(" PROGRAM_COUNTER "," data_or_address_register size ")"
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.type = EXPRESSION_NUMBER;
@@ -1886,7 +1891,7 @@ operand
 		$$.size = $5;
 		$$.index_register_is_address_register = $4 / 8 != 0;
 	}
-	| expression '(' PROGRAM_COUNTER ',' data_or_address_register size ')'
+	| expression "(" PROGRAM_COUNTER "," data_or_address_register size ")"
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
@@ -1894,7 +1899,7 @@ operand
 		$$.size = $6;
 		$$.index_register_is_address_register = $5 / 8 != 0;
 	}
-	| '(' expression ',' PROGRAM_COUNTER ',' data_or_address_register size ')'
+	| "(" expression "," PROGRAM_COUNTER "," data_or_address_register size ")"
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $2;
@@ -1902,7 +1907,7 @@ operand
 		$$.size = $7;
 		$$.index_register_is_address_register = $6 / 8 != 0;
 	}
-	| '(' PROGRAM_COUNTER ',' data_or_address_register ')'
+	| "(" PROGRAM_COUNTER "," data_or_address_register ")"
 	{
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -1912,7 +1917,7 @@ operand
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $4 / 8 != 0;
 	}
-	| expression '(' PROGRAM_COUNTER ',' data_or_address_register ')'
+	| expression "(" PROGRAM_COUNTER "," data_or_address_register ")"
 	{
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -1921,7 +1926,7 @@ operand
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $5 / 8 != 0;
 	}
-	| '(' expression ',' PROGRAM_COUNTER ',' data_or_address_register ')'
+	| "(" expression "," PROGRAM_COUNTER "," data_or_address_register ")"
 	{
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
@@ -1931,7 +1936,7 @@ operand
 		$$.index_register_is_address_register = $6 / 8 != 0;
 	}
 	/* Literal */
-	| '#' expression
+	| "#" expression
 	{
 		$$.type = OPERAND_LITERAL;
 		$$.literal = $2;
@@ -2008,7 +2013,7 @@ register_list
 	{
 		$$ = $1;
 	}
-	| register_span '/' register_list
+	| register_span "/" register_list
 	{
 		$$ = $1 | $3;
 	}
@@ -2019,7 +2024,7 @@ register_span
 	{
 		$$ = 1 << $1;
 	}
-	| data_or_address_register '-' data_or_address_register
+	| data_or_address_register "-" data_or_address_register
 	{
 		unsigned long start;
 		unsigned long end;
@@ -2057,7 +2062,7 @@ data_or_address_register
 /*
 number
 	: NUMBER
-	| '$' NUMBER
+	| "$" NUMBER
 	;
 */
 expression
@@ -2084,7 +2089,7 @@ expression1
 	{
 		$$ = $1;
 	}
-	| expression1 '=' expression2
+	| expression1 "=" expression2
 	{
 		if (!DoExpression(&$$, EXPRESSION_EQUALITY, &$1, &$3))
 			YYNOMEM;
@@ -2106,7 +2111,7 @@ expression2
 	{
 		$$ = $1;
 	}
-	| expression2 '<' expression3
+	| expression2 "<" expression3
 	{
 		if (!DoExpression(&$$, EXPRESSION_LESS_THAN, &$1, &$3))
 			YYNOMEM;
@@ -2116,7 +2121,7 @@ expression2
 		if (!DoExpression(&$$, EXPRESSION_LESS_OR_EQUAL, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression2 '>' expression3
+	| expression2 ">" expression3
 	{
 		if (!DoExpression(&$$, EXPRESSION_MORE_THAN, &$1, &$3))
 			YYNOMEM;
@@ -2133,12 +2138,12 @@ expression3
 	{
 		$$ = $1;
 	}
-	| expression3 '+' expression4
+	| expression3 "+" expression4
 	{
 		if (!DoExpression(&$$, EXPRESSION_ADD, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression3 '-' expression4
+	| expression3 "-" expression4
 	{
 		if (!DoExpression(&$$, EXPRESSION_SUBTRACT, &$1, &$3))
 			YYNOMEM;
@@ -2150,17 +2155,17 @@ expression4
 	{
 		$$ = $1;
 	}
-	| expression4 '*' expression5
+	| expression4 "*" expression5
 	{
 		if (!DoExpression(&$$, EXPRESSION_MULTIPLY, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression4 '/' expression5
+	| expression4 "/" expression5
 	{
 		if (!DoExpression(&$$, EXPRESSION_DIVIDE, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression4 '%' expression5
+	| expression4 "%" expression5
 	{
 		if (!DoExpression(&$$, EXPRESSION_MODULO, &$1, &$3))
 			YYNOMEM;
@@ -2172,22 +2177,22 @@ expression5
 	{
 		$$ = $1;
 	}
-	| expression5 '&' expression6
+	| expression5 "&" expression6
 	{
 		if (!DoExpression(&$$, EXPRESSION_BITWISE_AND, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression5 '!' expression6
+	| expression5 "!" expression6
 	{
 		if (!DoExpression(&$$, EXPRESSION_BITWISE_OR, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression5 '|' expression6
+	| expression5 "|" expression6
 	{
 		if (!DoExpression(&$$, EXPRESSION_BITWISE_OR, &$1, &$3))
 			YYNOMEM;
 	}
-	| expression5 '^' expression6
+	| expression5 "^" expression6
 	{
 		if (!DoExpression(&$$, EXPRESSION_BITWISE_XOR, &$1, &$3))
 			YYNOMEM;
@@ -2216,22 +2221,22 @@ expression7
 	{
 		$$ = $1;
 	}
-	| '+' expression7
+	| "+" expression7
 	{
 		$$ = $2;
 	}
-	| '-' expression7
+	| "-" expression7
 	{
 		if (!DoExpression(&$$, EXPRESSION_NEGATE, &$2, NULL))
 			YYNOMEM;
 	}
-	| '~' expression7
+	| "~" expression7
 	{
 		if (!DoExpression(&$$, EXPRESSION_BITWISE_NOT, &$2, NULL))
 			YYNOMEM;
 	}
 	/* This is an assembler extension: asm68k doesn't support this. */
-	| '!' expression7
+	| "!" expression7
 	{
 		if (!DoExpression(&$$, EXPRESSION_LOGICAL_NOT, &$2, NULL))
 			YYNOMEM;
@@ -2295,29 +2300,29 @@ expression8
 	{
 		$$ = $1;
 	}
-	| '*'
+	| "*"
 	{
 		$$.type = EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT;
 	}
-	| '@'
+	| "@"
 	{
 		$$.type = EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION;
 	}
-	| '(' expression ')'
+	| "(" expression ")"
 	{
 		$$ = $2;
 	}
-	| STRLEN '(' STRING ')'
+	| STRLEN "(" STRING ")"
 	{
 		$$.type = EXPRESSION_STRLEN;
 		$$.shared.string = $3;
 	}
-	| STRCMP '(' string ',' string ')'
+	| STRCMP "(" string "," string ")"
 	{
 		if (!DoExpression(&$$, EXPRESSION_STRCMP, &$3, &$5))
 			YYNOMEM;
 	}
-	| INSTR '(' expression ',' expression ')'
+	| INSTR "(" expression "," expression ")"
 	{
 		Expression expression;
 
@@ -2327,32 +2332,32 @@ expression8
 		if (!DoExpressionTriple(&$$, EXPRESSION_INSTR, &expression, &$3, &$5))
 			YYNOMEM;
 	}
-	| INSTR '(' expression ',' expression ',' expression ')'
+	| INSTR "(" expression "," expression "," expression ")"
 	{
 		if (!DoExpressionTriple(&$$, EXPRESSION_INSTR, &$3, &$5, &$7))
 			YYNOMEM;
 	}
-	| DEF '(' IDENTIFIER ')'
+	| DEF "(" IDENTIFIER ")"
 	{
 		$$.type = EXPRESSION_DEF;
 		$$.shared.string = $3;
 	}
-	| TYPE '(' IDENTIFIER ')'
+	| TYPE "(" IDENTIFIER ")"
 	{
 		$$.type = EXPRESSION_TYPE_WITH_IDENTIFIER;
 		$$.shared.string = $3;
 	}
-	| TYPE '(' NUMBER ')'
+	| TYPE "(" NUMBER ")"
 	{
 		$$.type = EXPRESSION_TYPE_WITH_NUMBER;
 		$$.shared.unsigned_long = $3;
 	}
-	| FILESIZE '(' STRING ')'
+	| FILESIZE "(" STRING ")"
 	{
 		$$.type = EXPRESSION_FILESIZE;
 		$$.shared.string = $3;
 	}
-	| OFFSET '(' expression ')'
+	| OFFSET "(" expression ")"
 	{
 		/* TODO: Make this actually do something besides pass the expression through. */
 		$$ = $3;
