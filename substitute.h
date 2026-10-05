@@ -28,7 +28,7 @@ typedef struct Substitute_ListEntry
 {
 	struct Substitute_ListEntry *next;
 	String identifier;
-	const StringView *value;
+	const String *value;
 } Substitute_ListEntry;
 
 typedef struct Substitute_State
@@ -41,7 +41,7 @@ typedef std::optional<StringView> (*Substitute_CustomSearch)(void *user_data, co
 void Substitute_Initialise(Substitute_State *state);
 void Substitute_Deinitialise(Substitute_State *state);
 
-cc_bool Substitute_PushSubstitute(Substitute_State *state, const StringView &identifier, const StringView &value);
+cc_bool Substitute_PushSubstitute(Substitute_State *state, const StringView &identifier, const String &value);
 void Substitute_PopSubstitute(Substitute_State *state);
 
 void Substitute_ProcessSubString(Substitute_State *state, Substitute_State *other_state, String &string, StringView &view_to_search, Substitute_CustomSearch custom_search_callback, const void *custom_search_user_data, cc_bool allow_implicit_matches, cc_bool case_insensitive);

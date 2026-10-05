@@ -72,8 +72,8 @@ size_t StringView_FindCharacter(const StringView &view, const char character, co
 
 void String_CreateBlank(String &string)
 {
-	StringView_Create(string.view, string_dummy_buffer, sizeof(string_dummy_buffer) - 1);
-	string.capacity = StringView_Length(string.view);
+	string.buffer = string_dummy_buffer;
+	string.capacity = string.length = sizeof(string_dummy_buffer) - 1;
 }
 
 cc_bool String_CreateInternal(String &string, const char* const source_1_buffer, const size_t source_1_length, const char* const source_2_buffer, const size_t source_2_length)
@@ -99,8 +99,8 @@ cc_bool String_CreateInternal(String &string, const char* const source_1_buffer,
 				memcpy(output_buffer + source_1_length, source_2_buffer, source_2_length);
 			output_buffer[output_length] = '\0';
 
-			StringView_Create(string.view, output_buffer, output_length);
-			string.capacity = StringView_Length(string.view);
+			string.buffer = output_buffer;
+			string.capacity = string.length = output_length;
 			return success;
 		}
 	}
@@ -127,10 +127,10 @@ void String_CreateMove(String &string, String &other_string)
 
 void String_Destroy(String &string)
 {
-	if (string.view.buffer == string_dummy_buffer)
+	if (string.buffer == string_dummy_buffer)
 		return;
 
-	free((char*)string.view.buffer);
+	free(string.buffer);
 
 	String_CreateBlank(string);
 }
@@ -157,8 +157,8 @@ cc_bool String_Replace(String &string, const size_t position, const size_t count
 		new_buffer[first_half_length + parameter_length + second_half_length] = '\0';
 
 		String_Destroy(string);
-		StringView_Create(string.view, new_buffer, new_length);
-		string.capacity = StringView_Length(string.view);
+		string.buffer = new_buffer;
+		string.capacity = string.length = new_length;
 		return cc_true;
 	}
 }
@@ -167,13 +167,13 @@ cc_bool String_Reserve(String &string, const size_t size)
 {
 	/* As an optimisation, we do not shrink the buffer. */
 	const size_t new_capacity = CC_MAX(size, string.capacity);
-	char* const old_buffer = String_Data(string) == string_dummy_buffer ? NULL : (char*)string.view.buffer;
+	char* const old_buffer = String_Data(string) == string_dummy_buffer ? NULL : string.buffer;
 	char* const new_buffer = (char*)realloc(old_buffer, new_capacity + 1);
 
 	if (new_buffer == NULL)
 		return cc_false;
 
-	string.view.buffer = new_buffer;
+	string.buffer = new_buffer;
 	string.capacity = new_capacity;
 
 	return cc_true;
@@ -199,7 +199,7 @@ cc_bool String_ResizeNoFill(String &string, const size_t size)
 		return cc_false;
 
 	/* Update the view with the new size. */
-	string.view.length = size;
+	string.length = size;
 
 	/* Add the terminating null character. */
 	String_At(string, String_Length(string)) = '\0';

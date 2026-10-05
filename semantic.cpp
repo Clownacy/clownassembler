@@ -4313,7 +4313,7 @@ static void PushSubstitute(SemanticState* const state, const StringView &identif
 		{
 			case SYMBOL_NONE:
 				dictionary_entry->type = SYMBOL_STRING_CONSTANT;
-				Substitute_PushSubstitute(dictionary == &state->dictionary ? &state->substitutions : &state->macro.substitutions, identifier, String_View(dictionary_entry->shared.string));
+				Substitute_PushSubstitute(dictionary == &state->dictionary ? &state->substitutions : &state->macro.substitutions, identifier, dictionary_entry->shared.string);
 				break;
 
 			case SYMBOL_STRING_CONSTANT:
@@ -4353,7 +4353,7 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 			if (dictionary_entry->type == SYMBOL_NONE)
 			{
 				dictionary_entry->type = SYMBOL_STRING_CONSTANT;
-				Substitute_PushSubstitute(&state->macro.substitutions, parameter, String_View(dictionary_entry->shared.string));
+				Substitute_PushSubstitute(&state->macro.substitutions, parameter, dictionary_entry->shared.string);
 			}
 			else if (dictionary_entry->type != SYMBOL_STRING_CONSTANT)
 			{

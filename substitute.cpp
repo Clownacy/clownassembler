@@ -33,7 +33,7 @@ void Substitute_Deinitialise(Substitute_State* const state)
 		Substitute_PopSubstitute(state);
 }
 
-cc_bool Substitute_PushSubstitute(Substitute_State* const state, const StringView &identifier, const StringView &value)
+cc_bool Substitute_PushSubstitute(Substitute_State* const state, const StringView &identifier, const String &value)
 {
 	Substitute_ListEntry* const list_entry = (Substitute_ListEntry*)malloc(sizeof(Substitute_ListEntry));
 
@@ -139,7 +139,7 @@ static std::optional<StringView> Substitute_FindEarliestSubstitute(Substitute_St
 				/* Record if this substitute occurs first. */
 				if (*earliest_found_position > found_position)
 				{
-					found_substitute = *list_entry->value;
+					found_substitute = String_View(*list_entry->value);
 					*earliest_found_position = found_position;
 					*earliest_found_length = found_length;
 				}
@@ -157,7 +157,7 @@ static std::optional<StringView> Substitute_FindEarliestSubstitute(Substitute_St
 			/* Record if this substitute occurs first. */
 			if (*earliest_found_position > found_position)
 			{
-				found_substitute = *list_entry->value;
+				found_substitute = String_View(*list_entry->value);
 				*earliest_found_position = found_position;
 				*earliest_found_length = found_length;
 			}
