@@ -211,53 +211,135 @@ typedef enum OpCodeType
 	OPCODE_ROR_SINGLE
 } OpcodeType;
 
-typedef enum ExpressionType
-{
-	EXPRESSION_SUBTRACT,
-	EXPRESSION_ADD,
-	EXPRESSION_MULTIPLY,
-	EXPRESSION_DIVIDE,
-	EXPRESSION_MODULO,
-	EXPRESSION_NEGATE,
-	EXPRESSION_LOGICAL_NOT,
-	EXPRESSION_LOGICAL_OR,
-	EXPRESSION_LOGICAL_AND,
-	EXPRESSION_BITWISE_NOT,
-	EXPRESSION_BITWISE_OR,
-	EXPRESSION_BITWISE_XOR,
-	EXPRESSION_BITWISE_AND,
-	EXPRESSION_EQUALITY,
-	EXPRESSION_INEQUALITY,
-	EXPRESSION_LESS_THAN,
-	EXPRESSION_LESS_OR_EQUAL,
-	EXPRESSION_MORE_THAN,
-	EXPRESSION_MORE_OR_EQUAL,
-	EXPRESSION_LEFT_SHIFT,
-	EXPRESSION_RIGHT_SHIFT,
-	EXPRESSION_NUMBER,
-	EXPRESSION_IDENTIFIER,
-	EXPRESSION_STRING,
-	EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT,
-	EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION,
-	EXPRESSION_STRLEN,
-	EXPRESSION_STRCMP,
-	EXPRESSION_INSTR,
-	EXPRESSION_DEF,
-	EXPRESSION_TYPE_WITH_IDENTIFIER,
-	EXPRESSION_TYPE_WITH_NUMBER,
-	EXPRESSION_FILESIZE
-} ExpressionType;
+struct ExpressionArithmetic1Operand;
+struct ExpressionArithmetic2Operand;
+struct ExpressionInstr;
+struct ExpressionStrcmp;
+struct ExpressionIdentifier;
+struct ExpressionString;
+struct ExpressionStrlen;
+struct ExpressionDef;
+struct ExpressionTypeWithIdentifier;
+struct ExpressionFilesize;
+struct ExpressionNumber;
+struct ExpressionProgramCounterOfStatement;
+struct ExpressionProgramCounterOfExpression;
+struct ExpressionTypeWithNumber;
 
-typedef struct Expression
+using Expression = std::variant<
+	ExpressionArithmetic1Operand,
+	ExpressionArithmetic2Operand,
+	ExpressionInstr,
+	ExpressionStrcmp,
+	ExpressionIdentifier,
+	ExpressionString,
+	ExpressionStrlen,
+	ExpressionDef,
+	ExpressionTypeWithIdentifier,
+	ExpressionFilesize,
+	ExpressionNumber,
+	ExpressionProgramCounterOfStatement,
+	ExpressionProgramCounterOfExpression,
+	ExpressionTypeWithNumber
+>;
+
+struct ExpressionArithmetic1Operand
 {
-	ExpressionType type;
-	union
+	enum class Type
 	{
-		unsigned long unsigned_long;
-		String string;
-		struct Expression *subexpressions;
-	} shared;
-} Expression;
+		NEGATE,
+		BITWISE_NOT,
+		LOGICAL_NOT,
+
+	} type;
+	Expression *subexpressions;
+};
+
+struct ExpressionArithmetic2Operand
+{
+	enum class Type
+	{
+		SUBTRACT,
+		ADD,
+		MULTIPLY,
+		DIVIDE,
+		MODULO,
+		LOGICAL_OR,
+		LOGICAL_AND,
+		BITWISE_OR,
+		BITWISE_XOR,
+		BITWISE_AND,
+		EQUALITY,
+		INEQUALITY,
+		LESS_THAN,
+		LESS_OR_EQUAL,
+		MORE_THAN,
+		MORE_OR_EQUAL,
+		LEFT_SHIFT,
+		RIGHT_SHIFT,
+	} type;
+	Expression *subexpressions;
+};
+
+struct ExpressionInstr
+{
+	Expression *subexpressions;
+};
+
+struct ExpressionStrcmp
+{
+	String string_a, string_b;
+};
+
+struct ExpressionIdentifier
+{
+	String string;
+};
+
+struct ExpressionString
+{
+	String string;
+};
+
+struct ExpressionStrlen
+{
+	String string;
+};
+
+struct ExpressionDef
+{
+	String string;
+};
+
+struct ExpressionTypeWithIdentifier
+{
+	String string;
+};
+
+struct ExpressionFilesize
+{
+	String string;
+};
+
+struct ExpressionNumber
+{
+	unsigned long value;
+};
+
+struct ExpressionProgramCounterOfStatement
+{
+	unsigned long value;
+};
+
+struct ExpressionProgramCounterOfExpression
+{
+	unsigned long value;
+};
+
+struct ExpressionTypeWithNumber
+{
+	unsigned long value;
+};
 
 typedef struct ExpressionListNode
 {
@@ -576,7 +658,7 @@ using Statement = std::variant<
 >;
 
 
-#line 580 "syntactic.h"
+#line 662 "syntactic.h"
 
 
 # include <cstdlib> // std::abort
@@ -720,7 +802,7 @@ using Statement = std::variant<
 
 #line 25 "syntactic.y"
 namespace m68kasm {
-#line 724 "syntactic.h"
+#line 806 "syntactic.h"
 
 
 
@@ -5469,7 +5551,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 869,     ///< Last index in yytable_.
+      yylast_ = 819,     ///< Last index in yytable_.
       yynnts_ = 25,  ///< Number of nonterminal symbols.
       yyfinal_ = 237 ///< Termination state number.
     };
@@ -5707,13 +5789,15 @@ switch (yykind)
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 5711 "syntactic.h"
+#line 5793 "syntactic.h"
 
 
 // "%code provides" blocks.
-#line 568 "syntactic.y"
+#line 650 "syntactic.y"
 
 
+static cc_bool DoExpression(Expression *expression, ExpressionArithmetic1Operand::Type type, Expression *subexpression);
+static cc_bool DoExpression(Expression *expression, ExpressionArithmetic2Operand::Type type, Expression *left_expression, Expression *right_expression);
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
 void DestroyIdentifierList(IdentifierList *list);
@@ -5721,7 +5805,7 @@ void DestroyIdentifierList(IdentifierList *list);
 #define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner)
 
 
-#line 5725 "syntactic.h"
+#line 5809 "syntactic.h"
 
 
 #endif // !YY_M68KASM_SYNTACTIC_H_INCLUDED

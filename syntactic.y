@@ -199,53 +199,135 @@ typedef enum OpCodeType
 	OPCODE_ROR_SINGLE
 } OpcodeType;
 
-typedef enum ExpressionType
-{
-	EXPRESSION_SUBTRACT,
-	EXPRESSION_ADD,
-	EXPRESSION_MULTIPLY,
-	EXPRESSION_DIVIDE,
-	EXPRESSION_MODULO,
-	EXPRESSION_NEGATE,
-	EXPRESSION_LOGICAL_NOT,
-	EXPRESSION_LOGICAL_OR,
-	EXPRESSION_LOGICAL_AND,
-	EXPRESSION_BITWISE_NOT,
-	EXPRESSION_BITWISE_OR,
-	EXPRESSION_BITWISE_XOR,
-	EXPRESSION_BITWISE_AND,
-	EXPRESSION_EQUALITY,
-	EXPRESSION_INEQUALITY,
-	EXPRESSION_LESS_THAN,
-	EXPRESSION_LESS_OR_EQUAL,
-	EXPRESSION_MORE_THAN,
-	EXPRESSION_MORE_OR_EQUAL,
-	EXPRESSION_LEFT_SHIFT,
-	EXPRESSION_RIGHT_SHIFT,
-	EXPRESSION_NUMBER,
-	EXPRESSION_IDENTIFIER,
-	EXPRESSION_STRING,
-	EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT,
-	EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION,
-	EXPRESSION_STRLEN,
-	EXPRESSION_STRCMP,
-	EXPRESSION_INSTR,
-	EXPRESSION_DEF,
-	EXPRESSION_TYPE_WITH_IDENTIFIER,
-	EXPRESSION_TYPE_WITH_NUMBER,
-	EXPRESSION_FILESIZE
-} ExpressionType;
+struct ExpressionArithmetic1Operand;
+struct ExpressionArithmetic2Operand;
+struct ExpressionInstr;
+struct ExpressionStrcmp;
+struct ExpressionIdentifier;
+struct ExpressionString;
+struct ExpressionStrlen;
+struct ExpressionDef;
+struct ExpressionTypeWithIdentifier;
+struct ExpressionFilesize;
+struct ExpressionNumber;
+struct ExpressionProgramCounterOfStatement;
+struct ExpressionProgramCounterOfExpression;
+struct ExpressionTypeWithNumber;
 
-typedef struct Expression
+using Expression = std::variant<
+	ExpressionArithmetic1Operand,
+	ExpressionArithmetic2Operand,
+	ExpressionInstr,
+	ExpressionStrcmp,
+	ExpressionIdentifier,
+	ExpressionString,
+	ExpressionStrlen,
+	ExpressionDef,
+	ExpressionTypeWithIdentifier,
+	ExpressionFilesize,
+	ExpressionNumber,
+	ExpressionProgramCounterOfStatement,
+	ExpressionProgramCounterOfExpression,
+	ExpressionTypeWithNumber
+>;
+
+struct ExpressionArithmetic1Operand
 {
-	ExpressionType type;
-	union
+	enum class Type
 	{
-		unsigned long unsigned_long;
-		String string;
-		struct Expression *subexpressions;
-	} shared;
-} Expression;
+		NEGATE,
+		BITWISE_NOT,
+		LOGICAL_NOT,
+
+	} type;
+	Expression *subexpressions;
+};
+
+struct ExpressionArithmetic2Operand
+{
+	enum class Type
+	{
+		SUBTRACT,
+		ADD,
+		MULTIPLY,
+		DIVIDE,
+		MODULO,
+		LOGICAL_OR,
+		LOGICAL_AND,
+		BITWISE_OR,
+		BITWISE_XOR,
+		BITWISE_AND,
+		EQUALITY,
+		INEQUALITY,
+		LESS_THAN,
+		LESS_OR_EQUAL,
+		MORE_THAN,
+		MORE_OR_EQUAL,
+		LEFT_SHIFT,
+		RIGHT_SHIFT,
+	} type;
+	Expression *subexpressions;
+};
+
+struct ExpressionInstr
+{
+	Expression *subexpressions;
+};
+
+struct ExpressionStrcmp
+{
+	String string_a, string_b;
+};
+
+struct ExpressionIdentifier
+{
+	String string;
+};
+
+struct ExpressionString
+{
+	String string;
+};
+
+struct ExpressionStrlen
+{
+	String string;
+};
+
+struct ExpressionDef
+{
+	String string;
+};
+
+struct ExpressionTypeWithIdentifier
+{
+	String string;
+};
+
+struct ExpressionFilesize
+{
+	String string;
+};
+
+struct ExpressionNumber
+{
+	unsigned long value;
+};
+
+struct ExpressionProgramCounterOfStatement
+{
+	unsigned long value;
+};
+
+struct ExpressionProgramCounterOfExpression
+{
+	unsigned long value;
+};
+
+struct ExpressionTypeWithNumber
+{
+	unsigned long value;
+};
 
 typedef struct ExpressionListNode
 {
@@ -567,6 +649,8 @@ using Statement = std::variant<
 
 %code provides {
 
+static cc_bool DoExpression(Expression *expression, ExpressionArithmetic1Operand::Type type, Expression *subexpression);
+static cc_bool DoExpression(Expression *expression, ExpressionArithmetic2Operand::Type type, Expression *left_expression, Expression *right_expression);
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
 void DestroyIdentifierList(IdentifierList *list);
@@ -587,8 +671,6 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message);
 void m68kasm_warning_pedantic(void *scanner, Statement *statement, const char *message);
 void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
-static cc_bool DoExpressionTriple(Expression *expression, ExpressionType type, Expression *left_expression, Expression *middle_expression, Expression *right_expression);
-static cc_bool DoExpression(Expression *expression, ExpressionType type, Expression *left_expression, Expression *right_expression);
 static void DestroyExpressionList(ExpressionList *list);
 static void DestroyOperand(Operand *operand);
 static void DestroyStatementInstruction(StatementInstruction *instruction);
@@ -860,13 +942,8 @@ statement
 		statement->emplace<StatementInclude>($2);
 	}
 	| DIRECTIVE_INCBIN STRING
-	{
-		// TODO: Get rid of this...
-		Expression start;
-		start.type = EXPRESSION_NUMBER;
-		start.shared.unsigned_long = 0;
-		
-		statement->emplace<StatementIncbin>($2, start, cc_false);
+	{		
+		statement->emplace<StatementIncbin>($2, ExpressionNumber{0}, cc_false);
 	}
 	| DIRECTIVE_INCBIN STRING "," expression
 	{
@@ -874,12 +951,7 @@ statement
 	}
 	| DIRECTIVE_INCBIN STRING "," "," expression
 	{
-		// TODO: Get rid of this...
-		Expression start;
-		start.type = EXPRESSION_NUMBER;
-		start.shared.unsigned_long = 0;
-		
-		statement->emplace<StatementIncbin>($2, start, cc_true, $5);
+		statement->emplace<StatementIncbin>($2, ExpressionNumber{0}, cc_true, $5);
 	}
 	| DIRECTIVE_INCBIN STRING "," expression "," expression
 	{
@@ -937,35 +1009,15 @@ statement
 	}
 	| DIRECTIVE_SUBSTR "," "," STRING
 	{
-		// TODO: Get rid of this...
-		Expression start;
-		start.type = EXPRESSION_NUMBER;
-		start.shared.unsigned_long = 1;
-
-		// TODO: Get rid of this...
-		Expression end;
-		end.type = EXPRESSION_NUMBER;
-		end.shared.unsigned_long = String_Length(&$4);
-
-		statement->emplace<StatementSubstr>(start, end, $4);
+		statement->emplace<StatementSubstr>(ExpressionNumber{1}, ExpressionNumber{String_Length(&$4)}, $4);
 	}
 	| DIRECTIVE_SUBSTR expression "," "," STRING
 	{
-		// TODO: Get rid of this...
-		Expression end;
-		end.type = EXPRESSION_NUMBER;
-		end.shared.unsigned_long = String_Length(&$5);
-
-		statement->emplace<StatementSubstr>($2, end, $5);
+		statement->emplace<StatementSubstr>($2, ExpressionNumber{String_Length(&$5)}, $5);
 	}
 	| DIRECTIVE_SUBSTR "," expression "," STRING
 	{
-		// TODO: Get rid of this...
-		Expression start;
-		start.type = EXPRESSION_NUMBER;
-		start.shared.unsigned_long = 1;
-
-		statement->emplace<StatementSubstr>(start, $3, $5);
+		statement->emplace<StatementSubstr>(ExpressionNumber{1}, $3, $5);
 	}
 	| DIRECTIVE_SUBSTR expression "," expression "," STRING
 	{
@@ -1871,8 +1923,7 @@ operand
 	| "(" ADDRESS_REGISTER "," data_or_address_register size ")"
 	{
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-		$$.literal.type = EXPRESSION_NUMBER;
-		$$.literal.shared.unsigned_long = 0;
+		$$.literal.emplace<ExpressionNumber>(0);
 		$$.main_register = $2;
 		$$.index_register = $4 % 8;
 		$$.size = $5;
@@ -1900,8 +1951,7 @@ operand
 	{
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-		$$.literal.type = EXPRESSION_NUMBER;
-		$$.literal.shared.unsigned_long = 0;
+		$$.literal.emplace<ExpressionNumber>(0);
 		$$.main_register = $2;
 		$$.index_register = $4 % 8;
 		$$.size = SIZE_WORD;
@@ -1945,8 +1995,7 @@ operand
 	| "(" PROGRAM_COUNTER "," data_or_address_register size ")"
 	{
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-		$$.literal.type = EXPRESSION_NUMBER;
-		$$.literal.shared.unsigned_long = 0;
+		$$.literal.emplace<ExpressionNumber>(0);
 		$$.index_register = $4 % 8;
 		$$.size = $5;
 		$$.index_register_is_address_register = $4 / 8 != 0;
@@ -1971,8 +2020,7 @@ operand
 	{
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
-		$$.literal.type = EXPRESSION_NUMBER;
-		$$.literal.shared.unsigned_long = 0;
+		$$.literal.emplace<ExpressionNumber>(0);
 		$$.index_register = $4 % 8;
 		$$.size = SIZE_WORD;
 		$$.index_register_is_address_register = $4 / 8 != 0;
@@ -2133,13 +2181,13 @@ expression
 	/* This is an assembler extension: asm68k doesn't support this. */
 	| expression LOGICAL_AND expression1
 	{
-		if (!DoExpression(&$$, EXPRESSION_LOGICAL_AND, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::LOGICAL_AND, &$1, &$3))
 			YYNOMEM;
 	}
 	/* This is an assembler extension: asm68k doesn't support this. */
 	| expression LOGICAL_OR expression1
 	{
-		if (!DoExpression(&$$, EXPRESSION_LOGICAL_OR, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::LOGICAL_OR, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -2151,17 +2199,17 @@ expression1
 	}
 	| expression1 "=" expression2
 	{
-		if (!DoExpression(&$$, EXPRESSION_EQUALITY, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::EQUALITY, &$1, &$3))
 			YYNOMEM;
 	}
 	| expression1 EQUALITY expression2
 	{
-		if (!DoExpression(&$$, EXPRESSION_EQUALITY, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::EQUALITY, &$1, &$3))
 			YYNOMEM;
 	}
 	| expression1 INEQUALITY expression2
 	{
-		if (!DoExpression(&$$, EXPRESSION_INEQUALITY, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::INEQUALITY, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -2173,22 +2221,22 @@ expression2
 	}
 	| expression2 "<" expression3
 	{
-		if (!DoExpression(&$$, EXPRESSION_LESS_THAN, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::LESS_THAN, &$1, &$3))
 			YYNOMEM;
 	}
 	| expression2 LESS_OR_EQUAL expression3
 	{
-		if (!DoExpression(&$$, EXPRESSION_LESS_OR_EQUAL, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::LESS_OR_EQUAL, &$1, &$3))
 			YYNOMEM;
 	}
 	| expression2 ">" expression3
 	{
-		if (!DoExpression(&$$, EXPRESSION_MORE_THAN, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::MORE_THAN, &$1, &$3))
 			YYNOMEM;
 	}
 	| expression2 MORE_OR_EQUAL expression3
 	{
-		if (!DoExpression(&$$, EXPRESSION_MORE_OR_EQUAL, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::MORE_OR_EQUAL, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -2200,12 +2248,12 @@ expression3
 	}
 	| expression3 "+" expression4
 	{
-		if (!DoExpression(&$$, EXPRESSION_ADD, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::ADD, &$1, &$3))
 			YYNOMEM;
 	}
 	| expression3 "-" expression4
 	{
-		if (!DoExpression(&$$, EXPRESSION_SUBTRACT, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::SUBTRACT, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -2217,17 +2265,17 @@ expression4
 	}
 	| expression4 "*" expression5
 	{
-		if (!DoExpression(&$$, EXPRESSION_MULTIPLY, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::MULTIPLY, &$1, &$3))
 			YYNOMEM;
 	}
 	| expression4 "/" expression5
 	{
-		if (!DoExpression(&$$, EXPRESSION_DIVIDE, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::DIVIDE, &$1, &$3))
 			YYNOMEM;
 	}
 	| expression4 "%" expression5
 	{
-		if (!DoExpression(&$$, EXPRESSION_MODULO, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::MODULO, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -2239,22 +2287,22 @@ expression5
 	}
 	| expression5 "&" expression6
 	{
-		if (!DoExpression(&$$, EXPRESSION_BITWISE_AND, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::BITWISE_AND, &$1, &$3))
 			YYNOMEM;
 	}
 	| expression5 "!" expression6
 	{
-		if (!DoExpression(&$$, EXPRESSION_BITWISE_OR, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::BITWISE_OR, &$1, &$3))
 			YYNOMEM;
 	}
 	| expression5 "|" expression6
 	{
-		if (!DoExpression(&$$, EXPRESSION_BITWISE_OR, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::BITWISE_OR, &$1, &$3))
 			YYNOMEM;
 	}
 	| expression5 "^" expression6
 	{
-		if (!DoExpression(&$$, EXPRESSION_BITWISE_XOR, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::BITWISE_XOR, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -2266,12 +2314,12 @@ expression6
 	}
 	| expression6 LEFT_SHIFT expression7
 	{
-		if (!DoExpression(&$$, EXPRESSION_LEFT_SHIFT, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::LEFT_SHIFT, &$1, &$3))
 			YYNOMEM;
 	}
 	| expression6 RIGHT_SHIFT expression7
 	{
-		if (!DoExpression(&$$, EXPRESSION_RIGHT_SHIFT, &$1, &$3))
+		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::RIGHT_SHIFT, &$1, &$3))
 			YYNOMEM;
 	}
 	;
@@ -2287,18 +2335,18 @@ expression7
 	}
 	| "-" expression7
 	{
-		if (!DoExpression(&$$, EXPRESSION_NEGATE, &$2, NULL))
+		if (!DoExpression(&$$, ExpressionArithmetic1Operand::Type::NEGATE, &$2))
 			YYNOMEM;
 	}
 	| "~" expression7
 	{
-		if (!DoExpression(&$$, EXPRESSION_BITWISE_NOT, &$2, NULL))
+		if (!DoExpression(&$$, ExpressionArithmetic1Operand::Type::BITWISE_NOT, &$2))
 			YYNOMEM;
 	}
 	/* This is an assembler extension: asm68k doesn't support this. */
 	| "!" expression7
 	{
-		if (!DoExpression(&$$, EXPRESSION_LOGICAL_NOT, &$2, NULL))
+		if (!DoExpression(&$$, ExpressionArithmetic1Operand::Type::LOGICAL_NOT, &$2))
 			YYNOMEM;
 	}
 	;
@@ -2348,13 +2396,11 @@ identifier
 expression8
 	: NUMBER
 	{
-		$$.type = EXPRESSION_NUMBER;
-		$$.shared.unsigned_long = $1;
+		$$.emplace<ExpressionNumber>($1);
 	}
 	| identifier %prec HIGHER_PRECEDENCE_THAN_SIZE
 	{
-		$$.type = EXPRESSION_IDENTIFIER;
-		$$.shared.string = $1;
+		$$.emplace<ExpressionIdentifier>($1);
 	}
 	| string
 	{
@@ -2362,11 +2408,11 @@ expression8
 	}
 	| "*"
 	{
-		$$.type = EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT;
+		$$.emplace<ExpressionProgramCounterOfStatement>();
 	}
 	| "@"
 	{
-		$$.type = EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION;
+		$$.emplace<ExpressionProgramCounterOfExpression>();
 	}
 	| "(" expression ")"
 	{
@@ -2374,48 +2420,53 @@ expression8
 	}
 	| STRLEN "(" STRING ")"
 	{
-		$$.type = EXPRESSION_STRLEN;
-		$$.shared.string = $3;
+		$$.emplace<ExpressionStrlen>($3);
 	}
-	| STRCMP "(" string "," string ")"
+	| STRCMP "(" STRING "," STRING ")"
 	{
-		if (!DoExpression(&$$, EXPRESSION_STRCMP, &$3, &$5))
-			YYNOMEM;
+		$$.emplace<ExpressionStrcmp>($3, $5);
 	}
 	| INSTR "(" expression "," expression ")"
 	{
-		Expression expression;
+		Expression *subexpressions = (Expression*)malloc(sizeof(Expression) * 3);
 
-		expression.type = EXPRESSION_NUMBER;
-		expression.shared.unsigned_long = 1;
-
-		if (!DoExpressionTriple(&$$, EXPRESSION_INSTR, &expression, &$3, &$5))
+		if (subexpressions == nullptr)
 			YYNOMEM;
+
+		subexpressions[0].emplace<ExpressionNumber>(1);
+		subexpressions[1] = std::move($3);
+		subexpressions[2] = std::move($5);
+
+		$$.emplace<ExpressionInstr>(subexpressions);
 	}
 	| INSTR "(" expression "," expression "," expression ")"
 	{
-		if (!DoExpressionTriple(&$$, EXPRESSION_INSTR, &$3, &$5, &$7))
+		Expression *subexpressions = (Expression*)malloc(sizeof(Expression) * 3);
+
+		if (subexpressions == nullptr)
 			YYNOMEM;
+
+		subexpressions[0] = std::move($3);
+		subexpressions[1] = std::move($5);
+		subexpressions[2] = std::move($7);
+
+		$$.emplace<ExpressionInstr>(subexpressions);
 	}
 	| DEF "(" IDENTIFIER ")"
 	{
-		$$.type = EXPRESSION_DEF;
-		$$.shared.string = $3;
+		$$.emplace<ExpressionDef>($3);
 	}
 	| TYPE "(" IDENTIFIER ")"
 	{
-		$$.type = EXPRESSION_TYPE_WITH_IDENTIFIER;
-		$$.shared.string = $3;
+		$$.emplace<ExpressionTypeWithIdentifier>($3);
 	}
 	| TYPE "(" NUMBER ")"
 	{
-		$$.type = EXPRESSION_TYPE_WITH_NUMBER;
-		$$.shared.unsigned_long = $3;
+		$$.emplace<ExpressionTypeWithNumber>($3);
 	}
 	| FILESIZE "(" STRING ")"
 	{
-		$$.type = EXPRESSION_FILESIZE;
-		$$.shared.string = $3;
+		$$.emplace<ExpressionFilesize>($3);
 	}
 	| OFFSET "(" expression ")"
 	{
@@ -2427,108 +2478,104 @@ expression8
 string
 	: STRING
 	{
-		$$.type = EXPRESSION_STRING;
-		$$.shared.string = $1;
+		$$.emplace<ExpressionString>($1);
 	}
 
 %%
 
-static cc_bool DoExpressionTriple(Expression *expression, ExpressionType type, Expression *left_expression, Expression *middle_expression, Expression *right_expression)
+static cc_bool DoExpression(Expression *expression, ExpressionArithmetic1Operand::Type type, Expression *subexpression)
 {
-	cc_bool success = cc_true;
+	Expression *subexpression_copy = (Expression*)malloc(sizeof(Expression));
 
-	expression->type = type;
-
-	expression->shared.subexpressions = (Expression*)malloc(sizeof(Expression) * (right_expression != NULL ? 3 : middle_expression != NULL ? 2 : 1));
-
-	if (expression->shared.subexpressions == NULL)
+	if (subexpression_copy == NULL)
 	{
-		DestroyExpression(left_expression);
-
-		if (middle_expression != NULL)
-			DestroyExpression(middle_expression);
-
-		if (right_expression != NULL)
-			DestroyExpression(right_expression);
-
-		success = cc_false;
-	}
-	else
-	{
-		expression->shared.subexpressions[0] = *left_expression;
-
-		if (middle_expression != NULL)
-			expression->shared.subexpressions[1] = *middle_expression;
-
-		if (right_expression != NULL)
-			expression->shared.subexpressions[2] = *right_expression;
+		DestroyExpression(subexpression);
+		return cc_false;
 	}
 
-	return success;
+	*subexpression_copy = std::move(*subexpression);
+
+	expression->emplace<ExpressionArithmetic1Operand>(type, subexpression_copy);
+
+	return cc_true;
 }
 
-static cc_bool DoExpression(Expression *expression, ExpressionType type, Expression *left_expression, Expression *right_expression)
+static cc_bool DoExpression(Expression *expression, ExpressionArithmetic2Operand::Type type, Expression *left_expression, Expression *right_expression)
 {
-	return DoExpressionTriple(expression, type, left_expression, right_expression, NULL);
+	Expression *subexpressions = (Expression*)malloc(sizeof(Expression) * 2);
+
+	if (subexpressions == NULL)
+	{
+		DestroyExpression(left_expression);
+		DestroyExpression(right_expression);
+		return cc_false;
+	}
+
+	subexpressions[0] = std::move(*left_expression);
+	subexpressions[1] = std::move(*right_expression);
+
+	expression->emplace<ExpressionArithmetic2Operand>(type, subexpressions);
+
+	return cc_true;
 }
 
 void DestroyExpression(Expression *expression)
 {
-	switch (expression->type)
-	{
-		case EXPRESSION_INSTR:
-			DestroyExpression(&expression->shared.subexpressions[0]);
-			DestroyExpression(&expression->shared.subexpressions[1]);
-			DestroyExpression(&expression->shared.subexpressions[2]);
-			free(expression->shared.subexpressions);
-			break;
-
-		case EXPRESSION_SUBTRACT:
-		case EXPRESSION_ADD:
-		case EXPRESSION_MULTIPLY:
-		case EXPRESSION_DIVIDE:
-		case EXPRESSION_MODULO:
-		case EXPRESSION_LOGICAL_OR:
-		case EXPRESSION_LOGICAL_AND:
-		case EXPRESSION_BITWISE_OR:
-		case EXPRESSION_BITWISE_XOR:
-		case EXPRESSION_BITWISE_AND:
-		case EXPRESSION_EQUALITY:
-		case EXPRESSION_INEQUALITY:
-		case EXPRESSION_LESS_THAN:
-		case EXPRESSION_LESS_OR_EQUAL:
-		case EXPRESSION_MORE_THAN:
-		case EXPRESSION_MORE_OR_EQUAL:
-		case EXPRESSION_LEFT_SHIFT:
-		case EXPRESSION_RIGHT_SHIFT:
-		case EXPRESSION_STRCMP:
-			DestroyExpression(&expression->shared.subexpressions[0]);
-			DestroyExpression(&expression->shared.subexpressions[1]);
-			free(expression->shared.subexpressions);
-			break;
-
-		case EXPRESSION_NEGATE:
-		case EXPRESSION_BITWISE_NOT:
-		case EXPRESSION_LOGICAL_NOT:
-			DestroyExpression(&expression->shared.subexpressions[0]);
-			free(expression->shared.subexpressions);
-			break;
-
-		case EXPRESSION_IDENTIFIER:
-		case EXPRESSION_STRING:
-		case EXPRESSION_STRLEN:
-		case EXPRESSION_DEF:
-		case EXPRESSION_TYPE_WITH_IDENTIFIER:
-		case EXPRESSION_FILESIZE:
-			String_Destroy(&expression->shared.string);
-			break;
-
-		case EXPRESSION_NUMBER:
-		case EXPRESSION_PROGRAM_COUNTER_OF_STATEMENT:
-		case EXPRESSION_PROGRAM_COUNTER_OF_EXPRESSION:
-		case EXPRESSION_TYPE_WITH_NUMBER:
-			break;
-	}
+	std::visit(
+		CC_VisitHelper{
+			[](ExpressionInstr &expression)
+			{
+				DestroyExpression(&expression.subexpressions[0]);
+				DestroyExpression(&expression.subexpressions[1]);
+				DestroyExpression(&expression.subexpressions[2]);
+				free(expression.subexpressions);
+			},
+			[](ExpressionArithmetic2Operand &expression)
+			{
+				DestroyExpression(&expression.subexpressions[0]);
+				DestroyExpression(&expression.subexpressions[1]);
+				free(expression.subexpressions);
+			},
+			[](ExpressionArithmetic1Operand &expression)
+			{
+				DestroyExpression(expression.subexpressions);
+				free(expression.subexpressions);
+			},
+			[](ExpressionStrcmp &expression)
+			{
+				String_Destroy(&expression.string_a);
+				String_Destroy(&expression.string_b);
+			},
+			[](ExpressionIdentifier &expression)
+			{
+				String_Destroy(&expression.string);
+			},
+			[](ExpressionString &expression)
+			{
+				String_Destroy(&expression.string);
+			},
+			[](ExpressionStrlen &expression)
+			{
+				String_Destroy(&expression.string);
+			},
+			[](ExpressionDef &expression)
+			{
+				String_Destroy(&expression.string);
+			},
+			[](ExpressionTypeWithIdentifier &expression)
+			{
+				String_Destroy(&expression.string);
+			},
+			[](ExpressionFilesize &expression)
+			{
+				String_Destroy(&expression.string);
+			},
+			[](ExpressionNumber &expression) {},
+			[](ExpressionProgramCounterOfStatement &expression) {},
+			[](ExpressionProgramCounterOfExpression &expression) {},
+			[](ExpressionTypeWithNumber &expression) {}
+		}, *expression
+	);
 }
 
 void DestroyIdentifierList(IdentifierList *list)
