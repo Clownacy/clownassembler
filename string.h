@@ -75,7 +75,7 @@ void String_ToLower(String &string);
 #define String_Data(STRING) ((char*)StringView_Data(String_View(STRING)))
 #define String_CStr String_Data
 #define String_Length(STRING) StringView_Length(String_View(STRING))
-#define String_Capacity(STRING) ((STRING)->capacity)
+#define String_Capacity(STRING) ((STRING).capacity)
 #define String_Empty(STRING) StringView_Empty(String_View(STRING))
 #define String_At(STRING, INDEX) String_Data(STRING)[INDEX]
 #define String_Compare(STRING, OTHER_STRING) StringView_Compare(String_View(STRING), String_View(OTHER_STRING))
