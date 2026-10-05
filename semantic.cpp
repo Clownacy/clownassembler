@@ -370,16 +370,6 @@ void m68kasm_error(void *scanner, Statement *statement, const char *message)
 	ErrorMessageCommon(state);
 }
 
-static void* MallocAndHandleError(SemanticState *state, size_t size)
-{
-	void *memory = malloc(size);
-
-	if (memory == NULL)
-		OutOfMemoryError(state);
-
-	return memory;
-}
-
 static unsigned int GetDecimalIntegerStringLength(unsigned long integer)
 {
 	unsigned int string_length;
@@ -725,22 +715,19 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 
 static void AddToSourceLineList(SemanticState *state, SourceLineList *source_line_list, const String *source_line)
 {
-	SourceLineListNode* const source_line_list_node = (SourceLineListNode*)MallocAndHandleError(state, sizeof(SourceLineListNode));
+	SourceLineListNode* const source_line_list_node = new SourceLineListNode;
 
-	if (source_line_list_node != NULL)
-	{
-		/* Append to the end of the list. */
-		if (source_line_list->tail != NULL)
-			source_line_list->tail->next = source_line_list_node;
-		else
-			source_line_list->head = source_line_list_node;
+	/* Append to the end of the list. */
+	if (source_line_list->tail != NULL)
+		source_line_list->tail->next = source_line_list_node;
+	else
+		source_line_list->head = source_line_list_node;
 
-		source_line_list->tail = source_line_list_node;
+	source_line_list->tail = source_line_list_node;
 
-		/* Initialise the list node. */
-		source_line_list_node->next = NULL;
-		String_CreateCopy(&source_line_list_node->source_line_buffer, source_line);
-	}
+	/* Initialise the list node. */
+	source_line_list_node->next = NULL;
+	String_CreateCopy(&source_line_list_node->source_line_buffer, source_line);
 }
 
 static void FreeSourceLineList(SourceLineListNode *source_line_list_head)
@@ -754,7 +741,7 @@ static void FreeSourceLineList(SourceLineListNode *source_line_list_head)
 		SourceLineListNode *next_source_line_list_node = source_line_list_node->next;
 
 		String_Destroy(&source_line_list_node->source_line_buffer);
-		free(source_line_list_node);
+		delete source_line_list_node;
 
 		source_line_list_node = next_source_line_list_node;
 	}
@@ -778,7 +765,7 @@ static void DestroySymbol(Dictionary_Entry *dictionary_entry)
 
 		case SYMBOL_EXPRESSION_CONSTANT:
 			DestroyExpression((Expression*)dictionary_entry->shared.pointer);
-			free(dictionary_entry->shared.pointer);
+			delete (Expression*)dictionary_entry->shared.pointer;
 			return;
 
 		case SYMBOL_MACRO:
@@ -793,7 +780,7 @@ static void DestroySymbol(Dictionary_Entry *dictionary_entry)
 			FreeSourceLineList(macro->source_line_list_head);
 			String_Destroy(&macro->name);
 
-			free(macro);
+			delete macro;
 			return;
 		}
 	}
@@ -1229,25 +1216,22 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 		/* Add the macro to the symbol table. */
 		if (symbol != NULL)
 		{
-			Macro* const macro = (Macro*)MallocAndHandleError(state, sizeof(Macro));
+			Macro* const macro = new Macro;
 
-			if (macro != NULL)
-			{
-				macro->is_short = macro_state.is_short;
-				macro->uses_label = macro_state.uses_label;
-				String_CreateMove(&macro->name, &macro_state.name);
+			macro->is_short = macro_state.is_short;
+			macro->uses_label = macro_state.uses_label;
+			String_CreateMove(&macro->name, &macro_state.name);
 
-				macro->parameter_names = macro_state.parameter_names.head;
-				macro_state.parameter_names.head = NULL;
-				macro_state.parameter_names.tail = NULL;
+			macro->parameter_names = macro_state.parameter_names.head;
+			macro_state.parameter_names.head = NULL;
+			macro_state.parameter_names.tail = NULL;
 
-				macro->source_line_list_head = macro_state.source_line_list.head;
-				macro_state.source_line_list.head = NULL;
-				macro_state.source_line_list.tail = NULL;
+			macro->source_line_list_head = macro_state.source_line_list.head;
+			macro_state.source_line_list.head = NULL;
+			macro_state.source_line_list.tail = NULL;
 
-				symbol->type = SYMBOL_MACRO;
-				symbol->shared.pointer = macro;
-			}
+			symbol->type = SYMBOL_MACRO;
+			symbol->shared.pointer = macro;
 		}
 	}
 
@@ -4942,16 +4926,13 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				if (!ResolveExpression(state, &equ.expression, &value, cc_false))
 				{
 					/* Separate the expression from the statement, so that it is not freed along with the statement. */
-					Expression *expression_copy = (Expression*)MallocAndHandleError(state, sizeof(Expression));
+					Expression *expression_copy = new Expression;
 
-					if (expression_copy != NULL)
-					{
-						/* Prevent subexpressions from being freed. */
-						expression_copy->emplace<ExpressionNumber>(0);
-						std::swap(*expression_copy, equ.expression);
+					/* Prevent subexpressions from being freed. */
+					expression_copy->emplace<ExpressionNumber>(0);
+					std::swap(*expression_copy, equ.expression);
 
-						AddIdentifierToSymbolTable(state, label, 0, expression_copy, SYMBOL_EXPRESSION_CONSTANT);
-					}
+					AddIdentifierToSymbolTable(state, label, 0, expression_copy, SYMBOL_EXPRESSION_CONSTANT);
 				}
 				else
 				{
@@ -5523,61 +5504,46 @@ static void ParseLine(SemanticState* const state, const StringView* const label,
 		{
 			/* If the statement cannot currently be processed because of undefined symbols,
 			   add it to the fix-up list so we can try again later. */
-			FixUp *fixup = (FixUp*)MallocAndHandleError(state, sizeof(FixUp));
+			FixUp *fixup = new FixUp;
 
-			if (fixup == NULL)
+			const Location *source_location = state->location;
+			Location *destination_location = &fixup->location;
+
+			/* Backup the statement. */
+			fixup->statement = statement;
+
+			/* Backup some state. */
+			fixup->macro_dictionary = (Dictionary_State*)SharedMemory_Copy(state->macro.dictionary);
+			fixup->program_counter = starting_program_counter;
+			fixup->output_position = starting_output_position;
+			fixup->segment_length = starting_segment_length;
+			String_CreateCopy(&fixup->last_global_label, &state->last_global_label);
+			String_CreateCopy(&fixup->source_line, state->source_line);
+			String_CreateCopyView(&fixup->label, label);
+			fixup->options = *Options_Get(&state->options);
+
+			/* Clone the location. */
+			*destination_location = *source_location;
+			String_CreateCopy(&destination_location->file_path, &source_location->file_path);
+
+			for (source_location = source_location->previous; source_location != NULL; source_location = source_location->previous)
 			{
-				/* Might as well delete this, since there's no fix-up to take ownership of it. */
-				DestroyStatement(&statement);
-			}
-			else
-			{
-				const Location *source_location = state->location;
-				Location *destination_location = &fixup->location;
+				destination_location->previous = new Location;
 
-				/* Backup the statement. */
-				fixup->statement = statement;
-
-				/* Backup some state. */
-				fixup->macro_dictionary = (Dictionary_State*)SharedMemory_Copy(state->macro.dictionary);
-				fixup->program_counter = starting_program_counter;
-				fixup->output_position = starting_output_position;
-				fixup->segment_length = starting_segment_length;
-				String_CreateCopy(&fixup->last_global_label, &state->last_global_label);
-				String_CreateCopy(&fixup->source_line, state->source_line);
-				String_CreateCopyView(&fixup->label, label);
-				fixup->options = *Options_Get(&state->options);
-
-				/* Clone the location. */
+				destination_location = destination_location->previous;
 				*destination_location = *source_location;
 				String_CreateCopy(&destination_location->file_path, &source_location->file_path);
-
-				for (source_location = source_location->previous; source_location != NULL; source_location = source_location->previous)
-				{
-					destination_location->previous = (Location*)MallocAndHandleError(state, sizeof(Location));
-
-					if (destination_location->previous == NULL)
-					{
-						break;
-					}
-					else
-					{
-						destination_location = destination_location->previous;
-						*destination_location = *source_location;
-						String_CreateCopy(&destination_location->file_path, &source_location->file_path);
-					}
-				}
-
-				/* Add the new fix-up to the list. */
-				if (state->fixup_list_head == NULL)
-					state->fixup_list_head = fixup;
-				else
-					state->fixup_list_tail->next = fixup;
-
-				state->fixup_list_tail = fixup;
-
-				fixup->next = NULL;
 			}
+
+			/* Add the new fix-up to the list. */
+			if (state->fixup_list_head == NULL)
+				state->fixup_list_head = fixup;
+			else
+				state->fixup_list_tail->next = fixup;
+
+			state->fixup_list_tail = fixup;
+
+			fixup->next = NULL;
 
 			state->fixup_needed = cc_false;
 		}
@@ -6015,7 +5981,7 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 				for (i = 0; i < state->macro.total_arguments; ++i)
 					String_Destroy(&state->macro.argument_list[i]);
 
-				free(state->macro.argument_list);
+				delete state->macro.argument_list;
 			}
 		}
 	}
@@ -6525,12 +6491,12 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 					{
 						Location *previous_location = location->previous;
 						String_Destroy(&location->file_path);
-						free(location);
+						delete location;
 						location = previous_location;
 					}
 					String_Destroy(&fixup->location.file_path);
 
-					free(fixup);
+					delete fixup;
 				}
 
 				/* Produce asm68k symbol file, if requested. */

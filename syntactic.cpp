@@ -1308,7 +1308,7 @@ namespace m68kasm {
   case 63: // expression_list: expression
 #line 1179 "syntactic.y"
         {
-		ExpressionListNode *node = (ExpressionListNode*)malloc(sizeof(ExpressionListNode));
+		ExpressionListNode *node = new ExpressionListNode;
 
 		if (node == NULL)
 		{
@@ -1329,7 +1329,7 @@ namespace m68kasm {
   case 64: // expression_list: expression_list "," expression
 #line 1196 "syntactic.y"
         {
-		ExpressionListNode *node = (ExpressionListNode*)malloc(sizeof(ExpressionListNode));
+		ExpressionListNode *node = new ExpressionListNode;
 
 		yylhs.value.as < ExpressionList > () = yystack_[2].value.as < ExpressionList > ();
 
@@ -1358,7 +1358,7 @@ namespace m68kasm {
   case 65: // identifier_list: IDENTIFIER
 #line 1224 "syntactic.y"
         {
-		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
+		IdentifierListNode *node = new IdentifierListNode;
 
 		if (node == NULL)
 		{
@@ -1379,7 +1379,7 @@ namespace m68kasm {
   case 66: // identifier_list: identifier_list "," IDENTIFIER
 #line 1241 "syntactic.y"
         {
-		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
+		IdentifierListNode *node = new IdentifierListNode;
 
 		yylhs.value.as < IdentifierList > () = yystack_[2].value.as < IdentifierList > ();
 
@@ -1408,7 +1408,7 @@ namespace m68kasm {
   case 67: // option_list: OPTION
 #line 1269 "syntactic.y"
         {
-		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
+		IdentifierListNode *node = new IdentifierListNode;
 
 		if (node == NULL)
 		{
@@ -1429,7 +1429,7 @@ namespace m68kasm {
   case 68: // option_list: option_list "," OPTION
 #line 1286 "syntactic.y"
         {
-		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
+		IdentifierListNode *node = new IdentifierListNode;
 
 		yylhs.value.as < IdentifierList > () = yystack_[2].value.as < IdentifierList > ();
 
@@ -3335,7 +3335,7 @@ namespace m68kasm {
   case 278: // expression8: INSTR "(" expression "," expression ")"
 #line 2430 "syntactic.y"
         {
-		Expression *subexpressions = (Expression*)malloc(sizeof(Expression) * 3);
+		Expression *subexpressions = new Expression[3];
 
 		if (subexpressions == nullptr)
 			YYNOMEM;
@@ -3352,7 +3352,7 @@ namespace m68kasm {
   case 279: // expression8: INSTR "(" expression "," expression "," expression ")"
 #line 2443 "syntactic.y"
         {
-		Expression *subexpressions = (Expression*)malloc(sizeof(Expression) * 3);
+		Expression *subexpressions = new Expression[3];
 
 		if (subexpressions == nullptr)
 			YYNOMEM;
@@ -4311,7 +4311,7 @@ namespace m68kasm {
 
 static cc_bool DoExpression(Expression *expression, ExpressionArithmetic1Operand::Type type, Expression *subexpression)
 {
-	Expression *subexpression_copy = (Expression*)malloc(sizeof(Expression));
+	Expression *subexpression_copy = new Expression;
 
 	if (subexpression_copy == NULL)
 	{
@@ -4328,7 +4328,7 @@ static cc_bool DoExpression(Expression *expression, ExpressionArithmetic1Operand
 
 static cc_bool DoExpression(Expression *expression, ExpressionArithmetic2Operand::Type type, Expression *left_expression, Expression *right_expression)
 {
-	Expression *subexpressions = (Expression*)malloc(sizeof(Expression) * 2);
+	Expression *subexpressions = new Expression[2];
 
 	if (subexpressions == NULL)
 	{
@@ -4354,18 +4354,18 @@ void DestroyExpression(Expression *expression)
 				DestroyExpression(&expression.subexpressions[0]);
 				DestroyExpression(&expression.subexpressions[1]);
 				DestroyExpression(&expression.subexpressions[2]);
-				free(expression.subexpressions);
+				delete[] expression.subexpressions;
 			},
 			[](ExpressionArithmetic2Operand &expression)
 			{
 				DestroyExpression(&expression.subexpressions[0]);
 				DestroyExpression(&expression.subexpressions[1]);
-				free(expression.subexpressions);
+				delete[] expression.subexpressions;
 			},
 			[](ExpressionArithmetic1Operand &expression)
 			{
 				DestroyExpression(expression.subexpressions);
-				free(expression.subexpressions);
+				delete expression.subexpressions;
 			},
 			[](ExpressionStrcmp &expression)
 			{
@@ -4414,7 +4414,7 @@ void DestroyIdentifierList(IdentifierList *list)
 
 		String_Destroy(&node->identifier);
 
-		free(node);
+		delete node;
 
 		node = next_node;
 	}
@@ -4430,7 +4430,7 @@ static void DestroyExpressionList(ExpressionList *list)
 
 		DestroyExpression(&node->expression);
 
-		free(node);
+		delete node;
 
 		node = next_node;
 	}

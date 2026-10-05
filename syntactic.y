@@ -1177,7 +1177,7 @@ statement
 expression_list
 	: expression
 	{
-		ExpressionListNode *node = (ExpressionListNode*)malloc(sizeof(ExpressionListNode));
+		ExpressionListNode *node = new ExpressionListNode;
 
 		if (node == NULL)
 		{
@@ -1194,7 +1194,7 @@ expression_list
 	}
 	| expression_list "," expression
 	{
-		ExpressionListNode *node = (ExpressionListNode*)malloc(sizeof(ExpressionListNode));
+		ExpressionListNode *node = new ExpressionListNode;
 
 		$$ = $1;
 
@@ -1222,7 +1222,7 @@ expression_list
 identifier_list
 	: IDENTIFIER
 	{
-		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
+		IdentifierListNode *node = new IdentifierListNode;
 
 		if (node == NULL)
 		{
@@ -1239,7 +1239,7 @@ identifier_list
 	}
 	| identifier_list "," IDENTIFIER
 	{
-		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
+		IdentifierListNode *node = new IdentifierListNode;
 
 		$$ = $1;
 
@@ -1267,7 +1267,7 @@ identifier_list
 option_list
 	: OPTION
 	{
-		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
+		IdentifierListNode *node = new IdentifierListNode;
 
 		if (node == NULL)
 		{
@@ -1284,7 +1284,7 @@ option_list
 	}
 	| option_list "," OPTION
 	{
-		IdentifierListNode *node = (IdentifierListNode*)malloc(sizeof(IdentifierListNode));
+		IdentifierListNode *node = new IdentifierListNode;
 
 		$$ = $1;
 
@@ -2428,7 +2428,7 @@ expression8
 	}
 	| INSTR "(" expression "," expression ")"
 	{
-		Expression *subexpressions = (Expression*)malloc(sizeof(Expression) * 3);
+		Expression *subexpressions = new Expression[3];
 
 		if (subexpressions == nullptr)
 			YYNOMEM;
@@ -2441,7 +2441,7 @@ expression8
 	}
 	| INSTR "(" expression "," expression "," expression ")"
 	{
-		Expression *subexpressions = (Expression*)malloc(sizeof(Expression) * 3);
+		Expression *subexpressions = new Expression[3];
 
 		if (subexpressions == nullptr)
 			YYNOMEM;
@@ -2485,7 +2485,7 @@ string
 
 static cc_bool DoExpression(Expression *expression, ExpressionArithmetic1Operand::Type type, Expression *subexpression)
 {
-	Expression *subexpression_copy = (Expression*)malloc(sizeof(Expression));
+	Expression *subexpression_copy = new Expression;
 
 	if (subexpression_copy == NULL)
 	{
@@ -2502,7 +2502,7 @@ static cc_bool DoExpression(Expression *expression, ExpressionArithmetic1Operand
 
 static cc_bool DoExpression(Expression *expression, ExpressionArithmetic2Operand::Type type, Expression *left_expression, Expression *right_expression)
 {
-	Expression *subexpressions = (Expression*)malloc(sizeof(Expression) * 2);
+	Expression *subexpressions = new Expression[2];
 
 	if (subexpressions == NULL)
 	{
@@ -2528,18 +2528,18 @@ void DestroyExpression(Expression *expression)
 				DestroyExpression(&expression.subexpressions[0]);
 				DestroyExpression(&expression.subexpressions[1]);
 				DestroyExpression(&expression.subexpressions[2]);
-				free(expression.subexpressions);
+				delete[] expression.subexpressions;
 			},
 			[](ExpressionArithmetic2Operand &expression)
 			{
 				DestroyExpression(&expression.subexpressions[0]);
 				DestroyExpression(&expression.subexpressions[1]);
-				free(expression.subexpressions);
+				delete[] expression.subexpressions;
 			},
 			[](ExpressionArithmetic1Operand &expression)
 			{
 				DestroyExpression(expression.subexpressions);
-				free(expression.subexpressions);
+				delete expression.subexpressions;
 			},
 			[](ExpressionStrcmp &expression)
 			{
@@ -2588,7 +2588,7 @@ void DestroyIdentifierList(IdentifierList *list)
 
 		String_Destroy(&node->identifier);
 
-		free(node);
+		delete node;
 
 		node = next_node;
 	}
@@ -2604,7 +2604,7 @@ static void DestroyExpressionList(ExpressionList *list)
 
 		DestroyExpression(&node->expression);
 
-		free(node);
+		delete node;
 
 		node = next_node;
 	}
