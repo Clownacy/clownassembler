@@ -4321,7 +4321,7 @@ static void PushSubstitute(SemanticState* const state, const StringView &identif
 				break;
 
 			default:
-				SemanticError(state, "Attempted to redefined symbol '%.*s' as a string constant.", (int)StringView_Length(identifier), StringView_Data(identifier));
+				SemanticError(state, "Attempted to redefine symbol '%.*s' as a string constant.", (int)StringView_Length(identifier), StringView_Data(identifier));
 				return;
 		}
 
@@ -4364,7 +4364,7 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 				   and in any case if we get here I'm pretty sure something has gone wrong, so we should emit an error in case one hasn't already been emitted.
 				   It might also be feasible to handle this without forcing the symbol to become a string constant, but right now this seems like the simplest
 				   solution to prevent a crash. */
-				SemanticError(state, "Attempted to redefined symbol '%.*s' as a string constant.", (int)StringView_Length(parameter), StringView_Data(parameter));
+				SemanticError(state, "Attempted to redefine symbol '%.*s' as a string constant.", (int)StringView_Length(parameter), StringView_Data(parameter));
 				dictionary_entry->type = SYMBOL_STRING_CONSTANT;
 			}
 			else
