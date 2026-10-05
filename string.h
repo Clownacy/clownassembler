@@ -59,9 +59,9 @@ void String_CreateBlank(String *string);
 cc_bool String_CreateInternal(String *string, const char *source_1_buffer, size_t source_1_length, const char *source_2_buffer, size_t source_2_length);
 #define String_Create(OUTPUT, INPUT_BUFFER, INPUT_LENGTH) String_CreateInternal(OUTPUT, INPUT_BUFFER, INPUT_LENGTH, NULL, 0)
 cc_bool String_CreateCopyView(String *string, const StringView *source);
-#define String_CreateCopy(OUTPUT, INPUT) String_CreateCopyView(OUTPUT, String_View(INPUT))
+#define String_CreateCopy(OUTPUT, INPUT) String_CreateCopyView(OUTPUT, &String_View(INPUT))
 cc_bool String_CreateAppendView(String *string, const StringView *source_1, const StringView *source_2);
-#define String_CreateAppend(OUTPUT, INPUT_1, INPUT_2) String_CreateAppendView(OUTPUT, String_View(INPUT_1), String_View(INPUT_2))
+#define String_CreateAppend(OUTPUT, INPUT_1, INPUT_2) String_CreateAppendView(OUTPUT, &String_View(INPUT_1), &String_View(INPUT_2))
 void String_CreateMove(String *string, String *other_string);
 void String_Destroy(String *string);
 cc_bool String_Replace(String *string, size_t position, size_t count, const StringView *other_string);
@@ -70,19 +70,19 @@ cc_bool String_Resize(String *string, size_t size);
 cc_bool String_ResizeNoFill(String *string, size_t size);
 void String_ToLower(String *string);
 
-#define String_View(STRING) ((const StringView*)&(STRING)->view)
-#define String_Data(STRING) ((char*)StringView_Data(String_View(STRING)))
+#define String_View(STRING) ((const StringView&)(STRING)->view)
+#define String_Data(STRING) ((char*)StringView_Data(&String_View(STRING)))
 #define String_CStr String_Data
-#define String_Length(STRING) StringView_Length(String_View(STRING))
+#define String_Length(STRING) StringView_Length(&String_View(STRING))
 #define String_Capacity(STRING) ((STRING)->capacity)
-#define String_Empty(STRING) StringView_Empty(String_View(STRING))
+#define String_Empty(STRING) StringView_Empty(&String_View(STRING))
 #define String_At(STRING, INDEX) String_Data(STRING)[INDEX]
-#define String_Compare(STRING, OTHER_STRING) StringView_Compare(String_View(STRING), String_View(OTHER_STRING))
-#define String_CompareCStrCaseInsensitive(STRING, C_STRING) StringView_CompareCStrCaseInsensitive(String_View(STRING), C_STRING)
-#define String_Find(STRING, SUB_VIEW, POSITION, CASE_INSENSITIVE) StringView_Find(String_View(STRING), SUB_VIEW, POSITION, CASE_INSENSITIVE)
-#define String_FindCharacter(STRING, CHARACTER, POSITION) StringView_FindCharacter(String_View(STRING), CHARACTER, POSITION)
+#define String_Compare(STRING, OTHER_STRING) StringView_Compare(&String_View(STRING), &String_View(OTHER_STRING))
+#define String_CompareCStrCaseInsensitive(STRING, C_STRING) StringView_CompareCStrCaseInsensitive(&String_View(STRING), C_STRING)
+#define String_Find(STRING, SUB_VIEW, POSITION, CASE_INSENSITIVE) StringView_Find(&String_View(STRING), SUB_VIEW, POSITION, CASE_INSENSITIVE)
+#define String_FindCharacter(STRING, CHARACTER, POSITION) StringView_FindCharacter(&String_View(STRING), CHARACTER, POSITION)
 #define String_SubStr(STRING, VIEW, POSITION, LENGTH) String_Create(STRING, &StringView_At(VIEW, POSITION), LENGTH)
-#define String_Front(STRING) StringView_Front(String_View(STRING))
-#define String_Back(STRING) StringView_Back(String_View(STRING))
+#define String_Front(STRING) StringView_Front(&String_View(STRING))
+#define String_Back(STRING) StringView_Back(&String_View(STRING))
 
 #endif /* STRING_H */

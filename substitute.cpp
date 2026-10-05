@@ -134,7 +134,7 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 		{
 			size_t found_position, found_length;
 
-			if (Substitute_FindSubstitute(view_to_search, starting_position, String_View(&list_entry->identifier), allow_implicit_matches, case_insensitive, &found_position, &found_length))
+			if (Substitute_FindSubstitute(view_to_search, starting_position, &String_View(&list_entry->identifier), allow_implicit_matches, case_insensitive, &found_position, &found_length))
 			{
 				/* Record if this substitute occurs first. */
 				if (*earliest_found_position > found_position)
@@ -152,7 +152,7 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 	{
 		size_t found_position, found_length;
 
-		if (Substitute_FindSubstitute(view_to_search, starting_position, String_View(&list_entry->identifier), allow_implicit_matches, case_insensitive, &found_position, &found_length))
+		if (Substitute_FindSubstitute(view_to_search, starting_position, &String_View(&list_entry->identifier), allow_implicit_matches, case_insensitive, &found_position, &found_length))
 		{
 			/* Record if this substitute occurs first. */
 			if (*earliest_found_position > found_position)
@@ -202,7 +202,7 @@ void Substitute_ProcessSubString(Substitute_State* const state, Substitute_State
 
 void Substitute_ProcessString(Substitute_State* const state, Substitute_State* const other_state, String* const string, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches, const cc_bool case_insensitive)
 {
-	StringView view = *String_View(string);
+	StringView view = String_View(string);
 	Substitute_ProcessSubString(state, other_state, string, &view, custom_search_callback, custom_search_user_data, allow_implicit_matches, case_insensitive);
 }
 
