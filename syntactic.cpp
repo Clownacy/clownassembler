@@ -987,7 +987,7 @@ namespace m68kasm {
   case 24: // statement: DIRECTIVE_SUBSTR "," "," STRING
 #line 1011 "syntactic.y"
         {
-		statement->emplace<StatementSubstr>(ExpressionNumber{1}, ExpressionNumber{String_Length(&yystack_[0].value.as < String > ())}, yystack_[0].value.as < String > ());
+		statement->emplace<StatementSubstr>(ExpressionNumber{1}, ExpressionNumber{String_Length(yystack_[0].value.as < String > ())}, yystack_[0].value.as < String > ());
 	}
 #line 993 "syntactic.cpp"
     break;
@@ -995,7 +995,7 @@ namespace m68kasm {
   case 25: // statement: DIRECTIVE_SUBSTR expression "," "," STRING
 #line 1015 "syntactic.y"
         {
-		statement->emplace<StatementSubstr>(yystack_[3].value.as < Expression > (), ExpressionNumber{String_Length(&yystack_[0].value.as < String > ())}, yystack_[0].value.as < String > ());
+		statement->emplace<StatementSubstr>(yystack_[3].value.as < Expression > (), ExpressionNumber{String_Length(yystack_[0].value.as < String > ())}, yystack_[0].value.as < String > ());
 	}
 #line 1001 "syntactic.cpp"
     break;
@@ -1362,7 +1362,7 @@ namespace m68kasm {
 
 		if (node == NULL)
 		{
-			String_Destroy(&yystack_[0].value.as < String > ());
+			String_Destroy(yystack_[0].value.as < String > ());
 			YYNOMEM;
 		}
 		else
@@ -1386,7 +1386,7 @@ namespace m68kasm {
 		if (node == NULL)
 		{
 			DestroyIdentifierList(&yystack_[2].value.as < IdentifierList > ());
-			String_Destroy(&yystack_[0].value.as < String > ());
+			String_Destroy(yystack_[0].value.as < String > ());
 			YYNOMEM;
 		}
 		else
@@ -1412,7 +1412,7 @@ namespace m68kasm {
 
 		if (node == NULL)
 		{
-			String_Destroy(&yystack_[0].value.as < String > ());
+			String_Destroy(yystack_[0].value.as < String > ());
 			YYNOMEM;
 		}
 		else
@@ -1436,7 +1436,7 @@ namespace m68kasm {
 		if (node == NULL)
 		{
 			DestroyIdentifierList(&yystack_[2].value.as < IdentifierList > ());
-			String_Destroy(&yystack_[0].value.as < String > ());
+			String_Destroy(yystack_[0].value.as < String > ());
 			YYNOMEM;
 		}
 		else
@@ -3207,7 +3207,7 @@ namespace m68kasm {
 #line 2357 "syntactic.y"
         {
 		const StringView literal = STRING_VIEW_INITIALISER(".b");
-		if (!String_CreateCopyView(&yylhs.value.as < String > (), &literal))
+		if (!String_CreateCopyView(yylhs.value.as < String > (), literal))
 			YYNOMEM;
 	}
 #line 3214 "syntactic.cpp"
@@ -3217,7 +3217,7 @@ namespace m68kasm {
 #line 2363 "syntactic.y"
         {
 		const StringView literal = STRING_VIEW_INITIALISER(".s");
-		if (!String_CreateCopyView(&yylhs.value.as < String > (), &literal))
+		if (!String_CreateCopyView(yylhs.value.as < String > (), literal))
 			YYNOMEM;
 	}
 #line 3224 "syntactic.cpp"
@@ -3227,7 +3227,7 @@ namespace m68kasm {
 #line 2369 "syntactic.y"
         {
 		const StringView literal = STRING_VIEW_INITIALISER(".w");
-		if (!String_CreateCopyView(&yylhs.value.as < String > (), &literal))
+		if (!String_CreateCopyView(yylhs.value.as < String > (), literal))
 			YYNOMEM;
 	}
 #line 3234 "syntactic.cpp"
@@ -3237,7 +3237,7 @@ namespace m68kasm {
 #line 2375 "syntactic.y"
         {
 		const StringView literal = STRING_VIEW_INITIALISER(".l");
-		if (!String_CreateCopyView(&yylhs.value.as < String > (), &literal))
+		if (!String_CreateCopyView(yylhs.value.as < String > (), literal))
 			YYNOMEM;
 	}
 #line 3244 "syntactic.cpp"
@@ -3258,9 +3258,9 @@ namespace m68kasm {
   case 269: // identifier: identifier local_identifier
 #line 2386 "syntactic.y"
         {
-		const cc_bool success = String_CreateAppend(&yylhs.value.as < String > (), &yystack_[1].value.as < String > (), &yystack_[0].value.as < String > ());
-		String_Destroy(&yystack_[1].value.as < String > ());
-		String_Destroy(&yystack_[0].value.as < String > ());
+		const cc_bool success = String_CreateAppend(yylhs.value.as < String > (), yystack_[1].value.as < String > (), yystack_[0].value.as < String > ());
+		String_Destroy(yystack_[1].value.as < String > ());
+		String_Destroy(yystack_[0].value.as < String > ());
 
 		if (!success)
 			YYNOMEM;
@@ -4369,32 +4369,32 @@ void DestroyExpression(Expression *expression)
 			},
 			[](ExpressionStrcmp &expression)
 			{
-				String_Destroy(&expression.string_a);
-				String_Destroy(&expression.string_b);
+				String_Destroy(expression.string_a);
+				String_Destroy(expression.string_b);
 			},
 			[](ExpressionIdentifier &expression)
 			{
-				String_Destroy(&expression.string);
+				String_Destroy(expression.string);
 			},
 			[](ExpressionString &expression)
 			{
-				String_Destroy(&expression.string);
+				String_Destroy(expression.string);
 			},
 			[](ExpressionStrlen &expression)
 			{
-				String_Destroy(&expression.string);
+				String_Destroy(expression.string);
 			},
 			[](ExpressionDef &expression)
 			{
-				String_Destroy(&expression.string);
+				String_Destroy(expression.string);
 			},
 			[](ExpressionTypeWithIdentifier &expression)
 			{
-				String_Destroy(&expression.string);
+				String_Destroy(expression.string);
 			},
 			[](ExpressionFilesize &expression)
 			{
-				String_Destroy(&expression.string);
+				String_Destroy(expression.string);
 			},
 			[](ExpressionNumber &expression) {},
 			[](ExpressionProgramCounterOfStatement &expression) {},
@@ -4412,7 +4412,7 @@ void DestroyIdentifierList(IdentifierList *list)
 	{
 		IdentifierListNode* const next_node = node->next;
 
-		String_Destroy(&node->identifier);
+		String_Destroy(node->identifier);
 
 		delete node;
 
@@ -4510,11 +4510,11 @@ void DestroyStatement(Statement *statement)
 			},
 			[](StatementInclude &statement)
 			{
-				String_Destroy(&statement.path);
+				String_Destroy(statement.path);
 			},
 			[](StatementIncbin &statement)
 			{
-				String_Destroy(&statement.path);
+				String_Destroy(statement.path);
 				DestroyExpression(&statement.start);
 
 				if (statement.has_length)
@@ -4566,29 +4566,29 @@ void DestroyStatement(Statement *statement)
 			},
 			[](StatementEquSString &statement)
 			{
-				String_Destroy(&statement.string);
+				String_Destroy(statement.string);
 			},
 			[](StatementEquSIdentifier &statement)
 			{
-				String_Destroy(&statement.string);
+				String_Destroy(statement.string);
 			},
 			[](StatementPushP &statement)
 			{
-				String_Destroy(&statement.string);
+				String_Destroy(statement.string);
 			},
 			[](StatementPopP &statement)
 			{
-				String_Destroy(&statement.string);
+				String_Destroy(statement.string);
 			},
 			[](StatementPurge &statement)
 			{
-				String_Destroy(&statement.string);
+				String_Destroy(statement.string);
 			},
 			[](StatementSubstr &statement)
 			{
 				DestroyExpression(&statement.start);
 				DestroyExpression(&statement.end);
-				String_Destroy(&statement.string);
+				String_Destroy(statement.string);
 			},
 			[](StatementCnop &statement)
 			{
@@ -4598,7 +4598,7 @@ void DestroyStatement(Statement *statement)
 			[](StatementInform &statement)
 			{
 				DestroyExpression(&statement.severity);
-				String_Destroy(&statement.message);
+				String_Destroy(statement.message);
 			},
 			[](StatementRS &statement)
 			{

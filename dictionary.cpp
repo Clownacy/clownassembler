@@ -41,8 +41,8 @@ static Dictionary_Bucket* GetBucket(Dictionary_State *state, const StringView *i
 	unsigned int hash;
 	size_t i;
 
-	const char *character = StringView_Data(identifier);
-	size_t length = StringView_Length(identifier);
+	const char *character = StringView_Data(*identifier);
+	size_t length = StringView_Length(*identifier);
 
 	/* Hash the identifier, using djb2. */
 	/* http://www.cse.yorku.ca/~oz/hash.html */
@@ -72,14 +72,14 @@ static SearchResult SearchBucket(Dictionary_State *state, Dictionary_Bucket *buc
 		{
 			int comparison_result;
 
-			const size_t identifier_length = StringView_Length(identifier);
+			const size_t identifier_length = StringView_Length(*identifier);
 
 			if (identifier_length < node->identifier_length)
 				comparison_result = -1;
 			else if (identifier_length > node->identifier_length)
 				comparison_result = 1;
 			else /*if (identifier_length == node->identifier_length)*/
-				comparison_result = state->compare_identifiers(StringView_Data(identifier), &node->identifier, identifier_length);
+				comparison_result = state->compare_identifiers(StringView_Data(*identifier), &node->identifier, identifier_length);
 
 			if (comparison_result < 0)
 			{
@@ -254,7 +254,7 @@ cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const Stri
 	else
 	{
 		/* The node was not found: create it instead. */
-		const size_t identifier_length = StringView_Length(identifier);
+		const size_t identifier_length = StringView_Length(*identifier);
 		Dictionary_Node *new_node = (Dictionary_Node*)malloc(sizeof(Dictionary_Node) - 1 + identifier_length);
 
 		if (new_node == NULL)
@@ -277,7 +277,7 @@ cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const Stri
 
 			/* Copy the identifier. */
 			new_node->identifier_length = identifier_length;
-			memcpy(&new_node->identifier, StringView_Data(identifier), identifier_length);
+			memcpy(&new_node->identifier, StringView_Data(*identifier), identifier_length);
 
 			if (search_result == SEARCH_RESULT_BUCKET_EMPTY)
 			{

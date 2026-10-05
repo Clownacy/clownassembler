@@ -1009,11 +1009,11 @@ statement
 	}
 	| DIRECTIVE_SUBSTR "," "," STRING
 	{
-		statement->emplace<StatementSubstr>(ExpressionNumber{1}, ExpressionNumber{String_Length(&$4)}, $4);
+		statement->emplace<StatementSubstr>(ExpressionNumber{1}, ExpressionNumber{String_Length($4)}, $4);
 	}
 	| DIRECTIVE_SUBSTR expression "," "," STRING
 	{
-		statement->emplace<StatementSubstr>($2, ExpressionNumber{String_Length(&$5)}, $5);
+		statement->emplace<StatementSubstr>($2, ExpressionNumber{String_Length($5)}, $5);
 	}
 	| DIRECTIVE_SUBSTR "," expression "," STRING
 	{
@@ -1226,7 +1226,7 @@ identifier_list
 
 		if (node == NULL)
 		{
-			String_Destroy(&$1);
+			String_Destroy($1);
 			YYNOMEM;
 		}
 		else
@@ -1246,7 +1246,7 @@ identifier_list
 		if (node == NULL)
 		{
 			DestroyIdentifierList(&$1);
-			String_Destroy(&$3);
+			String_Destroy($3);
 			YYNOMEM;
 		}
 		else
@@ -1271,7 +1271,7 @@ option_list
 
 		if (node == NULL)
 		{
-			String_Destroy(&$1);
+			String_Destroy($1);
 			YYNOMEM;
 		}
 		else
@@ -1291,7 +1291,7 @@ option_list
 		if (node == NULL)
 		{
 			DestroyIdentifierList(&$1);
-			String_Destroy(&$3);
+			String_Destroy($3);
 			YYNOMEM;
 		}
 		else
@@ -2356,25 +2356,25 @@ local_identifier
 	| SIZE_BYTE
 	{
 		const StringView literal = STRING_VIEW_INITIALISER(".b");
-		if (!String_CreateCopyView(&$$, &literal))
+		if (!String_CreateCopyView($$, literal))
 			YYNOMEM;
 	}
 	| SIZE_SHORT
 	{
 		const StringView literal = STRING_VIEW_INITIALISER(".s");
-		if (!String_CreateCopyView(&$$, &literal))
+		if (!String_CreateCopyView($$, literal))
 			YYNOMEM;
 	}
 	| SIZE_WORD
 	{
 		const StringView literal = STRING_VIEW_INITIALISER(".w");
-		if (!String_CreateCopyView(&$$, &literal))
+		if (!String_CreateCopyView($$, literal))
 			YYNOMEM;
 	}
 	| SIZE_LONGWORD
 	{
 		const StringView literal = STRING_VIEW_INITIALISER(".l");
-		if (!String_CreateCopyView(&$$, &literal))
+		if (!String_CreateCopyView($$, literal))
 			YYNOMEM;
 	}
 	;
@@ -2384,9 +2384,9 @@ identifier
 	| local_identifier
 	| identifier local_identifier
 	{
-		const cc_bool success = String_CreateAppend(&$$, &$1, &$2);
-		String_Destroy(&$1);
-		String_Destroy(&$2);
+		const cc_bool success = String_CreateAppend($$, $1, $2);
+		String_Destroy($1);
+		String_Destroy($2);
 
 		if (!success)
 			YYNOMEM;
@@ -2543,32 +2543,32 @@ void DestroyExpression(Expression *expression)
 			},
 			[](ExpressionStrcmp &expression)
 			{
-				String_Destroy(&expression.string_a);
-				String_Destroy(&expression.string_b);
+				String_Destroy(expression.string_a);
+				String_Destroy(expression.string_b);
 			},
 			[](ExpressionIdentifier &expression)
 			{
-				String_Destroy(&expression.string);
+				String_Destroy(expression.string);
 			},
 			[](ExpressionString &expression)
 			{
-				String_Destroy(&expression.string);
+				String_Destroy(expression.string);
 			},
 			[](ExpressionStrlen &expression)
 			{
-				String_Destroy(&expression.string);
+				String_Destroy(expression.string);
 			},
 			[](ExpressionDef &expression)
 			{
-				String_Destroy(&expression.string);
+				String_Destroy(expression.string);
 			},
 			[](ExpressionTypeWithIdentifier &expression)
 			{
-				String_Destroy(&expression.string);
+				String_Destroy(expression.string);
 			},
 			[](ExpressionFilesize &expression)
 			{
-				String_Destroy(&expression.string);
+				String_Destroy(expression.string);
 			},
 			[](ExpressionNumber &expression) {},
 			[](ExpressionProgramCounterOfStatement &expression) {},
@@ -2586,7 +2586,7 @@ void DestroyIdentifierList(IdentifierList *list)
 	{
 		IdentifierListNode* const next_node = node->next;
 
-		String_Destroy(&node->identifier);
+		String_Destroy(node->identifier);
 
 		delete node;
 
@@ -2684,11 +2684,11 @@ void DestroyStatement(Statement *statement)
 			},
 			[](StatementInclude &statement)
 			{
-				String_Destroy(&statement.path);
+				String_Destroy(statement.path);
 			},
 			[](StatementIncbin &statement)
 			{
-				String_Destroy(&statement.path);
+				String_Destroy(statement.path);
 				DestroyExpression(&statement.start);
 
 				if (statement.has_length)
@@ -2740,29 +2740,29 @@ void DestroyStatement(Statement *statement)
 			},
 			[](StatementEquSString &statement)
 			{
-				String_Destroy(&statement.string);
+				String_Destroy(statement.string);
 			},
 			[](StatementEquSIdentifier &statement)
 			{
-				String_Destroy(&statement.string);
+				String_Destroy(statement.string);
 			},
 			[](StatementPushP &statement)
 			{
-				String_Destroy(&statement.string);
+				String_Destroy(statement.string);
 			},
 			[](StatementPopP &statement)
 			{
-				String_Destroy(&statement.string);
+				String_Destroy(statement.string);
 			},
 			[](StatementPurge &statement)
 			{
-				String_Destroy(&statement.string);
+				String_Destroy(statement.string);
 			},
 			[](StatementSubstr &statement)
 			{
 				DestroyExpression(&statement.start);
 				DestroyExpression(&statement.end);
-				String_Destroy(&statement.string);
+				String_Destroy(statement.string);
 			},
 			[](StatementCnop &statement)
 			{
@@ -2772,7 +2772,7 @@ void DestroyStatement(Statement *statement)
 			[](StatementInform &statement)
 			{
 				DestroyExpression(&statement.severity);
-				String_Destroy(&statement.message);
+				String_Destroy(statement.message);
 			},
 			[](StatementRS &statement)
 			{

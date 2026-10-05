@@ -405,19 +405,19 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
-	StringView_Create(&view, yytext + 1, yyleng - 2);
-	String_CreateBlank(&string);
+	StringView_Create(view, yytext + 1, yyleng - 2);
+	String_CreateBlank(string);
 
-	if (!String_ResizeNoFill(&string, StringView_Length(&view)))
+	if (!String_ResizeNoFill(string, StringView_Length(view)))
 		throw m68kasm::parser::syntax_error("Could not allocate memory for generic string.");
 
 	/* Copy string, turning escaped (paired) quotes into regular (lone) quotes. */
 	output_size = 0;
 	previous_character = '\0';
 
-	for (i = 0; i < StringView_Length(&view); ++i)
+	for (i = 0; i < StringView_Length(view); ++i)
 	{
-		const char character = StringView_At(&view, i);
+		const char character = StringView_At(view, i);
 
 		if (character == quotation_character && previous_character == quotation_character)
 		{
@@ -426,10 +426,10 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 		}
 
 		previous_character = character;
-		String_At(&string, output_size++) = character;
+		String_At(string, output_size++) = character;
 	}
 
-	String_ResizeNoFill(&string, output_size);
+	String_ResizeNoFill(string, output_size);
 
 	return m68kasm::parser::make_STRING(std::move(string));
 }
@@ -441,7 +441,7 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
-	if (!String_Create(&string, yytext, yyleng))
+	if (!String_Create(string, yytext, yyleng))
 		throw m68kasm::parser::syntax_error("Could not allocate memory for generic string.");
 
 	return m68kasm::parser::make_STRING(std::move(string));
@@ -460,7 +460,7 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 		/* Identifier. */
 		String string;
 
-		if (!String_Create(&string, yytext, yyleng))
+		if (!String_Create(string, yytext, yyleng))
 			throw m68kasm::parser::syntax_error("Could not allocate memory for generic string.");
 
 		return m68kasm::parser::make_IDENTIFIER(std::move(string));
@@ -471,7 +471,7 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 [@\.][A-Za-z_0-9\?]+ {
 	String string;
 
-	if (!String_Create(&string, yytext, yyleng))
+	if (!String_Create(string, yytext, yyleng))
 		throw m68kasm::parser::syntax_error("Could not allocate memory for generic string.");
 
 	return m68kasm::parser::make_LOCAL_IDENTIFIER(std::move(string));
@@ -481,7 +481,7 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 <OPTIONS>[^ \t\r\n,]+ {
 	String string;
 
-	if (!String_Create(&string, yytext, yyleng))
+	if (!String_Create(string, yytext, yyleng))
 		throw m68kasm::parser::syntax_error("Could not allocate memory for generic string.");
 
 	return m68kasm::parser::make_OPTION(std::move(string));

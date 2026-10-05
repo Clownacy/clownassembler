@@ -43,7 +43,7 @@ cc_bool Substitute_PushSubstitute(Substitute_State* const state, const StringVie
 	list_entry->next = state->list_head;
 	state->list_head = list_entry;
 
-	String_CreateCopyView(&list_entry->identifier, identifier);
+	String_CreateCopyView(list_entry->identifier, *identifier);
 	list_entry->value = value;
 
 	return cc_true;
@@ -55,7 +55,7 @@ void Substitute_PopSubstitute(Substitute_State* const state)
 
 	state->list_head = list_entry->next;
 
-	String_Destroy(&list_entry->identifier);
+	String_Destroy(list_entry->identifier);
 
 	free(list_entry);
 }
@@ -66,12 +66,12 @@ static cc_bool Substitute_FindSubstitute(const StringView* const view_to_search,
 
 	/* Find identifier within string. */
 	/* Obviously bail if the identifier wasn't found. */
-	for (match_start = starting_position; (match_start = StringView_Find(view_to_search, substitute, match_start, case_insensitive)) != STRING_POSITION_INVALID; ++match_start)
+	for (match_start = starting_position; (match_start = StringView_Find(*view_to_search, *substitute, match_start, case_insensitive)) != STRING_POSITION_INVALID; ++match_start)
 	{
-		size_t match_length = StringView_Length(substitute);
+		size_t match_length = StringView_Length(*substitute);
 
-		const char character_before = match_start == 0 ? ' ' : StringView_At(view_to_search, match_start - 1);
-		const char character_after = match_start + match_length == StringView_Length(view_to_search) ? ' ' : StringView_At(view_to_search, match_start + match_length);
+		const char character_before = match_start == 0 ? ' ' : StringView_At(*view_to_search, match_start - 1);
+		const char character_after = match_start + match_length == StringView_Length(*view_to_search) ? ' ' : StringView_At(*view_to_search, match_start + match_length);
 
 		/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
 		/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
@@ -122,7 +122,7 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 
 			/* Absorb trailing backslash. */
 			/* TODO: Check if it already ends in a backslash? */
-			if (StringView_At(view_to_search, found_position + found_length) == '\\')
+			if (StringView_At(*view_to_search, found_position + found_length) == '\\')
 				++*earliest_found_length;
 		}
 	}
@@ -134,7 +134,7 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 		{
 			size_t found_position, found_length;
 
-			if (Substitute_FindSubstitute(view_to_search, starting_position, &String_View(&list_entry->identifier), allow_implicit_matches, case_insensitive, &found_position, &found_length))
+			if (Substitute_FindSubstitute(view_to_search, starting_position, &String_View(list_entry->identifier), allow_implicit_matches, case_insensitive, &found_position, &found_length))
 			{
 				/* Record if this substitute occurs first. */
 				if (*earliest_found_position > found_position)
@@ -152,7 +152,7 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 	{
 		size_t found_position, found_length;
 
-		if (Substitute_FindSubstitute(view_to_search, starting_position, &String_View(&list_entry->identifier), allow_implicit_matches, case_insensitive, &found_position, &found_length))
+		if (Substitute_FindSubstitute(view_to_search, starting_position, &String_View(list_entry->identifier), allow_implicit_matches, case_insensitive, &found_position, &found_length))
 		{
 			/* Record if this substitute occurs first. */
 			if (*earliest_found_position > found_position)
@@ -171,11 +171,11 @@ void Substitute_ProcessSubString(Substitute_State* const state, Substitute_State
 {
 	size_t starting_position = 0;
 
-	const size_t offset_into_string = StringView_Data(view_to_search) - String_Data(string);
-	const char removed_character = String_At(string, offset_into_string + StringView_Length(view_to_search));
+	const size_t offset_into_string = StringView_Data(*view_to_search) - String_Data(*string);
+	const char removed_character = String_At(*string, offset_into_string + StringView_Length(*view_to_search));
 
 	/* Null-terminate the view, so that search logic can use C's silly null-terminated string functions. */
-	String_At(string, offset_into_string + StringView_Length(view_to_search)) = '\0';
+	String_At(*string, offset_into_string + StringView_Length(*view_to_search)) = '\0';
 
 	for (;;)
 	{
@@ -187,22 +187,22 @@ void Substitute_ProcessSubString(Substitute_State* const state, Substitute_State
 			break;
 
 		/* Substitute it. */
-		String_Replace(string, offset_into_string + found_position, found_length, found_substitute);
+		String_Replace(*string, offset_into_string + found_position, found_length, *found_substitute);
 
 		/* Update the view. */
-		StringView_Create(view_to_search, &String_At(string, offset_into_string), StringView_Length(view_to_search) - found_length + StringView_Length(found_substitute));
+		StringView_Create(*view_to_search, &String_At(*string, offset_into_string), StringView_Length(*view_to_search) - found_length + StringView_Length(*found_substitute));
 
 		/* Limit the next search to after this. */
-		starting_position = found_position + StringView_Length(found_substitute);
+		starting_position = found_position + StringView_Length(*found_substitute);
 	}
 
 	/* Restore the character that we replaced with a null character earlier. */
-	String_At(string, offset_into_string + StringView_Length(view_to_search)) = removed_character;
+	String_At(*string, offset_into_string + StringView_Length(*view_to_search)) = removed_character;
 }
 
 void Substitute_ProcessString(Substitute_State* const state, Substitute_State* const other_state, String* const string, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches, const cc_bool case_insensitive)
 {
-	StringView view = String_View(string);
+	StringView view = String_View(*string);
 	Substitute_ProcessSubString(state, other_state, string, &view, custom_search_callback, custom_search_user_data, allow_implicit_matches, case_insensitive);
 }
 
