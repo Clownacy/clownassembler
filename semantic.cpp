@@ -1158,7 +1158,6 @@ static void TerminateRept(SemanticState *state, SemanticState::ModeRept &rept_st
 	++state->location->line_number;
 
 	FreeSourceLineList(source_line_list.head);
-
 }
 
 static void PurgeMacro(SemanticState* const state, const StringView* identifier, const cc_bool allow_undefined)
@@ -1206,7 +1205,7 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 
 	if (CurrentlyExpandingMacro(state))
 	{
-		/* See comment in PurgeMacro after the check for the same condition for more details */
+		/* See comment in PurgeMacro after the check for the same condition for more details. */
 		SemanticError(state, "Cannot define macro '%.*s' during macro expansion.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
 	}
 	else if (!StringView_Empty(identifier))
