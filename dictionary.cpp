@@ -36,13 +36,13 @@ typedef enum SearchResult
 	SEARCH_RESULT_BUCKET_EMPTY
 } SearchResult;
 
-static Dictionary_Bucket* GetBucket(Dictionary_State *state, const StringView *identifier)
+static Dictionary_Bucket* GetBucket(Dictionary_State *state, const StringView &identifier)
 {
 	unsigned int hash;
 	size_t i;
 
-	const char *character = StringView_Data(*identifier);
-	size_t length = StringView_Length(*identifier);
+	const char *character = StringView_Data(identifier);
+	size_t length = StringView_Length(identifier);
 
 	/* Hash the identifier, using djb2. */
 	/* http://www.cse.yorku.ca/~oz/hash.html */
@@ -54,7 +54,7 @@ static Dictionary_Bucket* GetBucket(Dictionary_State *state, const StringView *i
 	return &state->hash_table[hash % TOTAL_HASH_TABLE_ENTRIES];
 }
 
-static SearchResult SearchBucket(Dictionary_State *state, Dictionary_Bucket *bucket, const StringView *identifier, Dictionary_Node **node_pointer)
+static SearchResult SearchBucket(Dictionary_State *state, Dictionary_Bucket *bucket, const StringView &identifier, Dictionary_Node **node_pointer)
 {
 	SearchResult search_result;
 
@@ -72,14 +72,14 @@ static SearchResult SearchBucket(Dictionary_State *state, Dictionary_Bucket *buc
 		{
 			int comparison_result;
 
-			const size_t identifier_length = StringView_Length(*identifier);
+			const size_t identifier_length = StringView_Length(identifier);
 
 			if (identifier_length < node->identifier_length)
 				comparison_result = -1;
 			else if (identifier_length > node->identifier_length)
 				comparison_result = 1;
 			else /*if (identifier_length == node->identifier_length)*/
-				comparison_result = state->compare_identifiers(StringView_Data(*identifier), &node->identifier, identifier_length);
+				comparison_result = state->compare_identifiers(StringView_Data(identifier), &node->identifier, identifier_length);
 
 			if (comparison_result < 0)
 			{
@@ -236,7 +236,7 @@ void Dictionary_Deinit(Dictionary_State *state)
 	free(state->hash_table);
 }
 
-cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const StringView *identifier, Dictionary_Entry **entry_pointer)
+cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const StringView &identifier, Dictionary_Entry **entry_pointer)
 {
 	cc_bool success = cc_true;
 
@@ -254,7 +254,7 @@ cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const Stri
 	else
 	{
 		/* The node was not found: create it instead. */
-		const size_t identifier_length = StringView_Length(*identifier);
+		const size_t identifier_length = StringView_Length(identifier);
 		Dictionary_Node *new_node = (Dictionary_Node*)malloc(sizeof(Dictionary_Node) - 1 + identifier_length);
 
 		if (new_node == NULL)
@@ -277,7 +277,7 @@ cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const Stri
 
 			/* Copy the identifier. */
 			new_node->identifier_length = identifier_length;
-			memcpy(&new_node->identifier, StringView_Data(*identifier), identifier_length);
+			memcpy(&new_node->identifier, StringView_Data(identifier), identifier_length);
 
 			if (search_result == SEARCH_RESULT_BUCKET_EMPTY)
 			{
@@ -310,7 +310,7 @@ cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const Stri
 	return success;
 }
 
-Dictionary_Entry* Dictionary_LookUp(Dictionary_State *state, const StringView *identifier)
+Dictionary_Entry* Dictionary_LookUp(Dictionary_State *state, const StringView &identifier)
 {
 	Dictionary_Entry *entry;
 	Dictionary_Node *node;
@@ -325,7 +325,7 @@ Dictionary_Entry* Dictionary_LookUp(Dictionary_State *state, const StringView *i
 	return entry;
 }
 
-cc_bool Dictionary_Remove(Dictionary_State *state, const StringView *identifier)
+cc_bool Dictionary_Remove(Dictionary_State *state, const StringView &identifier)
 {
 	cc_bool success = cc_true;
 

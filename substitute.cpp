@@ -33,7 +33,7 @@ void Substitute_Deinitialise(Substitute_State* const state)
 		Substitute_PopSubstitute(state);
 }
 
-cc_bool Substitute_PushSubstitute(Substitute_State* const state, const StringView* const identifier, const StringView* const value)
+cc_bool Substitute_PushSubstitute(Substitute_State* const state, const StringView &identifier, const StringView &value)
 {
 	Substitute_ListEntry* const list_entry = (Substitute_ListEntry*)malloc(sizeof(Substitute_ListEntry));
 
@@ -43,8 +43,8 @@ cc_bool Substitute_PushSubstitute(Substitute_State* const state, const StringVie
 	list_entry->next = state->list_head;
 	state->list_head = list_entry;
 
-	String_CreateCopyView(list_entry->identifier, *identifier);
-	list_entry->value = value;
+	String_CreateCopyView(list_entry->identifier, identifier);
+	list_entry->value = &value;
 
 	return cc_true;
 }
@@ -60,18 +60,18 @@ void Substitute_PopSubstitute(Substitute_State* const state)
 	free(list_entry);
 }
 
-static cc_bool Substitute_FindSubstitute(const StringView* const view_to_search, const size_t starting_position, const StringView* const substitute, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, size_t* const found_position, size_t* const found_length)
+static cc_bool Substitute_FindSubstitute(const StringView &view_to_search, const size_t starting_position, const StringView &substitute, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, size_t* const found_position, size_t* const found_length)
 {
 	size_t match_start;
 
 	/* Find identifier within string. */
 	/* Obviously bail if the identifier wasn't found. */
-	for (match_start = starting_position; (match_start = StringView_Find(*view_to_search, *substitute, match_start, case_insensitive)) != STRING_POSITION_INVALID; ++match_start)
+	for (match_start = starting_position; (match_start = StringView_Find(view_to_search, substitute, match_start, case_insensitive)) != STRING_POSITION_INVALID; ++match_start)
 	{
-		size_t match_length = StringView_Length(*substitute);
+		size_t match_length = StringView_Length(substitute);
 
-		const char character_before = match_start == 0 ? ' ' : StringView_At(*view_to_search, match_start - 1);
-		const char character_after = match_start + match_length == StringView_Length(*view_to_search) ? ' ' : StringView_At(*view_to_search, match_start + match_length);
+		const char character_before = match_start == 0 ? ' ' : StringView_At(view_to_search, match_start - 1);
+		const char character_after = match_start + match_length == StringView_Length(view_to_search) ? ' ' : StringView_At(view_to_search, match_start + match_length);
 
 		/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
 		/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
@@ -101,10 +101,10 @@ static cc_bool Substitute_FindSubstitute(const StringView* const view_to_search,
 	return cc_false;
 }
 
-static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* const state, Substitute_State* const other_state, const StringView* const view_to_search, const size_t starting_position, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, size_t* const earliest_found_position, size_t* const earliest_found_length)
+static std::optional<StringView> Substitute_FindEarliestSubstitute(Substitute_State* const state, Substitute_State* const other_state, const StringView &view_to_search, const size_t starting_position, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, size_t* const earliest_found_position, size_t* const earliest_found_length)
 {
 	Substitute_ListEntry *list_entry;
-	const StringView *found_substitute = NULL;
+	std::optional<StringView> found_substitute;
 
 	*earliest_found_position = (size_t)-1;
 	*earliest_found_length = 0;
@@ -115,14 +115,14 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 
 		found_substitute = custom_search_callback((void*)custom_search_user_data, view_to_search, starting_position, case_insensitive, &found_position, &found_length);
 
-		if (found_substitute != NULL)
+		if (found_substitute.has_value())
 		{
 			*earliest_found_position = found_position;
 			*earliest_found_length = found_length;
 
 			/* Absorb trailing backslash. */
 			/* TODO: Check if it already ends in a backslash? */
-			if (StringView_At(*view_to_search, found_position + found_length) == '\\')
+			if (StringView_At(view_to_search, found_position + found_length) == '\\')
 				++*earliest_found_length;
 		}
 	}
@@ -134,12 +134,12 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 		{
 			size_t found_position, found_length;
 
-			if (Substitute_FindSubstitute(view_to_search, starting_position, &String_View(list_entry->identifier), allow_implicit_matches, case_insensitive, &found_position, &found_length))
+			if (Substitute_FindSubstitute(view_to_search, starting_position, String_View(list_entry->identifier), allow_implicit_matches, case_insensitive, &found_position, &found_length))
 			{
 				/* Record if this substitute occurs first. */
 				if (*earliest_found_position > found_position)
 				{
-					found_substitute = list_entry->value;
+					found_substitute = *list_entry->value;
 					*earliest_found_position = found_position;
 					*earliest_found_length = found_length;
 				}
@@ -152,12 +152,12 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 	{
 		size_t found_position, found_length;
 
-		if (Substitute_FindSubstitute(view_to_search, starting_position, &String_View(list_entry->identifier), allow_implicit_matches, case_insensitive, &found_position, &found_length))
+		if (Substitute_FindSubstitute(view_to_search, starting_position, String_View(list_entry->identifier), allow_implicit_matches, case_insensitive, &found_position, &found_length))
 		{
 			/* Record if this substitute occurs first. */
 			if (*earliest_found_position > found_position)
 			{
-				found_substitute = list_entry->value;
+				found_substitute = *list_entry->value;
 				*earliest_found_position = found_position;
 				*earliest_found_length = found_length;
 			}
@@ -167,43 +167,43 @@ static const StringView* Substitute_FindEarliestSubstitute(Substitute_State* con
 	return found_substitute;
 }
 
-void Substitute_ProcessSubString(Substitute_State* const state, Substitute_State* const other_state, String* const string, StringView* const view_to_search, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches, const cc_bool case_insensitive)
+void Substitute_ProcessSubString(Substitute_State* const state, Substitute_State* const other_state, String &string, StringView &view_to_search, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches, const cc_bool case_insensitive)
 {
 	size_t starting_position = 0;
 
-	const size_t offset_into_string = StringView_Data(*view_to_search) - String_Data(*string);
-	const char removed_character = String_At(*string, offset_into_string + StringView_Length(*view_to_search));
+	const size_t offset_into_string = StringView_Data(view_to_search) - String_Data(string);
+	const char removed_character = String_At(string, offset_into_string + StringView_Length(view_to_search));
 
 	/* Null-terminate the view, so that search logic can use C's silly null-terminated string functions. */
-	String_At(*string, offset_into_string + StringView_Length(*view_to_search)) = '\0';
+	String_At(string, offset_into_string + StringView_Length(view_to_search)) = '\0';
 
 	for (;;)
 	{
 		/* Find a substitute. */
 		size_t found_position, found_length;
-		const StringView* const found_substitute = Substitute_FindEarliestSubstitute(state, other_state, view_to_search, starting_position, custom_search_callback, custom_search_user_data, allow_implicit_matches, case_insensitive, &found_position, &found_length);
+		const std::optional<StringView> found_substitute = Substitute_FindEarliestSubstitute(state, other_state, view_to_search, starting_position, custom_search_callback, custom_search_user_data, allow_implicit_matches, case_insensitive, &found_position, &found_length);
 
-		if (found_substitute == NULL)
+		if (!found_substitute.has_value())
 			break;
 
 		/* Substitute it. */
-		String_Replace(*string, offset_into_string + found_position, found_length, *found_substitute);
+		String_Replace(string, offset_into_string + found_position, found_length, *found_substitute);
 
 		/* Update the view. */
-		StringView_Create(*view_to_search, &String_At(*string, offset_into_string), StringView_Length(*view_to_search) - found_length + StringView_Length(*found_substitute));
+		StringView_Create(view_to_search, &String_At(string, offset_into_string), StringView_Length(view_to_search) - found_length + StringView_Length(*found_substitute));
 
 		/* Limit the next search to after this. */
 		starting_position = found_position + StringView_Length(*found_substitute);
 	}
 
 	/* Restore the character that we replaced with a null character earlier. */
-	String_At(*string, offset_into_string + StringView_Length(*view_to_search)) = removed_character;
+	String_At(string, offset_into_string + StringView_Length(view_to_search)) = removed_character;
 }
 
-void Substitute_ProcessString(Substitute_State* const state, Substitute_State* const other_state, String* const string, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches, const cc_bool case_insensitive)
+void Substitute_ProcessString(Substitute_State* const state, Substitute_State* const other_state, String &string, const Substitute_CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches, const cc_bool case_insensitive)
 {
-	StringView view = String_View(*string);
-	Substitute_ProcessSubString(state, other_state, string, &view, custom_search_callback, custom_search_user_data, allow_implicit_matches, case_insensitive);
+	StringView view = String_View(string);
+	Substitute_ProcessSubString(state, other_state, string, view, custom_search_callback, custom_search_user_data, allow_implicit_matches, case_insensitive);
 }
 
 cc_bool Substitute_IsSubstituteBlockingCharacter(const char character)

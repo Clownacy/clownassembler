@@ -37,7 +37,7 @@ typedef struct StringStack_State
 void StringStack_Initialise(StringStack_State *state);
 void StringStack_Deinitialise(StringStack_State *state);
 
-cc_bool StringStack_Push(StringStack_State *state, const StringView *view);
-cc_bool StringStack_Pop(StringStack_State *state, String *string);
+cc_bool StringStack_Push(StringStack_State *state, const StringView &view);
+cc_bool StringStack_Pop(StringStack_State *state, String &string);
 
 #endif /* STRING_STACK_H */

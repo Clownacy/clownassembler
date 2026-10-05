@@ -18,6 +18,8 @@
 #ifndef SUBSTITUTE_H
 #define SUBSTITUTE_H
 
+#include <optional>
+
 #include "clowncommon/clowncommon.h"
 
 #include "string.h"
@@ -34,16 +36,16 @@ typedef struct Substitute_State
 	Substitute_ListEntry *list_head;
 } Substitute_State;
 
-typedef const StringView* (*Substitute_CustomSearch)(void *user_data, const StringView *view_to_search, size_t starting_position, cc_bool case_insensitive, size_t* const found_position, size_t* const found_length);
+typedef std::optional<StringView> (*Substitute_CustomSearch)(void *user_data, const StringView &view_to_search, size_t starting_position, cc_bool case_insensitive, size_t* const found_position, size_t* const found_length);
 
 void Substitute_Initialise(Substitute_State *state);
 void Substitute_Deinitialise(Substitute_State *state);
 
-cc_bool Substitute_PushSubstitute(Substitute_State *state, const StringView *identifier, const StringView *value);
+cc_bool Substitute_PushSubstitute(Substitute_State *state, const StringView &identifier, const StringView &value);
 void Substitute_PopSubstitute(Substitute_State *state);
 
-void Substitute_ProcessSubString(Substitute_State *state, Substitute_State *other_state, String *string, StringView *view_to_search, Substitute_CustomSearch custom_search_callback, const void *custom_search_user_data, cc_bool allow_implicit_matches, cc_bool case_insensitive);
-void Substitute_ProcessString(Substitute_State *state, Substitute_State *other_state, String *string, Substitute_CustomSearch custom_search_callback, const void *custom_search_user_data, cc_bool allow_implicit_matches, cc_bool case_insensitive);
+void Substitute_ProcessSubString(Substitute_State *state, Substitute_State *other_state, String &string, StringView &view_to_search, Substitute_CustomSearch custom_search_callback, const void *custom_search_user_data, cc_bool allow_implicit_matches, cc_bool case_insensitive);
+void Substitute_ProcessString(Substitute_State *state, Substitute_State *other_state, String &string, Substitute_CustomSearch custom_search_callback, const void *custom_search_user_data, cc_bool allow_implicit_matches, cc_bool case_insensitive);
 
 cc_bool Substitute_IsSubstituteBlockingCharacter(char character);
 cc_bool Substitute_IsWhitespaceCharacter(char character);
