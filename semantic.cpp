@@ -91,14 +91,6 @@ typedef struct SourceLineList
 	SourceLineListNode *tail;
 } SourceLineList;
 
-typedef enum Mode
-{
-	MODE_NORMAL,
-	MODE_REPT,
-	MODE_MACRO,
-	MODE_WHILE
-} Mode;
-
 typedef struct Macro
 {
 	cc_bool is_short, uses_label;
@@ -170,33 +162,32 @@ typedef struct SemanticState
 	cc_bool listing_macro;
 
 	/* Modes. */
-	Mode mode;
-	union
+	struct ModeNormal {};
+	struct ModeRept
 	{
-		struct
-		{
-			unsigned long repetitions;
-			unsigned long line_number;
-			unsigned int nesting;
-			SourceLineList source_line_list;
-		} rept;
-		struct
-		{
-			String name;
-			unsigned long line_number;
-			IdentifierList parameter_names;
-			SourceLineList source_line_list;
-			cc_bool is_short, uses_label;
-		} macro;
-		struct
-		{
-			Expression expression;
-			String source_line;
-			unsigned long line_number;
-			unsigned int nesting;
-			SourceLineList source_line_list;
-		} while_statement;
-	} shared;
+		unsigned long repetitions;
+		unsigned long line_number;
+		unsigned int nesting;
+		SourceLineList source_line_list;
+	};
+	struct ModeMacro
+	{
+		String name;
+		unsigned long line_number;
+		IdentifierList parameter_names;
+		SourceLineList source_line_list;
+		cc_bool is_short, uses_label;
+	};
+	struct ModeWhile
+	{
+		Expression expression;
+		String source_line;
+		unsigned long line_number;
+		unsigned int nesting;
+		SourceLineList source_line_list;
+	};
+
+	std::variant<ModeNormal, ModeRept, ModeMacro, ModeWhile> mode;
 } SemanticState;
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
@@ -1153,16 +1144,16 @@ static void TerminateIf(SemanticState *state)
 	--state->current_if_level;
 }
 
-static void TerminateRept(SemanticState *state)
+static void TerminateRept(SemanticState *state, SemanticState::ModeRept &rept_state)
 {
 	/* Back-up some state into local variables, in case a nested REPT statement clobbers it. */
-	unsigned long repetitions = state->shared.rept.repetitions;
+	unsigned long repetitions = rept_state.repetitions;
 
-	const unsigned long line_number = state->shared.rept.line_number;
-	const SourceLineList source_line_list = state->shared.rept.source_line_list;
+	const unsigned long line_number = rept_state.line_number;
+	const SourceLineList source_line_list = rept_state.source_line_list;
 
 	/* Exit REPT mode. */
-	state->mode = MODE_NORMAL;
+	state->mode.emplace<SemanticState::ModeNormal>();
 
 	while (repetitions-- != 0)
 	{
@@ -1220,12 +1211,9 @@ static void PurgeMacro(SemanticState* const state, const StringView* identifier,
 	}
 }
 
-static void TerminateMacro(SemanticState *state)
+static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro_state)
 {
-	const StringView* const identifier = String_View(&state->shared.macro.name);
-
-	/* Exit macro mode. */
-	state->mode = MODE_NORMAL;
+	const StringView* const identifier = String_View(&macro_state.name);
 
 	PurgeMacro(state, identifier, cc_true);
 
@@ -1245,17 +1233,17 @@ static void TerminateMacro(SemanticState *state)
 
 			if (macro != NULL)
 			{
-				macro->is_short = state->shared.macro.is_short;
-				macro->uses_label = state->shared.macro.uses_label;
-				String_CreateMove(&macro->name, &state->shared.macro.name);
+				macro->is_short = macro_state.is_short;
+				macro->uses_label = macro_state.uses_label;
+				String_CreateMove(&macro->name, &macro_state.name);
 
-				macro->parameter_names = state->shared.macro.parameter_names.head;
-				state->shared.macro.parameter_names.head = NULL;
-				state->shared.macro.parameter_names.tail = NULL;
+				macro->parameter_names = macro_state.parameter_names.head;
+				macro_state.parameter_names.head = NULL;
+				macro_state.parameter_names.tail = NULL;
 
-				macro->source_line_list_head = state->shared.macro.source_line_list.head;
-				state->shared.macro.source_line_list.head = NULL;
-				state->shared.macro.source_line_list.tail = NULL;
+				macro->source_line_list_head = macro_state.source_line_list.head;
+				macro_state.source_line_list.head = NULL;
+				macro_state.source_line_list.tail = NULL;
 
 				symbol->type = SYMBOL_MACRO;
 				symbol->shared.pointer = macro;
@@ -1264,23 +1252,26 @@ static void TerminateMacro(SemanticState *state)
 	}
 
 	/* Free all of this, in case we didn't get all the way to creating the macro and moving everything over. */
-	FreeSourceLineList(state->shared.macro.source_line_list.head);
-	DestroyIdentifierList(&state->shared.macro.parameter_names);
-	String_Destroy(&state->shared.macro.name);
+	FreeSourceLineList(macro_state.source_line_list.head);
+	DestroyIdentifierList(&macro_state.parameter_names);
+	String_Destroy(&macro_state.name);
+
+	/* Exit macro mode. */
+	state->mode.emplace<SemanticState::ModeNormal>();
 }
 
-static void TerminateWhile(SemanticState *state)
+static void TerminateWhile(SemanticState *state, SemanticState::ModeWhile &while_state)
 {
 	const String* const old_source_line = state->source_line;
 
 	/* Back-up some state into local variables, in case a nested WHILE statement clobbers it. */
-	Expression expression = state->shared.while_statement.expression;
-	String source_line = state->shared.while_statement.source_line;
-	const unsigned long starting_line_number = state->shared.while_statement.line_number;
-	SourceLineListNode* const source_line_list_head = state->shared.while_statement.source_line_list.head;
+	Expression expression = while_state.expression;
+	String source_line = while_state.source_line;
+	const unsigned long starting_line_number = while_state.line_number;
+	SourceLineListNode* const source_line_list_head = while_state.source_line_list.head;
 
 	/* Exit WHILE mode. */
-	state->mode = MODE_NORMAL;
+	state->mode.emplace<SemanticState::ModeNormal>();
 
 	state->suppress_listing = cc_true;
 
@@ -4745,36 +4736,36 @@ static cc_bool ReadSourceLine(SemanticState *state)
 static void ProcessRept(SemanticState *state, StatementRept *rept)
 {
 	/* Enter REPT mode. */
-	state->mode = MODE_REPT;
+	auto &mode = state->mode.emplace<SemanticState::ModeRept>();
 
-	if (!ResolveExpression(state, &rept->repetitions, &state->shared.rept.repetitions, cc_true))
+	if (!ResolveExpression(state, &rept->repetitions, &mode.repetitions, cc_true))
 	{
 		SemanticError(state, "Repetition value must be evaluable on the first pass.");
-		state->shared.rept.repetitions = 1;
+		mode.repetitions = 1;
 	}
 
-	state->shared.rept.line_number = state->location->line_number;
-	state->shared.rept.nesting = 0;
+	mode.line_number = state->location->line_number;
+	mode.nesting = 0;
 
-	state->shared.rept.source_line_list.head = NULL;
-	state->shared.rept.source_line_list.tail = NULL;
+	mode.source_line_list.head = NULL;
+	mode.source_line_list.tail = NULL;
 }
 
 static void ProcessMacro(SemanticState *state, StatementMacro *macro, const StringView *label, cc_bool is_short)
 {
 	/* Enter MACRO mode. */
-	state->mode = MODE_MACRO;
+	auto &mode = state->mode.emplace<SemanticState::ModeMacro>();
 
-	String_CreateCopyView(&state->shared.macro.name, label);
-	state->shared.macro.line_number = state->location->line_number;
-	state->shared.macro.parameter_names = macro->parameter_names;
+	String_CreateCopyView(&mode.name, label);
+	mode.line_number = state->location->line_number;
+	mode.parameter_names = macro->parameter_names;
 	macro->parameter_names.head = NULL;
 	macro->parameter_names.tail = NULL;
-	state->shared.macro.is_short = is_short;
-	state->shared.macro.uses_label = macro->uses_label;
+	mode.is_short = is_short;
+	mode.uses_label = macro->uses_label;
 
-	state->shared.macro.source_line_list.head = NULL;
-	state->shared.macro.source_line_list.tail = NULL;
+	mode.source_line_list.head = NULL;
+	mode.source_line_list.tail = NULL;
 }
 
 static void ProcessIf(SemanticState *state, Expression *expression)
@@ -4912,10 +4903,12 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			[&](StatementEndR &statement)
 			{
 				/* Exit REPT mode. */
-				if (state->mode != MODE_REPT)
+				const auto mode = std::get_if<SemanticState::ModeRept>(&state->mode);
+
+				if (mode == nullptr)
 					SemanticError(state, "This stray ENDR has no preceeding REPT.");
 				else
-					TerminateRept(state);
+					TerminateRept(state, *mode);
 			},
 			[&](StatementMacro &statement)
 			{
@@ -4928,12 +4921,14 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			[&](StatementEndM &statement)
 			{
 				/* Exit MACRO mode. */
-				if (state->mode != MODE_MACRO)
+				const auto mode = std::get_if<SemanticState::ModeMacro>(&state->mode);
+
+				if (mode == nullptr)
 					SemanticError(state, "This stray ENDM has no preceeding MACRO.");
-				else if (state->shared.macro.is_short)
+				else if (mode->is_short)
 					SemanticError(state, "ENDM cannot be used in a short macro.");
 				else
-					TerminateMacro(state);
+					TerminateMacro(state, *mode);
 			},
 			[&](StatementEqu &statement)
 			{
@@ -5105,29 +5100,31 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			[&](StatementWhile &statement)
 			{
 				/* Enter WHILE mode. */
-				state->mode = MODE_WHILE;
+				auto &mode = state->mode.emplace<SemanticState::ModeWhile>();
 
 				auto &while_statement = statement;
 
 				/* Dummy-out the statement's expression, since the state now owns it, and we don't
 				   want its sub-expressions to be automatically freed when the statement is freed. */
-				state->shared.while_statement.expression.emplace<ExpressionNumber>(0);
-				std::swap(state->shared.while_statement.expression, while_statement.expression);
-				String_CreateCopy(&state->shared.while_statement.source_line, state->source_line);
+				mode.expression.emplace<ExpressionNumber>(0);
+				std::swap(mode.expression, while_statement.expression);
+				String_CreateCopy(&mode.source_line, state->source_line);
 
-				state->shared.while_statement.line_number = state->location->line_number;
-				state->shared.while_statement.nesting = 0;
+				mode.line_number = state->location->line_number;
+				mode.nesting = 0;
 
-				state->shared.while_statement.source_line_list.head = NULL;
-				state->shared.while_statement.source_line_list.tail = NULL;
+				mode.source_line_list.head = NULL;
+				mode.source_line_list.tail = NULL;
 			},
 			[&](StatementEndW &statement)
 			{
 				/* Exit WHILE mode. */
-				if (state->mode != MODE_WHILE)
+				const auto mode = std::get_if<SemanticState::ModeWhile>(&state->mode);
+
+				if (mode == nullptr)
 					SemanticError(state, "This stray ENDW has no preceeding WHILE.");
 				else
-					TerminateWhile(state);
+					TerminateWhile(state, *mode);
 			},
 			[&](StatementEven &statement)
 			{
@@ -6037,8 +6034,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 
 	const String* const old_source_line = state->source_line;
 
-	/* Assert a few preconditions to ensure we're in a non-insane state */
-	assert(state->mode == MODE_NORMAL || state->mode == MODE_REPT || state->mode == MODE_WHILE || state->mode == MODE_MACRO);
+	/* Assert a few preconditions to ensure we're in a non-insane state. */
 	assert(CurrentlyExpandingMacro(state) == (state->macro.depth > 0));
 
 	if (write_line_to_listing_file)
@@ -6059,7 +6055,7 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 	/* Expand string constants and macro parameters only if we're actually parsing code;
 	   it is important that the input of REPT and WHILE is unaltered, so that each iteration
 	   can have unique expansions! */
-	if (state->mode == MODE_NORMAL)
+	if (std::holds_alternative<SemanticState::ModeNormal>(state->mode))
 	{
 		String_CreateCopy(&source_line, source_line_raw);
 		PerformSubstitutions(state, &source_line, cc_false);
@@ -6148,130 +6144,126 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 		StringView_SubStr(&directive, &directive_and_operands, 0, directive_length);
 
 		/* This is either a directive, or a macro. */
-		switch (state->mode)
-		{
-			case MODE_NORMAL:
-			{
-				/* If we are in the false part of an if-statement, then manually parse the
-				   source code until we encounter an IF, ELSEIF, ELSE, ENDC, or ENDIF.
-				   The reason for this is that the false part of an if-statement may contain
-				   invalid code and we do not want it to cause errors.
-				   This can get pretty complicated because we need to account for nesting. */
-				if (state->false_if_level != 0)
+		std::visit(
+			CC_VisitHelper{
+				[&](SemanticState::ModeNormal&)
 				{
-					/* TODO - Detect code after the keyword and error if any is found. */
-					if (StringView_CompareCStrCaseInsensitive(&directive, "if"))
+					/* If we are in the false part of an if-statement, then manually parse the
+					   source code until we encounter an IF, ELSEIF, ELSE, ENDC, or ENDIF.
+					   The reason for this is that the false part of an if-statement may contain
+					   invalid code and we do not want it to cause errors.
+					   This can get pretty complicated because we need to account for nesting. */
+					if (state->false_if_level != 0)
 					{
-						/* If-statements that are nested within the false part of another if-statement
-						   are themselves false, so create a false if-statement here and process it. */
-						++state->current_if_level;
-					}
-					else if (StringView_CompareCStrCaseInsensitive(&directive, "elseif")
-					      || StringView_CompareCStrCaseInsensitive(&directive, "else"  )
-					      || StringView_CompareCStrCaseInsensitive(&directive, "endc"  )
-					      || StringView_CompareCStrCaseInsensitive(&directive, "endif" ))
-					{
-						/* These can be processed normally too. */
-						SubstituteAndParseLine(state, &label, &directive_and_operands, &directive);
+						/* TODO - Detect code after the keyword and error if any is found. */
+						if (StringView_CompareCStrCaseInsensitive(&directive, "if"))
+						{
+							/* If-statements that are nested within the false part of another if-statement
+							   are themselves false, so create a false if-statement here and process it. */
+							++state->current_if_level;
+						}
+						else if (StringView_CompareCStrCaseInsensitive(&directive, "elseif")
+						      || StringView_CompareCStrCaseInsensitive(&directive, "else"  )
+						      || StringView_CompareCStrCaseInsensitive(&directive, "endc"  )
+						      || StringView_CompareCStrCaseInsensitive(&directive, "endif" ))
+						{
+							/* These can be processed normally too. */
+							SubstituteAndParseLine(state, &label, &directive_and_operands, &directive);
+						}
+						else
+						{
+							/* Drop the line completely, since it's inside the false half of an if statement and should be ignored. */
+						}
 					}
 					else
 					{
-						/* Drop the line completely, since it's inside the false half of an if statement and should be ignored. */
-					}
-				}
-				else
-				{
-					/* Look up the directive in the dictionary to see if it's actually a macro. */
-					const Dictionary_Entry* const macro_dictionary_entry = LookupSymbol(state, &directive, NULL);
-					Macro* const macro = macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO ? (Macro*)macro_dictionary_entry->shared.pointer : NULL;
+						/* Look up the directive in the dictionary to see if it's actually a macro. */
+						const Dictionary_Entry* const macro_dictionary_entry = LookupSymbol(state, &directive, NULL);
+						Macro* const macro = macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO ? (Macro*)macro_dictionary_entry->shared.pointer : NULL;
 
-					if (macro != NULL /*&& !macro->is_short*/)
+						if (macro != NULL /*&& !macro->is_short*/)
+						{
+							/* Regular macros are only expanded when needed. */
+							InvokeMacro(state, macro, &label, source_line_pointer);
+						}
+						else
+						{
+							/* This is not a macro invocation: it's just a regular line that can be assembled as-is. */
+							SubstituteAndParseLine(state, &label, &directive_and_operands, &directive);
+						}
+					}
+				},
+				[&](SemanticState::ModeRept &rept_state)
+				{
+					/* If this line is an 'ENDR' directive, then exit REPT mode. Otherwise, add the line to the REPT. */
+					if (StringView_CompareCStrCaseInsensitive(&directive, "endr") && rept_state.nesting-- == 0)
 					{
-						/* Regular macros are only expanded when needed. */
-						InvokeMacro(state, macro, &label, source_line_pointer);
+						/* TODO - Detect code after the keyword and error if any is found. */
+						ParseLine(state, &label, &directive_and_operands);
 					}
 					else
 					{
-						/* This is not a macro invocation: it's just a regular line that can be assembled as-is. */
-						SubstituteAndParseLine(state, &label, &directive_and_operands, &directive);
+						if (StringView_CompareCStrCaseInsensitive(&directive, "rept"))
+							++rept_state.nesting;
+
+						AddToSourceLineList(state, &rept_state.source_line_list, state->source_line);
 					}
-				}
-			}
-
-			break;
-
-		case MODE_REPT:
-			/* If this line is an 'ENDR' directive, then exit REPT mode. Otherwise, add the line to the REPT. */
-			if (StringView_CompareCStrCaseInsensitive(&directive, "endr") && state->shared.rept.nesting-- == 0)
-			{
-				/* TODO - Detect code after the keyword and error if any is found. */
-				ParseLine(state, &label, &directive_and_operands);
-			}
-			else
-			{
-				if (StringView_CompareCStrCaseInsensitive(&directive, "rept"))
-					++state->shared.rept.nesting;
-
-				AddToSourceLineList(state, &state->shared.rept.source_line_list, state->source_line);
-			}
-
-			break;
-
-		case MODE_MACRO:
-			/* If this line is an 'ENDM' directive, then exit macro mode. Otherwise, add the line to the macro. */
-			if (StringView_CompareCStrCaseInsensitive(&directive, "endm"))
-			{
-				/* TODO - Detect code after the keyword and error if any is found. */
-				if (state->shared.macro.is_short)
-					SemanticError(state, "Short macros shouldn't use ENDM.");
-				else
-					ParseLine(state, &label, &directive_and_operands);
-			}
-			else
-			{
-				if (state->shared.macro.is_short)
+				},
+				[&](SemanticState::ModeMacro &macro_state)
 				{
-					/* Short macros automatically terminate after one statement. */
-					const char first_nonwhitespace_character = String_At(state->source_line, strspn(String_CStr(state->source_line), " \t"));
-
-					if (!StringView_Empty(&label))
-						SemanticError(state, "Short macros shouldn't create labels.");
-
-					if (first_nonwhitespace_character == '\0' || first_nonwhitespace_character == ';')
+					/* If this line is an 'ENDM' directive, then exit macro mode. Otherwise, add the line to the macro. */
+					if (StringView_CompareCStrCaseInsensitive(&directive, "endm"))
 					{
-						/* This line is an empty statement: ignore it. */
+						/* TODO - Detect code after the keyword and error if any is found. */
+						if (macro_state.is_short)
+							SemanticError(state, "Short macros shouldn't use ENDM.");
+						else
+							ParseLine(state, &label, &directive_and_operands);
 					}
 					else
 					{
-						AddToSourceLineList(state, &state->shared.macro.source_line_list, state->source_line);
-						TerminateMacro(state);
+						if (macro_state.is_short)
+						{
+							/* Short macros automatically terminate after one statement. */
+							const char first_nonwhitespace_character = String_At(state->source_line, strspn(String_CStr(state->source_line), " \t"));
+
+							if (!StringView_Empty(&label))
+								SemanticError(state, "Short macros shouldn't create labels.");
+
+							if (first_nonwhitespace_character == '\0' || first_nonwhitespace_character == ';')
+							{
+								/* This line is an empty statement: ignore it. */
+							}
+							else
+							{
+								AddToSourceLineList(state, &macro_state.source_line_list, state->source_line);
+								TerminateMacro(state, macro_state);
+							}
+						}
+						else
+						{
+							AddToSourceLineList(state, &macro_state.source_line_list, state->source_line);
+						}
+					}
+				},
+				[&](SemanticState::ModeWhile &while_state)
+				{
+					/* If this line is an 'ENDW' directive, then exit 'WHILE' mode. Otherwise, add the line to the 'WHILE'. */
+					if (StringView_CompareCStrCaseInsensitive(&directive, "endw") && while_state.nesting-- == 0)
+					{
+						/* TODO - Detect code after the keyword and error if any is found. */
+						ParseLine(state, &label, &directive_and_operands);
+					}
+					else
+					{
+						if (StringView_CompareCStrCaseInsensitive(&directive, "while"))
+							++while_state.nesting;
+
+						AddToSourceLineList(state, &while_state.source_line_list, state->source_line);
 					}
 				}
-				else
-				{
-					AddToSourceLineList(state, &state->shared.macro.source_line_list, state->source_line);
-				}
-			}
-
-			break;
-
-		case MODE_WHILE:
-			/* If this line is an 'ENDW' directive, then exit 'WHILE' mode. Otherwise, add the line to the 'WHILE'. */
-			if (StringView_CompareCStrCaseInsensitive(&directive, "endw") && state->shared.while_statement.nesting-- == 0)
-			{
-				/* TODO - Detect code after the keyword and error if any is found. */
-				ParseLine(state, &label, &directive_and_operands);
-			}
-			else
-			{
-				if (StringView_CompareCStrCaseInsensitive(&directive, "while"))
-					++state->shared.while_statement.nesting;
-
-				AddToSourceLineList(state, &state->shared.while_statement.source_line_list, state->source_line);
-			}
-
-			break;
-		}
+			}, state->mode
+		);
 	}
 
 	if (write_line_to_listing_file)
@@ -6290,36 +6282,38 @@ static void AssembleFile(SemanticState *state)
 		AssembleLine(state, &state->line_buffer, cc_true);
 
 	/* If we're not in normal mode when a file ends, then something is wrong. */
-	while (state->mode != MODE_NORMAL)
+	while (!std::holds_alternative<SemanticState::ModeNormal>(state->mode))
 	{
-		switch (state->mode)
-		{
-			case MODE_NORMAL:
-				/* We can't reach this since we just checked for it */
-				assert(cc_false);
-				break;
+		std::visit(
+			CC_VisitHelper{
+				[&](SemanticState::ModeNormal&)
+				{
+					/* We can't reach this since we just checked for it. */
+					assert(cc_false);
+				},
+				[&](SemanticState::ModeRept &rept_state)
+				{
+					SemanticError(state, "REPT statement beginning at line %lu is missing its ENDR.", rept_state.line_number);
 
-			case MODE_REPT:
-				SemanticError(state, "REPT statement beginning at line %lu is missing its ENDR.", state->shared.rept.line_number);
+					/* Terminate the REPT to hopefully avoid future complications. */
+					TerminateRept(state, rept_state);
+				},
+				[&](SemanticState::ModeMacro &macro_state)
+				{
+					SemanticError(state, "MACRO statement beginning at line %lu is missing its ENDM.", macro_state.line_number);
 
-				/* Terminate the REPT to hopefully avoid future complications. */
-				TerminateRept(state);
-				break;
+					/* Terminate the macro to hopefully avoid future complications. */
+					TerminateMacro(state, macro_state);
+				},
+				[&](SemanticState::ModeWhile &while_state)
+				{
+					SemanticError(state, "WHILE statement beginning at line %lu is missing its ENDW.", while_state.line_number);
 
-			case MODE_MACRO:
-				SemanticError(state, "MACRO statement beginning at line %lu is missing its ENDM.", state->shared.macro.line_number);
-
-				/* Terminate the macro to hopefully avoid future complications. */
-				TerminateMacro(state);
-				break;
-
-			case MODE_WHILE:
-				SemanticError(state, "WHILE statement beginning at line %lu is missing its ENDW.", state->shared.while_statement.line_number);
-
-				/* Terminate the while-statement to hopefully avoid future complications. */
-				TerminateWhile(state);
-				break;
-		}
+					/* Terminate the while-statement to hopefully avoid future complications. */
+					TerminateWhile(state, while_state);
+				}
+			}, state->mode
+		);
 	}
 }
 
@@ -6434,7 +6428,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	state.location = &location;
 	Substitute_Initialise(&state.substitutions);
 	StringStack_Initialise(&state.string_stack);
-	state.mode = MODE_NORMAL;
+	state.mode.emplace<SemanticState::ModeNormal>();
 
 	/* Create the symbol table dictionary. */
 	if (!Dictionary_Init(&state.dictionary, Options_Get(&state.options)->case_insensitive))
