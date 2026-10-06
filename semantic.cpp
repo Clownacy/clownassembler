@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <variant>
 
 #include "clowncommon/clowncommon.h"
 
@@ -42,29 +43,44 @@ typedef ClownAssembler_TextInput TextInput;
 typedef ClownAssembler_BinaryStream BinaryStream;
 typedef ClownAssembler_TextOutput TextOutput;
 
-typedef enum SymbolType
-{
-	SYMBOL_NONE = -1,
-	SYMBOL_CONSTANT,
-	SYMBOL_VARIABLE,
-	SYMBOL_MACRO,
-	SYMBOL_LABEL,
-	SYMBOL_SPECIAL,
-	SYMBOL_STRING_CONSTANT,
-	SYMBOL_EXPRESSION_CONSTANT
-} SymbolType;
+struct SymbolNone {};
 
-struct SymbolDictionaryEntry
+struct SymbolConstant
 {
-	SymbolType type = SYMBOL_NONE;
-	union
-	{
-		unsigned long unsigned_long;
-		long signed_long;
-		void *pointer;
-		String string;
-	} shared;
+	unsigned long value;
 };
+
+struct SymbolVariable
+{
+	unsigned long value;
+};
+
+struct SymbolLabel
+{
+	unsigned long value;
+};
+
+struct SymbolMacro
+{
+	void *value;
+};
+
+struct SymbolSpecial
+{
+	void *value;
+};
+
+struct SymbolStringConstant
+{
+	String value;
+};
+
+struct SymbolExpressionConstant
+{
+	void *value;
+};
+
+using SymbolDictionaryEntry = std::variant<SymbolNone, SymbolConstant, SymbolVariable, SymbolLabel, SymbolMacro, SymbolSpecial, SymbolStringConstant, SymbolExpressionConstant>;
 
 using SymbolDictionary = Dictionary<SymbolDictionaryEntry>;
 
@@ -600,7 +616,8 @@ static SymbolDictionary::Entry* LookupSymbol(SemanticState *state, StringView id
 	return dictionary_entry;
 }
 
-static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, StringView identifier, SymbolType type, SymbolDictionary **dictionary)
+template<typename SymbolType>
+static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, StringView identifier, SymbolDictionary **dictionary)
 {
 	SymbolDictionary::Entry *dictionary_entry = NULL;
 	String expanded_identifier;
@@ -633,7 +650,7 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *s
 
 	String_Destroy(expanded_identifier);
 
-	if (dictionary_entry->type != SYMBOL_NONE && dictionary_entry->type != type)
+	if (!std::holds_alternative<SymbolNone>(*dictionary_entry) && !std::holds_alternative<SymbolType>(*dictionary_entry))
 	{
 		SemanticError(state, "Attempted to redefine symbol '%.*s' as a different type.", StringView_Length(identifier), StringView_Data(identifier));
 		dictionary_entry = NULL;
@@ -652,7 +669,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 
 	dictionary_entry = LookupSymbol(state, identifier, NULL);
 
-	if (dictionary_entry == NULL || dictionary_entry->type == SYMBOL_NONE)
+	if (dictionary_entry == NULL || std::holds_alternative<SymbolNone>(*dictionary_entry))
 	{
 		if (must_evaluate_on_first_pass)
 			SemanticError(state, "Symbol '%.*s' must be evaluable on first pass.", (int)StringView_Length(identifier), StringView_Data(identifier));
@@ -665,54 +682,60 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 	}
 	else
 	{
-		switch (dictionary_entry->type)
-		{
-			case SYMBOL_SPECIAL:
-				/* Don't worry; I know what I'm doing. */
-				if (dictionary_entry->shared.pointer == &string_rs)
+		std::visit(
+			CC_VisitHelper{
+				[&](SymbolSpecial &symbol)
 				{
-					*value = state->rs;
-				}
-				else if (dictionary_entry->shared.pointer == &string_narg)
-				{
-					if (!CurrentlyExpandingMacro(state))
+					/* Don't worry; I know what I'm doing. */
+					if (symbol.value == &string_rs)
 					{
-						SemanticWarning(state, "Symbol '%.*s' cannot be used outside of a macro.", (int)StringView_Length(identifier), StringView_Data(identifier));
-						success = cc_false;
+						*value = state->rs;
+					}
+					else if (symbol.value == &string_narg)
+					{
+						if (!CurrentlyExpandingMacro(state))
+						{
+							SemanticWarning(state, "Symbol '%.*s' cannot be used outside of a macro.", (int)StringView_Length(identifier), StringView_Data(identifier));
+							success = cc_false;
+						}
+						else
+						{
+							*value = state->macro.total_arguments_at_start;
+						}
 					}
 					else
 					{
-						*value = state->macro.total_arguments_at_start;
+						assert(cc_false);
+						success = cc_false;
 					}
-				}
-				else
+				},
+				[&](SymbolVariable &symbol)
 				{
-					assert(cc_false);
+					if (state->doing_fixup_pass)
+						SemanticWarning(state, "Symbol '%.*s' forward-referenced despite being a redefineable variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
+
+					*value = symbol.value;
+				},
+				[&](SymbolLabel &symbol)
+				{
+					*value = symbol.value;
+				},
+				[&](SymbolConstant &symbol)
+				{
+					*value = symbol.value;
+				},
+				[&](SymbolExpressionConstant &symbol)
+				{
+					if (!ResolveExpression(state, (Expression*)symbol.value, value, cc_false))
+						success = cc_false;
+				},
+				[&](auto &symbol)
+				{
+					SemanticError(state, "Symbol '%.*s' is not a label, constant, or variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
 					success = cc_false;
 				}
-
-				break;
-
-			case SYMBOL_VARIABLE:
-				if (state->doing_fixup_pass)
-					SemanticWarning(state, "Symbol '%.*s' forward-referenced despite being a redefineable variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
-				/* Fallthrough */
-			case SYMBOL_LABEL:
-			case SYMBOL_CONSTANT:
-				*value = dictionary_entry->shared.unsigned_long;
-				break;
-
-			case SYMBOL_EXPRESSION_CONSTANT:
-				if (!ResolveExpression(state, (Expression*)dictionary_entry->shared.pointer, value, cc_false))
-					success = cc_false;
-
-				break;
-
-			default:
-				SemanticError(state, "Symbol '%.*s' is not a label, constant, or variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
-				success = cc_false;
-				break;
-		}
+			}, *dictionary_entry
+		);
 	}
 
 	return success;
@@ -754,43 +777,39 @@ static void FreeSourceLineList(SourceLineListNode *source_line_list_head)
 
 static void DestroySymbol(SymbolDictionary::Entry *dictionary_entry)
 {
-	switch (dictionary_entry->type)
-	{
-		case SYMBOL_NONE:
-		case SYMBOL_LABEL:
-		case SYMBOL_CONSTANT:
-		case SYMBOL_VARIABLE:
-		case SYMBOL_SPECIAL:
+	std::visit(
+		CC_VisitHelper{
+			[&](SymbolStringConstant &symbol)
+			{
+				String_Destroy(symbol.value);
+			},
+			[&](SymbolExpressionConstant &symbol)
+			{
+				DestroyExpression((Expression*)symbol.value);
+				delete (Expression*)symbol.value;
+			},
+			[&](SymbolMacro &symbol)
+			{
+				Macro *macro = (Macro*)symbol.value;
+				IdentifierList destroyed_list = {0};
+
+				/* We make up a sort of "fake list" for the purposes of calling DestroyIdentifierList, since it doesn't take an IdentifierListNode directly. */
+				destroyed_list.head = macro->parameter_names;
+				DestroyIdentifierList(&destroyed_list);
+
+				FreeSourceLineList(macro->source_line_list_head);
+				String_Destroy(macro->name);
+
+				delete macro;
+			},
 			/* Nothing to free. */
-			return;
-
-		case SYMBOL_STRING_CONSTANT:
-			String_Destroy(dictionary_entry->shared.string);
-			return;
-
-		case SYMBOL_EXPRESSION_CONSTANT:
-			DestroyExpression((Expression*)dictionary_entry->shared.pointer);
-			delete (Expression*)dictionary_entry->shared.pointer;
-			return;
-
-		case SYMBOL_MACRO:
-		{
-			Macro *macro = (Macro*)dictionary_entry->shared.pointer;
-			IdentifierList destroyed_list = {0};
-
-			/* We make up a sort of "fake list" for the purposes of calling DestroyIdentifierList, since it doesn't take an IdentifierListNode directly. */
-			destroyed_list.head = macro->parameter_names;
-			DestroyIdentifierList(&destroyed_list);
-
-			FreeSourceLineList(macro->source_line_list_head);
-			String_Destroy(macro->name);
-
-			delete macro;
-			return;
-		}
-	}
-
-	assert(cc_false);
+			[&](SymbolNone &symbol) {},
+			[&](SymbolLabel &symbol) {},
+			[&](SymbolConstant &symbol) {},
+			[&](SymbolVariable &symbol) {},
+			[&](SymbolSpecial &symbol) {},
+		}, *dictionary_entry
+	);
 }
 
 /* Iterates over the guts of the dictionary to delete all of the node innards before calling SymbolDictionary::Deinit */
@@ -1171,7 +1190,7 @@ static void PurgeMacro(SemanticState* const state, StringView identifier, const 
 		if (!allow_undefined)
 			SemanticError(state, "Cannot purge '%.*s' as it does not exist.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
 	}
-	else if (entry->type != SYMBOL_MACRO)
+	else if (!std::holds_alternative<SymbolMacro>(*entry))
 	{
 		SemanticError(state, "Cannot purge '%.*s' as it is not a macro.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
 	}
@@ -1198,8 +1217,127 @@ static void PurgeMacro(SemanticState* const state, StringView identifier, const 
 	}
 }
 
-// Get rid of this by moving the function up here...
-static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, unsigned long integer_value, void *pointer_value, SymbolType type);
+template<typename SymbolType>
+static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, unsigned long integer_value);
+
+template<typename SymbolType>
+static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, void *pointer_value);
+
+template<>
+cc_bool AddIdentifierToSymbolTable<SymbolVariable>(SemanticState *state, const StringView &identifier, unsigned long integer_value)
+{
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolVariable>(state, identifier, NULL);
+
+	if (symbol == NULL)
+		return cc_false;
+
+	/* Free the old symbol, to prevent a leak. */
+	DestroySymbol(symbol);
+
+	symbol->emplace<SymbolVariable>(integer_value);
+
+	return cc_true;
+}
+
+template<>
+cc_bool AddIdentifierToSymbolTable<SymbolConstant>(SemanticState *state, const StringView &identifier, unsigned long integer_value)
+{
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolConstant>(state, identifier, NULL);
+
+	if (symbol == NULL)
+		return cc_false;
+
+	const auto constant_symbol = std::get_if<SymbolConstant>(symbol);
+
+	if (constant_symbol != nullptr && constant_symbol->value != integer_value)
+	{
+		SemanticError(state, "Constant '%.*s' cannot be redefined to a different value.", StringView_Length(identifier), StringView_Data(identifier));
+		return cc_false;
+	}
+
+	/* Free the old symbol, to prevent a leak. */
+	DestroySymbol(symbol);
+
+	symbol->emplace<SymbolConstant>(integer_value);
+
+	return cc_true;
+}
+
+template<>
+cc_bool AddIdentifierToSymbolTable<SymbolLabel>(SemanticState *state, const StringView &identifier, unsigned long integer_value)
+{
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolLabel>(state, identifier, NULL);
+
+	if (symbol == NULL)
+		return cc_false;
+
+	if (std::holds_alternative<SymbolLabel>(*symbol))
+	{
+		SemanticError(state, "Label '%.*s' cannot be redefined.", StringView_Length(identifier), StringView_Data(identifier));
+		return cc_false;
+	}
+
+	/* Free the old symbol, to prevent a leak. */
+	DestroySymbol(symbol);
+
+	symbol->emplace<SymbolLabel>(integer_value);
+
+	return cc_true;
+}
+
+template<>
+cc_bool AddIdentifierToSymbolTable<SymbolExpressionConstant>(SemanticState *state, const StringView &identifier, void *pointer_value)
+{
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolExpressionConstant>(state, identifier, NULL);
+
+	if (symbol == NULL)
+		return cc_false;
+
+	/* Free the old symbol, to prevent a leak. */
+	DestroySymbol(symbol);
+
+	symbol->emplace<SymbolExpressionConstant>(pointer_value);
+
+	return cc_true;
+}
+
+template<>
+cc_bool AddIdentifierToSymbolTable<SymbolMacro>(SemanticState *state, const StringView &identifier, void *pointer_value)
+{
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolMacro>(state, identifier, NULL);
+
+	if (symbol == NULL)
+		return cc_false;
+
+	if (std::holds_alternative<SymbolMacro>(*symbol))
+	{
+		SemanticError(state, "Macro '%.*s' cannot be redefined.", StringView_Length(identifier), StringView_Data(identifier));
+		return cc_false;
+	}
+
+	/* Free the old symbol, to prevent a leak. */
+	DestroySymbol(symbol);
+
+	symbol->emplace<SymbolMacro>(pointer_value);
+
+	return cc_true;
+}
+
+template<>
+cc_bool AddIdentifierToSymbolTable<SymbolSpecial>(SemanticState *state, const StringView &identifier, void *pointer_value)
+{
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolSpecial>(state, identifier, NULL);
+
+	if (symbol == NULL)
+		return cc_false;
+
+	/* Free the old symbol, to prevent a leak. */
+	DestroySymbol(symbol);
+
+	symbol->emplace<SymbolSpecial>(pointer_value);
+
+	return cc_true;
+}
 
 static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro_state)
 {
@@ -1229,7 +1367,7 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 		macro_state.source_line_list.head = NULL;
 		macro_state.source_line_list.tail = NULL;
 
-		if (!AddIdentifierToSymbolTable(state, identifier, 0, macro, SYMBOL_MACRO))
+		if (!AddIdentifierToSymbolTable<SymbolMacro>(state, identifier, macro))
 			delete macro;
 	}
 
@@ -1429,46 +1567,6 @@ static void SetLastGlobalLabel(SemanticState *state, const StringView &label)
 		String_Destroy(state->last_global_label);
 		String_CreateCopyView(state->last_global_label, label);
 	}
-}
-
-static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, unsigned long integer_value, void *pointer_value, SymbolType type)
-{
-	assert(type == SYMBOL_VARIABLE || type == SYMBOL_CONSTANT || type == SYMBOL_EXPRESSION_CONSTANT || type == SYMBOL_LABEL || type == SYMBOL_MACRO || type == SYMBOL_SPECIAL);
-
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist(state, identifier, type, NULL);
-
-	if (symbol == NULL)
-		return cc_false;
-
-	if (symbol->type == SYMBOL_CONSTANT && symbol->shared.unsigned_long != integer_value)
-	{
-		SemanticError(state, "Constant '%.*s' cannot be redefined to a different value.", StringView_Length(identifier), StringView_Data(identifier));
-		return cc_false;
-	}
-
-	if (symbol->type == SYMBOL_LABEL)
-	{
-		SemanticError(state, "Label '%.*s' cannot be redefined.", StringView_Length(identifier), StringView_Data(identifier));
-		return cc_false;
-	}
-
-	if (symbol->type == SYMBOL_MACRO)
-	{
-		SemanticError(state, "Macro '%.*s' cannot be redefined.", StringView_Length(identifier), StringView_Data(identifier));
-		return cc_false;
-	}
-
-	/* Free the old symbol, to prevent a leak. */
-	DestroySymbol(symbol);
-
-	symbol->type = type;
-
-	if (type == SYMBOL_EXPRESSION_CONSTANT || type == SYMBOL_MACRO || type == SYMBOL_SPECIAL)
-		symbol->shared.pointer = pointer_value;
-	else
-		symbol->shared.unsigned_long = integer_value;
-
-	return cc_true;
 }
 
 static void ResolveInstructionAmbiguity(SemanticState* const state, StatementInstruction* const instruction)
@@ -4283,28 +4381,30 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 static void PushSubstitute(SemanticState* const state, const StringView &identifier, const StringView &value)
 {
 	SymbolDictionary *dictionary;
-	SymbolDictionary::Entry* const dictionary_entry = LookupSymbolAndCreateIfNotExist(state, identifier, SYMBOL_STRING_CONSTANT, &dictionary);
+	SymbolDictionary::Entry* const dictionary_entry = LookupSymbolAndCreateIfNotExist<SymbolStringConstant>(state, identifier, &dictionary);
 
 	if (dictionary_entry != NULL)
 	{
-		switch (dictionary_entry->type)
-		{
-			case SYMBOL_NONE:
-				dictionary_entry->type = SYMBOL_STRING_CONSTANT;
-				Substitute_PushSubstitute(dictionary == &state->dictionary ? &state->substitutions : &state->macro.substitutions, identifier, dictionary_entry->shared.string);
-				break;
-
-			case SYMBOL_STRING_CONSTANT:
-				String_Destroy(dictionary_entry->shared.string);
-				break;
-
-			default:
-				// Should never be ran, since `LookupSymbolAndCreateIfNotExist` rejects mismatched types.
-				assert(cc_false);
-				return;
-		}
-
-		String_CreateCopyView(dictionary_entry->shared.string, value);
+		std::visit(
+			CC_VisitHelper{
+				[&](SymbolNone&)
+				{
+					auto &symbol = dictionary_entry->emplace<SymbolStringConstant>();
+					String_CreateCopyView(symbol.value, value);
+					Substitute_PushSubstitute(dictionary == &state->dictionary ? &state->substitutions : &state->macro.substitutions, identifier, symbol.value);
+				},
+				[&](SymbolStringConstant &symbol)
+				{
+					String_Destroy(symbol.value);
+					String_CreateCopyView(symbol.value, value);
+				},
+				[&](auto&)
+				{
+					// Should never be ran, since `LookupSymbolAndCreateIfNotExist` rejects mismatched types.
+					assert(cc_false);
+				},
+			}, *dictionary_entry
+		);
 	}
 }
 
@@ -4329,31 +4429,30 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 		else
 		{
 			/* TODO: De-duplicate this with the 'PushSubstitute' function. */
-			switch (dictionary_entry->type)
-			{
-				case SYMBOL_NONE:
-					dictionary_entry->type = SYMBOL_STRING_CONSTANT;
-					Substitute_PushSubstitute(&state->macro.substitutions, parameter, dictionary_entry->shared.string);
-					break;
-
-				case SYMBOL_STRING_CONSTANT:
-					String_Destroy(dictionary_entry->shared.string);
-					break;
-
-				default:
-					/* TODO: this is not a common case, but it can occur if e.g. someone redefines a parameter name as a normal symbol in the macro body.
-					   See tests/previously-crashing/redefine-macro-parameter-in-macro-body.asm for an example of this.
-					   That'll already have caused an error to be emitted, so this error might be somewhat cascading,
-					   but I'm not certain it's not possible to hit this in other ways,
-					   and in any case if we get here I'm pretty sure something has gone wrong, so we should emit an error in case one hasn't already been emitted.
-					   It might also be feasible to handle this without forcing the symbol to become a string constant, but right now this seems like the simplest
-					   solution to prevent a crash. */
-					SemanticError(state, "Attempted to redefine symbol '%.*s' as a string constant.", (int)StringView_Length(parameter), StringView_Data(parameter));
-					dictionary_entry->type = SYMBOL_STRING_CONSTANT;
-					break;
-			}
-
-			String_CreateCopyView(dictionary_entry->shared.string, argument);
+			std::visit(
+				CC_VisitHelper{
+					[&](SymbolNone&)
+					{
+						auto &symbol = dictionary_entry->emplace<SymbolStringConstant>();
+						String_CreateCopyView(symbol.value, argument);
+						Substitute_PushSubstitute(&state->macro.substitutions, parameter, symbol.value);
+					},
+					[&](SymbolStringConstant &symbol)
+					{
+						String_Destroy(symbol.value);
+						String_CreateCopyView(symbol.value, argument);
+					},
+					[&](auto&)
+					{
+						/* TODO: This is not a common case, but it can occur if e.g. someone redefines a parameter name as a normal symbol in the macro body.
+						   See tests/previously-crashing/redefine-macro-parameter-in-macro-body.asm for an example of this.
+						   That'll already have caused an error to be emitted, so this error might be somewhat cascading,
+						   but I'm not certain it's not possible to hit this in other ways,
+						   and in any case if we get here I'm pretty sure something has gone wrong, so we should emit an error in case one hasn't already been emitted. */
+						SemanticError(state, "Attempted to redefine symbol '%.*s' as a string constant.", (int)StringView_Length(parameter), StringView_Data(parameter));
+					},
+				}, *dictionary_entry
+			);
 		}
 	}
 }
@@ -4789,7 +4888,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		{
 			/* Handle the label here, instead of passing it onto a later function. */
 			SetLastGlobalLabel(state, label);
-			AddIdentifierToSymbolTable(state, label, state->program_counter, NULL, SYMBOL_LABEL);
+			AddIdentifierToSymbolTable<SymbolLabel>(state, label, state->program_counter);
 		}
 	}
 	else if (CC_VariantHoldsAnyOf<
@@ -4912,11 +5011,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					expression_copy->emplace<ExpressionNumber>(0);
 					std::swap(*expression_copy, equ.expression);
 
-					AddIdentifierToSymbolTable(state, label, 0, expression_copy, SYMBOL_EXPRESSION_CONSTANT);
+					AddIdentifierToSymbolTable<SymbolExpressionConstant>(state, label, expression_copy);
 				}
 				else
 				{
-					AddIdentifierToSymbolTable(state, label, value, NULL, SYMBOL_CONSTANT);
+					AddIdentifierToSymbolTable<SymbolConstant>(state, label, value);
 					ListIdentifierValue(state, value);
 				}
 
@@ -4931,10 +5030,12 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			{
 				const SymbolDictionary::Entry* const dictionary_entry = LookupSymbol(state, String_View(statement.string), NULL);
 
-				if (dictionary_entry == NULL || dictionary_entry->type != SYMBOL_STRING_CONSTANT)
+				const SymbolStringConstant* const symbol_string_constant = dictionary_entry == NULL ? NULL : std::get_if<SymbolStringConstant>(dictionary_entry);
+
+				if (symbol_string_constant == NULL)
 					SemanticError(state, "String constant can only be defined as a string or another string constant.");
 				else
-					PushSubstitute(state, label, String_View(dictionary_entry->shared.string));
+					PushSubstitute(state, label, String_View(symbol_string_constant->value));
 			},
 			[&](StatementSubstr &statement)
 			{
@@ -4987,7 +5088,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					return;
 				}
 
-				AddIdentifierToSymbolTable(state, label, value, NULL, SYMBOL_VARIABLE);
+				AddIdentifierToSymbolTable<SymbolVariable>(state, label, value);
 				ListIdentifierValue(state, value);
 			},
 			[&](StatementIf &statement)
@@ -5192,7 +5293,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					/* Add label to symbol table. */
 					if (!StringView_Empty(label))
 					{
-						AddIdentifierToSymbolTable(state, label, state->rs, NULL, SYMBOL_CONSTANT);
+						AddIdentifierToSymbolTable<SymbolConstant>(state, label, state->rs);
 						ListIdentifierValue(state, state->rs);
 					}
 
@@ -5780,7 +5881,7 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 				SetLastGlobalLabel(state, label);
 
 				if (!macro->uses_label)
-					AddIdentifierToSymbolTable(state, label, state->program_counter, NULL, SYMBOL_LABEL);
+					AddIdentifierToSymbolTable<SymbolLabel>(state, label, state->program_counter);
 			}
 
 			/* Extract and store the macro size specifier, if one exists. */
@@ -6128,7 +6229,8 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 					{
 						/* Look up the directive in the dictionary to see if it's actually a macro. */
 						const SymbolDictionary::Entry* const macro_dictionary_entry = LookupSymbol(state, directive, NULL);
-						Macro* const macro = macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO ? (Macro*)macro_dictionary_entry->shared.pointer : NULL;
+						const SymbolMacro* const symbol_macro = macro_dictionary_entry == NULL ? NULL : std::get_if<SymbolMacro>(macro_dictionary_entry);
+						Macro* const macro = symbol_macro == NULL ? NULL : (Macro*)symbol_macro->value;
 
 						if (macro != NULL /*&& !macro->is_short*/)
 						{
@@ -6274,7 +6376,9 @@ static cc_bool DictionaryFilterProduceSymbolFile(SymbolDictionary::Entry *entry,
 	void** const parameters = (void**)user_data;
 	const SemanticState* const state = (const SemanticState*)parameters[1];
 
-	if (entry->type == SYMBOL_LABEL)
+	const SymbolLabel* const symbol_label = std::get_if<SymbolLabel>(entry);
+
+	if (symbol_label != NULL)
 	{
 		const char *label;
 		size_t label_length;
@@ -6294,7 +6398,7 @@ static cc_bool DictionaryFilterProduceSymbolFile(SymbolDictionary::Entry *entry,
 
 			/* Output the address of the label. */
 			for (i = 0; i < 4; ++i)
-				BinaryStream_fputc((entry->shared.unsigned_long >> (i * 8)) & 0xFF, symbol_callbacks);
+				BinaryStream_fputc((symbol_label->value >> (i * 8)) & 0xFF, symbol_callbacks);
 
 			/* I have no idea what this means. */
 			BinaryStream_fputc(is_local_label ? 6 : 2, symbol_callbacks);
@@ -6312,7 +6416,7 @@ static cc_bool DictionaryFilterProduceSymbolFile(SymbolDictionary::Entry *entry,
 
 static cc_bool InitialiseBuiltInVariable(SemanticState* const state, const StringView &identifier)
 {
-	return AddIdentifierToSymbolTable(state, identifier, 0, (void*)&identifier, SYMBOL_SPECIAL);
+	return AddIdentifierToSymbolTable<SymbolSpecial>(state, identifier, (void*)&identifier);
 }
 
 static void AddDefinition(void* const internal, const char* const identifier_buffer, const size_t identifier_length, const unsigned long value)
@@ -6323,7 +6427,7 @@ static void AddDefinition(void* const internal, const char* const identifier_buf
 	StringView_Create(identifier, identifier_buffer, identifier_length);
 
 	/* TODO: Does asm68k create a constant or a variable? */
-	AddIdentifierToSymbolTable(state, identifier, value, NULL, SYMBOL_CONSTANT);
+	AddIdentifierToSymbolTable<SymbolConstant>(state, identifier, value);
 }
 
 static cc_bool ClownAssembler_AssembleToObjectFile(
