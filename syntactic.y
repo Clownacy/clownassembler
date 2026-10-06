@@ -2576,6 +2576,8 @@ void DestroyExpression(Expression *expression)
 			[](ExpressionTypeWithNumber &expression) {}
 		}, *expression
 	);
+
+	expression->emplace<ExpressionNumber>(0);
 }
 
 void DestroyIdentifierList(IdentifierList *list)
@@ -2788,4 +2790,6 @@ void DestroyStatement(Statement *statement)
 			}
 		}, *statement
 	);
+
+	statement->emplace<StatementEmpty>();
 }

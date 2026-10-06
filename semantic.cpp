@@ -806,6 +806,8 @@ static void DestroySymbol(SymbolDictionary::Entry *dictionary_entry)
 			[&](SymbolSpecial &symbol) {},
 		}, *dictionary_entry
 	);
+
+	dictionary_entry->emplace<SymbolNone>();
 }
 
 /* Iterates over the guts of the dictionary to delete all of the node innards before calling SymbolDictionary::Deinit */
