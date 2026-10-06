@@ -600,7 +600,7 @@ static SymbolDictionary::Entry* LookupSymbol(SemanticState *state, StringView id
 	return dictionary_entry;
 }
 
-static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, StringView identifier, SymbolDictionary **dictionary)
+static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, StringView identifier, SymbolType type, SymbolDictionary **dictionary)
 {
 	SymbolDictionary::Entry *dictionary_entry = NULL;
 	String expanded_identifier;
@@ -633,18 +633,9 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *s
 
 	String_Destroy(expanded_identifier);
 
-	return dictionary_entry;
-}
-
-static SymbolDictionary::Entry* CreateSymbol(SemanticState *state, const StringView &identifier)
-{
-	SymbolDictionary::Entry *dictionary_entry;
-
-	dictionary_entry = LookupSymbolAndCreateIfNotExist(state, identifier, NULL);
-
-	if (dictionary_entry != NULL && dictionary_entry->type != SYMBOL_NONE)
+	if (dictionary_entry->type != SYMBOL_NONE && dictionary_entry->type != type)
 	{
-		SemanticError(state, "Symbol '%.*s' cannot be redefined.", (int)StringView_Length(identifier), StringView_Data(identifier));
+		SemanticError(state, "Attempted to redefine symbol '%.*s' as a different type.", StringView_Length(identifier), StringView_Data(identifier));
 		dictionary_entry = NULL;
 	}
 
@@ -1207,6 +1198,9 @@ static void PurgeMacro(SemanticState* const state, StringView identifier, const 
 	}
 }
 
+// Get rid of this by moving the function up here...
+static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, unsigned long integer_value, void *pointer_value, SymbolType type);
+
 static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro_state)
 {
 	const StringView &identifier = String_View(macro_state.name);
@@ -1220,28 +1214,23 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 	}
 	else if (!StringView_Empty(identifier))
 	{
-		SymbolDictionary::Entry* const symbol = CreateSymbol(state, identifier);
-
 		/* Add the macro to the symbol table. */
-		if (symbol != NULL)
-		{
-			Macro* const macro = new Macro;
+		Macro* const macro = new Macro;
 
-			macro->is_short = macro_state.is_short;
-			macro->uses_label = macro_state.uses_label;
-			String_CreateMove(macro->name, macro_state.name);
+		macro->is_short = macro_state.is_short;
+		macro->uses_label = macro_state.uses_label;
+		String_CreateMove(macro->name, macro_state.name);
 
-			macro->parameter_names = macro_state.parameter_names.head;
-			macro_state.parameter_names.head = NULL;
-			macro_state.parameter_names.tail = NULL;
+		macro->parameter_names = macro_state.parameter_names.head;
+		macro_state.parameter_names.head = NULL;
+		macro_state.parameter_names.tail = NULL;
 
-			macro->source_line_list_head = macro_state.source_line_list.head;
-			macro_state.source_line_list.head = NULL;
-			macro_state.source_line_list.tail = NULL;
+		macro->source_line_list_head = macro_state.source_line_list.head;
+		macro_state.source_line_list.head = NULL;
+		macro_state.source_line_list.tail = NULL;
 
-			symbol->type = SYMBOL_MACRO;
-			symbol->shared.pointer = macro;
-		}
+		if (!AddIdentifierToSymbolTable(state, identifier, 0, macro, SYMBOL_MACRO))
+			delete macro;
 	}
 
 	/* Free all of this, in case we didn't get all the way to creating the macro and moving everything over. */
@@ -1442,34 +1431,31 @@ static void SetLastGlobalLabel(SemanticState *state, const StringView &label)
 	}
 }
 
-static void AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, unsigned long value, Expression *expression_value, SymbolType type)
+static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, unsigned long integer_value, void *pointer_value, SymbolType type)
 {
-	assert(type == SYMBOL_VARIABLE || type == SYMBOL_CONSTANT || type == SYMBOL_EXPRESSION_CONSTANT || type == SYMBOL_LABEL);
+	assert(type == SYMBOL_VARIABLE || type == SYMBOL_CONSTANT || type == SYMBOL_EXPRESSION_CONSTANT || type == SYMBOL_LABEL || type == SYMBOL_MACRO || type == SYMBOL_SPECIAL);
 
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist(state, identifier, NULL);
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist(state, identifier, type, NULL);
 
 	if (symbol == NULL)
-		return;
+		return cc_false;
 
-	if (symbol->type != SYMBOL_NONE && symbol->type != type)
-	{
-		/* We can't do the assignment in this case, actually doing redefinitions like this would wreck havoc -
-		   e.g. redefining a macro while it is being executed would force us to either leak it or have everything
-		   implode in a use-after-free mess. */
-		SemanticError(state, "Attempted to redefine symbol '%.*s' as a different type.", StringView_Length(identifier), StringView_Data(identifier));
-		return;
-	}
-
-	if (symbol->type == SYMBOL_CONSTANT && symbol->shared.unsigned_long != value)
+	if (symbol->type == SYMBOL_CONSTANT && symbol->shared.unsigned_long != integer_value)
 	{
 		SemanticError(state, "Constant '%.*s' cannot be redefined to a different value.", StringView_Length(identifier), StringView_Data(identifier));
-		return;
+		return cc_false;
 	}
 
 	if (symbol->type == SYMBOL_LABEL)
 	{
 		SemanticError(state, "Label '%.*s' cannot be redefined.", StringView_Length(identifier), StringView_Data(identifier));
-		return;
+		return cc_false;
+	}
+
+	if (symbol->type == SYMBOL_MACRO)
+	{
+		SemanticError(state, "Macro '%.*s' cannot be redefined.", StringView_Length(identifier), StringView_Data(identifier));
+		return cc_false;
 	}
 
 	/* Free the old symbol, to prevent a leak. */
@@ -1477,10 +1463,12 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const StringView &i
 
 	symbol->type = type;
 
-	if (type == SYMBOL_EXPRESSION_CONSTANT)
-		symbol->shared.pointer = expression_value;
+	if (type == SYMBOL_EXPRESSION_CONSTANT || type == SYMBOL_MACRO || type == SYMBOL_SPECIAL)
+		symbol->shared.pointer = pointer_value;
 	else
-		symbol->shared.unsigned_long = value;
+		symbol->shared.unsigned_long = integer_value;
+
+	return cc_true;
 }
 
 static void ResolveInstructionAmbiguity(SemanticState* const state, StatementInstruction* const instruction)
@@ -4295,7 +4283,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 static void PushSubstitute(SemanticState* const state, const StringView &identifier, const StringView &value)
 {
 	SymbolDictionary *dictionary;
-	SymbolDictionary::Entry* const dictionary_entry = LookupSymbolAndCreateIfNotExist(state, identifier, &dictionary);
+	SymbolDictionary::Entry* const dictionary_entry = LookupSymbolAndCreateIfNotExist(state, identifier, SYMBOL_STRING_CONSTANT, &dictionary);
 
 	if (dictionary_entry != NULL)
 	{
@@ -4311,7 +4299,8 @@ static void PushSubstitute(SemanticState* const state, const StringView &identif
 				break;
 
 			default:
-				SemanticError(state, "Attempted to redefine symbol '%.*s' as a string constant.", (int)StringView_Length(identifier), StringView_Data(identifier));
+				// Should never be ran, since `LookupSymbolAndCreateIfNotExist` rejects mismatched types.
+				assert(cc_false);
 				return;
 		}
 
@@ -6323,14 +6312,7 @@ static cc_bool DictionaryFilterProduceSymbolFile(SymbolDictionary::Entry *entry,
 
 static cc_bool InitialiseBuiltInVariable(SemanticState* const state, const StringView &identifier)
 {
-	SymbolDictionary::Entry* const symbol = CreateSymbol(state, identifier);
-
-	if (symbol == NULL)
-		return cc_false;
-
-	symbol->type = SYMBOL_SPECIAL;
-	symbol->shared.pointer = (void*)&identifier;
-	return cc_true;
+	return AddIdentifierToSymbolTable(state, identifier, 0, (void*)&identifier, SYMBOL_SPECIAL);
 }
 
 static void AddDefinition(void* const internal, const char* const identifier_buffer, const size_t identifier_length, const unsigned long value)
@@ -6340,16 +6322,8 @@ static void AddDefinition(void* const internal, const char* const identifier_buf
 	StringView identifier;
 	StringView_Create(identifier, identifier_buffer, identifier_length);
 
-	{
-		SymbolDictionary::Entry* const symbol = CreateSymbol(state, identifier);
-
-		if (symbol != NULL)
-		{
-			/* TODO: Does asm68k create a constant or a variable? */
-			symbol->type = SYMBOL_CONSTANT;
-			symbol->shared.unsigned_long = value;
-		}
-	}
+	/* TODO: Does asm68k create a constant or a variable? */
+	AddIdentifierToSymbolTable(state, identifier, value, NULL, SYMBOL_CONSTANT);
 }
 
 static cc_bool ClownAssembler_AssembleToObjectFile(
