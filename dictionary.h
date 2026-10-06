@@ -19,6 +19,7 @@
 #define DICTIONARY_H
 
 #include <stddef.h>
+#include <string>
 
 #include "clowncommon/clowncommon.h"
 
@@ -50,8 +51,7 @@ typedef struct Dictionary_Node
 
 	Dictionary_Entry entry;
 
-	size_t identifier_length;
-	char identifier; /* Actually a C89 flexible array member that *shouldn't* be undefined behaviour. */
+	std::string identifier;
 } Dictionary_Node;
 
 typedef struct Dictionary_Bucket

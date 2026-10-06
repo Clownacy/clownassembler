@@ -74,12 +74,12 @@ static SearchResult SearchBucket(Dictionary_State *state, Dictionary_Bucket *buc
 
 			const size_t identifier_length = StringView_Length(identifier);
 
-			if (identifier_length < node->identifier_length)
+			if (identifier_length < node->identifier.length())
 				comparison_result = -1;
-			else if (identifier_length > node->identifier_length)
+			else if (identifier_length > node->identifier.length())
 				comparison_result = 1;
 			else /*if (identifier_length == node->identifier_length)*/
-				comparison_result = state->compare_identifiers(StringView_Data(identifier), &node->identifier, identifier_length);
+				comparison_result = state->compare_identifiers(StringView_Data(identifier), node->identifier.data(), node->identifier.length());
 
 			if (comparison_result < 0)
 			{
@@ -184,31 +184,24 @@ static void RemoveNodeFromBucket(Dictionary_Bucket *bucket, Dictionary_Node *nod
 	else
 		bucket->linked_list = node->next;
 
-	free(node);
+	delete node;
 }
 
 cc_bool Dictionary_Init(Dictionary_State *state, cc_bool case_insensitive)
 {
 	cc_bool success = cc_true;
 
-	state->hash_table = (Dictionary_Bucket*)malloc(TOTAL_HASH_TABLE_ENTRIES * sizeof(*state->hash_table));
+	state->hash_table = new Dictionary_Bucket[TOTAL_HASH_TABLE_ENTRIES];
 
-	if (state->hash_table == NULL)
+	size_t i;
+
+	for (i = 0; i < TOTAL_HASH_TABLE_ENTRIES; ++i)
 	{
-		success = cc_false;
+		state->hash_table[i].binary_search_tree = NULL;
+		state->hash_table[i].linked_list = NULL;
 	}
-	else
-	{
-		size_t i;
 
-		for (i = 0; i < TOTAL_HASH_TABLE_ENTRIES; ++i)
-		{
-			state->hash_table[i].binary_search_tree = NULL;
-			state->hash_table[i].linked_list = NULL;
-		}
-
-		state->compare_identifiers = case_insensitive ? memcasecmp : memcmp;
-	}
+	state->compare_identifiers = case_insensitive ? memcasecmp : memcmp;
 
 	return success;
 }
@@ -227,13 +220,13 @@ void Dictionary_Deinit(Dictionary_State *state)
 		{
 			Dictionary_Node* const next_node = node->next;
 
-			free(node);
+			delete node;
 
 			node = next_node;
 		}
 	}
 
-	free(state->hash_table);
+	delete[] state->hash_table;
 }
 
 cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const StringView &identifier, Dictionary_Entry **entry_pointer)
@@ -254,57 +247,48 @@ cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const Stri
 	else
 	{
 		/* The node was not found: create it instead. */
-		const size_t identifier_length = StringView_Length(identifier);
-		Dictionary_Node *new_node = (Dictionary_Node*)malloc(sizeof(Dictionary_Node) - 1 + identifier_length);
+		Dictionary_Node *new_node = new Dictionary_Node;
 
-		if (new_node == NULL)
+		/* Initialise binary search tree pointers. */
+		new_node->parent = NULL;
+		new_node->left_child = NULL;
+		new_node->right_child = NULL;
+
+		/* Initialise linked-list pointers. */
+		new_node->next = NULL;
+		new_node->previous = NULL;
+
+		/* Mark the dictionary entry as unused. */
+		new_node->entry.type = -1;
+
+		/* Copy the identifier. */
+		new_node->identifier = {identifier.buffer, identifier.length};
+
+		if (search_result == SEARCH_RESULT_BUCKET_EMPTY)
 		{
-			success = cc_false;
+			/* Add the node to the root of the tree if it is empty. */
+			bucket->binary_search_tree = new_node;
 		}
 		else
 		{
-			/* Initialise binary search tree pointers. */
-			new_node->parent = NULL;
-			new_node->left_child = NULL;
-			new_node->right_child = NULL;
+			/* Insert node into correct part of binary search tree. */
+			new_node->parent = found_node;
 
-			/* Initialise linked-list pointers. */
-			new_node->next = NULL;
-			new_node->previous = NULL;
-
-			/* Mark the dictionary entry as unused. */
-			new_node->entry.type = -1;
-
-			/* Copy the identifier. */
-			new_node->identifier_length = identifier_length;
-			memcpy(&new_node->identifier, StringView_Data(identifier), identifier_length);
-
-			if (search_result == SEARCH_RESULT_BUCKET_EMPTY)
-			{
-				/* Add the node to the root of the tree if it is empty. */
-				bucket->binary_search_tree = new_node;
-			}
-			else
-			{
-				/* Insert node into correct part of binary search tree. */
-				new_node->parent = found_node;
-
-				if (search_result == SEARCH_RESULT_NOT_FOUND_WOULD_BE_LEFT_CHILD)
-					new_node->parent->left_child = new_node;
-				else /*if (search_result == SEARCH_RESULT_NOT_FOUND_WOULD_BE_RIGHT_CHILD)*/
-					new_node->parent->right_child = new_node;
-			}
-
-			/* Insert node at start of current bucket's linked list. */
-			new_node->next = bucket->linked_list;
-			bucket->linked_list = new_node;
-
-			if (new_node->next != NULL)
-				new_node->next->previous = new_node;
-
-			if (entry_pointer != NULL)
-				*entry_pointer = &new_node->entry;
+			if (search_result == SEARCH_RESULT_NOT_FOUND_WOULD_BE_LEFT_CHILD)
+				new_node->parent->left_child = new_node;
+			else /*if (search_result == SEARCH_RESULT_NOT_FOUND_WOULD_BE_RIGHT_CHILD)*/
+				new_node->parent->right_child = new_node;
 		}
+
+		/* Insert node at start of current bucket's linked list. */
+		new_node->next = bucket->linked_list;
+		bucket->linked_list = new_node;
+
+		if (new_node->next != NULL)
+			new_node->next->previous = new_node;
+
+		if (entry_pointer != NULL)
+			*entry_pointer = &new_node->entry;
 	}
 
 	return success;
@@ -355,7 +339,7 @@ void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dicti
 		{
 			Dictionary_Node* const next_node = node->next;
 
-			if (!filter_function(&node->entry, &node->identifier, node->identifier_length, (void*)user_data))
+			if (!filter_function(&node->entry, node->identifier.data(), node->identifier.length(), (void*)user_data))
 				RemoveNodeFromBucket(bucket, node);
 
 			node = next_node;
