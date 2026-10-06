@@ -20,48 +20,98 @@
 
 #include <cstddef>
 #include <optional>
-#include <stddef.h>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 
 #include "clowncommon/clowncommon.h"
 
-#include "strcmpci.h"
 #include "string.h"
 
-#define TOTAL_HASH_TABLE_ENTRIES 0x1000
-
-struct Dictionary_StringHash
+class Dictionary
 {
-	using is_transparent = void;
-
-	std::size_t operator()(const std::string_view &string) const { return std::hash<std::string_view>{}(string); }
-};
-
-typedef struct Dictionary_Entry
-{
-	int type = -1;
-	union
+public:
+	struct ToLower
 	{
-		unsigned long unsigned_long;
-		long signed_long;
-		void *pointer;
-		String string;
-	} shared; 
-} Dictionary_Entry;
+		const int delta;
 
-typedef struct Dictionary_State
-{
-	std::optional<std::unordered_map<std::string, Dictionary_Entry, Dictionary_StringHash, std::equal_to<>>> internal;
-} Dictionary_State;
+		constexpr ToLower(const cc_bool enabled)
+			: delta(enabled ? 'a' - 'A' : 0)
+		{}
 
-cc_bool Dictionary_Init(Dictionary_State *state, cc_bool case_insensitive);
-void Dictionary_Deinit(Dictionary_State *state);
+		constexpr auto operator()(const auto &value) const
+		{
+			return value + (value >= 'A' && value <= 'Z' ? delta : 0);
+		}
+	};
 
-cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const StringView &identifier, Dictionary_Entry **entry_pointer);
-Dictionary_Entry* Dictionary_LookUp(Dictionary_State *state, const StringView &identifier);
-cc_bool Dictionary_Remove(Dictionary_State *state, const StringView &identifier);
-void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data), const void *user_data);
+	struct StringHash
+	{
+		using is_transparent = void;
+
+		std::size_t operator()(const std::string_view &string) const
+		{
+			constexpr ToLower to_lower(cc_true);
+
+			// Hash the identifier using djb2.
+			// http://www.cse.yorku.ca/~oz/hash.html
+			std::size_t hash = 5381;
+
+			for (const auto &character : string)
+				hash = hash * 33 + to_lower(character); // Hash the identifier in lower-case form, so that case-insensitive mode works.
+
+			return hash;
+		}
+	};
+
+	class StringCompare
+	{
+	private:
+		const ToLower to_lower;
+
+	public:
+		using is_transparent = void;
+
+		StringCompare(const cc_bool enabled)
+			: to_lower(enabled)
+		{}
+
+		constexpr bool operator()(const auto &lhs, const auto &rhs) const
+		{
+			if (std::size(lhs) != std::size(rhs))
+				return false;
+
+			for (std::size_t i = 0; i < std::size(lhs); ++i)
+			{
+				if (to_lower(lhs[i]) != to_lower(rhs[i]))
+					return false;
+			}
+
+			return true;
+		}
+	};
+
+	typedef struct Entry
+	{
+		int type = -1;
+		union
+		{
+			unsigned long unsigned_long;
+			long signed_long;
+			void *pointer;
+			String string;
+		} shared; 
+	} Entry;
+
+	std::optional<std::unordered_map<std::string, Entry, StringHash, StringCompare>> internal;
+
+	cc_bool Init(cc_bool case_insensitive);
+	void Deinit();
+
+	cc_bool LookUpAndCreateIfNotExist(const StringView &identifier, Entry **entry_pointer);
+	Entry* LookUp(const StringView &identifier);
+	cc_bool Remove(const StringView &identifier);
+	void Filter(cc_bool (*filter_function)(Entry *entry, const char *identifier, std::size_t identifier_length, void *user_data), const void *user_data);
+};
 
 #endif /* DICTIONARY_H */

@@ -17,58 +17,63 @@
 
 #include "dictionary.h"
 
-#include <ctype.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "clowncommon/clowncommon.h"
-
-#include "strcmpci.h"
-
-cc_bool Dictionary_Init(Dictionary_State *state, cc_bool case_insensitive)
+cc_bool Dictionary::Init(cc_bool case_insensitive)
 {
-	state->internal.emplace();
+	internal.emplace(0, decltype(internal)::value_type::hasher{}, decltype(internal)::value_type::key_equal{case_insensitive});
 
 	return cc_true;
 }
 
-void Dictionary_Deinit(Dictionary_State *state)
+void Dictionary::Deinit()
 {
-	state->internal.reset();
+	internal.reset();
 }
 
-cc_bool Dictionary_LookUpAndCreateIfNotExist(Dictionary_State *state, const StringView &identifier, Dictionary_Entry **entry_pointer)
+cc_bool Dictionary::LookUpAndCreateIfNotExist(const StringView &identifier, Entry **entry_pointer)
 {
-	*entry_pointer = &(*state->internal)[{identifier.buffer, identifier.length}];
+	// All of this crap to work-around C++ not having a decent `operator[]` before C++26... fuck me.
+	const std::string_view key{identifier.buffer, identifier.length};
+
+	auto it = internal->find(key);
+
+	auto &entry = it != internal->end() ? it->second : internal->emplace(std::piecewise_construct, std::forward_as_tuple(key), std::tuple<>()).first->second; // Nightmare Difficulty C++
+
+	if (entry_pointer != nullptr)
+		*entry_pointer = &entry;
+
 	return cc_true;
 }
 
-Dictionary_Entry* Dictionary_LookUp(Dictionary_State *state, const StringView &identifier)
+Dictionary::Entry* Dictionary::LookUp(const StringView &identifier)
 {
-	auto it = state->internal->find({identifier.buffer, identifier.length});
+	const std::string_view key{identifier.buffer, identifier.length};
 
-	if (it == state->internal->end())
+	auto it = internal->find(key);
+
+	if (it == internal->end())
 		return nullptr;
 
 	return &it->second;
 }
 
-cc_bool Dictionary_Remove(Dictionary_State *state, const StringView &identifier)
+cc_bool Dictionary::Remove(const StringView &identifier)
 {
-	auto it = state->internal->find({identifier.buffer, identifier.length});
+	auto it = internal->find(std::string_view{identifier.buffer, identifier.length});
 
-	if (it == state->internal->end())
+	if (it == internal->end())
 		return cc_false;
 
-	state->internal->erase(it);
+	internal->erase(it);
 
 	return cc_true;
 }
 
-void Dictionary_Filter(Dictionary_State *state, cc_bool (*filter_function)(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data), const void *user_data)
+void Dictionary::Filter(cc_bool (*filter_function)(Entry *entry, const char *identifier, size_t identifier_length, void *user_data), const void *user_data)
 {
-	for (auto it = state->internal->begin(); it != state->internal->end(); ++it)
-		if (filter_function(&it->second, it->first.data(), it->first.length(), const_cast<void*>(user_data)))
-			state->internal->erase(it);
+	std::erase_if(*internal,
+		[&](auto &entry)
+		{
+			return !filter_function(&entry.second, entry.first.data(), entry.first.length(), const_cast<void*>(user_data));
+		}
+	);
 }

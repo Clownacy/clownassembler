@@ -67,7 +67,7 @@ typedef struct FixUp
 	struct FixUp *next;
 
 	Statement statement;
-	Dictionary_State *macro_dictionary;
+	Dictionary *macro_dictionary;
 	unsigned long program_counter;
 	size_t output_position;
 	size_t segment_length;
@@ -102,7 +102,7 @@ typedef struct Macro
 typedef struct SemanticState_Macro
 {
 	Macro *metadata;
-	Dictionary_State *dictionary;
+	Dictionary *dictionary;
 	Substitute_State substitutions;
 	struct MacroCustomSubstituteSearch_Closure *closure;
 	String *argument_list;
@@ -123,7 +123,7 @@ typedef struct SemanticState
 	const TextOutput *error_callbacks;
 
 	/* Global stuff. */
-	Dictionary_State dictionary;
+	Dictionary dictionary;
 	String last_global_label;
 	Location *location;
 	yyscan_t flex_state;
@@ -552,9 +552,9 @@ static void ExpandIdentifier(SemanticState *state, String &expanded_identifier, 
 		String_CreateAppendView(expanded_identifier, String_View(state->last_global_label), identifier);
 }
 
-static Dictionary_Entry* LookupSymbol(SemanticState *state, StringView identifier, Dictionary_State **dictionary)
+static Dictionary::Entry* LookupSymbol(SemanticState *state, StringView identifier, Dictionary **dictionary)
 {
-	Dictionary_Entry *dictionary_entry = NULL;
+	Dictionary::Entry *dictionary_entry = NULL;
 	String expanded_identifier;
 
 	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
@@ -567,14 +567,14 @@ static Dictionary_Entry* LookupSymbol(SemanticState *state, StringView identifie
 		*dictionary = state->macro.dictionary;
 
 	if (state->macro.dictionary != NULL)
-		dictionary_entry = Dictionary_LookUp(state->macro.dictionary, identifier);
+		dictionary_entry = state->macro.dictionary->LookUp(identifier);
 
 	if (dictionary_entry == NULL)
 	{
 		if (dictionary != NULL)
 			*dictionary = &state->dictionary;
 
-		dictionary_entry = Dictionary_LookUp(&state->dictionary, identifier);
+		dictionary_entry = state->dictionary.LookUp(identifier);
 
 		if (dictionary_entry == NULL)
 			if (dictionary != NULL)
@@ -586,9 +586,9 @@ static Dictionary_Entry* LookupSymbol(SemanticState *state, StringView identifie
 	return dictionary_entry;
 }
 
-static Dictionary_Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, StringView identifier, Dictionary_State **dictionary)
+static Dictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, StringView identifier, Dictionary **dictionary)
 {
-	Dictionary_Entry *dictionary_entry = NULL;
+	Dictionary::Entry *dictionary_entry = NULL;
 	String expanded_identifier;
 
 	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
@@ -601,14 +601,14 @@ static Dictionary_Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, S
 		*dictionary = state->macro.dictionary;
 
 	if (state->macro.dictionary != NULL)
-		dictionary_entry = Dictionary_LookUp(state->macro.dictionary, identifier);
+		dictionary_entry = state->macro.dictionary->LookUp(identifier);
 
 	if (dictionary_entry == NULL)
 	{
 		if (dictionary != NULL)
 			*dictionary = &state->dictionary;
 
-		if (!Dictionary_LookUpAndCreateIfNotExist(&state->dictionary, identifier, &dictionary_entry))
+		if (!state->dictionary.LookUpAndCreateIfNotExist(identifier, &dictionary_entry))
 		{
 			OutOfMemoryError(state);
 			dictionary_entry = NULL;
@@ -622,9 +622,9 @@ static Dictionary_Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, S
 	return dictionary_entry;
 }
 
-static Dictionary_Entry* CreateSymbol(SemanticState *state, const StringView &identifier)
+static Dictionary::Entry* CreateSymbol(SemanticState *state, const StringView &identifier)
 {
-	Dictionary_Entry *dictionary_entry;
+	Dictionary::Entry *dictionary_entry;
 
 	dictionary_entry = LookupSymbolAndCreateIfNotExist(state, identifier, NULL);
 
@@ -643,7 +643,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 {
 	cc_bool success = cc_true;
 
-	Dictionary_Entry *dictionary_entry;
+	Dictionary::Entry *dictionary_entry;
 
 	dictionary_entry = LookupSymbol(state, identifier, NULL);
 
@@ -747,7 +747,7 @@ static void FreeSourceLineList(SourceLineListNode *source_line_list_head)
 	}
 }
 
-static void DestroySymbol(Dictionary_Entry *dictionary_entry)
+static void DestroySymbol(Dictionary::Entry *dictionary_entry)
 {
 	switch ((SymbolType)dictionary_entry->type)
 	{
@@ -788,14 +788,14 @@ static void DestroySymbol(Dictionary_Entry *dictionary_entry)
 	assert(cc_false);
 }
 
-/* Iterates over the guts of the dictionary to delete all of the node innards before calling Dictionary_Deinit */
+/* Iterates over the guts of the dictionary to delete all of the node innards before calling Dictionary::Deinit */
 /* Basically a hack until the "destructor" method put as a TODO in dictionary.h is implemented, pretty much */
-static void SymbolDictionary_Deinit(Dictionary_State *state)
+static void SymbolDictionary_Deinit(Dictionary *state)
 {
 	for (auto &entry : *state->internal)
 		DestroySymbol(&entry.second);
 
-	Dictionary_Deinit(state);
+	state->Deinit();
 }
 
 static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, cc_bool fold)
@@ -1158,8 +1158,8 @@ static void TerminateRept(SemanticState *state, SemanticState::ModeRept &rept_st
 
 static void PurgeMacro(SemanticState* const state, StringView identifier, const cc_bool allow_undefined)
 {
-	Dictionary_State *dictionary;
-	Dictionary_Entry* const entry = LookupSymbol(state, identifier, &dictionary);
+	Dictionary *dictionary;
+	Dictionary::Entry* const entry = LookupSymbol(state, identifier, &dictionary);
 
 	if (entry == NULL)
 	{
@@ -1187,7 +1187,7 @@ static void PurgeMacro(SemanticState* const state, StringView identifier, const 
 			identifier = String_View(expanded_identifier);
 
 		DestroySymbol(entry);
-		Dictionary_Remove(dictionary, identifier);
+		dictionary->Remove(identifier);
 
 		String_Destroy(expanded_identifier);
 	}
@@ -1206,7 +1206,7 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 	}
 	else if (!StringView_Empty(identifier))
 	{
-		Dictionary_Entry* const symbol = CreateSymbol(state, identifier);
+		Dictionary::Entry* const symbol = CreateSymbol(state, identifier);
 
 		/* Add the macro to the symbol table. */
 		if (symbol != NULL)
@@ -1430,7 +1430,7 @@ static void SetLastGlobalLabel(SemanticState *state, const StringView &label)
 
 static void AddIdentifierToSymbolTable(SemanticState *state, const StringView &label, unsigned long value, Expression *expression_value, SymbolType type)
 {
-	Dictionary_Entry *symbol;
+	Dictionary::Entry *symbol;
 
 	symbol = NULL;
 
@@ -4300,8 +4300,8 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 static void PushSubstitute(SemanticState* const state, const StringView &identifier, const StringView &value)
 {
-	Dictionary_State *dictionary;
-	Dictionary_Entry* const dictionary_entry = LookupSymbolAndCreateIfNotExist(state, identifier, &dictionary);
+	Dictionary *dictionary;
+	Dictionary::Entry* const dictionary_entry = LookupSymbolAndCreateIfNotExist(state, identifier, &dictionary);
 
 	if (dictionary_entry != NULL)
 	{
@@ -4334,12 +4334,12 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 
 	for (parameter_name = state->macro.metadata->parameter_names, argument_index = 0; parameter_name != NULL; parameter_name = parameter_name->next, ++argument_index)
 	{
-		Dictionary_Entry *dictionary_entry;
+		Dictionary::Entry *dictionary_entry;
 
 		const StringView &parameter = String_View(parameter_name->identifier);
 		const StringView &argument = argument_index >= state->macro.total_arguments ? blank_argument : String_View(state->macro.argument_list[argument_index]);
 
-		if (!Dictionary_LookUpAndCreateIfNotExist(state->macro.dictionary, parameter, &dictionary_entry))
+		if (!state->macro.dictionary->LookUpAndCreateIfNotExist(parameter, &dictionary_entry))
 		{
 			OutOfMemoryError(state);
 		}
@@ -4944,7 +4944,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			},
 			[&](StatementEquSIdentifier &statement)
 			{
-				const Dictionary_Entry* const dictionary_entry = LookupSymbol(state, String_View(statement.string), NULL);
+				const Dictionary::Entry* const dictionary_entry = LookupSymbol(state, String_View(statement.string), NULL);
 
 				if (dictionary_entry == NULL || dictionary_entry->type != SYMBOL_STRING_CONSTANT)
 					SemanticError(state, "String constant can only be defined as a string or another string constant.");
@@ -5431,7 +5431,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					const IdentifierListNode *list_entry;
 
 					for (list_entry = statement.identifiers.head; list_entry != NULL; list_entry = list_entry->next)
-						if (!Dictionary_LookUpAndCreateIfNotExist(state->macro.dictionary, String_View(list_entry->identifier), NULL))
+						if (!state->macro.dictionary->LookUpAndCreateIfNotExist(String_View(list_entry->identifier), NULL))
 							OutOfMemoryError(state);
 				}
 			},
@@ -5508,7 +5508,7 @@ static void ParseLine(SemanticState* const state, const StringView &label, const
 			fixup->statement = statement;
 
 			/* Backup some state. */
-			fixup->macro_dictionary = (Dictionary_State*)SharedMemory_Copy(state->macro.dictionary);
+			fixup->macro_dictionary = (Dictionary*)SharedMemory_Copy(state->macro.dictionary);
 			fixup->program_counter = starting_program_counter;
 			fixup->output_position = starting_output_position;
 			fixup->segment_length = starting_segment_length;
@@ -5760,7 +5760,7 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 	else
 	{
 		state->macro.metadata = macro;
-		state->macro.dictionary = (Dictionary_State*)SharedMemory_Allocate(sizeof(Dictionary_State));
+		state->macro.dictionary = (Dictionary*)SharedMemory_Allocate(sizeof(Dictionary));
 
 		if (state->macro.dictionary == NULL)
 		{
@@ -5769,10 +5769,10 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 		else
 		{
 			// TODO: Please don't do this...
-			new(state->macro.dictionary) Dictionary_State;
+			new(state->macro.dictionary) Dictionary;
 
 			/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
-			Dictionary_Init(state->macro.dictionary, Options_Get(&state->options)->case_insensitive);
+			state->macro.dictionary->Init(Options_Get(&state->options)->case_insensitive);
 			Substitute_Initialise(&state->macro.substitutions);
 			state->macro.closure = &closure;
 			state->macro.argument_list = NULL;
@@ -5969,7 +5969,7 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 
 			Substitute_Deinitialise(&state->macro.substitutions);
 			if (SharedMemory_WillBeDestroyed(state->macro.dictionary))
-				SymbolDictionary_Deinit(state->macro.dictionary);
+				state->macro.dictionary->Deinit();
 			SharedMemory_Free(state->macro.dictionary);
 
 			/* Destroy argument list. */
@@ -6142,7 +6142,7 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 					else
 					{
 						/* Look up the directive in the dictionary to see if it's actually a macro. */
-						const Dictionary_Entry* const macro_dictionary_entry = LookupSymbol(state, directive, NULL);
+						const Dictionary::Entry* const macro_dictionary_entry = LookupSymbol(state, directive, NULL);
 						Macro* const macro = macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO ? (Macro*)macro_dictionary_entry->shared.pointer : NULL;
 
 						if (macro != NULL /*&& !macro->is_short*/)
@@ -6281,7 +6281,7 @@ static void AssembleFile(SemanticState *state)
 	}
 }
 
-static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const char *identifier, size_t identifier_length, void *user_data)
+static cc_bool DictionaryFilterProduceSymbolFile(Dictionary::Entry *entry, const char *identifier, size_t identifier_length, void *user_data)
 {
 	/* The symbol file only contains labels. */
 	/* Labels longer than 0xFF characters are silently ignored. */
@@ -6327,7 +6327,7 @@ static cc_bool DictionaryFilterProduceSymbolFile(Dictionary_Entry *entry, const 
 
 static cc_bool InitialiseBuiltInVariable(SemanticState* const state, const StringView &identifier)
 {
-	Dictionary_Entry* const symbol = CreateSymbol(state, identifier);
+	Dictionary::Entry* const symbol = CreateSymbol(state, identifier);
 
 	if (symbol == NULL)
 		return cc_false;
@@ -6345,7 +6345,7 @@ static void AddDefinition(void* const internal, const char* const identifier_buf
 	StringView_Create(identifier, identifier_buffer, identifier_length);
 
 	{
-		Dictionary_Entry* const symbol = CreateSymbol(state, identifier);
+		Dictionary::Entry* const symbol = CreateSymbol(state, identifier);
 
 		if (symbol != NULL)
 		{
@@ -6395,7 +6395,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	state.mode.emplace<SemanticState::ModeNormal>();
 
 	/* Create the symbol table dictionary. */
-	if (!Dictionary_Init(&state.dictionary, Options_Get(&state.options)->case_insensitive))
+	if (!state.dictionary.Init(Options_Get(&state.options)->case_insensitive))
 	{
 		OutOfMemoryError(&state);
 	}
@@ -6515,7 +6515,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 					BinaryStream_fputc(0, symbol_callbacks);
 					BinaryStream_fputc(0, symbol_callbacks);
 
-					Dictionary_Filter(&state.dictionary, DictionaryFilterProduceSymbolFile, parameters);
+					state.dictionary.Filter(DictionaryFilterProduceSymbolFile, parameters);
 				}
 			}
 		}
