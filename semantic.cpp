@@ -792,12 +792,8 @@ static void DestroySymbol(Dictionary_Entry *dictionary_entry)
 /* Basically a hack until the "destructor" method put as a TODO in dictionary.h is implemented, pretty much */
 static void SymbolDictionary_Deinit(Dictionary_State *state)
 {
-	Dictionary_Bucket *bucket;
-	Dictionary_Node *node;
-
-	for (bucket = state->hash_table; bucket < state->hash_table + TOTAL_HASH_TABLE_ENTRIES; ++bucket)
-		for (node = bucket->linked_list; node != NULL; node = node->next)
-			DestroySymbol(&node->entry);
+	for (auto &entry : *state->internal)
+		DestroySymbol(&entry.second);
 
 	Dictionary_Deinit(state);
 }
@@ -5772,6 +5768,9 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 		}
 		else
 		{
+			// TODO: Please don't do this...
+			new(state->macro.dictionary) Dictionary_State;
+
 			/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
 			Dictionary_Init(state->macro.dictionary, Options_Get(&state->options)->case_insensitive);
 			Substitute_Initialise(&state->macro.substitutions);

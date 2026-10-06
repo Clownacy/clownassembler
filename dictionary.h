@@ -18,8 +18,12 @@
 #ifndef DICTIONARY_H
 #define DICTIONARY_H
 
+#include <cstddef>
+#include <optional>
 #include <stddef.h>
 #include <string>
+#include <string_view>
+#include <unordered_map>
 
 #include "clowncommon/clowncommon.h"
 
@@ -28,9 +32,19 @@
 
 #define TOTAL_HASH_TABLE_ENTRIES 0x1000
 
+struct Dictionary_StringHash
+{
+    using hash_type = std::hash<std::string_view>;
+    using is_transparent = void;
+
+    std::size_t operator()(const char *string) const             { return hash_type{}(string); }
+    std::size_t operator()(const std::string_view &string) const { return hash_type{}(string); }
+    std::size_t operator()(const std::string &string) const      { return hash_type{}(string); }
+};
+
 typedef struct Dictionary_Entry
 {
-	int type;
+	int type = -1;
 	union
 	{
 		unsigned long unsigned_long;
@@ -40,30 +54,9 @@ typedef struct Dictionary_Entry
 	} shared; 
 } Dictionary_Entry;
 
-typedef struct Dictionary_Node
-{
-	struct Dictionary_Node *next;
-	struct Dictionary_Node *previous;
-
-	struct Dictionary_Node *parent;
-	struct Dictionary_Node *left_child;
-	struct Dictionary_Node *right_child;
-
-	Dictionary_Entry entry;
-
-	std::string identifier;
-} Dictionary_Node;
-
-typedef struct Dictionary_Bucket
-{
-	Dictionary_Node *binary_search_tree;
-	Dictionary_Node *linked_list;
-} Dictionary_Bucket;
-
 typedef struct Dictionary_State
 {
-	Dictionary_Bucket *hash_table;
-	MemoryComparisionFunction compare_identifiers;
+	std::optional<std::unordered_map<std::string, Dictionary_Entry, Dictionary_StringHash, std::equal_to<>>> internal;
 } Dictionary_State;
 
 cc_bool Dictionary_Init(Dictionary_State *state, cc_bool case_insensitive);
