@@ -34,12 +34,9 @@
 
 struct Dictionary_StringHash
 {
-    using hash_type = std::hash<std::string_view>;
     using is_transparent = void;
 
-    std::size_t operator()(const char *string) const             { return hash_type{}(string); }
-    std::size_t operator()(const std::string_view &string) const { return hash_type{}(string); }
-    std::size_t operator()(const std::string &string) const      { return hash_type{}(string); }
+    std::size_t operator()(const std::string_view &string) const { return std::hash<std::string_view>{}(string); }
 };
 
 typedef struct Dictionary_Entry
