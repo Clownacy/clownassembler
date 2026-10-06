@@ -35,10 +35,7 @@ void Substitute_Deinitialise(Substitute_State* const state)
 
 cc_bool Substitute_PushSubstitute(Substitute_State* const state, const StringView &identifier, const String &value)
 {
-	Substitute_ListEntry* const list_entry = (Substitute_ListEntry*)malloc(sizeof(Substitute_ListEntry));
-
-	if (list_entry == NULL)
-		return cc_false;
+	Substitute_ListEntry* const list_entry = new Substitute_ListEntry;
 
 	list_entry->next = state->list_head;
 	state->list_head = list_entry;
@@ -57,7 +54,7 @@ void Substitute_PopSubstitute(Substitute_State* const state)
 
 	String_Destroy(list_entry->identifier);
 
-	free(list_entry);
+	delete list_entry;
 }
 
 static cc_bool Substitute_FindSubstitute(const StringView &view_to_search, const size_t starting_position, const StringView &substitute, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, size_t* const found_position, size_t* const found_length)
