@@ -30,6 +30,8 @@ add_library(clownassembler_core STATIC
 	"syntactic.h"
 )
 
+set_target_properties(clownassembler_core PROPERTIES CXX_STANDARD 20)
+
 # Custom frontend
 add_executable(clownassembler
 	"frontend-custom.cpp"
