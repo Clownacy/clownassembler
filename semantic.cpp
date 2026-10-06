@@ -4340,26 +4340,28 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 		else
 		{
 			/* TODO: De-duplicate this with the 'PushSubstitute' function. */
-			if (dictionary_entry->type == SYMBOL_NONE)
+			switch (dictionary_entry->type)
 			{
-				dictionary_entry->type = SYMBOL_STRING_CONSTANT;
-				Substitute_PushSubstitute(&state->macro.substitutions, parameter, dictionary_entry->shared.string);
-			}
-			else if (dictionary_entry->type != SYMBOL_STRING_CONSTANT)
-			{
-				/* TODO: this is not a common case, but it can occur if e.g. someone redefines a parameter name as a normal symbol in the macro body.
-				   See tests/previously-crashing/redefine-macro-parameter-in-macro-body.asm for an example of this.
-				   That'll already have caused an error to be emitted, so this error might be somewhat cascading,
-				   but I'm not certain it's not possible to hit this in other ways,
-				   and in any case if we get here I'm pretty sure something has gone wrong, so we should emit an error in case one hasn't already been emitted.
-				   It might also be feasible to handle this without forcing the symbol to become a string constant, but right now this seems like the simplest
-				   solution to prevent a crash. */
-				SemanticError(state, "Attempted to redefine symbol '%.*s' as a string constant.", (int)StringView_Length(parameter), StringView_Data(parameter));
-				dictionary_entry->type = SYMBOL_STRING_CONSTANT;
-			}
-			else
-			{
-				String_Destroy(dictionary_entry->shared.string);
+				case SYMBOL_NONE:
+					dictionary_entry->type = SYMBOL_STRING_CONSTANT;
+					Substitute_PushSubstitute(&state->macro.substitutions, parameter, dictionary_entry->shared.string);
+					break;
+
+				case SYMBOL_STRING_CONSTANT:
+					String_Destroy(dictionary_entry->shared.string);
+					break;
+
+				default:
+					/* TODO: this is not a common case, but it can occur if e.g. someone redefines a parameter name as a normal symbol in the macro body.
+					   See tests/previously-crashing/redefine-macro-parameter-in-macro-body.asm for an example of this.
+					   That'll already have caused an error to be emitted, so this error might be somewhat cascading,
+					   but I'm not certain it's not possible to hit this in other ways,
+					   and in any case if we get here I'm pretty sure something has gone wrong, so we should emit an error in case one hasn't already been emitted.
+					   It might also be feasible to handle this without forcing the symbol to become a string constant, but right now this seems like the simplest
+					   solution to prevent a crash. */
+					SemanticError(state, "Attempted to redefine symbol '%.*s' as a string constant.", (int)StringView_Length(parameter), StringView_Data(parameter));
+					dictionary_entry->type = SYMBOL_STRING_CONSTANT;
+					break;
 			}
 
 			String_CreateCopyView(dictionary_entry->shared.string, argument);
