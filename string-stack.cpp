@@ -35,7 +35,7 @@ void StringStack_Deinitialise(StringStack_State* const state)
 
 cc_bool StringStack_Push(StringStack_State* const state, const StringView &view)
 {
-	StringStack_ListEntry* const list_entry = (StringStack_ListEntry*)malloc(sizeof(StringStack_ListEntry));
+	StringStack_ListEntry* const list_entry = new StringStack_ListEntry;
 
 	if (list_entry == NULL)
 		return cc_false;
@@ -60,7 +60,7 @@ cc_bool StringStack_Pop(StringStack_State* const state, String &string)
 	String_CreateMove(string, list_entry->string);
 	String_Destroy(list_entry->string);
 
-	free(list_entry);
+	delete list_entry;
 
 	return cc_true;
 }
