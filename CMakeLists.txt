@@ -4,7 +4,6 @@ project(clownassembler VERSION 1.1.3 LANGUAGES C CXX)
 
 # Core
 add_library(clownassembler_core STATIC
-	"dictionary.cpp"
 	"dictionary.h"
 	"io.cpp"
 	"io.h"

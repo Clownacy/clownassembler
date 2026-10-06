@@ -54,6 +54,20 @@ typedef enum SymbolType
 	SYMBOL_EXPRESSION_CONSTANT
 } SymbolType;
 
+struct SymbolDictionaryEntry
+{
+	int type = SYMBOL_NONE;
+	union
+	{
+		unsigned long unsigned_long;
+		long signed_long;
+		void *pointer;
+		String string;
+	} shared;
+};
+
+using SymbolDictionary = Dictionary<SymbolDictionaryEntry>;
+
 typedef struct Location
 {
 	struct Location *previous;
@@ -67,7 +81,7 @@ typedef struct FixUp
 	struct FixUp *next;
 
 	Statement statement;
-	Dictionary *macro_dictionary;
+	SymbolDictionary *macro_dictionary;
 	unsigned long program_counter;
 	size_t output_position;
 	size_t segment_length;
@@ -102,7 +116,7 @@ typedef struct Macro
 typedef struct SemanticState_Macro
 {
 	Macro *metadata;
-	Dictionary *dictionary;
+	SymbolDictionary *dictionary;
 	Substitute_State substitutions;
 	struct MacroCustomSubstituteSearch_Closure *closure;
 	String *argument_list;
@@ -123,7 +137,7 @@ typedef struct SemanticState
 	const TextOutput *error_callbacks;
 
 	/* Global stuff. */
-	Dictionary dictionary;
+	SymbolDictionary dictionary;
 	String last_global_label;
 	Location *location;
 	yyscan_t flex_state;
@@ -552,9 +566,9 @@ static void ExpandIdentifier(SemanticState *state, String &expanded_identifier, 
 		String_CreateAppendView(expanded_identifier, String_View(state->last_global_label), identifier);
 }
 
-static Dictionary::Entry* LookupSymbol(SemanticState *state, StringView identifier, Dictionary **dictionary)
+static SymbolDictionary::Entry* LookupSymbol(SemanticState *state, StringView identifier, SymbolDictionary **dictionary)
 {
-	Dictionary::Entry *dictionary_entry = NULL;
+	SymbolDictionary::Entry *dictionary_entry = NULL;
 	String expanded_identifier;
 
 	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
@@ -586,9 +600,9 @@ static Dictionary::Entry* LookupSymbol(SemanticState *state, StringView identifi
 	return dictionary_entry;
 }
 
-static Dictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, StringView identifier, Dictionary **dictionary)
+static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, StringView identifier, SymbolDictionary **dictionary)
 {
-	Dictionary::Entry *dictionary_entry = NULL;
+	SymbolDictionary::Entry *dictionary_entry = NULL;
 	String expanded_identifier;
 
 	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
@@ -622,9 +636,9 @@ static Dictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, 
 	return dictionary_entry;
 }
 
-static Dictionary::Entry* CreateSymbol(SemanticState *state, const StringView &identifier)
+static SymbolDictionary::Entry* CreateSymbol(SemanticState *state, const StringView &identifier)
 {
-	Dictionary::Entry *dictionary_entry;
+	SymbolDictionary::Entry *dictionary_entry;
 
 	dictionary_entry = LookupSymbolAndCreateIfNotExist(state, identifier, NULL);
 
@@ -643,7 +657,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 {
 	cc_bool success = cc_true;
 
-	Dictionary::Entry *dictionary_entry;
+	SymbolDictionary::Entry *dictionary_entry;
 
 	dictionary_entry = LookupSymbol(state, identifier, NULL);
 
@@ -747,7 +761,7 @@ static void FreeSourceLineList(SourceLineListNode *source_line_list_head)
 	}
 }
 
-static void DestroySymbol(Dictionary::Entry *dictionary_entry)
+static void DestroySymbol(SymbolDictionary::Entry *dictionary_entry)
 {
 	switch ((SymbolType)dictionary_entry->type)
 	{
@@ -788,9 +802,9 @@ static void DestroySymbol(Dictionary::Entry *dictionary_entry)
 	assert(cc_false);
 }
 
-/* Iterates over the guts of the dictionary to delete all of the node innards before calling Dictionary::Deinit */
+/* Iterates over the guts of the dictionary to delete all of the node innards before calling SymbolDictionary::Deinit */
 /* Basically a hack until the "destructor" method put as a TODO in dictionary.h is implemented, pretty much */
-static void SymbolDictionary_Deinit(Dictionary *state)
+static void SymbolDictionary_Deinit(SymbolDictionary *state)
 {
 	for (auto &entry : *state->internal)
 		DestroySymbol(&entry.second);
@@ -1158,8 +1172,8 @@ static void TerminateRept(SemanticState *state, SemanticState::ModeRept &rept_st
 
 static void PurgeMacro(SemanticState* const state, StringView identifier, const cc_bool allow_undefined)
 {
-	Dictionary *dictionary;
-	Dictionary::Entry* const entry = LookupSymbol(state, identifier, &dictionary);
+	SymbolDictionary *dictionary;
+	SymbolDictionary::Entry* const entry = LookupSymbol(state, identifier, &dictionary);
 
 	if (entry == NULL)
 	{
@@ -1206,7 +1220,7 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 	}
 	else if (!StringView_Empty(identifier))
 	{
-		Dictionary::Entry* const symbol = CreateSymbol(state, identifier);
+		SymbolDictionary::Entry* const symbol = CreateSymbol(state, identifier);
 
 		/* Add the macro to the symbol table. */
 		if (symbol != NULL)
@@ -1430,7 +1444,7 @@ static void SetLastGlobalLabel(SemanticState *state, const StringView &label)
 
 static void AddIdentifierToSymbolTable(SemanticState *state, const StringView &label, unsigned long value, Expression *expression_value, SymbolType type)
 {
-	Dictionary::Entry *symbol;
+	SymbolDictionary::Entry *symbol;
 
 	symbol = NULL;
 
@@ -4300,8 +4314,8 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 static void PushSubstitute(SemanticState* const state, const StringView &identifier, const StringView &value)
 {
-	Dictionary *dictionary;
-	Dictionary::Entry* const dictionary_entry = LookupSymbolAndCreateIfNotExist(state, identifier, &dictionary);
+	SymbolDictionary *dictionary;
+	SymbolDictionary::Entry* const dictionary_entry = LookupSymbolAndCreateIfNotExist(state, identifier, &dictionary);
 
 	if (dictionary_entry != NULL)
 	{
@@ -4334,7 +4348,7 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 
 	for (parameter_name = state->macro.metadata->parameter_names, argument_index = 0; parameter_name != NULL; parameter_name = parameter_name->next, ++argument_index)
 	{
-		Dictionary::Entry *dictionary_entry;
+		SymbolDictionary::Entry *dictionary_entry;
 
 		const StringView &parameter = String_View(parameter_name->identifier);
 		const StringView &argument = argument_index >= state->macro.total_arguments ? blank_argument : String_View(state->macro.argument_list[argument_index]);
@@ -4944,7 +4958,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			},
 			[&](StatementEquSIdentifier &statement)
 			{
-				const Dictionary::Entry* const dictionary_entry = LookupSymbol(state, String_View(statement.string), NULL);
+				const SymbolDictionary::Entry* const dictionary_entry = LookupSymbol(state, String_View(statement.string), NULL);
 
 				if (dictionary_entry == NULL || dictionary_entry->type != SYMBOL_STRING_CONSTANT)
 					SemanticError(state, "String constant can only be defined as a string or another string constant.");
@@ -5508,7 +5522,7 @@ static void ParseLine(SemanticState* const state, const StringView &label, const
 			fixup->statement = statement;
 
 			/* Backup some state. */
-			fixup->macro_dictionary = (Dictionary*)SharedMemory_Copy(state->macro.dictionary);
+			fixup->macro_dictionary = (SymbolDictionary*)SharedMemory_Copy(state->macro.dictionary);
 			fixup->program_counter = starting_program_counter;
 			fixup->output_position = starting_output_position;
 			fixup->segment_length = starting_segment_length;
@@ -5760,7 +5774,7 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 	else
 	{
 		state->macro.metadata = macro;
-		state->macro.dictionary = (Dictionary*)SharedMemory_Allocate(sizeof(Dictionary));
+		state->macro.dictionary = (SymbolDictionary*)SharedMemory_Allocate(sizeof(SymbolDictionary));
 
 		if (state->macro.dictionary == NULL)
 		{
@@ -5769,7 +5783,7 @@ static void InvokeMacro(SemanticState* const state, Macro* const macro, const St
 		else
 		{
 			// TODO: Please don't do this...
-			new(state->macro.dictionary) Dictionary;
+			new(state->macro.dictionary) SymbolDictionary;
 
 			/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
 			state->macro.dictionary->Init(Options_Get(&state->options)->case_insensitive);
@@ -6142,7 +6156,7 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 					else
 					{
 						/* Look up the directive in the dictionary to see if it's actually a macro. */
-						const Dictionary::Entry* const macro_dictionary_entry = LookupSymbol(state, directive, NULL);
+						const SymbolDictionary::Entry* const macro_dictionary_entry = LookupSymbol(state, directive, NULL);
 						Macro* const macro = macro_dictionary_entry != NULL && macro_dictionary_entry->type == SYMBOL_MACRO ? (Macro*)macro_dictionary_entry->shared.pointer : NULL;
 
 						if (macro != NULL /*&& !macro->is_short*/)
@@ -6281,7 +6295,7 @@ static void AssembleFile(SemanticState *state)
 	}
 }
 
-static cc_bool DictionaryFilterProduceSymbolFile(Dictionary::Entry *entry, const char *identifier, size_t identifier_length, void *user_data)
+static cc_bool DictionaryFilterProduceSymbolFile(SymbolDictionary::Entry *entry, const char *identifier, size_t identifier_length, void *user_data)
 {
 	/* The symbol file only contains labels. */
 	/* Labels longer than 0xFF characters are silently ignored. */
@@ -6327,7 +6341,7 @@ static cc_bool DictionaryFilterProduceSymbolFile(Dictionary::Entry *entry, const
 
 static cc_bool InitialiseBuiltInVariable(SemanticState* const state, const StringView &identifier)
 {
-	Dictionary::Entry* const symbol = CreateSymbol(state, identifier);
+	SymbolDictionary::Entry* const symbol = CreateSymbol(state, identifier);
 
 	if (symbol == NULL)
 		return cc_false;
@@ -6345,7 +6359,7 @@ static void AddDefinition(void* const internal, const char* const identifier_buf
 	StringView_Create(identifier, identifier_buffer, identifier_length);
 
 	{
-		Dictionary::Entry* const symbol = CreateSymbol(state, identifier);
+		SymbolDictionary::Entry* const symbol = CreateSymbol(state, identifier);
 
 		if (symbol != NULL)
 		{

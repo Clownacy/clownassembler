@@ -28,9 +28,10 @@
 
 #include "string.h"
 
+template<typename EntryArgument>
 class Dictionary
 {
-public:
+private:
 	struct ToLower
 	{
 		const int delta;
@@ -91,27 +92,71 @@ public:
 		}
 	};
 
-	typedef struct Entry
-	{
-		int type = -1;
-		union
-		{
-			unsigned long unsigned_long;
-			long signed_long;
-			void *pointer;
-			String string;
-		} shared; 
-	} Entry;
+public:
+	using Entry = EntryArgument;
 
 	std::optional<std::unordered_map<std::string, Entry, StringHash, StringCompare>> internal;
 
-	cc_bool Init(cc_bool case_insensitive);
-	void Deinit();
+	cc_bool Init(cc_bool case_insensitive)
+	{
+		internal.emplace(0, StringHash{}, StringCompare{case_insensitive});
 
-	cc_bool LookUpAndCreateIfNotExist(const StringView &identifier, Entry **entry_pointer);
-	Entry* LookUp(const StringView &identifier);
-	cc_bool Remove(const StringView &identifier);
-	void Filter(cc_bool (*filter_function)(Entry *entry, const char *identifier, std::size_t identifier_length, void *user_data), const void *user_data);
+		return cc_true;
+	}
+
+	void Deinit()
+	{
+		internal.reset();
+	}
+
+	cc_bool LookUpAndCreateIfNotExist(const StringView &identifier, Entry **entry_pointer)
+	{
+		// All of this crap to work-around C++ not having a decent `operator[]` before C++26... fuck me.
+		const std::string_view key{identifier.buffer, identifier.length};
+
+		auto it = internal->find(key);
+
+		auto &entry = it != internal->end() ? it->second : internal->emplace(std::piecewise_construct, std::forward_as_tuple(key), std::tuple<>()).first->second; // Nightmare Difficulty C++
+
+		if (entry_pointer != nullptr)
+			*entry_pointer = &entry;
+
+		return cc_true;
+	}
+
+	Entry* LookUp(const StringView &identifier)
+	{
+		const std::string_view key{identifier.buffer, identifier.length};
+
+		auto it = internal->find(key);
+
+		if (it == internal->end())
+			return nullptr;
+
+		return &it->second;
+	}
+
+	cc_bool Remove(const StringView &identifier)
+	{
+		auto it = internal->find(std::string_view{identifier.buffer, identifier.length});
+
+		if (it == internal->end())
+			return cc_false;
+
+		internal->erase(it);
+
+		return cc_true;
+	}
+
+	void Filter(cc_bool (*filter_function)(Entry *entry, const char *identifier, std::size_t identifier_length, void *user_data), const void *user_data)
+	{
+		std::erase_if(*internal,
+			[&](auto &entry)
+			{
+				return !filter_function(&entry.second, entry.first.data(), entry.first.length(), const_cast<void*>(user_data));
+			}
+		);
+	}
 };
 
 #endif /* DICTIONARY_H */
