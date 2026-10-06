@@ -88,7 +88,11 @@ struct SymbolMacro
 
 struct SymbolSpecial
 {
-	void *value;
+	enum class Type
+	{
+		RS,
+		NARG,
+	} type;
 };
 
 struct SymbolStringConstant
@@ -691,27 +695,30 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 			CC_VisitHelper{
 				[&](SymbolSpecial &symbol)
 				{
-					/* Don't worry; I know what I'm doing. */
-					if (symbol.value == &string_rs)
+					switch (symbol.type)
 					{
-						*value = state->rs;
-					}
-					else if (symbol.value == &string_narg)
-					{
-						if (!CurrentlyExpandingMacro(state))
-						{
-							SemanticWarning(state, "Symbol '%.*s' cannot be used outside of a macro.", (int)StringView_Length(identifier), StringView_Data(identifier));
+						case SymbolSpecial::Type::RS:
+							*value = state->rs;
+							break;
+
+						case SymbolSpecial::Type::NARG:
+							if (!CurrentlyExpandingMacro(state))
+							{
+								SemanticWarning(state, "Symbol '%.*s' cannot be used outside of a macro.", (int)StringView_Length(identifier), StringView_Data(identifier));
+								success = cc_false;
+							}
+							else
+							{
+								*value = state->macro.total_arguments_at_start;
+							}
+
+							break;
+
+						default:
+							// Should never happen.
+							assert(cc_false);
 							success = cc_false;
-						}
-						else
-						{
-							*value = state->macro.total_arguments_at_start;
-						}
-					}
-					else
-					{
-						assert(cc_false);
-						success = cc_false;
+							break;
 					}
 				},
 				[&](SymbolVariable &symbol)
@@ -1232,6 +1239,9 @@ static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView
 template<typename SymbolType>
 static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, Macro macro);
 
+template<typename SymbolType>
+static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, SymbolSpecial::Type type);
+
 template<>
 cc_bool AddIdentifierToSymbolTable<SymbolVariable>(SemanticState *state, const StringView &identifier, unsigned long integer_value)
 {
@@ -1333,7 +1343,7 @@ cc_bool AddIdentifierToSymbolTable<SymbolMacro>(SemanticState *state, const Stri
 }
 
 template<>
-cc_bool AddIdentifierToSymbolTable<SymbolSpecial>(SemanticState *state, const StringView &identifier, void *pointer_value)
+cc_bool AddIdentifierToSymbolTable<SymbolSpecial>(SemanticState *state, const StringView &identifier, SymbolSpecial::Type type)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolSpecial>(state, identifier, NULL);
 
@@ -1343,7 +1353,7 @@ cc_bool AddIdentifierToSymbolTable<SymbolSpecial>(SemanticState *state, const St
 	/* Free the old symbol, to prevent a leak. */
 	DestroySymbol(symbol);
 
-	symbol->emplace<SymbolSpecial>(pointer_value);
+	symbol->emplace<SymbolSpecial>(type);
 
 	return cc_true;
 }
@@ -6414,11 +6424,6 @@ static cc_bool DictionaryFilterProduceSymbolFile(SymbolDictionary::Entry *entry,
 	return cc_true;
 }
 
-static cc_bool InitialiseBuiltInVariable(SemanticState* const state, const StringView &identifier)
-{
-	return AddIdentifierToSymbolTable<SymbolSpecial>(state, identifier, (void*)&identifier);
-}
-
 static void AddDefinition(void* const internal, const char* const identifier_buffer, const size_t identifier_length, const unsigned long value)
 {
 	SemanticState* const state = (SemanticState*)internal;
@@ -6475,8 +6480,8 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	}
 	else
 	{
-		if (InitialiseBuiltInVariable(&state, string_rs)
-		 && InitialiseBuiltInVariable(&state, string_narg))
+		if (AddIdentifierToSymbolTable<SymbolSpecial>(&state, string_rs,   SymbolSpecial::Type::RS)
+		 && AddIdentifierToSymbolTable<SymbolSpecial>(&state, string_narg, SymbolSpecial::Type::NARG))
 		{
 			if (definition_callback != NULL)
 				definition_callback(&state, (void*)user_data, AddDefinition);
