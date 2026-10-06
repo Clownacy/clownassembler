@@ -56,7 +56,7 @@ typedef enum SymbolType
 
 struct SymbolDictionaryEntry
 {
-	int type = SYMBOL_NONE;
+	SymbolType type = SYMBOL_NONE;
 	union
 	{
 		unsigned long unsigned_long;
@@ -763,7 +763,7 @@ static void FreeSourceLineList(SourceLineListNode *source_line_list_head)
 
 static void DestroySymbol(SymbolDictionary::Entry *dictionary_entry)
 {
-	switch ((SymbolType)dictionary_entry->type)
+	switch (dictionary_entry->type)
 	{
 		case SYMBOL_NONE:
 		case SYMBOL_LABEL:
@@ -1458,7 +1458,7 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const StringView &l
 
 			if (symbol != NULL)
 			{
-				if (symbol->type != SYMBOL_NONE && (SymbolType)symbol->type != type)
+				if (symbol->type != SYMBOL_NONE && symbol->type != type)
 				{
 					/* We can't do the assignment in this case, actually doing redefinitions like this would wreck havoc -
 					   e.g. redefining a macro while it is being executed would force us to either leak it or have everything
