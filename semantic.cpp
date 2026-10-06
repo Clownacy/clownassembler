@@ -43,6 +43,27 @@ typedef ClownAssembler_TextInput TextInput;
 typedef ClownAssembler_BinaryStream BinaryStream;
 typedef ClownAssembler_TextOutput TextOutput;
 
+typedef struct SourceLineListNode
+{
+	struct SourceLineListNode *next;
+
+	String source_line_buffer;
+} SourceLineListNode;
+
+typedef struct SourceLineList
+{
+	SourceLineListNode *head;
+	SourceLineListNode *tail;
+} SourceLineList;
+
+typedef struct Macro
+{
+	cc_bool is_short, uses_label;
+	String name;
+	IdentifierListNode *parameter_names;
+	SourceLineListNode *source_line_list_head;
+} Macro;
+
 struct SymbolNone {};
 
 struct SymbolConstant
@@ -62,7 +83,7 @@ struct SymbolLabel
 
 struct SymbolMacro
 {
-	void *value;
+	Macro macro;
 };
 
 struct SymbolSpecial
@@ -108,30 +129,9 @@ typedef struct FixUp
 	Options options;
 } FixUp;
 
-typedef struct SourceLineListNode
-{
-	struct SourceLineListNode *next;
-
-	String source_line_buffer;
-} SourceLineListNode;
-
-typedef struct SourceLineList
-{
-	SourceLineListNode *head;
-	SourceLineListNode *tail;
-} SourceLineList;
-
-typedef struct Macro
-{
-	cc_bool is_short, uses_label;
-	String name;
-	IdentifierListNode *parameter_names;
-	SourceLineListNode *source_line_list_head;
-} Macro;
-
 typedef struct SemanticState_Macro
 {
-	Macro *metadata;
+	const Macro *metadata;
 	SymbolDictionary *dictionary;
 	Substitute_State substitutions;
 	struct MacroCustomSubstituteSearch_Closure *closure;
@@ -789,17 +789,14 @@ static void DestroySymbol(SymbolDictionary::Entry *dictionary_entry)
 			},
 			[&](SymbolMacro &symbol)
 			{
-				Macro *macro = (Macro*)symbol.value;
 				IdentifierList destroyed_list = {0};
 
 				/* We make up a sort of "fake list" for the purposes of calling DestroyIdentifierList, since it doesn't take an IdentifierListNode directly. */
-				destroyed_list.head = macro->parameter_names;
+				destroyed_list.head = symbol.macro.parameter_names;
 				DestroyIdentifierList(&destroyed_list);
 
-				FreeSourceLineList(macro->source_line_list_head);
-				String_Destroy(macro->name);
-
-				delete macro;
+				FreeSourceLineList(symbol.macro.source_line_list_head);
+				String_Destroy(symbol.macro.name);
 			},
 			/* Nothing to free. */
 			[&](SymbolNone &symbol) {},
@@ -1225,6 +1222,9 @@ static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView
 template<typename SymbolType>
 static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, Expression expression);
 
+template<typename SymbolType>
+static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, Macro macro);
+
 template<>
 cc_bool AddIdentifierToSymbolTable<SymbolVariable>(SemanticState *state, const StringView &identifier, unsigned long integer_value)
 {
@@ -1304,7 +1304,7 @@ cc_bool AddIdentifierToSymbolTable<SymbolExpressionConstant>(SemanticState *stat
 }
 
 template<>
-cc_bool AddIdentifierToSymbolTable<SymbolMacro>(SemanticState *state, const StringView &identifier, void *pointer_value)
+cc_bool AddIdentifierToSymbolTable<SymbolMacro>(SemanticState *state, const StringView &identifier, Macro macro)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolMacro>(state, identifier, NULL);
 
@@ -1320,7 +1320,7 @@ cc_bool AddIdentifierToSymbolTable<SymbolMacro>(SemanticState *state, const Stri
 	/* Free the old symbol, to prevent a leak. */
 	DestroySymbol(symbol);
 
-	symbol->emplace<SymbolMacro>(pointer_value);
+	symbol->emplace<SymbolMacro>(std::move(macro));
 
 	return cc_true;
 }
@@ -1355,22 +1355,21 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 	else if (!StringView_Empty(identifier))
 	{
 		/* Add the macro to the symbol table. */
-		Macro* const macro = new Macro;
+		Macro macro;
 
-		macro->is_short = macro_state.is_short;
-		macro->uses_label = macro_state.uses_label;
-		String_CreateMove(macro->name, macro_state.name);
+		macro.is_short = macro_state.is_short;
+		macro.uses_label = macro_state.uses_label;
+		String_CreateMove(macro.name, macro_state.name);
 
-		macro->parameter_names = macro_state.parameter_names.head;
+		macro.parameter_names = macro_state.parameter_names.head;
 		macro_state.parameter_names.head = NULL;
 		macro_state.parameter_names.tail = NULL;
 
-		macro->source_line_list_head = macro_state.source_line_list.head;
+		macro.source_line_list_head = macro_state.source_line_list.head;
 		macro_state.source_line_list.head = NULL;
 		macro_state.source_line_list.tail = NULL;
 
-		if (!AddIdentifierToSymbolTable<SymbolMacro>(state, identifier, macro))
-			delete macro;
+		AddIdentifierToSymbolTable<SymbolMacro>(state, identifier, std::move(macro));
 	}
 
 	/* Free all of this, in case we didn't get all the way to creating the macro and moving everything over. */
@@ -5829,7 +5828,7 @@ static void SubstituteAndParseLine(SemanticState *state, const StringView &label
 	String_Destroy(modified_directive_and_operands);
 }
 
-static void InvokeMacro(SemanticState* const state, Macro* const macro, const StringView &label, const char *source_line_pointer)
+static void InvokeMacro(SemanticState* const state, const Macro* const macro, const StringView &label, const char *source_line_pointer)
 {
 	/* This is a macro invocation. */
 	MacroCustomSubstituteSearch_Closure closure;
@@ -6227,7 +6226,7 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 						/* Look up the directive in the dictionary to see if it's actually a macro. */
 						const SymbolDictionary::Entry* const macro_dictionary_entry = LookupSymbol(state, directive, NULL);
 						const SymbolMacro* const symbol_macro = macro_dictionary_entry == NULL ? NULL : std::get_if<SymbolMacro>(macro_dictionary_entry);
-						Macro* const macro = symbol_macro == NULL ? NULL : (Macro*)symbol_macro->value;
+						const Macro* const macro = symbol_macro == NULL ? NULL : &symbol_macro->macro;
 
 						if (macro != NULL /*&& !macro->is_short*/)
 						{
