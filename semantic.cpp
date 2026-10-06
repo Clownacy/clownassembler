@@ -702,12 +702,12 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 
 				break;
 
+			case SYMBOL_VARIABLE:
+				if (state->doing_fixup_pass)
+					SemanticWarning(state, "Symbol '%.*s' forward-referenced despite being a redefineable variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
+				/* Fallthrough */
 			case SYMBOL_LABEL:
 			case SYMBOL_CONSTANT:
-			case SYMBOL_VARIABLE:
-				if (state->doing_fixup_pass && dictionary_entry->type == SYMBOL_VARIABLE)
-					SemanticWarning(state, "Symbol '%.*s' forward-referenced despite being a redefineable variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
-
 				*value = dictionary_entry->shared.unsigned_long;
 				break;
 
@@ -1442,65 +1442,45 @@ static void SetLastGlobalLabel(SemanticState *state, const StringView &label)
 	}
 }
 
-static void AddIdentifierToSymbolTable(SemanticState *state, const StringView &label, unsigned long value, Expression *expression_value, SymbolType type)
+static void AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, unsigned long value, Expression *expression_value, SymbolType type)
 {
-	SymbolDictionary::Entry *symbol;
+	assert(type == SYMBOL_VARIABLE || type == SYMBOL_CONSTANT || type == SYMBOL_EXPRESSION_CONSTANT || type == SYMBOL_LABEL);
 
-	symbol = NULL;
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist(state, identifier, NULL);
 
-	/* Now add it to the symbol table. */
-	switch (type)
+	if (symbol == NULL)
+		return;
+
+	if (symbol->type != SYMBOL_NONE && symbol->type != type)
 	{
-		case SYMBOL_VARIABLE:
-		case SYMBOL_CONSTANT:
-		case SYMBOL_EXPRESSION_CONSTANT:
-			symbol = LookupSymbolAndCreateIfNotExist(state, label, NULL);
-
-			if (symbol != NULL)
-			{
-				if (symbol->type != SYMBOL_NONE && symbol->type != type)
-				{
-					/* We can't do the assignment in this case, actually doing redefinitions like this would wreck havoc -
-					   e.g. redefining a macro while it is being executed would force us to either leak it or have everything
-					   implode in a use-after-free mess. */
-					symbol = NULL;
-					SemanticError(state, "Attempted to redefine symbol as a different type.");
-				}
-				else if (type == SYMBOL_CONSTANT && symbol->type == SYMBOL_CONSTANT && symbol->shared.unsigned_long != value)
-				{
-					SemanticError(state, "Constant cannot be redefined to a different value.");
-				}
-				else
-				{
-					/* Free the old symbol, to prevent a leak. */
-					DestroySymbol(symbol);
-				}
-			}
-
-			break;
-
-		case SYMBOL_LABEL:
-			symbol = CreateSymbol(state, label);
-			break;
-
-		case SYMBOL_NONE:
-		case SYMBOL_MACRO:
-		case SYMBOL_SPECIAL:
-		case SYMBOL_STRING_CONSTANT:
-			/* This should not happen. */
-			assert(cc_false);
-			break;
+		/* We can't do the assignment in this case, actually doing redefinitions like this would wreck havoc -
+		   e.g. redefining a macro while it is being executed would force us to either leak it or have everything
+		   implode in a use-after-free mess. */
+		SemanticError(state, "Attempted to redefine symbol '%.*s' as a different type.", StringView_Length(identifier), StringView_Data(identifier));
+		return;
 	}
 
-	if (symbol != NULL)
+	if (symbol->type == SYMBOL_CONSTANT && symbol->shared.unsigned_long != value)
 	{
-		symbol->type = type;
-
-		if (type == SYMBOL_EXPRESSION_CONSTANT)
-			symbol->shared.pointer = expression_value;
-		else
-			symbol->shared.unsigned_long = value;
+		SemanticError(state, "Constant '%.*s' cannot be redefined to a different value.", StringView_Length(identifier), StringView_Data(identifier));
+		return;
 	}
+
+	if (symbol->type == SYMBOL_LABEL)
+	{
+		SemanticError(state, "Label '%.*s' cannot be redefined.", StringView_Length(identifier), StringView_Data(identifier));
+		return;
+	}
+
+	/* Free the old symbol, to prevent a leak. */
+	DestroySymbol(symbol);
+
+	symbol->type = type;
+
+	if (type == SYMBOL_EXPRESSION_CONSTANT)
+		symbol->shared.pointer = expression_value;
+	else
+		symbol->shared.unsigned_long = value;
 }
 
 static void ResolveInstructionAmbiguity(SemanticState* const state, StatementInstruction* const instruction)
