@@ -77,7 +77,7 @@ struct SymbolStringConstant
 
 struct SymbolExpressionConstant
 {
-	void *value;
+	Expression expression;
 };
 
 using SymbolDictionaryEntry = std::variant<SymbolNone, SymbolConstant, SymbolVariable, SymbolLabel, SymbolMacro, SymbolSpecial, SymbolStringConstant, SymbolExpressionConstant>;
@@ -726,7 +726,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 				},
 				[&](SymbolExpressionConstant &symbol)
 				{
-					if (!ResolveExpression(state, (Expression*)symbol.value, value, cc_false))
+					if (!ResolveExpression(state, &symbol.expression, value, cc_false))
 						success = cc_false;
 				},
 				[&](auto &symbol)
@@ -785,8 +785,7 @@ static void DestroySymbol(SymbolDictionary::Entry *dictionary_entry)
 			},
 			[&](SymbolExpressionConstant &symbol)
 			{
-				DestroyExpression((Expression*)symbol.value);
-				delete (Expression*)symbol.value;
+				DestroyExpression(&symbol.expression);
 			},
 			[&](SymbolMacro &symbol)
 			{
@@ -1223,6 +1222,9 @@ static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView
 template<typename SymbolType>
 static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, void *pointer_value);
 
+template<typename SymbolType>
+static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, Expression expression);
+
 template<>
 cc_bool AddIdentifierToSymbolTable<SymbolVariable>(SemanticState *state, const StringView &identifier, unsigned long integer_value)
 {
@@ -1286,7 +1288,7 @@ cc_bool AddIdentifierToSymbolTable<SymbolLabel>(SemanticState *state, const Stri
 }
 
 template<>
-cc_bool AddIdentifierToSymbolTable<SymbolExpressionConstant>(SemanticState *state, const StringView &identifier, void *pointer_value)
+cc_bool AddIdentifierToSymbolTable<SymbolExpressionConstant>(SemanticState *state, const StringView &identifier, Expression expression)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolExpressionConstant>(state, identifier, NULL);
 
@@ -1296,7 +1298,7 @@ cc_bool AddIdentifierToSymbolTable<SymbolExpressionConstant>(SemanticState *stat
 	/* Free the old symbol, to prevent a leak. */
 	DestroySymbol(symbol);
 
-	symbol->emplace<SymbolExpressionConstant>(pointer_value);
+	symbol->emplace<SymbolExpressionConstant>(std::move(expression));
 
 	return cc_true;
 }
@@ -5004,14 +5006,9 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 				if (!ResolveExpression(state, &equ.expression, &value, cc_false))
 				{
-					/* Separate the expression from the statement, so that it is not freed along with the statement. */
-					Expression *expression_copy = new Expression;
-
-					/* Prevent subexpressions from being freed. */
-					expression_copy->emplace<ExpressionNumber>(0);
-					std::swap(*expression_copy, equ.expression);
-
-					AddIdentifierToSymbolTable<SymbolExpressionConstant>(state, label, expression_copy);
+					AddIdentifierToSymbolTable<SymbolExpressionConstant>(state, label, std::move(equ.expression));
+					// TODO: Why does removing this result in a crash?
+					equ.expression.emplace<ExpressionNumber>(0);
 				}
 				else
 				{
