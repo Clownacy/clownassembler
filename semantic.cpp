@@ -21,6 +21,7 @@
 
 #include <assert.h>
 #include <limits.h>
+#include <memory>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,7 +32,6 @@
 
 #include "dictionary.h"
 #include "p2bin.h"
-#include "shared-memory.h"
 #include "string.h"
 #include "string-stack.h"
 #include "substitute.h"
@@ -118,7 +118,7 @@ typedef struct FixUp
 	struct FixUp *next;
 
 	Statement statement;
-	SymbolDictionary *macro_dictionary;
+	std::shared_ptr<SymbolDictionary> macro_dictionary;
 	unsigned long program_counter;
 	size_t output_position;
 	size_t segment_length;
@@ -132,7 +132,7 @@ typedef struct FixUp
 typedef struct SemanticState_Macro
 {
 	const Macro *metadata;
-	SymbolDictionary *dictionary;
+	std::shared_ptr<SymbolDictionary> dictionary;
 	Substitute_State substitutions;
 	struct MacroCustomSubstituteSearch_Closure *closure;
 	String *argument_list;
@@ -593,11 +593,13 @@ static SymbolDictionary::Entry* LookupSymbol(SemanticState *state, StringView id
 	if (!String_Empty(expanded_identifier))
 		identifier = String_View(expanded_identifier);
 
-	if (dictionary != NULL)
-		*dictionary = state->macro.dictionary;
-
 	if (state->macro.dictionary != NULL)
+	{
+		if (dictionary != NULL)
+			*dictionary = &*state->macro.dictionary;
+
 		dictionary_entry = state->macro.dictionary->LookUp(identifier);
+	}
 
 	if (dictionary_entry == NULL)
 	{
@@ -619,6 +621,7 @@ static SymbolDictionary::Entry* LookupSymbol(SemanticState *state, StringView id
 template<typename SymbolType>
 static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, StringView identifier, SymbolDictionary **dictionary)
 {
+	/* TODO: Deduplicate this with `LookupSymbol`. */
 	SymbolDictionary::Entry *dictionary_entry = NULL;
 	String expanded_identifier;
 
@@ -628,11 +631,13 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *s
 	if (!String_Empty(expanded_identifier))
 		identifier = String_View(expanded_identifier);
 
-	if (dictionary != NULL)
-		*dictionary = state->macro.dictionary;
-
 	if (state->macro.dictionary != NULL)
+	{
+		if (dictionary != NULL)
+			*dictionary = &*state->macro.dictionary;
+
 		dictionary_entry = state->macro.dictionary->LookUp(identifier);
+	}
 
 	if (dictionary_entry == NULL)
 	{
@@ -5592,7 +5597,7 @@ static void ParseLine(SemanticState* const state, const StringView &label, const
 			fixup->statement = statement;
 
 			/* Backup some state. */
-			fixup->macro_dictionary = (SymbolDictionary*)SharedMemory_Copy(state->macro.dictionary);
+			fixup->macro_dictionary = state->macro.dictionary;
 			fixup->program_counter = starting_program_counter;
 			fixup->output_position = starting_output_position;
 			fixup->segment_length = starting_segment_length;
@@ -5844,7 +5849,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 	else
 	{
 		state->macro.metadata = macro;
-		state->macro.dictionary = (SymbolDictionary*)SharedMemory_Allocate(sizeof(SymbolDictionary));
+		state->macro.dictionary = std::make_shared<SymbolDictionary>();
 
 		if (state->macro.dictionary == NULL)
 		{
@@ -5852,9 +5857,6 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 		}
 		else
 		{
-			// TODO: Please don't do this...
-			new(state->macro.dictionary) SymbolDictionary;
-
 			/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
 			state->macro.dictionary->Init(Options_Get(&state->options)->case_insensitive);
 			Substitute_Initialise(&state->macro.substitutions);
@@ -6052,9 +6054,9 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 			String_Destroy(closure.unique_suffix);
 
 			Substitute_Deinitialise(&state->macro.substitutions);
-			if (SharedMemory_WillBeDestroyed(state->macro.dictionary))
+			if (state->macro.dictionary.use_count() == 1)
 				state->macro.dictionary->Deinit();
-			SharedMemory_Free(state->macro.dictionary);
+			state->macro.dictionary.reset();
 
 			/* Destroy argument list. */
 			{
@@ -6547,9 +6549,9 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 					/* We're done with this statement: delete it. */
 					DestroyStatement(&fixup->statement);
-					if (SharedMemory_WillBeDestroyed(fixup->macro_dictionary))
-						SymbolDictionary_Deinit(fixup->macro_dictionary);
-					SharedMemory_Free(fixup->macro_dictionary);
+					if (fixup->macro_dictionary.use_count() == 1)
+						SymbolDictionary_Deinit(&*fixup->macro_dictionary);
+					fixup->macro_dictionary.reset();
 					String_Destroy(fixup->last_global_label);
 					String_Destroy(fixup->source_line);
 					String_Destroy(fixup->label);
