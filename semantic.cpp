@@ -23,6 +23,7 @@
 #include <deque>
 #include <limits.h>
 #include <memory>
+#include <stack>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,7 +36,6 @@
 #include "dictionary.h"
 #include "p2bin.h"
 #include "string.h"
-#include "string-stack.h"
 #include "substitute.h"
 #include "syntactic.h"
 #define YY_NO_UNISTD_H
@@ -153,7 +153,7 @@ typedef struct SemanticState
 	String line_buffer;
 	const String *source_line;
 	Substitute_State substitutions;
-	StringStack_State string_stack;
+	std::stack<String> string_stack;
 	Options_State options;
 	SemanticState_Macro macro;
 	size_t output_position, previous_segment_length_output_position;
@@ -5348,17 +5348,19 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			},
 			[&](StatementPushP &statement)
 			{
-				if (!StringStack_Push(&state->string_stack, String_View(statement.string)))
-					InternalError(state, "Failed to allocate memory for the string stack.");
+				state->string_stack.push(statement.string);
 			},
 			[&](StatementPopP &statement)
 			{
-				String string;
-
-				if (!StringStack_Pop(&state->string_stack, string))
+				if (state->string_stack.empty())
+				{
 					SemanticError(state, "POPP used but the string stack was empty.");
+				}
 				else
-					PushSubstitute(state, String_View(statement.string), String_View(string));
+				{
+					PushSubstitute(state, String_View(statement.string), state->string_stack.top());
+					state->string_stack.pop();
+				}
 			},
 			[&](StatementShift &statement)
 			{
@@ -6298,7 +6300,6 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	state.line_buffer = "";
 	state.location = &location;
 	Substitute_Initialise(&state.substitutions);
-	StringStack_Initialise(&state.string_stack);
 	state.mode.emplace<SemanticState::ModeNormal>();
 
 	/* Create the symbol table dictionary. */
@@ -6423,7 +6424,6 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 		SymbolDictionary_Deinit(&state.dictionary);
 	}
 
-	StringStack_Deinitialise(&state.string_stack);
 	Substitute_Deinitialise(&state.substitutions);
 
 	Options_Deinitialise(&state.options);

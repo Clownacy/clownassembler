@@ -18,8 +18,6 @@ add_library(clownassembler_core STATIC
 	"strcmpci.cpp"
 	"strcmpci.h"
 	"string.h"
-	"string-stack.cpp"
-	"string-stack.h"
 	"substitute.cpp"
 	"substitute.h"
 	"syntactic.cpp"
