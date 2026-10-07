@@ -37,7 +37,9 @@
 
 %code requires {
 
+#include <array>
 #include <deque>
+#include <memory>
 #include <variant>
 
 #include "clowncommon/clowncommon.h"
@@ -235,7 +237,7 @@ struct ExpressionArithmetic1Operand
 		LOGICAL_NOT,
 
 	} type;
-	Expression *subexpressions;
+	std::unique_ptr<Expression> subexpressions;
 };
 
 struct ExpressionArithmetic2Operand
@@ -261,12 +263,12 @@ struct ExpressionArithmetic2Operand
 		LEFT_SHIFT,
 		RIGHT_SHIFT,
 	} type;
-	Expression *subexpressions;
+	std::unique_ptr<Expression[]> subexpressions;
 };
 
 struct ExpressionInstr
 {
-	Expression *subexpressions;
+	std::unique_ptr<Expression[]> subexpressions;
 };
 
 struct ExpressionStrcmp
@@ -908,7 +910,7 @@ statement
 	}
 	| instruction
 	{
-		statement->emplace<StatementInstruction>($1);
+		statement->emplace<StatementInstruction>(std::move($1));
 	}
 	| DIRECTIVE_DC size expression_list
 	{
@@ -916,7 +918,7 @@ statement
 	}
 	| DIRECTIVE_DCB size expression "," expression
 	{
-		statement->emplace<StatementDcb>($2, $3, $5);
+		statement->emplace<StatementDcb>($2, std::move($3), std::move($5));
 	}
 	| DIRECTIVE_DS size expression
 	{
@@ -2350,29 +2352,23 @@ expression8
 	}
 	| INSTR "(" expression "," expression ")"
 	{
-		Expression *subexpressions = new Expression[3];
+		auto subexpressions = std::make_unique<Expression[]>(3);
 
-		if (subexpressions == nullptr)
-			YYNOMEM;
-
-		subexpressions[0].emplace<ExpressionNumber>(1);
+		subexpressions[0] = ExpressionNumber{1};
 		subexpressions[1] = std::move($3);
 		subexpressions[2] = std::move($5);
 
-		$$.emplace<ExpressionInstr>(subexpressions);
+		$$.emplace<ExpressionInstr>(std::move(subexpressions));
 	}
 	| INSTR "(" expression "," expression "," expression ")"
 	{
-		Expression *subexpressions = new Expression[3];
-
-		if (subexpressions == nullptr)
-			YYNOMEM;
+		auto subexpressions = std::make_unique<Expression[]>(3);
 
 		subexpressions[0] = std::move($3);
 		subexpressions[1] = std::move($5);
 		subexpressions[2] = std::move($7);
 
-		$$.emplace<ExpressionInstr>(subexpressions);
+		$$.emplace<ExpressionInstr>(std::move(subexpressions));
 	}
 	| DEF "(" IDENTIFIER ")"
 	{
@@ -2407,36 +2403,21 @@ string
 
 static cc_bool DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression)
 {
-	Expression *subexpression_copy = new Expression;
+	auto subexpression_copy = std::make_unique<Expression>(std::move(subexpression));
 
-	if (subexpression_copy == NULL)
-	{
-		DestroyExpression(&subexpression);
-		return cc_false;
-	}
-
-	*subexpression_copy = std::move(subexpression);
-
-	expression.emplace<ExpressionArithmetic1Operand>(type, subexpression_copy);
+	expression.emplace<ExpressionArithmetic1Operand>(type, std::move(subexpression_copy));
 
 	return cc_true;
 }
 
 static cc_bool DoExpression(Expression &expression, ExpressionArithmetic2Operand::Type type, Expression left_expression, Expression right_expression)
 {
-	Expression *subexpressions = new Expression[2];
-
-	if (subexpressions == NULL)
-	{
-		DestroyExpression(&left_expression);
-		DestroyExpression(&right_expression);
-		return cc_false;
-	}
+	auto subexpressions = std::make_unique<Expression[]>(2);
 
 	subexpressions[0] = std::move(left_expression);
 	subexpressions[1] = std::move(right_expression);
 
-	expression.emplace<ExpressionArithmetic2Operand>(type, subexpressions);
+	expression.emplace<ExpressionArithmetic2Operand>(type, std::move(subexpressions));
 
 	return cc_true;
 }
@@ -2450,18 +2431,15 @@ void DestroyExpression(Expression *expression)
 				DestroyExpression(&expression.subexpressions[0]);
 				DestroyExpression(&expression.subexpressions[1]);
 				DestroyExpression(&expression.subexpressions[2]);
-				delete[] expression.subexpressions;
 			},
 			[](ExpressionArithmetic2Operand &expression)
 			{
 				DestroyExpression(&expression.subexpressions[0]);
 				DestroyExpression(&expression.subexpressions[1]);
-				delete[] expression.subexpressions;
 			},
 			[](ExpressionArithmetic1Operand &expression)
 			{
-				DestroyExpression(expression.subexpressions);
-				delete expression.subexpressions;
+				DestroyExpression(&*expression.subexpressions);
 			},
 			[](ExpressionStrcmp &expression)
 			{

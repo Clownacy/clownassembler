@@ -963,7 +963,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			},
 			[&](ExpressionArithmetic1Operand &expression)
 			{
-				if (!ResolveExpression(state, expression.subexpressions, value, fold))
+				if (!ResolveExpression(state, &*expression.subexpressions, value, fold))
 				{
 					success = cc_false;
 				}
@@ -1733,7 +1733,7 @@ static void ResolveInstructionAmbiguity(SemanticState* const state, StatementIns
 					if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
 					{
 						/* If I remember correctly, this syntax is actually officially valid. */
-						instruction->operands[1] = instruction->operands[0];
+						instruction->operands[1] = std::move(instruction->operands[0]);
 						instruction->operands[0].type = OPERAND_LITERAL;
 						instruction->operands[0].literal.emplace<ExpressionNumber>(1);
 					}
@@ -3494,7 +3494,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 						machine_code |= ConstructEffectiveAddressBits(state, operands_to_output[1]);
 
-						custom_operands[0] = *operands_to_output[0];
+						custom_operands[0] = std::move(*operands_to_output[0]);
 						operands_to_output[0] = &custom_operands[0];
 
 						/* Convert lone registers to register_lists. */
@@ -5498,7 +5498,7 @@ static void ParseLine(SemanticState* const state, const StringView &label, const
 			Location *destination_location = &fixup->location;
 
 			/* Backup the statement. */
-			fixup->statement = statement;
+			fixup->statement = std::move(statement);
 
 			/* Backup some state. */
 			fixup->macro_dictionary = state->macro.dictionary;

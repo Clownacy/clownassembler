@@ -44,7 +44,7 @@
 
 
 // Unqualified %code blocks.
-#line 648 "syntactic.y"
+#line 650 "syntactic.y"
 
 
 #include <assert.h>
@@ -806,7 +806,7 @@ namespace m68kasm {
           switch (yyn)
             {
   case 2: // statement: %empty
-#line 906 "syntactic.y"
+#line 908 "syntactic.y"
         {
 		statement->emplace<StatementEmpty>();
 	}
@@ -814,15 +814,15 @@ namespace m68kasm {
     break;
 
   case 3: // statement: instruction
-#line 910 "syntactic.y"
+#line 912 "syntactic.y"
         {
-		statement->emplace<StatementInstruction>(YY_MOVE (yystack_[0].value.as < StatementInstruction > ()));
+		statement->emplace<StatementInstruction>(std::move(YY_MOVE (yystack_[0].value.as < StatementInstruction > ())));
 	}
 #line 822 "syntactic.cpp"
     break;
 
   case 4: // statement: DIRECTIVE_DC size expression_list
-#line 914 "syntactic.y"
+#line 916 "syntactic.y"
         {
 		statement->emplace<StatementDc>(YY_MOVE (yystack_[1].value.as < Size > ()), YY_MOVE (yystack_[0].value.as < ExpressionList > ()));
 	}
@@ -830,15 +830,15 @@ namespace m68kasm {
     break;
 
   case 5: // statement: DIRECTIVE_DCB size expression "," expression
-#line 918 "syntactic.y"
+#line 920 "syntactic.y"
         {
-		statement->emplace<StatementDcb>(YY_MOVE (yystack_[3].value.as < Size > ()), YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement->emplace<StatementDcb>(YY_MOVE (yystack_[3].value.as < Size > ()), std::move(YY_MOVE (yystack_[2].value.as < Expression > ())), std::move(YY_MOVE (yystack_[0].value.as < Expression > ())));
 	}
 #line 838 "syntactic.cpp"
     break;
 
   case 6: // statement: DIRECTIVE_DS size expression
-#line 922 "syntactic.y"
+#line 924 "syntactic.y"
         {
 		statement->emplace<StatementDs>(YY_MOVE (yystack_[1].value.as < Size > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -846,7 +846,7 @@ namespace m68kasm {
     break;
 
   case 7: // statement: DIRECTIVE_INCLUDE STRING
-#line 926 "syntactic.y"
+#line 928 "syntactic.y"
         {
 		statement->emplace<StatementInclude>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
@@ -854,7 +854,7 @@ namespace m68kasm {
     break;
 
   case 8: // statement: DIRECTIVE_INCBIN STRING
-#line 930 "syntactic.y"
+#line 932 "syntactic.y"
         {		
 		statement->emplace<StatementIncbin>(YY_MOVE (yystack_[0].value.as < String > ()), ExpressionNumber{0}, cc_false);
 	}
@@ -862,7 +862,7 @@ namespace m68kasm {
     break;
 
   case 9: // statement: DIRECTIVE_INCBIN STRING "," expression
-#line 934 "syntactic.y"
+#line 936 "syntactic.y"
         {
 		statement->emplace<StatementIncbin>(YY_MOVE (yystack_[2].value.as < String > ()), YY_MOVE (yystack_[0].value.as < Expression > ()), cc_false);
 	}
@@ -870,7 +870,7 @@ namespace m68kasm {
     break;
 
   case 10: // statement: DIRECTIVE_INCBIN STRING "," "," expression
-#line 938 "syntactic.y"
+#line 940 "syntactic.y"
         {
 		statement->emplace<StatementIncbin>(YY_MOVE (yystack_[3].value.as < String > ()), ExpressionNumber{0}, cc_true, YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -878,7 +878,7 @@ namespace m68kasm {
     break;
 
   case 11: // statement: DIRECTIVE_INCBIN STRING "," expression "," expression
-#line 942 "syntactic.y"
+#line 944 "syntactic.y"
         {
 		statement->emplace<StatementIncbin>(YY_MOVE (yystack_[4].value.as < String > ()), YY_MOVE (yystack_[2].value.as < Expression > ()), cc_true, YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -886,7 +886,7 @@ namespace m68kasm {
     break;
 
   case 12: // statement: DIRECTIVE_REPT expression
-#line 946 "syntactic.y"
+#line 948 "syntactic.y"
         {
 		statement->emplace<StatementRept>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -894,7 +894,7 @@ namespace m68kasm {
     break;
 
   case 13: // statement: DIRECTIVE_ENDR
-#line 950 "syntactic.y"
+#line 952 "syntactic.y"
         {
 		statement->emplace<StatementEndR>();
 	}
@@ -902,7 +902,7 @@ namespace m68kasm {
     break;
 
   case 14: // statement: DIRECTIVE_MACRO
-#line 954 "syntactic.y"
+#line 956 "syntactic.y"
         {
 		statement->emplace<StatementMacro>(cc_false);
 	}
@@ -910,7 +910,7 @@ namespace m68kasm {
     break;
 
   case 15: // statement: DIRECTIVE_MACRO "*"
-#line 958 "syntactic.y"
+#line 960 "syntactic.y"
         {
 		statement->emplace<StatementMacro>(cc_true);
 	}
@@ -918,7 +918,7 @@ namespace m68kasm {
     break;
 
   case 16: // statement: DIRECTIVE_MACRO identifier_list
-#line 962 "syntactic.y"
+#line 964 "syntactic.y"
         {
 		statement->emplace<StatementMacro>(cc_false, YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
 	}
@@ -926,7 +926,7 @@ namespace m68kasm {
     break;
 
   case 17: // statement: DIRECTIVE_MACRO "*" "," identifier_list
-#line 966 "syntactic.y"
+#line 968 "syntactic.y"
         {
 		statement->emplace<StatementMacro>(cc_true, YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
 	}
@@ -934,7 +934,7 @@ namespace m68kasm {
     break;
 
   case 18: // statement: DIRECTIVE_MACROS
-#line 970 "syntactic.y"
+#line 972 "syntactic.y"
         {
 		// TODO: Is there a way to make this tidier?
 		statement->emplace<StatementMacroS>(StatementMacro{cc_false});
@@ -943,7 +943,7 @@ namespace m68kasm {
     break;
 
   case 19: // statement: DIRECTIVE_MACROS identifier_list
-#line 975 "syntactic.y"
+#line 977 "syntactic.y"
         {
 		// TODO: Is there a way to make this tidier?
 		statement->emplace<StatementMacroS>(StatementMacro{cc_false, YY_MOVE (yystack_[0].value.as < IdentifierList > ())});
@@ -952,7 +952,7 @@ namespace m68kasm {
     break;
 
   case 20: // statement: DIRECTIVE_ENDM
-#line 980 "syntactic.y"
+#line 982 "syntactic.y"
         {
 		statement->emplace<StatementEndM>();
 	}
@@ -960,7 +960,7 @@ namespace m68kasm {
     break;
 
   case 21: // statement: DIRECTIVE_EQU expression
-#line 984 "syntactic.y"
+#line 986 "syntactic.y"
         {
 		statement->emplace<StatementEqu>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -968,7 +968,7 @@ namespace m68kasm {
     break;
 
   case 22: // statement: DIRECTIVE_EQUS STRING
-#line 988 "syntactic.y"
+#line 990 "syntactic.y"
         {
 		statement->emplace<StatementEquSString>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
@@ -976,7 +976,7 @@ namespace m68kasm {
     break;
 
   case 23: // statement: DIRECTIVE_EQUS IDENTIFIER
-#line 992 "syntactic.y"
+#line 994 "syntactic.y"
         {
 		statement->emplace<StatementEquSIdentifier>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
@@ -984,7 +984,7 @@ namespace m68kasm {
     break;
 
   case 24: // statement: DIRECTIVE_SUBSTR "," "," STRING
-#line 996 "syntactic.y"
+#line 998 "syntactic.y"
         {
 		String string = YY_MOVE (yystack_[0].value.as < String > ());
 		const auto string_length = String_Length(string);
@@ -994,7 +994,7 @@ namespace m68kasm {
     break;
 
   case 25: // statement: DIRECTIVE_SUBSTR expression "," "," STRING
-#line 1002 "syntactic.y"
+#line 1004 "syntactic.y"
         {
 		String string = YY_MOVE (yystack_[0].value.as < String > ());
 		const auto string_length = String_Length(string);
@@ -1004,7 +1004,7 @@ namespace m68kasm {
     break;
 
   case 26: // statement: DIRECTIVE_SUBSTR "," expression "," STRING
-#line 1008 "syntactic.y"
+#line 1010 "syntactic.y"
         {
 		statement->emplace<StatementSubstr>(ExpressionNumber{1}, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < String > ()));
 	}
@@ -1012,7 +1012,7 @@ namespace m68kasm {
     break;
 
   case 27: // statement: DIRECTIVE_SUBSTR expression "," expression "," STRING
-#line 1012 "syntactic.y"
+#line 1014 "syntactic.y"
         {
 		statement->emplace<StatementSubstr>(YY_MOVE (yystack_[4].value.as < Expression > ()), YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < String > ()));
 	}
@@ -1020,7 +1020,7 @@ namespace m68kasm {
     break;
 
   case 28: // statement: DIRECTIVE_SET expression
-#line 1016 "syntactic.y"
+#line 1018 "syntactic.y"
         {
 		statement->emplace<StatementSet>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -1028,7 +1028,7 @@ namespace m68kasm {
     break;
 
   case 29: // statement: "=" expression
-#line 1020 "syntactic.y"
+#line 1022 "syntactic.y"
         {
 		statement->emplace<StatementSet>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -1036,7 +1036,7 @@ namespace m68kasm {
     break;
 
   case 30: // statement: DIRECTIVE_IF expression
-#line 1024 "syntactic.y"
+#line 1026 "syntactic.y"
         {
 		statement->emplace<StatementIf>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -1044,7 +1044,7 @@ namespace m68kasm {
     break;
 
   case 31: // statement: DIRECTIVE_ELSEIF expression
-#line 1028 "syntactic.y"
+#line 1030 "syntactic.y"
         {
 		statement->emplace<StatementElseIf>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -1052,7 +1052,7 @@ namespace m68kasm {
     break;
 
   case 32: // statement: DIRECTIVE_ELSEIF
-#line 1032 "syntactic.y"
+#line 1034 "syntactic.y"
         {
 		statement->emplace<StatementElse>();
 	}
@@ -1060,7 +1060,7 @@ namespace m68kasm {
     break;
 
   case 33: // statement: DIRECTIVE_ELSE
-#line 1036 "syntactic.y"
+#line 1038 "syntactic.y"
         {
 		statement->emplace<StatementElse>();
 	}
@@ -1068,7 +1068,7 @@ namespace m68kasm {
     break;
 
   case 34: // statement: DIRECTIVE_ENDC
-#line 1040 "syntactic.y"
+#line 1042 "syntactic.y"
         {
 		statement->emplace<StatementEndC>();
 	}
@@ -1076,7 +1076,7 @@ namespace m68kasm {
     break;
 
   case 35: // statement: DIRECTIVE_WHILE expression
-#line 1044 "syntactic.y"
+#line 1046 "syntactic.y"
         {
 		statement->emplace<StatementWhile>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -1084,7 +1084,7 @@ namespace m68kasm {
     break;
 
   case 36: // statement: DIRECTIVE_ENDW
-#line 1048 "syntactic.y"
+#line 1050 "syntactic.y"
         {
 		statement->emplace<StatementEndW>();
 	}
@@ -1092,7 +1092,7 @@ namespace m68kasm {
     break;
 
   case 37: // statement: DIRECTIVE_EVEN
-#line 1052 "syntactic.y"
+#line 1054 "syntactic.y"
         {
 		statement->emplace<StatementEven>();
 	}
@@ -1100,7 +1100,7 @@ namespace m68kasm {
     break;
 
   case 38: // statement: DIRECTIVE_CNOP expression "," expression
-#line 1056 "syntactic.y"
+#line 1058 "syntactic.y"
         {
 		statement->emplace<StatementCnop>(YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -1108,7 +1108,7 @@ namespace m68kasm {
     break;
 
   case 39: // statement: DIRECTIVE_INFORM expression "," STRING
-#line 1060 "syntactic.y"
+#line 1062 "syntactic.y"
         {
 		statement->emplace<StatementInform>(YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < String > ()));
 	}
@@ -1116,7 +1116,7 @@ namespace m68kasm {
     break;
 
   case 40: // statement: DIRECTIVE_INFORM expression "," STRING "," expression_list
-#line 1064 "syntactic.y"
+#line 1066 "syntactic.y"
         {
 		/* TODO - parameters */
 		statement->emplace<StatementInform>(YY_MOVE (yystack_[4].value.as < Expression > ()), YY_MOVE (yystack_[2].value.as < String > ()));
@@ -1125,7 +1125,7 @@ namespace m68kasm {
     break;
 
   case 41: // statement: DIRECTIVE_FAIL
-#line 1069 "syntactic.y"
+#line 1071 "syntactic.y"
         {
 		statement->emplace<StatementFail>();
 	}
@@ -1133,7 +1133,7 @@ namespace m68kasm {
     break;
 
   case 42: // statement: DIRECTIVE_END
-#line 1073 "syntactic.y"
+#line 1075 "syntactic.y"
         {
 		statement->emplace<StatementEnd>();
 	}
@@ -1141,7 +1141,7 @@ namespace m68kasm {
     break;
 
   case 43: // statement: DIRECTIVE_RS size expression
-#line 1077 "syntactic.y"
+#line 1079 "syntactic.y"
         {
 		statement->emplace<StatementRS>(YY_MOVE (yystack_[1].value.as < Size > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -1149,7 +1149,7 @@ namespace m68kasm {
     break;
 
   case 44: // statement: DIRECTIVE_RSSET expression
-#line 1081 "syntactic.y"
+#line 1083 "syntactic.y"
         {
 		statement->emplace<StatementRSSet>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -1157,7 +1157,7 @@ namespace m68kasm {
     break;
 
   case 45: // statement: DIRECTIVE_RSRESET expression
-#line 1085 "syntactic.y"
+#line 1087 "syntactic.y"
         {
 		/* As mentioned in S.N. 68k's manual, this odd hack
 		   is necessary for compatibility with other assemblers. */
@@ -1167,7 +1167,7 @@ namespace m68kasm {
     break;
 
   case 46: // statement: DIRECTIVE_RSRESET
-#line 1091 "syntactic.y"
+#line 1093 "syntactic.y"
         {
 		statement->emplace<StatementRSReset>();
 	}
@@ -1175,7 +1175,7 @@ namespace m68kasm {
     break;
 
   case 47: // statement: DIRECTIVE_OBJ expression
-#line 1095 "syntactic.y"
+#line 1097 "syntactic.y"
         {
 		statement->emplace<StatementObj>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -1183,7 +1183,7 @@ namespace m68kasm {
     break;
 
   case 48: // statement: DIRECTIVE_OBJEND
-#line 1099 "syntactic.y"
+#line 1101 "syntactic.y"
         {
 		statement->emplace<StatementObjEnd>();
 	}
@@ -1191,7 +1191,7 @@ namespace m68kasm {
     break;
 
   case 49: // statement: DIRECTIVE_ORG expression
-#line 1103 "syntactic.y"
+#line 1105 "syntactic.y"
         {
 		statement->emplace<StatementOrg>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -1199,7 +1199,7 @@ namespace m68kasm {
     break;
 
   case 50: // statement: DIRECTIVE_PUSHO
-#line 1107 "syntactic.y"
+#line 1109 "syntactic.y"
         {
 		statement->emplace<StatementPushO>();
 	}
@@ -1207,7 +1207,7 @@ namespace m68kasm {
     break;
 
   case 51: // statement: DIRECTIVE_POPO
-#line 1111 "syntactic.y"
+#line 1113 "syntactic.y"
         {
 		statement->emplace<StatementPopO>();
 	}
@@ -1215,7 +1215,7 @@ namespace m68kasm {
     break;
 
   case 52: // statement: DIRECTIVE_OPT option_list
-#line 1115 "syntactic.y"
+#line 1117 "syntactic.y"
         {
 		statement->emplace<StatementOpt>(YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
 	}
@@ -1223,7 +1223,7 @@ namespace m68kasm {
     break;
 
   case 53: // statement: DIRECTIVE_PUSHP STRING
-#line 1119 "syntactic.y"
+#line 1121 "syntactic.y"
         {
 		statement->emplace<StatementPushP>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
@@ -1231,7 +1231,7 @@ namespace m68kasm {
     break;
 
   case 54: // statement: DIRECTIVE_POPP IDENTIFIER
-#line 1123 "syntactic.y"
+#line 1125 "syntactic.y"
         {
 		statement->emplace<StatementPopP>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
@@ -1239,7 +1239,7 @@ namespace m68kasm {
     break;
 
   case 55: // statement: DIRECTIVE_SHIFT
-#line 1127 "syntactic.y"
+#line 1129 "syntactic.y"
         {
 		statement->emplace<StatementShift>();
 	}
@@ -1247,7 +1247,7 @@ namespace m68kasm {
     break;
 
   case 56: // statement: DIRECTIVE_MEXIT
-#line 1131 "syntactic.y"
+#line 1133 "syntactic.y"
         {
 		statement->emplace<StatementMExit>();
 	}
@@ -1255,7 +1255,7 @@ namespace m68kasm {
     break;
 
   case 57: // statement: DIRECTIVE_LOCAL identifier_list
-#line 1135 "syntactic.y"
+#line 1137 "syntactic.y"
         {
 		statement->emplace<StatementLocal>(YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
 	}
@@ -1263,7 +1263,7 @@ namespace m68kasm {
     break;
 
   case 58: // statement: DIRECTIVE_LIST
-#line 1139 "syntactic.y"
+#line 1141 "syntactic.y"
         {
 		/* TODO: Make this actually do something. */
 		statement->emplace<StatementEmpty>();
@@ -1272,7 +1272,7 @@ namespace m68kasm {
     break;
 
   case 59: // statement: DIRECTIVE_LIST "+"
-#line 1144 "syntactic.y"
+#line 1146 "syntactic.y"
         {
 		/* TODO: Make this actually do something. */
 		statement->emplace<StatementEmpty>();
@@ -1281,7 +1281,7 @@ namespace m68kasm {
     break;
 
   case 60: // statement: DIRECTIVE_LIST "-"
-#line 1149 "syntactic.y"
+#line 1151 "syntactic.y"
         {
 		/* TODO: Make this actually do something. */
 		statement->emplace<StatementEmpty>();
@@ -1290,7 +1290,7 @@ namespace m68kasm {
     break;
 
   case 61: // statement: DIRECTIVE_NOLIST
-#line 1154 "syntactic.y"
+#line 1156 "syntactic.y"
         {
 		/* TODO: Make this actually do something. */
 		statement->emplace<StatementEmpty>();
@@ -1299,7 +1299,7 @@ namespace m68kasm {
     break;
 
   case 62: // statement: DIRECTIVE_PURGE IDENTIFIER
-#line 1159 "syntactic.y"
+#line 1161 "syntactic.y"
         {
 		statement->emplace<StatementPurge>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
@@ -1307,7 +1307,7 @@ namespace m68kasm {
     break;
 
   case 63: // expression_list: expression
-#line 1166 "syntactic.y"
+#line 1168 "syntactic.y"
         {
 		yylhs.value.as < ExpressionList > ().emplace_back(std::move(YY_MOVE (yystack_[0].value.as < Expression > ())));
 	}
@@ -1315,7 +1315,7 @@ namespace m68kasm {
     break;
 
   case 64: // expression_list: expression_list "," expression
-#line 1170 "syntactic.y"
+#line 1172 "syntactic.y"
         {
 		yylhs.value.as < ExpressionList > () = std::move(YY_MOVE (yystack_[2].value.as < ExpressionList > ()));
 
@@ -1325,7 +1325,7 @@ namespace m68kasm {
     break;
 
   case 65: // identifier_list: IDENTIFIER
-#line 1179 "syntactic.y"
+#line 1181 "syntactic.y"
         {
 		yylhs.value.as < IdentifierList > ().emplace_back(std::move(YY_MOVE (yystack_[0].value.as < String > ())));
 	}
@@ -1333,7 +1333,7 @@ namespace m68kasm {
     break;
 
   case 66: // identifier_list: identifier_list "," IDENTIFIER
-#line 1183 "syntactic.y"
+#line 1185 "syntactic.y"
         {
 		yylhs.value.as < IdentifierList > () = std::move(YY_MOVE (yystack_[2].value.as < IdentifierList > ()));
 
@@ -1343,7 +1343,7 @@ namespace m68kasm {
     break;
 
   case 67: // option_list: OPTION
-#line 1192 "syntactic.y"
+#line 1194 "syntactic.y"
         {
 		yylhs.value.as < IdentifierList > ().emplace_back(std::move(YY_MOVE (yystack_[0].value.as < String > ())));
 	}
@@ -1351,7 +1351,7 @@ namespace m68kasm {
     break;
 
   case 68: // option_list: option_list "," OPTION
-#line 1196 "syntactic.y"
+#line 1198 "syntactic.y"
         {
 		yylhs.value.as < IdentifierList > () = std::move(YY_MOVE (yystack_[2].value.as < IdentifierList > ()));
 
@@ -1361,7 +1361,7 @@ namespace m68kasm {
     break;
 
   case 69: // instruction: full_opcode
-#line 1205 "syntactic.y"
+#line 1207 "syntactic.y"
         {
 		yylhs.value.as < StatementInstruction > ().opcode = YY_MOVE (yystack_[0].value.as < Opcode > ());
 		yylhs.value.as < StatementInstruction > ().operands[0].type = OPERAND_NONE;
@@ -1371,7 +1371,7 @@ namespace m68kasm {
     break;
 
   case 70: // instruction: full_opcode operand
-#line 1211 "syntactic.y"
+#line 1213 "syntactic.y"
         {
 		yylhs.value.as < StatementInstruction > ().opcode = YY_MOVE (yystack_[1].value.as < Opcode > ());
 		yylhs.value.as < StatementInstruction > ().operands[0] = YY_MOVE (yystack_[0].value.as < Operand > ());
@@ -1381,7 +1381,7 @@ namespace m68kasm {
     break;
 
   case 71: // instruction: full_opcode operand "," operand
-#line 1217 "syntactic.y"
+#line 1219 "syntactic.y"
         {
 		yylhs.value.as < StatementInstruction > ().opcode = YY_MOVE (yystack_[3].value.as < Opcode > ());
 		yylhs.value.as < StatementInstruction > ().operands[0] = YY_MOVE (yystack_[2].value.as < Operand > ());
@@ -1391,7 +1391,7 @@ namespace m68kasm {
     break;
 
   case 72: // full_opcode: opcode
-#line 1226 "syntactic.y"
+#line 1228 "syntactic.y"
         {
 		yylhs.value.as < Opcode > () = YY_MOVE (yystack_[0].value.as < Opcode > ());
 		yylhs.value.as < Opcode > ().size = SIZE_UNDEFINED;
@@ -1400,7 +1400,7 @@ namespace m68kasm {
     break;
 
   case 73: // full_opcode: opcode "."
-#line 1231 "syntactic.y"
+#line 1233 "syntactic.y"
         {
 		yylhs.value.as < Opcode > () = YY_MOVE (yystack_[1].value.as < Opcode > ());
 		yylhs.value.as < Opcode > ().size = SIZE_UNDEFINED;
@@ -1410,7 +1410,7 @@ namespace m68kasm {
     break;
 
   case 74: // full_opcode: opcode size
-#line 1237 "syntactic.y"
+#line 1239 "syntactic.y"
         {
 		yylhs.value.as < Opcode > () = YY_MOVE (yystack_[1].value.as < Opcode > ());
 		yylhs.value.as < Opcode > ().size = YY_MOVE (yystack_[0].value.as < Size > ());
@@ -1419,7 +1419,7 @@ namespace m68kasm {
     break;
 
   case 75: // opcode: DIRECTIVE_ORI
-#line 1245 "syntactic.y"
+#line 1247 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ORI;
 	}
@@ -1427,7 +1427,7 @@ namespace m68kasm {
     break;
 
   case 76: // opcode: DIRECTIVE_ANDI
-#line 1249 "syntactic.y"
+#line 1251 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ANDI;
 	}
@@ -1435,7 +1435,7 @@ namespace m68kasm {
     break;
 
   case 77: // opcode: DIRECTIVE_SUBI
-#line 1253 "syntactic.y"
+#line 1255 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_SUBI;
 	}
@@ -1443,7 +1443,7 @@ namespace m68kasm {
     break;
 
   case 78: // opcode: DIRECTIVE_ADDI
-#line 1257 "syntactic.y"
+#line 1259 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ADDI;
 	}
@@ -1451,7 +1451,7 @@ namespace m68kasm {
     break;
 
   case 79: // opcode: DIRECTIVE_EORI
-#line 1261 "syntactic.y"
+#line 1263 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_EORI;
 	}
@@ -1459,7 +1459,7 @@ namespace m68kasm {
     break;
 
   case 80: // opcode: DIRECTIVE_CMPI
-#line 1265 "syntactic.y"
+#line 1267 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_CMPI;
 	}
@@ -1467,7 +1467,7 @@ namespace m68kasm {
     break;
 
   case 81: // opcode: DIRECTIVE_BTST
-#line 1269 "syntactic.y"
+#line 1271 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_BTST_STATIC;
 	}
@@ -1475,7 +1475,7 @@ namespace m68kasm {
     break;
 
   case 82: // opcode: DIRECTIVE_BCHG
-#line 1273 "syntactic.y"
+#line 1275 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_BCHG_STATIC;
 	}
@@ -1483,7 +1483,7 @@ namespace m68kasm {
     break;
 
   case 83: // opcode: DIRECTIVE_BCLR
-#line 1277 "syntactic.y"
+#line 1279 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_BCLR_STATIC;
 	}
@@ -1491,7 +1491,7 @@ namespace m68kasm {
     break;
 
   case 84: // opcode: DIRECTIVE_BSET
-#line 1281 "syntactic.y"
+#line 1283 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_BSET_STATIC;
 	}
@@ -1499,7 +1499,7 @@ namespace m68kasm {
     break;
 
   case 85: // opcode: DIRECTIVE_MOVEP
-#line 1285 "syntactic.y"
+#line 1287 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_MOVEP_TO_REG;
 	}
@@ -1507,7 +1507,7 @@ namespace m68kasm {
     break;
 
   case 86: // opcode: DIRECTIVE_MOVEA
-#line 1289 "syntactic.y"
+#line 1291 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_MOVEA;
 	}
@@ -1515,7 +1515,7 @@ namespace m68kasm {
     break;
 
   case 87: // opcode: DIRECTIVE_MOVE
-#line 1293 "syntactic.y"
+#line 1295 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_MOVE;
 	}
@@ -1523,7 +1523,7 @@ namespace m68kasm {
     break;
 
   case 88: // opcode: DIRECTIVE_NEGX
-#line 1297 "syntactic.y"
+#line 1299 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_NEGX;
 	}
@@ -1531,7 +1531,7 @@ namespace m68kasm {
     break;
 
   case 89: // opcode: DIRECTIVE_CLR
-#line 1301 "syntactic.y"
+#line 1303 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_CLR;
 	}
@@ -1539,7 +1539,7 @@ namespace m68kasm {
     break;
 
   case 90: // opcode: DIRECTIVE_NEG
-#line 1305 "syntactic.y"
+#line 1307 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_NEG;
 	}
@@ -1547,7 +1547,7 @@ namespace m68kasm {
     break;
 
   case 91: // opcode: DIRECTIVE_NOT
-#line 1309 "syntactic.y"
+#line 1311 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_NOT;
 	}
@@ -1555,7 +1555,7 @@ namespace m68kasm {
     break;
 
   case 92: // opcode: DIRECTIVE_EXT
-#line 1313 "syntactic.y"
+#line 1315 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_EXT;
 	}
@@ -1563,7 +1563,7 @@ namespace m68kasm {
     break;
 
   case 93: // opcode: DIRECTIVE_NBCD
-#line 1317 "syntactic.y"
+#line 1319 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_NBCD;
 	}
@@ -1571,7 +1571,7 @@ namespace m68kasm {
     break;
 
   case 94: // opcode: DIRECTIVE_SWAP
-#line 1321 "syntactic.y"
+#line 1323 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_SWAP;
 	}
@@ -1579,7 +1579,7 @@ namespace m68kasm {
     break;
 
   case 95: // opcode: DIRECTIVE_PEA
-#line 1325 "syntactic.y"
+#line 1327 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_PEA;
 	}
@@ -1587,7 +1587,7 @@ namespace m68kasm {
     break;
 
   case 96: // opcode: DIRECTIVE_ILLEGAL
-#line 1329 "syntactic.y"
+#line 1331 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ILLEGAL;
 	}
@@ -1595,7 +1595,7 @@ namespace m68kasm {
     break;
 
   case 97: // opcode: DIRECTIVE_TAS
-#line 1333 "syntactic.y"
+#line 1335 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_TAS;
 	}
@@ -1603,7 +1603,7 @@ namespace m68kasm {
     break;
 
   case 98: // opcode: DIRECTIVE_TST
-#line 1337 "syntactic.y"
+#line 1339 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_TST;
 	}
@@ -1611,7 +1611,7 @@ namespace m68kasm {
     break;
 
   case 99: // opcode: DIRECTIVE_TRAP
-#line 1341 "syntactic.y"
+#line 1343 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_TRAP;
 	}
@@ -1619,7 +1619,7 @@ namespace m68kasm {
     break;
 
   case 100: // opcode: DIRECTIVE_LINK
-#line 1345 "syntactic.y"
+#line 1347 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_LINK;
 	}
@@ -1627,7 +1627,7 @@ namespace m68kasm {
     break;
 
   case 101: // opcode: DIRECTIVE_UNLK
-#line 1349 "syntactic.y"
+#line 1351 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_UNLK;
 	}
@@ -1635,7 +1635,7 @@ namespace m68kasm {
     break;
 
   case 102: // opcode: DIRECTIVE_RESET
-#line 1353 "syntactic.y"
+#line 1355 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_RESET;
 	}
@@ -1643,7 +1643,7 @@ namespace m68kasm {
     break;
 
   case 103: // opcode: DIRECTIVE_NOP
-#line 1357 "syntactic.y"
+#line 1359 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_NOP;
 	}
@@ -1651,7 +1651,7 @@ namespace m68kasm {
     break;
 
   case 104: // opcode: DIRECTIVE_STOP
-#line 1361 "syntactic.y"
+#line 1363 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_STOP;
 	}
@@ -1659,7 +1659,7 @@ namespace m68kasm {
     break;
 
   case 105: // opcode: DIRECTIVE_RTE
-#line 1365 "syntactic.y"
+#line 1367 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_RTE;
 	}
@@ -1667,7 +1667,7 @@ namespace m68kasm {
     break;
 
   case 106: // opcode: DIRECTIVE_RTS
-#line 1369 "syntactic.y"
+#line 1371 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_RTS;
 	}
@@ -1675,7 +1675,7 @@ namespace m68kasm {
     break;
 
   case 107: // opcode: DIRECTIVE_TRAPV
-#line 1373 "syntactic.y"
+#line 1375 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_TRAPV;
 	}
@@ -1683,7 +1683,7 @@ namespace m68kasm {
     break;
 
   case 108: // opcode: DIRECTIVE_RTR
-#line 1377 "syntactic.y"
+#line 1379 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_RTR;
 	}
@@ -1691,7 +1691,7 @@ namespace m68kasm {
     break;
 
   case 109: // opcode: DIRECTIVE_JSR
-#line 1381 "syntactic.y"
+#line 1383 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_JSR;
 	}
@@ -1699,7 +1699,7 @@ namespace m68kasm {
     break;
 
   case 110: // opcode: DIRECTIVE_JMP
-#line 1385 "syntactic.y"
+#line 1387 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_JMP;
 	}
@@ -1707,7 +1707,7 @@ namespace m68kasm {
     break;
 
   case 111: // opcode: DIRECTIVE_MOVEM
-#line 1389 "syntactic.y"
+#line 1391 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_MOVEM_TO_REGS;
 	}
@@ -1715,7 +1715,7 @@ namespace m68kasm {
     break;
 
   case 112: // opcode: DIRECTIVE_LEA
-#line 1393 "syntactic.y"
+#line 1395 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_LEA;
 	}
@@ -1723,7 +1723,7 @@ namespace m68kasm {
     break;
 
   case 113: // opcode: DIRECTIVE_CHK
-#line 1397 "syntactic.y"
+#line 1399 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_CHK;
 	}
@@ -1731,7 +1731,7 @@ namespace m68kasm {
     break;
 
   case 114: // opcode: DIRECTIVE_ADDQ
-#line 1401 "syntactic.y"
+#line 1403 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ADDQ;
 	}
@@ -1739,7 +1739,7 @@ namespace m68kasm {
     break;
 
   case 115: // opcode: DIRECTIVE_SUBQ
-#line 1405 "syntactic.y"
+#line 1407 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_SUBQ;
 	}
@@ -1747,7 +1747,7 @@ namespace m68kasm {
     break;
 
   case 116: // opcode: DIRECTIVE_ST
-#line 1409 "syntactic.y"
+#line 1411 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_TRUE;
@@ -1756,7 +1756,7 @@ namespace m68kasm {
     break;
 
   case 117: // opcode: DIRECTIVE_SF
-#line 1414 "syntactic.y"
+#line 1416 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_FALSE;
@@ -1765,7 +1765,7 @@ namespace m68kasm {
     break;
 
   case 118: // opcode: DIRECTIVE_SHI
-#line 1419 "syntactic.y"
+#line 1421 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_HIGHER;
@@ -1774,7 +1774,7 @@ namespace m68kasm {
     break;
 
   case 119: // opcode: DIRECTIVE_SLS
-#line 1424 "syntactic.y"
+#line 1426 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LOWER_OR_SAME;
@@ -1783,7 +1783,7 @@ namespace m68kasm {
     break;
 
   case 120: // opcode: DIRECTIVE_SCC
-#line 1429 "syntactic.y"
+#line 1431 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_CLEAR;
@@ -1792,7 +1792,7 @@ namespace m68kasm {
     break;
 
   case 121: // opcode: DIRECTIVE_SCS
-#line 1434 "syntactic.y"
+#line 1436 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_SET;
@@ -1801,7 +1801,7 @@ namespace m68kasm {
     break;
 
   case 122: // opcode: DIRECTIVE_SNE
-#line 1439 "syntactic.y"
+#line 1441 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_NOT_EQUAL;
@@ -1810,7 +1810,7 @@ namespace m68kasm {
     break;
 
   case 123: // opcode: DIRECTIVE_SEQ
-#line 1444 "syntactic.y"
+#line 1446 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_EQUAL;
@@ -1819,7 +1819,7 @@ namespace m68kasm {
     break;
 
   case 124: // opcode: DIRECTIVE_SVC
-#line 1449 "syntactic.y"
+#line 1451 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_CLEAR;
@@ -1828,7 +1828,7 @@ namespace m68kasm {
     break;
 
   case 125: // opcode: DIRECTIVE_SVS
-#line 1454 "syntactic.y"
+#line 1456 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_SET;
@@ -1837,7 +1837,7 @@ namespace m68kasm {
     break;
 
   case 126: // opcode: DIRECTIVE_SPL
-#line 1459 "syntactic.y"
+#line 1461 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_PLUS;
@@ -1846,7 +1846,7 @@ namespace m68kasm {
     break;
 
   case 127: // opcode: DIRECTIVE_SMI
-#line 1464 "syntactic.y"
+#line 1466 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_MINUS;
@@ -1855,7 +1855,7 @@ namespace m68kasm {
     break;
 
   case 128: // opcode: DIRECTIVE_SGE
-#line 1469 "syntactic.y"
+#line 1471 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_OR_EQUAL;
@@ -1864,7 +1864,7 @@ namespace m68kasm {
     break;
 
   case 129: // opcode: DIRECTIVE_SLT
-#line 1474 "syntactic.y"
+#line 1476 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_THAN;
@@ -1873,7 +1873,7 @@ namespace m68kasm {
     break;
 
   case 130: // opcode: DIRECTIVE_SGT
-#line 1479 "syntactic.y"
+#line 1481 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_THAN;
@@ -1882,7 +1882,7 @@ namespace m68kasm {
     break;
 
   case 131: // opcode: DIRECTIVE_SLE
-#line 1484 "syntactic.y"
+#line 1486 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_OR_EQUAL;
@@ -1891,7 +1891,7 @@ namespace m68kasm {
     break;
 
   case 132: // opcode: DIRECTIVE_DBT
-#line 1489 "syntactic.y"
+#line 1491 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_TRUE;
@@ -1900,7 +1900,7 @@ namespace m68kasm {
     break;
 
   case 133: // opcode: DIRECTIVE_DBF
-#line 1494 "syntactic.y"
+#line 1496 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_FALSE;
@@ -1909,7 +1909,7 @@ namespace m68kasm {
     break;
 
   case 134: // opcode: DIRECTIVE_DBHI
-#line 1499 "syntactic.y"
+#line 1501 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_HIGHER;
@@ -1918,7 +1918,7 @@ namespace m68kasm {
     break;
 
   case 135: // opcode: DIRECTIVE_DBLS
-#line 1504 "syntactic.y"
+#line 1506 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LOWER_OR_SAME;
@@ -1927,7 +1927,7 @@ namespace m68kasm {
     break;
 
   case 136: // opcode: DIRECTIVE_DBCC
-#line 1509 "syntactic.y"
+#line 1511 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_CLEAR;
@@ -1936,7 +1936,7 @@ namespace m68kasm {
     break;
 
   case 137: // opcode: DIRECTIVE_DBCS
-#line 1514 "syntactic.y"
+#line 1516 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_SET;
@@ -1945,7 +1945,7 @@ namespace m68kasm {
     break;
 
   case 138: // opcode: DIRECTIVE_DBNE
-#line 1519 "syntactic.y"
+#line 1521 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_NOT_EQUAL;
@@ -1954,7 +1954,7 @@ namespace m68kasm {
     break;
 
   case 139: // opcode: DIRECTIVE_DBEQ
-#line 1524 "syntactic.y"
+#line 1526 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_EQUAL;
@@ -1963,7 +1963,7 @@ namespace m68kasm {
     break;
 
   case 140: // opcode: DIRECTIVE_DBVC
-#line 1529 "syntactic.y"
+#line 1531 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_CLEAR;
@@ -1972,7 +1972,7 @@ namespace m68kasm {
     break;
 
   case 141: // opcode: DIRECTIVE_DBVS
-#line 1534 "syntactic.y"
+#line 1536 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_SET;
@@ -1981,7 +1981,7 @@ namespace m68kasm {
     break;
 
   case 142: // opcode: DIRECTIVE_DBPL
-#line 1539 "syntactic.y"
+#line 1541 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_PLUS;
@@ -1990,7 +1990,7 @@ namespace m68kasm {
     break;
 
   case 143: // opcode: DIRECTIVE_DBMI
-#line 1544 "syntactic.y"
+#line 1546 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_MINUS;
@@ -1999,7 +1999,7 @@ namespace m68kasm {
     break;
 
   case 144: // opcode: DIRECTIVE_DBGE
-#line 1549 "syntactic.y"
+#line 1551 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_OR_EQUAL;
@@ -2008,7 +2008,7 @@ namespace m68kasm {
     break;
 
   case 145: // opcode: DIRECTIVE_DBLT
-#line 1554 "syntactic.y"
+#line 1556 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_THAN;
@@ -2017,7 +2017,7 @@ namespace m68kasm {
     break;
 
   case 146: // opcode: DIRECTIVE_DBGT
-#line 1559 "syntactic.y"
+#line 1561 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_THAN;
@@ -2026,7 +2026,7 @@ namespace m68kasm {
     break;
 
   case 147: // opcode: DIRECTIVE_DBLE
-#line 1564 "syntactic.y"
+#line 1566 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_OR_EQUAL;
@@ -2035,7 +2035,7 @@ namespace m68kasm {
     break;
 
   case 148: // opcode: DIRECTIVE_BRA
-#line 1569 "syntactic.y"
+#line 1571 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_BRA;
 	}
@@ -2043,7 +2043,7 @@ namespace m68kasm {
     break;
 
   case 149: // opcode: DIRECTIVE_BSR
-#line 1573 "syntactic.y"
+#line 1575 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_BSR;
 	}
@@ -2051,7 +2051,7 @@ namespace m68kasm {
     break;
 
   case 150: // opcode: DIRECTIVE_BHI
-#line 1577 "syntactic.y"
+#line 1579 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_HIGHER;
@@ -2060,7 +2060,7 @@ namespace m68kasm {
     break;
 
   case 151: // opcode: DIRECTIVE_BLS
-#line 1582 "syntactic.y"
+#line 1584 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LOWER_OR_SAME;
@@ -2069,7 +2069,7 @@ namespace m68kasm {
     break;
 
   case 152: // opcode: DIRECTIVE_BCC
-#line 1587 "syntactic.y"
+#line 1589 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_CLEAR;
@@ -2078,7 +2078,7 @@ namespace m68kasm {
     break;
 
   case 153: // opcode: DIRECTIVE_BCS
-#line 1592 "syntactic.y"
+#line 1594 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_SET;
@@ -2087,7 +2087,7 @@ namespace m68kasm {
     break;
 
   case 154: // opcode: DIRECTIVE_BNE
-#line 1597 "syntactic.y"
+#line 1599 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_NOT_EQUAL;
@@ -2096,7 +2096,7 @@ namespace m68kasm {
     break;
 
   case 155: // opcode: DIRECTIVE_BEQ
-#line 1602 "syntactic.y"
+#line 1604 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_EQUAL;
@@ -2105,7 +2105,7 @@ namespace m68kasm {
     break;
 
   case 156: // opcode: DIRECTIVE_BVC
-#line 1607 "syntactic.y"
+#line 1609 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_CLEAR;
@@ -2114,7 +2114,7 @@ namespace m68kasm {
     break;
 
   case 157: // opcode: DIRECTIVE_BVS
-#line 1612 "syntactic.y"
+#line 1614 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_SET;
@@ -2123,7 +2123,7 @@ namespace m68kasm {
     break;
 
   case 158: // opcode: DIRECTIVE_BPL
-#line 1617 "syntactic.y"
+#line 1619 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_PLUS;
@@ -2132,7 +2132,7 @@ namespace m68kasm {
     break;
 
   case 159: // opcode: DIRECTIVE_BMI
-#line 1622 "syntactic.y"
+#line 1624 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_MINUS;
@@ -2141,7 +2141,7 @@ namespace m68kasm {
     break;
 
   case 160: // opcode: DIRECTIVE_BGE
-#line 1627 "syntactic.y"
+#line 1629 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_OR_EQUAL;
@@ -2150,7 +2150,7 @@ namespace m68kasm {
     break;
 
   case 161: // opcode: DIRECTIVE_BLT
-#line 1632 "syntactic.y"
+#line 1634 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_THAN;
@@ -2159,7 +2159,7 @@ namespace m68kasm {
     break;
 
   case 162: // opcode: DIRECTIVE_BGT
-#line 1637 "syntactic.y"
+#line 1639 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_THAN;
@@ -2168,7 +2168,7 @@ namespace m68kasm {
     break;
 
   case 163: // opcode: DIRECTIVE_BLE
-#line 1642 "syntactic.y"
+#line 1644 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_OR_EQUAL;
@@ -2177,7 +2177,7 @@ namespace m68kasm {
     break;
 
   case 164: // opcode: DIRECTIVE_MOVEQ
-#line 1647 "syntactic.y"
+#line 1649 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_MOVEQ;
 	}
@@ -2185,7 +2185,7 @@ namespace m68kasm {
     break;
 
   case 165: // opcode: DIRECTIVE_DIVU
-#line 1651 "syntactic.y"
+#line 1653 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DIVU;
 	}
@@ -2193,7 +2193,7 @@ namespace m68kasm {
     break;
 
   case 166: // opcode: DIRECTIVE_DIVS
-#line 1655 "syntactic.y"
+#line 1657 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DIVS;
 	}
@@ -2201,7 +2201,7 @@ namespace m68kasm {
     break;
 
   case 167: // opcode: DIRECTIVE_SBCD
-#line 1659 "syntactic.y"
+#line 1661 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_SBCD_DATA_REGS;
 	}
@@ -2209,7 +2209,7 @@ namespace m68kasm {
     break;
 
   case 168: // opcode: DIRECTIVE_OR
-#line 1663 "syntactic.y"
+#line 1665 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_OR_TO_REG;
 	}
@@ -2217,7 +2217,7 @@ namespace m68kasm {
     break;
 
   case 169: // opcode: DIRECTIVE_SUB
-#line 1667 "syntactic.y"
+#line 1669 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_SUB_TO_REG;
 	}
@@ -2225,7 +2225,7 @@ namespace m68kasm {
     break;
 
   case 170: // opcode: DIRECTIVE_SUBX
-#line 1671 "syntactic.y"
+#line 1673 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_SUBX_DATA_REGS;
 	}
@@ -2233,7 +2233,7 @@ namespace m68kasm {
     break;
 
   case 171: // opcode: DIRECTIVE_SUBA
-#line 1675 "syntactic.y"
+#line 1677 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_SUBA;
 	}
@@ -2241,7 +2241,7 @@ namespace m68kasm {
     break;
 
   case 172: // opcode: DIRECTIVE_EOR
-#line 1679 "syntactic.y"
+#line 1681 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_EOR;
 	}
@@ -2249,7 +2249,7 @@ namespace m68kasm {
     break;
 
   case 173: // opcode: DIRECTIVE_CMPM
-#line 1683 "syntactic.y"
+#line 1685 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_CMPM;
 	}
@@ -2257,7 +2257,7 @@ namespace m68kasm {
     break;
 
   case 174: // opcode: DIRECTIVE_CMP
-#line 1687 "syntactic.y"
+#line 1689 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_CMP;
 	}
@@ -2265,7 +2265,7 @@ namespace m68kasm {
     break;
 
   case 175: // opcode: DIRECTIVE_CMPA
-#line 1691 "syntactic.y"
+#line 1693 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_CMPA;
 	}
@@ -2273,7 +2273,7 @@ namespace m68kasm {
     break;
 
   case 176: // opcode: DIRECTIVE_MULU
-#line 1695 "syntactic.y"
+#line 1697 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_MULU;
 	}
@@ -2281,7 +2281,7 @@ namespace m68kasm {
     break;
 
   case 177: // opcode: DIRECTIVE_MULS
-#line 1699 "syntactic.y"
+#line 1701 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_MULS;
 	}
@@ -2289,7 +2289,7 @@ namespace m68kasm {
     break;
 
   case 178: // opcode: DIRECTIVE_ABCD
-#line 1703 "syntactic.y"
+#line 1705 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ABCD_DATA_REGS;
 	}
@@ -2297,7 +2297,7 @@ namespace m68kasm {
     break;
 
   case 179: // opcode: DIRECTIVE_EXG
-#line 1707 "syntactic.y"
+#line 1709 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_EXG;
 	}
@@ -2305,7 +2305,7 @@ namespace m68kasm {
     break;
 
   case 180: // opcode: DIRECTIVE_AND
-#line 1711 "syntactic.y"
+#line 1713 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_AND_TO_REG;
 	}
@@ -2313,7 +2313,7 @@ namespace m68kasm {
     break;
 
   case 181: // opcode: DIRECTIVE_ADD
-#line 1715 "syntactic.y"
+#line 1717 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ADD_TO_REG;
 	}
@@ -2321,7 +2321,7 @@ namespace m68kasm {
     break;
 
   case 182: // opcode: DIRECTIVE_ADDX
-#line 1719 "syntactic.y"
+#line 1721 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ADDX_DATA_REGS;
 	}
@@ -2329,7 +2329,7 @@ namespace m68kasm {
     break;
 
   case 183: // opcode: DIRECTIVE_ADDA
-#line 1723 "syntactic.y"
+#line 1725 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ADDA;
 	}
@@ -2337,7 +2337,7 @@ namespace m68kasm {
     break;
 
   case 184: // opcode: DIRECTIVE_ASL
-#line 1727 "syntactic.y"
+#line 1729 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ASL_STATIC;
 	}
@@ -2345,7 +2345,7 @@ namespace m68kasm {
     break;
 
   case 185: // opcode: DIRECTIVE_ASR
-#line 1731 "syntactic.y"
+#line 1733 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ASR_STATIC;
 	}
@@ -2353,7 +2353,7 @@ namespace m68kasm {
     break;
 
   case 186: // opcode: DIRECTIVE_LSL
-#line 1735 "syntactic.y"
+#line 1737 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_LSL_STATIC;
 	}
@@ -2361,7 +2361,7 @@ namespace m68kasm {
     break;
 
   case 187: // opcode: DIRECTIVE_LSR
-#line 1739 "syntactic.y"
+#line 1741 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_LSR_STATIC;
 	}
@@ -2369,7 +2369,7 @@ namespace m68kasm {
     break;
 
   case 188: // opcode: DIRECTIVE_ROXL
-#line 1743 "syntactic.y"
+#line 1745 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ROXL_STATIC;
 	}
@@ -2377,7 +2377,7 @@ namespace m68kasm {
     break;
 
   case 189: // opcode: DIRECTIVE_ROXR
-#line 1747 "syntactic.y"
+#line 1749 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ROXR_STATIC;
 	}
@@ -2385,7 +2385,7 @@ namespace m68kasm {
     break;
 
   case 190: // opcode: DIRECTIVE_ROL
-#line 1751 "syntactic.y"
+#line 1753 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ROL_STATIC;
 	}
@@ -2393,7 +2393,7 @@ namespace m68kasm {
     break;
 
   case 191: // opcode: DIRECTIVE_ROR
-#line 1755 "syntactic.y"
+#line 1757 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ROR_STATIC;
 	}
@@ -2401,7 +2401,7 @@ namespace m68kasm {
     break;
 
   case 192: // size: SIZE_BYTE
-#line 1762 "syntactic.y"
+#line 1764 "syntactic.y"
         {
 		yylhs.value.as < Size > () = SIZE_BYTE;
 	}
@@ -2409,7 +2409,7 @@ namespace m68kasm {
     break;
 
   case 193: // size: SIZE_SHORT
-#line 1766 "syntactic.y"
+#line 1768 "syntactic.y"
         {
 		yylhs.value.as < Size > () = SIZE_SHORT;
 	}
@@ -2417,7 +2417,7 @@ namespace m68kasm {
     break;
 
   case 194: // size: SIZE_WORD
-#line 1770 "syntactic.y"
+#line 1772 "syntactic.y"
         {
 		yylhs.value.as < Size > () = SIZE_WORD;
 	}
@@ -2425,7 +2425,7 @@ namespace m68kasm {
     break;
 
   case 195: // size: SIZE_LONGWORD
-#line 1774 "syntactic.y"
+#line 1776 "syntactic.y"
         {
 		yylhs.value.as < Size > () = SIZE_LONGWORD;
 	}
@@ -2433,7 +2433,7 @@ namespace m68kasm {
     break;
 
   case 196: // operand: "(" ADDRESS_REGISTER ")"
-#line 1782 "syntactic.y"
+#line 1784 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT;
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
@@ -2442,7 +2442,7 @@ namespace m68kasm {
     break;
 
   case 197: // operand: "(" ADDRESS_REGISTER ")" "+"
-#line 1787 "syntactic.y"
+#line 1789 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT;
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
@@ -2451,7 +2451,7 @@ namespace m68kasm {
     break;
 
   case 198: // operand: "-" "(" ADDRESS_REGISTER ")"
-#line 1792 "syntactic.y"
+#line 1794 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT;
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
@@ -2460,7 +2460,7 @@ namespace m68kasm {
     break;
 
   case 199: // operand: expression "(" ADDRESS_REGISTER ")"
-#line 1797 "syntactic.y"
+#line 1799 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[3].value.as < Expression > ());
@@ -2470,7 +2470,7 @@ namespace m68kasm {
     break;
 
   case 200: // operand: "(" expression "," ADDRESS_REGISTER ")"
-#line 1803 "syntactic.y"
+#line 1805 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[3].value.as < Expression > ());
@@ -2480,7 +2480,7 @@ namespace m68kasm {
     break;
 
   case 201: // operand: "(" ADDRESS_REGISTER "," expression ")"
-#line 1809 "syntactic.y"
+#line 1811 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[1].value.as < Expression > ());
@@ -2490,7 +2490,7 @@ namespace m68kasm {
     break;
 
   case 202: // operand: "(" ADDRESS_REGISTER "," data_or_address_register size ")"
-#line 1815 "syntactic.y"
+#line 1817 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2505,7 +2505,7 @@ namespace m68kasm {
     break;
 
   case 203: // operand: expression "(" ADDRESS_REGISTER "," data_or_address_register size ")"
-#line 1826 "syntactic.y"
+#line 1828 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2520,7 +2520,7 @@ namespace m68kasm {
     break;
 
   case 204: // operand: "(" expression "," ADDRESS_REGISTER "," data_or_address_register size ")"
-#line 1837 "syntactic.y"
+#line 1839 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2535,7 +2535,7 @@ namespace m68kasm {
     break;
 
   case 205: // operand: "(" ADDRESS_REGISTER "," data_or_address_register ")"
-#line 1848 "syntactic.y"
+#line 1850 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
@@ -2551,7 +2551,7 @@ namespace m68kasm {
     break;
 
   case 206: // operand: expression "(" ADDRESS_REGISTER "," data_or_address_register ")"
-#line 1860 "syntactic.y"
+#line 1862 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
@@ -2567,7 +2567,7 @@ namespace m68kasm {
     break;
 
   case 207: // operand: "(" expression "," ADDRESS_REGISTER "," data_or_address_register ")"
-#line 1872 "syntactic.y"
+#line 1874 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
@@ -2583,7 +2583,7 @@ namespace m68kasm {
     break;
 
   case 208: // operand: expression "(" PROGRAM_COUNTER ")"
-#line 1884 "syntactic.y"
+#line 1886 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[3].value.as < Expression > ());
@@ -2592,7 +2592,7 @@ namespace m68kasm {
     break;
 
   case 209: // operand: "(" expression "," PROGRAM_COUNTER ")"
-#line 1889 "syntactic.y"
+#line 1891 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[3].value.as < Expression > ());
@@ -2601,7 +2601,7 @@ namespace m68kasm {
     break;
 
   case 210: // operand: "(" PROGRAM_COUNTER "," expression ")"
-#line 1894 "syntactic.y"
+#line 1896 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[1].value.as < Expression > ());
@@ -2610,7 +2610,7 @@ namespace m68kasm {
     break;
 
   case 211: // operand: "(" PROGRAM_COUNTER "," data_or_address_register size ")"
-#line 1899 "syntactic.y"
+#line 1901 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2624,7 +2624,7 @@ namespace m68kasm {
     break;
 
   case 212: // operand: expression "(" PROGRAM_COUNTER "," data_or_address_register size ")"
-#line 1909 "syntactic.y"
+#line 1911 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2638,7 +2638,7 @@ namespace m68kasm {
     break;
 
   case 213: // operand: "(" expression "," PROGRAM_COUNTER "," data_or_address_register size ")"
-#line 1919 "syntactic.y"
+#line 1921 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2652,7 +2652,7 @@ namespace m68kasm {
     break;
 
   case 214: // operand: "(" PROGRAM_COUNTER "," data_or_address_register ")"
-#line 1929 "syntactic.y"
+#line 1931 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
@@ -2667,7 +2667,7 @@ namespace m68kasm {
     break;
 
   case 215: // operand: expression "(" PROGRAM_COUNTER "," data_or_address_register ")"
-#line 1940 "syntactic.y"
+#line 1942 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
@@ -2682,7 +2682,7 @@ namespace m68kasm {
     break;
 
   case 216: // operand: "(" expression "," PROGRAM_COUNTER "," data_or_address_register ")"
-#line 1951 "syntactic.y"
+#line 1953 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
@@ -2697,7 +2697,7 @@ namespace m68kasm {
     break;
 
   case 217: // operand: "#" expression
-#line 1963 "syntactic.y"
+#line 1965 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_LITERAL;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[0].value.as < Expression > ());
@@ -2706,7 +2706,7 @@ namespace m68kasm {
     break;
 
   case 218: // operand: STATUS_REGISTER
-#line 1979 "syntactic.y"
+#line 1981 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_STATUS_REGISTER;
 	}
@@ -2714,7 +2714,7 @@ namespace m68kasm {
     break;
 
   case 219: // operand: CONDITION_CODE_REGISTER
-#line 1983 "syntactic.y"
+#line 1985 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_CONDITION_CODE_REGISTER;
 	}
@@ -2722,7 +2722,7 @@ namespace m68kasm {
     break;
 
   case 220: // operand: USER_STACK_POINTER_REGISTER
-#line 1987 "syntactic.y"
+#line 1989 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_USER_STACK_POINTER_REGISTER;
 	}
@@ -2730,7 +2730,7 @@ namespace m68kasm {
     break;
 
   case 221: // operand: expression
-#line 1992 "syntactic.y"
+#line 1994 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[0].value.as < Expression > ());
@@ -2740,7 +2740,7 @@ namespace m68kasm {
     break;
 
   case 222: // operand: expression size
-#line 1998 "syntactic.y"
+#line 2000 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_ABSOLUTE;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[1].value.as < Expression > ());
@@ -2750,7 +2750,7 @@ namespace m68kasm {
     break;
 
   case 223: // operand: register_list
-#line 2005 "syntactic.y"
+#line 2007 "syntactic.y"
         {
 		const auto register_list = YY_MOVE (yystack_[0].value.as < unsigned long > ());
 
@@ -2784,7 +2784,7 @@ namespace m68kasm {
     break;
 
   case 224: // register_list: register_span
-#line 2038 "syntactic.y"
+#line 2040 "syntactic.y"
         {
 		yylhs.value.as < unsigned long > () = YY_MOVE (yystack_[0].value.as < unsigned long > ());
 	}
@@ -2792,7 +2792,7 @@ namespace m68kasm {
     break;
 
   case 225: // register_list: register_span "/" register_list
-#line 2042 "syntactic.y"
+#line 2044 "syntactic.y"
         {
 		yylhs.value.as < unsigned long > () = YY_MOVE (yystack_[2].value.as < unsigned long > ()) | YY_MOVE (yystack_[0].value.as < unsigned long > ());
 	}
@@ -2800,7 +2800,7 @@ namespace m68kasm {
     break;
 
   case 226: // register_span: data_or_address_register
-#line 2049 "syntactic.y"
+#line 2051 "syntactic.y"
         {
 		yylhs.value.as < unsigned long > () = 1 << YY_MOVE (yystack_[0].value.as < unsigned long > ());
 	}
@@ -2808,7 +2808,7 @@ namespace m68kasm {
     break;
 
   case 227: // register_span: data_or_address_register "-" data_or_address_register
-#line 2053 "syntactic.y"
+#line 2055 "syntactic.y"
         {
 		const auto first_data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 		const auto second_data_or_address_register = YY_MOVE (yystack_[0].value.as < unsigned long > ());
@@ -2837,7 +2837,7 @@ namespace m68kasm {
     break;
 
   case 228: // data_or_address_register: DATA_REGISTER
-#line 2081 "syntactic.y"
+#line 2083 "syntactic.y"
         {
 		yylhs.value.as < unsigned long > () = 0 + YY_MOVE (yystack_[0].value.as < unsigned long > ());
 	}
@@ -2845,7 +2845,7 @@ namespace m68kasm {
     break;
 
   case 229: // data_or_address_register: ADDRESS_REGISTER
-#line 2085 "syntactic.y"
+#line 2087 "syntactic.y"
         {
 		yylhs.value.as < unsigned long > () = 8 + YY_MOVE (yystack_[0].value.as < unsigned long > ());
 	}
@@ -2853,7 +2853,7 @@ namespace m68kasm {
     break;
 
   case 230: // expression: expression1
-#line 2098 "syntactic.y"
+#line 2100 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
@@ -2861,7 +2861,7 @@ namespace m68kasm {
     break;
 
   case 231: // expression: expression LOGICAL_AND expression1
-#line 2103 "syntactic.y"
+#line 2105 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LOGICAL_AND, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -2870,7 +2870,7 @@ namespace m68kasm {
     break;
 
   case 232: // expression: expression LOGICAL_OR expression1
-#line 2109 "syntactic.y"
+#line 2111 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LOGICAL_OR, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -2879,7 +2879,7 @@ namespace m68kasm {
     break;
 
   case 233: // expression1: expression2
-#line 2117 "syntactic.y"
+#line 2119 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
@@ -2887,7 +2887,7 @@ namespace m68kasm {
     break;
 
   case 234: // expression1: expression1 "=" expression2
-#line 2121 "syntactic.y"
+#line 2123 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::EQUALITY, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -2896,7 +2896,7 @@ namespace m68kasm {
     break;
 
   case 235: // expression1: expression1 EQUALITY expression2
-#line 2126 "syntactic.y"
+#line 2128 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::EQUALITY, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -2905,7 +2905,7 @@ namespace m68kasm {
     break;
 
   case 236: // expression1: expression1 INEQUALITY expression2
-#line 2131 "syntactic.y"
+#line 2133 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::INEQUALITY, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -2914,7 +2914,7 @@ namespace m68kasm {
     break;
 
   case 237: // expression2: expression3
-#line 2139 "syntactic.y"
+#line 2141 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
@@ -2922,7 +2922,7 @@ namespace m68kasm {
     break;
 
   case 238: // expression2: expression2 "<" expression3
-#line 2143 "syntactic.y"
+#line 2145 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LESS_THAN, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -2931,7 +2931,7 @@ namespace m68kasm {
     break;
 
   case 239: // expression2: expression2 LESS_OR_EQUAL expression3
-#line 2148 "syntactic.y"
+#line 2150 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LESS_OR_EQUAL, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -2940,7 +2940,7 @@ namespace m68kasm {
     break;
 
   case 240: // expression2: expression2 ">" expression3
-#line 2153 "syntactic.y"
+#line 2155 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::MORE_THAN, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -2949,7 +2949,7 @@ namespace m68kasm {
     break;
 
   case 241: // expression2: expression2 MORE_OR_EQUAL expression3
-#line 2158 "syntactic.y"
+#line 2160 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::MORE_OR_EQUAL, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -2958,7 +2958,7 @@ namespace m68kasm {
     break;
 
   case 242: // expression3: expression4
-#line 2166 "syntactic.y"
+#line 2168 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
@@ -2966,7 +2966,7 @@ namespace m68kasm {
     break;
 
   case 243: // expression3: expression3 "+" expression4
-#line 2170 "syntactic.y"
+#line 2172 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::ADD, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -2975,7 +2975,7 @@ namespace m68kasm {
     break;
 
   case 244: // expression3: expression3 "-" expression4
-#line 2175 "syntactic.y"
+#line 2177 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::SUBTRACT, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -2984,7 +2984,7 @@ namespace m68kasm {
     break;
 
   case 245: // expression4: expression5
-#line 2183 "syntactic.y"
+#line 2185 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
@@ -2992,7 +2992,7 @@ namespace m68kasm {
     break;
 
   case 246: // expression4: expression4 "*" expression5
-#line 2187 "syntactic.y"
+#line 2189 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::MULTIPLY, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -3001,7 +3001,7 @@ namespace m68kasm {
     break;
 
   case 247: // expression4: expression4 "/" expression5
-#line 2192 "syntactic.y"
+#line 2194 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::DIVIDE, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -3010,7 +3010,7 @@ namespace m68kasm {
     break;
 
   case 248: // expression4: expression4 "%" expression5
-#line 2197 "syntactic.y"
+#line 2199 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::MODULO, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -3019,7 +3019,7 @@ namespace m68kasm {
     break;
 
   case 249: // expression5: expression6
-#line 2205 "syntactic.y"
+#line 2207 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
@@ -3027,7 +3027,7 @@ namespace m68kasm {
     break;
 
   case 250: // expression5: expression5 "&" expression6
-#line 2209 "syntactic.y"
+#line 2211 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::BITWISE_AND, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -3036,7 +3036,7 @@ namespace m68kasm {
     break;
 
   case 251: // expression5: expression5 "!" expression6
-#line 2214 "syntactic.y"
+#line 2216 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::BITWISE_OR, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -3045,7 +3045,7 @@ namespace m68kasm {
     break;
 
   case 252: // expression5: expression5 "|" expression6
-#line 2219 "syntactic.y"
+#line 2221 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::BITWISE_OR, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -3054,7 +3054,7 @@ namespace m68kasm {
     break;
 
   case 253: // expression5: expression5 "^" expression6
-#line 2224 "syntactic.y"
+#line 2226 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::BITWISE_XOR, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -3063,7 +3063,7 @@ namespace m68kasm {
     break;
 
   case 254: // expression6: expression7
-#line 2232 "syntactic.y"
+#line 2234 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
@@ -3071,7 +3071,7 @@ namespace m68kasm {
     break;
 
   case 255: // expression6: expression6 LEFT_SHIFT expression7
-#line 2236 "syntactic.y"
+#line 2238 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LEFT_SHIFT, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -3080,7 +3080,7 @@ namespace m68kasm {
     break;
 
   case 256: // expression6: expression6 RIGHT_SHIFT expression7
-#line 2241 "syntactic.y"
+#line 2243 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::RIGHT_SHIFT, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -3089,7 +3089,7 @@ namespace m68kasm {
     break;
 
   case 257: // expression7: expression8
-#line 2249 "syntactic.y"
+#line 2251 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
@@ -3097,7 +3097,7 @@ namespace m68kasm {
     break;
 
   case 258: // expression7: "+" expression7
-#line 2253 "syntactic.y"
+#line 2255 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
@@ -3105,7 +3105,7 @@ namespace m68kasm {
     break;
 
   case 259: // expression7: "-" expression7
-#line 2257 "syntactic.y"
+#line 2259 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic1Operand::Type::NEGATE, YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -3114,7 +3114,7 @@ namespace m68kasm {
     break;
 
   case 260: // expression7: "~" expression7
-#line 2262 "syntactic.y"
+#line 2264 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic1Operand::Type::BITWISE_NOT, YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -3123,7 +3123,7 @@ namespace m68kasm {
     break;
 
   case 261: // expression7: "!" expression7
-#line 2268 "syntactic.y"
+#line 2270 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic1Operand::Type::LOGICAL_NOT, YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
@@ -3132,13 +3132,13 @@ namespace m68kasm {
     break;
 
   case 262: // local_identifier: LOCAL_IDENTIFIER
-#line 2275 "syntactic.y"
+#line 2277 "syntactic.y"
           { yylhs.value.as < String > () = YY_MOVE (yystack_[0].value.as < String > ()); }
 #line 3138 "syntactic.cpp"
     break;
 
   case 263: // local_identifier: SIZE_BYTE
-#line 2277 "syntactic.y"
+#line 2279 "syntactic.y"
         {
 		const StringView literal = STRING_VIEW_INITIALISER(".b");
 		if (!String_CreateCopyView(yylhs.value.as < String > (), literal))
@@ -3148,7 +3148,7 @@ namespace m68kasm {
     break;
 
   case 264: // local_identifier: SIZE_SHORT
-#line 2283 "syntactic.y"
+#line 2285 "syntactic.y"
         {
 		const StringView literal = STRING_VIEW_INITIALISER(".s");
 		if (!String_CreateCopyView(yylhs.value.as < String > (), literal))
@@ -3158,7 +3158,7 @@ namespace m68kasm {
     break;
 
   case 265: // local_identifier: SIZE_WORD
-#line 2289 "syntactic.y"
+#line 2291 "syntactic.y"
         {
 		const StringView literal = STRING_VIEW_INITIALISER(".w");
 		if (!String_CreateCopyView(yylhs.value.as < String > (), literal))
@@ -3168,7 +3168,7 @@ namespace m68kasm {
     break;
 
   case 266: // local_identifier: SIZE_LONGWORD
-#line 2295 "syntactic.y"
+#line 2297 "syntactic.y"
         {
 		const StringView literal = STRING_VIEW_INITIALISER(".l");
 		if (!String_CreateCopyView(yylhs.value.as < String > (), literal))
@@ -3178,19 +3178,19 @@ namespace m68kasm {
     break;
 
   case 267: // identifier: IDENTIFIER
-#line 2303 "syntactic.y"
+#line 2305 "syntactic.y"
           { yylhs.value.as < String > () = YY_MOVE (yystack_[0].value.as < String > ()); }
 #line 3184 "syntactic.cpp"
     break;
 
   case 268: // identifier: local_identifier
-#line 2304 "syntactic.y"
+#line 2306 "syntactic.y"
           { yylhs.value.as < String > () = YY_MOVE (yystack_[0].value.as < String > ()); }
 #line 3190 "syntactic.cpp"
     break;
 
   case 269: // identifier: identifier local_identifier
-#line 2306 "syntactic.y"
+#line 2308 "syntactic.y"
         {
 		auto string_a = YY_MOVE (yystack_[1].value.as < String > ());
 		auto string_b = YY_MOVE (yystack_[0].value.as < String > ());
@@ -3205,7 +3205,7 @@ namespace m68kasm {
     break;
 
   case 270: // expression8: NUMBER
-#line 2320 "syntactic.y"
+#line 2322 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionNumber>(YY_MOVE (yystack_[0].value.as < unsigned long > ()));
 	}
@@ -3213,7 +3213,7 @@ namespace m68kasm {
     break;
 
   case 271: // expression8: identifier
-#line 2324 "syntactic.y"
+#line 2326 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionIdentifier>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
@@ -3221,7 +3221,7 @@ namespace m68kasm {
     break;
 
   case 272: // expression8: string
-#line 2328 "syntactic.y"
+#line 2330 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
@@ -3229,7 +3229,7 @@ namespace m68kasm {
     break;
 
   case 273: // expression8: "*"
-#line 2332 "syntactic.y"
+#line 2334 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionProgramCounterOfStatement>();
 	}
@@ -3237,7 +3237,7 @@ namespace m68kasm {
     break;
 
   case 274: // expression8: "@"
-#line 2336 "syntactic.y"
+#line 2338 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionProgramCounterOfExpression>();
 	}
@@ -3245,7 +3245,7 @@ namespace m68kasm {
     break;
 
   case 275: // expression8: "(" expression ")"
-#line 2340 "syntactic.y"
+#line 2342 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[1].value.as < Expression > ());
 	}
@@ -3253,7 +3253,7 @@ namespace m68kasm {
     break;
 
   case 276: // expression8: STRLEN "(" STRING ")"
-#line 2344 "syntactic.y"
+#line 2346 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionStrlen>(YY_MOVE (yystack_[1].value.as < String > ()));
 	}
@@ -3261,7 +3261,7 @@ namespace m68kasm {
     break;
 
   case 277: // expression8: STRCMP "(" STRING "," STRING ")"
-#line 2348 "syntactic.y"
+#line 2350 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionStrcmp>(YY_MOVE (yystack_[3].value.as < String > ()), YY_MOVE (yystack_[1].value.as < String > ()));
 	}
@@ -3269,90 +3269,84 @@ namespace m68kasm {
     break;
 
   case 278: // expression8: INSTR "(" expression "," expression ")"
-#line 2352 "syntactic.y"
+#line 2354 "syntactic.y"
         {
-		Expression *subexpressions = new Expression[3];
+		auto subexpressions = std::make_unique<Expression[]>(3);
 
-		if (subexpressions == nullptr)
-			YYNOMEM;
-
-		subexpressions[0].emplace<ExpressionNumber>(1);
+		subexpressions[0] = ExpressionNumber{1};
 		subexpressions[1] = std::move(YY_MOVE (yystack_[3].value.as < Expression > ()));
 		subexpressions[2] = std::move(YY_MOVE (yystack_[1].value.as < Expression > ()));
 
-		yylhs.value.as < Expression > ().emplace<ExpressionInstr>(subexpressions);
+		yylhs.value.as < Expression > ().emplace<ExpressionInstr>(std::move(subexpressions));
 	}
-#line 3286 "syntactic.cpp"
+#line 3283 "syntactic.cpp"
     break;
 
   case 279: // expression8: INSTR "(" expression "," expression "," expression ")"
-#line 2365 "syntactic.y"
+#line 2364 "syntactic.y"
         {
-		Expression *subexpressions = new Expression[3];
-
-		if (subexpressions == nullptr)
-			YYNOMEM;
+		auto subexpressions = std::make_unique<Expression[]>(3);
 
 		subexpressions[0] = std::move(YY_MOVE (yystack_[5].value.as < Expression > ()));
 		subexpressions[1] = std::move(YY_MOVE (yystack_[3].value.as < Expression > ()));
 		subexpressions[2] = std::move(YY_MOVE (yystack_[1].value.as < Expression > ()));
 
-		yylhs.value.as < Expression > ().emplace<ExpressionInstr>(subexpressions);
+		yylhs.value.as < Expression > ().emplace<ExpressionInstr>(std::move(subexpressions));
 	}
-#line 3303 "syntactic.cpp"
+#line 3297 "syntactic.cpp"
     break;
 
   case 280: // expression8: DEF "(" IDENTIFIER ")"
-#line 2378 "syntactic.y"
+#line 2374 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionDef>(YY_MOVE (yystack_[1].value.as < String > ()));
 	}
-#line 3311 "syntactic.cpp"
+#line 3305 "syntactic.cpp"
     break;
 
   case 281: // expression8: TYPE "(" IDENTIFIER ")"
-#line 2382 "syntactic.y"
+#line 2378 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionTypeWithIdentifier>(YY_MOVE (yystack_[1].value.as < String > ()));
 	}
-#line 3319 "syntactic.cpp"
+#line 3313 "syntactic.cpp"
     break;
 
   case 282: // expression8: TYPE "(" NUMBER ")"
-#line 2386 "syntactic.y"
+#line 2382 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionTypeWithNumber>(YY_MOVE (yystack_[1].value.as < unsigned long > ()));
 	}
-#line 3327 "syntactic.cpp"
+#line 3321 "syntactic.cpp"
     break;
 
   case 283: // expression8: FILESIZE "(" STRING ")"
-#line 2390 "syntactic.y"
+#line 2386 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionFilesize>(YY_MOVE (yystack_[1].value.as < String > ()));
 	}
-#line 3335 "syntactic.cpp"
+#line 3329 "syntactic.cpp"
     break;
 
   case 284: // expression8: OFFSET "(" expression ")"
-#line 2394 "syntactic.y"
+#line 2390 "syntactic.y"
         {
 		/* TODO: Make this actually do something besides pass the expression through. */
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[1].value.as < Expression > ());
 	}
-#line 3344 "syntactic.cpp"
+#line 3338 "syntactic.cpp"
     break;
 
   case 285: // string: STRING
-#line 2402 "syntactic.y"
+#line 2398 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionString>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
-#line 3352 "syntactic.cpp"
+#line 3346 "syntactic.cpp"
     break;
 
 
-#line 3356 "syntactic.cpp"
+#line 3350 "syntactic.cpp"
 
             default:
               break;
@@ -4179,35 +4173,35 @@ namespace m68kasm {
   const short
   parser::yyrline_[] =
   {
-       0,   906,   906,   909,   913,   917,   921,   925,   929,   933,
-     937,   941,   945,   949,   953,   957,   961,   965,   969,   974,
-     979,   983,   987,   991,   995,  1001,  1007,  1011,  1015,  1019,
-    1023,  1027,  1031,  1035,  1039,  1043,  1047,  1051,  1055,  1059,
-    1063,  1068,  1072,  1076,  1080,  1084,  1090,  1094,  1098,  1102,
-    1106,  1110,  1114,  1118,  1122,  1126,  1130,  1134,  1138,  1143,
-    1148,  1153,  1158,  1165,  1169,  1178,  1182,  1191,  1195,  1204,
-    1210,  1216,  1225,  1230,  1236,  1244,  1248,  1252,  1256,  1260,
-    1264,  1268,  1272,  1276,  1280,  1284,  1288,  1292,  1296,  1300,
-    1304,  1308,  1312,  1316,  1320,  1324,  1328,  1332,  1336,  1340,
-    1344,  1348,  1352,  1356,  1360,  1364,  1368,  1372,  1376,  1380,
-    1384,  1388,  1392,  1396,  1400,  1404,  1408,  1413,  1418,  1423,
-    1428,  1433,  1438,  1443,  1448,  1453,  1458,  1463,  1468,  1473,
-    1478,  1483,  1488,  1493,  1498,  1503,  1508,  1513,  1518,  1523,
-    1528,  1533,  1538,  1543,  1548,  1553,  1558,  1563,  1568,  1572,
-    1576,  1581,  1586,  1591,  1596,  1601,  1606,  1611,  1616,  1621,
-    1626,  1631,  1636,  1641,  1646,  1650,  1654,  1658,  1662,  1666,
-    1670,  1674,  1678,  1682,  1686,  1690,  1694,  1698,  1702,  1706,
-    1710,  1714,  1718,  1722,  1726,  1730,  1734,  1738,  1742,  1746,
-    1750,  1754,  1761,  1765,  1769,  1773,  1781,  1786,  1791,  1796,
-    1802,  1808,  1814,  1825,  1836,  1847,  1859,  1871,  1883,  1888,
-    1893,  1898,  1908,  1918,  1928,  1939,  1950,  1962,  1978,  1982,
-    1986,  1991,  1997,  2004,  2037,  2041,  2048,  2052,  2080,  2084,
-    2097,  2102,  2108,  2116,  2120,  2125,  2130,  2138,  2142,  2147,
-    2152,  2157,  2165,  2169,  2174,  2182,  2186,  2191,  2196,  2204,
-    2208,  2213,  2218,  2223,  2231,  2235,  2240,  2248,  2252,  2256,
-    2261,  2267,  2275,  2276,  2282,  2288,  2294,  2303,  2304,  2305,
-    2319,  2323,  2327,  2331,  2335,  2339,  2343,  2347,  2351,  2364,
-    2377,  2381,  2385,  2389,  2393,  2401
+       0,   908,   908,   911,   915,   919,   923,   927,   931,   935,
+     939,   943,   947,   951,   955,   959,   963,   967,   971,   976,
+     981,   985,   989,   993,   997,  1003,  1009,  1013,  1017,  1021,
+    1025,  1029,  1033,  1037,  1041,  1045,  1049,  1053,  1057,  1061,
+    1065,  1070,  1074,  1078,  1082,  1086,  1092,  1096,  1100,  1104,
+    1108,  1112,  1116,  1120,  1124,  1128,  1132,  1136,  1140,  1145,
+    1150,  1155,  1160,  1167,  1171,  1180,  1184,  1193,  1197,  1206,
+    1212,  1218,  1227,  1232,  1238,  1246,  1250,  1254,  1258,  1262,
+    1266,  1270,  1274,  1278,  1282,  1286,  1290,  1294,  1298,  1302,
+    1306,  1310,  1314,  1318,  1322,  1326,  1330,  1334,  1338,  1342,
+    1346,  1350,  1354,  1358,  1362,  1366,  1370,  1374,  1378,  1382,
+    1386,  1390,  1394,  1398,  1402,  1406,  1410,  1415,  1420,  1425,
+    1430,  1435,  1440,  1445,  1450,  1455,  1460,  1465,  1470,  1475,
+    1480,  1485,  1490,  1495,  1500,  1505,  1510,  1515,  1520,  1525,
+    1530,  1535,  1540,  1545,  1550,  1555,  1560,  1565,  1570,  1574,
+    1578,  1583,  1588,  1593,  1598,  1603,  1608,  1613,  1618,  1623,
+    1628,  1633,  1638,  1643,  1648,  1652,  1656,  1660,  1664,  1668,
+    1672,  1676,  1680,  1684,  1688,  1692,  1696,  1700,  1704,  1708,
+    1712,  1716,  1720,  1724,  1728,  1732,  1736,  1740,  1744,  1748,
+    1752,  1756,  1763,  1767,  1771,  1775,  1783,  1788,  1793,  1798,
+    1804,  1810,  1816,  1827,  1838,  1849,  1861,  1873,  1885,  1890,
+    1895,  1900,  1910,  1920,  1930,  1941,  1952,  1964,  1980,  1984,
+    1988,  1993,  1999,  2006,  2039,  2043,  2050,  2054,  2082,  2086,
+    2099,  2104,  2110,  2118,  2122,  2127,  2132,  2140,  2144,  2149,
+    2154,  2159,  2167,  2171,  2176,  2184,  2188,  2193,  2198,  2206,
+    2210,  2215,  2220,  2225,  2233,  2237,  2242,  2250,  2254,  2258,
+    2263,  2269,  2277,  2278,  2284,  2290,  2296,  2305,  2306,  2307,
+    2321,  2325,  2329,  2333,  2337,  2341,  2345,  2349,  2353,  2363,
+    2373,  2377,  2381,  2385,  2389,  2397
   };
 
   void
@@ -4240,43 +4234,28 @@ namespace m68kasm {
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 4244 "syntactic.cpp"
+#line 4238 "syntactic.cpp"
 
-#line 2406 "syntactic.y"
+#line 2402 "syntactic.y"
 
 
 static cc_bool DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression)
 {
-	Expression *subexpression_copy = new Expression;
+	auto subexpression_copy = std::make_unique<Expression>(std::move(subexpression));
 
-	if (subexpression_copy == NULL)
-	{
-		DestroyExpression(&subexpression);
-		return cc_false;
-	}
-
-	*subexpression_copy = std::move(subexpression);
-
-	expression.emplace<ExpressionArithmetic1Operand>(type, subexpression_copy);
+	expression.emplace<ExpressionArithmetic1Operand>(type, std::move(subexpression_copy));
 
 	return cc_true;
 }
 
 static cc_bool DoExpression(Expression &expression, ExpressionArithmetic2Operand::Type type, Expression left_expression, Expression right_expression)
 {
-	Expression *subexpressions = new Expression[2];
-
-	if (subexpressions == NULL)
-	{
-		DestroyExpression(&left_expression);
-		DestroyExpression(&right_expression);
-		return cc_false;
-	}
+	auto subexpressions = std::make_unique<Expression[]>(2);
 
 	subexpressions[0] = std::move(left_expression);
 	subexpressions[1] = std::move(right_expression);
 
-	expression.emplace<ExpressionArithmetic2Operand>(type, subexpressions);
+	expression.emplace<ExpressionArithmetic2Operand>(type, std::move(subexpressions));
 
 	return cc_true;
 }
@@ -4290,18 +4269,15 @@ void DestroyExpression(Expression *expression)
 				DestroyExpression(&expression.subexpressions[0]);
 				DestroyExpression(&expression.subexpressions[1]);
 				DestroyExpression(&expression.subexpressions[2]);
-				delete[] expression.subexpressions;
 			},
 			[](ExpressionArithmetic2Operand &expression)
 			{
 				DestroyExpression(&expression.subexpressions[0]);
 				DestroyExpression(&expression.subexpressions[1]);
-				delete[] expression.subexpressions;
 			},
 			[](ExpressionArithmetic1Operand &expression)
 			{
-				DestroyExpression(expression.subexpressions);
-				delete expression.subexpressions;
+				DestroyExpression(&*expression.subexpressions);
 			},
 			[](ExpressionStrcmp &expression)
 			{

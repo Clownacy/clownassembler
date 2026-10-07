@@ -48,7 +48,9 @@
 #line 38 "syntactic.y"
 
 
+#include <array>
 #include <deque>
+#include <memory>
 #include <variant>
 
 #include "clowncommon/clowncommon.h"
@@ -246,7 +248,7 @@ struct ExpressionArithmetic1Operand
 		LOGICAL_NOT,
 
 	} type;
-	Expression *subexpressions;
+	std::unique_ptr<Expression> subexpressions;
 };
 
 struct ExpressionArithmetic2Operand
@@ -272,12 +274,12 @@ struct ExpressionArithmetic2Operand
 		LEFT_SHIFT,
 		RIGHT_SHIFT,
 	} type;
-	Expression *subexpressions;
+	std::unique_ptr<Expression[]> subexpressions;
 };
 
 struct ExpressionInstr
 {
-	Expression *subexpressions;
+	std::unique_ptr<Expression[]> subexpressions;
 };
 
 struct ExpressionStrcmp
@@ -644,7 +646,7 @@ using Statement = std::variant<
 >;
 
 
-#line 648 "syntactic.h"
+#line 650 "syntactic.h"
 
 
 # include <cstdlib> // std::abort
@@ -788,7 +790,7 @@ using Statement = std::variant<
 
 #line 25 "syntactic.y"
 namespace m68kasm {
-#line 792 "syntactic.h"
+#line 794 "syntactic.h"
 
 
 
@@ -5775,11 +5777,11 @@ switch (yykind)
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 5779 "syntactic.h"
+#line 5781 "syntactic.h"
 
 
 // "%code provides" blocks.
-#line 637 "syntactic.y"
+#line 639 "syntactic.y"
 
 
 static cc_bool DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression);
@@ -5790,7 +5792,7 @@ void DestroyStatement(Statement *statement);
 #define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner)
 
 
-#line 5794 "syntactic.h"
+#line 5796 "syntactic.h"
 
 
 #endif // !YY_M68KASM_SYNTACTIC_H_INCLUDED
