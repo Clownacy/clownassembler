@@ -351,49 +351,41 @@ int main(int argc, char **argv)
 			for (j = i; j < argc; ++j)
 				combined_arguments_size += strlen(argv[j]);
 
-			combined_arguments = (char*)malloc(combined_arguments_size);
+			combined_arguments = new char[combined_arguments_size];
 
-			if (combined_arguments == NULL)
+			char *comma;
+
+			combined_arguments[0] = '\0';
+
+			for (j = i; j < argc; ++j)
+				strcat(combined_arguments, argv[j]);
+
+			source_file_path = combined_arguments;
+			comma = strchr(source_file_path, ',');
+
+			if (comma != NULL)
 			{
-				fprintf(stderr, "Error: Could not allocate memory for combined argument string.\n");
-				exit_code = EXIT_FAILURE;
-			}
-			else
-			{
-				char *comma;
+				comma[0] = '\0';
 
-				combined_arguments[0] = '\0';
-
-				for (j = i; j < argc; ++j)
-					strcat(combined_arguments, argv[j]);
-
-				source_file_path = combined_arguments;
-				comma = strchr(source_file_path, ',');
+				object_file_path = comma + 1;
+				comma = strchr(object_file_path, ',');
 
 				if (comma != NULL)
 				{
 					comma[0] = '\0';
 
-					object_file_path = comma + 1;
-					comma = strchr(object_file_path, ',');
+					symbol_file_path = comma + 1;
+					comma = strchr(symbol_file_path, ',');
 
 					if (comma != NULL)
 					{
 						comma[0] = '\0';
 
-						symbol_file_path = comma + 1;
-						comma = strchr(symbol_file_path, ',');
+						listing_file_path = comma + 1;
+						comma = strchr(listing_file_path, ',');
 
 						if (comma != NULL)
-						{
 							comma[0] = '\0';
-
-							listing_file_path = comma + 1;
-							comma = strchr(listing_file_path, ',');
-
-							if (comma != NULL)
-								comma[0] = '\0';
-						}
 					}
 				}
 			}
@@ -458,7 +450,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	free(combined_arguments);
+	delete[] combined_arguments;
 
 	if (source_file != NULL)
 		fclose(source_file);

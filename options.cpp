@@ -21,10 +21,7 @@
 
 static cc_bool Options_PushInternal(Options_State* const state, const Options* const options)
 {
-	Options_ListEntry* const list_entry = (Options_ListEntry*)malloc(sizeof(Options_ListEntry));
-
-	if (list_entry == NULL)
-		return cc_false;
+	Options_ListEntry* const list_entry = new Options_ListEntry;
 
 	list_entry->next = state->list;
 	state->list = list_entry;
@@ -40,7 +37,7 @@ static void Options_PopInternal(Options_State* const state)
 
 	state->list = list_entry->next;
 
-	free(list_entry);
+	delete list_entry;
 }
 
 cc_bool Options_Initialise(Options_State* const state, const Options* const options)

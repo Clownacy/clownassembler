@@ -240,29 +240,26 @@ void BinaryStream_CloseFile(const BinaryStream* const callbacks)
 
 cc_bool BinaryStream_OpenMemory(BinaryStream* const callbacks)
 {
-	MemoryIO* const state = (MemoryIO*)malloc(sizeof(MemoryIO));
+	MemoryIO* const state = new MemoryIO;
+
+	state->capacity = 0x100;
+	state->size = 0;
+	state->position = 0;
+	state->buffer = (unsigned char*)malloc(state->capacity);
 
 	if (state != NULL)
 	{
-		state->capacity = 0x100;
-		state->size = 0;
-		state->position = 0;
-		state->buffer = (unsigned char*)malloc(state->capacity);
+		callbacks->user_data = state;
+		callbacks->read_character = Memory_ReadCharacter;
+		callbacks->read_characters = Memory_ReadCharacters;
+		callbacks->write_character = Memory_WriteCharacter;
+		callbacks->write_characters = Memory_WriteCharacters;
+		callbacks->seek = Memory_Seek;
 
-		if (state != NULL)
-		{
-			callbacks->user_data = state;
-			callbacks->read_character = Memory_ReadCharacter;
-			callbacks->read_characters = Memory_ReadCharacters;
-			callbacks->write_character = Memory_WriteCharacter;
-			callbacks->write_characters = Memory_WriteCharacters;
-			callbacks->seek = Memory_Seek;
-
-			return cc_true;
-		}
-
-		free(state);
+		return cc_true;
 	}
+
+	delete state;
 
 	return cc_false;
 }
@@ -272,7 +269,7 @@ void BinaryStream_CloseMemory(BinaryStream* const callbacks)
 	MemoryIO* const state = (MemoryIO*)callbacks->user_data;
 
 	free(state->buffer);
-	free(state);
+	delete state;
 }
 
 cc_bool BinaryStream_exists(const BinaryStream* const callbacks)
