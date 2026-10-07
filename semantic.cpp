@@ -144,7 +144,8 @@ typedef struct SemanticState
 	const TextOutput *error_callbacks = nullptr;
 
 	/* Global stuff. */
-	std::optional<SymbolDictionary> dictionary;
+	OptionsStack options;
+	SymbolDictionary dictionary;
 	String last_global_label;
 	std::deque<Location> location;
 	yyscan_t flex_state;
@@ -152,7 +153,6 @@ typedef struct SemanticState
 	const String *source_line = nullptr;
 	Substitute_State substitutions;
 	std::stack<String> string_stack;
-	OptionsStack options;
 	SemanticState_Macro macro;
 	size_t output_position = 0, previous_segment_length_output_position = 0;
 	size_t segment_position = 0, segment_length = 0;
@@ -208,6 +208,7 @@ typedef struct SemanticState
 
 	SemanticState(Options default_options)
 		: options(std::move(default_options))
+		, dictionary(options->case_insensitive)
 	{}
 } SemanticState;
 
@@ -598,9 +599,9 @@ static SymbolDictionary::Entry* LookupSymbol(SemanticState *state, StringView id
 	if (dictionary_entry == NULL)
 	{
 		if (dictionary != NULL)
-			*dictionary = &*state->dictionary;
+			*dictionary = &state->dictionary;
 
-		dictionary_entry = state->dictionary->LookUp(identifier);
+		dictionary_entry = state->dictionary.LookUp(identifier);
 
 		if (dictionary_entry == NULL)
 			if (dictionary != NULL)
@@ -634,9 +635,9 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *s
 	if (dictionary_entry == NULL)
 	{
 		if (dictionary != NULL)
-			*dictionary = &*state->dictionary;
+			*dictionary = &state->dictionary;
 
-		if (!state->dictionary->LookUpAndCreateIfNotExist(identifier, &dictionary_entry))
+		if (!state->dictionary.LookUpAndCreateIfNotExist(identifier, &dictionary_entry))
 		{
 			OutOfMemoryError(state);
 			dictionary_entry = NULL;
@@ -4293,7 +4294,7 @@ static void PushSubstitute(SemanticState* const state, const StringView &identif
 				{
 					auto &symbol = dictionary_entry->emplace<SymbolStringConstant>();
 					String_CreateCopyView(symbol.value, value);
-					Substitute_PushSubstitute(dictionary == &*state->dictionary ? &state->substitutions : &state->macro.substitutions, identifier, symbol.value);
+					Substitute_PushSubstitute(dictionary == &state->dictionary ? &state->substitutions : &state->macro.substitutions, identifier, symbol.value);
 				},
 				[&](SymbolStringConstant &symbol)
 				{
@@ -6252,9 +6253,6 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	Substitute_Initialise(&state.substitutions);
 	state.mode.emplace<SemanticState::ModeNormal>();
 
-	/* Create the symbol table dictionary. */
-	state.dictionary.emplace(state.options->case_insensitive);
-
 	if (AddToSymbolTable(&state, string_rs,   SymbolSpecial{SymbolSpecial::Type::RS})
 	 && AddToSymbolTable(&state, string_narg, SymbolSpecial{SymbolSpecial::Type::NARG}))
 	{
@@ -6347,7 +6345,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 				BinaryStream_fputc(0, symbol_callbacks);
 				BinaryStream_fputc(0, symbol_callbacks);
 
-				state.dictionary->Filter(DictionaryFilterProduceSymbolFile, parameters);
+				state.dictionary.Filter(DictionaryFilterProduceSymbolFile, parameters);
 			}
 		}
 	}
