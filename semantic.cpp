@@ -5595,20 +5595,6 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 		}
 		else
 		{
-			/* TODO: When I switch to C++, make this the first thing to go... */
-			typedef struct MacroCustomSubstituteSearch_Closure
-			{
-				struct SemanticState *state;
-
-				StringView size;
-				StringView arguments;
-				StringView label;
-				String unique_suffix;
-				String symbol_value_string;
-			} MacroCustomSubstituteSearch_Closure;
-
-			MacroCustomSubstituteSearch_Closure closure;
-
 			state->macro.argument_list = {};
 			state->macro.total_arguments = 0;
 			state->macro.total_arguments_at_start = 0;
@@ -5617,8 +5603,6 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 			++state->macro.depth;
 
 			++state->current_macro_invocation;
-
-			closure.state = state;
 
 			state->suppress_listing = cc_true;
 
@@ -5632,46 +5616,44 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 					AddToSymbolTable(state, label, SymbolLabel{state->program_counter});
 			}
 
+			StringView size;
+
 			/* Extract and store the macro size specifier, if one exists. */
 			if (source_line_pointer[0] == '.')
 			{
 				/* Skip the '.' character. */
 				++source_line_pointer;
 
-				StringView_Create(closure.size, source_line_pointer, strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS));
+				StringView_Create(size, source_line_pointer, strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS));
 
 				/* Advance past the size specifier. */
-				source_line_pointer += StringView_Length(closure.size);
+				source_line_pointer += StringView_Length(size);
 			}
 			else
 			{
-				StringView_CreateBlank(closure.size);
+				StringView_CreateBlank(size);
 			}
 
 			/* Extract combined arguments string. */
-			{
-				const char* const arguments_string_start = source_line_pointer + strspn(source_line_pointer, " \t");
-				const char *arguments_string_end = strchr(arguments_string_start, ';');
+			const char* const arguments_string_start = source_line_pointer + strspn(source_line_pointer, " \t");
+			const char *arguments_string_end = strchr(arguments_string_start, ';');
 
-				if (arguments_string_end == NULL)
-					arguments_string_end = String_Data(*state->source_line) + String_Length(*state->source_line);
+			if (arguments_string_end == NULL)
+				arguments_string_end = String_Data(*state->source_line) + String_Length(*state->source_line);
 
-				/* Remove trailing whitespace. */
-				while (arguments_string_end > arguments_string_start && (arguments_string_end[-1] == ' ' || arguments_string_end[-1] == '\t'))
-					--arguments_string_end;
+			/* Remove trailing whitespace. */
+			while (arguments_string_end > arguments_string_start && (arguments_string_end[-1] == ' ' || arguments_string_end[-1] == '\t'))
+				--arguments_string_end;
 
-				StringView_Create(closure.arguments, arguments_string_start, arguments_string_end - arguments_string_start);
-			}
+			StringView arguments;
+			StringView_Create(arguments, arguments_string_start, arguments_string_end - arguments_string_start);
 
-			closure.label = label;
-			closure.unique_suffix = ComputeUniqueMacroSuffix(state);
-			closure.symbol_value_string = "";
+			const String unique_suffix = ComputeUniqueMacroSuffix(state);
+			String symbol_value_string;
 
-			state->macro.custom_search = [&closure](const StringView &view_to_search, size_t starting_position, cc_bool case_insensitive, size_t* const found_position, size_t* const found_length) -> std::optional<StringView>
+			state->macro.custom_search = [state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const StringView &view_to_search, size_t starting_position, cc_bool case_insensitive, size_t* const found_position, size_t* const found_length) -> std::optional<StringView>
 			{
 				/* `view_to_search` always points to a null-terminated string. */
-				SemanticState* const state = closure.state;
-
 				(void)case_insensitive;
 
 				for (*found_position = starting_position; (*found_position = StringView_FindCharacter(view_to_search, '\\', *found_position)) != STRING_POSITION_INVALID; ++(*found_position))
@@ -5683,19 +5665,19 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 					switch (symbol)
 					{
 						case '0':
-							return closure.size;
+							return size;
 
 						case '_':
 							if (Substitute::IsSubstituteBlockingCharacter(StringView_At(view_to_search, *found_position + *found_length)))
 								continue;
 
-							return closure.arguments;
+							return arguments;
 
 						case '*':
-							return closure.label;
+							return label;
 
 						case '@':
-							return String_View(closure.unique_suffix);
+							return String_View(unique_suffix);
 
 						case '#':
 						case '$':
@@ -5716,11 +5698,11 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 								value = 0;
 
 							if (symbol == '#')
-								closure.symbol_value_string = DecimalIntegerToString(value);
+								symbol_value_string = DecimalIntegerToString(value);
 							else /*if (symbol == '$')*/
-								closure.symbol_value_string = HexadecimalIntegerToString(value);
+								symbol_value_string = HexadecimalIntegerToString(value);
 
-							return String_View(closure.symbol_value_string);
+							return String_View(symbol_value_string);
 						}
 
 						default:
