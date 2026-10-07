@@ -27,7 +27,7 @@
 
 #define STRING_POSITION_INVALID ((size_t)-1)
 
-using String = std::optional<std::string>;
+using String = std::string;
 using StringView = std::string_view;
 
 #define STRING_VIEW_INITIALISER(x) x
@@ -37,20 +37,20 @@ using StringView = std::string_view;
 #define StringView_Empty(x) ((x).empty())
 #define StringView_At(x, i) ((x).data()[i])
 #define StringView_Back(x) ((x).back())
-#define String_At(x, i) ((x)->data()[i])
-#define String_CStr(x) ((x)->c_str())
-#define String_Data(x) ((x)->data())
-#define String_Empty(x) ((x)->empty())
-#define String_Length(x) ((x)->length())
-#define String_Reserve(x, size) ((x)->reserve(size))
-#define String_Capacity(x) ((x)->capacity())
+#define String_At(x, i) ((x).data()[i])
+#define String_CStr(x) ((x).c_str())
+#define String_Data(x) ((x).data())
+#define String_Empty(x) ((x).empty())
+#define String_Length(x) ((x).length())
+#define String_Reserve(x, size) ((x).reserve(size))
+#define String_Capacity(x) ((x).capacity())
 inline cc_bool String_ResizeNoFill(String &string, std::size_t size)
 {
-	string->resize(size);
+	string.resize(size);
 	return cc_true;
 }
 
-#define String_CreateBlank(x) ((x).emplace())
+#define String_CreateBlank(x) ((x) = {})
 
 inline cc_bool String_CreateCopyView(String &string, const StringView &view)
 {
@@ -78,21 +78,21 @@ inline cc_bool String_CreateMove(String &string, String &other_string)
 
 inline cc_bool String_CreateAppend(String &string, const String &other_string_a, const String &other_string_b)
 {
-	string = *other_string_a + *other_string_b;
+	string = other_string_a + other_string_b;
 	return cc_true;
 }
 
-#define String_Destroy(x) ((x).reset())
-#define String_View(x) (std::string_view(*(x)))
-#define String_Replace(string, position, count, other_string) ((string)->replace(position, count, other_string))
-#define String_Compare(a, b) (*(a) == *(b))
+#define String_Destroy(x)
+#define String_View(x) (std::string_view((x)))
+#define String_Replace(string, position, count, other_string) ((string).replace(position, count, other_string))
+#define String_Compare(a, b) ((a) == (b))
 #define StringView_Create(x, buffer, length) ((x) = std::string_view(buffer, length))
 #define StringView_CreateBlank(x) ((x) = {})
 #define StringView_SubStr(VIEW, OTHER_VIEW, POSITION, LENGTH) StringView_Create(VIEW, &StringView_At(OTHER_VIEW, POSITION), LENGTH)
 
 inline void String_ToLower(String &string)
 {
-	for (auto &character : *string)
+	for (auto &character : string)
 		character = std::tolower(character);
 }
 

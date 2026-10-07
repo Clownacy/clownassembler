@@ -434,7 +434,7 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
-	return m68kasm::parser::make_STRING({{yytext, static_cast<std::size_t>(yyleng)}});
+	return m68kasm::parser::make_STRING({yytext, static_cast<std::size_t>(yyleng)});
 }
 
  /* Identifier, data register, or address register. */
@@ -448,18 +448,18 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 	else
 	{
 		/* Identifier. */
-		return m68kasm::parser::make_IDENTIFIER({{yytext, static_cast<std::size_t>(yyleng)}});
+		return m68kasm::parser::make_IDENTIFIER({yytext, static_cast<std::size_t>(yyleng)});
 	}
 }
 
  /* Local label. */
 [@\.][A-Za-z_0-9\?]+ {
-	return m68kasm::parser::make_LOCAL_IDENTIFIER({{yytext, static_cast<std::size_t>(yyleng)}});
+	return m68kasm::parser::make_LOCAL_IDENTIFIER({yytext, static_cast<std::size_t>(yyleng)});
 }
 
  /* Option. */
 <OPTIONS>[^ \t\r\n,]+ {
-	return m68kasm::parser::make_OPTION({{yytext, static_cast<std::size_t>(yyleng)}});
+	return m68kasm::parser::make_OPTION({yytext, static_cast<std::size_t>(yyleng)});
 }
 
  /* Make Bison signal a syntax error for unrecognised symbols */

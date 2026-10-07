@@ -570,13 +570,13 @@ static void ExpandIdentifier(SemanticState *state, String &expanded_identifier, 
 		String_CreateBlank(expanded_identifier);
 	else if (String_Empty(state->last_global_label))
 	{
-		expanded_identifier.emplace(identifier.substr(1));
+		expanded_identifier = identifier.substr(1);
 		//String_CreateInternal(expanded_identifier, StringView_Data(identifier) + 1, StringView_Length(identifier) - 1, NULL, 0);
 	}
 	else
 	{
-		expanded_identifier.emplace(*state->last_global_label);
-		*expanded_identifier += identifier;
+		expanded_identifier = state->last_global_label;
+		expanded_identifier += identifier;
 		//String_CreateAppendView(expanded_identifier, String_View(state->last_global_label), identifier);
 	}
 }
@@ -1255,7 +1255,7 @@ static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifi
 
 static cc_bool AddToSymbolTable(SemanticState *state, SymbolMacro symbol_contents)
 {
-	const StringView &identifier = *symbol_contents.macro.name;
+	const StringView &identifier = symbol_contents.macro.name;
 
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolMacro>(state, identifier, NULL);
 

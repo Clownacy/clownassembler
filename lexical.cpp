@@ -3036,7 +3036,7 @@ YY_RULE_SETUP
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
-	return m68kasm::parser::make_STRING({{yytext, static_cast<std::size_t>(yyleng)}});
+	return m68kasm::parser::make_STRING({yytext, static_cast<std::size_t>(yyleng)});
 }
 	YY_BREAK
 /* Identifier, data register, or address register. */
@@ -3053,7 +3053,7 @@ YY_RULE_SETUP
 	else
 	{
 		/* Identifier. */
-		return m68kasm::parser::make_IDENTIFIER({{yytext, static_cast<std::size_t>(yyleng)}});
+		return m68kasm::parser::make_IDENTIFIER({yytext, static_cast<std::size_t>(yyleng)});
 	}
 }
 	YY_BREAK
@@ -3062,7 +3062,7 @@ case 245:
 YY_RULE_SETUP
 #line 457 "lexical.l"
 {
-	return m68kasm::parser::make_LOCAL_IDENTIFIER({{yytext, static_cast<std::size_t>(yyleng)}});
+	return m68kasm::parser::make_LOCAL_IDENTIFIER({yytext, static_cast<std::size_t>(yyleng)});
 }
 	YY_BREAK
 /* Option. */
@@ -3070,7 +3070,7 @@ case 246:
 YY_RULE_SETUP
 #line 462 "lexical.l"
 {
-	return m68kasm::parser::make_OPTION({{yytext, static_cast<std::size_t>(yyleng)}});
+	return m68kasm::parser::make_OPTION({yytext, static_cast<std::size_t>(yyleng)});
 }
 	YY_BREAK
 /* Make Bison signal a syntax error for unrecognised symbols */
