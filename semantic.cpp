@@ -102,8 +102,6 @@ using SymbolDictionary = Dictionary<SymbolDictionaryEntry>;
 
 typedef struct Location
 {
-	struct Location *previous;
-
 	String file_path; /* TODO: This should really be a `StringView`, but fix-ups need deep copies... */
 	unsigned long line_number;
 } Location;
@@ -117,7 +115,7 @@ typedef struct FixUp
 	size_t segment_length;
 	String last_global_label;
 	String source_line;
-	Location location;
+	std::deque<Location> location;
 	String label;
 	Options options;
 } FixUp;
@@ -148,7 +146,7 @@ typedef struct SemanticState
 	/* Global stuff. */
 	SymbolDictionary dictionary;
 	String last_global_label;
-	Location *location;
+	std::deque<Location> location;
 	yyscan_t flex_state;
 	String line_buffer;
 	const String *source_line;
@@ -293,10 +291,8 @@ static void OutputWriteSegmentByte(SemanticState* const state, const unsigned ch
 
 static void ErrorMessageCommon(SemanticState *state)
 {
-	const Location *location;
-
-	for (location = state->location; location != NULL; location = location->previous)
-		TextOutput_fprintf(state->error_callbacks, "\nOn line %lu of '%s'...", location->line_number, String_CStr(location->file_path));
+	for (const auto &location : state->location)
+		TextOutput_fprintf(state->error_callbacks, "\nOn line %lu of '%s'...", location.line_number, String_CStr(location.file_path));
 
 	TextOutput_fprintf(state->error_callbacks, "\n%s\n\n", state->source_line == NULL ? "[No source line]" : String_CStr(*state->source_line));
 }
@@ -1120,7 +1116,7 @@ static void TerminateRept(SemanticState *state, SemanticState::ModeRept &rept_st
 	while (rept_state_copy.repetitions-- != 0)
 	{
 		/* Rewind back to the line number of the start of the REPT. */
-		state->location->line_number = rept_state_copy.line_number;
+		state->location.front().line_number = rept_state_copy.line_number;
 
 		/* Process the REPT's nested statements. */
 		for (const auto source_line : rept_state_copy.source_line_list)
@@ -1128,7 +1124,7 @@ static void TerminateRept(SemanticState *state, SemanticState::ModeRept &rept_st
 	}
 
 	/* Increment past the ENDR line number. */
-	++state->location->line_number;
+	++state->location.front().line_number;
 }
 
 static void PurgeMacro(SemanticState* const state, StringView identifier, const cc_bool allow_undefined)
@@ -1327,7 +1323,7 @@ static void TerminateWhile(SemanticState *state, SemanticState::ModeWhile &while
 			break;
 
 		/* Rewind back to the line number of the start of the WHILE. */
-		state->location->line_number = while_state_copy.line_number;
+		state->location.front().line_number = while_state_copy.line_number;
 
 		/* Process the WHILE's nested statements. */
 		for (const auto &source_line : while_state_copy.source_line_list)
@@ -1335,7 +1331,7 @@ static void TerminateWhile(SemanticState *state, SemanticState::ModeWhile &while
 	}
 
 	/* Increment past the ENDW line number. */
-	++state->location->line_number;
+	++state->location.front().line_number;
 
 	DestroyExpression(&while_state_copy.expression);
 
@@ -4513,16 +4509,10 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 		}
 		else
 		{
-			Location location;
-
 			const TextInput* const previous_input_callbacks = state->input_callbacks;
 
 			/* Add file path and line number to the location list. */
-			String_CreateCopy(location.file_path, include->path);
-			location.line_number = 0;
-
-			location.previous = state->location;
-			state->location = &location;
+			state->location.emplace_front(include->path, 0);
 
 			state->input_callbacks = &input_callbacks;
 
@@ -4530,7 +4520,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 
 			state->input_callbacks = previous_input_callbacks;
 
-			state->location = state->location->previous;
+			state->location.pop_front();
 
 			TextInput_CloseFile(&input_callbacks);
 		}
@@ -4708,7 +4698,7 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 		mode.repetitions = 1;
 	}
 
-	mode.line_number = state->location->line_number;
+	mode.line_number = state->location.front().line_number;
 	mode.nesting = 0;
 }
 
@@ -4718,7 +4708,7 @@ static void ProcessMacro(SemanticState *state, StatementMacro *macro, const Stri
 	auto &mode = state->mode.emplace<SemanticState::ModeMacro>();
 
 	String_CreateCopyView(mode.metadata.name, label);
-	mode.line_number = state->location->line_number;
+	mode.line_number = state->location.front().line_number;
 	mode.metadata.parameter_names = std::move(macro->parameter_names);
 	mode.metadata.is_short = is_short;
 	mode.metadata.uses_label = macro->uses_label;
@@ -5060,7 +5050,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				std::swap(mode.expression, while_statement.expression);
 				String_CreateCopy(mode.source_line, *state->source_line);
 
-				mode.line_number = state->location->line_number;
+				mode.line_number = state->location.front().line_number;
 				mode.nesting = 0;
 			},
 			[&](StatementEndW &statement)
@@ -5466,8 +5456,6 @@ static void ParseLine(SemanticState* const state, const StringView &label, const
 			   add it to the fix-up list so we can try again later. */
 			FixUp &fixup = state->fixup_list.emplace_back();
 
-			const Location *source_location = state->location;
-			Location *destination_location = &fixup.location;
 
 			/* Backup the statement. */
 			fixup.statement = std::move(statement);
@@ -5483,17 +5471,7 @@ static void ParseLine(SemanticState* const state, const StringView &label, const
 			fixup.options = *Options_Get(&state->options);
 
 			/* Clone the location. */
-			*destination_location = *source_location;
-			String_CreateCopy(destination_location->file_path, source_location->file_path);
-
-			for (source_location = source_location->previous; source_location != NULL; source_location = source_location->previous)
-			{
-				destination_location->previous = new Location;
-
-				destination_location = destination_location->previous;
-				*destination_location = *source_location;
-				String_CreateCopy(destination_location->file_path, source_location->file_path);
-			}
+			fixup.location = state->location;
 
 			state->fixup_needed = cc_false;
 		}
@@ -5856,8 +5834,6 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 
 			/* Finally, invoke the macro. */
 			{
-				Location location;
-
 				const cc_bool previous_listing_macro = state->listing_macro;
 
 				/* Flush line before changing this state, so that the macro line is not given the 'M' label. */
@@ -5865,11 +5841,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 				state->listing_macro = cc_true;
 
 				/* Push a new location (this macro).*/
-				String_CreateCopy(location.file_path, macro->name);
-				location.line_number = 0;
-
-				location.previous = state->location;
-				state->location = &location;
+				state->location.emplace_front(macro->name, 0);
 
 				/* Iterate over each line of the macro, sending it to be processed. */
 				for (const auto &source_line : macro->source_line_list)
@@ -5899,7 +5871,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 				}
 
 				/* Pop location. */
-				state->location = state->location->previous;
+				state->location.pop_front();
 
 				state->listing_macro = previous_listing_macro;
 			}
@@ -5959,7 +5931,7 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 		state->source_line = &source_line_raw;
 	}
 
-	++state->location->line_number;
+	++state->location.front().line_number;
 
 	if (String_At(*state->source_line, 0) == '*')
 	{
@@ -6276,15 +6248,12 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	const ClownAssembler_DefinitionCallback definition_callback,
 	const void* const user_data)
 {
-	Location location;
 	SemanticState state = {0}; /* Default-initialise everything. */
 
 	/* For error messages, we want to maintain a list of filenames and line
 	   numbers that describe the location and nesting of the erroneous
 	   line. This is the first entry in that list. */
-	location.previous = NULL;
-	String_Create(location.file_path, input_file_path, strlen(input_file_path));
-	location.line_number = 0;
+	state.location.emplace_front(input_file_path, 0);
 
 	/* Initialise the state's non-default values. */
 	state.success = cc_true;
@@ -6298,7 +6267,6 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 	state.last_global_label = "";
 	state.line_buffer = "";
-	state.location = &location;
 	Substitute_Initialise(&state.substitutions);
 	state.mode.emplace<SemanticState::ModeNormal>();
 
@@ -6361,8 +6329,6 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 				while (!state.fixup_list.empty())
 				{
-					Location *location;
-
 					/* Pop fix-up from list. */
 					FixUp &fixup = state.fixup_list.front();
 
@@ -6373,7 +6339,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 					state.segment_length = fixup.segment_length;
 					String_CreateCopy(state.last_global_label, fixup.last_global_label);
 					state.source_line = &fixup.source_line;
-					state.location = &fixup.location;
+					state.location = std::move(fixup.location);
 					*Options_Get(&state.options) = fixup.options;
 
 					/* Re-process statement. */
@@ -6384,16 +6350,6 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 					if (fixup.macro_dictionary.use_count() == 1)
 						SymbolDictionary_Deinit(&*fixup.macro_dictionary);
 					fixup.macro_dictionary.reset();
-
-					/* Pop one location from the list. */
-					location = fixup.location.previous;
-
-					while (location != NULL)
-					{
-						Location *previous_location = location->previous;
-						delete location;
-						location = previous_location;
-					}
 
 					state.fixup_list.pop_front();
 				}
