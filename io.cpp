@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -71,70 +72,50 @@ static void File_PrintFormatted(void* const user_data, const char* const format,
 
 typedef struct MemoryIO
 {
-	unsigned char *buffer;
-	size_t capacity, size, position;
+	std::stringstream stream;
 } MemoryIO;
 
 static void Memory_Seek(void* const user_data, const size_t position)
 {
 	MemoryIO* const state = (MemoryIO*)user_data;
 
-	state->position = CC_MIN(state->size, position);
+	state->stream.seekg(position);
+	state->stream.seekp(position);
 }
 
 static int Memory_ReadCharacter(void* const user_data)
 {
 	MemoryIO* const state = (MemoryIO*)user_data;
 
-	if (state->position >= state->size)
+	const auto character = state->stream.get();
+
+	if (state->stream.gcount() == 0)
 		return EOF;
 
-	return state->buffer[state->position++];
+	return character;
 }
 
 static size_t Memory_ReadCharacters(void* const user_data, void* const characters, const size_t total_characters)
 {
 	MemoryIO* const state = (MemoryIO*)user_data;
 
-	const size_t characters_to_read = CC_MIN(total_characters, state->size - state->position);
+	state->stream.read(static_cast<char*>(characters), total_characters);
 
-	memcpy(characters, &state->buffer[state->position], characters_to_read);
-	state->position += characters_to_read;
-
-	return characters_to_read;
+	return state->stream.gcount();
 }
 
 static void Memory_WriteCharacters(void* const user_data, const void* const characters, const size_t total_characters)
 {
 	MemoryIO* const state = (MemoryIO*)user_data;
 
-	state->size = CC_MAX(state->size, state->position + total_characters);
-
-	if (state->capacity < state->size)
-	{
-		unsigned char* buffer = state->buffer;
-		size_t capacity = state->capacity;
-
-		while (capacity < state->size)
-			capacity <<= 1;
-
-		buffer = (unsigned char*)realloc(buffer, capacity);
-
-		if (buffer == NULL)
-			return;
-
-		state->buffer = buffer;
-		state->capacity = capacity;
-	}
-
-	memcpy(&state->buffer[state->position], characters, total_characters);
-	state->position += total_characters;
+	state->stream.write(static_cast<const char*>(characters), total_characters);
 }
 
 static void Memory_WriteCharacter(void* const user_data, const int character)
 {
-	const unsigned char byte = character;
-	Memory_WriteCharacters(user_data, &byte, 1);
+	MemoryIO* const state = (MemoryIO*)user_data;
+
+	state->stream.put(character);
 }
 
 /* TextInput */
@@ -242,33 +223,20 @@ cc_bool BinaryStream_OpenMemory(BinaryStream* const callbacks)
 {
 	MemoryIO* const state = new MemoryIO;
 
-	state->capacity = 0x100;
-	state->size = 0;
-	state->position = 0;
-	state->buffer = (unsigned char*)malloc(state->capacity);
+	callbacks->user_data = state;
+	callbacks->read_character = Memory_ReadCharacter;
+	callbacks->read_characters = Memory_ReadCharacters;
+	callbacks->write_character = Memory_WriteCharacter;
+	callbacks->write_characters = Memory_WriteCharacters;
+	callbacks->seek = Memory_Seek;
 
-	if (state != NULL)
-	{
-		callbacks->user_data = state;
-		callbacks->read_character = Memory_ReadCharacter;
-		callbacks->read_characters = Memory_ReadCharacters;
-		callbacks->write_character = Memory_WriteCharacter;
-		callbacks->write_characters = Memory_WriteCharacters;
-		callbacks->seek = Memory_Seek;
-
-		return cc_true;
-	}
-
-	delete state;
-
-	return cc_false;
+	return cc_true;
 }
 
 void BinaryStream_CloseMemory(BinaryStream* const callbacks)
 {
 	MemoryIO* const state = (MemoryIO*)callbacks->user_data;
 
-	free(state->buffer);
 	delete state;
 }
 
