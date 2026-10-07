@@ -910,7 +910,7 @@ statement
 	}
 	| instruction
 	{
-		statement->emplace<StatementInstruction>(std::move($1));
+		statement->emplace<StatementInstruction>($1);
 	}
 	| DIRECTIVE_DC size expression_list
 	{
@@ -918,7 +918,7 @@ statement
 	}
 	| DIRECTIVE_DCB size expression "," expression
 	{
-		statement->emplace<StatementDcb>($2, std::move($3), std::move($5));
+		statement->emplace<StatementDcb>($2, $3, $5);
 	}
 	| DIRECTIVE_DS size expression
 	{
@@ -1166,39 +1166,39 @@ statement
 expression_list
 	: expression
 	{
-		$$.emplace_back(std::move($1));
+		$$.emplace_back($1);
 	}
 	| expression_list "," expression
 	{
-		$$ = std::move($1);
+		$$ = $1;
 
-		$$.emplace_back(std::move($3));
+		$$.emplace_back($3);
 	}
 	;
 
 identifier_list
 	: IDENTIFIER
 	{
-		$$.emplace_back(std::move($1));
+		$$.emplace_back($1);
 	}
 	| identifier_list "," IDENTIFIER
 	{
-		$$ = std::move($1);
+		$$ = $1;
 
-		$$.emplace_back(std::move($3));
+		$$.emplace_back($3);
 	}
 	;
 
 option_list
 	: OPTION
 	{
-		$$.emplace_back(std::move($1));
+		$$.emplace_back($1);
 	}
 	| option_list "," OPTION
 	{
-		$$ = std::move($1);
+		$$ = $1;
 
-		$$.emplace_back(std::move($3));
+		$$.emplace_back($3);
 	}
 	;
 
@@ -2355,8 +2355,8 @@ expression8
 		auto subexpressions = std::make_unique<Expression[]>(3);
 
 		subexpressions[0] = ExpressionNumber{1};
-		subexpressions[1] = std::move($3);
-		subexpressions[2] = std::move($5);
+		subexpressions[1] = $3;
+		subexpressions[2] = $5;
 
 		$$.emplace<ExpressionInstr>(std::move(subexpressions));
 	}
@@ -2364,9 +2364,9 @@ expression8
 	{
 		auto subexpressions = std::make_unique<Expression[]>(3);
 
-		subexpressions[0] = std::move($3);
-		subexpressions[1] = std::move($5);
-		subexpressions[2] = std::move($7);
+		subexpressions[0] = $3;
+		subexpressions[1] = $5;
+		subexpressions[2] = $7;
 
 		$$.emplace<ExpressionInstr>(std::move(subexpressions));
 	}

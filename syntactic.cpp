@@ -816,7 +816,7 @@ namespace m68kasm {
   case 3: // statement: instruction
 #line 912 "syntactic.y"
         {
-		statement->emplace<StatementInstruction>(std::move(YY_MOVE (yystack_[0].value.as < StatementInstruction > ())));
+		statement->emplace<StatementInstruction>(YY_MOVE (yystack_[0].value.as < StatementInstruction > ()));
 	}
 #line 822 "syntactic.cpp"
     break;
@@ -832,7 +832,7 @@ namespace m68kasm {
   case 5: // statement: DIRECTIVE_DCB size expression "," expression
 #line 920 "syntactic.y"
         {
-		statement->emplace<StatementDcb>(YY_MOVE (yystack_[3].value.as < Size > ()), std::move(YY_MOVE (yystack_[2].value.as < Expression > ())), std::move(YY_MOVE (yystack_[0].value.as < Expression > ())));
+		statement->emplace<StatementDcb>(YY_MOVE (yystack_[3].value.as < Size > ()), YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 838 "syntactic.cpp"
     break;
@@ -1309,7 +1309,7 @@ namespace m68kasm {
   case 63: // expression_list: expression
 #line 1168 "syntactic.y"
         {
-		yylhs.value.as < ExpressionList > ().emplace_back(std::move(YY_MOVE (yystack_[0].value.as < Expression > ())));
+		yylhs.value.as < ExpressionList > ().emplace_back(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 1315 "syntactic.cpp"
     break;
@@ -1317,9 +1317,9 @@ namespace m68kasm {
   case 64: // expression_list: expression_list "," expression
 #line 1172 "syntactic.y"
         {
-		yylhs.value.as < ExpressionList > () = std::move(YY_MOVE (yystack_[2].value.as < ExpressionList > ()));
+		yylhs.value.as < ExpressionList > () = YY_MOVE (yystack_[2].value.as < ExpressionList > ());
 
-		yylhs.value.as < ExpressionList > ().emplace_back(std::move(YY_MOVE (yystack_[0].value.as < Expression > ())));
+		yylhs.value.as < ExpressionList > ().emplace_back(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 1325 "syntactic.cpp"
     break;
@@ -1327,7 +1327,7 @@ namespace m68kasm {
   case 65: // identifier_list: IDENTIFIER
 #line 1181 "syntactic.y"
         {
-		yylhs.value.as < IdentifierList > ().emplace_back(std::move(YY_MOVE (yystack_[0].value.as < String > ())));
+		yylhs.value.as < IdentifierList > ().emplace_back(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
 #line 1333 "syntactic.cpp"
     break;
@@ -1335,9 +1335,9 @@ namespace m68kasm {
   case 66: // identifier_list: identifier_list "," IDENTIFIER
 #line 1185 "syntactic.y"
         {
-		yylhs.value.as < IdentifierList > () = std::move(YY_MOVE (yystack_[2].value.as < IdentifierList > ()));
+		yylhs.value.as < IdentifierList > () = YY_MOVE (yystack_[2].value.as < IdentifierList > ());
 
-		yylhs.value.as < IdentifierList > ().emplace_back(std::move(YY_MOVE (yystack_[0].value.as < String > ())));
+		yylhs.value.as < IdentifierList > ().emplace_back(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
 #line 1343 "syntactic.cpp"
     break;
@@ -1345,7 +1345,7 @@ namespace m68kasm {
   case 67: // option_list: OPTION
 #line 1194 "syntactic.y"
         {
-		yylhs.value.as < IdentifierList > ().emplace_back(std::move(YY_MOVE (yystack_[0].value.as < String > ())));
+		yylhs.value.as < IdentifierList > ().emplace_back(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
 #line 1351 "syntactic.cpp"
     break;
@@ -1353,9 +1353,9 @@ namespace m68kasm {
   case 68: // option_list: option_list "," OPTION
 #line 1198 "syntactic.y"
         {
-		yylhs.value.as < IdentifierList > () = std::move(YY_MOVE (yystack_[2].value.as < IdentifierList > ()));
+		yylhs.value.as < IdentifierList > () = YY_MOVE (yystack_[2].value.as < IdentifierList > ());
 
-		yylhs.value.as < IdentifierList > ().emplace_back(std::move(YY_MOVE (yystack_[0].value.as < String > ())));
+		yylhs.value.as < IdentifierList > ().emplace_back(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
 #line 1361 "syntactic.cpp"
     break;
@@ -3274,8 +3274,8 @@ namespace m68kasm {
 		auto subexpressions = std::make_unique<Expression[]>(3);
 
 		subexpressions[0] = ExpressionNumber{1};
-		subexpressions[1] = std::move(YY_MOVE (yystack_[3].value.as < Expression > ()));
-		subexpressions[2] = std::move(YY_MOVE (yystack_[1].value.as < Expression > ()));
+		subexpressions[1] = YY_MOVE (yystack_[3].value.as < Expression > ());
+		subexpressions[2] = YY_MOVE (yystack_[1].value.as < Expression > ());
 
 		yylhs.value.as < Expression > ().emplace<ExpressionInstr>(std::move(subexpressions));
 	}
@@ -3287,9 +3287,9 @@ namespace m68kasm {
         {
 		auto subexpressions = std::make_unique<Expression[]>(3);
 
-		subexpressions[0] = std::move(YY_MOVE (yystack_[5].value.as < Expression > ()));
-		subexpressions[1] = std::move(YY_MOVE (yystack_[3].value.as < Expression > ()));
-		subexpressions[2] = std::move(YY_MOVE (yystack_[1].value.as < Expression > ()));
+		subexpressions[0] = YY_MOVE (yystack_[5].value.as < Expression > ());
+		subexpressions[1] = YY_MOVE (yystack_[3].value.as < Expression > ());
+		subexpressions[2] = YY_MOVE (yystack_[1].value.as < Expression > ());
 
 		yylhs.value.as < Expression > ().emplace<ExpressionInstr>(std::move(subexpressions));
 	}
