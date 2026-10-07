@@ -637,13 +637,7 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *s
 		if (dictionary != NULL)
 			*dictionary = &state->dictionary;
 
-		if (!state->dictionary.LookUpAndCreateIfNotExist(identifier, &dictionary_entry))
-		{
-			OutOfMemoryError(state);
-			dictionary_entry = NULL;
-			if (dictionary != NULL)
-				*dictionary = NULL;
-		}
+		dictionary_entry = &state->dictionary.LookUpAndCreateIfNotExist(identifier);
 	}
 
 	if (!std::holds_alternative<SymbolNone>(*dictionary_entry) && !std::holds_alternative<SymbolType>(*dictionary_entry))
@@ -4317,42 +4311,35 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 
 	for (size_t argument_index = 0; argument_index < state->macro.metadata->parameter_names.size(); ++argument_index)
 	{
-		SymbolDictionary::Entry *dictionary_entry;
-
 		const StringView &parameter = String_View(state->macro.metadata->parameter_names[argument_index]);
 		const StringView &argument = argument_index >= state->macro.total_arguments ? blank_argument : String_View(state->macro.argument_list[argument_index]);
 
-		if (!state->macro.dictionary->LookUpAndCreateIfNotExist(parameter, &dictionary_entry))
-		{
-			OutOfMemoryError(state);
-		}
-		else
-		{
-			/* TODO: De-duplicate this with the 'PushSubstitute' function. */
-			std::visit(
-				CC_VisitHelper{
-					[&](SymbolNone&)
-					{
-						auto &symbol = dictionary_entry->emplace<SymbolStringConstant>();
-						String_CreateCopyView(symbol.value, argument);
-						state->macro.substitutions.PushSubstitute(parameter, symbol.value);
-					},
-					[&](SymbolStringConstant &symbol)
-					{
-						String_CreateCopyView(symbol.value, argument);
-					},
-					[&](auto&)
-					{
-						/* TODO: This is not a common case, but it can occur if e.g. someone redefines a parameter name as a normal symbol in the macro body.
-						   See tests/previously-crashing/redefine-macro-parameter-in-macro-body.asm for an example of this.
-						   That'll already have caused an error to be emitted, so this error might be somewhat cascading,
-						   but I'm not certain it's not possible to hit this in other ways,
-						   and in any case if we get here I'm pretty sure something has gone wrong, so we should emit an error in case one hasn't already been emitted. */
-						SemanticError(state, "Attempted to redefine symbol '%.*s' as a string constant.", (int)StringView_Length(parameter), StringView_Data(parameter));
-					},
-				}, *dictionary_entry
-			);
-		}
+		SymbolDictionary::Entry &dictionary_entry = state->macro.dictionary->LookUpAndCreateIfNotExist(parameter);
+
+		/* TODO: De-duplicate this with the 'PushSubstitute' function. */
+		std::visit(
+			CC_VisitHelper{
+				[&](SymbolNone&)
+				{
+					auto &symbol = dictionary_entry.emplace<SymbolStringConstant>();
+					String_CreateCopyView(symbol.value, argument);
+					state->macro.substitutions.PushSubstitute(parameter, symbol.value);
+				},
+				[&](SymbolStringConstant &symbol)
+				{
+					String_CreateCopyView(symbol.value, argument);
+				},
+				[&](auto&)
+				{
+					/* TODO: This is not a common case, but it can occur if e.g. someone redefines a parameter name as a normal symbol in the macro body.
+					   See tests/previously-crashing/redefine-macro-parameter-in-macro-body.asm for an example of this.
+					   That'll already have caused an error to be emitted, so this error might be somewhat cascading,
+					   but I'm not certain it's not possible to hit this in other ways,
+					   and in any case if we get here I'm pretty sure something has gone wrong, so we should emit an error in case one hasn't already been emitted. */
+					SemanticError(state, "Attempted to redefine symbol '%.*s' as a string constant.", (int)StringView_Length(parameter), StringView_Data(parameter));
+				},
+			}, dictionary_entry
+		);
 	}
 }
 
@@ -5382,8 +5369,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				else
 				{
 					for (const auto &identifier : statement.identifiers)
-						if (!state->macro.dictionary->LookUpAndCreateIfNotExist(String_View(identifier), NULL))
-							OutOfMemoryError(state);
+						state->macro.dictionary->LookUpAndCreateIfNotExist(String_View(identifier));
 				}
 			},
 			[&](StatementPurge &statement)
@@ -6147,52 +6133,6 @@ static void AssembleFile(SemanticState *state)
 	}
 }
 
-static cc_bool DictionaryFilterProduceSymbolFile(SymbolDictionary::Entry *entry, const char *identifier, size_t identifier_length, void *user_data)
-{
-	/* The symbol file only contains labels. */
-	/* Labels longer than 0xFF characters are silently ignored. */
-	/* Local labels are also silently ignored (unless 'v+' is specified). */
-	void** const parameters = (void**)user_data;
-	const SemanticState* const state = (const SemanticState*)parameters[1];
-
-	const SymbolLabel* const symbol_label = std::get_if<SymbolLabel>(entry);
-
-	if (symbol_label != NULL)
-	{
-		const char *label;
-		size_t label_length;
-		cc_bool is_local_label;
-
-		for (label = &identifier[identifier_length], label_length = 0; label_length != identifier_length; --label, ++label_length)
-			if (*label == state->options->local_signifier)
-				break;
-
-		is_local_label = label_length != identifier_length;
-
-		if (label_length < 0x100 && (!is_local_label || state->options->output_local_labels_to_sym_file))
-		{
-			unsigned int i;
-
-			const BinaryStream* const symbol_callbacks = (const BinaryStream*)parameters[0];
-
-			/* Output the address of the label. */
-			for (i = 0; i < 4; ++i)
-				BinaryStream_fputc((symbol_label->value >> (i * 8)) & 0xFF, symbol_callbacks);
-
-			/* I have no idea what this means. */
-			BinaryStream_fputc(is_local_label ? 6 : 2, symbol_callbacks);
-
-			/* Output the length of the label. */
-			BinaryStream_fputc(label_length, symbol_callbacks);
-
-			/* Output the label itself. */
-			BinaryStream_fwrite(label, 1, label_length, symbol_callbacks);
-		}
-	}
-
-	return cc_true;
-}
-
 static void AddDefinition(void* const internal, const char* const identifier_buffer, const size_t identifier_length, const unsigned long value)
 {
 	SemanticState* const state = (SemanticState*)internal;
@@ -6307,11 +6247,6 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 			/* Produce asm68k symbol file, if requested. */
 			if (BinaryStream_exists(symbol_callbacks))
 			{
-				const void *parameters[2];
-
-				parameters[0] = symbol_callbacks;
-				parameters[1] = &state;
-
 				/* Some kind of header. */
 				BinaryStream_fputc('M', symbol_callbacks);
 				BinaryStream_fputc('N', symbol_callbacks);
@@ -6322,7 +6257,48 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 				BinaryStream_fputc(0, symbol_callbacks);
 				BinaryStream_fputc(0, symbol_callbacks);
 
-				state.dictionary.Filter(DictionaryFilterProduceSymbolFile, parameters);
+				state.dictionary.Filter(
+					[&](const SymbolDictionary::Entry &entry, const StringView &identifier) -> cc_bool
+					{
+						/* The symbol file only contains labels. */
+						/* Labels longer than 0xFF characters are silently ignored. */
+						/* Local labels are also silently ignored (unless 'v+' is specified). */
+						const SymbolLabel* const symbol_label = std::get_if<SymbolLabel>(&entry);
+
+						if (symbol_label != NULL)
+						{
+							const char *label;
+							size_t label_length;
+							cc_bool is_local_label;
+
+							for (label = &StringView_At(identifier, StringView_Length(identifier)), label_length = 0; label_length != StringView_Length(identifier); --label, ++label_length)
+								if (*label == state.options->local_signifier)
+									break;
+
+							is_local_label = label_length != StringView_Length(identifier);
+
+							if (label_length < 0x100 && (!is_local_label || state.options->output_local_labels_to_sym_file))
+							{
+								unsigned int i;
+
+								/* Output the address of the label. */
+								for (i = 0; i < 4; ++i)
+									BinaryStream_fputc((symbol_label->value >> (i * 8)) & 0xFF, symbol_callbacks);
+
+								/* I have no idea what this means. */
+								BinaryStream_fputc(is_local_label ? 6 : 2, symbol_callbacks);
+
+								/* Output the length of the label. */
+								BinaryStream_fputc(label_length, symbol_callbacks);
+
+								/* Output the label itself. */
+								BinaryStream_fwrite(label, 1, label_length, symbol_callbacks);
+							}
+						}
+
+						return cc_true;
+					}
+				);
 			}
 		}
 	}

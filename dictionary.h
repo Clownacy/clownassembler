@@ -19,7 +19,7 @@
 #define DICTIONARY_H
 
 #include <cstddef>
-#include <optional>
+#include <functional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -32,10 +32,12 @@ template<typename EntryArgument>
 class Dictionary
 {
 private:
-	struct ToLower
+	class ToLower
 	{
+	private:
 		const int delta;
 
+	public:
 		constexpr ToLower(const cc_bool enabled)
 			: delta(enabled ? 'a' - 'A' : 0)
 		{}
@@ -46,8 +48,9 @@ private:
 		}
 	};
 
-	struct StringHash
+	class StringHash
 	{
+	public:
 		using is_transparent = void;
 
 		std::size_t operator()(const std::string_view &string) const
@@ -73,7 +76,7 @@ private:
 	public:
 		using is_transparent = void;
 
-		StringCompare(const cc_bool enabled)
+		constexpr StringCompare(const cc_bool enabled)
 			: to_lower(enabled)
 		{}
 
@@ -83,10 +86,8 @@ private:
 				return false;
 
 			for (std::size_t i = 0; i < std::size(lhs); ++i)
-			{
 				if (to_lower(lhs[i]) != to_lower(rhs[i]))
 					return false;
-			}
 
 			return true;
 		}
@@ -99,20 +100,14 @@ public:
 
 	Dictionary(cc_bool case_insensitive)
 		: internal(0, StringHash{}, StringCompare{case_insensitive})
-	{
-	}
+	{}
 
-	cc_bool LookUpAndCreateIfNotExist(const StringView &identifier, Entry **entry_pointer)
+	Entry& LookUpAndCreateIfNotExist(const StringView &identifier)
 	{
 		// All of this crap to work-around C++ not having a decent `operator[]` before C++26... fuck me.
 		auto it = internal.find(identifier);
 
-		auto &entry = it != internal.end() ? it->second : internal.emplace(std::piecewise_construct, std::forward_as_tuple(identifier), std::tuple<>()).first->second; // Nightmare Difficulty C++
-
-		if (entry_pointer != nullptr)
-			*entry_pointer = &entry;
-
-		return cc_true;
+		return it != internal.end() ? it->second : internal.emplace(std::piecewise_construct, std::forward_as_tuple(identifier), std::tuple<>()).first->second; // Nightmare Difficulty C++
 	}
 
 	Entry* LookUp(const StringView &identifier)
@@ -125,24 +120,22 @@ public:
 		return &it->second;
 	}
 
-	cc_bool Remove(const StringView &identifier)
+	void Remove(const StringView &identifier)
 	{
 		auto it = internal.find(identifier);
 
 		if (it == internal.end())
-			return cc_false;
+			return;
 
 		internal.erase(it);
-
-		return cc_true;
 	}
 
-	void Filter(cc_bool (*filter_function)(Entry *entry, const char *identifier, std::size_t identifier_length, void *user_data), const void *user_data)
+	void Filter(const std::function<cc_bool(const Entry &entry, const StringView &identifier)> &filter_function)
 	{
 		std::erase_if(internal,
 			[&](auto &entry)
 			{
-				return !filter_function(&entry.second, entry.first.data(), entry.first.length(), const_cast<void*>(user_data));
+				return !filter_function(entry.second, entry.first);
 			}
 		);
 	}
