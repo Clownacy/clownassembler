@@ -117,7 +117,7 @@ typedef struct FixUp
 	String source_line;
 	std::deque<Location> location;
 	String label;
-	ClownAssembler_Settings options;
+	Options options;
 } FixUp;
 
 typedef struct SemanticState_Macro
@@ -152,7 +152,7 @@ typedef struct SemanticState
 	const String *source_line;
 	Substitute_State substitutions;
 	std::stack<String> string_stack;
-	std::stack<ClownAssembler_Settings> options;
+	OptionsStack options;
 	SemanticState_Macro macro;
 	size_t output_position, previous_segment_length_output_position;
 	size_t segment_position, segment_length;
@@ -205,6 +205,10 @@ typedef struct SemanticState
 	};
 
 	std::variant<ModeNormal, ModeRept, ModeMacro, ModeWhile> mode;
+
+	SemanticState(Options default_options)
+		: options(std::move(default_options))
+	{}
 } SemanticState;
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
@@ -299,7 +303,7 @@ static void ErrorMessageCommon(SemanticState *state)
 
 CC_ATTRIBUTE_PRINTF(2, 3) static void SemanticWarning(SemanticState *state, const char *fmt, ...)
 {
-	if (state->options.top().warnings_enabled)
+	if (state->options->warnings_enabled)
 	{
 		va_list args;
 
@@ -358,7 +362,7 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message)
 
 	(void)statement;
 
-	if (state->options.top().warnings_enabled)
+	if (state->options->warnings_enabled)
 	{
 		TextOutput_fprintf(state->error_callbacks, "Warning: %s", message);
 
@@ -370,7 +374,7 @@ void m68kasm_warning_pedantic(void *scanner, Statement *statement, const char *m
 {
 	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
 
-	if (state->options.top().pedantic_warnings_enabled)
+	if (state->options->pedantic_warnings_enabled)
 		m68kasm_warning(scanner, statement, message);
 }
 
@@ -553,7 +557,7 @@ static cc_bool CurrentlyExpandingMacro(const SemanticState* const state)
 
 static void ExpandIdentifier(SemanticState *state, String &expanded_identifier, const StringView &identifier)
 {
-	if (StringView_Empty(identifier) || (StringView_At(identifier, 0) != state->options.top().local_signifier))
+	if (StringView_Empty(identifier) || (StringView_At(identifier, 0) != state->options->local_signifier))
 	{
 		expanded_identifier = "";
 		//String_CreateBlank(expanded_identifier);
@@ -1036,7 +1040,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 				else
 				{
 					/* TODO: What if 'position' is 0? */
-					const size_t found_position = String_Find(expression_string_a->string, String_View(expression_string_b->string), position - 1, state->options.top().case_insensitive);
+					const size_t found_position = String_Find(expression_string_a->string, String_View(expression_string_b->string), position - 1, state->options->case_insensitive);
 					*value = found_position == STRING_POSITION_INVALID ? 0 : found_position + 1;
 				}
 			},
@@ -1110,7 +1114,7 @@ static void TerminateRept(SemanticState *state, SemanticState::ModeRept &rept_st
 
 		/* Process the REPT's nested statements. */
 		for (const auto source_line : rept_state_copy.source_line_list)
-			AssembleLine(state, source_line, state->options.top().expand_all_macros);
+			AssembleLine(state, source_line, state->options->expand_all_macros);
 	}
 
 	/* Increment past the ENDR line number. */
@@ -1460,7 +1464,7 @@ static void SetLastGlobalLabel(SemanticState *state, const StringView &label)
 {
 	const char first_character = StringView_At(label, 0);
 
-	if (first_character != state->options.top().local_signifier)
+	if (first_character != state->options->local_signifier)
 	{
 		/* This is a global label - cache it for later. */
 		String_CreateCopyView(state->last_global_label, label);
@@ -1475,7 +1479,7 @@ static void ResolveInstructionAmbiguity(SemanticState* const state, StatementIns
 		switch (instruction->opcode.type)
 		{
 			#define ALIAS_AND_LOOP(ALIAS) {instruction->opcode.type = ALIAS; continue;}
-			#define WARN_ALIAS_AND_LOOP(ALIAS, MESSAGE) {if (state->options.top().pedantic_warnings_enabled) SemanticWarning(state, MESSAGE); ALIAS_AND_LOOP(ALIAS)}
+			#define WARN_ALIAS_AND_LOOP(ALIAS, MESSAGE) {if (state->options->pedantic_warnings_enabled) SemanticWarning(state, MESSAGE); ALIAS_AND_LOOP(ALIAS)}
 
 			case OPCODE_ORI:
 				if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
@@ -1759,7 +1763,7 @@ static void ResolveInstructionAmbiguity(SemanticState* const state, StatementIns
 
 static void OptimiseInstruction(SemanticState* const state, StatementInstruction* const instruction)
 {
-	if (state->options.top().optimisation.zero_displacement)
+	if (state->options->optimisation.zero_displacement)
 	{
 		unsigned int i;
 
@@ -4401,7 +4405,7 @@ static void PerformEven(SemanticState* const state)
 
 static cc_bool ShouldPerformAutomaticEven(SemanticState* const state, const Size size)
 {
-	return state->options.top().automatic_even && size != SIZE_BYTE;
+	return state->options->automatic_even && size != SIZE_BYTE;
 }
 
 static void ProcessDc(SemanticState *state, StatementDc *dc)
@@ -4870,7 +4874,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			{
 				unsigned long value;
 
-				if (state->options.top().equ_set_descope_local_labels)
+				if (state->options->equ_set_descope_local_labels)
 					SetLastGlobalLabel(state, label);
 
 				auto &equ = statement;
@@ -4947,7 +4951,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			{
 				unsigned long value;
 
-				if (state->options.top().equ_set_descope_local_labels)
+				if (state->options->equ_set_descope_local_labels)
 					SetLastGlobalLabel(state, label);
 
 				if (!ResolveExpression(state, &statement.expression, &value, cc_true))
@@ -5257,11 +5261,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			},
 			[&](StatementPushO &statement)
 			{
-				state->options.push(state->options.top());
+				state->options.Push();
 			},
 			[&](StatementPopO &statement)
 			{
-				state->options.pop();
+				state->options.Pop();
 			},
 			[&](StatementOpt &statement)
 			{
@@ -5269,55 +5273,55 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				{
 					/* TODO: A lot of these are unimplemented... */
 					if (String_CompareCStrCaseInsensitive(option, "ae+"))
-						state->options.top().automatic_even = cc_true;
+						state->options->automatic_even = cc_true;
 					else if (String_CompareCStrCaseInsensitive(option, "ae-"))
-						state->options.top().automatic_even = cc_false;
+						state->options->automatic_even = cc_false;
 					else if (String_CompareCStrCaseInsensitive(option, "an+"))
 						;
 					else if (String_CompareCStrCaseInsensitive(option, "an-"))
 						;
 					else if (String_CompareCStrCaseInsensitive(option, "c+"))
-						state->options.top().case_insensitive = cc_false;
+						state->options->case_insensitive = cc_false;
 					else if (String_CompareCStrCaseInsensitive(option, "c-"))
-						state->options.top().case_insensitive = cc_true;
+						state->options->case_insensitive = cc_true;
 					else if (String_CompareCStrCaseInsensitive(option, "d+"))
-						state->options.top().equ_set_descope_local_labels = cc_true;
+						state->options->equ_set_descope_local_labels = cc_true;
 					else if (String_CompareCStrCaseInsensitive(option, "d-"))
-						state->options.top().equ_set_descope_local_labels = cc_false;
+						state->options->equ_set_descope_local_labels = cc_false;
 					else if (String_CompareCStrCaseInsensitive(option, "e+"))
 						;
 					else if (String_CompareCStrCaseInsensitive(option, "e-"))
 						;
 					else if (String_CompareCStrCaseInsensitive(option, "l+"))
-						state->options.top().local_signifier = '.';
+						state->options->local_signifier = '.';
 					else if (String_CompareCStrCaseInsensitive(option, "l-"))
-						state->options.top().local_signifier = '@';
+						state->options->local_signifier = '@';
 					else if (String_Length(option) == 2 && (String_At(option, 0) == 'l' || String_At(option, 0) == 'L'))
-						state->options.top().local_signifier = String_At(option, 1);
+						state->options->local_signifier = String_At(option, 1);
 					/*else if (String_CompareCStrCaseInsensitive(option, "s+"))
 						;*/
 					else if (String_CompareCStrCaseInsensitive(option, "s-"))
 						;
 					else if (String_CompareCStrCaseInsensitive(option, "m+"))
-						state->options.top().expand_all_macros = cc_true;
+						state->options->expand_all_macros = cc_true;
 					else if (String_CompareCStrCaseInsensitive(option, "m-"))
-						state->options.top().expand_all_macros = cc_false;
+						state->options->expand_all_macros = cc_false;
 					else if (String_CompareCStrCaseInsensitive(option, "oz+"))
-						state->options.top().optimisation.zero_displacement = cc_true;
+						state->options->optimisation.zero_displacement = cc_true;
 					else if (String_CompareCStrCaseInsensitive(option, "oz-"))
-						state->options.top().optimisation.zero_displacement = cc_false;
+						state->options->optimisation.zero_displacement = cc_false;
 					else if (String_CompareCStrCaseInsensitive(option, "v+"))
-						state->options.top().output_local_labels_to_sym_file = cc_true;
+						state->options->output_local_labels_to_sym_file = cc_true;
 					else if (String_CompareCStrCaseInsensitive(option, "v-"))
-						state->options.top().output_local_labels_to_sym_file = cc_false;
+						state->options->output_local_labels_to_sym_file = cc_false;
 					else if (String_CompareCStrCaseInsensitive(option, "w+"))
-						state->options.top().warnings_enabled = cc_true;
+						state->options->warnings_enabled = cc_true;
 					else if (String_CompareCStrCaseInsensitive(option, "w-"))
-						state->options.top().warnings_enabled = cc_false;
+						state->options->warnings_enabled = cc_false;
 					else if (String_CompareCStrCaseInsensitive(option, "wp+"))
-						state->options.top().pedantic_warnings_enabled = cc_true;
+						state->options->pedantic_warnings_enabled = cc_true;
 					else if (String_CompareCStrCaseInsensitive(option, "wp-"))
-						state->options.top().pedantic_warnings_enabled = cc_false;
+						state->options->pedantic_warnings_enabled = cc_false;
 					else if (String_CompareCStrCaseInsensitive(option, "ws+"))
 						;
 					else if (String_CompareCStrCaseInsensitive(option, "ws-"))
@@ -5458,7 +5462,7 @@ static void ParseLine(SemanticState* const state, const StringView &label, const
 			String_CreateCopy(fixup.last_global_label, state->last_global_label);
 			String_CreateCopy(fixup.source_line, *state->source_line);
 			String_CreateCopyView(fixup.label, label);
-			fixup.options = state->options.top();
+			fixup.options = *state->options;
 
 			/* Clone the location. */
 			fixup.location = state->location;
@@ -5570,7 +5574,7 @@ static std::optional<StringView> MacroCustomSubstituteSearch(void* const user_da
 
 static void PerformSubstitutionsOnSubString(SemanticState* const state, String &string, StringView &view_to_search, const cc_bool allow_implicit_matches)
 {
-	const cc_bool case_insensitive = state->options.top().case_insensitive;
+	const cc_bool case_insensitive = state->options->case_insensitive;
 
 	if (state->macro.closure != NULL)
 		Substitute_ProcessSubString(&state->substitutions, &state->macro.substitutions, string, view_to_search, MacroCustomSubstituteSearch, state->macro.closure, allow_implicit_matches, case_insensitive);
@@ -5680,7 +5684,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 	{
 		state->macro.metadata = macro;
 		/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
-		state->macro.dictionary = std::make_shared<SymbolDictionary>(state->options.top().case_insensitive);
+		state->macro.dictionary = std::make_shared<SymbolDictionary>(state->options->case_insensitive);
 
 		if (state->macro.dictionary == NULL)
 		{
@@ -5806,7 +5810,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 							state->macro.argument_list.emplace_back();
 							String_CreateCopyView(state->macro.argument_list[state->macro.total_arguments], argument);
 
-							if (StringView_Length(argument) != 0 && StringView_At(argument, 0) != '"' && StringView_At(argument, 0) != '\'' && state->options.top().case_insensitive)
+							if (StringView_Length(argument) != 0 && StringView_At(argument, 0) != '"' && StringView_At(argument, 0) != '\'' && state->options->case_insensitive)
 								String_ToLower(state->macro.argument_list[state->macro.total_arguments]);
 
 							++state->macro.total_arguments;
@@ -5841,11 +5845,11 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 						String expanded_source_line;
 						String_CreateCopy(expanded_source_line, source_line);
 						PerformSubstitutions(state, expanded_source_line, cc_false);
-						AssembleLine(state, expanded_source_line, state->options.top().expand_all_macros);
+						AssembleLine(state, expanded_source_line, state->options->expand_all_macros);
 					}
 					else
 					{
-						AssembleLine(state, source_line, state->options.top().expand_all_macros);
+						AssembleLine(state, source_line, state->options->expand_all_macros);
 					}
 
 					if (!CurrentlyExpandingMacro(state))
@@ -6181,12 +6185,12 @@ static cc_bool DictionaryFilterProduceSymbolFile(SymbolDictionary::Entry *entry,
 		cc_bool is_local_label;
 
 		for (label = &identifier[identifier_length], label_length = 0; label_length != identifier_length; --label, ++label_length)
-			if (*label == state->options.top().local_signifier)
+			if (*label == state->options->local_signifier)
 				break;
 
 		is_local_label = label_length != identifier_length;
 
-		if (label_length < 0x100 && (!is_local_label || state->options.top().output_local_labels_to_sym_file))
+		if (label_length < 0x100 && (!is_local_label || state->options->output_local_labels_to_sym_file))
 		{
 			unsigned int i;
 
@@ -6232,7 +6236,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	const ClownAssembler_DefinitionCallback definition_callback,
 	const void* const user_data)
 {
-	SemanticState state = {0}; /* Default-initialise everything. */
+	SemanticState state(*initial_options);
 
 	/* For error messages, we want to maintain a list of filenames and line
 	   numbers that describe the location and nesting of the erroneous
@@ -6247,15 +6251,13 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	state.error_callbacks = error_callbacks;
 	state.listing_callbacks = listing_callbacks;
 
-	state.options.push(*initial_options);
-
 	state.last_global_label = "";
 	state.line_buffer = "";
 	Substitute_Initialise(&state.substitutions);
 	state.mode.emplace<SemanticState::ModeNormal>();
 
 	/* Create the symbol table dictionary. */
-	state.dictionary.emplace(state.options.top().case_insensitive);
+	state.dictionary.emplace(state.options->case_insensitive);
 
 	if (AddToSymbolTable(&state, string_rs,   SymbolSpecial{SymbolSpecial::Type::RS})
 	 && AddToSymbolTable(&state, string_narg, SymbolSpecial{SymbolSpecial::Type::NARG}))
@@ -6272,7 +6274,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 		{
 			/* Enable Bison debugging if available and requested by the user. */
 		#if M68KASM_DEBUG
-			if (state.options.top().debug)
+			if (state.options->debug)
 				m68kasm_debug = 1;
 		#endif
 
@@ -6320,7 +6322,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 				String_CreateMove(state.last_global_label, fixup.last_global_label);
 				state.source_line = &fixup.source_line;
 				state.location = std::move(fixup.location);
-				state.options.top() = fixup.options;
+				*state.options = fixup.options;
 
 				/* Re-process statement. */
 				ProcessStatement(&state, &fixup.statement, String_View(fixup.label));

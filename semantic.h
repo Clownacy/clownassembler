@@ -25,25 +25,11 @@
 #include "clowncommon/clowncommon.h"
 
 #include "io.h"
+#include "options.h"
 
 #define CLOWNASSEMBLER_VERSION_STRING "ClownAssembler v1.1.3"
 
-typedef struct ClownAssembler_Settings
-{
-	char local_signifier;
-	cc_bool debug;
-	cc_bool case_insensitive;
-	cc_bool equ_set_descope_local_labels;
-	cc_bool output_local_labels_to_sym_file;
-	cc_bool warnings_enabled;
-	cc_bool pedantic_warnings_enabled;
-	cc_bool expand_all_macros;
-	cc_bool automatic_even;
-	struct
-	{
-		cc_bool zero_displacement;
-	} optimisation;
-} ClownAssembler_Settings;
+using ClownAssembler_Settings = Options;
 
 typedef void (*ClownAssembler_AddDefinition)(void *internal, const char *identifier, size_t identifier_length, unsigned long value);
 typedef void (*ClownAssembler_DefinitionCallback)(void *internal, void *user_data, ClownAssembler_AddDefinition add_definition);
