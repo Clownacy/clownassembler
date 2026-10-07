@@ -18,6 +18,7 @@
 #ifndef IO_H
 #define IO_H
 
+#include <format>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -31,7 +32,6 @@ typedef size_t (*ClownAssembler_ReadCharacters)(void *user_data, void *character
 typedef void (*ClownAssembler_WriteCharacter)(void *user_data, int character);
 typedef void (*ClownAssembler_WriteCharacters)(void *user_data, const void *characters, size_t total_characters);
 typedef void (*ClownAssembler_WriteString)(void *user_data, const char *string);
-typedef void (*ClownAssembler_PrintFormatted)(void *user_data, const char *format, va_list args);
 
 typedef struct ClownAssembler_TextInput
 {
@@ -42,7 +42,6 @@ typedef struct ClownAssembler_TextInput
 typedef struct ClownAssembler_TextOutput
 {
 	const void *user_data;
-	ClownAssembler_PrintFormatted print_formatted;
 	ClownAssembler_WriteCharacter write_character;
 	ClownAssembler_WriteString write_string;
 } ClownAssembler_TextOutput;
@@ -64,10 +63,15 @@ char* TextInput_fgets(char *buffer, size_t buffer_size, const ClownAssembler_Tex
 
 void TextOutput_OpenFILE(ClownAssembler_TextOutput *callbacks, FILE *file);
 cc_bool TextOutput_exists(const ClownAssembler_TextOutput *callbacks);
-void TextOutput_vfprintf(const ClownAssembler_TextOutput *callbacks, const char *format, va_list args);
-CC_ATTRIBUTE_PRINTF(2, 3) void TextOutput_fprintf(const ClownAssembler_TextOutput *callbacks, const char *format, ...);
 void TextOutput_fputs(const char *string, const ClownAssembler_TextOutput *callbacks);
 void TextOutput_fputc(int character, const ClownAssembler_TextOutput *callbacks);
+
+template<typename... Args>
+void TextOutput_Format(const ClownAssembler_TextOutput *callbacks, std::format_string<Args...> &&format_string, Args &&...args)
+{
+	const auto string = std::format(std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+	TextOutput_fputs(string.c_str(), callbacks);
+}
 
 void BinaryStream_OpenFILE(ClownAssembler_BinaryStream *callbacks, FILE *file);
 cc_bool BinaryStream_OpenFile(ClownAssembler_BinaryStream *callbacks, const char *path, const char *mode);

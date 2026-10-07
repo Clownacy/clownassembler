@@ -67,21 +67,6 @@ static void WriteString(void* const user_data, const char* const string)
 	*data.stream << string;
 }
 
-static void PrintFormatted(void* const user_data, const char* const format, va_list args)
-{
-	const auto &data = *static_cast<OutputData*>(user_data);
-
-	va_list args_copy;
-	va_copy(args_copy, args);
-	const auto buffer_size = std::vsnprintf(nullptr, 0, format, args_copy) + 1;
-	va_end(args_copy);
-
-	std::vector<char> buffer(buffer_size);
-	std::vsnprintf(buffer.data(), buffer.size(), format, args);
-
-	*data.stream << buffer.data();
-}
-
 bool ClownAssembler::Assemble(
 	std::istream &input,
 	std::ostream &output,
@@ -98,7 +83,7 @@ bool ClownAssembler::Assemble(
 	const ClownAssembler_BinaryStream output_callbacks = {&output_data, nullptr, nullptr, WriteCharacter, WriteCharacters, Seek};
 
 	OutputData error_data;
-	ClownAssembler_TextOutput error_callbacks = {nullptr, PrintFormatted, WriteCharacter, WriteString};
+	ClownAssembler_TextOutput error_callbacks = {nullptr, WriteCharacter, WriteString};
 	if (errors != nullptr)
 	{
 		error_data = {errors, errors->tellp()};
@@ -106,7 +91,7 @@ bool ClownAssembler::Assemble(
 	}
 
 	OutputData listing_data;
-	ClownAssembler_TextOutput listing_callbacks = {nullptr, PrintFormatted, WriteCharacter, WriteString};
+	ClownAssembler_TextOutput listing_callbacks = {nullptr, WriteCharacter, WriteString};
 	if (listing != nullptr)
 	{
 		listing_data = {listing, listing->tellp()};

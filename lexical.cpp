@@ -1358,8 +1358,10 @@ static const flex_int16_t yy_chk[2255] =
 #define YY_NO_INPUT 1
 #line 26 "lexical.l"
 
+#include <format>
 #include <stdlib.h>
 #include <string.h>
+#include <string_view>
 
 #include "syntactic.h"
 
@@ -1423,10 +1425,10 @@ static unsigned long ParseNumber(void* const scanner, const char* const string_s
 	return value;
 }
 
-#line 1426 "lexical.cpp"
+#line 1428 "lexical.cpp"
 /* Regular expression. */
 
-#line 1429 "lexical.cpp"
+#line 1431 "lexical.cpp"
 
 #define INITIAL 0
 #define OPERANDS 1
@@ -1688,12 +1690,12 @@ YY_DECL
 		}
 
 	{
-#line 104 "lexical.l"
+#line 106 "lexical.l"
 
 
-#line 107 "lexical.l"
+#line 109 "lexical.l"
  /* Ignore whitespace */
-#line 1696 "lexical.cpp"
+#line 1698 "lexical.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -1748,7 +1750,7 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 108 "lexical.l"
+#line 110 "lexical.l"
 ;
 	YY_BREAK
 /* Terminate at comment or newline. When terminating, revert to initial state. */
@@ -1757,852 +1759,852 @@ case YY_STATE_EOF(OPERANDS):
 case YY_STATE_EOF(PATH):
 case YY_STATE_EOF(OPTIONS):
 case YY_STATE_EOF(MACRO_PARAMETERS):
-#line 111 "lexical.l"
+#line 113 "lexical.l"
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 112 "lexical.l"
+#line 114 "lexical.l"
 BEGIN(INITIAL); return m68kasm::parser::make_YYEOF();
 	YY_BREAK
 /* Directives. */
 case 3:
 YY_RULE_SETUP
-#line 115 "lexical.l"
+#line 117 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ORI();
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 116 "lexical.l"
+#line 118 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ANDI();
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 117 "lexical.l"
+#line 119 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SUBI();
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 118 "lexical.l"
+#line 120 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ADDI();
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 119 "lexical.l"
+#line 121 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_EORI();
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 120 "lexical.l"
+#line 122 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_CMPI();
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 121 "lexical.l"
+#line 123 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BTST();
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 122 "lexical.l"
+#line 124 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BCHG();
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 123 "lexical.l"
+#line 125 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BCLR();
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 124 "lexical.l"
+#line 126 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BSET();
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 125 "lexical.l"
+#line 127 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_MOVEP();
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 126 "lexical.l"
+#line 128 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_MOVEA();
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 127 "lexical.l"
+#line 129 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_MOVE();
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 128 "lexical.l"
+#line 130 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_NEGX();
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 129 "lexical.l"
+#line 131 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_CLR();
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 130 "lexical.l"
+#line 132 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_NEG();
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 131 "lexical.l"
+#line 133 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_NOT();
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 132 "lexical.l"
+#line 134 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_EXT();
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 133 "lexical.l"
+#line 135 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_NBCD();
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 134 "lexical.l"
+#line 136 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SWAP();
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 135 "lexical.l"
+#line 137 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_PEA();
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 136 "lexical.l"
+#line 138 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ILLEGAL();
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 137 "lexical.l"
+#line 139 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_TAS();
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 138 "lexical.l"
+#line 140 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_TST();
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 139 "lexical.l"
+#line 141 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_TRAP();
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 140 "lexical.l"
+#line 142 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_LINK();
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 141 "lexical.l"
+#line 143 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_UNLK();
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 142 "lexical.l"
+#line 144 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_RESET();
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 143 "lexical.l"
+#line 145 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_NOP();
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 144 "lexical.l"
+#line 146 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_STOP();
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 145 "lexical.l"
+#line 147 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_RTE();
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 146 "lexical.l"
+#line 148 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_RTS();
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 147 "lexical.l"
+#line 149 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_TRAPV();
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 148 "lexical.l"
+#line 150 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_RTR();
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 149 "lexical.l"
+#line 151 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_JSR();
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 150 "lexical.l"
+#line 152 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_JMP();
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 151 "lexical.l"
+#line 153 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_MOVEM();
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 152 "lexical.l"
+#line 154 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_LEA();
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 153 "lexical.l"
+#line 155 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_CHK();
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 154 "lexical.l"
+#line 156 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ADDQ();
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 155 "lexical.l"
+#line 157 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SUBQ();
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 156 "lexical.l"
+#line 158 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ST();
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 157 "lexical.l"
+#line 159 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SF();
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 158 "lexical.l"
+#line 160 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SHI();
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 159 "lexical.l"
+#line 161 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SLS();
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 160 "lexical.l"
+#line 162 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SCC();
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 161 "lexical.l"
+#line 163 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SCS();
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 162 "lexical.l"
+#line 164 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SNE();
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 163 "lexical.l"
+#line 165 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SEQ();
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 164 "lexical.l"
+#line 166 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SVC();
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 165 "lexical.l"
+#line 167 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SVS();
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 166 "lexical.l"
+#line 168 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SPL();
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 167 "lexical.l"
+#line 169 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SMI();
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 168 "lexical.l"
+#line 170 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SGE();
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 169 "lexical.l"
+#line 171 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SLT();
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 170 "lexical.l"
+#line 172 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SGT();
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 171 "lexical.l"
+#line 173 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SLE();
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
-#line 172 "lexical.l"
+#line 174 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SCC();
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
-#line 173 "lexical.l"
+#line 175 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SCS();
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
-#line 174 "lexical.l"
+#line 176 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBT();
 	YY_BREAK
 case 63:
 YY_RULE_SETUP
-#line 175 "lexical.l"
+#line 177 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBF();
 	YY_BREAK
 case 64:
 YY_RULE_SETUP
-#line 176 "lexical.l"
+#line 178 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBHI();
 	YY_BREAK
 case 65:
 YY_RULE_SETUP
-#line 177 "lexical.l"
+#line 179 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBLS();
 	YY_BREAK
 case 66:
 YY_RULE_SETUP
-#line 178 "lexical.l"
+#line 180 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBCC();
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
-#line 179 "lexical.l"
+#line 181 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBCS();
 	YY_BREAK
 case 68:
 YY_RULE_SETUP
-#line 180 "lexical.l"
+#line 182 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBNE();
 	YY_BREAK
 case 69:
 YY_RULE_SETUP
-#line 181 "lexical.l"
+#line 183 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBEQ();
 	YY_BREAK
 case 70:
 YY_RULE_SETUP
-#line 182 "lexical.l"
+#line 184 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBVC();
 	YY_BREAK
 case 71:
 YY_RULE_SETUP
-#line 183 "lexical.l"
+#line 185 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBVS();
 	YY_BREAK
 case 72:
 YY_RULE_SETUP
-#line 184 "lexical.l"
+#line 186 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBPL();
 	YY_BREAK
 case 73:
 YY_RULE_SETUP
-#line 185 "lexical.l"
+#line 187 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBMI();
 	YY_BREAK
 case 74:
 YY_RULE_SETUP
-#line 186 "lexical.l"
+#line 188 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBGE();
 	YY_BREAK
 case 75:
 YY_RULE_SETUP
-#line 187 "lexical.l"
+#line 189 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBLT();
 	YY_BREAK
 case 76:
 YY_RULE_SETUP
-#line 188 "lexical.l"
+#line 190 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBGT();
 	YY_BREAK
 case 77:
 YY_RULE_SETUP
-#line 189 "lexical.l"
+#line 191 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBLE();
 	YY_BREAK
 case 78:
 YY_RULE_SETUP
-#line 190 "lexical.l"
+#line 192 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBCC();
 	YY_BREAK
 case 79:
 YY_RULE_SETUP
-#line 191 "lexical.l"
+#line 193 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBCS();
 	YY_BREAK
 case 80:
 YY_RULE_SETUP
-#line 192 "lexical.l"
+#line 194 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DBF();
 	YY_BREAK
 case 81:
 YY_RULE_SETUP
-#line 193 "lexical.l"
+#line 195 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BRA();
 	YY_BREAK
 case 82:
 YY_RULE_SETUP
-#line 194 "lexical.l"
+#line 196 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BSR();
 	YY_BREAK
 case 83:
 YY_RULE_SETUP
-#line 195 "lexical.l"
+#line 197 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BHI();
 	YY_BREAK
 case 84:
 YY_RULE_SETUP
-#line 196 "lexical.l"
+#line 198 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BLS();
 	YY_BREAK
 case 85:
 YY_RULE_SETUP
-#line 197 "lexical.l"
+#line 199 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BCC();
 	YY_BREAK
 case 86:
 YY_RULE_SETUP
-#line 198 "lexical.l"
+#line 200 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BCS();
 	YY_BREAK
 case 87:
 YY_RULE_SETUP
-#line 199 "lexical.l"
+#line 201 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BNE();
 	YY_BREAK
 case 88:
 YY_RULE_SETUP
-#line 200 "lexical.l"
+#line 202 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BEQ();
 	YY_BREAK
 case 89:
 YY_RULE_SETUP
-#line 201 "lexical.l"
+#line 203 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BVC();
 	YY_BREAK
 case 90:
 YY_RULE_SETUP
-#line 202 "lexical.l"
+#line 204 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BVS();
 	YY_BREAK
 case 91:
 YY_RULE_SETUP
-#line 203 "lexical.l"
+#line 205 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BPL();
 	YY_BREAK
 case 92:
 YY_RULE_SETUP
-#line 204 "lexical.l"
+#line 206 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BMI();
 	YY_BREAK
 case 93:
 YY_RULE_SETUP
-#line 205 "lexical.l"
+#line 207 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BGE();
 	YY_BREAK
 case 94:
 YY_RULE_SETUP
-#line 206 "lexical.l"
+#line 208 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BLT();
 	YY_BREAK
 case 95:
 YY_RULE_SETUP
-#line 207 "lexical.l"
+#line 209 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BGT();
 	YY_BREAK
 case 96:
 YY_RULE_SETUP
-#line 208 "lexical.l"
+#line 210 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BLE();
 	YY_BREAK
 case 97:
 YY_RULE_SETUP
-#line 209 "lexical.l"
+#line 211 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BCC();
 	YY_BREAK
 case 98:
 YY_RULE_SETUP
-#line 210 "lexical.l"
+#line 212 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_BCS();
 	YY_BREAK
 case 99:
 YY_RULE_SETUP
-#line 211 "lexical.l"
+#line 213 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_MOVEQ();
 	YY_BREAK
 case 100:
 YY_RULE_SETUP
-#line 212 "lexical.l"
+#line 214 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DIVU();
 	YY_BREAK
 case 101:
 YY_RULE_SETUP
-#line 213 "lexical.l"
+#line 215 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DIVS();
 	YY_BREAK
 case 102:
 YY_RULE_SETUP
-#line 214 "lexical.l"
+#line 216 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SBCD();
 	YY_BREAK
 case 103:
 YY_RULE_SETUP
-#line 215 "lexical.l"
+#line 217 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_OR();
 	YY_BREAK
 case 104:
 YY_RULE_SETUP
-#line 216 "lexical.l"
+#line 218 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SUB();
 	YY_BREAK
 case 105:
 YY_RULE_SETUP
-#line 217 "lexical.l"
+#line 219 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SUBX();
 	YY_BREAK
 case 106:
 YY_RULE_SETUP
-#line 218 "lexical.l"
+#line 220 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SUBA();
 	YY_BREAK
 case 107:
 YY_RULE_SETUP
-#line 219 "lexical.l"
+#line 221 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_EOR();
 	YY_BREAK
 case 108:
 YY_RULE_SETUP
-#line 220 "lexical.l"
+#line 222 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_CMPM();
 	YY_BREAK
 case 109:
 YY_RULE_SETUP
-#line 221 "lexical.l"
+#line 223 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_CMP();
 	YY_BREAK
 case 110:
 YY_RULE_SETUP
-#line 222 "lexical.l"
+#line 224 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_CMPA();
 	YY_BREAK
 case 111:
 YY_RULE_SETUP
-#line 223 "lexical.l"
+#line 225 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_MULU();
 	YY_BREAK
 case 112:
 YY_RULE_SETUP
-#line 224 "lexical.l"
+#line 226 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_MULS();
 	YY_BREAK
 case 113:
 YY_RULE_SETUP
-#line 225 "lexical.l"
+#line 227 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ABCD();
 	YY_BREAK
 case 114:
 YY_RULE_SETUP
-#line 226 "lexical.l"
+#line 228 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_EXG();
 	YY_BREAK
 case 115:
 YY_RULE_SETUP
-#line 227 "lexical.l"
+#line 229 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_AND();
 	YY_BREAK
 case 116:
 YY_RULE_SETUP
-#line 228 "lexical.l"
+#line 230 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ADD();
 	YY_BREAK
 case 117:
 YY_RULE_SETUP
-#line 229 "lexical.l"
+#line 231 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ADDX();
 	YY_BREAK
 case 118:
 YY_RULE_SETUP
-#line 230 "lexical.l"
+#line 232 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ADDA();
 	YY_BREAK
 case 119:
 YY_RULE_SETUP
-#line 231 "lexical.l"
+#line 233 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ASL();
 	YY_BREAK
 case 120:
 YY_RULE_SETUP
-#line 232 "lexical.l"
+#line 234 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ASR();
 	YY_BREAK
 case 121:
 YY_RULE_SETUP
-#line 233 "lexical.l"
+#line 235 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_LSL();
 	YY_BREAK
 case 122:
 YY_RULE_SETUP
-#line 234 "lexical.l"
+#line 236 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_LSR();
 	YY_BREAK
 case 123:
 YY_RULE_SETUP
-#line 235 "lexical.l"
+#line 237 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ROXL();
 	YY_BREAK
 case 124:
 YY_RULE_SETUP
-#line 236 "lexical.l"
+#line 238 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ROXR();
 	YY_BREAK
 case 125:
 YY_RULE_SETUP
-#line 237 "lexical.l"
+#line 239 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ROL();
 	YY_BREAK
 case 126:
 YY_RULE_SETUP
-#line 238 "lexical.l"
+#line 240 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ROR();
 	YY_BREAK
 case 127:
 YY_RULE_SETUP
-#line 239 "lexical.l"
+#line 241 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DC();
 	YY_BREAK
 case 128:
 YY_RULE_SETUP
-#line 240 "lexical.l"
+#line 242 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DCB();
 	YY_BREAK
 case 129:
 YY_RULE_SETUP
-#line 241 "lexical.l"
+#line 243 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_DS();
 	YY_BREAK
 case 130:
 YY_RULE_SETUP
-#line 242 "lexical.l"
+#line 244 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_REPT();
 	YY_BREAK
 case 131:
 YY_RULE_SETUP
-#line 243 "lexical.l"
+#line 245 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ENDR();
 	YY_BREAK
 case 132:
 YY_RULE_SETUP
-#line 244 "lexical.l"
+#line 246 "lexical.l"
 BEGIN(MACRO_PARAMETERS); return m68kasm::parser::make_DIRECTIVE_MACRO();
 	YY_BREAK
 case 133:
 YY_RULE_SETUP
-#line 245 "lexical.l"
+#line 247 "lexical.l"
 BEGIN(MACRO_PARAMETERS); return m68kasm::parser::make_DIRECTIVE_MACROS();
 	YY_BREAK
 case 134:
 YY_RULE_SETUP
-#line 246 "lexical.l"
+#line 248 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ENDM();
 	YY_BREAK
 case 135:
 YY_RULE_SETUP
-#line 247 "lexical.l"
+#line 249 "lexical.l"
 BEGIN(PATH); return m68kasm::parser::make_DIRECTIVE_INCLUDE();
 	YY_BREAK
 case 136:
 YY_RULE_SETUP
-#line 248 "lexical.l"
+#line 250 "lexical.l"
 BEGIN(PATH); return m68kasm::parser::make_DIRECTIVE_INCBIN();
 	YY_BREAK
 case 137:
 YY_RULE_SETUP
-#line 249 "lexical.l"
+#line 251 "lexical.l"
 BEGIN(PATH); return m68kasm::parser::make_DIRECTIVE_INCBIN();
 	YY_BREAK
 case 138:
 YY_RULE_SETUP
-#line 250 "lexical.l"
+#line 252 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_EQU();
 	YY_BREAK
 case 139:
 YY_RULE_SETUP
-#line 251 "lexical.l"
+#line 253 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_EQUS();
 	YY_BREAK
 case 140:
 YY_RULE_SETUP
-#line 252 "lexical.l"
+#line 254 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SUBSTR();
 	YY_BREAK
 case 141:
 YY_RULE_SETUP
-#line 253 "lexical.l"
+#line 255 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SET();
 	YY_BREAK
 case 142:
 YY_RULE_SETUP
-#line 254 "lexical.l"
+#line 256 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_IF();
 	YY_BREAK
 case 143:
 YY_RULE_SETUP
-#line 255 "lexical.l"
+#line 257 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ELSEIF();
 	YY_BREAK
 case 144:
 YY_RULE_SETUP
-#line 256 "lexical.l"
+#line 258 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ELSE();
 	YY_BREAK
 case 145:
 YY_RULE_SETUP
-#line 257 "lexical.l"
+#line 259 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ENDC();
 	YY_BREAK
 case 146:
 YY_RULE_SETUP
-#line 258 "lexical.l"
+#line 260 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ENDC();
 	YY_BREAK
 case 147:
 YY_RULE_SETUP
-#line 259 "lexical.l"
+#line 261 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_WHILE();
 	YY_BREAK
 case 148:
 YY_RULE_SETUP
-#line 260 "lexical.l"
+#line 262 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ENDW();
 	YY_BREAK
 case 149:
 YY_RULE_SETUP
-#line 261 "lexical.l"
+#line 263 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_EVEN();
 	YY_BREAK
 case 150:
 YY_RULE_SETUP
-#line 262 "lexical.l"
+#line 264 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_CNOP();
 	YY_BREAK
 case 151:
 YY_RULE_SETUP
-#line 263 "lexical.l"
+#line 265 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_INFORM();
 	YY_BREAK
 case 152:
 YY_RULE_SETUP
-#line 264 "lexical.l"
+#line 266 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_END();
 	YY_BREAK
 case 153:
 YY_RULE_SETUP
-#line 265 "lexical.l"
+#line 267 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_RS();
 	YY_BREAK
 case 154:
 YY_RULE_SETUP
-#line 266 "lexical.l"
+#line 268 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_RSSET();
 	YY_BREAK
 case 155:
 YY_RULE_SETUP
-#line 267 "lexical.l"
+#line 269 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_RSRESET();
 	YY_BREAK
 case 156:
 YY_RULE_SETUP
-#line 268 "lexical.l"
+#line 270 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_OBJ();
 	YY_BREAK
 case 157:
 YY_RULE_SETUP
-#line 269 "lexical.l"
+#line 271 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_OBJEND();
 	YY_BREAK
 case 158:
 YY_RULE_SETUP
-#line 270 "lexical.l"
+#line 272 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ORG();
 	YY_BREAK
 case 159:
 YY_RULE_SETUP
-#line 271 "lexical.l"
+#line 273 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_PUSHO();
 	YY_BREAK
 case 160:
 YY_RULE_SETUP
-#line 272 "lexical.l"
+#line 274 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_POPO();
 	YY_BREAK
 case 161:
 YY_RULE_SETUP
-#line 273 "lexical.l"
+#line 275 "lexical.l"
 BEGIN(OPTIONS);  return m68kasm::parser::make_DIRECTIVE_OPT();
 	YY_BREAK
 case 162:
 YY_RULE_SETUP
-#line 274 "lexical.l"
+#line 276 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_PUSHP();
 	YY_BREAK
 case 163:
 YY_RULE_SETUP
-#line 275 "lexical.l"
+#line 277 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_POPP();
 	YY_BREAK
 case 164:
 YY_RULE_SETUP
-#line 276 "lexical.l"
+#line 278 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SHIFT();
 	YY_BREAK
 case 165:
 YY_RULE_SETUP
-#line 277 "lexical.l"
+#line 279 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_MEXIT();
 	YY_BREAK
 case 166:
 YY_RULE_SETUP
-#line 278 "lexical.l"
+#line 280 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_LOCAL();
 	YY_BREAK
 case 167:
 YY_RULE_SETUP
-#line 279 "lexical.l"
+#line 281 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_EQUAL();
 	YY_BREAK
 case 168:
 YY_RULE_SETUP
-#line 280 "lexical.l"
+#line 282 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_LIST();
 	YY_BREAK
 case 169:
 YY_RULE_SETUP
-#line 281 "lexical.l"
+#line 283 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_NOLIST();
 	YY_BREAK
 case 170:
 YY_RULE_SETUP
-#line 282 "lexical.l"
+#line 284 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_PURGE();
 	YY_BREAK
 /* axm68k opcodes. */
@@ -2610,328 +2612,328 @@ BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_PURGE();
     it could better-support Z80 macros. */
 case 171:
 YY_RULE_SETUP
-#line 287 "lexical.l"
+#line 289 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ADD();
 	YY_BREAK
 case 172:
 YY_RULE_SETUP
-#line 288 "lexical.l"
+#line 290 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ADDA();
 	YY_BREAK
 case 173:
 YY_RULE_SETUP
-#line 289 "lexical.l"
+#line 291 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ADDI();
 	YY_BREAK
 case 174:
 YY_RULE_SETUP
-#line 290 "lexical.l"
+#line 292 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ADDQ();
 	YY_BREAK
 case 175:
 YY_RULE_SETUP
-#line 291 "lexical.l"
+#line 293 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ADDX();
 	YY_BREAK
 case 176:
 YY_RULE_SETUP
-#line 292 "lexical.l"
+#line 294 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_AND();
 	YY_BREAK
 case 177:
 YY_RULE_SETUP
-#line 293 "lexical.l"
+#line 295 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ANDI();
 	YY_BREAK
 case 178:
 YY_RULE_SETUP
-#line 294 "lexical.l"
+#line 296 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_NEG();
 	YY_BREAK
 case 179:
 YY_RULE_SETUP
-#line 295 "lexical.l"
+#line 297 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_NOP();
 	YY_BREAK
 case 180:
 YY_RULE_SETUP
-#line 296 "lexical.l"
+#line 298 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_OR();
 	YY_BREAK
 case 181:
 YY_RULE_SETUP
-#line 297 "lexical.l"
+#line 299 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ORI();
 	YY_BREAK
 case 182:
 YY_RULE_SETUP
-#line 298 "lexical.l"
+#line 300 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SUB();
 	YY_BREAK
 case 183:
 YY_RULE_SETUP
-#line 299 "lexical.l"
+#line 301 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SUBA();
 	YY_BREAK
 case 184:
 YY_RULE_SETUP
-#line 300 "lexical.l"
+#line 302 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SUBI();
 	YY_BREAK
 case 185:
 YY_RULE_SETUP
-#line 301 "lexical.l"
+#line 303 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SUBQ();
 	YY_BREAK
 case 186:
 YY_RULE_SETUP
-#line 302 "lexical.l"
+#line 304 "lexical.l"
 BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_SUBX();
 	YY_BREAK
 /* Sizes. */
 case 187:
 YY_RULE_SETUP
-#line 305 "lexical.l"
+#line 307 "lexical.l"
 return m68kasm::parser::make_SIZE_BYTE();
 	YY_BREAK
 case 188:
 YY_RULE_SETUP
-#line 306 "lexical.l"
+#line 308 "lexical.l"
 return m68kasm::parser::make_SIZE_SHORT();
 	YY_BREAK
 case 189:
 YY_RULE_SETUP
-#line 307 "lexical.l"
+#line 309 "lexical.l"
 return m68kasm::parser::make_SIZE_WORD();
 	YY_BREAK
 case 190:
 YY_RULE_SETUP
-#line 308 "lexical.l"
+#line 310 "lexical.l"
 return m68kasm::parser::make_SIZE_LONGWORD();
 	YY_BREAK
 /* Misc. symbols. */
 case 191:
 YY_RULE_SETUP
-#line 311 "lexical.l"
+#line 313 "lexical.l"
 return m68kasm::parser::make_PERIOD();
 	YY_BREAK
 case 192:
 YY_RULE_SETUP
-#line 312 "lexical.l"
+#line 314 "lexical.l"
 return m68kasm::parser::make_COMMA();
 	YY_BREAK
 case 193:
 YY_RULE_SETUP
-#line 313 "lexical.l"
+#line 315 "lexical.l"
 return m68kasm::parser::make_PARENTHESIS_LEFT();
 	YY_BREAK
 case 194:
 YY_RULE_SETUP
-#line 314 "lexical.l"
+#line 316 "lexical.l"
 return m68kasm::parser::make_PARENTHESIS_RIGHT();
 	YY_BREAK
 case 195:
 YY_RULE_SETUP
-#line 315 "lexical.l"
+#line 317 "lexical.l"
 return m68kasm::parser::make_DOLLAR();
 	YY_BREAK
 case 196:
 YY_RULE_SETUP
-#line 316 "lexical.l"
+#line 318 "lexical.l"
 return m68kasm::parser::make_PLUS();
 	YY_BREAK
 case 197:
 YY_RULE_SETUP
-#line 317 "lexical.l"
+#line 319 "lexical.l"
 return m68kasm::parser::make_MINUS();
 	YY_BREAK
 case 198:
 YY_RULE_SETUP
-#line 318 "lexical.l"
+#line 320 "lexical.l"
 return m68kasm::parser::make_ASTERIX();
 	YY_BREAK
 case 199:
 YY_RULE_SETUP
-#line 319 "lexical.l"
+#line 321 "lexical.l"
 return m68kasm::parser::make_FORWARD_SLASH();
 	YY_BREAK
 case 200:
 YY_RULE_SETUP
-#line 320 "lexical.l"
+#line 322 "lexical.l"
 return m68kasm::parser::make_EQUAL();
 	YY_BREAK
 case 201:
 YY_RULE_SETUP
-#line 321 "lexical.l"
+#line 323 "lexical.l"
 return m68kasm::parser::make_AT();
 	YY_BREAK
 case 202:
 YY_RULE_SETUP
-#line 322 "lexical.l"
+#line 324 "lexical.l"
 return m68kasm::parser::make_HASH();
 	YY_BREAK
 case 203:
 YY_RULE_SETUP
-#line 323 "lexical.l"
+#line 325 "lexical.l"
 return m68kasm::parser::make_AMPERSAND();
 	YY_BREAK
 case 204:
 YY_RULE_SETUP
-#line 324 "lexical.l"
+#line 326 "lexical.l"
 return m68kasm::parser::make_CARET();
 	YY_BREAK
 case 205:
 YY_RULE_SETUP
-#line 325 "lexical.l"
+#line 327 "lexical.l"
 return m68kasm::parser::make_EXCLAMATION();
 	YY_BREAK
 case 206:
 YY_RULE_SETUP
-#line 326 "lexical.l"
+#line 328 "lexical.l"
 return m68kasm::parser::make_VERTICAL_BAR();
 	YY_BREAK
 case 207:
 YY_RULE_SETUP
-#line 327 "lexical.l"
+#line 329 "lexical.l"
 return m68kasm::parser::make_ANGLE_LEFT();
 	YY_BREAK
 case 208:
 YY_RULE_SETUP
-#line 328 "lexical.l"
+#line 330 "lexical.l"
 return m68kasm::parser::make_ANGLE_RIGHT();
 	YY_BREAK
 case 209:
 YY_RULE_SETUP
-#line 329 "lexical.l"
+#line 331 "lexical.l"
 return m68kasm::parser::make_PERCENTAGE();
 	YY_BREAK
 case 210:
 YY_RULE_SETUP
-#line 330 "lexical.l"
+#line 332 "lexical.l"
 return m68kasm::parser::make_TILDE();
 	YY_BREAK
 /* Operators. */
 case 211:
 YY_RULE_SETUP
-#line 333 "lexical.l"
+#line 335 "lexical.l"
 return m68kasm::parser::make_LOGICAL_AND();
 	YY_BREAK
 case 212:
 YY_RULE_SETUP
-#line 334 "lexical.l"
+#line 336 "lexical.l"
 return m68kasm::parser::make_LOGICAL_OR();
 	YY_BREAK
 case 213:
 YY_RULE_SETUP
-#line 335 "lexical.l"
+#line 337 "lexical.l"
 return m68kasm::parser::make_EQUALITY();   /* An assembler extension, for programmers that are familiar with C. */
 	YY_BREAK
 case 214:
 YY_RULE_SETUP
-#line 336 "lexical.l"
+#line 338 "lexical.l"
 return m68kasm::parser::make_INEQUALITY(); /* An assembler extension, for programmers that are familiar with C. */
 	YY_BREAK
 case 215:
 YY_RULE_SETUP
-#line 337 "lexical.l"
+#line 339 "lexical.l"
 return m68kasm::parser::make_INEQUALITY();
 	YY_BREAK
 case 216:
 YY_RULE_SETUP
-#line 338 "lexical.l"
+#line 340 "lexical.l"
 return m68kasm::parser::make_INEQUALITY();
 	YY_BREAK
 case 217:
 YY_RULE_SETUP
-#line 339 "lexical.l"
+#line 341 "lexical.l"
 return m68kasm::parser::make_LESS_OR_EQUAL();
 	YY_BREAK
 case 218:
 YY_RULE_SETUP
-#line 340 "lexical.l"
+#line 342 "lexical.l"
 return m68kasm::parser::make_MORE_OR_EQUAL();
 	YY_BREAK
 case 219:
 YY_RULE_SETUP
-#line 341 "lexical.l"
+#line 343 "lexical.l"
 return m68kasm::parser::make_LEFT_SHIFT();
 	YY_BREAK
 case 220:
 YY_RULE_SETUP
-#line 342 "lexical.l"
+#line 344 "lexical.l"
 return m68kasm::parser::make_RIGHT_SHIFT();
 	YY_BREAK
 /* Operands. */
 case 221:
 YY_RULE_SETUP
-#line 345 "lexical.l"
+#line 347 "lexical.l"
 return m68kasm::parser::make_STATUS_REGISTER();
 	YY_BREAK
 case 222:
 YY_RULE_SETUP
-#line 346 "lexical.l"
+#line 348 "lexical.l"
 return m68kasm::parser::make_CONDITION_CODE_REGISTER();
 	YY_BREAK
 case 223:
 YY_RULE_SETUP
-#line 347 "lexical.l"
+#line 349 "lexical.l"
 return m68kasm::parser::make_ADDRESS_REGISTER(7);
 	YY_BREAK
 case 224:
 YY_RULE_SETUP
-#line 348 "lexical.l"
+#line 350 "lexical.l"
 return m68kasm::parser::make_USER_STACK_POINTER_REGISTER();
 	YY_BREAK
 case 225:
 YY_RULE_SETUP
-#line 349 "lexical.l"
+#line 351 "lexical.l"
 return m68kasm::parser::make_PROGRAM_COUNTER();
 	YY_BREAK
 /* Functions. */
 case 226:
 YY_RULE_SETUP
-#line 352 "lexical.l"
+#line 354 "lexical.l"
 return m68kasm::parser::make_STRLEN();
 	YY_BREAK
 case 227:
 YY_RULE_SETUP
-#line 353 "lexical.l"
+#line 355 "lexical.l"
 return m68kasm::parser::make_STRCMP();
 	YY_BREAK
 case 228:
 YY_RULE_SETUP
-#line 354 "lexical.l"
+#line 356 "lexical.l"
 return m68kasm::parser::make_INSTR();
 	YY_BREAK
 case 229:
 YY_RULE_SETUP
-#line 355 "lexical.l"
+#line 357 "lexical.l"
 return m68kasm::parser::make_DEF();
 	YY_BREAK
 case 230:
 YY_RULE_SETUP
-#line 356 "lexical.l"
+#line 358 "lexical.l"
 return m68kasm::parser::make_TYPE();
 	YY_BREAK
 case 231:
 YY_RULE_SETUP
-#line 357 "lexical.l"
+#line 359 "lexical.l"
 return m68kasm::parser::make_FILESIZE();
 	YY_BREAK
 case 232:
 YY_RULE_SETUP
-#line 358 "lexical.l"
+#line 360 "lexical.l"
 return m68kasm::parser::make_OFFSET();
 	YY_BREAK
 case 233:
 YY_RULE_SETUP
-#line 359 "lexical.l"
+#line 361 "lexical.l"
 return m68kasm::parser::make_OFFSET();
 	YY_BREAK
 /* Decimal number. */
 case 234:
 YY_RULE_SETUP
-#line 362 "lexical.l"
+#line 364 "lexical.l"
 {
 	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext, yyleng, 10));
 }
@@ -2939,7 +2941,7 @@ YY_RULE_SETUP
 /* Hexadecimal number (68k). */
 case 235:
 YY_RULE_SETUP
-#line 367 "lexical.l"
+#line 369 "lexical.l"
 {
 	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext + 1, yyleng - 1, 16));
 }
@@ -2947,7 +2949,7 @@ YY_RULE_SETUP
 /* Binary number (68k). */
 case 236:
 YY_RULE_SETUP
-#line 372 "lexical.l"
+#line 374 "lexical.l"
 {
 	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext + 1, yyleng - 1, 2));
 }
@@ -2955,7 +2957,7 @@ YY_RULE_SETUP
 /* Hexadecimal number (Z80). */
 case 237:
 YY_RULE_SETUP
-#line 377 "lexical.l"
+#line 379 "lexical.l"
 {
 	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext, yyleng - 1, 16));
 }
@@ -2963,7 +2965,7 @@ YY_RULE_SETUP
 /* Binary number (Z80). */
 case 238:
 YY_RULE_SETUP
-#line 382 "lexical.l"
+#line 384 "lexical.l"
 {
 	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext, yyleng - 1, 2));
 }
@@ -2971,7 +2973,7 @@ YY_RULE_SETUP
 /* Hexadecimal number (C). */
 case 239:
 YY_RULE_SETUP
-#line 387 "lexical.l"
+#line 389 "lexical.l"
 {
 	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext + 2, yyleng - 2, 16));
 }
@@ -2979,7 +2981,7 @@ YY_RULE_SETUP
 /* Binary number (GNU C). */
 case 240:
 YY_RULE_SETUP
-#line 392 "lexical.l"
+#line 394 "lexical.l"
 {
 	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext + 2, yyleng - 2, 2));
 }
@@ -2987,11 +2989,11 @@ YY_RULE_SETUP
 /* String. */
 case 241:
 /* rule 241 can match eol */
-#line 398 "lexical.l"
+#line 400 "lexical.l"
 case 242:
 /* rule 242 can match eol */
 YY_RULE_SETUP
-#line 398 "lexical.l"
+#line 400 "lexical.l"
 {
 	size_t i, output_size;
 	char previous_character;
@@ -3031,7 +3033,7 @@ YY_RULE_SETUP
 case 243:
 /* rule 243 can match eol */
 YY_RULE_SETUP
-#line 434 "lexical.l"
+#line 436 "lexical.l"
 {
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
@@ -3042,7 +3044,7 @@ YY_RULE_SETUP
 /* Identifier, data register, or address register. */
 case 244:
 YY_RULE_SETUP
-#line 442 "lexical.l"
+#line 444 "lexical.l"
 {
 	if (yyleng == 2 && (yytext[0] == 'd' || yytext[0] == 'D' || yytext[0] == 'a' || yytext[0] == 'A') && yytext[1] >= '0' && yytext[1] <= '7')
 	{
@@ -3060,7 +3062,7 @@ YY_RULE_SETUP
 /* Local label. */
 case 245:
 YY_RULE_SETUP
-#line 457 "lexical.l"
+#line 459 "lexical.l"
 {
 	return m68kasm::parser::make_LOCAL_IDENTIFIER({yytext, static_cast<std::size_t>(yyleng)});
 }
@@ -3068,7 +3070,7 @@ YY_RULE_SETUP
 /* Option. */
 case 246:
 YY_RULE_SETUP
-#line 462 "lexical.l"
+#line 464 "lexical.l"
 {
 	return m68kasm::parser::make_OPTION({yytext, static_cast<std::size_t>(yyleng)});
 }
@@ -3076,15 +3078,15 @@ YY_RULE_SETUP
 /* Make Bison signal a syntax error for unrecognised symbols */
 case 247:
 YY_RULE_SETUP
-#line 467 "lexical.l"
-throw m68kasm::parser::syntax_error(std::string("Invalid character '") + yytext + "'.");
+#line 469 "lexical.l"
+throw m68kasm::parser::syntax_error(std::format("Invalid character '{}'.", std::string_view{yytext, static_cast<std::size_t>(yyleng)}));
 	YY_BREAK
 case 248:
 YY_RULE_SETUP
-#line 469 "lexical.l"
+#line 471 "lexical.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 3087 "lexical.cpp"
+#line 3089 "lexical.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -4214,6 +4216,6 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 469 "lexical.l"
+#line 471 "lexical.l"
 
 

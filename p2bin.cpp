@@ -161,7 +161,7 @@ static cc_bool ProcessRecords(void)
 
 					if (granularity != 1)
 					{
-						TextOutput_fprintf(error_callbacks, "Error: Unsupported granularity of %u (only 1 is supported).\n", granularity);
+						TextOutput_Format(error_callbacks, "Error: Unsupported granularity of {} (only 1 is supported).\n", granularity);
 						return cc_false;
 					}
 
@@ -172,7 +172,7 @@ static cc_bool ProcessRecords(void)
 				default:
 					if (record_header >= 0x80)
 					{
-						TextOutput_fprintf(error_callbacks, "Error: Unrecognised record header value (0x%02X).\n", record_header);
+						TextOutput_Format(error_callbacks, "Error: Unrecognised record header value (0x{:02X}).\n", record_header);
 						return cc_false;
 					}
 
@@ -201,7 +201,7 @@ cc_bool ConvertObjectFileToFlatBinary(const ClownAssembler_BinaryStream* const i
 	if (BinaryStream_fread(magic, sizeof(magic), 1, input_file) == 0)
 		TextOutput_fputs("Error: Could not read header magic value.\n", error_callbacks);
 	else if (magic[0] != 0x89 || magic[1] != 0x14)
-		TextOutput_fprintf(error_callbacks, "Error: Invalid header magic value - expected 0x8914 but got 0x%02X%02X.\nInput file is either corrupt or not a valid AS code file.\n", magic[0], magic[1]);
+		TextOutput_Format(error_callbacks, "Error: Invalid header magic value - expected 0x8914 but got 0x{:02X}{:02X}.\nInput file is either corrupt or not a valid AS code file.\n", magic[0], magic[1]);
 	else if (ProcessRecords())
 		success = cc_true;
 

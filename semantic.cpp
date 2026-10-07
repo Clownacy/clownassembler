@@ -297,51 +297,42 @@ static void OutputWriteSegmentByte(SemanticState* const state, const unsigned ch
 static void ErrorMessageCommon(SemanticState *state)
 {
 	for (const auto &location : state->location)
-		TextOutput_fprintf(state->error_callbacks, "\nOn line %lu of '%s'...", location.line_number, String_CStr(location.file_path));
+		TextOutput_Format(state->error_callbacks, "\nOn line {} of '{}'...", location.line_number, location.file_path);
 
-	TextOutput_fprintf(state->error_callbacks, "\n%s\n\n", state->source_line == NULL ? "[No source line]" : String_CStr(*state->source_line));
+	TextOutput_Format(state->error_callbacks, "\n{}\n\n", state->source_line == NULL ? "[No source line]" : *state->source_line);
 }
 
-CC_ATTRIBUTE_PRINTF(2, 3) static void SemanticWarning(SemanticState *state, const char *fmt, ...)
+template<typename... Args>
+static void SemanticWarning(SemanticState *state, std::format_string<Args...> &&format_string, Args &&...args)
 {
 	if (state->options->warnings_enabled)
 	{
-		va_list args;
-
 		TextOutput_fputs("Warning: ", state->error_callbacks);
 
-		va_start(args, fmt);
-		TextOutput_vfprintf(state->error_callbacks, fmt, args);
-		va_end(args);
+		TextOutput_Format(state->error_callbacks, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 
 		ErrorMessageCommon(state);
 	}
 }
 
-CC_ATTRIBUTE_PRINTF(2, 3) static void SemanticError(SemanticState *state, const char *fmt, ...)
+template<typename... Args>
+static void SemanticError(SemanticState *state, std::format_string<Args...> &&format_string, Args &&...args)
 {
-	va_list args;
-
 	TextOutput_fputs("Error: ", state->error_callbacks);
 
-	va_start(args, fmt);
-	TextOutput_vfprintf(state->error_callbacks, fmt, args);
-	va_end(args);
+	TextOutput_Format(state->error_callbacks, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 
 	ErrorMessageCommon(state);
 
 	state->success = cc_false;
 }
 
-CC_ATTRIBUTE_PRINTF(2, 3) static void InternalError(SemanticState *state, const char *fmt, ...)
+template<typename... Args>
+static void InternalError(SemanticState *state, std::format_string<Args...> &&format_string, Args &&...args)
 {
-	va_list args;
-
 	TextOutput_fputs("Internal error: ", state->error_callbacks);
 
-	va_start(args, fmt);
-	TextOutput_vfprintf(state->error_callbacks, fmt, args);
-	va_end(args);
+	TextOutput_Format(state->error_callbacks, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 
 	ErrorMessageCommon(state);
 
@@ -365,7 +356,7 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message)
 
 	if (state->options->warnings_enabled)
 	{
-		TextOutput_fprintf(state->error_callbacks, "Warning: %s", message);
+		TextOutput_Format(state->error_callbacks, "Warning: {}", message);
 
 		ErrorMessageCommon(state);
 	}
@@ -385,7 +376,7 @@ void m68kasm_error(void *scanner, Statement *statement, const char *message)
 
 	(void)statement;
 
-	TextOutput_fprintf(state->error_callbacks, "Error: %s", message);
+	TextOutput_Format(state->error_callbacks, "Error: {}", message);
 
 	ErrorMessageCommon(state);
 }
@@ -502,7 +493,7 @@ static void ListSourceLine(SemanticState *state)
 
 			TextOutput_fputc(state->listing_macro ? 'M' : ' ', state->listing_callbacks);
 
-			TextOutput_fprintf(state->listing_callbacks, " %s\n", String_CStr(*state->source_line));
+			TextOutput_Format(state->listing_callbacks, " {}\n", *state->source_line);
 		}
 	}
 }
@@ -512,7 +503,7 @@ static void ListIdentifierValue(SemanticState *state, unsigned long value)
 	/* Output line to listing file. */
 	if (TextOutput_exists(state->listing_callbacks) && !state->doing_fixup_pass && !state->suppress_listing)
 	{
-		TextOutput_fprintf(state->listing_callbacks, " =%08lX", value);
+		TextOutput_Format(state->listing_callbacks, " ={:08X}", value);
 
 		state->listing_counter += 2 + 8;
 	}
@@ -541,7 +532,7 @@ static void OutputByte(SemanticState *state, unsigned int byte)
 					++state->listing_counter;
 				}
 
-				TextOutput_fprintf(state->listing_callbacks, "%02X", byte);
+				TextOutput_Format(state->listing_callbacks, "{:02X}", byte);
 				state->listing_counter += 2;
 			}
 		}
@@ -642,7 +633,7 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *s
 
 	if (!std::holds_alternative<SymbolNone>(*dictionary_entry) && !std::holds_alternative<SymbolType>(*dictionary_entry))
 	{
-		SemanticError(state, "Attempted to redefine symbol '%.*s' as a different type.", StringView_Length(identifier), StringView_Data(identifier));
+		SemanticError(state, "Attempted to redefine symbol '{}' as a different type.", identifier);
 		dictionary_entry = NULL;
 	}
 
@@ -662,9 +653,9 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 	if (dictionary_entry == NULL || std::holds_alternative<SymbolNone>(*dictionary_entry))
 	{
 		if (must_evaluate_on_first_pass)
-			SemanticError(state, "Symbol '%.*s' must be evaluable on first pass.", (int)StringView_Length(identifier), StringView_Data(identifier));
+			SemanticError(state, "Symbol '{}' must be evaluable on first pass.", identifier);
 		else if (state->doing_fixup_pass)
-			SemanticError(state, "Symbol '%.*s' does not exist.", (int)StringView_Length(identifier), StringView_Data(identifier));
+			SemanticError(state, "Symbol '{}' does not exist.", identifier);
 		else
 			state->fixup_needed = cc_true;
 
@@ -685,7 +676,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 						case SymbolSpecial::Type::NARG:
 							if (!CurrentlyExpandingMacro(state))
 							{
-								SemanticWarning(state, "Symbol '%.*s' cannot be used outside of a macro.", (int)StringView_Length(identifier), StringView_Data(identifier));
+								SemanticWarning(state, "Symbol '{}' cannot be used outside of a macro.", identifier);
 								success = cc_false;
 							}
 							else
@@ -705,7 +696,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 				[&](SymbolVariable &symbol)
 				{
 					if (state->doing_fixup_pass)
-						SemanticWarning(state, "Symbol '%.*s' forward-referenced despite being a redefineable variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
+						SemanticWarning(state, "Symbol '{}' forward-referenced despite being a redefineable variable.", identifier);
 
 					*value = symbol.value;
 				},
@@ -724,7 +715,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 				},
 				[&](auto &symbol)
 				{
-					SemanticError(state, "Symbol '%.*s' is not a label, constant, or variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
+					SemanticError(state, "Symbol '{}' is not a label, constant, or variable.", identifier);
 					success = cc_false;
 				}
 			}, *dictionary_entry
@@ -1059,7 +1050,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 				if (file == NULL)
 				{
 					success = cc_false;
-					SemanticError(state, "File '%s' could not be opened.", file_path);
+					SemanticError(state, "File '{}' could not be opened.", file_path);
 				}
 				else
 				{
@@ -1124,11 +1115,11 @@ static void PurgeMacro(SemanticState* const state, StringView identifier, const 
 	if (entry == NULL)
 	{
 		if (!allow_undefined)
-			SemanticError(state, "Cannot purge '%.*s' as it does not exist.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
+			SemanticError(state, "Cannot purge '{}' as it does not exist.\n", identifier);
 	}
 	else if (!std::holds_alternative<SymbolMacro>(*entry))
 	{
-		SemanticError(state, "Cannot purge '%.*s' as it is not a macro.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
+		SemanticError(state, "Cannot purge '{}' as it is not a macro.\n", identifier);
 	}
 	else if (CurrentlyExpandingMacro(state))
 	{
@@ -1136,7 +1127,7 @@ static void PurgeMacro(SemanticState* const state, StringView identifier, const 
 		   "how to crash and burn into UAF/double free" without a bunch of changes to support it, for not much benefit.
 		   We don't check for the name of the currently-expanded macro because one could e.g. invoke a, which invokes b,
 		   which redefines a, and there is currently no simple wey to check the entire macro expansion stack. */
-		SemanticError(state, "Cannot purge '%.*s' during macro expansion.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
+		SemanticError(state, "Cannot purge '{}' during macro expansion.\n", identifier);
 	}
 	else
 	{
@@ -1177,7 +1168,7 @@ static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifi
 
 	if (constant_symbol != nullptr && constant_symbol->value != symbol_contents.value)
 	{
-		SemanticError(state, "Constant '%.*s' cannot be redefined to a different value.", StringView_Length(identifier), StringView_Data(identifier));
+		SemanticError(state, "Constant '{}' cannot be redefined to a different value.", identifier);
 		return cc_false;
 	}
 
@@ -1198,7 +1189,7 @@ static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifi
 
 	if (std::holds_alternative<SymbolLabel>(*symbol))
 	{
-		SemanticError(state, "Label '%.*s' cannot be redefined.", StringView_Length(identifier), StringView_Data(identifier));
+		SemanticError(state, "Label '{}' cannot be redefined.", identifier);
 		return cc_false;
 	}
 
@@ -1236,7 +1227,7 @@ static cc_bool AddToSymbolTable(SemanticState *state, SymbolMacro symbol_content
 
 	if (std::holds_alternative<SymbolMacro>(*symbol))
 	{
-		SemanticError(state, "Macro '%.*s' cannot be redefined.", StringView_Length(identifier), StringView_Data(identifier));
+		SemanticError(state, "Macro '{}' cannot be redefined.", identifier);
 		return cc_false;
 	}
 
@@ -1272,7 +1263,7 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 	if (CurrentlyExpandingMacro(state))
 	{
 		/* See comment in PurgeMacro after the check for the same condition for more details. */
-		SemanticError(state, "Cannot define macro '%.*s' during macro expansion.\n", (int)StringView_Length(identifier), StringView_Data(identifier));
+		SemanticError(state, "Cannot define macro '{}' during macro expansion.\n", identifier);
 	}
 	else if (!StringView_Empty(identifier))
 	{
@@ -2948,7 +2939,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 			size_undefined = " (no size)";
 		}
 
-		SemanticError(state, "Instruction cannot be this size: allowed sizes are...%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", newline_byte, opcode_byte, size_byte, newline_short, opcode_short, size_short, newline_word, opcode_word, size_word, newline_longword, opcode_longword, size_longword, newline_undefined, opcode_undefined, size_undefined);
+		SemanticError(state, "Instruction cannot be this size: allowed sizes are...{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}", newline_byte, opcode_byte, size_byte, newline_short, opcode_short, size_short, newline_word, opcode_word, size_word, newline_longword, opcode_longword, size_longword, newline_undefined, opcode_undefined, size_undefined);
 	}
 	else
 	{
@@ -2983,7 +2974,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 		if (total_operands_wanted != total_operands_have)
 		{
-			SemanticError(state, "Instruction has %u operands, but it should have %u.", total_operands_have, total_operands_wanted);
+			SemanticError(state, "Instruction has {} operands, but it should have {}.", total_operands_have, total_operands_wanted);
 		}
 		else
 		{
@@ -3067,7 +3058,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							break;
 					}
 
-					SemanticError(state, "%s operand cannot be %s.", i == 0 ? "First" : "Second", operand_string);
+					SemanticError(state, "{} operand cannot be {}.", i == 0 ? "First" : "Second", operand_string);
 					good_operands = cc_false;
 				}
 			}
@@ -3588,7 +3579,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							const unsigned long offset = value - state->program_counter;
 
 							if (offset > 0x7FFF)
-								SemanticError(state, "The destination is too far away: it must be less than $8000 bytes after the start of the instruction, but instead it was $%lX bytes away.", offset);
+								SemanticError(state, "The destination is too far away: it must be less than $8000 bytes after the start of the instruction, but instead it was ${:X} bytes away.", offset);
 
 							custom_operands[0].literal.emplace<ExpressionNumber>(offset);
 						}
@@ -3597,13 +3588,13 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							const unsigned long offset = state->program_counter - value;
 
 							if (offset > 0x8000)
-								SemanticError(state, "The destination is too far away: it must be less than $8001 bytes before the start of the instruction, but instead it was $%lX bytes away.", offset);
+								SemanticError(state, "The destination is too far away: it must be less than $8001 bytes before the start of the instruction, but instead it was ${:X} bytes away.", offset);
 
 							custom_operands[0].literal.emplace<ExpressionNumber>(0 - offset);
 						}
 
 						if ((value & 1) != 0)
-							SemanticWarning(state, "Branch leads to odd address 0x%lX.", value);
+							SemanticWarning(state, "Branch leads to odd address 0x{:X}.", value);
 
 						break;
 					}
@@ -3650,12 +3641,12 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								if (offset == 0)
 									SemanticError(state, "The destination cannot be 0 bytes away when using a short-sized branch: use a word-sized branch instead.");
 								else if (offset > 0x7F)
-									SemanticError(state, "The destination is too far away: it must be less than $80 bytes after the start of the instruction, but instead it was $%lX bytes away.", offset);
+									SemanticError(state, "The destination is too far away: it must be less than $80 bytes after the start of the instruction, but instead it was ${:X} bytes away.", offset);
 							}
 							else
 							{
 								if (offset > 0x7FFF)
-									SemanticError(state, "The destination is too far away: it must be less than $8000 bytes after the start of the instruction, but instead it was $%lX bytes away.", offset);
+									SemanticError(state, "The destination is too far away: it must be less than $8000 bytes after the start of the instruction, but instead it was ${:X} bytes away.", offset);
 							}
 						}
 						else
@@ -3665,19 +3656,19 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
 							{
 								if (offset > 0x80)
-									SemanticError(state, "The destination is too far away: it must be less than $81 bytes before the start of the instruction, but instead it was $%lX bytes away.", offset);
+									SemanticError(state, "The destination is too far away: it must be less than $81 bytes before the start of the instruction, but instead it was ${:X} bytes away.", offset);
 							}
 							else
 							{
 								if (offset > 0x8000)
-									SemanticError(state, "The destination is too far away: it must be less than $8001 bytes before the start of the instruction, but instead it was $%lX bytes away.", offset);
+									SemanticError(state, "The destination is too far away: it must be less than $8001 bytes before the start of the instruction, but instead it was ${:X} bytes away.", offset);
 							}
 
 							offset = 0 - offset;
 						}
 
 						if ((value & 1) != 0)
-							SemanticWarning(state, "Branch leads to odd address 0x%lX.", value);
+							SemanticWarning(state, "Branch leads to odd address 0x{:X}.", value);
 
 						if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
 						{
@@ -4172,7 +4163,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 									bytes_to_write = 2;
 
 									if (value >= 0x8000 && value < 0xFFFF8000)
-										SemanticError(state, "Word-sized addresses cannot be higher than $7FFF or lower than $FFFF8000, but was $%lX.", value);
+										SemanticError(state, "Word-sized addresses cannot be higher than $7FFF or lower than $FFFF8000, but was ${:X}.", value);
 
 									break;
 
@@ -4192,7 +4183,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 									bytes_to_write = 2;
 
 									if (value >= 0x100 && value < 0xFFFFFF00)
-										SemanticError(state, "Byte-sized literals cannot be larger than $FF or smaller than -$100, but was $%lX.", value);
+										SemanticError(state, "Byte-sized literals cannot be larger than $FF or smaller than -$100, but was ${:X}.", value);
 
 									value &= 0xFF;
 
@@ -4203,7 +4194,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 									bytes_to_write = 2;
 
 									if (value >= 0x10000 && value < 0xFFFF0000)
-										SemanticError(state, "Word-sized literals cannot be larger than $FFFF or smaller than -$10000, but was $%lX.", value);
+										SemanticError(state, "Word-sized literals cannot be larger than $FFFF or smaller than -$10000, but was ${:X}.", value);
 
 									break;
 
@@ -4222,7 +4213,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							bytes_to_write = 2;
 
 							if (value >= 0x80 && value < 0xFFFFFF80)
-								SemanticError(state, "Displacement values cannot be larger than $7F or smaller than -$80, but was $%lX.", value);
+								SemanticError(state, "Displacement values cannot be larger than $7F or smaller than -$80, but was ${:X}.", value);
 
 							if (operand->size == SIZE_BYTE || operand->size == SIZE_SHORT)
 								SemanticError(state, "Index registers cannot be byte-sized.");
@@ -4246,7 +4237,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							bytes_to_write = 2;
 
 							if (value >= 0x8000 && value < 0xFFFF8000)
-								SemanticError(state, "Displacement values cannot be larger than $7FFF or smaller than -$8000, but was $%lX.", value);
+								SemanticError(state, "Displacement values cannot be larger than $7FFF or smaller than -$8000, but was ${:X}.", value);
 
 							break;
 					}
@@ -4336,7 +4327,7 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 					   That'll already have caused an error to be emitted, so this error might be somewhat cascading,
 					   but I'm not certain it's not possible to hit this in other ways,
 					   and in any case if we get here I'm pretty sure something has gone wrong, so we should emit an error in case one hasn't already been emitted. */
-					SemanticError(state, "Attempted to redefine symbol '%.*s' as a string constant.", (int)StringView_Length(parameter), StringView_Data(parameter));
+					SemanticError(state, "Attempted to redefine symbol '{}' as a string constant.", parameter);
 				},
 			}, dictionary_entry
 		);
@@ -4352,7 +4343,7 @@ static void OutputDcValue(SemanticState *state, const Size size, unsigned long v
 		case SIZE_BYTE:
 		case SIZE_SHORT:
 			if (value > 0xFF && value < 0xFFFFFF00)
-				SemanticError(state, "Value cannot be higher than $FF or lower than -$100, but was $%lX.", value);
+				SemanticError(state, "Value cannot be higher than $FF or lower than -$100, but was ${:X}.", value);
 
 			bytes_to_write = 1;
 
@@ -4360,7 +4351,7 @@ static void OutputDcValue(SemanticState *state, const Size size, unsigned long v
 
 		case SIZE_WORD:
 			if (value > 0xFFFF && value < 0xFFFF0000)
-				SemanticError(state, "Value cannot be higher than $FFFF or lower than -$10000, but was $%lX.", value);
+				SemanticError(state, "Value cannot be higher than $FFFF or lower than -$10000, but was ${:X}.", value);
 
 			bytes_to_write = 2;
 
@@ -4488,7 +4479,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 
 		if (!TextInput_OpenFile(&input_callbacks, String_CStr(standard_path)))
 		{
-			SemanticError(state, "File '%s' could not be opened.", String_CStr(include->path));
+			SemanticError(state, "File '{}' could not be opened.", include->path);
 		}
 		else
 		{
@@ -4516,7 +4507,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 
 	if (input_file == NULL)
 	{
-		SemanticError(state, "File '%s' could not be opened.", String_CStr(incbin->path));
+		SemanticError(state, "File '{}' could not be opened.", incbin->path);
 	}
 	else
 	{
@@ -5110,16 +5101,16 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				switch (severity)
 				{
 					case 0:
-						TextOutput_fprintf(state->error_callbacks, "INFORM: '%s'\n", String_CStr(inform.message));
+						TextOutput_Format(state->error_callbacks, "INFORM: '{}'\n", inform.message);
 						break;
 
 					case 1:
-						SemanticWarning(state, "INFORM: '%s'", String_CStr(inform.message));
+						SemanticWarning(state, "INFORM: '{}'", inform.message);
 						break;
 
 					case 2:
 					case 3: /* TODO: Halt assembly. */
-						SemanticError(state, "INFORM: '%s'", String_CStr(inform.message));
+						SemanticError(state, "INFORM: '{}'", inform.message);
 						break;
 				}
 			},
@@ -5236,7 +5227,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				}
 				else if (value > 0xFFFFFFFF)
 				{
-					SemanticError(state, "Value cannot be larger than 0xFFFFFFFF (was 0x%lX).", value);
+					SemanticError(state, "Value cannot be larger than 0xFFFFFFFF (was 0x{:X}).", value);
 				}
 				else
 				{
@@ -5316,7 +5307,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					else if (String_CompareCStrCaseInsensitive(option, "ws-"))
 						;
 					else
-						SemanticWarning(state, "Unrecognised option '%s'.", String_CStr(option));
+						SemanticWarning(state, "Unrecognised option '{}'.", option);
 				}
 			},
 			[&](StatementPushP &statement)
@@ -5866,7 +5857,7 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 
 			state->listing_counter = 0;
 			state->suppress_listing = cc_false;
-			TextOutput_fprintf(state->listing_callbacks, "%08lX", state->program_counter);
+			TextOutput_Format(state->listing_callbacks, "{:08X}", state->program_counter);
 		}
 	}
 
@@ -6109,21 +6100,21 @@ static void AssembleFile(SemanticState *state)
 				},
 				[&](SemanticState::ModeRept &rept_state)
 				{
-					SemanticError(state, "REPT statement beginning at line %lu is missing its ENDR.", rept_state.line_number);
+					SemanticError(state, "REPT statement beginning at line {} is missing its ENDR.", rept_state.line_number);
 
 					/* Terminate the REPT to hopefully avoid future complications. */
 					TerminateRept(state, rept_state);
 				},
 				[&](SemanticState::ModeMacro &macro_state)
 				{
-					SemanticError(state, "MACRO statement beginning at line %lu is missing its ENDM.", macro_state.line_number);
+					SemanticError(state, "MACRO statement beginning at line {} is missing its ENDM.", macro_state.line_number);
 
 					/* Terminate the macro to hopefully avoid future complications. */
 					TerminateMacro(state, macro_state);
 				},
 				[&](SemanticState::ModeWhile &while_state)
 				{
-					SemanticError(state, "WHILE statement beginning at line %lu is missing its ENDW.", while_state.line_number);
+					SemanticError(state, "WHILE statement beginning at line {} is missing its ENDW.", while_state.line_number);
 
 					/* Terminate the while-statement to hopefully avoid future complications. */
 					TerminateWhile(state, while_state);

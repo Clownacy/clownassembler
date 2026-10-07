@@ -24,8 +24,10 @@
 
 %{
 
+#include <format>
 #include <stdlib.h>
 #include <string.h>
+#include <string_view>
 
 #include "syntactic.h"
 
@@ -463,6 +465,6 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 }
 
  /* Make Bison signal a syntax error for unrecognised symbols */
-.        throw m68kasm::parser::syntax_error(std::string("Invalid character '") + yytext + "'.");
+.        throw m68kasm::parser::syntax_error(std::format("Invalid character '{}'.", std::string_view{yytext, static_cast<std::size_t>(yyleng)}));
 
 %%

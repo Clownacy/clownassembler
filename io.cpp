@@ -63,11 +63,6 @@ static void File_WriteString(void* const user_data, const char* const string)
 	fputs(string, (FILE*)user_data);
 }
 
-static void File_PrintFormatted(void* const user_data, const char* const format, va_list args)
-{
-	vfprintf((FILE*)user_data, format, args);
-}
-
 /* Memory-based IO callbacks */
 
 typedef struct MemoryIO
@@ -152,7 +147,6 @@ char* TextInput_fgets(char* const buffer, const size_t buffer_size, const TextIn
 void TextOutput_OpenFILE(TextOutput* const callbacks, FILE *file)
 {
 	callbacks->user_data = file;
-	callbacks->print_formatted = File_PrintFormatted;
 	callbacks->write_character = File_WriteCharacter;
 	callbacks->write_string = File_WriteString;
 }
@@ -160,23 +154,6 @@ void TextOutput_OpenFILE(TextOutput* const callbacks, FILE *file)
 cc_bool TextOutput_exists(const TextOutput* const callbacks)
 {
 	return callbacks != NULL && callbacks->user_data != NULL;
-}
-
-void TextOutput_vfprintf(const TextOutput* const callbacks, const char* const format, va_list args)
-{
-	if (TextOutput_exists(callbacks))
-		callbacks->print_formatted((void*)callbacks->user_data, format, args);
-}
-
-void TextOutput_fprintf(const TextOutput* const callbacks, const char* const format, ...)
-{
-	if (TextOutput_exists(callbacks))
-	{
-		va_list args;
-		va_start(args, format);
-		TextOutput_vfprintf(callbacks, format, args);
-		va_end(args);
-	}
 }
 
 void TextOutput_fputs(const char* const string, const TextOutput* const callbacks)
