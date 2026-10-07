@@ -25,26 +25,32 @@
 
 #include "string.h"
 
-typedef struct Substitute_ListEntry
+class Substitute
 {
-	String identifier;
-	const String *value;
-} Substitute_ListEntry;
+public:
+	using CustomSearch = std::optional<StringView> (*)(void *user_data, const StringView &view_to_search, size_t starting_position, cc_bool case_insensitive, size_t* const found_position, size_t* const found_length);
 
-typedef struct Substitute_State
-{
-	std::forward_list<Substitute_ListEntry> list;
-} Substitute_State;
+private:
+	struct ListEntry
+	{
+		String identifier;
+		const String *value;
+	};
 
-typedef std::optional<StringView> (*Substitute_CustomSearch)(void *user_data, const StringView &view_to_search, size_t starting_position, cc_bool case_insensitive, size_t* const found_position, size_t* const found_length);
+	std::forward_list<ListEntry> list;
 
-cc_bool Substitute_PushSubstitute(Substitute_State *state, const StringView &identifier, const String &value);
-void Substitute_PopSubstitute(Substitute_State *state);
+	static cc_bool FindSubstitute(const StringView &view_to_search, const size_t starting_position, const StringView &substitute, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, size_t* const found_position, size_t* const found_length);
+	std::optional<StringView> FindEarliestSubstitute(Substitute *other_state, const StringView &view_to_search, const size_t starting_position, const CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, size_t* const earliest_found_position, size_t* const earliest_found_length);
 
-void Substitute_ProcessSubString(Substitute_State *state, Substitute_State *other_state, String &string, StringView &view_to_search, Substitute_CustomSearch custom_search_callback, const void *custom_search_user_data, cc_bool allow_implicit_matches, cc_bool case_insensitive);
-void Substitute_ProcessString(Substitute_State *state, Substitute_State *other_state, String &string, Substitute_CustomSearch custom_search_callback, const void *custom_search_user_data, cc_bool allow_implicit_matches, cc_bool case_insensitive);
+public:
+	cc_bool PushSubstitute(const StringView &identifier, const String &value);
+	void PopSubstitute();
 
-cc_bool Substitute_IsSubstituteBlockingCharacter(char character);
-cc_bool Substitute_IsWhitespaceCharacter(char character);
+	void ProcessSubString(Substitute *other_state, String &string, StringView &view_to_search, CustomSearch custom_search_callback, const void *custom_search_user_data, cc_bool allow_implicit_matches, cc_bool case_insensitive);
+	void ProcessString(Substitute *other_state, String &string, CustomSearch custom_search_callback, const void *custom_search_user_data, cc_bool allow_implicit_matches, cc_bool case_insensitive);
+
+	static cc_bool IsSubstituteBlockingCharacter(char character);
+	static cc_bool IsWhitespaceCharacter(char character);
+};
 
 #endif /* SUBSTITUTE_H */

@@ -124,7 +124,7 @@ typedef struct SemanticState_Macro
 {
 	const Macro *metadata = nullptr;
 	std::shared_ptr<SymbolDictionary> dictionary;
-	Substitute_State substitutions;
+	Substitute substitutions;
 	struct MacroCustomSubstituteSearch_Closure *closure = nullptr;
 	std::vector<String> argument_list;
 	size_t total_arguments = 0, total_arguments_at_start = 0;
@@ -151,7 +151,7 @@ typedef struct SemanticState
 	yyscan_t flex_state;
 	String line_buffer;
 	const String *source_line = nullptr;
-	Substitute_State substitutions;
+	Substitute substitutions;
 	std::stack<String> string_stack;
 	SemanticState_Macro macro;
 	size_t output_position = 0, previous_segment_length_output_position = 0;
@@ -4294,7 +4294,8 @@ static void PushSubstitute(SemanticState* const state, const StringView &identif
 				{
 					auto &symbol = dictionary_entry->emplace<SymbolStringConstant>();
 					String_CreateCopyView(symbol.value, value);
-					Substitute_PushSubstitute(dictionary == &state->dictionary ? &state->substitutions : &state->macro.substitutions, identifier, symbol.value);
+					auto &substitute = dictionary == &state->dictionary ? state->substitutions : state->macro.substitutions;
+					substitute.PushSubstitute(identifier, symbol.value);
 				},
 				[&](SymbolStringConstant &symbol)
 				{
@@ -4334,7 +4335,7 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 					{
 						auto &symbol = dictionary_entry->emplace<SymbolStringConstant>();
 						String_CreateCopyView(symbol.value, argument);
-						Substitute_PushSubstitute(&state->macro.substitutions, parameter, symbol.value);
+						state->macro.substitutions.PushSubstitute(parameter, symbol.value);
 					},
 					[&](SymbolStringConstant &symbol)
 					{
@@ -5508,7 +5509,7 @@ static std::optional<StringView> MacroCustomSubstituteSearch(void* const user_da
 				return closure->size;
 
 			case '_':
-				if (Substitute_IsSubstituteBlockingCharacter(StringView_At(view_to_search, *found_position + *found_length)))
+				if (Substitute::IsSubstituteBlockingCharacter(StringView_At(view_to_search, *found_position + *found_length)))
 					continue;
 
 				return closure->arguments;
@@ -5578,9 +5579,9 @@ static void PerformSubstitutionsOnSubString(SemanticState* const state, String &
 	const cc_bool case_insensitive = state->options->case_insensitive;
 
 	if (state->macro.closure != NULL)
-		Substitute_ProcessSubString(&state->substitutions, &state->macro.substitutions, string, view_to_search, MacroCustomSubstituteSearch, state->macro.closure, allow_implicit_matches, case_insensitive);
+		state->substitutions.ProcessSubString(&state->macro.substitutions, string, view_to_search, MacroCustomSubstituteSearch, state->macro.closure, allow_implicit_matches, case_insensitive);
 	else
-		Substitute_ProcessSubString(&state->substitutions, NULL, string, view_to_search, NULL, NULL, allow_implicit_matches, case_insensitive);
+		state->substitutions.ProcessSubString(NULL, string, view_to_search, NULL, NULL, allow_implicit_matches, case_insensitive);
 }
 
 static void PerformSubstitutions(SemanticState* const state, String &string, const cc_bool allow_implicit_matches)
