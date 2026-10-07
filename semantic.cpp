@@ -110,8 +110,6 @@ typedef struct Location
 
 typedef struct FixUp
 {
-	struct FixUp *next;
-
 	Statement statement;
 	std::shared_ptr<SymbolDictionary> macro_dictionary;
 	unsigned long program_counter;
@@ -166,8 +164,7 @@ typedef struct SemanticState
 	cc_bool end;
 
 	/* Fix-ups. */
-	FixUp *fixup_list_head;
-	FixUp *fixup_list_tail;
+	std::deque<FixUp> fixup_list;
 	cc_bool fixup_needed;
 	cc_bool doing_fixup_pass;
 
@@ -5465,23 +5462,23 @@ static void ParseLine(SemanticState* const state, const StringView &label, const
 		{
 			/* If the statement cannot currently be processed because of undefined symbols,
 			   add it to the fix-up list so we can try again later. */
-			FixUp *fixup = new FixUp;
+			FixUp &fixup = state->fixup_list.emplace_back();
 
 			const Location *source_location = state->location;
-			Location *destination_location = &fixup->location;
+			Location *destination_location = &fixup.location;
 
 			/* Backup the statement. */
-			fixup->statement = std::move(statement);
+			fixup.statement = std::move(statement);
 
 			/* Backup some state. */
-			fixup->macro_dictionary = state->macro.dictionary;
-			fixup->program_counter = starting_program_counter;
-			fixup->output_position = starting_output_position;
-			fixup->segment_length = starting_segment_length;
-			String_CreateCopy(fixup->last_global_label, state->last_global_label);
-			String_CreateCopy(fixup->source_line, *state->source_line);
-			String_CreateCopyView(fixup->label, label);
-			fixup->options = *Options_Get(&state->options);
+			fixup.macro_dictionary = state->macro.dictionary;
+			fixup.program_counter = starting_program_counter;
+			fixup.output_position = starting_output_position;
+			fixup.segment_length = starting_segment_length;
+			String_CreateCopy(fixup.last_global_label, state->last_global_label);
+			String_CreateCopy(fixup.source_line, *state->source_line);
+			String_CreateCopyView(fixup.label, label);
+			fixup.options = *Options_Get(&state->options);
 
 			/* Clone the location. */
 			*destination_location = *source_location;
@@ -5495,16 +5492,6 @@ static void ParseLine(SemanticState* const state, const StringView &label, const
 				*destination_location = *source_location;
 				String_CreateCopy(destination_location->file_path, source_location->file_path);
 			}
-
-			/* Add the new fix-up to the list. */
-			if (state->fixup_list_head == NULL)
-				state->fixup_list_head = fixup;
-			else
-				state->fixup_list_tail->next = fixup;
-
-			state->fixup_list_tail = fixup;
-
-			fixup->next = NULL;
 
 			state->fixup_needed = cc_false;
 		}
@@ -6371,35 +6358,34 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 				   directives that could not be completed in the first pass. */
 				state.doing_fixup_pass = cc_true;
 
-				while (state.fixup_list_head != NULL)
+				while (!state.fixup_list.empty())
 				{
 					Location *location;
 
 					/* Pop fix-up from list. */
-					FixUp* const fixup = state.fixup_list_head;
-					state.fixup_list_head = fixup->next;
+					FixUp &fixup = state.fixup_list.front();
 
 					/* Reset some state to how it was at the time the statement was first processed. */
-					state.macro.dictionary = fixup->macro_dictionary;
-					state.program_counter = fixup->program_counter;
-					OutputSeek(&state, fixup->output_position);
-					state.segment_length = fixup->segment_length;
-					String_CreateCopy(state.last_global_label, fixup->last_global_label);
-					state.source_line = &fixup->source_line;
-					state.location = &fixup->location;
-					*Options_Get(&state.options) = fixup->options;
+					state.macro.dictionary = fixup.macro_dictionary;
+					state.program_counter = fixup.program_counter;
+					OutputSeek(&state, fixup.output_position);
+					state.segment_length = fixup.segment_length;
+					String_CreateCopy(state.last_global_label, fixup.last_global_label);
+					state.source_line = &fixup.source_line;
+					state.location = &fixup.location;
+					*Options_Get(&state.options) = fixup.options;
 
 					/* Re-process statement. */
-					ProcessStatement(&state, &fixup->statement, String_View(fixup->label));
+					ProcessStatement(&state, &fixup.statement, String_View(fixup.label));
 
 					/* We're done with this statement: delete it. */
-					DestroyStatement(&fixup->statement);
-					if (fixup->macro_dictionary.use_count() == 1)
-						SymbolDictionary_Deinit(&*fixup->macro_dictionary);
-					fixup->macro_dictionary.reset();
+					DestroyStatement(&fixup.statement);
+					if (fixup.macro_dictionary.use_count() == 1)
+						SymbolDictionary_Deinit(&*fixup.macro_dictionary);
+					fixup.macro_dictionary.reset();
 
 					/* Pop one location from the list. */
-					location = fixup->location.previous;
+					location = fixup.location.previous;
 
 					while (location != NULL)
 					{
@@ -6408,7 +6394,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 						location = previous_location;
 					}
 
-					delete fixup;
+					state.fixup_list.pop_front();
 				}
 
 				/* Produce asm68k symbol file, if requested. */
