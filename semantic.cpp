@@ -6337,7 +6337,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 					state.program_counter = fixup.program_counter;
 					OutputSeek(&state, fixup.output_position);
 					state.segment_length = fixup.segment_length;
-					String_CreateCopy(state.last_global_label, fixup.last_global_label);
+					String_CreateMove(state.last_global_label, fixup.last_global_label);
 					state.source_line = &fixup.source_line;
 					state.location = std::move(fixup.location);
 					*Options_Get(&state.options) = fixup.options;
