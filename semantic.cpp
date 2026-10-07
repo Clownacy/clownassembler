@@ -122,26 +122,26 @@ typedef struct FixUp
 
 typedef struct SemanticState_Macro
 {
-	const Macro *metadata;
+	const Macro *metadata = nullptr;
 	std::shared_ptr<SymbolDictionary> dictionary;
 	Substitute_State substitutions;
-	struct MacroCustomSubstituteSearch_Closure *closure;
+	struct MacroCustomSubstituteSearch_Closure *closure = nullptr;
 	std::vector<String> argument_list;
-	size_t total_arguments, total_arguments_at_start;
-	unsigned int starting_if_level;
-	unsigned int depth;
-	cc_bool active;
+	size_t total_arguments = 0, total_arguments_at_start = 0;
+	unsigned int starting_if_level = 0;
+	unsigned int depth = 0;
+	cc_bool active = cc_false;
 } SemanticState_Macro;
 
 typedef struct SemanticState
 {
-	cc_bool success;
+	cc_bool success = cc_true;
 
 	/* Callbacks. */
-	const TextInput *input_callbacks;
-	const BinaryStream *output_callbacks;
-	const TextOutput *listing_callbacks;
-	const TextOutput *error_callbacks;
+	const TextInput *input_callbacks = nullptr;
+	const BinaryStream *output_callbacks = nullptr;
+	const TextOutput *listing_callbacks = nullptr;
+	const TextOutput *error_callbacks = nullptr;
 
 	/* Global stuff. */
 	std::optional<SymbolDictionary> dictionary;
@@ -149,58 +149,58 @@ typedef struct SemanticState
 	std::deque<Location> location;
 	yyscan_t flex_state;
 	String line_buffer;
-	const String *source_line;
+	const String *source_line = nullptr;
 	Substitute_State substitutions;
 	std::stack<String> string_stack;
 	OptionsStack options;
 	SemanticState_Macro macro;
-	size_t output_position, previous_segment_length_output_position;
-	size_t segment_position, segment_length;
-	unsigned long program_counter, program_counter_of_statement, program_counter_of_expression;
-	unsigned long current_macro_invocation;
-	unsigned long rs;
-	cc_bool end;
+	size_t output_position = 0, previous_segment_length_output_position = 0;
+	size_t segment_position = 0, segment_length = 0;
+	unsigned long program_counter = 0, program_counter_of_statement = 0, program_counter_of_expression = 0;
+	unsigned long current_macro_invocation = 0;
+	unsigned long rs = 0;
+	cc_bool end = cc_false;
 
 	/* Fix-ups. */
 	std::deque<FixUp> fixup_list;
-	cc_bool fixup_needed;
-	cc_bool doing_fixup_pass;
+	cc_bool fixup_needed = cc_false;
+	cc_bool doing_fixup_pass = cc_false;
 
 	/* If-statements. */
-	unsigned int current_if_level;
-	unsigned int false_if_level;
-	cc_bool true_already_found;
+	unsigned int current_if_level = 0;
+	unsigned int false_if_level = 0;
+	cc_bool true_already_found = cc_false;
 
 	/* OBJ directive. */
-	cc_bool obj_active;
-	unsigned long obj_delta;
+	cc_bool obj_active = cc_false;
+	unsigned long obj_delta = 0;
 
 	/* Listing. */
-	unsigned int listing_counter;
-	cc_bool line_listed;
-	cc_bool suppress_listing;
-	cc_bool listing_macro;
+	unsigned int listing_counter = 0;
+	cc_bool line_listed = cc_false;
+	cc_bool suppress_listing = cc_false;
+	cc_bool listing_macro = cc_false;
 
 	/* Modes. */
 	struct ModeNormal {};
 	struct ModeRept
 	{
-		unsigned long repetitions;
-		unsigned long line_number;
-		unsigned int nesting;
+		unsigned long repetitions = 0;
+		unsigned long line_number = 0;
+		unsigned int nesting = 0;
 		SourceLineList source_line_list;
 	};
 	struct ModeMacro
 	{
-		unsigned long line_number;
+		unsigned long line_number = 0;
 		Macro metadata;
 	};
 	struct ModeWhile
 	{
 		Expression expression;
 		String source_line;
-		unsigned long line_number;
-		unsigned int nesting;
+		unsigned long line_number = 0;
+		unsigned int nesting = 0;
 		SourceLineList source_line_list;
 	};
 
@@ -6244,15 +6244,11 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	state.location.emplace_front(input_file_path, 0);
 
 	/* Initialise the state's non-default values. */
-	state.success = cc_true;
-
 	state.input_callbacks = input_callbacks;
 	state.output_callbacks = output_callbacks;
 	state.error_callbacks = error_callbacks;
 	state.listing_callbacks = listing_callbacks;
 
-	state.last_global_label = "";
-	state.line_buffer = "";
 	Substitute_Initialise(&state.substitutions);
 	state.mode.emplace<SemanticState::ModeNormal>();
 
