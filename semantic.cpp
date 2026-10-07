@@ -5675,7 +5675,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 	/* This is a macro invocation. */
 	MacroCustomSubstituteSearch_Closure closure;
 
-	const SemanticState_Macro previous_macro_state = state->macro;
+	const SemanticState_Macro previous_macro_state = std::move(state->macro);
 
 	if (state->macro.depth >= 0x100)
 	{
@@ -5693,7 +5693,6 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 		}
 		else
 		{
-			Substitute_Initialise(&state->macro.substitutions);
 			state->macro.closure = &closure;
 			state->macro.argument_list = {};
 			state->macro.total_arguments = 0;
@@ -5869,8 +5868,6 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 
 				state->listing_macro = previous_listing_macro;
 			}
-
-			Substitute_Deinitialise(&state->macro.substitutions);
 		}
 	}
 
@@ -6250,7 +6247,6 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	state.error_callbacks = error_callbacks;
 	state.listing_callbacks = listing_callbacks;
 
-	Substitute_Initialise(&state.substitutions);
 	state.mode.emplace<SemanticState::ModeNormal>();
 
 	if (AddToSymbolTable(&state, string_rs,   SymbolSpecial{SymbolSpecial::Type::RS})
@@ -6349,8 +6345,6 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 			}
 		}
 	}
-
-	Substitute_Deinitialise(&state.substitutions);
 
 	return state.success;
 }

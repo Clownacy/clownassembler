@@ -22,37 +22,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-void Substitute_Initialise(Substitute_State* const state)
-{
-	state->list_head = NULL;
-}
-
-void Substitute_Deinitialise(Substitute_State* const state)
-{
-	while (state->list_head != NULL)
-		Substitute_PopSubstitute(state);
-}
-
 cc_bool Substitute_PushSubstitute(Substitute_State* const state, const StringView &identifier, const String &value)
 {
-	Substitute_ListEntry* const list_entry = new Substitute_ListEntry;
-
-	list_entry->next = state->list_head;
-	state->list_head = list_entry;
-
-	String_CreateCopyView(list_entry->identifier, identifier);
-	list_entry->value = &value;
-
+	state->list.emplace_front(std::string(identifier), &value);
 	return cc_true;
 }
 
 void Substitute_PopSubstitute(Substitute_State* const state)
 {
-	Substitute_ListEntry* const list_entry = state->list_head;
-
-	state->list_head = list_entry->next;
-
-	delete list_entry;
+	state->list.pop_front();
 }
 
 static cc_bool Substitute_FindSubstitute(const StringView &view_to_search, const size_t starting_position, const StringView &substitute, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, size_t* const found_position, size_t* const found_length)
@@ -125,16 +103,16 @@ static std::optional<StringView> Substitute_FindEarliestSubstitute(Substitute_St
 	if (other_state != NULL)
 	{
 		/* Search all substitutes, looking for the earliest. */
-		for (list_entry = other_state->list_head; list_entry != NULL; list_entry = list_entry->next)
+		for (const auto &entry : other_state->list)
 		{
 			size_t found_position, found_length;
 
-			if (Substitute_FindSubstitute(view_to_search, starting_position, String_View(list_entry->identifier), allow_implicit_matches, case_insensitive, &found_position, &found_length))
+			if (Substitute_FindSubstitute(view_to_search, starting_position, String_View(entry.identifier), allow_implicit_matches, case_insensitive, &found_position, &found_length))
 			{
 				/* Record if this substitute occurs first. */
 				if (*earliest_found_position > found_position)
 				{
-					found_substitute = String_View(*list_entry->value);
+					found_substitute = String_View(*entry.value);
 					*earliest_found_position = found_position;
 					*earliest_found_length = found_length;
 				}
@@ -143,16 +121,16 @@ static std::optional<StringView> Substitute_FindEarliestSubstitute(Substitute_St
 	}
 
 	/* Search all substitutes, looking for the earliest. */
-	for (list_entry = state->list_head; list_entry != NULL; list_entry = list_entry->next)
+	for (const auto &entry : state->list)
 	{
 		size_t found_position, found_length;
 
-		if (Substitute_FindSubstitute(view_to_search, starting_position, String_View(list_entry->identifier), allow_implicit_matches, case_insensitive, &found_position, &found_length))
+		if (Substitute_FindSubstitute(view_to_search, starting_position, String_View(entry.identifier), allow_implicit_matches, case_insensitive, &found_position, &found_length))
 		{
 			/* Record if this substitute occurs first. */
 			if (*earliest_found_position > found_position)
 			{
-				found_substitute = String_View(*list_entry->value);
+				found_substitute = String_View(*entry.value);
 				*earliest_found_position = found_position;
 				*earliest_found_length = found_length;
 			}

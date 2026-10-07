@@ -18,6 +18,7 @@
 #ifndef SUBSTITUTE_H
 #define SUBSTITUTE_H
 
+#include <forward_list>
 #include <optional>
 
 #include "clowncommon/clowncommon.h"
@@ -26,20 +27,16 @@
 
 typedef struct Substitute_ListEntry
 {
-	struct Substitute_ListEntry *next;
 	String identifier;
 	const String *value;
 } Substitute_ListEntry;
 
 typedef struct Substitute_State
 {
-	Substitute_ListEntry *list_head;
+	std::forward_list<Substitute_ListEntry> list;
 } Substitute_State;
 
 typedef std::optional<StringView> (*Substitute_CustomSearch)(void *user_data, const StringView &view_to_search, size_t starting_position, cc_bool case_insensitive, size_t* const found_position, size_t* const found_length);
-
-void Substitute_Initialise(Substitute_State *state);
-void Substitute_Deinitialise(Substitute_State *state);
 
 cc_bool Substitute_PushSubstitute(Substitute_State *state, const StringView &identifier, const String &value);
 void Substitute_PopSubstitute(Substitute_State *state);
