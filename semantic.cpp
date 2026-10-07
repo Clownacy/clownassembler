@@ -20,6 +20,7 @@
 #include "semantic.h"
 
 #include <assert.h>
+#include <deque>
 #include <limits.h>
 #include <memory>
 #include <stdarg.h>
@@ -44,25 +45,14 @@ typedef ClownAssembler_TextInput TextInput;
 typedef ClownAssembler_BinaryStream BinaryStream;
 typedef ClownAssembler_TextOutput TextOutput;
 
-typedef struct SourceLineListNode
-{
-	struct SourceLineListNode *next;
-
-	String source_line_buffer;
-} SourceLineListNode;
-
-typedef struct SourceLineList
-{
-	SourceLineListNode *head;
-	SourceLineListNode *tail;
-} SourceLineList;
+using SourceLineList = std::deque<String>;
 
 typedef struct Macro
 {
 	cc_bool is_short, uses_label;
 	String name;
 	IdentifierListNode *parameter_names;
-	SourceLineListNode *source_line_list_head;
+	SourceLineList source_line_list;
 } Macro;
 
 struct SymbolNone {};
@@ -761,38 +751,9 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 	return success;
 }
 
-static void AddToSourceLineList(SemanticState *state, SourceLineList *source_line_list, const String &source_line)
+static void AddToSourceLineList(SemanticState *state, SourceLineList &source_line_list, String source_line)
 {
-	SourceLineListNode* const source_line_list_node = new SourceLineListNode;
-
-	/* Append to the end of the list. */
-	if (source_line_list->tail != NULL)
-		source_line_list->tail->next = source_line_list_node;
-	else
-		source_line_list->head = source_line_list_node;
-
-	source_line_list->tail = source_line_list_node;
-
-	/* Initialise the list node. */
-	source_line_list_node->next = NULL;
-	String_CreateCopy(source_line_list_node->source_line_buffer, source_line);
-}
-
-static void FreeSourceLineList(SourceLineListNode *source_line_list_head)
-{
-	SourceLineListNode *source_line_list_node;
-
-	source_line_list_node = source_line_list_head;
-
-	while (source_line_list_node != NULL)
-	{
-		SourceLineListNode *next_source_line_list_node = source_line_list_node->next;
-
-		String_Destroy(source_line_list_node->source_line_buffer);
-		delete source_line_list_node;
-
-		source_line_list_node = next_source_line_list_node;
-	}
+	source_line_list.emplace_back(std::move(source_line));
 }
 
 static void DestroySymbol(SymbolDictionary::Entry *dictionary_entry)
@@ -815,7 +776,6 @@ static void DestroySymbol(SymbolDictionary::Entry *dictionary_entry)
 				destroyed_list.head = symbol.macro.parameter_names;
 				DestroyIdentifierList(&destroyed_list);
 
-				FreeSourceLineList(symbol.macro.source_line_list_head);
 				String_Destroy(symbol.macro.name);
 			},
 			/* Nothing to free. */
@@ -1172,30 +1132,23 @@ static void TerminateIf(SemanticState *state)
 static void TerminateRept(SemanticState *state, SemanticState::ModeRept &rept_state)
 {
 	/* Back-up some state into local variables, in case a nested REPT statement clobbers it. */
-	unsigned long repetitions = rept_state.repetitions;
-
-	const unsigned long line_number = rept_state.line_number;
-	const SourceLineList source_line_list = rept_state.source_line_list;
+	auto rept_state_copy = std::move(rept_state);
 
 	/* Exit REPT mode. */
 	state->mode.emplace<SemanticState::ModeNormal>();
 
-	while (repetitions-- != 0)
+	while (rept_state_copy.repetitions-- != 0)
 	{
-		SourceLineListNode *source_line_list_node;
-
 		/* Rewind back to the line number of the start of the REPT. */
-		state->location->line_number = line_number;
+		state->location->line_number = rept_state_copy.line_number;
 
 		/* Process the REPT's nested statements. */
-		for (source_line_list_node = source_line_list.head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-			AssembleLine(state, source_line_list_node->source_line_buffer, Options_Get(&state->options)->expand_all_macros);
+		for (const auto source_line : rept_state_copy.source_line_list)
+			AssembleLine(state, source_line, Options_Get(&state->options)->expand_all_macros);
 	}
 
 	/* Increment past the ENDR line number. */
 	++state->location->line_number;
-
-	FreeSourceLineList(source_line_list.head);
 }
 
 static void PurgeMacro(SemanticState* const state, StringView identifier, const cc_bool allow_undefined)
@@ -1371,15 +1324,12 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 		macro_state.parameter_names.head = NULL;
 		macro_state.parameter_names.tail = NULL;
 
-		macro.source_line_list_head = macro_state.source_line_list.head;
-		macro_state.source_line_list.head = NULL;
-		macro_state.source_line_list.tail = NULL;
+		macro.source_line_list = std::move(macro_state.source_line_list);
 
 		AddToSymbolTable(state, SymbolMacro{std::move(macro)});
 	}
 
 	/* Free all of this, in case we didn't get all the way to creating the macro and moving everything over. */
-	FreeSourceLineList(macro_state.source_line_list.head);
 	DestroyIdentifierList(&macro_state.parameter_names);
 	String_Destroy(macro_state.name);
 
@@ -1392,10 +1342,7 @@ static void TerminateWhile(SemanticState *state, SemanticState::ModeWhile &while
 	const String* const old_source_line = state->source_line;
 
 	/* Back-up some state into local variables, in case a nested WHILE statement clobbers it. */
-	Expression expression = while_state.expression;
-	String source_line = while_state.source_line;
-	const unsigned long starting_line_number = while_state.line_number;
-	SourceLineListNode* const source_line_list_head = while_state.source_line_list.head;
+	auto while_state_copy = std::move(while_state);
 
 	/* Exit WHILE mode. */
 	state->mode.emplace<SemanticState::ModeNormal>();
@@ -1405,11 +1352,10 @@ static void TerminateWhile(SemanticState *state, SemanticState::ModeWhile &while
 	for (;;)
 	{
 		unsigned long value;
-		SourceLineListNode *source_line_list_node;
 
-		state->source_line = &source_line;
+		state->source_line = &while_state_copy.source_line;
 
-		if (!ResolveExpression(state, &expression, &value, cc_false))
+		if (!ResolveExpression(state, &while_state_copy.expression, &value, cc_false))
 		{
 			SemanticError(state, "Expression must be evaluable on the first pass.");
 			break;
@@ -1419,19 +1365,18 @@ static void TerminateWhile(SemanticState *state, SemanticState::ModeWhile &while
 			break;
 
 		/* Rewind back to the line number of the start of the WHILE. */
-		state->location->line_number = starting_line_number;
+		state->location->line_number = while_state_copy.line_number;
 
 		/* Process the WHILE's nested statements. */
-		for (source_line_list_node = source_line_list_head; source_line_list_node != NULL; source_line_list_node = source_line_list_node->next)
-			AssembleLine(state, source_line_list_node->source_line_buffer, cc_false);
+		for (const auto &source_line : while_state_copy.source_line_list)
+			AssembleLine(state, source_line, cc_false);
 	}
 
 	/* Increment past the ENDW line number. */
 	++state->location->line_number;
 
-	FreeSourceLineList(source_line_list_head);
-	String_Destroy(source_line);
-	DestroyExpression(&expression);
+	String_Destroy(while_state_copy.source_line);
+	DestroyExpression(&while_state_copy.expression);
 
 	state->source_line = old_source_line;
 }
@@ -4816,9 +4761,6 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 
 	mode.line_number = state->location->line_number;
 	mode.nesting = 0;
-
-	mode.source_line_list.head = NULL;
-	mode.source_line_list.tail = NULL;
 }
 
 static void ProcessMacro(SemanticState *state, StatementMacro *macro, const StringView &label, cc_bool is_short)
@@ -4833,9 +4775,6 @@ static void ProcessMacro(SemanticState *state, StatementMacro *macro, const Stri
 	macro->parameter_names.tail = NULL;
 	mode.is_short = is_short;
 	mode.uses_label = macro->uses_label;
-
-	mode.source_line_list.head = NULL;
-	mode.source_line_list.tail = NULL;
 }
 
 static void ProcessIf(SemanticState *state, Expression *expression)
@@ -5176,9 +5115,6 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 				mode.line_number = state->location->line_number;
 				mode.nesting = 0;
-
-				mode.source_line_list.head = NULL;
-				mode.source_line_list.tail = NULL;
 			},
 			[&](StatementEndW &statement)
 			{
@@ -5996,7 +5932,6 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 			/* Finally, invoke the macro. */
 			{
 				Location location;
-				const SourceLineListNode *source_line_list_node;
 
 				const cc_bool previous_listing_macro = state->listing_macro;
 
@@ -6012,21 +5947,24 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 				state->location = &location;
 
 				/* Iterate over each line of the macro, sending it to be processed. */
-				for (source_line_list_node = macro->source_line_list_head; source_line_list_node != NULL && CurrentlyExpandingMacro(state); source_line_list_node = source_line_list_node->next)
+				for (const auto &source_line : macro->source_line_list)
 				{
 					/* TODO: This is redundant and wrong: these substitutions are already done later, and this should only be doing the macro arguments! */
 					if (macro->is_short)
 					{
-						String source_line;
-						String_CreateCopy(source_line, source_line_list_node->source_line_buffer);
-						PerformSubstitutions(state, source_line, cc_false);
-						AssembleLine(state, source_line, Options_Get(&state->options)->expand_all_macros);
-						String_Destroy(source_line);
+						String expanded_source_line;
+						String_CreateCopy(expanded_source_line, source_line);
+						PerformSubstitutions(state, expanded_source_line, cc_false);
+						AssembleLine(state, expanded_source_line, Options_Get(&state->options)->expand_all_macros);
+						String_Destroy(expanded_source_line);
 					}
 					else
 					{
-						AssembleLine(state, source_line_list_node->source_line_buffer, Options_Get(&state->options)->expand_all_macros);
+						AssembleLine(state, source_line, Options_Get(&state->options)->expand_all_macros);
 					}
+
+					if (!CurrentlyExpandingMacro(state))
+						break;
 				}
 
 				if (!macro->is_short)
@@ -6247,7 +6185,7 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 						if (StringView_CompareCStrCaseInsensitive(directive, "rept"))
 							++rept_state.nesting;
 
-						AddToSourceLineList(state, &rept_state.source_line_list, *state->source_line);
+						AddToSourceLineList(state, rept_state.source_line_list, *state->source_line);
 					}
 				},
 				[&](SemanticState::ModeMacro &macro_state)
@@ -6277,13 +6215,13 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 							}
 							else
 							{
-								AddToSourceLineList(state, &macro_state.source_line_list, *state->source_line);
+								AddToSourceLineList(state, macro_state.source_line_list, *state->source_line);
 								TerminateMacro(state, macro_state);
 							}
 						}
 						else
 						{
-							AddToSourceLineList(state, &macro_state.source_line_list, *state->source_line);
+							AddToSourceLineList(state, macro_state.source_line_list, *state->source_line);
 						}
 					}
 				},
@@ -6300,7 +6238,7 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 						if (StringView_CompareCStrCaseInsensitive(directive, "while"))
 							++while_state.nesting;
 
-						AddToSourceLineList(state, &while_state.source_line_list, *state->source_line);
+						AddToSourceLineList(state, while_state.source_line_list, *state->source_line);
 					}
 				}
 			}, state->mode
