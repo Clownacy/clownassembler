@@ -2993,8 +2993,6 @@ case 242:
 YY_RULE_SETUP
 #line 398 "lexical.l"
 {
-	String string;
-	StringView view;
 	size_t i, output_size;
 	char previous_character;
 
@@ -3003,11 +3001,10 @@ YY_RULE_SETUP
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
-	StringView_Create(view, yytext + 1, yyleng - 2);
-	String_CreateBlank(string);
+	StringView view(yytext + 1, yyleng - 2);
+	std::string string;
 
-	if (!String_ResizeNoFill(string, StringView_Length(view)))
-		throw m68kasm::parser::syntax_error("Could not allocate memory for generic string.");
+	string.reserve(StringView_Length(view));
 
 	/* Copy string, turning escaped (paired) quotes into regular (lone) quotes. */
 	output_size = 0;
@@ -3024,10 +3021,8 @@ YY_RULE_SETUP
 		}
 
 		previous_character = character;
-		String_At(string, output_size++) = character;
+		string.push_back(character);
 	}
-
-	String_ResizeNoFill(string, output_size);
 
 	return m68kasm::parser::make_STRING(std::move(string));
 }
@@ -3036,23 +3031,18 @@ YY_RULE_SETUP
 case 243:
 /* rule 243 can match eol */
 YY_RULE_SETUP
-#line 439 "lexical.l"
+#line 434 "lexical.l"
 {
-	String string;
-
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
-	if (!String_Create(string, yytext, yyleng))
-		throw m68kasm::parser::syntax_error("Could not allocate memory for generic string.");
-
-	return m68kasm::parser::make_STRING(std::move(string));
+	return m68kasm::parser::make_STRING({{yytext, static_cast<std::size_t>(yyleng)}});
 }
 	YY_BREAK
 /* Identifier, data register, or address register. */
 case 244:
 YY_RULE_SETUP
-#line 452 "lexical.l"
+#line 442 "lexical.l"
 {
 	if (yyleng == 2 && (yytext[0] == 'd' || yytext[0] == 'D' || yytext[0] == 'a' || yytext[0] == 'A') && yytext[1] >= '0' && yytext[1] <= '7')
 	{
@@ -3063,53 +3053,38 @@ YY_RULE_SETUP
 	else
 	{
 		/* Identifier. */
-		String string;
-
-		if (!String_Create(string, yytext, yyleng))
-			throw m68kasm::parser::syntax_error("Could not allocate memory for generic string.");
-
-		return m68kasm::parser::make_IDENTIFIER(std::move(string));
+		return m68kasm::parser::make_IDENTIFIER({{yytext, static_cast<std::size_t>(yyleng)}});
 	}
 }
 	YY_BREAK
 /* Local label. */
 case 245:
 YY_RULE_SETUP
-#line 472 "lexical.l"
+#line 457 "lexical.l"
 {
-	String string;
-
-	if (!String_Create(string, yytext, yyleng))
-		throw m68kasm::parser::syntax_error("Could not allocate memory for generic string.");
-
-	return m68kasm::parser::make_LOCAL_IDENTIFIER(std::move(string));
+	return m68kasm::parser::make_LOCAL_IDENTIFIER({{yytext, static_cast<std::size_t>(yyleng)}});
 }
 	YY_BREAK
 /* Option. */
 case 246:
 YY_RULE_SETUP
-#line 482 "lexical.l"
+#line 462 "lexical.l"
 {
-	String string;
-
-	if (!String_Create(string, yytext, yyleng))
-		throw m68kasm::parser::syntax_error("Could not allocate memory for generic string.");
-
-	return m68kasm::parser::make_OPTION(std::move(string));
+	return m68kasm::parser::make_OPTION({{yytext, static_cast<std::size_t>(yyleng)}});
 }
 	YY_BREAK
 /* Make Bison signal a syntax error for unrecognised symbols */
 case 247:
 YY_RULE_SETUP
-#line 492 "lexical.l"
+#line 467 "lexical.l"
 throw m68kasm::parser::syntax_error(std::string("Invalid character '") + yytext + "'.");
 	YY_BREAK
 case 248:
 YY_RULE_SETUP
-#line 494 "lexical.l"
+#line 469 "lexical.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 3112 "lexical.cpp"
+#line 3087 "lexical.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -4239,6 +4214,6 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 494 "lexical.l"
+#line 469 "lexical.l"
 
 

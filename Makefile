@@ -24,8 +24,8 @@ syntactic.cpp syntactic.h: syntactic.y
 
 assemblers: clownassembler clownassembler_asm68k
 
-clownassembler_asm68k: frontend-asm68k.cpp io.cpp lexical.cpp options.cpp p2bin.cpp semantic.cpp strcmpci.cpp string.cpp string-stack.cpp substitute.cpp syntactic.cpp
+clownassembler_asm68k: frontend-asm68k.cpp io.cpp lexical.cpp options.cpp p2bin.cpp semantic.cpp strcmpci.cpp string-stack.cpp substitute.cpp syntactic.cpp
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
 
-clownassembler: frontend-custom.cpp io.cpp lexical.cpp options.cpp p2bin.cpp semantic.cpp strcmpci.cpp string.cpp string-stack.cpp substitute.cpp syntactic.cpp
+clownassembler: frontend-custom.cpp io.cpp lexical.cpp options.cpp p2bin.cpp semantic.cpp strcmpci.cpp string-stack.cpp substitute.cpp syntactic.cpp
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)

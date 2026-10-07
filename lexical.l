@@ -395,8 +395,6 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
  /* String. */
 (?:\"[^\"]*\")+ |
 (?:\'[^\']*\')+ {
-	String string;
-	StringView view;
 	size_t i, output_size;
 	char previous_character;
 
@@ -405,11 +403,10 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
-	StringView_Create(view, yytext + 1, yyleng - 2);
-	String_CreateBlank(string);
+	StringView view(yytext + 1, yyleng - 2);
+	std::string string;
 
-	if (!String_ResizeNoFill(string, StringView_Length(view)))
-		throw m68kasm::parser::syntax_error("Could not allocate memory for generic string.");
+	string.reserve(StringView_Length(view));
 
 	/* Copy string, turning escaped (paired) quotes into regular (lone) quotes. */
 	output_size = 0;
@@ -426,25 +423,18 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 		}
 
 		previous_character = character;
-		String_At(string, output_size++) = character;
+		string.push_back(character);
 	}
-
-	String_ResizeNoFill(string, output_size);
 
 	return m68kasm::parser::make_STRING(std::move(string));
 }
 
  /* File path (like a string, but it doesn't need to be wrapped in quotation marks). */
 <PATH>[^, \t;]([^,;]*[^, \t;])? {
-	String string;
-
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
-	if (!String_Create(string, yytext, yyleng))
-		throw m68kasm::parser::syntax_error("Could not allocate memory for generic string.");
-
-	return m68kasm::parser::make_STRING(std::move(string));
+	return m68kasm::parser::make_STRING({{yytext, static_cast<std::size_t>(yyleng)}});
 }
 
  /* Identifier, data register, or address register. */
@@ -458,33 +448,18 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 	else
 	{
 		/* Identifier. */
-		String string;
-
-		if (!String_Create(string, yytext, yyleng))
-			throw m68kasm::parser::syntax_error("Could not allocate memory for generic string.");
-
-		return m68kasm::parser::make_IDENTIFIER(std::move(string));
+		return m68kasm::parser::make_IDENTIFIER({{yytext, static_cast<std::size_t>(yyleng)}});
 	}
 }
 
  /* Local label. */
 [@\.][A-Za-z_0-9\?]+ {
-	String string;
-
-	if (!String_Create(string, yytext, yyleng))
-		throw m68kasm::parser::syntax_error("Could not allocate memory for generic string.");
-
-	return m68kasm::parser::make_LOCAL_IDENTIFIER(std::move(string));
+	return m68kasm::parser::make_LOCAL_IDENTIFIER({{yytext, static_cast<std::size_t>(yyleng)}});
 }
 
  /* Option. */
 <OPTIONS>[^ \t\r\n,]+ {
-	String string;
-
-	if (!String_Create(string, yytext, yyleng))
-		throw m68kasm::parser::syntax_error("Could not allocate memory for generic string.");
-
-	return m68kasm::parser::make_OPTION(std::move(string));
+	return m68kasm::parser::make_OPTION({{yytext, static_cast<std::size_t>(yyleng)}});
 }
 
  /* Make Bison signal a syntax error for unrecognised symbols */

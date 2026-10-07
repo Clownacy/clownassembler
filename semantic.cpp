@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <variant>
+#include <vector>
 
 #include "clowncommon/clowncommon.h"
 
@@ -139,7 +140,7 @@ typedef struct SemanticState_Macro
 	std::shared_ptr<SymbolDictionary> dictionary;
 	Substitute_State substitutions;
 	struct MacroCustomSubstituteSearch_Closure *closure;
-	String *argument_list;
+	std::vector<String> argument_list;
 	size_t total_arguments, total_arguments_at_start;
 	unsigned int starting_if_level;
 	unsigned int depth;
@@ -581,9 +582,16 @@ static void ExpandIdentifier(SemanticState *state, String &expanded_identifier, 
 	if (StringView_Empty(identifier) || (StringView_At(identifier, 0) != Options_Get(&state->options)->local_signifier))
 		String_CreateBlank(expanded_identifier);
 	else if (String_Empty(state->last_global_label))
-		String_CreateInternal(expanded_identifier, StringView_Data(identifier) + 1, StringView_Length(identifier) - 1, NULL, 0);
+	{
+		expanded_identifier.emplace(identifier.substr(1));
+		//String_CreateInternal(expanded_identifier, StringView_Data(identifier) + 1, StringView_Length(identifier) - 1, NULL, 0);
+	}
 	else
-		String_CreateAppendView(expanded_identifier, String_View(state->last_global_label), identifier);
+	{
+		expanded_identifier.emplace(*state->last_global_label);
+		*expanded_identifier += identifier;
+		//String_CreateAppendView(expanded_identifier, String_View(state->last_global_label), identifier);
+	}
 }
 
 static SymbolDictionary::Entry* LookupSymbol(SemanticState *state, StringView identifier, SymbolDictionary **dictionary)
@@ -1237,7 +1245,7 @@ template<typename SymbolType>
 static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, Expression expression);
 
 template<typename SymbolType>
-static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, Macro macro);
+static cc_bool AddIdentifierToSymbolTable(SemanticState *state, Macro macro);
 
 template<typename SymbolType>
 static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, SymbolSpecial::Type type);
@@ -1321,8 +1329,10 @@ cc_bool AddIdentifierToSymbolTable<SymbolExpressionConstant>(SemanticState *stat
 }
 
 template<>
-cc_bool AddIdentifierToSymbolTable<SymbolMacro>(SemanticState *state, const StringView &identifier, Macro macro)
+cc_bool AddIdentifierToSymbolTable<SymbolMacro>(SemanticState *state, Macro macro)
 {
+	const StringView &identifier = *macro.name;
+
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolMacro>(state, identifier, NULL);
 
 	if (symbol == NULL)
@@ -1386,7 +1396,7 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 		macro_state.source_line_list.head = NULL;
 		macro_state.source_line_list.tail = NULL;
 
-		AddIdentifierToSymbolTable<SymbolMacro>(state, identifier, std::move(macro));
+		AddIdentifierToSymbolTable<SymbolMacro>(state, std::move(macro));
 	}
 
 	/* Free all of this, in case we didn't get all the way to creating the macro and moving everything over. */
@@ -4721,7 +4731,7 @@ static cc_bool ReadSourceLineRaw(SemanticState *state, size_t line_buffer_write_
 	cc_bool data_read = cc_false;
 
 	/* Repeatedly read into the string until we've fit a whole line (or an error occurs). */
-	while (TextInput_fgets(&String_At(state->line_buffer, line_buffer_write_position), String_Capacity(state->line_buffer) + 1 - line_buffer_write_position, state->input_callbacks) != NULL)
+	while (TextInput_fgets(&String_At(state->line_buffer, line_buffer_write_position), String_Length(state->line_buffer) + 1 - line_buffer_write_position, state->input_callbacks) != NULL)
 	{
 		line_buffer_write_position += strlen(&String_At(state->line_buffer, line_buffer_write_position));
 
@@ -4751,11 +4761,11 @@ static cc_bool ReadSourceLineRaw(SemanticState *state, size_t line_buffer_write_
 		}
 
 		/* If the buffer is not full but there is no newline, then we must have reached the end of the file, so we can exit now. */
-		if (line_buffer_write_position != String_Capacity(state->line_buffer))
+		if (line_buffer_write_position != String_Length(state->line_buffer))
 			break;
 
 		/* If there the buffer is full and there is no newline, then the line must be longer than the buffer, so make the buffer bigger! */
-		String_Reserve(state->line_buffer, ((String_Capacity(state->line_buffer) + 1) * 2) - 1);
+		String_ResizeNoFill(state->line_buffer, ((String_Length(state->line_buffer) + 1) * 2) - 1);
 		/* Now loop back around and read more of the line! */
 	}
 
@@ -5511,7 +5521,9 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				{
 					--state->macro.total_arguments;
 					String_Destroy(state->macro.argument_list[0]);
-					memmove(state->macro.argument_list, state->macro.argument_list + 1, sizeof(*state->macro.argument_list) * state->macro.total_arguments);
+					for (unsigned int i = 0; i < state->macro.total_arguments; ++i)
+						state->macro.argument_list[i] = std::move(state->macro.argument_list[i + 1]);
+					state->macro.argument_list.pop_back();
 					PushMacroArgumentSubstitutions(state);
 				}
 			},
@@ -5764,7 +5776,7 @@ static void PerformSubstitutions(SemanticState* const state, String &string, con
 
 static cc_bool FindStringInSourceLine(const String &string, const size_t starting_position, StringView &view)
 {
-	char *start_pointer, *end_pointer;
+	const char *start_pointer, *end_pointer;
 
 	start_pointer = strpbrk(&String_At(string, starting_position), "'\"");
 
@@ -5871,7 +5883,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 			state->macro.dictionary->Init(Options_Get(&state->options)->case_insensitive);
 			Substitute_Initialise(&state->macro.substitutions);
 			state->macro.closure = &closure;
-			state->macro.argument_list = NULL;
+			state->macro.argument_list = {};
 			state->macro.total_arguments = 0;
 			state->macro.total_arguments_at_start = 0;
 			state->macro.starting_if_level = state->current_if_level;
@@ -5984,21 +5996,14 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 								break;
 
 							/* Add to argument list. */
-							{
-								String* const new_argument_list = (String*)realloc(state->macro.argument_list, sizeof(*state->macro.argument_list) * (state->macro.total_arguments + 1));
+							state->macro.argument_list.emplace_back();
+							String_CreateCopyView(state->macro.argument_list[state->macro.total_arguments], argument);
 
-								if (new_argument_list != NULL)
-								{
-									state->macro.argument_list = new_argument_list;
-									String_CreateCopyView(state->macro.argument_list[state->macro.total_arguments], argument);
+							if (StringView_Length(argument) != 0 && StringView_At(argument, 0) != '"' && StringView_At(argument, 0) != '\'' && Options_Get(&state->options)->case_insensitive)
+								String_ToLower(state->macro.argument_list[state->macro.total_arguments]);
 
-									if (StringView_Length(argument) != 0 && StringView_At(argument, 0) != '"' && StringView_At(argument, 0) != '\'' && Options_Get(&state->options)->case_insensitive)
-										String_ToLower(state->macro.argument_list[state->macro.total_arguments]);
-
-									++state->macro.total_arguments;
-									++state->macro.total_arguments_at_start;
-								}
-							}
+							++state->macro.total_arguments;
+							++state->macro.total_arguments_at_start;
 
 							break;
 						}
@@ -6069,14 +6074,10 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 			state->macro.dictionary.reset();
 
 			/* Destroy argument list. */
-			{
-				size_t i;
+			for (size_t i = 0; i < state->macro.total_arguments; ++i)
+				String_Destroy(state->macro.argument_list[i]);
 
-				for (i = 0; i < state->macro.total_arguments; ++i)
-					String_Destroy(state->macro.argument_list[i]);
-
-				delete state->macro.argument_list;
-			}
+			state->macro.argument_list.clear();
 		}
 	}
 

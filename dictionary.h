@@ -112,11 +112,9 @@ public:
 	cc_bool LookUpAndCreateIfNotExist(const StringView &identifier, Entry **entry_pointer)
 	{
 		// All of this crap to work-around C++ not having a decent `operator[]` before C++26... fuck me.
-		const std::string_view key{identifier.buffer, identifier.length};
+		auto it = internal->find(identifier);
 
-		auto it = internal->find(key);
-
-		auto &entry = it != internal->end() ? it->second : internal->emplace(std::piecewise_construct, std::forward_as_tuple(key), std::tuple<>()).first->second; // Nightmare Difficulty C++
+		auto &entry = it != internal->end() ? it->second : internal->emplace(std::piecewise_construct, std::forward_as_tuple(identifier), std::tuple<>()).first->second; // Nightmare Difficulty C++
 
 		if (entry_pointer != nullptr)
 			*entry_pointer = &entry;
@@ -126,9 +124,7 @@ public:
 
 	Entry* LookUp(const StringView &identifier)
 	{
-		const std::string_view key{identifier.buffer, identifier.length};
-
-		auto it = internal->find(key);
+		auto it = internal->find(identifier);
 
 		if (it == internal->end())
 			return nullptr;
@@ -138,7 +134,7 @@ public:
 
 	cc_bool Remove(const StringView &identifier)
 	{
-		auto it = internal->find(std::string_view{identifier.buffer, identifier.length});
+		auto it = internal->find(identifier);
 
 		if (it == internal->end())
 			return cc_false;
