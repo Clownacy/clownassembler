@@ -51,7 +51,7 @@ typedef struct Macro
 {
 	cc_bool is_short, uses_label;
 	String name;
-	IdentifierListNode *parameter_names;
+	IdentifierList parameter_names;
 	SourceLineList source_line_list;
 } Macro;
 
@@ -197,11 +197,8 @@ typedef struct SemanticState
 	};
 	struct ModeMacro
 	{
-		String name;
 		unsigned long line_number;
-		IdentifierList parameter_names;
-		SourceLineList source_line_list;
-		cc_bool is_short, uses_label;
+		Macro metadata;
 	};
 	struct ModeWhile
 	{
@@ -770,12 +767,7 @@ static void DestroySymbol(SymbolDictionary::Entry *dictionary_entry)
 			},
 			[&](SymbolMacro &symbol)
 			{
-				IdentifierList destroyed_list = {0};
-
-				/* We make up a sort of "fake list" for the purposes of calling DestroyIdentifierList, since it doesn't take an IdentifierListNode directly. */
-				destroyed_list.head = symbol.macro.parameter_names;
-				DestroyIdentifierList(&destroyed_list);
-
+				DestroyIdentifierList(&symbol.macro.parameter_names);
 				String_Destroy(symbol.macro.name);
 			},
 			/* Nothing to free. */
@@ -1302,7 +1294,7 @@ static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifi
 
 static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro_state)
 {
-	const StringView &identifier = String_View(macro_state.name);
+	const StringView &identifier = String_View(macro_state.metadata.name);
 
 	PurgeMacro(state, identifier, cc_true);
 
@@ -1314,24 +1306,16 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 	else if (!StringView_Empty(identifier))
 	{
 		/* Add the macro to the symbol table. */
-		Macro macro;
+		AddToSymbolTable(state, SymbolMacro{std::move(macro_state.metadata)});
 
-		macro.is_short = macro_state.is_short;
-		macro.uses_label = macro_state.uses_label;
-		String_CreateMove(macro.name, macro_state.name);
-
-		macro.parameter_names = macro_state.parameter_names.head;
-		macro_state.parameter_names.head = NULL;
-		macro_state.parameter_names.tail = NULL;
-
-		macro.source_line_list = std::move(macro_state.source_line_list);
-
-		AddToSymbolTable(state, SymbolMacro{std::move(macro)});
+		/* TODO: Remove this when `parameter_names` is a standard C++ container. */
+		macro_state.metadata.parameter_names.head = NULL;
+		macro_state.metadata.parameter_names.tail = NULL;
 	}
 
 	/* Free all of this, in case we didn't get all the way to creating the macro and moving everything over. */
-	DestroyIdentifierList(&macro_state.parameter_names);
-	String_Destroy(macro_state.name);
+	DestroyIdentifierList(&macro_state.metadata.parameter_names);
+	String_Destroy(macro_state.metadata.name);
 
 	/* Exit macro mode. */
 	state->mode.emplace<SemanticState::ModeNormal>();
@@ -4367,7 +4351,7 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 
 	const StringView blank_argument = STRING_VIEW_INITIALISER_BLANK;
 
-	for (parameter_name = state->macro.metadata->parameter_names, argument_index = 0; parameter_name != NULL; parameter_name = parameter_name->next, ++argument_index)
+	for (parameter_name = state->macro.metadata->parameter_names.head, argument_index = 0; parameter_name != NULL; parameter_name = parameter_name->next, ++argument_index)
 	{
 		SymbolDictionary::Entry *dictionary_entry;
 
@@ -4768,13 +4752,13 @@ static void ProcessMacro(SemanticState *state, StatementMacro *macro, const Stri
 	/* Enter MACRO mode. */
 	auto &mode = state->mode.emplace<SemanticState::ModeMacro>();
 
-	String_CreateCopyView(mode.name, label);
+	String_CreateCopyView(mode.metadata.name, label);
 	mode.line_number = state->location->line_number;
-	mode.parameter_names = macro->parameter_names;
+	mode.metadata.parameter_names = macro->parameter_names;
 	macro->parameter_names.head = NULL;
 	macro->parameter_names.tail = NULL;
-	mode.is_short = is_short;
-	mode.uses_label = macro->uses_label;
+	mode.metadata.is_short = is_short;
+	mode.metadata.uses_label = macro->uses_label;
 }
 
 static void ProcessIf(SemanticState *state, Expression *expression)
@@ -4934,7 +4918,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 				if (mode == nullptr)
 					SemanticError(state, "This stray ENDM has no preceeding MACRO.");
-				else if (mode->is_short)
+				else if (mode->metadata.is_short)
 					SemanticError(state, "ENDM cannot be used in a short macro.");
 				else
 					TerminateMacro(state, *mode);
@@ -6194,14 +6178,14 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 					if (StringView_CompareCStrCaseInsensitive(directive, "endm"))
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
-						if (macro_state.is_short)
+						if (macro_state.metadata.is_short)
 							SemanticError(state, "Short macros shouldn't use ENDM.");
 						else
 							ParseLine(state, label, directive_and_operands);
 					}
 					else
 					{
-						if (macro_state.is_short)
+						if (macro_state.metadata.is_short)
 						{
 							/* Short macros automatically terminate after one statement. */
 							const char first_nonwhitespace_character = String_At(*state->source_line, strspn(String_CStr(*state->source_line), " \t"));
@@ -6215,13 +6199,13 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 							}
 							else
 							{
-								AddToSourceLineList(state, macro_state.source_line_list, *state->source_line);
+								AddToSourceLineList(state, macro_state.metadata.source_line_list, *state->source_line);
 								TerminateMacro(state, macro_state);
 							}
 						}
 						else
 						{
-							AddToSourceLineList(state, macro_state.source_line_list, *state->source_line);
+							AddToSourceLineList(state, macro_state.metadata.source_line_list, *state->source_line);
 						}
 					}
 				},
