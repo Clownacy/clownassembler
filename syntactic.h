@@ -45,7 +45,7 @@
 #ifndef YY_M68KASM_SYNTACTIC_H_INCLUDED
 # define YY_M68KASM_SYNTACTIC_H_INCLUDED
 // "%code requires" blocks.
-#line 37 "syntactic.y"
+#line 38 "syntactic.y"
 
 
 #include <deque>
@@ -5779,11 +5779,11 @@ switch (yykind)
 
 
 // "%code provides" blocks.
-#line 636 "syntactic.y"
+#line 637 "syntactic.y"
 
 
-static cc_bool DoExpression(Expression *expression, ExpressionArithmetic1Operand::Type type, Expression *subexpression);
-static cc_bool DoExpression(Expression *expression, ExpressionArithmetic2Operand::Type type, Expression *left_expression, Expression *right_expression);
+static cc_bool DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression);
+static cc_bool DoExpression(Expression &expression, ExpressionArithmetic2Operand::Type type, Expression left_expression, Expression right_expression);
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
 

@@ -27,6 +27,7 @@
 %define api.token.raw
 %define api.token.constructor
 %define api.value.type variant
+%define api.value.automove 
 
 %param {void *scanner}
 
@@ -635,8 +636,8 @@ using Statement = std::variant<
 
 %code provides {
 
-static cc_bool DoExpression(Expression *expression, ExpressionArithmetic1Operand::Type type, Expression *subexpression);
-static cc_bool DoExpression(Expression *expression, ExpressionArithmetic2Operand::Type type, Expression *left_expression, Expression *right_expression);
+static cc_bool DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression);
+static cc_bool DoExpression(Expression &expression, ExpressionArithmetic2Operand::Type type, Expression left_expression, Expression right_expression);
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
 
@@ -993,11 +994,15 @@ statement
 	}
 	| DIRECTIVE_SUBSTR "," "," STRING
 	{
-		statement->emplace<StatementSubstr>(ExpressionNumber{1}, ExpressionNumber{String_Length($4)}, $4);
+		String string = $4;
+		const auto string_length = String_Length(string);
+		statement->emplace<StatementSubstr>(ExpressionNumber{1}, ExpressionNumber{string_length}, std::move(string));
 	}
 	| DIRECTIVE_SUBSTR expression "," "," STRING
 	{
-		statement->emplace<StatementSubstr>($2, ExpressionNumber{String_Length($5)}, $5);
+		String string = $5;
+		const auto string_length = String_Length(string);
+		statement->emplace<StatementSubstr>($2, ExpressionNumber{string_length}, std::move(string));
 	}
 	| DIRECTIVE_SUBSTR "," expression "," STRING
 	{
@@ -1808,60 +1813,72 @@ operand
 	}
 	| "(" ADDRESS_REGISTER "," data_or_address_register size ")"
 	{
+		const auto data_or_address_register = $4;
+
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.emplace<ExpressionNumber>(0);
 		$$.main_register = $2;
-		$$.index_register = $4 % 8;
+		$$.index_register = data_or_address_register % 8;
 		$$.size = $5;
-		$$.index_register_is_address_register = $4 / 8 != 0;
+		$$.index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
 	| expression "(" ADDRESS_REGISTER "," data_or_address_register size ")"
 	{
+		const auto data_or_address_register = $5;
+
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
 		$$.main_register = $3;
-		$$.index_register = $5 % 8;
+		$$.index_register = data_or_address_register % 8;
 		$$.size = $6;
-		$$.index_register_is_address_register = $5 / 8 !=0;
+		$$.index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
 	| "(" expression "," ADDRESS_REGISTER "," data_or_address_register size ")"
 	{
+		const auto data_or_address_register = $6;
+
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $2;
 		$$.main_register = $4;
-		$$.index_register = $6 % 8;
+		$$.index_register = data_or_address_register % 8;
 		$$.size = $7;
-		$$.index_register_is_address_register = $6 / 8 !=0;
+		$$.index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
 	| "(" ADDRESS_REGISTER "," data_or_address_register ")"
 	{
+		const auto data_or_address_register = $4;
+
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.emplace<ExpressionNumber>(0);
 		$$.main_register = $2;
-		$$.index_register = $4 % 8;
+		$$.index_register = data_or_address_register % 8;
 		$$.size = SIZE_WORD;
-		$$.index_register_is_address_register = $4 / 8 != 0;
+		$$.index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
 	| expression "(" ADDRESS_REGISTER "," data_or_address_register ")"
 	{
+		const auto data_or_address_register = $5;
+
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
 		$$.main_register = $3;
-		$$.index_register = $5 % 8;
+		$$.index_register = data_or_address_register % 8;
 		$$.size = SIZE_WORD;
-		$$.index_register_is_address_register = $5 / 8 !=0;
+		$$.index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
 	| "(" expression "," ADDRESS_REGISTER "," data_or_address_register ")"
 	{
+		const auto data_or_address_register = $6;
+
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $2;
 		$$.main_register = $4;
-		$$.index_register = $6 % 8;
+		$$.index_register = data_or_address_register % 8;
 		$$.size = SIZE_WORD;
-		$$.index_register_is_address_register = $6 / 8 !=0;
+		$$.index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
 	| expression "(" PROGRAM_COUNTER ")"
 	{
@@ -1880,54 +1897,66 @@ operand
 	}
 	| "(" PROGRAM_COUNTER "," data_or_address_register size ")"
 	{
+		const auto data_or_address_register = $4;
+
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.emplace<ExpressionNumber>(0);
-		$$.index_register = $4 % 8;
+		$$.index_register = data_or_address_register % 8;
 		$$.size = $5;
-		$$.index_register_is_address_register = $4 / 8 != 0;
+		$$.index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
 	| expression "(" PROGRAM_COUNTER "," data_or_address_register size ")"
 	{
+		const auto data_or_address_register = $5;
+
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
-		$$.index_register = $5 % 8;
+		$$.index_register = data_or_address_register % 8;
 		$$.size = $6;
-		$$.index_register_is_address_register = $5 / 8 != 0;
+		$$.index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
 	| "(" expression "," PROGRAM_COUNTER "," data_or_address_register size ")"
 	{
+		const auto data_or_address_register = $6;
+
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $2;
-		$$.index_register = $6 % 8;
+		$$.index_register = data_or_address_register % 8;
 		$$.size = $7;
-		$$.index_register_is_address_register = $6 / 8 != 0;
+		$$.index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
 	| "(" PROGRAM_COUNTER "," data_or_address_register ")"
 	{
+		const auto data_or_address_register = $4;
+
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.emplace<ExpressionNumber>(0);
-		$$.index_register = $4 % 8;
+		$$.index_register = data_or_address_register % 8;
 		$$.size = SIZE_WORD;
-		$$.index_register_is_address_register = $4 / 8 != 0;
+		$$.index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
 	| expression "(" PROGRAM_COUNTER "," data_or_address_register ")"
 	{
+		const auto data_or_address_register = $5;
+
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
-		$$.index_register = $5 % 8;
+		$$.index_register = data_or_address_register % 8;
 		$$.size = SIZE_WORD;
-		$$.index_register_is_address_register = $5 / 8 != 0;
+		$$.index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
 	| "(" expression "," PROGRAM_COUNTER "," data_or_address_register ")"
 	{
+		const auto data_or_address_register = $6;
+
 		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $2;
-		$$.index_register = $6 % 8;
+		$$.index_register = data_or_address_register % 8;
 		$$.size = SIZE_WORD;
-		$$.index_register_is_address_register = $6 / 8 != 0;
+		$$.index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
 	/* Literal */
 	| "#" expression
@@ -1974,13 +2003,15 @@ operand
 	/* Register list */
 	| register_list
 	{
+		const auto register_list = $1;
+
 		/* Neat trick to check if only one bit is set (yes, I know that it evaluates to true for 0, but that doesn't matter here). */
-		if (($1 & ($1 - 1)) == 0)
+		if ((register_list & (register_list - 1)) == 0)
 		{
 			/* This is a single register. */
 			$$.main_register = 0;
 
-			while (($1 & (1 << $$.main_register)) == 0)
+			while ((register_list & (1 << $$.main_register)) == 0)
 				++$$.main_register;
 
 			if ($$.main_register >= 8)
@@ -1997,7 +2028,7 @@ operand
 		{
 			/* This is multiple registers. */
 			$$.type = OPERAND_REGISTER_LIST;
-			$$.main_register = $1; /* Such a hack... */
+			$$.main_register = register_list; /* Such a hack... */
 		}
 	}
 	;
@@ -2020,19 +2051,22 @@ register_span
 	}
 	| data_or_address_register "-" data_or_address_register
 	{
+		const auto first_data_or_address_register = $1;
+		const auto second_data_or_address_register = $3;
+
 		unsigned long start;
 		unsigned long end;
 		unsigned long i;
 
-		if ($1 < $3)
+		if (first_data_or_address_register < second_data_or_address_register)
 		{
-			start = $1;
-			end = $3;
+			start = first_data_or_address_register;
+			end = second_data_or_address_register;
 		}
 		else
 		{
-			start = $3;
-			end = $1;
+			start = second_data_or_address_register;
+			end = first_data_or_address_register;
 		}
 
 		$$ = 0;
@@ -2067,13 +2101,13 @@ expression
 	/* This is an assembler extension: asm68k doesn't support this. */
 	| expression LOGICAL_AND expression1
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::LOGICAL_AND, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::LOGICAL_AND, $1, $3))
 			YYNOMEM;
 	}
 	/* This is an assembler extension: asm68k doesn't support this. */
 	| expression LOGICAL_OR expression1
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::LOGICAL_OR, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::LOGICAL_OR, $1, $3))
 			YYNOMEM;
 	}
 	;
@@ -2085,17 +2119,17 @@ expression1
 	}
 	| expression1 "=" expression2
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::EQUALITY, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::EQUALITY, $1, $3))
 			YYNOMEM;
 	}
 	| expression1 EQUALITY expression2
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::EQUALITY, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::EQUALITY, $1, $3))
 			YYNOMEM;
 	}
 	| expression1 INEQUALITY expression2
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::INEQUALITY, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::INEQUALITY, $1, $3))
 			YYNOMEM;
 	}
 	;
@@ -2107,22 +2141,22 @@ expression2
 	}
 	| expression2 "<" expression3
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::LESS_THAN, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::LESS_THAN, $1, $3))
 			YYNOMEM;
 	}
 	| expression2 LESS_OR_EQUAL expression3
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::LESS_OR_EQUAL, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::LESS_OR_EQUAL, $1, $3))
 			YYNOMEM;
 	}
 	| expression2 ">" expression3
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::MORE_THAN, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::MORE_THAN, $1, $3))
 			YYNOMEM;
 	}
 	| expression2 MORE_OR_EQUAL expression3
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::MORE_OR_EQUAL, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::MORE_OR_EQUAL, $1, $3))
 			YYNOMEM;
 	}
 	;
@@ -2134,12 +2168,12 @@ expression3
 	}
 	| expression3 "+" expression4
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::ADD, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::ADD, $1, $3))
 			YYNOMEM;
 	}
 	| expression3 "-" expression4
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::SUBTRACT, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::SUBTRACT, $1, $3))
 			YYNOMEM;
 	}
 	;
@@ -2151,17 +2185,17 @@ expression4
 	}
 	| expression4 "*" expression5
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::MULTIPLY, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::MULTIPLY, $1, $3))
 			YYNOMEM;
 	}
 	| expression4 "/" expression5
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::DIVIDE, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::DIVIDE, $1, $3))
 			YYNOMEM;
 	}
 	| expression4 "%" expression5
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::MODULO, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::MODULO, $1, $3))
 			YYNOMEM;
 	}
 	;
@@ -2173,22 +2207,22 @@ expression5
 	}
 	| expression5 "&" expression6
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::BITWISE_AND, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::BITWISE_AND, $1, $3))
 			YYNOMEM;
 	}
 	| expression5 "!" expression6
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::BITWISE_OR, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::BITWISE_OR, $1, $3))
 			YYNOMEM;
 	}
 	| expression5 "|" expression6
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::BITWISE_OR, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::BITWISE_OR, $1, $3))
 			YYNOMEM;
 	}
 	| expression5 "^" expression6
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::BITWISE_XOR, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::BITWISE_XOR, $1, $3))
 			YYNOMEM;
 	}
 	;
@@ -2200,12 +2234,12 @@ expression6
 	}
 	| expression6 LEFT_SHIFT expression7
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::LEFT_SHIFT, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::LEFT_SHIFT, $1, $3))
 			YYNOMEM;
 	}
 	| expression6 RIGHT_SHIFT expression7
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic2Operand::Type::RIGHT_SHIFT, &$1, &$3))
+		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::RIGHT_SHIFT, $1, $3))
 			YYNOMEM;
 	}
 	;
@@ -2221,18 +2255,18 @@ expression7
 	}
 	| "-" expression7
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic1Operand::Type::NEGATE, &$2))
+		if (!DoExpression($$, ExpressionArithmetic1Operand::Type::NEGATE, $2))
 			YYNOMEM;
 	}
 	| "~" expression7
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic1Operand::Type::BITWISE_NOT, &$2))
+		if (!DoExpression($$, ExpressionArithmetic1Operand::Type::BITWISE_NOT, $2))
 			YYNOMEM;
 	}
 	/* This is an assembler extension: asm68k doesn't support this. */
 	| "!" expression7
 	{
-		if (!DoExpression(&$$, ExpressionArithmetic1Operand::Type::LOGICAL_NOT, &$2))
+		if (!DoExpression($$, ExpressionArithmetic1Operand::Type::LOGICAL_NOT, $2))
 			YYNOMEM;
 	}
 	;
@@ -2270,9 +2304,11 @@ identifier
 	| local_identifier
 	| identifier local_identifier
 	{
-		const cc_bool success = String_CreateAppend($$, $1, $2);
-		String_Destroy($1);
-		String_Destroy($2);
+		auto string_a = $1;
+		auto string_b = $2;
+		const cc_bool success = String_CreateAppend($$, string_a, string_b);
+		String_Destroy(string_a);
+		String_Destroy(string_b);
 
 		if (!success)
 			YYNOMEM;
@@ -2369,38 +2405,38 @@ string
 
 %%
 
-static cc_bool DoExpression(Expression *expression, ExpressionArithmetic1Operand::Type type, Expression *subexpression)
+static cc_bool DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression)
 {
 	Expression *subexpression_copy = new Expression;
 
 	if (subexpression_copy == NULL)
 	{
-		DestroyExpression(subexpression);
+		DestroyExpression(&subexpression);
 		return cc_false;
 	}
 
-	*subexpression_copy = std::move(*subexpression);
+	*subexpression_copy = std::move(subexpression);
 
-	expression->emplace<ExpressionArithmetic1Operand>(type, subexpression_copy);
+	expression.emplace<ExpressionArithmetic1Operand>(type, subexpression_copy);
 
 	return cc_true;
 }
 
-static cc_bool DoExpression(Expression *expression, ExpressionArithmetic2Operand::Type type, Expression *left_expression, Expression *right_expression)
+static cc_bool DoExpression(Expression &expression, ExpressionArithmetic2Operand::Type type, Expression left_expression, Expression right_expression)
 {
 	Expression *subexpressions = new Expression[2];
 
 	if (subexpressions == NULL)
 	{
-		DestroyExpression(left_expression);
-		DestroyExpression(right_expression);
+		DestroyExpression(&left_expression);
+		DestroyExpression(&right_expression);
 		return cc_false;
 	}
 
-	subexpressions[0] = std::move(*left_expression);
-	subexpressions[1] = std::move(*right_expression);
+	subexpressions[0] = std::move(left_expression);
+	subexpressions[1] = std::move(right_expression);
 
-	expression->emplace<ExpressionArithmetic2Operand>(type, subexpressions);
+	expression.emplace<ExpressionArithmetic2Operand>(type, subexpressions);
 
 	return cc_true;
 }
