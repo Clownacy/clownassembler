@@ -9,8 +9,6 @@ add_library(clownassembler_core STATIC
 	"io.h"
 	"lexical.cpp"
 	"lexical.h"
-	"options.cpp"
-	"options.h"
 	"p2bin.cpp"
 	"p2bin.h"
 	"semantic.cpp"
