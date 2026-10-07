@@ -36,6 +36,7 @@
 
 %code requires {
 
+#include <deque>
 #include <variant>
 
 #include "clowncommon/clowncommon.h"
@@ -43,13 +44,6 @@
 
 /* Temporary junk! */
 #define YYNOMEM YYERROR
-
-#define CREATE_LIST_TYPE(TYPE)\
-typedef struct TYPE\
-{\
-	TYPE##Node *head;\
-	TYPE##Node *tail;\
-} TYPE
 
 typedef enum Size
 {
@@ -336,16 +330,8 @@ typedef struct ExpressionListNode
 	Expression expression;
 } ExpressionListNode;
 
-CREATE_LIST_TYPE(ExpressionList);
-
-typedef struct IdentifierListNode
-{
-	struct IdentifierListNode *next;
-
-	String identifier;
-} IdentifierListNode;
-
-CREATE_LIST_TYPE(IdentifierList);
+using ExpressionList = std::deque<Expression>;
+using IdentifierList = std::deque<String>;
 
 typedef struct Opcode
 {
@@ -653,7 +639,6 @@ static cc_bool DoExpression(Expression *expression, ExpressionArithmetic1Operand
 static cc_bool DoExpression(Expression *expression, ExpressionArithmetic2Operand::Type type, Expression *left_expression, Expression *right_expression);
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
-void DestroyIdentifierList(IdentifierList *list);
 
 #define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner)
 
@@ -671,7 +656,6 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message);
 void m68kasm_warning_pedantic(void *scanner, Statement *statement, const char *message);
 void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
-static void DestroyExpressionList(ExpressionList *list);
 static void DestroyOperand(Operand *operand);
 static void DestroyStatementInstruction(StatementInstruction *instruction);
 
@@ -1074,8 +1058,6 @@ statement
 	| DIRECTIVE_INFORM expression "," STRING "," expression_list
 	{
 		/* TODO - parameters */
-		DestroyExpressionList(&$6);
-
 		statement->emplace<StatementInform>($2, $4);
 	}
 	| DIRECTIVE_FAIL
@@ -1177,135 +1159,39 @@ statement
 expression_list
 	: expression
 	{
-		ExpressionListNode *node = new ExpressionListNode;
-
-		if (node == NULL)
-		{
-			DestroyExpression(&$1);
-			YYNOMEM;
-		}
-		else
-		{
-			node->expression = $1;
-			node->next = NULL;
-		}
-
-		$$.head = $$.tail = node;
+		$$.emplace_back(std::move($1));
 	}
 	| expression_list "," expression
 	{
-		ExpressionListNode *node = new ExpressionListNode;
+		$$ = std::move($1);
 
-		$$ = $1;
-
-		if (node == NULL)
-		{
-			DestroyExpressionList(&$1);
-			DestroyExpression(&$3);
-			YYNOMEM;
-		}
-		else
-		{
-			node->expression = $3;
-			node->next = NULL;
-
-			if ($$.head == NULL)
-				$$.head = node;
-			else
-				((ExpressionListNode*)$$.tail)->next = node;
-
-			$$.tail = node;
-		}
+		$$.emplace_back(std::move($3));
 	}
 	;
 
 identifier_list
 	: IDENTIFIER
 	{
-		IdentifierListNode *node = new IdentifierListNode;
-
-		if (node == NULL)
-		{
-			String_Destroy($1);
-			YYNOMEM;
-		}
-		else
-		{
-			node->identifier = $1;
-			node->next = NULL;
-		}
-
-		$$.head = $$.tail = node;
+		$$.emplace_back(std::move($1));
 	}
 	| identifier_list "," IDENTIFIER
 	{
-		IdentifierListNode *node = new IdentifierListNode;
+		$$ = std::move($1);
 
-		$$ = $1;
-
-		if (node == NULL)
-		{
-			DestroyIdentifierList(&$1);
-			String_Destroy($3);
-			YYNOMEM;
-		}
-		else
-		{
-			node->identifier = $3;
-			node->next = NULL;
-
-			if ($$.head == NULL)
-				$$.head = node;
-			else
-				((IdentifierListNode*)$$.tail)->next = node;
-
-			$$.tail = node;
-		}
+		$$.emplace_back(std::move($3));
 	}
 	;
 
 option_list
 	: OPTION
 	{
-		IdentifierListNode *node = new IdentifierListNode;
-
-		if (node == NULL)
-		{
-			String_Destroy($1);
-			YYNOMEM;
-		}
-		else
-		{
-			node->identifier = $1;
-			node->next = NULL;
-		}
-
-		$$.head = $$.tail = node;
+		$$.emplace_back(std::move($1));
 	}
 	| option_list "," OPTION
 	{
-		IdentifierListNode *node = new IdentifierListNode;
+		$$ = std::move($1);
 
-		$$ = $1;
-
-		if (node == NULL)
-		{
-			DestroyIdentifierList(&$1);
-			String_Destroy($3);
-			YYNOMEM;
-		}
-		else
-		{
-			node->identifier = $3;
-			node->next = NULL;
-
-			if ($$.head == NULL)
-				$$.head = node;
-			else
-				((IdentifierListNode*)$$.tail)->next = node;
-
-			$$.tail = node;
-		}
+		$$.emplace_back(std::move($3));
 	}
 	;
 
@@ -2580,38 +2466,6 @@ void DestroyExpression(Expression *expression)
 	expression->emplace<ExpressionNumber>(0);
 }
 
-void DestroyIdentifierList(IdentifierList *list)
-{
-	IdentifierListNode *node = list->head;
-
-	while (node != NULL)
-	{
-		IdentifierListNode* const next_node = node->next;
-
-		String_Destroy(node->identifier);
-
-		delete node;
-
-		node = next_node;
-	}
-}
-
-static void DestroyExpressionList(ExpressionList *list)
-{
-	ExpressionListNode *node = list->head;
-
-	while (node != NULL)
-	{
-		ExpressionListNode* const next_node = node->next;
-
-		DestroyExpression(&node->expression);
-
-		delete node;
-
-		node = next_node;
-	}
-}
-
 static void DestroyOperand(Operand *operand)
 {
 	switch (operand->type)
@@ -2673,7 +2527,6 @@ void DestroyStatement(Statement *statement)
 			},
 			[](StatementDc &statement)
 			{
-				DestroyExpressionList(&statement.values);
 			},
 			[](StatementDcb &statement)
 			{
@@ -2702,11 +2555,9 @@ void DestroyStatement(Statement *statement)
 			},
 			[](StatementMacro &statement)
 			{
-				DestroyIdentifierList(&statement.parameter_names);
 			},
 			[](StatementMacroS &statement)
 			{
-				DestroyIdentifierList(&statement.macro.parameter_names);
 			},
 			[](StatementEqu &statement)
 			{
@@ -2782,11 +2633,9 @@ void DestroyStatement(Statement *statement)
 			},
 			[](StatementOpt &statement)
 			{
-				DestroyIdentifierList(&statement.options);
 			},
 			[](StatementLocal &statement)
 			{
-				DestroyIdentifierList(&statement.identifiers);
 			}
 		}, *statement
 	);

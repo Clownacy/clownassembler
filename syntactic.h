@@ -48,6 +48,7 @@
 #line 37 "syntactic.y"
 
 
+#include <deque>
 #include <variant>
 
 #include "clowncommon/clowncommon.h"
@@ -55,13 +56,6 @@
 
 /* Temporary junk! */
 #define YYNOMEM YYERROR
-
-#define CREATE_LIST_TYPE(TYPE)\
-typedef struct TYPE\
-{\
-	TYPE##Node *head;\
-	TYPE##Node *tail;\
-} TYPE
 
 typedef enum Size
 {
@@ -348,16 +342,8 @@ typedef struct ExpressionListNode
 	Expression expression;
 } ExpressionListNode;
 
-CREATE_LIST_TYPE(ExpressionList);
-
-typedef struct IdentifierListNode
-{
-	struct IdentifierListNode *next;
-
-	String identifier;
-} IdentifierListNode;
-
-CREATE_LIST_TYPE(IdentifierList);
+using ExpressionList = std::deque<Expression>;
+using IdentifierList = std::deque<String>;
 
 typedef struct Opcode
 {
@@ -658,7 +644,7 @@ using Statement = std::variant<
 >;
 
 
-#line 662 "syntactic.h"
+#line 648 "syntactic.h"
 
 
 # include <cstdlib> // std::abort
@@ -802,7 +788,7 @@ using Statement = std::variant<
 
 #line 25 "syntactic.y"
 namespace m68kasm {
-#line 806 "syntactic.h"
+#line 792 "syntactic.h"
 
 
 
@@ -5789,23 +5775,22 @@ switch (yykind)
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 5793 "syntactic.h"
+#line 5779 "syntactic.h"
 
 
 // "%code provides" blocks.
-#line 650 "syntactic.y"
+#line 636 "syntactic.y"
 
 
 static cc_bool DoExpression(Expression *expression, ExpressionArithmetic1Operand::Type type, Expression *subexpression);
 static cc_bool DoExpression(Expression *expression, ExpressionArithmetic2Operand::Type type, Expression *left_expression, Expression *right_expression);
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
-void DestroyIdentifierList(IdentifierList *list);
 
 #define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner)
 
 
-#line 5809 "syntactic.h"
+#line 5794 "syntactic.h"
 
 
 #endif // !YY_M68KASM_SYNTACTIC_H_INCLUDED

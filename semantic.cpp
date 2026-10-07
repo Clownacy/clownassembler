@@ -767,7 +767,6 @@ static void DestroySymbol(SymbolDictionary::Entry *dictionary_entry)
 			},
 			[&](SymbolMacro &symbol)
 			{
-				DestroyIdentifierList(&symbol.macro.parameter_names);
 				String_Destroy(symbol.macro.name);
 			},
 			/* Nothing to free. */
@@ -1307,14 +1306,9 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 	{
 		/* Add the macro to the symbol table. */
 		AddToSymbolTable(state, SymbolMacro{std::move(macro_state.metadata)});
-
-		/* TODO: Remove this when `parameter_names` is a standard C++ container. */
-		macro_state.metadata.parameter_names.head = NULL;
-		macro_state.metadata.parameter_names.tail = NULL;
 	}
 
 	/* Free all of this, in case we didn't get all the way to creating the macro and moving everything over. */
-	DestroyIdentifierList(&macro_state.metadata.parameter_names);
 	String_Destroy(macro_state.metadata.name);
 
 	/* Exit macro mode. */
@@ -4346,16 +4340,13 @@ static void PushSubstitute(SemanticState* const state, const StringView &identif
 
 static void PushMacroArgumentSubstitutions(SemanticState* const state)
 {
-	const IdentifierListNode *parameter_name;
-	size_t argument_index;
-
 	const StringView blank_argument = STRING_VIEW_INITIALISER_BLANK;
 
-	for (parameter_name = state->macro.metadata->parameter_names.head, argument_index = 0; parameter_name != NULL; parameter_name = parameter_name->next, ++argument_index)
+	for (size_t argument_index = 0; argument_index < state->macro.metadata->parameter_names.size(); ++argument_index)
 	{
 		SymbolDictionary::Entry *dictionary_entry;
 
-		const StringView &parameter = String_View(parameter_name->identifier);
+		const StringView &parameter = String_View(state->macro.metadata->parameter_names[argument_index]);
 		const StringView &argument = argument_index >= state->macro.total_arguments ? blank_argument : String_View(state->macro.argument_list[argument_index]);
 
 		if (!state->macro.dictionary->LookUpAndCreateIfNotExist(parameter, &dictionary_entry))
@@ -4449,14 +4440,12 @@ static cc_bool ShouldPerformAutomaticEven(SemanticState* const state, const Size
 
 static void ProcessDc(SemanticState *state, StatementDc *dc)
 {
-	ExpressionListNode *expression_list_node;
-
 	if (ShouldPerformAutomaticEven(state, dc->size))
 		PerformEven(state);
 
-	for (expression_list_node = dc->values.head; expression_list_node != NULL; expression_list_node = expression_list_node->next)
+	for (auto &expression : dc->values)
 	{
-		const auto expression_string = std::get_if<ExpressionString>(&expression_list_node->expression);
+		const auto expression_string = std::get_if<ExpressionString>(&expression);
 
 		if (expression_string != nullptr && (dc->size == SIZE_BYTE || dc->size == SIZE_SHORT))
 		{
@@ -4474,7 +4463,7 @@ static void ProcessDc(SemanticState *state, StatementDc *dc)
 			/* Update the program counter symbol in between values, to keep it up to date. */
 			state->program_counter_of_expression = state->program_counter;
 
-			if (!ResolveExpression(state, &expression_list_node->expression, &value, cc_true))
+			if (!ResolveExpression(state, &expression, &value, cc_true))
 				value = 0;
 
 			OutputDcValue(state, dc->size, value);
@@ -4754,9 +4743,7 @@ static void ProcessMacro(SemanticState *state, StatementMacro *macro, const Stri
 
 	String_CreateCopyView(mode.metadata.name, label);
 	mode.line_number = state->location->line_number;
-	mode.metadata.parameter_names = macro->parameter_names;
-	macro->parameter_names.head = NULL;
-	macro->parameter_names.tail = NULL;
+	mode.metadata.parameter_names = std::move(macro->parameter_names);
 	mode.metadata.is_short = is_short;
 	mode.metadata.uses_label = macro->uses_label;
 }
@@ -5322,67 +5309,65 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			},
 			[&](StatementOpt &statement)
 			{
-				const IdentifierListNode *option;
-
-				for (option = statement.options.head; option != NULL; option = option->next)
+				for (const auto &option : statement.options)
 				{
 					/* TODO: A lot of these are unimplemented... */
-					if (String_CompareCStrCaseInsensitive(option->identifier, "ae+"))
+					if (String_CompareCStrCaseInsensitive(option, "ae+"))
 						Options_Get(&state->options)->automatic_even = cc_true;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "ae-"))
+					else if (String_CompareCStrCaseInsensitive(option, "ae-"))
 						Options_Get(&state->options)->automatic_even = cc_false;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "an+"))
+					else if (String_CompareCStrCaseInsensitive(option, "an+"))
 						;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "an-"))
+					else if (String_CompareCStrCaseInsensitive(option, "an-"))
 						;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "c+"))
+					else if (String_CompareCStrCaseInsensitive(option, "c+"))
 						Options_Get(&state->options)->case_insensitive = cc_false;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "c-"))
+					else if (String_CompareCStrCaseInsensitive(option, "c-"))
 						Options_Get(&state->options)->case_insensitive = cc_true;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "d+"))
+					else if (String_CompareCStrCaseInsensitive(option, "d+"))
 						Options_Get(&state->options)->equ_set_descope_local_labels = cc_true;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "d-"))
+					else if (String_CompareCStrCaseInsensitive(option, "d-"))
 						Options_Get(&state->options)->equ_set_descope_local_labels = cc_false;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "e+"))
+					else if (String_CompareCStrCaseInsensitive(option, "e+"))
 						;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "e-"))
+					else if (String_CompareCStrCaseInsensitive(option, "e-"))
 						;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "l+"))
+					else if (String_CompareCStrCaseInsensitive(option, "l+"))
 						Options_Get(&state->options)->local_signifier = '.';
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "l-"))
+					else if (String_CompareCStrCaseInsensitive(option, "l-"))
 						Options_Get(&state->options)->local_signifier = '@';
-					else if (String_Length(option->identifier) == 2 && (String_At(option->identifier, 0) == 'l' || String_At(option->identifier, 0) == 'L'))
-						Options_Get(&state->options)->local_signifier = String_At(option->identifier, 1);
-					/*else if (String_CompareCStrCaseInsensitive(option->identifier, "s+"))
+					else if (String_Length(option) == 2 && (String_At(option, 0) == 'l' || String_At(option, 0) == 'L'))
+						Options_Get(&state->options)->local_signifier = String_At(option, 1);
+					/*else if (String_CompareCStrCaseInsensitive(option, "s+"))
 						;*/
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "s-"))
+					else if (String_CompareCStrCaseInsensitive(option, "s-"))
 						;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "m+"))
+					else if (String_CompareCStrCaseInsensitive(option, "m+"))
 						Options_Get(&state->options)->expand_all_macros = cc_true;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "m-"))
+					else if (String_CompareCStrCaseInsensitive(option, "m-"))
 						Options_Get(&state->options)->expand_all_macros = cc_false;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "oz+"))
+					else if (String_CompareCStrCaseInsensitive(option, "oz+"))
 						Options_Get(&state->options)->optimisation.zero_displacement = cc_true;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "oz-"))
+					else if (String_CompareCStrCaseInsensitive(option, "oz-"))
 						Options_Get(&state->options)->optimisation.zero_displacement = cc_false;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "v+"))
+					else if (String_CompareCStrCaseInsensitive(option, "v+"))
 						Options_Get(&state->options)->output_local_labels_to_sym_file = cc_true;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "v-"))
+					else if (String_CompareCStrCaseInsensitive(option, "v-"))
 						Options_Get(&state->options)->output_local_labels_to_sym_file = cc_false;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "w+"))
+					else if (String_CompareCStrCaseInsensitive(option, "w+"))
 						Options_Get(&state->options)->warnings_enabled = cc_true;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "w-"))
+					else if (String_CompareCStrCaseInsensitive(option, "w-"))
 						Options_Get(&state->options)->warnings_enabled = cc_false;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "wp+"))
+					else if (String_CompareCStrCaseInsensitive(option, "wp+"))
 						Options_Get(&state->options)->pedantic_warnings_enabled = cc_true;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "wp-"))
+					else if (String_CompareCStrCaseInsensitive(option, "wp-"))
 						Options_Get(&state->options)->pedantic_warnings_enabled = cc_false;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "ws+"))
+					else if (String_CompareCStrCaseInsensitive(option, "ws+"))
 						;
-					else if (String_CompareCStrCaseInsensitive(option->identifier, "ws-"))
+					else if (String_CompareCStrCaseInsensitive(option, "ws-"))
 						;
 					else
-						SemanticWarning(state, "Unrecognised option '%s'.", String_CStr(option->identifier));
+						SemanticWarning(state, "Unrecognised option '%s'.", String_CStr(option));
 				}
 			},
 			[&](StatementPushP &statement)
@@ -5438,10 +5423,8 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				}
 				else
 				{
-					const IdentifierListNode *list_entry;
-
-					for (list_entry = statement.identifiers.head; list_entry != NULL; list_entry = list_entry->next)
-						if (!state->macro.dictionary->LookUpAndCreateIfNotExist(String_View(list_entry->identifier), NULL))
+					for (const auto &identifier : statement.identifiers)
+						if (!state->macro.dictionary->LookUpAndCreateIfNotExist(String_View(identifier), NULL))
 							OutOfMemoryError(state);
 				}
 			},
