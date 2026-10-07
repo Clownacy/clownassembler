@@ -144,7 +144,7 @@ typedef struct SemanticState
 	const TextOutput *error_callbacks;
 
 	/* Global stuff. */
-	SymbolDictionary dictionary;
+	std::optional<SymbolDictionary> dictionary;
 	String last_global_label;
 	std::deque<Location> location;
 	yyscan_t flex_state;
@@ -594,9 +594,9 @@ static SymbolDictionary::Entry* LookupSymbol(SemanticState *state, StringView id
 	if (dictionary_entry == NULL)
 	{
 		if (dictionary != NULL)
-			*dictionary = &state->dictionary;
+			*dictionary = &*state->dictionary;
 
-		dictionary_entry = state->dictionary.LookUp(identifier);
+		dictionary_entry = state->dictionary->LookUp(identifier);
 
 		if (dictionary_entry == NULL)
 			if (dictionary != NULL)
@@ -630,9 +630,9 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *s
 	if (dictionary_entry == NULL)
 	{
 		if (dictionary != NULL)
-			*dictionary = &state->dictionary;
+			*dictionary = &*state->dictionary;
 
-		if (!state->dictionary.LookUpAndCreateIfNotExist(identifier, &dictionary_entry))
+		if (!state->dictionary->LookUpAndCreateIfNotExist(identifier, &dictionary_entry))
 		{
 			OutOfMemoryError(state);
 			dictionary_entry = NULL;
@@ -764,16 +764,6 @@ static void DestroySymbol(SymbolDictionary::Entry *dictionary_entry)
 	);
 
 	dictionary_entry->emplace<SymbolNone>();
-}
-
-/* Iterates over the guts of the dictionary to delete all of the node innards before calling SymbolDictionary::Deinit */
-/* Basically a hack until the "destructor" method put as a TODO in dictionary.h is implemented, pretty much */
-static void SymbolDictionary_Deinit(SymbolDictionary *state)
-{
-	for (auto &entry : *state->internal)
-		DestroySymbol(&entry.second);
-
-	state->Deinit();
 }
 
 static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, cc_bool fold)
@@ -4299,7 +4289,7 @@ static void PushSubstitute(SemanticState* const state, const StringView &identif
 				{
 					auto &symbol = dictionary_entry->emplace<SymbolStringConstant>();
 					String_CreateCopyView(symbol.value, value);
-					Substitute_PushSubstitute(dictionary == &state->dictionary ? &state->substitutions : &state->macro.substitutions, identifier, symbol.value);
+					Substitute_PushSubstitute(dictionary == &*state->dictionary ? &state->substitutions : &state->macro.substitutions, identifier, symbol.value);
 				},
 				[&](SymbolStringConstant &symbol)
 				{
@@ -5689,7 +5679,8 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 	else
 	{
 		state->macro.metadata = macro;
-		state->macro.dictionary = std::make_shared<SymbolDictionary>();
+		/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
+		state->macro.dictionary = std::make_shared<SymbolDictionary>(Options_Get(&state->options)->case_insensitive);
 
 		if (state->macro.dictionary == NULL)
 		{
@@ -5697,8 +5688,6 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 		}
 		else
 		{
-			/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
-			state->macro.dictionary->Init(Options_Get(&state->options)->case_insensitive);
 			Substitute_Initialise(&state->macro.substitutions);
 			state->macro.closure = &closure;
 			state->macro.argument_list = {};
@@ -5877,11 +5866,6 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 			}
 
 			Substitute_Deinitialise(&state->macro.substitutions);
-			if (state->macro.dictionary.use_count() == 1)
-				state->macro.dictionary->Deinit();
-			state->macro.dictionary.reset();
-
-			state->macro.argument_list.clear();
 		}
 	}
 
@@ -6271,113 +6255,103 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	state.mode.emplace<SemanticState::ModeNormal>();
 
 	/* Create the symbol table dictionary. */
-	if (!state.dictionary.Init(Options_Get(&state.options)->case_insensitive))
+	state.dictionary.emplace(Options_Get(&state.options)->case_insensitive);
+
+	if (AddToSymbolTable(&state, string_rs,   SymbolSpecial{SymbolSpecial::Type::RS})
+	 && AddToSymbolTable(&state, string_narg, SymbolSpecial{SymbolSpecial::Type::NARG}))
 	{
-		OutOfMemoryError(&state);
-	}
-	else
-	{
-		if (AddToSymbolTable(&state, string_rs,   SymbolSpecial{SymbolSpecial::Type::RS})
-		 && AddToSymbolTable(&state, string_narg, SymbolSpecial{SymbolSpecial::Type::NARG}))
+		if (definition_callback != NULL)
+			definition_callback(&state, (void*)user_data, AddDefinition);
+
+		/* Initialise the lexer. */
+		if (m68kasm_lex_init_extra(&state, &state.flex_state) != 0)
 		{
-			if (definition_callback != NULL)
-				definition_callback(&state, (void*)user_data, AddDefinition);
+			InternalError(&state, "m68kasm_lex_init failed.");
+		}
+		else
+		{
+			/* Enable Bison debugging if available and requested by the user. */
+		#if M68KASM_DEBUG
+			if (Options_Get(&state.options)->debug)
+				m68kasm_debug = 1;
+		#endif
 
-			/* Initialise the lexer. */
-			if (m68kasm_lex_init_extra(&state, &state.flex_state) != 0)
+			/* Object file magic number. */
+			OutputWriteRawByte(&state, 0x89);
+			OutputWriteRawByte(&state, 0x14);
+
+			/* Begin first segment. */
+			WriteRecordSegment(&state);
+
+			/* Perform first pass of assembly, creating a list of fix-ups. */
+			AssembleFile(&state);
+
+			/* Finalise the segment record data. */
+			TerminatePreviousRecordSegment(&state);
+
+			/* Write terminating record. */
+			OutputWriteRawByte(&state, 0x00);
+			BinaryStream_fwrite(StringView_Data(string_assembler_identifier), 1, StringView_Length(string_assembler_identifier), output_callbacks);
+
+			/* Destroy the lexer, as we no longer need it. */
+			if (m68kasm_lex_destroy(state.flex_state) != 0)
+				InternalError(&state, "m68kasm_lex_destroy failed.");
+
+			/* Perform some sanity checks to make sure we're not somehow in an invalid state. */
+			if (state.current_if_level != 0)
+				SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
+			if (state.obj_active)
+				SemanticError(&state, "An OBJ statement somewhere is missing its OBJEND.");
+
+			/* Process the fix-ups: reassemble instructions and reprocess
+			   directives that could not be completed in the first pass. */
+			state.doing_fixup_pass = cc_true;
+
+			while (!state.fixup_list.empty())
 			{
-				InternalError(&state, "m68kasm_lex_init failed.");
+				/* Pop fix-up from list. */
+				FixUp &fixup = state.fixup_list.front();
+
+				/* Reset some state to how it was at the time the statement was first processed. */
+				state.macro.dictionary = fixup.macro_dictionary;
+				state.program_counter = fixup.program_counter;
+				OutputSeek(&state, fixup.output_position);
+				state.segment_length = fixup.segment_length;
+				String_CreateMove(state.last_global_label, fixup.last_global_label);
+				state.source_line = &fixup.source_line;
+				state.location = std::move(fixup.location);
+				*Options_Get(&state.options) = fixup.options;
+
+				/* Re-process statement. */
+				ProcessStatement(&state, &fixup.statement, String_View(fixup.label));
+
+				/* We're done with this statement: delete it. */
+				DestroyStatement(&fixup.statement);
+
+				state.fixup_list.pop_front();
 			}
-			else
+
+			/* Produce asm68k symbol file, if requested. */
+			if (BinaryStream_exists(symbol_callbacks))
 			{
-				/* Enable Bison debugging if available and requested by the user. */
-			#if M68KASM_DEBUG
-				if (Options_Get(&state.options)->debug)
-					m68kasm_debug = 1;
-			#endif
+				const void *parameters[2];
 
-				/* Object file magic number. */
-				OutputWriteRawByte(&state, 0x89);
-				OutputWriteRawByte(&state, 0x14);
+				parameters[0] = symbol_callbacks;
+				parameters[1] = &state;
 
-				/* Begin first segment. */
-				WriteRecordSegment(&state);
+				/* Some kind of header. */
+				BinaryStream_fputc('M', symbol_callbacks);
+				BinaryStream_fputc('N', symbol_callbacks);
+				BinaryStream_fputc('D', symbol_callbacks);
+				BinaryStream_fputc(1, symbol_callbacks);
+				BinaryStream_fputc(0, symbol_callbacks);
+				BinaryStream_fputc(0, symbol_callbacks);
+				BinaryStream_fputc(0, symbol_callbacks);
+				BinaryStream_fputc(0, symbol_callbacks);
 
-				/* Perform first pass of assembly, creating a list of fix-ups. */
-				AssembleFile(&state);
-
-				/* Finalise the segment record data. */
-				TerminatePreviousRecordSegment(&state);
-
-				/* Write terminating record. */
-				OutputWriteRawByte(&state, 0x00);
-				BinaryStream_fwrite(StringView_Data(string_assembler_identifier), 1, StringView_Length(string_assembler_identifier), output_callbacks);
-
-				/* Destroy the lexer, as we no longer need it. */
-				if (m68kasm_lex_destroy(state.flex_state) != 0)
-					InternalError(&state, "m68kasm_lex_destroy failed.");
-
-				/* Perform some sanity checks to make sure we're not somehow in an invalid state. */
-				if (state.current_if_level != 0)
-					SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
-				if (state.obj_active)
-					SemanticError(&state, "An OBJ statement somewhere is missing its OBJEND.");
-
-				/* Process the fix-ups: reassemble instructions and reprocess
-				   directives that could not be completed in the first pass. */
-				state.doing_fixup_pass = cc_true;
-
-				while (!state.fixup_list.empty())
-				{
-					/* Pop fix-up from list. */
-					FixUp &fixup = state.fixup_list.front();
-
-					/* Reset some state to how it was at the time the statement was first processed. */
-					state.macro.dictionary = fixup.macro_dictionary;
-					state.program_counter = fixup.program_counter;
-					OutputSeek(&state, fixup.output_position);
-					state.segment_length = fixup.segment_length;
-					String_CreateMove(state.last_global_label, fixup.last_global_label);
-					state.source_line = &fixup.source_line;
-					state.location = std::move(fixup.location);
-					*Options_Get(&state.options) = fixup.options;
-
-					/* Re-process statement. */
-					ProcessStatement(&state, &fixup.statement, String_View(fixup.label));
-
-					/* We're done with this statement: delete it. */
-					DestroyStatement(&fixup.statement);
-					if (fixup.macro_dictionary.use_count() == 1)
-						SymbolDictionary_Deinit(&*fixup.macro_dictionary);
-					fixup.macro_dictionary.reset();
-
-					state.fixup_list.pop_front();
-				}
-
-				/* Produce asm68k symbol file, if requested. */
-				if (BinaryStream_exists(symbol_callbacks))
-				{
-					const void *parameters[2];
-
-					parameters[0] = symbol_callbacks;
-					parameters[1] = &state;
-
-					/* Some kind of header. */
-					BinaryStream_fputc('M', symbol_callbacks);
-					BinaryStream_fputc('N', symbol_callbacks);
-					BinaryStream_fputc('D', symbol_callbacks);
-					BinaryStream_fputc(1, symbol_callbacks);
-					BinaryStream_fputc(0, symbol_callbacks);
-					BinaryStream_fputc(0, symbol_callbacks);
-					BinaryStream_fputc(0, symbol_callbacks);
-					BinaryStream_fputc(0, symbol_callbacks);
-
-					state.dictionary.Filter(DictionaryFilterProduceSymbolFile, parameters);
-				}
+				state.dictionary->Filter(DictionaryFilterProduceSymbolFile, parameters);
 			}
 		}
-
-		SymbolDictionary_Deinit(&state.dictionary);
 	}
 
 	Substitute_Deinitialise(&state.substitutions);
