@@ -18,6 +18,7 @@
 #ifndef SUBSTITUTE_H
 #define SUBSTITUTE_H
 
+#include <cstddef>
 #include <forward_list>
 #include <optional>
 
@@ -28,7 +29,7 @@
 class Substitute
 {
 public:
-	using CustomSearch = std::optional<StringView> (*)(void *user_data, const StringView &view_to_search, size_t starting_position, cc_bool case_insensitive, size_t* const found_position, size_t* const found_length);
+	using CustomSearch = std::optional<StringView> (*)(void *user_data, const StringView &view_to_search, std::size_t starting_position, cc_bool case_insensitive, std::size_t* const found_position, std::size_t* const found_length);
 
 private:
 	struct ListEntry
@@ -39,8 +40,8 @@ private:
 
 	std::forward_list<ListEntry> list;
 
-	static cc_bool FindSubstitute(const StringView &view_to_search, const size_t starting_position, const StringView &substitute, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, size_t* const found_position, size_t* const found_length);
-	std::optional<StringView> FindEarliestSubstitute(Substitute *other_state, const StringView &view_to_search, const size_t starting_position, const CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, size_t* const earliest_found_position, size_t* const earliest_found_length);
+	static cc_bool FindSubstitute(const StringView &view_to_search, const std::size_t starting_position, const StringView &substitute, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t* const found_position, std::size_t* const found_length);
+	std::optional<StringView> FindEarliestSubstitute(Substitute *other_state, const StringView &view_to_search, const std::size_t starting_position, const CustomSearch custom_search_callback, const void* const custom_search_user_data, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t* const earliest_found_position, std::size_t* const earliest_found_length);
 
 public:
 	cc_bool PushSubstitute(const StringView &identifier, const String &value);
