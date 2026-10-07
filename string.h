@@ -50,8 +50,6 @@ inline cc_bool String_ResizeNoFill(String &string, std::size_t size)
 	return cc_true;
 }
 
-#define String_CreateBlank(x) ((x) = {})
-
 inline cc_bool String_CreateCopyView(String &string, const StringView &view)
 {
 	string = view;
@@ -82,7 +80,6 @@ inline cc_bool String_CreateAppend(String &string, const String &other_string_a,
 	return cc_true;
 }
 
-#define String_Destroy(x)
 #define String_View(x) (std::string_view((x)))
 #define String_Replace(string, position, count, other_string) ((string).replace(position, count, other_string))
 #define String_Compare(a, b) ((a) == (b))

@@ -3192,84 +3192,80 @@ namespace m68kasm {
   case 269: // identifier: identifier local_identifier
 #line 2308 "syntactic.y"
         {
-		auto string_a = YY_MOVE (yystack_[1].value.as < String > ());
-		auto string_b = YY_MOVE (yystack_[0].value.as < String > ());
-		const cc_bool success = String_CreateAppend(yylhs.value.as < String > (), string_a, string_b);
-		String_Destroy(string_a);
-		String_Destroy(string_b);
+		const cc_bool success = String_CreateAppend(yylhs.value.as < String > (), YY_MOVE (yystack_[1].value.as < String > ()), YY_MOVE (yystack_[0].value.as < String > ()));
 
 		if (!success)
 			YYNOMEM;
 	}
-#line 3205 "syntactic.cpp"
+#line 3201 "syntactic.cpp"
     break;
 
   case 270: // expression8: NUMBER
-#line 2322 "syntactic.y"
+#line 2318 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionNumber>(YY_MOVE (yystack_[0].value.as < unsigned long > ()));
 	}
-#line 3213 "syntactic.cpp"
+#line 3209 "syntactic.cpp"
     break;
 
   case 271: // expression8: identifier
-#line 2326 "syntactic.y"
+#line 2322 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionIdentifier>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
-#line 3221 "syntactic.cpp"
+#line 3217 "syntactic.cpp"
     break;
 
   case 272: // expression8: string
-#line 2330 "syntactic.y"
+#line 2326 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
-#line 3229 "syntactic.cpp"
+#line 3225 "syntactic.cpp"
     break;
 
   case 273: // expression8: "*"
-#line 2334 "syntactic.y"
+#line 2330 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionProgramCounterOfStatement>();
 	}
-#line 3237 "syntactic.cpp"
+#line 3233 "syntactic.cpp"
     break;
 
   case 274: // expression8: "@"
-#line 2338 "syntactic.y"
+#line 2334 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionProgramCounterOfExpression>();
 	}
-#line 3245 "syntactic.cpp"
+#line 3241 "syntactic.cpp"
     break;
 
   case 275: // expression8: "(" expression ")"
-#line 2342 "syntactic.y"
+#line 2338 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[1].value.as < Expression > ());
 	}
-#line 3253 "syntactic.cpp"
+#line 3249 "syntactic.cpp"
     break;
 
   case 276: // expression8: STRLEN "(" STRING ")"
-#line 2346 "syntactic.y"
+#line 2342 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionStrlen>(YY_MOVE (yystack_[1].value.as < String > ()));
 	}
-#line 3261 "syntactic.cpp"
+#line 3257 "syntactic.cpp"
     break;
 
   case 277: // expression8: STRCMP "(" STRING "," STRING ")"
-#line 2350 "syntactic.y"
+#line 2346 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionStrcmp>(YY_MOVE (yystack_[3].value.as < String > ()), YY_MOVE (yystack_[1].value.as < String > ()));
 	}
-#line 3269 "syntactic.cpp"
+#line 3265 "syntactic.cpp"
     break;
 
   case 278: // expression8: INSTR "(" expression "," expression ")"
-#line 2354 "syntactic.y"
+#line 2350 "syntactic.y"
         {
 		auto subexpressions = std::make_unique<Expression[]>(3);
 
@@ -3279,11 +3275,11 @@ namespace m68kasm {
 
 		yylhs.value.as < Expression > ().emplace<ExpressionInstr>(std::move(subexpressions));
 	}
-#line 3283 "syntactic.cpp"
+#line 3279 "syntactic.cpp"
     break;
 
   case 279: // expression8: INSTR "(" expression "," expression "," expression ")"
-#line 2364 "syntactic.y"
+#line 2360 "syntactic.y"
         {
 		auto subexpressions = std::make_unique<Expression[]>(3);
 
@@ -3293,60 +3289,60 @@ namespace m68kasm {
 
 		yylhs.value.as < Expression > ().emplace<ExpressionInstr>(std::move(subexpressions));
 	}
-#line 3297 "syntactic.cpp"
+#line 3293 "syntactic.cpp"
     break;
 
   case 280: // expression8: DEF "(" IDENTIFIER ")"
-#line 2374 "syntactic.y"
+#line 2370 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionDef>(YY_MOVE (yystack_[1].value.as < String > ()));
 	}
-#line 3305 "syntactic.cpp"
+#line 3301 "syntactic.cpp"
     break;
 
   case 281: // expression8: TYPE "(" IDENTIFIER ")"
-#line 2378 "syntactic.y"
+#line 2374 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionTypeWithIdentifier>(YY_MOVE (yystack_[1].value.as < String > ()));
 	}
-#line 3313 "syntactic.cpp"
+#line 3309 "syntactic.cpp"
     break;
 
   case 282: // expression8: TYPE "(" NUMBER ")"
-#line 2382 "syntactic.y"
+#line 2378 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionTypeWithNumber>(YY_MOVE (yystack_[1].value.as < unsigned long > ()));
 	}
-#line 3321 "syntactic.cpp"
+#line 3317 "syntactic.cpp"
     break;
 
   case 283: // expression8: FILESIZE "(" STRING ")"
-#line 2386 "syntactic.y"
+#line 2382 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionFilesize>(YY_MOVE (yystack_[1].value.as < String > ()));
 	}
-#line 3329 "syntactic.cpp"
+#line 3325 "syntactic.cpp"
     break;
 
   case 284: // expression8: OFFSET "(" expression ")"
-#line 2390 "syntactic.y"
+#line 2386 "syntactic.y"
         {
 		/* TODO: Make this actually do something besides pass the expression through. */
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[1].value.as < Expression > ());
 	}
-#line 3338 "syntactic.cpp"
+#line 3334 "syntactic.cpp"
     break;
 
   case 285: // string: STRING
-#line 2398 "syntactic.y"
+#line 2394 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionString>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
-#line 3346 "syntactic.cpp"
+#line 3342 "syntactic.cpp"
     break;
 
 
-#line 3350 "syntactic.cpp"
+#line 3346 "syntactic.cpp"
 
             default:
               break;
@@ -4200,8 +4196,8 @@ namespace m68kasm {
     2154,  2159,  2167,  2171,  2176,  2184,  2188,  2193,  2198,  2206,
     2210,  2215,  2220,  2225,  2233,  2237,  2242,  2250,  2254,  2258,
     2263,  2269,  2277,  2278,  2284,  2290,  2296,  2305,  2306,  2307,
-    2321,  2325,  2329,  2333,  2337,  2341,  2345,  2349,  2353,  2363,
-    2373,  2377,  2381,  2385,  2389,  2397
+    2317,  2321,  2325,  2329,  2333,  2337,  2341,  2345,  2349,  2359,
+    2369,  2373,  2377,  2381,  2385,  2393
   };
 
   void
@@ -4234,9 +4230,9 @@ namespace m68kasm {
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 4238 "syntactic.cpp"
+#line 4234 "syntactic.cpp"
 
-#line 2402 "syntactic.y"
+#line 2398 "syntactic.y"
 
 
 static cc_bool DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression)
@@ -4281,32 +4277,24 @@ void DestroyExpression(Expression *expression)
 			},
 			[](ExpressionStrcmp &expression)
 			{
-				String_Destroy(expression.string_a);
-				String_Destroy(expression.string_b);
 			},
 			[](ExpressionIdentifier &expression)
 			{
-				String_Destroy(expression.string);
 			},
 			[](ExpressionString &expression)
 			{
-				String_Destroy(expression.string);
 			},
 			[](ExpressionStrlen &expression)
 			{
-				String_Destroy(expression.string);
 			},
 			[](ExpressionDef &expression)
 			{
-				String_Destroy(expression.string);
 			},
 			[](ExpressionTypeWithIdentifier &expression)
 			{
-				String_Destroy(expression.string);
 			},
 			[](ExpressionFilesize &expression)
 			{
-				String_Destroy(expression.string);
 			},
 			[](ExpressionNumber &expression) {},
 			[](ExpressionProgramCounterOfStatement &expression) {},
@@ -4391,11 +4379,9 @@ void DestroyStatement(Statement *statement)
 			},
 			[](StatementInclude &statement)
 			{
-				String_Destroy(statement.path);
 			},
 			[](StatementIncbin &statement)
 			{
-				String_Destroy(statement.path);
 				DestroyExpression(&statement.start);
 
 				if (statement.has_length)
@@ -4445,29 +4431,23 @@ void DestroyStatement(Statement *statement)
 			},
 			[](StatementEquSString &statement)
 			{
-				String_Destroy(statement.string);
 			},
 			[](StatementEquSIdentifier &statement)
 			{
-				String_Destroy(statement.string);
 			},
 			[](StatementPushP &statement)
 			{
-				String_Destroy(statement.string);
 			},
 			[](StatementPopP &statement)
 			{
-				String_Destroy(statement.string);
 			},
 			[](StatementPurge &statement)
 			{
-				String_Destroy(statement.string);
 			},
 			[](StatementSubstr &statement)
 			{
 				DestroyExpression(&statement.start);
 				DestroyExpression(&statement.end);
-				String_Destroy(statement.string);
 			},
 			[](StatementCnop &statement)
 			{
@@ -4477,7 +4457,6 @@ void DestroyStatement(Statement *statement)
 			[](StatementInform &statement)
 			{
 				DestroyExpression(&statement.severity);
-				String_Destroy(statement.message);
 			},
 			[](StatementRS &statement)
 			{

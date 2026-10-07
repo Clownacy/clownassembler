@@ -2306,11 +2306,7 @@ identifier
 	| local_identifier
 	| identifier local_identifier
 	{
-		auto string_a = $1;
-		auto string_b = $2;
-		const cc_bool success = String_CreateAppend($$, string_a, string_b);
-		String_Destroy(string_a);
-		String_Destroy(string_b);
+		const cc_bool success = String_CreateAppend($$, $1, $2);
 
 		if (!success)
 			YYNOMEM;
@@ -2443,32 +2439,24 @@ void DestroyExpression(Expression *expression)
 			},
 			[](ExpressionStrcmp &expression)
 			{
-				String_Destroy(expression.string_a);
-				String_Destroy(expression.string_b);
 			},
 			[](ExpressionIdentifier &expression)
 			{
-				String_Destroy(expression.string);
 			},
 			[](ExpressionString &expression)
 			{
-				String_Destroy(expression.string);
 			},
 			[](ExpressionStrlen &expression)
 			{
-				String_Destroy(expression.string);
 			},
 			[](ExpressionDef &expression)
 			{
-				String_Destroy(expression.string);
 			},
 			[](ExpressionTypeWithIdentifier &expression)
 			{
-				String_Destroy(expression.string);
 			},
 			[](ExpressionFilesize &expression)
 			{
-				String_Destroy(expression.string);
 			},
 			[](ExpressionNumber &expression) {},
 			[](ExpressionProgramCounterOfStatement &expression) {},
@@ -2553,11 +2541,9 @@ void DestroyStatement(Statement *statement)
 			},
 			[](StatementInclude &statement)
 			{
-				String_Destroy(statement.path);
 			},
 			[](StatementIncbin &statement)
 			{
-				String_Destroy(statement.path);
 				DestroyExpression(&statement.start);
 
 				if (statement.has_length)
@@ -2607,29 +2593,23 @@ void DestroyStatement(Statement *statement)
 			},
 			[](StatementEquSString &statement)
 			{
-				String_Destroy(statement.string);
 			},
 			[](StatementEquSIdentifier &statement)
 			{
-				String_Destroy(statement.string);
 			},
 			[](StatementPushP &statement)
 			{
-				String_Destroy(statement.string);
 			},
 			[](StatementPopP &statement)
 			{
-				String_Destroy(statement.string);
 			},
 			[](StatementPurge &statement)
 			{
-				String_Destroy(statement.string);
 			},
 			[](StatementSubstr &statement)
 			{
 				DestroyExpression(&statement.start);
 				DestroyExpression(&statement.end);
-				String_Destroy(statement.string);
 			},
 			[](StatementCnop &statement)
 			{
@@ -2639,7 +2619,6 @@ void DestroyStatement(Statement *statement)
 			[](StatementInform &statement)
 			{
 				DestroyExpression(&statement.severity);
-				String_Destroy(statement.message);
 			},
 			[](StatementRS &statement)
 			{

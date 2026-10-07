@@ -52,8 +52,6 @@ void Substitute_PopSubstitute(Substitute_State* const state)
 
 	state->list_head = list_entry->next;
 
-	String_Destroy(list_entry->identifier);
-
 	delete list_entry;
 }
 

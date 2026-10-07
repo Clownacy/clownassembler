@@ -428,7 +428,6 @@ static String DecimalIntegerToString(const unsigned long integer)
 
 	const size_t length = GetDecimalIntegerStringLength(integer);
 
-	String_CreateBlank(string);
 	if (String_ResizeNoFill(string, length))
 		sprintf(String_Data(string), "%lu", integer);
 
@@ -441,7 +440,6 @@ static String HexadecimalIntegerToString(const unsigned long integer)
 
 	const size_t length = GetHexadecimalIntegerStringLength(integer);
 
-	String_CreateBlank(string);
 	if (String_ResizeNoFill(string, length))
 		sprintf(String_Data(string), "%lX", integer);
 
@@ -455,7 +453,6 @@ static String ComputeUniqueMacroSuffix(const SemanticState* const state)
 
 	const size_t length = GetDecimalIntegerStringLength(integer);
 
-	String_CreateBlank(string);
 	if (String_ResizeNoFill(string, 1 + length))
 		sprintf(String_Data(string), "_%lu", integer);
 
@@ -486,10 +483,7 @@ static FILE* fopen_backslash(const StringView &path, const char *mode)
 	String path_copy;
 
 	if (ToStandardPath(path, path_copy))
-	{
 		file = fopen(String_CStr(path_copy), mode);
-		String_Destroy(path_copy);
-	}
 
 	return file;
 }
@@ -567,7 +561,10 @@ static cc_bool CurrentlyExpandingMacro(const SemanticState* const state)
 static void ExpandIdentifier(SemanticState *state, String &expanded_identifier, const StringView &identifier)
 {
 	if (StringView_Empty(identifier) || (StringView_At(identifier, 0) != Options_Get(&state->options)->local_signifier))
-		String_CreateBlank(expanded_identifier);
+	{
+		expanded_identifier = "";
+		//String_CreateBlank(expanded_identifier);
+	}
 	else if (String_Empty(state->last_global_label))
 	{
 		expanded_identifier = identifier.substr(1);
@@ -575,6 +572,7 @@ static void ExpandIdentifier(SemanticState *state, String &expanded_identifier, 
 	}
 	else
 	{
+		// TODO: Make this suck less.
 		expanded_identifier = state->last_global_label;
 		expanded_identifier += identifier;
 		//String_CreateAppendView(expanded_identifier, String_View(state->last_global_label), identifier);
@@ -611,8 +609,6 @@ static SymbolDictionary::Entry* LookupSymbol(SemanticState *state, StringView id
 			if (dictionary != NULL)
 				*dictionary = NULL;
 	}
-
-	String_Destroy(expanded_identifier);
 
 	return dictionary_entry;
 }
@@ -651,8 +647,6 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *s
 				*dictionary = NULL;
 		}
 	}
-
-	String_Destroy(expanded_identifier);
 
 	if (!std::holds_alternative<SymbolNone>(*dictionary_entry) && !std::holds_alternative<SymbolType>(*dictionary_entry))
 	{
@@ -759,7 +753,6 @@ static void DestroySymbol(SymbolDictionary::Entry *dictionary_entry)
 		CC_VisitHelper{
 			[&](SymbolStringConstant &symbol)
 			{
-				String_Destroy(symbol.value);
 			},
 			[&](SymbolExpressionConstant &symbol)
 			{
@@ -767,7 +760,6 @@ static void DestroySymbol(SymbolDictionary::Entry *dictionary_entry)
 			},
 			[&](SymbolMacro &symbol)
 			{
-				String_Destroy(symbol.macro.name);
 			},
 			/* Nothing to free. */
 			[&](SymbolNone &symbol) {},
@@ -1174,8 +1166,6 @@ static void PurgeMacro(SemanticState* const state, StringView identifier, const 
 
 		DestroySymbol(entry);
 		dictionary->Remove(identifier);
-
-		String_Destroy(expanded_identifier);
 	}
 }
 
@@ -1308,9 +1298,6 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 		AddToSymbolTable(state, SymbolMacro{std::move(macro_state.metadata)});
 	}
 
-	/* Free all of this, in case we didn't get all the way to creating the macro and moving everything over. */
-	String_Destroy(macro_state.metadata.name);
-
 	/* Exit macro mode. */
 	state->mode.emplace<SemanticState::ModeNormal>();
 }
@@ -1353,7 +1340,6 @@ static void TerminateWhile(SemanticState *state, SemanticState::ModeWhile &while
 	/* Increment past the ENDW line number. */
 	++state->location->line_number;
 
-	String_Destroy(while_state_copy.source_line);
 	DestroyExpression(&while_state_copy.expression);
 
 	state->source_line = old_source_line;
@@ -1494,7 +1480,6 @@ static void SetLastGlobalLabel(SemanticState *state, const StringView &label)
 	if (first_character != Options_Get(&state->options)->local_signifier)
 	{
 		/* This is a global label - cache it for later. */
-		String_Destroy(state->last_global_label);
 		String_CreateCopyView(state->last_global_label, label);
 	}
 }
@@ -4325,7 +4310,6 @@ static void PushSubstitute(SemanticState* const state, const StringView &identif
 				},
 				[&](SymbolStringConstant &symbol)
 				{
-					String_Destroy(symbol.value);
 					String_CreateCopyView(symbol.value, value);
 				},
 				[&](auto&)
@@ -4366,7 +4350,6 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 					},
 					[&](SymbolStringConstant &symbol)
 					{
-						String_Destroy(symbol.value);
 						String_CreateCopyView(symbol.value, argument);
 					},
 					[&](auto&)
@@ -4552,12 +4535,8 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 
 			state->location = state->location->previous;
 
-			String_Destroy(location.file_path);
-
 			TextInput_CloseFile(&input_callbacks);
 		}
-
-		String_Destroy(standard_path);
 	}
 }
 
@@ -5380,14 +5359,9 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				String string;
 
 				if (!StringStack_Pop(&state->string_stack, string))
-				{
 					SemanticError(state, "POPP used but the string stack was empty.");
-				}
 				else
-				{
 					PushSubstitute(state, String_View(statement.string), String_View(string));
-					String_Destroy(string);
-				}
 			},
 			[&](StatementShift &statement)
 			{
@@ -5404,7 +5378,6 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				else
 				{
 					--state->macro.total_arguments;
-					String_Destroy(state->macro.argument_list[0]);
 					for (unsigned int i = 0; i < state->macro.total_arguments; ++i)
 						state->macro.argument_list[i] = std::move(state->macro.argument_list[i + 1]);
 					state->macro.argument_list.pop_back();
@@ -5599,8 +5572,6 @@ static std::optional<StringView> MacroCustomSubstituteSearch(void* const user_da
 				if (identifier_start[identifier_length] == '\\')
 					++*found_length;
 
-				String_Destroy(closure->symbol_value_string);
-
 				if (!GetSymbolInteger(state, identifier, cc_true, &value))
 					value = 0;
 
@@ -5735,8 +5706,6 @@ static void SubstituteAndParseLine(SemanticState *state, const StringView &label
 	PerformSubstitutionsExcludingQuotedStrings(state, modified_directive_and_operands, StringView_Length(directive), cc_true);
 
 	ParseLine(state, label, String_View(modified_directive_and_operands));
-
-	String_Destroy(modified_directive_and_operands);
 }
 
 static void InvokeMacro(SemanticState* const state, const Macro* const macro, const StringView &label, const char *source_line_pointer)
@@ -5821,7 +5790,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 
 			closure.label = label;
 			closure.unique_suffix = ComputeUniqueMacroSuffix(state);
-			String_CreateBlank(closure.symbol_value_string);
+			closure.symbol_value_string = "";
 
 			/* Extract and store the individual macro arguments, if they exist. */
 			{
@@ -5923,7 +5892,6 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 						String_CreateCopy(expanded_source_line, source_line);
 						PerformSubstitutions(state, expanded_source_line, cc_false);
 						AssembleLine(state, expanded_source_line, Options_Get(&state->options)->expand_all_macros);
-						String_Destroy(expanded_source_line);
 					}
 					else
 					{
@@ -5944,22 +5912,13 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 				/* Pop location. */
 				state->location = state->location->previous;
 
-				String_Destroy(location.file_path);
-
 				state->listing_macro = previous_listing_macro;
 			}
-
-			String_Destroy(closure.symbol_value_string);
-			String_Destroy(closure.unique_suffix);
 
 			Substitute_Deinitialise(&state->macro.substitutions);
 			if (state->macro.dictionary.use_count() == 1)
 				state->macro.dictionary->Deinit();
 			state->macro.dictionary.reset();
-
-			/* Destroy argument list. */
-			for (size_t i = 0; i < state->macro.total_arguments; ++i)
-				String_Destroy(state->macro.argument_list[i]);
 
 			state->macro.argument_list.clear();
 		}
@@ -6215,9 +6174,6 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 	if (write_line_to_listing_file)
 		ListSourceLine(state);
 
-	if (state->source_line == &source_line)
-		String_Destroy(source_line);
-
 	state->source_line = old_source_line;
 }
 
@@ -6351,8 +6307,8 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 	Options_Initialise(&state.options, initial_options);
 
-	String_CreateBlank(state.last_global_label);
-	String_CreateBlank(state.line_buffer);
+	state.last_global_label = "";
+	state.line_buffer = "";
 	state.location = &location;
 	Substitute_Initialise(&state.substitutions);
 	StringStack_Initialise(&state.string_stack);
@@ -6428,7 +6384,6 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 					state.program_counter = fixup->program_counter;
 					OutputSeek(&state, fixup->output_position);
 					state.segment_length = fixup->segment_length;
-					String_Destroy(state.last_global_label);
 					String_CreateCopy(state.last_global_label, fixup->last_global_label);
 					state.source_line = &fixup->source_line;
 					state.location = &fixup->location;
@@ -6442,9 +6397,6 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 					if (fixup->macro_dictionary.use_count() == 1)
 						SymbolDictionary_Deinit(&*fixup->macro_dictionary);
 					fixup->macro_dictionary.reset();
-					String_Destroy(fixup->last_global_label);
-					String_Destroy(fixup->source_line);
-					String_Destroy(fixup->label);
 
 					/* Pop one location from the list. */
 					location = fixup->location.previous;
@@ -6452,11 +6404,9 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 					while (location != NULL)
 					{
 						Location *previous_location = location->previous;
-						String_Destroy(location->file_path);
 						delete location;
 						location = previous_location;
 					}
-					String_Destroy(fixup->location.file_path);
 
 					delete fixup;
 				}
@@ -6489,12 +6439,8 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 	StringStack_Deinitialise(&state.string_stack);
 	Substitute_Deinitialise(&state.substitutions);
-	String_Destroy(state.line_buffer);
-	String_Destroy(state.last_global_label);
 
 	Options_Deinitialise(&state.options);
-
-	String_Destroy(location.file_path);
 
 	return state.success;
 }

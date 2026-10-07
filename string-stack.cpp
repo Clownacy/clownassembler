@@ -29,8 +29,7 @@ void StringStack_Deinitialise(StringStack_State* const state)
 {
 	String string;
 
-	while (StringStack_Pop(state, string))
-		String_Destroy(string);
+	StringStack_Pop(state, string);
 }
 
 cc_bool StringStack_Push(StringStack_State* const state, const StringView &view)
@@ -58,7 +57,6 @@ cc_bool StringStack_Pop(StringStack_State* const state, String &string)
 	state->list = list_entry->next;
 
 	String_CreateMove(string, list_entry->string);
-	String_Destroy(list_entry->string);
 
 	delete list_entry;
 
