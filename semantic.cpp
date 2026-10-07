@@ -547,37 +547,26 @@ static cc_bool CurrentlyExpandingMacro(const SemanticState* const state)
 	return state->macro.active;
 }
 
-static void ExpandIdentifier(SemanticState *state, String &expanded_identifier, const StringView &identifier)
+static StringView ExpandIdentifier(SemanticState *state, const StringView &identifier, String &expanded_identifier)
 {
 	if (StringView_Empty(identifier) || (StringView_At(identifier, 0) != state->options->local_signifier))
-	{
-		expanded_identifier = "";
-		//String_CreateBlank(expanded_identifier);
-	}
-	else if (String_Empty(state->last_global_label))
-	{
-		expanded_identifier = identifier.substr(1);
-		//String_CreateInternal(expanded_identifier, StringView_Data(identifier) + 1, StringView_Length(identifier) - 1, NULL, 0);
-	}
-	else
-	{
-		// TODO: Make this suck less.
-		expanded_identifier = state->last_global_label;
-		expanded_identifier += identifier;
-		//String_CreateAppendView(expanded_identifier, String_View(state->last_global_label), identifier);
-	}
+		return identifier;
+
+	if (String_Empty(state->last_global_label))
+		return identifier.substr(1);
+
+	expanded_identifier = std::format("{}{}", state->last_global_label, identifier);
+
+	return expanded_identifier;
 }
 
 static SymbolDictionary::Entry* LookupSymbol(SemanticState *state, StringView identifier, SymbolDictionary **dictionary)
 {
 	SymbolDictionary::Entry *dictionary_entry = NULL;
-	String expanded_identifier;
 
 	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
-	ExpandIdentifier(state, expanded_identifier, identifier);
-
-	if (!String_Empty(expanded_identifier))
-		identifier = String_View(expanded_identifier);
+	String expanded_identifier;
+	identifier = ExpandIdentifier(state, identifier, expanded_identifier);
 
 	if (state->macro.dictionary != NULL)
 	{
@@ -607,13 +596,10 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *s
 {
 	/* TODO: Deduplicate this with `LookupSymbol`. */
 	SymbolDictionary::Entry *dictionary_entry = NULL;
-	String expanded_identifier;
 
 	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
-	ExpandIdentifier(state, expanded_identifier, identifier);
-
-	if (!String_Empty(expanded_identifier))
-		identifier = String_View(expanded_identifier);
+	String expanded_identifier;
+	identifier = ExpandIdentifier(state, identifier, expanded_identifier);
 
 	if (state->macro.dictionary != NULL)
 	{
@@ -1131,11 +1117,9 @@ static void PurgeMacro(SemanticState* const state, StringView identifier, const 
 	}
 	else
 	{
-		String expanded_identifier;
 		/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
-		ExpandIdentifier(state, expanded_identifier, identifier);
-		if (!String_Empty(expanded_identifier))
-			identifier = String_View(expanded_identifier);
+		String expanded_identifier;
+		identifier = ExpandIdentifier(state, identifier, expanded_identifier);
 
 		DestroySymbol(entry);
 		dictionary->Remove(identifier);
