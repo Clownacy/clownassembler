@@ -1235,23 +1235,7 @@ static void PurgeMacro(SemanticState* const state, StringView identifier, const 
 	}
 }
 
-template<typename SymbolType>
-static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, unsigned long integer_value);
-
-template<typename SymbolType>
-static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, void *pointer_value);
-
-template<typename SymbolType>
-static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, Expression expression);
-
-template<typename SymbolType>
-static cc_bool AddIdentifierToSymbolTable(SemanticState *state, Macro macro);
-
-template<typename SymbolType>
-static cc_bool AddIdentifierToSymbolTable(SemanticState *state, const StringView &identifier, SymbolSpecial::Type type);
-
-template<>
-cc_bool AddIdentifierToSymbolTable<SymbolVariable>(SemanticState *state, const StringView &identifier, unsigned long integer_value)
+static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifier, SymbolVariable symbol_contents)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolVariable>(state, identifier, NULL);
 
@@ -1261,13 +1245,12 @@ cc_bool AddIdentifierToSymbolTable<SymbolVariable>(SemanticState *state, const S
 	/* Free the old symbol, to prevent a leak. */
 	DestroySymbol(symbol);
 
-	symbol->emplace<SymbolVariable>(integer_value);
+	symbol->emplace<SymbolVariable>(std::move(symbol_contents));
 
 	return cc_true;
 }
 
-template<>
-cc_bool AddIdentifierToSymbolTable<SymbolConstant>(SemanticState *state, const StringView &identifier, unsigned long integer_value)
+static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifier, SymbolConstant symbol_contents)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolConstant>(state, identifier, NULL);
 
@@ -1276,7 +1259,7 @@ cc_bool AddIdentifierToSymbolTable<SymbolConstant>(SemanticState *state, const S
 
 	const auto constant_symbol = std::get_if<SymbolConstant>(symbol);
 
-	if (constant_symbol != nullptr && constant_symbol->value != integer_value)
+	if (constant_symbol != nullptr && constant_symbol->value != symbol_contents.value)
 	{
 		SemanticError(state, "Constant '%.*s' cannot be redefined to a different value.", StringView_Length(identifier), StringView_Data(identifier));
 		return cc_false;
@@ -1285,13 +1268,12 @@ cc_bool AddIdentifierToSymbolTable<SymbolConstant>(SemanticState *state, const S
 	/* Free the old symbol, to prevent a leak. */
 	DestroySymbol(symbol);
 
-	symbol->emplace<SymbolConstant>(integer_value);
+	symbol->emplace<SymbolConstant>(std::move(symbol_contents));
 
 	return cc_true;
 }
 
-template<>
-cc_bool AddIdentifierToSymbolTable<SymbolLabel>(SemanticState *state, const StringView &identifier, unsigned long integer_value)
+static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifier, SymbolLabel symbol_contents)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolLabel>(state, identifier, NULL);
 
@@ -1307,13 +1289,12 @@ cc_bool AddIdentifierToSymbolTable<SymbolLabel>(SemanticState *state, const Stri
 	/* Free the old symbol, to prevent a leak. */
 	DestroySymbol(symbol);
 
-	symbol->emplace<SymbolLabel>(integer_value);
+	symbol->emplace<SymbolLabel>(std::move(symbol_contents));
 
 	return cc_true;
 }
 
-template<>
-cc_bool AddIdentifierToSymbolTable<SymbolExpressionConstant>(SemanticState *state, const StringView &identifier, Expression expression)
+static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifier, SymbolExpressionConstant symbol_contents)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolExpressionConstant>(state, identifier, NULL);
 
@@ -1323,15 +1304,14 @@ cc_bool AddIdentifierToSymbolTable<SymbolExpressionConstant>(SemanticState *stat
 	/* Free the old symbol, to prevent a leak. */
 	DestroySymbol(symbol);
 
-	symbol->emplace<SymbolExpressionConstant>(std::move(expression));
+	symbol->emplace<SymbolExpressionConstant>(std::move(symbol_contents));
 
 	return cc_true;
 }
 
-template<>
-cc_bool AddIdentifierToSymbolTable<SymbolMacro>(SemanticState *state, Macro macro)
+static cc_bool AddToSymbolTable(SemanticState *state, SymbolMacro symbol_contents)
 {
-	const StringView &identifier = *macro.name;
+	const StringView &identifier = *symbol_contents.macro.name;
 
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolMacro>(state, identifier, NULL);
 
@@ -1347,13 +1327,12 @@ cc_bool AddIdentifierToSymbolTable<SymbolMacro>(SemanticState *state, Macro macr
 	/* Free the old symbol, to prevent a leak. */
 	DestroySymbol(symbol);
 
-	symbol->emplace<SymbolMacro>(std::move(macro));
+	symbol->emplace<SymbolMacro>(std::move(symbol_contents));
 
 	return cc_true;
 }
 
-template<>
-cc_bool AddIdentifierToSymbolTable<SymbolSpecial>(SemanticState *state, const StringView &identifier, SymbolSpecial::Type type)
+static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifier, SymbolSpecial symbol_contents)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolSpecial>(state, identifier, NULL);
 
@@ -1363,7 +1342,7 @@ cc_bool AddIdentifierToSymbolTable<SymbolSpecial>(SemanticState *state, const St
 	/* Free the old symbol, to prevent a leak. */
 	DestroySymbol(symbol);
 
-	symbol->emplace<SymbolSpecial>(type);
+	symbol->emplace<SymbolSpecial>(std::move(symbol_contents));
 
 	return cc_true;
 }
@@ -1396,7 +1375,7 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 		macro_state.source_line_list.head = NULL;
 		macro_state.source_line_list.tail = NULL;
 
-		AddIdentifierToSymbolTable<SymbolMacro>(state, std::move(macro));
+		AddToSymbolTable(state, SymbolMacro{std::move(macro)});
 	}
 
 	/* Free all of this, in case we didn't get all the way to creating the macro and moving everything over. */
@@ -4916,7 +4895,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		{
 			/* Handle the label here, instead of passing it onto a later function. */
 			SetLastGlobalLabel(state, label);
-			AddIdentifierToSymbolTable<SymbolLabel>(state, label, state->program_counter);
+			AddToSymbolTable(state, label, SymbolLabel{state->program_counter});
 		}
 	}
 	else if (CC_VariantHoldsAnyOf<
@@ -5032,13 +5011,13 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 				if (!ResolveExpression(state, &equ.expression, &value, cc_false))
 				{
-					AddIdentifierToSymbolTable<SymbolExpressionConstant>(state, label, std::move(equ.expression));
+					AddToSymbolTable(state, label, SymbolExpressionConstant{std::move(equ.expression)});
 					// TODO: Why does removing this result in a crash?
 					equ.expression.emplace<ExpressionNumber>(0);
 				}
 				else
 				{
-					AddIdentifierToSymbolTable<SymbolConstant>(state, label, value);
+					AddToSymbolTable(state, label, SymbolConstant{value});
 					ListIdentifierValue(state, value);
 				}
 
@@ -5111,7 +5090,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					return;
 				}
 
-				AddIdentifierToSymbolTable<SymbolVariable>(state, label, value);
+				AddToSymbolTable(state, label, SymbolVariable{value});
 				ListIdentifierValue(state, value);
 			},
 			[&](StatementIf &statement)
@@ -5316,7 +5295,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					/* Add label to symbol table. */
 					if (!StringView_Empty(label))
 					{
-						AddIdentifierToSymbolTable<SymbolConstant>(state, label, state->rs);
+						AddToSymbolTable(state, label, SymbolConstant{state->rs});
 						ListIdentifierValue(state, state->rs);
 					}
 
@@ -5903,7 +5882,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 				SetLastGlobalLabel(state, label);
 
 				if (!macro->uses_label)
-					AddIdentifierToSymbolTable<SymbolLabel>(state, label, state->program_counter);
+					AddToSymbolTable(state, label, SymbolLabel{state->program_counter});
 			}
 
 			/* Extract and store the macro size specifier, if one exists. */
@@ -6433,7 +6412,7 @@ static void AddDefinition(void* const internal, const char* const identifier_buf
 	StringView_Create(identifier, identifier_buffer, identifier_length);
 
 	/* TODO: Does asm68k create a constant or a variable? */
-	AddIdentifierToSymbolTable<SymbolConstant>(state, identifier, value);
+	AddToSymbolTable(state, identifier, SymbolConstant{value});
 }
 
 static cc_bool ClownAssembler_AssembleToObjectFile(
@@ -6481,8 +6460,8 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	}
 	else
 	{
-		if (AddIdentifierToSymbolTable<SymbolSpecial>(&state, string_rs,   SymbolSpecial::Type::RS)
-		 && AddIdentifierToSymbolTable<SymbolSpecial>(&state, string_narg, SymbolSpecial::Type::NARG))
+		if (AddToSymbolTable(&state, string_rs,   SymbolSpecial{SymbolSpecial::Type::RS})
+		 && AddToSymbolTable(&state, string_narg, SymbolSpecial{SymbolSpecial::Type::NARG}))
 		{
 			if (definition_callback != NULL)
 				definition_callback(&state, (void*)user_data, AddDefinition);
