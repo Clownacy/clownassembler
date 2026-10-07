@@ -125,7 +125,7 @@ typedef struct SemanticState_Macro
 	const Macro *metadata = nullptr;
 	std::shared_ptr<SymbolDictionary> dictionary;
 	Substitute substitutions;
-	struct MacroCustomSubstituteSearch_Closure *closure = nullptr;
+	Substitute::CustomSearch custom_search;
 	std::vector<String> argument_list;
 	size_t total_arguments = 0, total_arguments_at_start = 0;
 	unsigned int starting_if_level = 0;
@@ -5477,111 +5477,14 @@ static void ParseLine(SemanticState* const state, const StringView &label, const
 #define DIRECTIVE_OR_MACRO_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_"
 #define LABEL_CHARS DIRECTIVE_OR_MACRO_CHARS ".@"
 
-/* TODO: When I switch to C++, make this the first thing to go... */
-typedef struct MacroCustomSubstituteSearch_Closure
-{
-	struct SemanticState *state;
-
-	StringView size;
-	StringView arguments;
-	StringView label;
-	String unique_suffix;
-	String symbol_value_string;
-} MacroCustomSubstituteSearch_Closure;
-
-static std::optional<StringView> MacroCustomSubstituteSearch(void* const user_data, const StringView &view_to_search, size_t starting_position, cc_bool case_insensitive, size_t* const found_position, size_t* const found_length)
-{
-	/* `view_to_search` always points to a null-terminated string. */
-	MacroCustomSubstituteSearch_Closure* const closure = (MacroCustomSubstituteSearch_Closure*)user_data;
-	SemanticState* const state = closure->state;
-
-	(void)case_insensitive;
-
-	for (*found_position = starting_position; (*found_position = StringView_FindCharacter(view_to_search, '\\', *found_position)) != STRING_POSITION_INVALID; ++(*found_position))
-	{
-		const char symbol = StringView_At(view_to_search, *found_position + 1);
-
-		*found_length = 2;
-
-		switch (symbol)
-		{
-			case '0':
-				return closure->size;
-
-			case '_':
-				if (Substitute::IsSubstituteBlockingCharacter(StringView_At(view_to_search, *found_position + *found_length)))
-					continue;
-
-				return closure->arguments;
-
-			case '*':
-				return closure->label;
-
-			case '@':
-				return String_View(closure->unique_suffix);
-
-			case '#':
-			case '$':
-			{
-				unsigned long value;
-				const char* const identifier_start = &StringView_At(view_to_search, *found_position + 2);
-				const size_t identifier_length = strspn(identifier_start, DIRECTIVE_OR_MACRO_CHARS);
-				StringView identifier;
-
-				StringView_Create(identifier, identifier_start, identifier_length);
-
-				*found_length += identifier_length;
-				/* Absorb trailing backslash. */
-				if (identifier_start[identifier_length] == '\\')
-					++*found_length;
-
-				if (!GetSymbolInteger(state, identifier, cc_true, &value))
-					value = 0;
-
-				if (symbol == '#')
-					closure->symbol_value_string = DecimalIntegerToString(value);
-				else /*if (symbol == '$')*/
-					closure->symbol_value_string = HexadecimalIntegerToString(value);
-
-				return String_View(closure->symbol_value_string);
-			}
-
-			default:
-			{
-				char *end;
-
-				/* Obtain numerical index of the parameter. */
-				const char* const start = &StringView_At(view_to_search, *found_position + 1);
-				const unsigned long parameter_index = strtoul(start, &end, 10) - 1;
-
-				/* Check if conversion failed. */
-				if (end == start)
-					continue;
-
-				*found_length = 1 + (end - start);
-
-				if (parameter_index >= state->macro.total_arguments)
-				{
-					static const StringView blank_argument = STRING_VIEW_INITIALISER_BLANK;
-					return blank_argument;
-				}
-
-				return String_View(state->macro.argument_list[parameter_index]);
-			}
-		}
-	}
-
-	return std::nullopt;
-}
-
 static void PerformSubstitutionsOnSubString(SemanticState* const state, String &string, StringView &view_to_search, const cc_bool allow_implicit_matches)
 {
 	const cc_bool case_insensitive = state->options->case_insensitive;
 
-	if (state->macro.closure != NULL)
-		state->substitutions.ProcessSubString(&state->macro.substitutions, string, view_to_search, MacroCustomSubstituteSearch, state->macro.closure, allow_implicit_matches, case_insensitive);
+	if (state->macro.custom_search)
+		state->substitutions.ProcessSubString(&state->macro.substitutions, string, view_to_search, state->macro.custom_search, allow_implicit_matches, case_insensitive);
 	else
-		state->substitutions.ProcessSubString(NULL, string, view_to_search, NULL, NULL, allow_implicit_matches, case_insensitive);
+		state->substitutions.ProcessSubString(NULL, string, view_to_search, NULL, allow_implicit_matches, case_insensitive);
 }
 
 static void PerformSubstitutions(SemanticState* const state, String &string, const cc_bool allow_implicit_matches)
@@ -5674,8 +5577,6 @@ static void SubstituteAndParseLine(SemanticState *state, const StringView &label
 static void InvokeMacro(SemanticState* const state, const Macro* const macro, const StringView &label, const char *source_line_pointer)
 {
 	/* This is a macro invocation. */
-	MacroCustomSubstituteSearch_Closure closure;
-
 	const SemanticState_Macro previous_macro_state = std::move(state->macro);
 
 	if (state->macro.depth >= 0x100)
@@ -5694,7 +5595,20 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 		}
 		else
 		{
-			state->macro.closure = &closure;
+			/* TODO: When I switch to C++, make this the first thing to go... */
+			typedef struct MacroCustomSubstituteSearch_Closure
+			{
+				struct SemanticState *state;
+
+				StringView size;
+				StringView arguments;
+				StringView label;
+				String unique_suffix;
+				String symbol_value_string;
+			} MacroCustomSubstituteSearch_Closure;
+
+			MacroCustomSubstituteSearch_Closure closure;
+
 			state->macro.argument_list = {};
 			state->macro.total_arguments = 0;
 			state->macro.total_arguments_at_start = 0;
@@ -5752,6 +5666,90 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 			closure.label = label;
 			closure.unique_suffix = ComputeUniqueMacroSuffix(state);
 			closure.symbol_value_string = "";
+
+			state->macro.custom_search = [&closure](const StringView &view_to_search, size_t starting_position, cc_bool case_insensitive, size_t* const found_position, size_t* const found_length) -> std::optional<StringView>
+			{
+				/* `view_to_search` always points to a null-terminated string. */
+				SemanticState* const state = closure.state;
+
+				(void)case_insensitive;
+
+				for (*found_position = starting_position; (*found_position = StringView_FindCharacter(view_to_search, '\\', *found_position)) != STRING_POSITION_INVALID; ++(*found_position))
+				{
+					const char symbol = StringView_At(view_to_search, *found_position + 1);
+
+					*found_length = 2;
+
+					switch (symbol)
+					{
+						case '0':
+							return closure.size;
+
+						case '_':
+							if (Substitute::IsSubstituteBlockingCharacter(StringView_At(view_to_search, *found_position + *found_length)))
+								continue;
+
+							return closure.arguments;
+
+						case '*':
+							return closure.label;
+
+						case '@':
+							return String_View(closure.unique_suffix);
+
+						case '#':
+						case '$':
+						{
+							unsigned long value;
+							const char* const identifier_start = &StringView_At(view_to_search, *found_position + 2);
+							const size_t identifier_length = strspn(identifier_start, DIRECTIVE_OR_MACRO_CHARS);
+							StringView identifier;
+
+							StringView_Create(identifier, identifier_start, identifier_length);
+
+							*found_length += identifier_length;
+							/* Absorb trailing backslash. */
+							if (identifier_start[identifier_length] == '\\')
+								++*found_length;
+
+							if (!GetSymbolInteger(state, identifier, cc_true, &value))
+								value = 0;
+
+							if (symbol == '#')
+								closure.symbol_value_string = DecimalIntegerToString(value);
+							else /*if (symbol == '$')*/
+								closure.symbol_value_string = HexadecimalIntegerToString(value);
+
+							return String_View(closure.symbol_value_string);
+						}
+
+						default:
+						{
+							char *end;
+
+							/* Obtain numerical index of the parameter. */
+							const char* const start = &StringView_At(view_to_search, *found_position + 1);
+							const unsigned long parameter_index = strtoul(start, &end, 10) - 1;
+
+							/* Check if conversion failed. */
+							if (end == start)
+								continue;
+
+							*found_length = 1 + (end - start);
+
+							if (parameter_index >= state->macro.total_arguments)
+							{
+								static const StringView blank_argument = STRING_VIEW_INITIALISER_BLANK;
+								return blank_argument;
+							}
+
+							return String_View(state->macro.argument_list[parameter_index]);
+						}
+					}
+				}
+
+				return std::nullopt;
+			};
 
 			/* Extract and store the individual macro arguments, if they exist. */
 			{
