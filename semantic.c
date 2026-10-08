@@ -1528,45 +1528,9 @@ static void SetLastGlobalLabel(SemanticState *state, const StringView *label)
 
 static void AddIdentifierToSymbolTable(SemanticState *state, const StringView *label, unsigned long value, Expression *expression_value, SymbolType type)
 {
-	Dictionary_Entry *symbol;
-
-	symbol = NULL;
-
 	/* Now add it to the symbol table. */
 	switch (type)
 	{
-		case SYMBOL_VARIABLE:
-		case SYMBOL_CONSTANT:
-		case SYMBOL_EXPRESSION_CONSTANT:
-			symbol = LookupSymbolAndCreateIfNotExist(state, label, NULL);
-
-			if (symbol != NULL)
-			{
-				if (symbol->type != SYMBOL_NONE && (SymbolType)symbol->type != type)
-				{
-					/* We can't do the assignment in this case, actually doing redefinitions like this would wreck havoc -
-					   e.g. redefining a macro while it is being executed would force us to either leak it or have everything
-					   implode in a use-after-free mess. */
-					symbol = NULL;
-					SemanticError(state, "Attempted to redefine symbol as a different type.");
-				}
-				else if (type == SYMBOL_CONSTANT && symbol->type == SYMBOL_CONSTANT && symbol->shared.unsigned_long != value)
-				{
-					SemanticError(state, "Constant cannot be redefined to a different value.");
-				}
-				else
-				{
-					/* Free the old symbol, to prevent a leak. */
-					DestroySymbol(symbol);
-				}
-			}
-
-			break;
-
-		case SYMBOL_LABEL:
-			symbol = CreateSymbol(state, label);
-			break;
-
 		case SYMBOL_NONE:
 		case SYMBOL_MACRO:
 		case SYMBOL_SPECIAL:
@@ -1574,16 +1538,50 @@ static void AddIdentifierToSymbolTable(SemanticState *state, const StringView *l
 			/* This should not happen. */
 			assert(cc_false);
 			break;
-	}
 
-	if (symbol != NULL)
-	{
-		symbol->type = type;
+		case SYMBOL_VARIABLE:
+		case SYMBOL_CONSTANT:
+		case SYMBOL_EXPRESSION_CONSTANT:
+		case SYMBOL_LABEL:
+		{
+			Dictionary_Entry* const symbol = LookupSymbolAndCreateIfNotExist(state, label, NULL);
 
-		if (type == SYMBOL_EXPRESSION_CONSTANT)
-			symbol->shared.pointer = expression_value;
-		else
-			symbol->shared.unsigned_long = value;
+			if (symbol == NULL)
+				break;
+
+			if (symbol->type != SYMBOL_NONE && (SymbolType)symbol->type != type)
+			{
+				/* We can't do the assignment in this case, actually doing redefinitions like this would wreck havoc -
+				   e.g. redefining a macro while it is being executed would force us to either leak it or have everything
+				   implode in a use-after-free mess. */
+				SemanticError(state, "Attempted to redefine symbol '%.*s' as a different type.", (int)StringView_Length(label), StringView_Data(label));
+				break;
+			}
+
+			if (symbol->type == SYMBOL_CONSTANT && symbol->shared.unsigned_long != value)
+			{
+				SemanticError(state, "Constant '%.*s' cannot be redefined to a different value.", (int)StringView_Length(label), StringView_Data(label));
+				break;
+			}
+
+			if (symbol->type == SYMBOL_LABEL)
+			{
+				SemanticError(state, "Label '%.*s' cannot be redefined.", (int)StringView_Length(label), StringView_Data(label));
+				break;
+			}
+
+			/* Free the old symbol, to prevent a leak. */
+			DestroySymbol(symbol);
+
+			symbol->type = type;
+
+			if (type == SYMBOL_EXPRESSION_CONSTANT)
+				symbol->shared.pointer = expression_value;
+			else
+				symbol->shared.unsigned_long = value;
+
+			break;
+		}
 	}
 }
 
