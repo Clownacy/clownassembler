@@ -626,7 +626,12 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *s
 	return dictionary_entry;
 }
 
-static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, cc_bool fold);
+static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, cc_bool fold = cc_true);
+
+static cc_bool ResolveExpressionWithoutFolding(SemanticState *state, Expression *expression, unsigned long *value)
+{
+	return ResolveExpression(state, expression, value, cc_false);
+}
 
 static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifier, const cc_bool must_evaluate_on_first_pass, unsigned long* const value)
 {
@@ -696,7 +701,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 				},
 				[&](SymbolExpressionConstant &symbol)
 				{
-					if (!ResolveExpression(state, &symbol.expression, value, cc_false))
+					if (!ResolveExpression(state, &symbol.expression, value))
 						success = cc_false;
 				},
 				[&](auto &symbol)
@@ -1277,7 +1282,10 @@ static void TerminateWhile(SemanticState *state, SemanticState::ModeWhile &while
 
 		state->source_line = &while_state_copy.source_line;
 
-		if (!ResolveExpression(state, &while_state_copy.expression, &value, cc_false))
+		/* We absolutely do not want to fold (cache) this expression, because
+		   while-loops depend on variables mutating from previous values;
+		   without this, while-loops will never terminate. */
+		if (!ResolveExpressionWithoutFolding(state, &while_state_copy.expression, &value))
 		{
 			SemanticError(state, "Expression must be evaluable on the first pass.");
 			break;
@@ -1745,7 +1753,7 @@ static void OptimiseInstruction(SemanticState* const state, StatementInstruction
 			{
 				unsigned long value;
 
-				if (ResolveExpression(state, &operand->literal, &value, cc_false) && value == 0)
+				if (ResolveExpression(state, &operand->literal, &value) && value == 0)
 					operand->type = OPERAND_ADDRESS_REGISTER_INDIRECT;
 			}
 		}
@@ -3129,7 +3137,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							{
 								unsigned long value;
 
-								if (!ResolveExpression(state, &instruction->operands[0].literal, &value, cc_true))
+								if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
 									value = 0;
 
 								/* Check whether the literal value will wrap or not, and warn the user if so. */
@@ -3348,7 +3356,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 						machine_code = 0x4E40;
 
-						if (!ResolveExpression(state, &instruction->operands[0].literal, &value, cc_true))
+						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
 							value = 0;
 
 						if (value > 15)
@@ -3520,7 +3528,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 						machine_code |= ConstructSizeBits(instruction->opcode.size);
 						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
 
-						if (!ResolveExpression(state, &instruction->operands[0].literal, &value, cc_true))
+						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
 							value = 1;
 
 						if (value < 1 || value > 8)
@@ -3549,7 +3557,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 						machine_code |= instruction->operands[0].main_register;
 
 						/* Obtain the destination address. */
-						if (!ResolveExpression(state, &instruction->operands[1].literal, &value, cc_true))
+						if (!ResolveExpression(state, &instruction->operands[1].literal, &value))
 							value = state->program_counter - 2;
 
 						/* Construct a custom operand to hold the destination offset. */
@@ -3612,7 +3620,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 						}
 
 						/* Obtain the destination address. */
-						if (!ResolveExpression(state, &instruction->operands[0].literal, &value, cc_true))
+						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
 							value = state->program_counter - 2;
 
 						/* Calculate the destination offset. */
@@ -3679,7 +3687,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 						machine_code = 0x7000;
 
 						/* Obtain the value to be moved. */
-						if (!ResolveExpression(state, &instruction->operands[0].literal, &value, cc_true))
+						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
 							value = 0;
 
 						if (value > 0x7F && value < 0xFFFFFF80)
@@ -4015,7 +4023,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							{
 								unsigned long value;
 
-								if (!ResolveExpression(state, &instruction->operands[0].literal, &value, cc_true))
+								if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
 									value = 0;
 
 								if (value > 8 || value < 1)
@@ -4108,7 +4116,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 					unsigned int bytes_to_write = 2;
 					unsigned long value;
 
-					if (!ResolveExpression(state, &operand->literal, &value, cc_true))
+					if (!ResolveExpression(state, &operand->literal, &value))
 					{
 						if (operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT || operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER)
 							value = state->program_counter; /* Prevent out-of-range displacements later on. */
@@ -4397,7 +4405,7 @@ static void ProcessDc(SemanticState *state, StatementDc *dc)
 			/* Update the program counter symbol in between values, to keep it up to date. */
 			state->program_counter_of_expression = state->program_counter;
 
-			if (!ResolveExpression(state, &expression, &value, cc_true))
+			if (!ResolveExpression(state, &expression, &value))
 				value = 0;
 
 			OutputDcValue(state, dc->size, value);
@@ -4412,7 +4420,7 @@ static void ProcessDcb(SemanticState *state, StatementDcb *dcb)
 	if (ShouldPerformAutomaticEven(state, dcb->size))
 		PerformEven(state);
 
-	if (!ResolveExpression(state, &dcb->repetitions, &repetitions, cc_true))
+	if (!ResolveExpression(state, &dcb->repetitions, &repetitions))
 	{
 		SemanticError(state, "Repetition value must be evaluable on first pass.");
 	}
@@ -4421,7 +4429,7 @@ static void ProcessDcb(SemanticState *state, StatementDcb *dcb)
 		unsigned long value;
 		unsigned long i;
 
-		if (!ResolveExpression(state, &dcb->value, &value, cc_true))
+		if (!ResolveExpression(state, &dcb->value, &value))
 			value = 0;
 
 		for (i = 0; i < repetitions; ++i)
@@ -4436,7 +4444,7 @@ static void ProcessDs(SemanticState *state, StatementDs *ds)
 	if (ShouldPerformAutomaticEven(state, ds->size))
 		PerformEven(state);
 
-	if (!ResolveExpression(state, &ds->length, &length, cc_true))
+	if (!ResolveExpression(state, &ds->length, &length))
 	{
 		SemanticError(state, "Repetition value must be evaluable on first pass.");
 	}
@@ -4497,7 +4505,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 	{
 		unsigned long value;
 
-		if (!ResolveExpression(state, &incbin->start, &value, cc_true))
+		if (!ResolveExpression(state, &incbin->start, &value))
 		{
 			SemanticError(state, "Start value must be evaluable on the first pass.");
 			value = 0;
@@ -4511,7 +4519,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 			unsigned long length;
 			unsigned long i;
 
-			if (!ResolveExpression(state, &incbin->length, &length, cc_true))
+			if (!ResolveExpression(state, &incbin->length, &length))
 			{
 				SemanticError(state, "Length value must be evaluable on the first pass.");
 				length = 0;
@@ -4650,7 +4658,7 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 	/* Enter REPT mode. */
 	auto &mode = state->mode.emplace<SemanticState::ModeRept>();
 
-	if (!ResolveExpression(state, &rept->repetitions, &mode.repetitions, cc_true))
+	if (!ResolveExpression(state, &rept->repetitions, &mode.repetitions))
 	{
 		SemanticError(state, "Repetition value must be evaluable on the first pass.");
 		mode.repetitions = 1;
@@ -4678,7 +4686,7 @@ static void ProcessIf(SemanticState *state, Expression *expression)
 
 	++state->current_if_level;
 
-	if (!ResolveExpression(state, expression, &value, cc_true))
+	if (!ResolveExpression(state, expression, &value))
 	{
 		SemanticError(state, "Condition must be evaluable on the first pass.");
 		value = 1;
@@ -4843,7 +4851,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 				auto &equ = statement;
 
-				if (!ResolveExpression(state, &equ.expression, &value, cc_false))
+				if (!ResolveExpression(state, &equ.expression, &value))
 				{
 					AddToSymbolTable(state, label, SymbolExpressionConstant{std::move(equ.expression)});
 					// TODO: Why does removing this result in a crash?
@@ -4880,13 +4888,13 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 				auto &substr = statement;
 
-				if (!ResolveExpression(state, &substr.start, &start, cc_true))
+				if (!ResolveExpression(state, &substr.start, &start))
 				{
 					SemanticError(state, "Start must be evaluable on the first pass.");
 					return;
 				}
 
-				if (!ResolveExpression(state, &substr.end, &end, cc_true))
+				if (!ResolveExpression(state, &substr.end, &end))
 				{
 					SemanticError(state, "End must be evaluable on the first pass.");
 					return;
@@ -4918,7 +4926,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				if (state->options->equ_set_descope_local_labels)
 					SetLastGlobalLabel(state, label);
 
-				if (!ResolveExpression(state, &statement.expression, &value, cc_true))
+				if (!ResolveExpression(state, &statement.expression, &value))
 				{
 					SemanticError(state, "Value must be evaluable on the first pass.");
 					return;
@@ -4943,7 +4951,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					{
 						unsigned long value;
 
-						if (!ResolveExpression(state, &statement.expression, &value, cc_true))
+						if (!ResolveExpression(state, &statement.expression, &value))
 						{
 							SemanticError(state, "Condition must be evaluable on the first pass.");
 							value = 1;
@@ -5031,7 +5039,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 				unsigned long offset;
 
-				if (!ResolveExpression(state, &cnop.offset, &offset, cc_true))
+				if (!ResolveExpression(state, &cnop.offset, &offset))
 				{
 					SemanticError(state, "Offset must be evaluable on the first pass.");
 				}
@@ -5039,7 +5047,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				{
 					unsigned long size_boundary;
 
-					if (!ResolveExpression(state, &cnop.size_boundary, &size_boundary, cc_true))
+					if (!ResolveExpression(state, &cnop.size_boundary, &size_boundary))
 					{
 						SemanticError(state, "Size boundary must be evaluable on the first pass.");
 					}
@@ -5075,7 +5083,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				unsigned long severity;
 
 				/* Definitely an 'INFORM'... */
-				if (!ResolveExpression(state, &inform.severity, &severity, cc_true))
+				if (!ResolveExpression(state, &inform.severity, &severity))
 				{
 					SemanticError(state, "Severity must be evaluable on the first pass.");
 					severity = 0;
@@ -5117,7 +5125,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					if ((state->rs & 1) != 0)
 						++state->rs;
 
-				if (!ResolveExpression(state, &rs.length, &length, cc_true))
+				if (!ResolveExpression(state, &rs.length, &length))
 				{
 					SemanticError(state, "Length must be evaluable on the first pass.");
 				}
@@ -5160,7 +5168,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				/* Set '__rs' to value. */
 				unsigned long value;
 
-				if (!ResolveExpression(state, &statement.expression, &value, cc_true))
+				if (!ResolveExpression(state, &statement.expression, &value))
 					SemanticError(state, "Value must be evaluable on the first pass.");
 				else
 					state->rs = value;
@@ -5180,7 +5188,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				{
 					unsigned long value;
 
-					if (!ResolveExpression(state, &statement.expression, &value, cc_true))
+					if (!ResolveExpression(state, &statement.expression, &value))
 						SemanticError(state, "Value must be evaluable on the first pass.");
 					else
 						state->obj_delta = value - state->program_counter;
@@ -5205,7 +5213,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			{
 				unsigned long value;
 
-				if (!ResolveExpression(state, &statement.expression, &value, cc_true))
+				if (!ResolveExpression(state, &statement.expression, &value))
 				{
 					SemanticError(state, "Value must be evaluable on the first pass.");
 				}
