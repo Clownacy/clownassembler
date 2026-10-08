@@ -749,7 +749,6 @@ static void DestroySymbol(SymbolDictionary::Entry *dictionary_entry)
 
 static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, cc_bool fold)
 {
-	/* TODO - Maybe we should be doing signed arithmetic... that's what ProASM does, after all. */
 	cc_bool success = cc_true;
 
 	std::visit(
