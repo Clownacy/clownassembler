@@ -2995,7 +2995,6 @@ case 242:
 YY_RULE_SETUP
 #line 400 "lexical.l"
 {
-	size_t i;
 	char previous_character;
 
 	const char quotation_character = yytext[0];
@@ -3011,10 +3010,8 @@ YY_RULE_SETUP
 	/* Copy string, turning escaped (paired) quotes into regular (lone) quotes. */
 	previous_character = '\0';
 
-	for (i = 0; i < StringView_Length(view); ++i)
+	for (const char character : view)
 	{
-		const char character = StringView_At(view, i);
-
 		if (character == quotation_character && previous_character == quotation_character)
 		{
 			previous_character = '\0';
@@ -3032,7 +3029,7 @@ YY_RULE_SETUP
 case 243:
 /* rule 243 can match eol */
 YY_RULE_SETUP
-#line 435 "lexical.l"
+#line 432 "lexical.l"
 {
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
@@ -3043,7 +3040,7 @@ YY_RULE_SETUP
 /* Identifier, data register, or address register. */
 case 244:
 YY_RULE_SETUP
-#line 443 "lexical.l"
+#line 440 "lexical.l"
 {
 	if (yyleng == 2 && (yytext[0] == 'd' || yytext[0] == 'D' || yytext[0] == 'a' || yytext[0] == 'A') && yytext[1] >= '0' && yytext[1] <= '7')
 	{
@@ -3061,7 +3058,7 @@ YY_RULE_SETUP
 /* Local label. */
 case 245:
 YY_RULE_SETUP
-#line 458 "lexical.l"
+#line 455 "lexical.l"
 {
 	return m68kasm::parser::make_LOCAL_IDENTIFIER({yytext, static_cast<std::size_t>(yyleng)});
 }
@@ -3069,7 +3066,7 @@ YY_RULE_SETUP
 /* Option. */
 case 246:
 YY_RULE_SETUP
-#line 463 "lexical.l"
+#line 460 "lexical.l"
 {
 	return m68kasm::parser::make_OPTION({yytext, static_cast<std::size_t>(yyleng)});
 }
@@ -3077,15 +3074,15 @@ YY_RULE_SETUP
 /* Make Bison signal a syntax error for unrecognised symbols */
 case 247:
 YY_RULE_SETUP
-#line 468 "lexical.l"
+#line 465 "lexical.l"
 throw m68kasm::parser::syntax_error(std::format("Invalid character '{}'.", std::string_view{yytext, static_cast<std::size_t>(yyleng)}));
 	YY_BREAK
 case 248:
 YY_RULE_SETUP
-#line 470 "lexical.l"
+#line 467 "lexical.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 3088 "lexical.cpp"
+#line 3085 "lexical.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -4215,6 +4212,6 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 470 "lexical.l"
+#line 467 "lexical.l"
 
 

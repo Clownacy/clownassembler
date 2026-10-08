@@ -397,7 +397,6 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
  /* String. */
 (?:\"[^\"]*\")+ |
 (?:\'[^\']*\')+ {
-	size_t i;
 	char previous_character;
 
 	const char quotation_character = yytext[0];
@@ -413,10 +412,8 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 	/* Copy string, turning escaped (paired) quotes into regular (lone) quotes. */
 	previous_character = '\0';
 
-	for (i = 0; i < StringView_Length(view); ++i)
+	for (const char character : view)
 	{
-		const char character = StringView_At(view, i);
-
 		if (character == quotation_character && previous_character == quotation_character)
 		{
 			previous_character = '\0';
