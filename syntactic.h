@@ -5784,13 +5784,10 @@ switch (yykind)
 #line 639 "syntactic.y"
 
 
-void DestroyExpression(Expression *expression);
-void DestroyStatement(Statement *statement);
-
 #define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner)
 
 
-#line 5794 "syntactic.h"
+#line 5791 "syntactic.h"
 
 
 #endif // !YY_M68KASM_SYNTACTIC_H_INCLUDED

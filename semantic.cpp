@@ -721,32 +721,6 @@ static void AddToSourceLineList(SemanticState *state, SourceLineList &source_lin
 	source_line_list.emplace_back(std::move(source_line));
 }
 
-static void DestroySymbol(SymbolDictionary::Entry *dictionary_entry)
-{
-	std::visit(
-		CC_VisitHelper{
-			[&](SymbolStringConstant &symbol)
-			{
-			},
-			[&](SymbolExpressionConstant &symbol)
-			{
-				DestroyExpression(&symbol.expression);
-			},
-			[&](SymbolMacro &symbol)
-			{
-			},
-			/* Nothing to free. */
-			[&](SymbolNone &symbol) {},
-			[&](SymbolLabel &symbol) {},
-			[&](SymbolConstant &symbol) {},
-			[&](SymbolVariable &symbol) {},
-			[&](SymbolSpecial &symbol) {},
-		}, *dictionary_entry
-	);
-
-	dictionary_entry->emplace<SymbolNone>();
-}
-
 static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, cc_bool fold)
 {
 	cc_bool success = cc_true;
@@ -1056,10 +1030,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 	/* Now that we have resolved the value, let's hardcode it here so that we don't ever have to calculate it again. */
 	/* This is especially useful for fix-ups, which may otherwise depend on identifiers that no longer exist at the time the value is resolved again. */
 	if (success && fold)
-	{
-		DestroyExpression(expression);
 		expression->emplace<ExpressionNumber>(*value);
-	}
 
 	return success;
 }
@@ -1125,7 +1096,6 @@ static void PurgeMacro(SemanticState* const state, StringView identifier, const 
 		String expanded_identifier;
 		identifier = ExpandIdentifier(state, identifier, expanded_identifier);
 
-		DestroySymbol(entry);
 		dictionary->Remove(identifier);
 	}
 }
@@ -1136,9 +1106,6 @@ static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifi
 
 	if (symbol == NULL)
 		return cc_false;
-
-	/* Free the old symbol, to prevent a leak. */
-	DestroySymbol(symbol);
 
 	symbol->emplace<SymbolVariable>(std::move(symbol_contents));
 
@@ -1160,9 +1127,6 @@ static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifi
 		return cc_false;
 	}
 
-	/* Free the old symbol, to prevent a leak. */
-	DestroySymbol(symbol);
-
 	symbol->emplace<SymbolConstant>(std::move(symbol_contents));
 
 	return cc_true;
@@ -1181,9 +1145,6 @@ static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifi
 		return cc_false;
 	}
 
-	/* Free the old symbol, to prevent a leak. */
-	DestroySymbol(symbol);
-
 	symbol->emplace<SymbolLabel>(std::move(symbol_contents));
 
 	return cc_true;
@@ -1195,9 +1156,6 @@ static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifi
 
 	if (symbol == NULL)
 		return cc_false;
-
-	/* Free the old symbol, to prevent a leak. */
-	DestroySymbol(symbol);
 
 	symbol->emplace<SymbolExpressionConstant>(std::move(symbol_contents));
 
@@ -1219,9 +1177,6 @@ static cc_bool AddToSymbolTable(SemanticState *state, SymbolMacro symbol_content
 		return cc_false;
 	}
 
-	/* Free the old symbol, to prevent a leak. */
-	DestroySymbol(symbol);
-
 	symbol->emplace<SymbolMacro>(std::move(symbol_contents));
 
 	return cc_true;
@@ -1233,9 +1188,6 @@ static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifi
 
 	if (symbol == NULL)
 		return cc_false;
-
-	/* Free the old symbol, to prevent a leak. */
-	DestroySymbol(symbol);
 
 	symbol->emplace<SymbolSpecial>(std::move(symbol_contents));
 
@@ -1303,8 +1255,6 @@ static void TerminateWhile(SemanticState *state, SemanticState::ModeWhile &while
 
 	/* Increment past the ENDW line number. */
 	++state->location.front().line_number;
-
-	DestroyExpression(&while_state_copy.expression);
 
 	state->source_line = old_source_line;
 }
@@ -5384,7 +5334,6 @@ static cc_bool ParseStatement(SemanticState* const state, Statement* const state
 	if (parse_result == 2)
 		OutOfMemoryError(state);
 
-	DestroyStatement(statement);
 	return cc_false;
 }
 
@@ -5409,12 +5358,7 @@ static void ParseLine(SemanticState* const state, const StringView &label, const
 
 		ProcessStatement(state, &statement, label);
 
-		if (!state->fixup_needed)
-		{
-			/* We're done with this statement: delete it. */
-			DestroyStatement(&statement);
-		}
-		else
+		if (state->fixup_needed)
 		{
 			/* If the statement cannot currently be processed because of undefined symbols,
 			   add it to the fix-up list so we can try again later. */
@@ -6221,8 +6165,6 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 				ProcessStatement(&state, &fixup.statement, String_View(fixup.label));
 
 				/* We're done with this statement: delete it. */
-				DestroyStatement(&fixup.statement);
-
 				state.fixup_list.pop_front();
 			}
 
