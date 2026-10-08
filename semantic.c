@@ -707,12 +707,12 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 
 				break;
 
+			case SYMBOL_VARIABLE:
+				if (state->doing_fixup_pass)
+					SemanticWarning(state, "Symbol '%.*s' forward-referenced despite being a redefineable variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
+				/* Fallthrough */
 			case SYMBOL_LABEL:
 			case SYMBOL_CONSTANT:
-			case SYMBOL_VARIABLE:
-				if (state->doing_fixup_pass && dictionary_entry->type == SYMBOL_VARIABLE)
-					SemanticWarning(state, "Symbol '%.*s' forward-referenced despite being a redefineable variable.", (int)StringView_Length(identifier), StringView_Data(identifier));
-
 				*value = dictionary_entry->shared.unsigned_long;
 				break;
 
