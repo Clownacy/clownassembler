@@ -1054,7 +1054,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 	);
 
 	/* Now that we have resolved the value, let's hardcode it here so that we don't ever have to calculate it again. */
-	/* This is especially useful for fix-ups, which may otherwise depend on identifiers that no longer exist at the time is value is resolved again. */
+	/* This is especially useful for fix-ups, which may otherwise depend on identifiers that no longer exist at the time the value is resolved again. */
 	if (success && fold)
 	{
 		DestroyExpression(expression);
