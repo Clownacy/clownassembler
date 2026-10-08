@@ -6607,7 +6607,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 					OutputSeek(&state, fixup->output_position);
 					state.segment_length = fixup->segment_length;
 					String_Destroy(&state.last_global_label);
-					String_CreateCopy(&state.last_global_label, &fixup->last_global_label);
+					String_CreateMove(&state.last_global_label, &fixup->last_global_label);
 					state.source_line = &fixup->source_line;
 					state.location = &fixup->location;
 					*Options_Get(&state.options) = fixup->options;
