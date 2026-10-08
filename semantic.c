@@ -1199,7 +1199,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 	}
 
 	/* Now that we have resolved the value, let's hardcode it here so that we don't ever have to calculate it again. */
-	/* This is especially useful for fix-ups, which may otherwise depend on identifiers that no longer exist at the time is value is resolved again. */
+	/* This is especially useful for fix-ups, which may otherwise depend on identifiers that no longer exist at the time the value is resolved again. */
 	if (success && fold)
 	{
 		DestroyExpression(expression);
@@ -4416,7 +4416,7 @@ static void PushSubstitute(SemanticState* const state, const StringView* const i
 				break;
 
 			default:
-				SemanticError(state, "Attempted to redefined symbol '%.*s' as a string constant.", (int)StringView_Length(identifier), StringView_Data(identifier));
+				SemanticError(state, "Attempted to redefine symbol '%.*s' as a string constant.", (int)StringView_Length(identifier), StringView_Data(identifier));
 				return;
 		}
 
@@ -4459,7 +4459,7 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 				   and in any case if we get here I'm pretty sure something has gone wrong, so we should emit an error in case one hasn't already been emitted.
 				   It might also be feasible to handle this without forcing the symbol to become a string constant, but right now this seems like the simplest
 				   solution to prevent a crash. */
-				SemanticError(state, "Attempted to redefined symbol '%.*s' as a string constant.", (int)StringView_Length(parameter), StringView_Data(parameter));
+				SemanticError(state, "Attempted to redefine symbol '%.*s' as a string constant.", (int)StringView_Length(parameter), StringView_Data(parameter));
 				dictionary_entry->type = SYMBOL_STRING_CONSTANT;
 			}
 			else
@@ -4749,7 +4749,7 @@ static cc_bool ReadSourceLineRaw(SemanticState *state, size_t line_buffer_write_
 		if (line_buffer_write_position != String_Capacity(&state->line_buffer))
 			break;
 
-		/* If there the buffer is full and there is no newline, then the line must be longer than the buffer, so make the buffer bigger! */
+		/* If the buffer is full and there is no newline, then the line must be longer than the buffer, so make the buffer bigger! */
 		String_Reserve(&state->line_buffer, ((String_Capacity(&state->line_buffer) + 1) * 2) - 1);
 		/* Now loop back around and read more of the line! */
 	}
