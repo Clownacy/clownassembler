@@ -249,7 +249,7 @@ cc_bool BinaryStream_OpenMemory(BinaryStream* const callbacks)
 		state->position = 0;
 		state->buffer = (unsigned char*)malloc(state->capacity);
 
-		if (state != NULL)
+		if (state->buffer != NULL)
 		{
 			callbacks->user_data = state;
 			callbacks->read_character = Memory_ReadCharacter;
