@@ -135,6 +135,32 @@ typedef struct SemanticState_Macro
 
 typedef struct SemanticState
 {
+	class Flex
+	{
+	private:
+		yyscan_t internal;
+
+	public:
+		Flex(struct SemanticState &state)
+		{
+			if (m68kasm_lex_init_extra(&state, &internal) != 0)
+				throw std::runtime_error("m68kasm_lex_init failed.");
+		}
+
+		~Flex()
+		{
+			m68kasm_lex_destroy(internal);
+		}
+
+		Flex(const Flex &other) = delete;
+		Flex& operator=(const Flex &other) = delete;
+
+		yyscan_t& operator*()
+		{
+			return internal;
+		}
+	};
+
 	cc_bool success = cc_true;
 
 	/* Callbacks. */
@@ -148,7 +174,9 @@ typedef struct SemanticState
 	SymbolDictionary dictionary;
 	String last_global_label;
 	std::deque<Location> location;
-	yyscan_t flex_state;
+	Flex flex_state = {*this};
+	Statement statement;
+	m68kasm::parser parser = {*flex_state, &statement};
 	String line_buffer;
 	const String *source_line = nullptr;
 	Substitute substitutions;
@@ -5317,16 +5345,14 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 	state->program_counter_of_expression = state->program_counter;
 }
 
-static cc_bool ParseStatement(SemanticState* const state, Statement* const statement, const StringView &view)
+static cc_bool ParseStatement(SemanticState* const state, const StringView &view)
 {
 	/* Parse the source line with Flex and Bison (Lex and Yacc). */
-	const YY_BUFFER_STATE buffer = m68kasm__scan_bytes(StringView_Data(view), StringView_Length(view), state->flex_state);
+	const YY_BUFFER_STATE buffer = m68kasm__scan_bytes(StringView_Data(view), StringView_Length(view), *state->flex_state);
 	int parse_result;
 
-	*statement = {};
-	m68kasm::parser parser(state->flex_state, statement);
-	parse_result = parser.parse();
-	m68kasm__delete_buffer(buffer, state->flex_state);
+	parse_result = state->parser.parse();
+	m68kasm__delete_buffer(buffer, *state->flex_state);
 
 	if (parse_result == 0)
 		return cc_true;
@@ -5341,14 +5367,13 @@ static cc_bool ParseStatement(SemanticState* const state, Statement* const state
 static void ParseLine(SemanticState* const state, const StringView &label, const StringView &directive_and_operands)
 {
 	/* This is a normal assembly line. */
-	Statement statement;
 
 	/* Back these up, before they get a chance to be modified by ProcessStatement. */
 	const unsigned long starting_program_counter = state->program_counter;
 	const size_t starting_output_position = state->output_position;
 	const size_t starting_segment_length = state->segment_length;
 
-	if (!ParseStatement(state, &statement, directive_and_operands))
+	if (!ParseStatement(state, directive_and_operands))
 	{
 		/* An error message will have already been printed, so we don't need to do one here. */
 		state->success = cc_false;
@@ -5357,7 +5382,7 @@ static void ParseLine(SemanticState* const state, const StringView &label, const
 	{
 		state->fixup_needed = cc_false;
 
-		ProcessStatement(state, &statement, label);
+		ProcessStatement(state, &state->statement, label);
 
 		if (state->fixup_needed)
 		{
@@ -5367,7 +5392,7 @@ static void ParseLine(SemanticState* const state, const StringView &label, const
 
 
 			/* Backup the statement. */
-			fixup.statement = std::move(statement);
+			fixup.statement = std::move(state->statement);
 
 			/* Backup some state. */
 			fixup.macro_dictionary = state->macro.dictionary;
@@ -6103,128 +6128,116 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 		if (definition_callback != NULL)
 			definition_callback(&state, (void*)user_data, AddDefinition);
 
-		/* Initialise the lexer. */
-		if (m68kasm_lex_init_extra(&state, &state.flex_state) != 0)
+		/* Enable Bison debugging if available and requested by the user. */
+	#if M68KASM_DEBUG
+		if (state.options->debug)
+			m68kasm_debug = 1;
+	#endif
+
+		/* Object file magic number. */
+		OutputWriteRawByte(&state, 0x89);
+		OutputWriteRawByte(&state, 0x14);
+
+		/* Begin first segment. */
+		WriteRecordSegment(&state);
+
+		/* Perform first pass of assembly, creating a list of fix-ups. */
+		AssembleFile(&state);
+
+		/* Finalise the segment record data. */
+		TerminatePreviousRecordSegment(&state);
+
+		/* Write terminating record. */
+		OutputWriteRawByte(&state, 0x00);
+		BinaryStream_fwrite(StringView_Data(string_assembler_identifier), 1, StringView_Length(string_assembler_identifier), output_callbacks);
+
+		/* Perform some sanity checks to make sure we're not somehow in an invalid state. */
+		if (state.current_if_level != 0)
+			SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
+		if (state.obj_active)
+			SemanticError(&state, "An OBJ statement somewhere is missing its OBJEND.");
+
+		/* Process the fix-ups: reassemble instructions and reprocess
+		   directives that could not be completed in the first pass. */
+		state.doing_fixup_pass = cc_true;
+
+		while (!state.fixup_list.empty())
 		{
-			InternalError(&state, "m68kasm_lex_init failed.");
+			/* Pop fix-up from list. */
+			FixUp &fixup = state.fixup_list.front();
+
+			/* Reset some state to how it was at the time the statement was first processed. */
+			state.macro.dictionary = fixup.macro_dictionary;
+			state.program_counter = fixup.program_counter;
+			OutputSeek(&state, fixup.output_position);
+			state.segment_length = fixup.segment_length;
+			String_CreateMove(state.last_global_label, fixup.last_global_label);
+			state.source_line = &fixup.source_line;
+			state.location = std::move(fixup.location);
+			*state.options = fixup.options;
+
+			/* Re-process statement. */
+			ProcessStatement(&state, &fixup.statement, String_View(fixup.label));
+
+			/* We're done with this statement: delete it. */
+			state.fixup_list.pop_front();
 		}
-		else
+
+		/* Produce asm68k symbol file, if requested. */
+		if (BinaryStream_exists(symbol_callbacks))
 		{
-			/* Enable Bison debugging if available and requested by the user. */
-		#if M68KASM_DEBUG
-			if (state.options->debug)
-				m68kasm_debug = 1;
-		#endif
+			/* Some kind of header. */
+			BinaryStream_fputc('M', symbol_callbacks);
+			BinaryStream_fputc('N', symbol_callbacks);
+			BinaryStream_fputc('D', symbol_callbacks);
+			BinaryStream_fputc(1, symbol_callbacks);
+			BinaryStream_fputc(0, symbol_callbacks);
+			BinaryStream_fputc(0, symbol_callbacks);
+			BinaryStream_fputc(0, symbol_callbacks);
+			BinaryStream_fputc(0, symbol_callbacks);
 
-			/* Object file magic number. */
-			OutputWriteRawByte(&state, 0x89);
-			OutputWriteRawByte(&state, 0x14);
+			state.dictionary.Filter(
+				[&](const SymbolDictionary::Entry &entry, const StringView &identifier) -> cc_bool
+				{
+					/* The symbol file only contains labels. */
+					/* Labels longer than 0xFF characters are silently ignored. */
+					/* Local labels are also silently ignored (unless 'v+' is specified). */
+					const SymbolLabel* const symbol_label = std::get_if<SymbolLabel>(&entry);
 
-			/* Begin first segment. */
-			WriteRecordSegment(&state);
-
-			/* Perform first pass of assembly, creating a list of fix-ups. */
-			AssembleFile(&state);
-
-			/* Finalise the segment record data. */
-			TerminatePreviousRecordSegment(&state);
-
-			/* Write terminating record. */
-			OutputWriteRawByte(&state, 0x00);
-			BinaryStream_fwrite(StringView_Data(string_assembler_identifier), 1, StringView_Length(string_assembler_identifier), output_callbacks);
-
-			/* Destroy the lexer, as we no longer need it. */
-			if (m68kasm_lex_destroy(state.flex_state) != 0)
-				InternalError(&state, "m68kasm_lex_destroy failed.");
-
-			/* Perform some sanity checks to make sure we're not somehow in an invalid state. */
-			if (state.current_if_level != 0)
-				SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
-			if (state.obj_active)
-				SemanticError(&state, "An OBJ statement somewhere is missing its OBJEND.");
-
-			/* Process the fix-ups: reassemble instructions and reprocess
-			   directives that could not be completed in the first pass. */
-			state.doing_fixup_pass = cc_true;
-
-			while (!state.fixup_list.empty())
-			{
-				/* Pop fix-up from list. */
-				FixUp &fixup = state.fixup_list.front();
-
-				/* Reset some state to how it was at the time the statement was first processed. */
-				state.macro.dictionary = fixup.macro_dictionary;
-				state.program_counter = fixup.program_counter;
-				OutputSeek(&state, fixup.output_position);
-				state.segment_length = fixup.segment_length;
-				String_CreateMove(state.last_global_label, fixup.last_global_label);
-				state.source_line = &fixup.source_line;
-				state.location = std::move(fixup.location);
-				*state.options = fixup.options;
-
-				/* Re-process statement. */
-				ProcessStatement(&state, &fixup.statement, String_View(fixup.label));
-
-				/* We're done with this statement: delete it. */
-				state.fixup_list.pop_front();
-			}
-
-			/* Produce asm68k symbol file, if requested. */
-			if (BinaryStream_exists(symbol_callbacks))
-			{
-				/* Some kind of header. */
-				BinaryStream_fputc('M', symbol_callbacks);
-				BinaryStream_fputc('N', symbol_callbacks);
-				BinaryStream_fputc('D', symbol_callbacks);
-				BinaryStream_fputc(1, symbol_callbacks);
-				BinaryStream_fputc(0, symbol_callbacks);
-				BinaryStream_fputc(0, symbol_callbacks);
-				BinaryStream_fputc(0, symbol_callbacks);
-				BinaryStream_fputc(0, symbol_callbacks);
-
-				state.dictionary.Filter(
-					[&](const SymbolDictionary::Entry &entry, const StringView &identifier) -> cc_bool
+					if (symbol_label != NULL)
 					{
-						/* The symbol file only contains labels. */
-						/* Labels longer than 0xFF characters are silently ignored. */
-						/* Local labels are also silently ignored (unless 'v+' is specified). */
-						const SymbolLabel* const symbol_label = std::get_if<SymbolLabel>(&entry);
+						const char *label;
+						size_t label_length;
+						cc_bool is_local_label;
 
-						if (symbol_label != NULL)
+						for (label = &StringView_At(identifier, StringView_Length(identifier)), label_length = 0; label_length != StringView_Length(identifier); --label, ++label_length)
+							if (*label == state.options->local_signifier)
+								break;
+
+						is_local_label = label_length != StringView_Length(identifier);
+
+						if (label_length < 0x100 && (!is_local_label || state.options->output_local_labels_to_sym_file))
 						{
-							const char *label;
-							size_t label_length;
-							cc_bool is_local_label;
+							unsigned int i;
 
-							for (label = &StringView_At(identifier, StringView_Length(identifier)), label_length = 0; label_length != StringView_Length(identifier); --label, ++label_length)
-								if (*label == state.options->local_signifier)
-									break;
+							/* Output the address of the label. */
+							for (i = 0; i < 4; ++i)
+								BinaryStream_fputc((symbol_label->value >> (i * 8)) & 0xFF, symbol_callbacks);
 
-							is_local_label = label_length != StringView_Length(identifier);
+							/* I have no idea what this means. */
+							BinaryStream_fputc(is_local_label ? 6 : 2, symbol_callbacks);
 
-							if (label_length < 0x100 && (!is_local_label || state.options->output_local_labels_to_sym_file))
-							{
-								unsigned int i;
+							/* Output the length of the label. */
+							BinaryStream_fputc(label_length, symbol_callbacks);
 
-								/* Output the address of the label. */
-								for (i = 0; i < 4; ++i)
-									BinaryStream_fputc((symbol_label->value >> (i * 8)) & 0xFF, symbol_callbacks);
-
-								/* I have no idea what this means. */
-								BinaryStream_fputc(is_local_label ? 6 : 2, symbol_callbacks);
-
-								/* Output the length of the label. */
-								BinaryStream_fputc(label_length, symbol_callbacks);
-
-								/* Output the label itself. */
-								BinaryStream_fwrite(label, 1, label_length, symbol_callbacks);
-							}
+							/* Output the label itself. */
+							BinaryStream_fwrite(label, 1, label_length, symbol_callbacks);
 						}
-
-						return cc_true;
 					}
-				);
-			}
+
+					return cc_true;
+				}
+			);
 		}
 	}
 
