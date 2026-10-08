@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 	const char *output_file_path;
 	const char *listing_file_path;
 	const char *symbol_file_path;
-	ClownAssembler_Settings settings = {0};
+	ClownAssembler_Settings settings = {};
 	int i;
 
 	total_arguments = argc;

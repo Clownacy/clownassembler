@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 
 	int i;
 	char *combined_arguments;
-	ClownAssembler_Settings settings = {0};
+	ClownAssembler_Settings settings = {};
 	char *source_file_path;
 	char *object_file_path;
 	char *symbol_file_path;
