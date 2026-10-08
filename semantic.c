@@ -717,7 +717,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView *identifi
 				break;
 
 			case SYMBOL_EXPRESSION_CONSTANT:
-				if (!ResolveExpression(state, (Expression*)dictionary_entry->shared.pointer, value, cc_false))
+				if (!ResolveExpression(state, (Expression*)dictionary_entry->shared.pointer, value, cc_true))
 					success = cc_false;
 
 				break;
@@ -1359,6 +1359,9 @@ static void TerminateWhile(SemanticState *state)
 
 		state->source_line = &source_line;
 
+		/* We absolutely do not want to fold (cache) this expression, because
+		   while-loops depend on variables mutating from previous values;
+		   without this, while-loops will never terminate. */
 		if (!ResolveExpression(state, &expression, &value, cc_false))
 		{
 			SemanticError(state, "Expression must be evaluable on the first pass.");
@@ -1890,7 +1893,7 @@ static void OptimiseInstruction(SemanticState* const state, StatementInstruction
 			{
 				unsigned long value;
 
-				if (ResolveExpression(state, &operand->literal, &value, cc_false) && value == 0)
+				if (ResolveExpression(state, &operand->literal, &value, cc_true) && value == 0)
 					operand->type = OPERAND_ADDRESS_REGISTER_INDIRECT;
 			}
 		}
@@ -5010,7 +5013,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			if (Options_Get(&state->options)->equ_set_descope_local_labels)
 				SetLastGlobalLabel(state, label);
 
-			if (!ResolveExpression(state, &statement->shared.expression, &value, cc_false))
+			if (!ResolveExpression(state, &statement->shared.expression, &value, cc_true))
 			{
 				/* Separate the expression from the statement, so that it is not freed along with the statement. */
 				Expression *expression_copy = (Expression*)MallocAndHandleError(state, sizeof(Expression));
