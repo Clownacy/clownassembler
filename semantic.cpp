@@ -704,7 +704,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 					if (!ResolveExpression(state, &symbol.expression, value))
 						success = cc_false;
 				},
-				[&](auto &symbol)
+				[&](auto&)
 				{
 					SemanticError(state, "Symbol '{}' is not a label, constant, or variable.", identifier);
 					success = cc_false;
@@ -716,7 +716,8 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 	return success;
 }
 
-static void AddToSourceLineList(SemanticState *state, SourceLineList &source_line_list, String source_line)
+// TODO: Just inline this.
+static void AddToSourceLineList(SourceLineList &source_line_list, String source_line)
 {
 	source_line_list.emplace_back(std::move(source_line));
 }
@@ -953,11 +954,11 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 					}
 				}
 			},
-			[&](ExpressionProgramCounterOfStatement &expression)
+			[&](ExpressionProgramCounterOfStatement&)
 			{
 				*value = state->program_counter_of_statement;
 			},
-			[&](ExpressionProgramCounterOfExpression &expression)
+			[&](ExpressionProgramCounterOfExpression&)
 			{
 				*value = state->program_counter_of_expression;
 			},
@@ -998,11 +999,11 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			{
 				*value = LookupSymbol(state, String_View(expression.string), NULL) != NULL ? -1 : 0;
 			},
-			[&](ExpressionTypeWithIdentifier &expression)
+			[&](ExpressionTypeWithIdentifier&)
 			{
 				*value = 0; /* TODO: This is a placeholder! */
 			},
-			[&](ExpressionTypeWithNumber &expression)
+			[&](ExpressionTypeWithNumber&)
 			{
 				*value = 1; /* TODO: This is a placeholder! */
 			},
@@ -1060,7 +1061,7 @@ static void TerminateRept(SemanticState *state, SemanticState::ModeRept &rept_st
 		state->location.front().line_number = rept_state_copy.line_number;
 
 		/* Process the REPT's nested statements. */
-		for (const auto source_line : rept_state_copy.source_line_list)
+		for (const auto &source_line : rept_state_copy.source_line_list)
 			AssembleLine(state, source_line, state->options->expand_all_macros);
 	}
 
@@ -4732,7 +4733,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 	std::visit(
 		CC_VisitHelper{
-			[&](StatementEmpty &statement) {},
+			[&](StatementEmpty&) {},
 			[&](StatementInstruction &statement)
 			{
 				ProcessInstruction(state, &statement);
@@ -4761,7 +4762,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			{
 				ProcessRept(state, &statement);
 			},
-			[&](StatementEndR &statement)
+			[&](StatementEndR&)
 			{
 				/* Exit REPT mode. */
 				const auto mode = std::get_if<SemanticState::ModeRept>(&state->mode);
@@ -4779,7 +4780,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			{
 				ProcessMacro(state, &statement.macro, label, cc_true);
 			},
-			[&](StatementEndM &statement)
+			[&](StatementEndM&)
 			{
 				/* Exit MACRO mode. */
 				const auto mode = std::get_if<SemanticState::ModeMacro>(&state->mode);
@@ -4919,7 +4920,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					}
 				}
 			},
-			[&](StatementElse &statement)
+			[&](StatementElse&)
 			{
 				if (state->current_if_level == 0)
 				{
@@ -4945,7 +4946,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					}
 				}
 			},
-			[&](StatementEndC &statement)
+			[&](StatementEndC&)
 			{
 				if (state->current_if_level == 0)
 					SemanticError(state, "This stray ENDC/ENDIF has no preceeding IF.");
@@ -4968,7 +4969,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				mode.line_number = state->location.front().line_number;
 				mode.nesting = 0;
 			},
-			[&](StatementEndW &statement)
+			[&](StatementEndW&)
 			{
 				/* Exit WHILE mode. */
 				const auto mode = std::get_if<SemanticState::ModeWhile>(&state->mode);
@@ -4978,7 +4979,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				else
 					TerminateWhile(state, *mode);
 			},
-			[&](StatementEven &statement)
+			[&](StatementEven&)
 			{
 				PerformEven(state);
 			},
@@ -5055,12 +5056,12 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 						break;
 				}
 			},
-			[&](StatementFail &statement)
+			[&](StatementFail&)
 			{
 				/* TODO: Halt assembly. */
 				SemanticError(state, "Assembly Failed");
 			},
-			[&](StatementEnd &statement)
+			[&](StatementEnd&)
 			{
 				state->end = cc_true;
 			},
@@ -5122,7 +5123,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				else
 					state->rs = value;
 			},
-			[&](StatementRSReset &statement)
+			[&](StatementRSReset&)
 			{
 				/* Set '__rs' to 0. */
 				state->rs = 0;
@@ -5146,7 +5147,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					AdvanceProgramCounter(state, state->obj_delta);
 				}
 			},
-			[&](StatementObjEnd &statement)
+			[&](StatementObjEnd&)
 			{
 				if (!state->obj_active)
 				{
@@ -5180,11 +5181,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					state->program_counter = value;
 				}
 			},
-			[&](StatementPushO &statement)
+			[&](StatementPushO&)
 			{
 				state->options.Push();
 			},
-			[&](StatementPopO &statement)
+			[&](StatementPopO&)
 			{
 				state->options.Pop();
 			},
@@ -5267,7 +5268,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					state->string_stack.pop();
 				}
 			},
-			[&](StatementShift &statement)
+			[&](StatementShift&)
 			{
 				if (!CurrentlyExpandingMacro(state))
 				{
@@ -5288,7 +5289,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 					PushMacroArgumentSubstitutions(state);
 				}
 			},
-			[&](StatementMExit &statement)
+			[&](StatementMExit&)
 			{
 				state->macro.active = cc_false;
 			},
@@ -5951,7 +5952,7 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 						if (StringView_CompareCStrCaseInsensitive(directive, "rept"))
 							++rept_state.nesting;
 
-						AddToSourceLineList(state, rept_state.source_line_list, *state->source_line);
+						AddToSourceLineList(rept_state.source_line_list, *state->source_line);
 					}
 				},
 				[&](SemanticState::ModeMacro &macro_state)
@@ -5981,13 +5982,13 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 							}
 							else
 							{
-								AddToSourceLineList(state, macro_state.metadata.source_line_list, *state->source_line);
+								AddToSourceLineList(macro_state.metadata.source_line_list, *state->source_line);
 								TerminateMacro(state, macro_state);
 							}
 						}
 						else
 						{
-							AddToSourceLineList(state, macro_state.metadata.source_line_list, *state->source_line);
+							AddToSourceLineList(macro_state.metadata.source_line_list, *state->source_line);
 						}
 					}
 				},
@@ -6004,7 +6005,7 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 						if (StringView_CompareCStrCaseInsensitive(directive, "while"))
 							++while_state.nesting;
 
-						AddToSourceLineList(state, while_state.source_line_list, *state->source_line);
+						AddToSourceLineList(while_state.source_line_list, *state->source_line);
 					}
 				}
 			}, state->mode
