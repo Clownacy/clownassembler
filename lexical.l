@@ -397,7 +397,7 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
  /* String. */
 (?:\"[^\"]*\")+ |
 (?:\'[^\']*\')+ {
-	size_t i, output_size;
+	size_t i;
 	char previous_character;
 
 	const char quotation_character = yytext[0];
@@ -411,7 +411,6 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 	string.reserve(StringView_Length(view));
 
 	/* Copy string, turning escaped (paired) quotes into regular (lone) quotes. */
-	output_size = 0;
 	previous_character = '\0';
 
 	for (i = 0; i < StringView_Length(view); ++i)

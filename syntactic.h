@@ -5784,15 +5784,13 @@ switch (yykind)
 #line 639 "syntactic.y"
 
 
-static cc_bool DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression);
-static cc_bool DoExpression(Expression &expression, ExpressionArithmetic2Operand::Type type, Expression left_expression, Expression right_expression);
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
 
 #define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner)
 
 
-#line 5796 "syntactic.h"
+#line 5794 "syntactic.h"
 
 
 #endif // !YY_M68KASM_SYNTACTIC_H_INCLUDED

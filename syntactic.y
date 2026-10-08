@@ -638,8 +638,6 @@ using Statement = std::variant<
 
 %code provides {
 
-static cc_bool DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression);
-static cc_bool DoExpression(Expression &expression, ExpressionArithmetic2Operand::Type type, Expression left_expression, Expression right_expression);
 void DestroyExpression(Expression *expression);
 void DestroyStatement(Statement *statement);
 
@@ -659,6 +657,8 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message);
 void m68kasm_warning_pedantic(void *scanner, Statement *statement, const char *message);
 void m68kasm_error(void *scanner, Statement *statement, const char *message);
 
+static cc_bool DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression);
+static cc_bool DoExpression(Expression &expression, ExpressionArithmetic2Operand::Type type, Expression left_expression, Expression right_expression);
 static void DestroyOperand(Operand *operand);
 static void DestroyStatementInstruction(StatementInstruction *instruction);
 
@@ -971,7 +971,7 @@ statement
 	| DIRECTIVE_MACROS
 	{
 		// TODO: Is there a way to make this tidier?
-		statement->emplace<StatementMacroS>(StatementMacro{cc_false});
+		statement->emplace<StatementMacroS>(StatementMacro{cc_false, {}});
 	}
 	| DIRECTIVE_MACROS identifier_list
 	{
