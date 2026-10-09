@@ -26,8 +26,8 @@
 #include <stddef.h>
 #include <string.h>
 
-static const ClownAssembler_BinaryStream *input_file;
-static const ClownAssembler_BinaryStream *output_file;
+static std::istream *input_stream;
+static std::ostream *output_stream;
 static const ClownAssembler_TextOutput *error_callbacks;
 static jmp_buf jump_buffer;
 static unsigned char padding_buffer[0x1000];
@@ -38,9 +38,9 @@ static unsigned int padding_value = 0;
 
 static unsigned int ReadByte(void)
 {
-	const int byte = BinaryStream_fgetc(input_file);
+	const int byte = input_stream->get();
 
-	if (byte == EOF)
+	if (input_stream->gcount() == 0)
 	{
 		TextOutput_fputs("Error: File ended prematurely.\n", error_callbacks);
 		longjmp(jump_buffer, 1);
@@ -51,7 +51,9 @@ static unsigned int ReadByte(void)
 
 static void ReadBytes(unsigned char* const buffer, const unsigned int total_bytes)
 {
-	if (BinaryStream_fread(buffer, total_bytes, 1, input_file) == 0)
+	input_stream->read(reinterpret_cast<char*>(buffer), total_bytes);
+
+	if (input_stream->gcount() != total_bytes)
 	{
 		TextOutput_fputs("Error: File ended prematurely.\n", error_callbacks);
 		longjmp(jump_buffer, 1);
@@ -108,14 +110,15 @@ static void ProcessSegment(void)
 		/* Set padding bytes between segments. */
 		const unsigned long padding_length = start_address - maximum_address;
 
-		BinaryStream_fseek(output_file, maximum_address - base_address);
+		output_stream->seekp(maximum_address - base_address);
 
+		/* TODO: Is this actually necessary? I thought padding was inserted automatically. */
 		for (i = 0; i < padding_length; i += sizeof(padding_buffer))
-			BinaryStream_fwrite(padding_buffer, CC_MIN(sizeof(padding_buffer), padding_length - i), 1, output_file);
+			output_stream->write(reinterpret_cast<const char*>(padding_buffer), CC_MIN(sizeof(padding_buffer), padding_length - i));
 	}
 	else
 	{
-		BinaryStream_fseek(output_file, start_address - base_address);
+		output_stream->seekp(start_address - base_address);
 	}
 
 	/* Copy segment data. We do some batching using a buffer to improve performance. */
@@ -124,7 +127,7 @@ static void ProcessSegment(void)
 		const unsigned long bytes_to_do = CC_MIN(sizeof(copy_buffer), length - i);
 
 		ReadBytes(copy_buffer, bytes_to_do);
-		BinaryStream_fwrite(copy_buffer, bytes_to_do, 1, output_file);
+		output_stream->write(reinterpret_cast<const char*>(copy_buffer), bytes_to_do);
 	}
 
 	if (end_address > maximum_address)
@@ -187,18 +190,20 @@ static cc_bool ProcessRecords(void)
 	return cc_false;
 }
 
-cc_bool ConvertObjectFileToFlatBinary(const ClownAssembler_BinaryStream* const input_file_parameter, const ClownAssembler_BinaryStream* const output_file_parameter, const ClownAssembler_TextOutput* const error_callbacks_parameter)
+cc_bool ConvertObjectFileToFlatBinary(std::istream &input_stream_parameter, std::ostream &output_stream_parameter, const ClownAssembler_TextOutput* const error_callbacks_parameter)
 {
 	unsigned char magic[2];
 
 	cc_bool success = cc_false;
 
-	input_file = input_file_parameter;
-	output_file = output_file_parameter;
+	input_stream = &input_stream_parameter;
+	output_stream = &output_stream_parameter;
 	error_callbacks = error_callbacks_parameter;
 
 	/* Read and check the header's magic number. */
-	if (BinaryStream_fread(magic, sizeof(magic), 1, input_file) == 0)
+	input_stream->read(reinterpret_cast<char*>(magic), sizeof(magic));
+
+	if (input_stream->gcount() != sizeof(magic))
 		TextOutput_fputs("Error: Could not read header magic value.\n", error_callbacks);
 	else if (magic[0] != 0x89 || magic[1] != 0x14)
 		TextOutput_Format(error_callbacks, "Error: Invalid header magic value - expected 0x8914 but got 0x{:02X}{:02X}.\nInput file is either corrupt or not a valid AS code file.\n", magic[0], magic[1]);

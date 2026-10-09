@@ -23,6 +23,7 @@
 #include <deque>
 #include <limits.h>
 #include <memory>
+#include <sstream>
 #include <stack>
 #include <stdarg.h>
 #include <stdio.h>
@@ -165,7 +166,7 @@ typedef struct SemanticState
 
 	/* Callbacks. */
 	const TextInput *input_callbacks = nullptr;
-	const BinaryStream *output_callbacks = nullptr;
+	std::ostream *output_stream = nullptr;
 	const TextOutput *listing_callbacks = nullptr;
 	const TextOutput *error_callbacks = nullptr;
 
@@ -251,13 +252,13 @@ static const StringView string_assembler_identifier = STRING_VIEW_INITIALISER(CL
 static void OutputWriteRawByte(SemanticState* const state, const unsigned char byte)
 {
 	++state->output_position;
-	BinaryStream_fputc(byte, state->output_callbacks);
+	state->output_stream->put(byte);
 }
 
 static void OutputSeek(SemanticState* const state, const size_t position)
 {
 	state->output_position = position;
-	BinaryStream_fseek(state->output_callbacks, position);
+	state->output_stream->seekp(position);
 }
 
 static void TerminatePreviousRecordSegment(SemanticState *state)
@@ -6098,10 +6099,10 @@ static void AddDefinition(void* const internal, const char* const identifier_buf
 
 static cc_bool ClownAssembler_AssembleToObjectFile(
 	const TextInput* const input_callbacks,
-	const BinaryStream* const output_callbacks,
+	std::ostream &output_stream,
 	const TextOutput* const error_callbacks,
 	const TextOutput* const listing_callbacks,
-	const BinaryStream* const symbol_callbacks,
+	std::ostream *symbol_stream,
 	const char* const input_file_path,
 	const ClownAssembler_Settings* const initial_options,
 	const ClownAssembler_DefinitionCallback definition_callback,
@@ -6116,7 +6117,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 	/* Initialise the state's non-default values. */
 	state.input_callbacks = input_callbacks;
-	state.output_callbacks = output_callbacks;
+	state.output_stream = &output_stream;
 	state.error_callbacks = error_callbacks;
 	state.listing_callbacks = listing_callbacks;
 
@@ -6149,7 +6150,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 		/* Write terminating record. */
 		OutputWriteRawByte(&state, 0x00);
-		BinaryStream_fwrite(StringView_Data(string_assembler_identifier), 1, StringView_Length(string_assembler_identifier), output_callbacks);
+		output_stream.write(StringView_Data(string_assembler_identifier), StringView_Length(string_assembler_identifier));
 
 		/* Perform some sanity checks to make sure we're not somehow in an invalid state. */
 		if (state.current_if_level != 0)
@@ -6184,17 +6185,17 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 		}
 
 		/* Produce asm68k symbol file, if requested. */
-		if (BinaryStream_exists(symbol_callbacks))
+		if (symbol_stream != nullptr)
 		{
 			/* Some kind of header. */
-			BinaryStream_fputc('M', symbol_callbacks);
-			BinaryStream_fputc('N', symbol_callbacks);
-			BinaryStream_fputc('D', symbol_callbacks);
-			BinaryStream_fputc(1, symbol_callbacks);
-			BinaryStream_fputc(0, symbol_callbacks);
-			BinaryStream_fputc(0, symbol_callbacks);
-			BinaryStream_fputc(0, symbol_callbacks);
-			BinaryStream_fputc(0, symbol_callbacks);
+			symbol_stream->put('M');
+			symbol_stream->put('N');
+			symbol_stream->put('D');
+			symbol_stream->put(1);
+			symbol_stream->put(0);
+			symbol_stream->put(0);
+			symbol_stream->put(0);
+			symbol_stream->put(0);
 
 			state.dictionary.Filter(
 				[&](const SymbolDictionary::Entry &entry, const StringView &identifier) -> cc_bool
@@ -6222,16 +6223,16 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 							/* Output the address of the label. */
 							for (i = 0; i < 4; ++i)
-								BinaryStream_fputc((symbol_label->value >> (i * 8)) & 0xFF, symbol_callbacks);
+								symbol_stream->put((symbol_label->value >> (i * 8)) & 0xFF);
 
 							/* I have no idea what this means. */
-							BinaryStream_fputc(is_local_label ? 6 : 2, symbol_callbacks);
+							symbol_stream->put(is_local_label ? 6 : 2);
 
 							/* Output the length of the label. */
-							BinaryStream_fputc(label_length, symbol_callbacks);
+							symbol_stream->put(label_length);
 
 							/* Output the label itself. */
-							BinaryStream_fwrite(label, 1, label_length, symbol_callbacks);
+							symbol_stream->write(label, label_length);
 						}
 					}
 
@@ -6246,10 +6247,10 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 cc_bool ClownAssembler_Assemble(
 	const TextInput* const input_callbacks,
-	const BinaryStream* const output_callbacks,
+	std::ostream &output_stream,
 	const TextOutput* const error_callbacks,
 	const TextOutput* const listing_callbacks,
-	const BinaryStream* const symbol_callbacks,
+	std::ostream* const symbol_stream,
 	const char* const input_file_path,
 	const ClownAssembler_Settings* const initial_options,
 	const ClownAssembler_DefinitionCallback definition_callback,
@@ -6257,23 +6258,12 @@ cc_bool ClownAssembler_Assemble(
 {
 	cc_bool success = cc_false;
 
-	ClownAssembler_BinaryStream temporary_callbacks;
+	std::stringstream object_stream;
 
-	if (!BinaryStream_OpenMemory(&temporary_callbacks))
+	if (ClownAssembler_AssembleToObjectFile(input_callbacks, object_stream, error_callbacks, listing_callbacks, symbol_stream, input_file_path, initial_options, definition_callback, user_data))
 	{
-		TextOutput_fputs("Internal error: Could not open temporary file.\n", error_callbacks);
-	}
-	else
-	{
-		if (ClownAssembler_AssembleToObjectFile(input_callbacks, &temporary_callbacks, error_callbacks, listing_callbacks, symbol_callbacks, input_file_path, initial_options, definition_callback, user_data))
-		{
-			BinaryStream_rewind(&temporary_callbacks);
-
-			if (ConvertObjectFileToFlatBinary(&temporary_callbacks, output_callbacks, error_callbacks))
-				success = cc_true;
-		}
-
-		BinaryStream_CloseMemory(&temporary_callbacks);
+		if (ConvertObjectFileToFlatBinary(object_stream, output_stream, error_callbacks))
+			success = cc_true;
 	}
 
 	return success;
@@ -6281,26 +6271,22 @@ cc_bool ClownAssembler_Assemble(
 
 cc_bool ClownAssembler_AssembleFile(
 	std::istream &input_file,
-	std::iostream &output_file,
+	std::ostream &output_stream,
 	std::ostream &error_file,
 	std::ostream &listing_file,
-	std::iostream &symbol_file,
+	std::ostream* const symbol_stream,
 	const char* const input_file_path,
 	const ClownAssembler_Settings* const settings,
 	const ClownAssembler_DefinitionCallback definition_callback,
 	const void* const user_data)
 {
 	ClownAssembler_TextInput input_callbacks;
-	ClownAssembler_BinaryStream output_callbacks;
 	ClownAssembler_TextOutput error_callbacks;
 	ClownAssembler_TextOutput listing_callbacks;
-	ClownAssembler_BinaryStream symbol_callbacks;
 
 	TextInput_OpenFILE(&input_callbacks, input_file);
-	BinaryStream_OpenFILE(&output_callbacks, output_file);
 	TextOutput_OpenFILE(&error_callbacks, error_file);
 	TextOutput_OpenFILE(&listing_callbacks, listing_file);
-	BinaryStream_OpenFILE(&symbol_callbacks, symbol_file);
 
-	return ClownAssembler_Assemble(&input_callbacks, &output_callbacks, &error_callbacks, &listing_callbacks, &symbol_callbacks, input_file_path, settings, definition_callback, user_data);
+	return ClownAssembler_Assemble(&input_callbacks, output_stream, &error_callbacks, &listing_callbacks, symbol_stream, input_file_path, settings, definition_callback, user_data);
 }

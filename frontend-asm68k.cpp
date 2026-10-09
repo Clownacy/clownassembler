@@ -79,8 +79,8 @@ int main(int argc, char **argv)
 	char *symbol_file_path;
 	char *listing_file_path;
 	std::ifstream source_file;
-	std::fstream object_file;
-	std::fstream symbol_file;
+	std::ofstream object_file;
+	std::ofstream symbol_file;
 	std::ofstream listing_file;
 	enum
 	{
@@ -417,7 +417,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		object_file.open(object_file_path, object_file.trunc | object_file.in | object_file.out | object_file.binary);
+		object_file.open(object_file_path, object_file.binary);
 		if (!object_file.is_open())
 		{
 			fprintf(stderr, "Error: Object file could not be opened.\n");
@@ -425,8 +425,12 @@ int main(int argc, char **argv)
 		}
 	}
 
+	std::ostream *symbol_stream = NULL;
 	if (symbol_file_path != NULL && symbol_file_path[0] != '\0')
-		symbol_file.open(symbol_file_path, symbol_file.trunc | symbol_file.in | symbol_file.out | symbol_file.binary);
+	{
+		symbol_stream = &symbol_file;
+		symbol_file.open(symbol_file_path, symbol_file.binary);
+	}
 
 	if (listing_file_path != NULL && listing_file_path[0] != '\0')
 		listing_file.open(listing_file_path);
@@ -451,7 +455,7 @@ int main(int argc, char **argv)
 	/* If we've gotten this far without any errors, then finally run the assembler. */
 	if (exit_code != EXIT_FAILURE)
 	{
-		if (!ClownAssembler_AssembleFile(source_file, object_file, std::cout, listing_file, symbol_file, source_file_path, &settings, DefinitionCallback, NULL))
+		if (!ClownAssembler_AssembleFile(source_file, object_file, std::cout, listing_file, symbol_stream, source_file_path, &settings, DefinitionCallback, NULL))
 		{
 			fprintf(stderr, "Error: Failed to assemble.\n");
 			exit_code = EXIT_FAILURE;

@@ -235,7 +235,7 @@ int main(int argc, char **argv)
 			{
 				std::istream &input_file = input_file_path == NULL ? std::cin : input_file_stream;
 
-				std::fstream output_file(output_file_path, output_file.trunc | output_file.in | output_file.out | output_file.binary);
+				std::ofstream output_file(output_file_path, output_file.binary);
 
 				if (!output_file.is_open())
 				{
@@ -244,7 +244,8 @@ int main(int argc, char **argv)
 				else
 				{
 					std::ofstream listing_file;
-					std::fstream symbol_file;
+					std::ostream *symbol_stream;
+					std::ofstream symbol_file;
 					cc_bool success;
 
 					if (listing_file_path == NULL)
@@ -261,17 +262,18 @@ int main(int argc, char **argv)
 
 					if (symbol_file_path == NULL)
 					{
-						symbol_file = NULL;
+						symbol_stream = NULL;
 					}
 					else
 					{
-						symbol_file.open(symbol_file_path, symbol_file.trunc | symbol_file.in | symbol_file.out | symbol_file.binary);
+						symbol_stream = &symbol_file;
+						symbol_file.open(symbol_file_path, symbol_file.binary);
 
 						if (!symbol_file.is_open())
 							ERROR("Could not open symbol file.");
 					}
 
-					success = ClownAssembler_AssembleFile(input_file, output_file, std::cerr, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", &settings, DefinitionCallback, NULL);
+					success = ClownAssembler_AssembleFile(input_file, output_file, std::cerr, listing_file, symbol_stream, input_file_path != NULL ? input_file_path : "STDIN", &settings, DefinitionCallback, NULL);
 
 					if (symbol_file.is_open())
 						symbol_file.close();

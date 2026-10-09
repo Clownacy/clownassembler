@@ -74,15 +74,4 @@ void TextOutput_Format(const ClownAssembler_TextOutput *callbacks, std::format_s
 	TextOutput_fputs(string.c_str(), callbacks);
 }
 
-void BinaryStream_OpenFILE(ClownAssembler_BinaryStream *callbacks, std::iostream &file);
-cc_bool BinaryStream_OpenMemory(ClownAssembler_BinaryStream *callbacks);
-void BinaryStream_CloseMemory(ClownAssembler_BinaryStream *callbacks);
-cc_bool BinaryStream_exists(const ClownAssembler_BinaryStream *callbacks);
-void BinaryStream_fseek(const ClownAssembler_BinaryStream *callbacks, size_t position);
-#define BinaryStream_rewind(CALLBACKS) BinaryStream_fseek(CALLBACKS, 0)
-int BinaryStream_fgetc(const ClownAssembler_BinaryStream *callbacks);
-size_t BinaryStream_fread(void *buffer, size_t size, size_t count, const ClownAssembler_BinaryStream *callbacks);
-void BinaryStream_fputc(int character, const ClownAssembler_BinaryStream *callbacks);
-void BinaryStream_fwrite(const void *buffer, size_t size, size_t count, const ClownAssembler_BinaryStream *callbacks);
-
 #endif /* IO_H */

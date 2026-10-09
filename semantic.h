@@ -37,10 +37,10 @@ typedef void (*ClownAssembler_DefinitionCallback)(void *internal, void *user_dat
 
 cc_bool ClownAssembler_AssembleFile(
 	std::istream &input_callbacks,
-	std::iostream &output_callbacks,
+	std::ostream &output_callbacks,
 	std::ostream &error_callbacks,
 	std::ostream &listing_callbacks,
-	std::iostream &symbol_callbacks,
+	std::ostream *symbol_callbacks,
 	const char *input_file_path,
 	const ClownAssembler_Settings *settings,
 	ClownAssembler_DefinitionCallback definition_callback,
@@ -48,10 +48,10 @@ cc_bool ClownAssembler_AssembleFile(
 
 cc_bool ClownAssembler_Assemble(
 	const ClownAssembler_TextInput *input_callbacks,
-	const ClownAssembler_BinaryStream *output_callbacks,
+	std::ostream &output_callbacks,
 	const ClownAssembler_TextOutput *error_callbacks,
 	const ClownAssembler_TextOutput *listing_callbacks,
-	const ClownAssembler_BinaryStream *symbol_callbacks,
+	std::ostream *symbol_callbacks,
 	const char *input_file_path,
 	const ClownAssembler_Settings *settings,
 	ClownAssembler_DefinitionCallback definition_callback,
