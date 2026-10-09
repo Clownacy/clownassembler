@@ -29,11 +29,8 @@
 static std::istream *input_stream;
 static std::ostream *output_stream;
 static const ClownAssembler_TextOutput *error_callbacks;
-static unsigned char padding_buffer[0x1000];
 static cc_bool base_address_found = cc_false;
 static unsigned long base_address;
-static unsigned long maximum_address = 0;
-static unsigned int padding_value = 0;
 
 static unsigned int ReadByte(void)
 {
@@ -79,28 +76,15 @@ static void ProcessSegment(void)
 
 	const unsigned long start_address = ReadLongInt();
 	const unsigned int length = ReadWord();
-	const unsigned long end_address = start_address + length;
-
+	
 	if (!base_address_found)
 	{
 		base_address_found = cc_true;
 		base_address = start_address;
-		maximum_address = start_address;
 	}
 	else if (start_address < base_address)
 	{
 		throw std::runtime_error("Error: Segment located before start of file.\n");
-	}
-	else if (start_address > maximum_address)
-	{
-		/* Set padding bytes between segments. */
-		const unsigned long padding_length = start_address - maximum_address;
-
-		output_stream->seekp(maximum_address - base_address);
-
-		/* TODO: Is this actually necessary? I thought padding was inserted automatically. */
-		for (i = 0; i < padding_length; i += sizeof(padding_buffer))
-			output_stream->write(reinterpret_cast<const char*>(padding_buffer), CC_MIN(sizeof(padding_buffer), padding_length - i));
 	}
 	else
 	{
@@ -115,15 +99,10 @@ static void ProcessSegment(void)
 		ReadBytes(copy_buffer, bytes_to_do);
 		output_stream->write(reinterpret_cast<const char*>(copy_buffer), bytes_to_do);
 	}
-
-	if (end_address > maximum_address)
-		maximum_address = end_address;
 }
 
 static void ProcessRecords(void)
 {
-	memset(padding_buffer, padding_value, sizeof(padding_buffer));
-
 	for (;;)
 	{
 		const unsigned int record_header = ReadByte();
