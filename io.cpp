@@ -24,16 +24,10 @@
 
 #include "io.h"
 
-typedef ClownAssembler_TextInput TextInput;
-
-/* Default FILE-based IO callbacks */
-
-static char* File_ReadLine(void* const user_data, char* const buffer, const size_t buffer_size)
+char* TextInput_fgets(char* const buffer, const size_t buffer_size, std::istream &stream)
 {
 	// This function needs to emulate 'fgets', which is why
 	// it does so many bizarre things.
-	auto &stream = *static_cast<std::istream*>(user_data);
-
 	stream.clear();
 	stream.getline(buffer, buffer_size);
 
@@ -56,35 +50,4 @@ static char* File_ReadLine(void* const user_data, char* const buffer, const size
 	buffer[end + 0] = '\n';
 	buffer[end + 1] = '\0';
 
-	return buffer;
-}
-
-
-/* TextInput */
-
-void TextInput_OpenFILE(TextInput* const callbacks, std::istream &file)
-{
-	callbacks->user_data = &file;
-	callbacks->read_line = File_ReadLine;
-}
-
-cc_bool TextInput_OpenFile(TextInput* const callbacks, const char* const path)
-{
-	std::ifstream input_file(path);
-
-	if (!input_file.is_open())
-		return cc_false;
-
-	TextInput_OpenFILE(callbacks, *new std::ifstream(std::move(input_file)));
-	return cc_true;
-}
-
-void TextInput_CloseFile(const TextInput* const callbacks)
-{
-	delete static_cast<std::ifstream*>(callbacks->user_data);
-}
-
-char* TextInput_fgets(char* const buffer, const size_t buffer_size, const TextInput* const callbacks)
-{
-	return callbacks->read_line((void*)callbacks->user_data, buffer, buffer_size);
-}
+	return buffer;}

@@ -47,7 +47,7 @@ cc_bool ClownAssembler_AssembleFile(
 	const void *user_data);
 
 cc_bool ClownAssembler_Assemble(
-	const ClownAssembler_TextInput *input_callbacks,
+	std::istream &input_callbacks,
 	std::ostream &output_callbacks,
 	std::ostream &error_callbacks,
 	std::ostream *listing_callbacks,

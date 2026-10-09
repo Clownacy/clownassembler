@@ -21,6 +21,7 @@
 
 #include <assert.h>
 #include <deque>
+#include <fstream>
 #include <limits.h>
 #include <memory>
 #include <sstream>
@@ -41,8 +42,6 @@
 #include "syntactic.h"
 #define YY_NO_UNISTD_H
 #include "lexical.h"
-
-typedef ClownAssembler_TextInput TextInput;
 
 using SourceLineList = std::deque<String>;
 
@@ -163,7 +162,7 @@ typedef struct SemanticState
 	cc_bool success = cc_true;
 
 	/* Callbacks. */
-	const TextInput *input_callbacks = nullptr;
+	std::istream *input_stream = nullptr;
 	std::ostream *output_stream = nullptr;
 	std::ostream *listing_stream = nullptr;
 	std::ostream *error_stream = nullptr;
@@ -4444,28 +4443,26 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 	}
 	else
 	{
-		TextInput input_callbacks;
+		std::ifstream input_stream(standard_path);
 
-		if (!TextInput_OpenFile(&input_callbacks, String_CStr(standard_path)))
+		if (!input_stream.is_open())
 		{
 			SemanticError(state, "File '{}' could not be opened.", include->path);
 		}
 		else
 		{
-			const TextInput* const previous_input_callbacks = state->input_callbacks;
+			std::istream* const previous_input_stream = state->input_stream;
 
 			/* Add file path and line number to the location list. */
 			state->location.emplace_front(include->path, 0);
 
-			state->input_callbacks = &input_callbacks;
+			state->input_stream = &input_stream;
 
 			AssembleFile(state);
 
-			state->input_callbacks = previous_input_callbacks;
+			state->input_stream = previous_input_stream;
 
 			state->location.pop_front();
-
-			TextInput_CloseFile(&input_callbacks);
 		}
 	}
 }
@@ -4537,7 +4534,7 @@ static cc_bool ReadSourceLineRaw(SemanticState *state, size_t line_buffer_write_
 	cc_bool data_read = cc_false;
 
 	/* Repeatedly read into the string until we've fit a whole line (or an error occurs). */
-	while (TextInput_fgets(&String_At(state->line_buffer, line_buffer_write_position), String_Length(state->line_buffer) + 1 - line_buffer_write_position, state->input_callbacks) != NULL)
+	while (TextInput_fgets(&String_At(state->line_buffer, line_buffer_write_position), String_Length(state->line_buffer) + 1 - line_buffer_write_position, *state->input_stream) != NULL)
 	{
 		line_buffer_write_position += strlen(&String_At(state->line_buffer, line_buffer_write_position));
 
@@ -6096,7 +6093,7 @@ static void AddDefinition(void* const internal, const char* const identifier_buf
 }
 
 static cc_bool ClownAssembler_AssembleToObjectFile(
-	const TextInput* const input_callbacks,
+	std::istream &input_stream,
 	std::ostream &output_stream,
 	std::ostream &error_stream,
 	std::ostream* const listing_stream,
@@ -6114,7 +6111,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	state.location.emplace_front(input_file_path, 0);
 
 	/* Initialise the state's non-default values. */
-	state.input_callbacks = input_callbacks;
+	state.input_stream = &input_stream;
 	state.output_stream = &output_stream;
 	state.error_stream = &error_stream;
 	state.listing_stream = listing_stream;
@@ -6244,7 +6241,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 }
 
 cc_bool ClownAssembler_Assemble(
-	const TextInput* const input_callbacks,
+	std::istream &input_stream,
 	std::ostream &output_stream,
 	std::ostream &error_stream,
 	std::ostream* const listing_stream,
@@ -6258,7 +6255,7 @@ cc_bool ClownAssembler_Assemble(
 
 	std::stringstream object_stream;
 
-	if (ClownAssembler_AssembleToObjectFile(input_callbacks, object_stream, error_stream, listing_stream, symbol_stream, input_file_path, initial_options, definition_callback, user_data))
+	if (ClownAssembler_AssembleToObjectFile(input_stream, object_stream, error_stream, listing_stream, symbol_stream, input_file_path, initial_options, definition_callback, user_data))
 	{
 		if (ConvertObjectFileToFlatBinary(object_stream, output_stream, error_stream))
 			success = cc_true;
@@ -6268,7 +6265,7 @@ cc_bool ClownAssembler_Assemble(
 }
 
 cc_bool ClownAssembler_AssembleFile(
-	std::istream &input_file,
+	std::istream &input_stream,
 	std::ostream &output_stream,
 	std::ostream &error_stream,
 	std::ostream &listing_stream,
@@ -6278,9 +6275,5 @@ cc_bool ClownAssembler_AssembleFile(
 	const ClownAssembler_DefinitionCallback definition_callback,
 	const void* const user_data)
 {
-	ClownAssembler_TextInput input_callbacks;
-
-	TextInput_OpenFILE(&input_callbacks, input_file);
-
-	return ClownAssembler_Assemble(&input_callbacks, output_stream, error_stream, &listing_stream, symbol_stream, input_file_path, settings, definition_callback, user_data);
+	return ClownAssembler_Assemble(input_stream, output_stream, error_stream, &listing_stream, symbol_stream, input_file_path, settings, definition_callback, user_data);
 }

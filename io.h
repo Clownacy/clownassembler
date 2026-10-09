@@ -26,18 +26,9 @@
 
 #include "clowncommon/clowncommon.h"
 
-typedef char* (*ClownAssembler_ReadLine)(void *user_data, char *buffer, size_t buffer_size);
+typedef char* (*ClownAssembler_ReadLine)(std::istream &callbacks, char *buffer, size_t buffer_size);
 
-typedef struct ClownAssembler_TextInput
-{
-	void *user_data;
-	ClownAssembler_ReadLine read_line;
-} ClownAssembler_TextInput;
-
-void TextInput_OpenFILE(ClownAssembler_TextInput *callbacks, std::istream &file);
-cc_bool TextInput_OpenFile(ClownAssembler_TextInput *callbacks, const char *path);
-void TextInput_CloseFile(const ClownAssembler_TextInput *callbacks);
-char* TextInput_fgets(char *buffer, size_t buffer_size, const ClownAssembler_TextInput *callbacks);
+char* TextInput_fgets(char *buffer, size_t buffer_size, std::istream &callbacks);
 
 template<typename... Args>
 void TextOutput_Format(std::ostream &stream, std::format_string<Args...> &&format_string, Args &&...args)
