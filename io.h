@@ -27,8 +27,6 @@
 #include "clowncommon/clowncommon.h"
 
 typedef char* (*ClownAssembler_ReadLine)(void *user_data, char *buffer, size_t buffer_size);
-typedef void (*ClownAssembler_WriteCharacter)(void *user_data, int character);
-typedef void (*ClownAssembler_WriteString)(void *user_data, const char *string);
 
 typedef struct ClownAssembler_TextInput
 {
@@ -36,28 +34,16 @@ typedef struct ClownAssembler_TextInput
 	ClownAssembler_ReadLine read_line;
 } ClownAssembler_TextInput;
 
-typedef struct ClownAssembler_TextOutput
-{
-	void *user_data;
-	ClownAssembler_WriteCharacter write_character;
-	ClownAssembler_WriteString write_string;
-} ClownAssembler_TextOutput;
-
 void TextInput_OpenFILE(ClownAssembler_TextInput *callbacks, std::istream &file);
 cc_bool TextInput_OpenFile(ClownAssembler_TextInput *callbacks, const char *path);
 void TextInput_CloseFile(const ClownAssembler_TextInput *callbacks);
 char* TextInput_fgets(char *buffer, size_t buffer_size, const ClownAssembler_TextInput *callbacks);
 
-void TextOutput_OpenFILE(ClownAssembler_TextOutput *callbacks, std::ostream &file);
-cc_bool TextOutput_exists(const ClownAssembler_TextOutput *callbacks);
-void TextOutput_fputs(const char *string, const ClownAssembler_TextOutput *callbacks);
-void TextOutput_fputc(int character, const ClownAssembler_TextOutput *callbacks);
-
 template<typename... Args>
-void TextOutput_Format(const ClownAssembler_TextOutput *callbacks, std::format_string<Args...> &&format_string, Args &&...args)
+void TextOutput_Format(std::ostream &stream, std::format_string<Args...> &&format_string, Args &&...args)
 {
-	const auto string = std::format(std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
-	TextOutput_fputs(string.c_str(), callbacks);
+	// TODO: Replace this with `std::format_to`.
+	stream << std::format(std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 }
 
 #endif /* IO_H */

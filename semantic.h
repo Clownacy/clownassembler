@@ -49,8 +49,8 @@ cc_bool ClownAssembler_AssembleFile(
 cc_bool ClownAssembler_Assemble(
 	const ClownAssembler_TextInput *input_callbacks,
 	std::ostream &output_callbacks,
-	const ClownAssembler_TextOutput *error_callbacks,
-	const ClownAssembler_TextOutput *listing_callbacks,
+	std::ostream &error_callbacks,
+	std::ostream *listing_callbacks,
 	std::ostream *symbol_callbacks,
 	const char *input_file_path,
 	const ClownAssembler_Settings *settings,

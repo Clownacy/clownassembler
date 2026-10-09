@@ -43,7 +43,6 @@
 #include "lexical.h"
 
 typedef ClownAssembler_TextInput TextInput;
-typedef ClownAssembler_TextOutput TextOutput;
 
 using SourceLineList = std::deque<String>;
 
@@ -166,8 +165,8 @@ typedef struct SemanticState
 	/* Callbacks. */
 	const TextInput *input_callbacks = nullptr;
 	std::ostream *output_stream = nullptr;
-	const TextOutput *listing_callbacks = nullptr;
-	const TextOutput *error_callbacks = nullptr;
+	std::ostream *listing_stream = nullptr;
+	std::ostream *error_stream = nullptr;
 
 	/* Global stuff. */
 	OptionsStack options;
@@ -325,9 +324,9 @@ static void OutputWriteSegmentByte(SemanticState* const state, const unsigned ch
 static void ErrorMessageCommon(SemanticState *state)
 {
 	for (const auto &location : state->location)
-		TextOutput_Format(state->error_callbacks, "\nOn line {} of '{}'...", location.line_number, location.file_path);
+		TextOutput_Format(*state->error_stream, "\nOn line {} of '{}'...", location.line_number, location.file_path);
 
-	TextOutput_Format(state->error_callbacks, "\n{}\n\n", state->source_line == NULL ? "[No source line]" : *state->source_line);
+	TextOutput_Format(*state->error_stream, "\n{}\n\n", state->source_line == NULL ? "[No source line]" : *state->source_line);
 }
 
 template<typename... Args>
@@ -335,9 +334,9 @@ static void SemanticWarning(SemanticState *state, std::format_string<Args...> &&
 {
 	if (state->options->warnings_enabled)
 	{
-		TextOutput_fputs("Warning: ", state->error_callbacks);
+		*state->error_stream << "Warning: ";
 
-		TextOutput_Format(state->error_callbacks, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+		TextOutput_Format(*state->error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 
 		ErrorMessageCommon(state);
 	}
@@ -346,9 +345,9 @@ static void SemanticWarning(SemanticState *state, std::format_string<Args...> &&
 template<typename... Args>
 static void SemanticError(SemanticState *state, std::format_string<Args...> &&format_string, Args &&...args)
 {
-	TextOutput_fputs("Error: ", state->error_callbacks);
+	*state->error_stream << "Error: ";
 
-	TextOutput_Format(state->error_callbacks, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+	TextOutput_Format(*state->error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 
 	ErrorMessageCommon(state);
 
@@ -358,9 +357,9 @@ static void SemanticError(SemanticState *state, std::format_string<Args...> &&fo
 template<typename... Args>
 static void InternalError(SemanticState *state, std::format_string<Args...> &&format_string, Args &&...args)
 {
-	TextOutput_fputs("Internal error: ", state->error_callbacks);
+	*state->error_stream << "Internal error: ";
 
-	TextOutput_Format(state->error_callbacks, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+	TextOutput_Format(*state->error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 
 	ErrorMessageCommon(state);
 
@@ -369,7 +368,7 @@ static void InternalError(SemanticState *state, std::format_string<Args...> &&fo
 
 static void OutOfMemoryError(SemanticState *state)
 {
-	TextOutput_fputs("Out-of-memory error.", state->error_callbacks);
+	*state->error_stream << "Out-of-memory error.";
 
 	ErrorMessageCommon(state);
 
@@ -384,7 +383,7 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message)
 
 	if (state->options->warnings_enabled)
 	{
-		TextOutput_Format(state->error_callbacks, "Warning: {}", message);
+		TextOutput_Format(*state->error_stream, "Warning: {}", message);
 
 		ErrorMessageCommon(state);
 	}
@@ -404,7 +403,7 @@ void m68kasm_error(void *scanner, Statement *statement, const char *message)
 
 	(void)statement;
 
-	TextOutput_Format(state->error_callbacks, "Error: {}", message);
+	TextOutput_Format(*state->error_stream, "Error: {}", message);
 
 	ErrorMessageCommon(state);
 }
@@ -508,7 +507,7 @@ static FILE* fopen_backslash(const StringView &path, const char *mode)
 static void ListSourceLine(SemanticState *state)
 {
 	/* Output line to listing file. */
-	if (TextOutput_exists(state->listing_callbacks))
+	if (state->listing_stream != nullptr)
 	{
 		if (!state->line_listed && state->source_line != NULL)
 		{
@@ -517,11 +516,11 @@ static void ListSourceLine(SemanticState *state)
 			state->line_listed = cc_true;
 
 			for (i = state->listing_counter; i < 26; ++i)
-				TextOutput_fputc(' ', state->listing_callbacks);
+				state->listing_stream->put(' ');
 
-			TextOutput_fputc(state->listing_macro ? 'M' : ' ', state->listing_callbacks);
+			state->listing_stream->put(state->listing_macro ? 'M' : ' ');
 
-			TextOutput_Format(state->listing_callbacks, " {}\n", *state->source_line);
+			TextOutput_Format(*state->listing_stream, " {}\n", *state->source_line);
 		}
 	}
 }
@@ -529,9 +528,9 @@ static void ListSourceLine(SemanticState *state)
 static void ListIdentifierValue(SemanticState *state, unsigned long value)
 {
 	/* Output line to listing file. */
-	if (TextOutput_exists(state->listing_callbacks) && !state->doing_fixup_pass && !state->suppress_listing)
+	if (state->listing_stream != nullptr && !state->doing_fixup_pass && !state->suppress_listing)
 	{
-		TextOutput_Format(state->listing_callbacks, " ={:08X}", value);
+		TextOutput_Format(*state->listing_stream, " ={:08X}", value);
 
 		state->listing_counter += 2 + 8;
 	}
@@ -541,7 +540,7 @@ static void ListIdentifierValue(SemanticState *state, unsigned long value)
 static void OutputByte(SemanticState *state, unsigned int byte)
 {
 	/* Write to listing file. */
-	if (TextOutput_exists(state->listing_callbacks) && !state->doing_fixup_pass && !state->suppress_listing)
+	if (state->listing_stream != nullptr && !state->doing_fixup_pass && !state->suppress_listing)
 	{
 		/* We can only write up to 10 bytes. */
 		if (state->listing_counter <= 25)
@@ -549,18 +548,18 @@ static void OutputByte(SemanticState *state, unsigned int byte)
 			if (state->listing_counter == 25)
 			{
 				/* After the last byte, we output a '+' to signal there's more. */
-				TextOutput_fputc('+', state->listing_callbacks);
+				state->listing_stream->put('+');
 				++state->listing_counter;
 			}
 			else
 			{
 				if (state->listing_counter % 5 == 0)
 				{
-					TextOutput_fputc(' ', state->listing_callbacks);
+					state->listing_stream->put(' ');
 					++state->listing_counter;
 				}
 
-				TextOutput_Format(state->listing_callbacks, "{:02X}", byte);
+				TextOutput_Format(*state->listing_stream, "{:02X}", byte);
 				state->listing_counter += 2;
 			}
 		}
@@ -5071,7 +5070,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				switch (severity)
 				{
 					case 0:
-						TextOutput_Format(state->error_callbacks, "INFORM: '{}'\n", inform.message);
+						TextOutput_Format(*state->error_stream, "INFORM: '{}'\n", inform.message);
 						break;
 
 					case 1:
@@ -5812,13 +5811,13 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 		ListSourceLine(state);
 
 		/* Output program counter to listing file. */
-		if (TextOutput_exists(state->listing_callbacks))
+		if (state->listing_stream != nullptr)
 		{
 			state->line_listed = cc_false;
 
 			state->listing_counter = 0;
 			state->suppress_listing = cc_false;
-			TextOutput_Format(state->listing_callbacks, "{:08X}", state->program_counter);
+			TextOutput_Format(*state->listing_stream, "{:08X}", state->program_counter);
 		}
 	}
 
@@ -6099,8 +6098,8 @@ static void AddDefinition(void* const internal, const char* const identifier_buf
 static cc_bool ClownAssembler_AssembleToObjectFile(
 	const TextInput* const input_callbacks,
 	std::ostream &output_stream,
-	const TextOutput* const error_callbacks,
-	const TextOutput* const listing_callbacks,
+	std::ostream &error_stream,
+	std::ostream* const listing_stream,
 	std::ostream *symbol_stream,
 	const char* const input_file_path,
 	const ClownAssembler_Settings* const initial_options,
@@ -6117,8 +6116,8 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	/* Initialise the state's non-default values. */
 	state.input_callbacks = input_callbacks;
 	state.output_stream = &output_stream;
-	state.error_callbacks = error_callbacks;
-	state.listing_callbacks = listing_callbacks;
+	state.error_stream = &error_stream;
+	state.listing_stream = listing_stream;
 
 	state.mode.emplace<SemanticState::ModeNormal>();
 
@@ -6247,8 +6246,8 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 cc_bool ClownAssembler_Assemble(
 	const TextInput* const input_callbacks,
 	std::ostream &output_stream,
-	const TextOutput* const error_callbacks,
-	const TextOutput* const listing_callbacks,
+	std::ostream &error_stream,
+	std::ostream* const listing_stream,
 	std::ostream* const symbol_stream,
 	const char* const input_file_path,
 	const ClownAssembler_Settings* const initial_options,
@@ -6259,9 +6258,9 @@ cc_bool ClownAssembler_Assemble(
 
 	std::stringstream object_stream;
 
-	if (ClownAssembler_AssembleToObjectFile(input_callbacks, object_stream, error_callbacks, listing_callbacks, symbol_stream, input_file_path, initial_options, definition_callback, user_data))
+	if (ClownAssembler_AssembleToObjectFile(input_callbacks, object_stream, error_stream, listing_stream, symbol_stream, input_file_path, initial_options, definition_callback, user_data))
 	{
-		if (ConvertObjectFileToFlatBinary(object_stream, output_stream, error_callbacks))
+		if (ConvertObjectFileToFlatBinary(object_stream, output_stream, error_stream))
 			success = cc_true;
 	}
 
@@ -6271,8 +6270,8 @@ cc_bool ClownAssembler_Assemble(
 cc_bool ClownAssembler_AssembleFile(
 	std::istream &input_file,
 	std::ostream &output_stream,
-	std::ostream &error_file,
-	std::ostream &listing_file,
+	std::ostream &error_stream,
+	std::ostream &listing_stream,
 	std::ostream* const symbol_stream,
 	const char* const input_file_path,
 	const ClownAssembler_Settings* const settings,
@@ -6280,12 +6279,8 @@ cc_bool ClownAssembler_AssembleFile(
 	const void* const user_data)
 {
 	ClownAssembler_TextInput input_callbacks;
-	ClownAssembler_TextOutput error_callbacks;
-	ClownAssembler_TextOutput listing_callbacks;
 
 	TextInput_OpenFILE(&input_callbacks, input_file);
-	TextOutput_OpenFILE(&error_callbacks, error_file);
-	TextOutput_OpenFILE(&listing_callbacks, listing_file);
 
-	return ClownAssembler_Assemble(&input_callbacks, output_stream, &error_callbacks, &listing_callbacks, symbol_stream, input_file_path, settings, definition_callback, user_data);
+	return ClownAssembler_Assemble(&input_callbacks, output_stream, error_stream, &listing_stream, symbol_stream, input_file_path, settings, definition_callback, user_data);
 }

@@ -24,6 +24,6 @@
 
 #include "io.h"
 
-cc_bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &output_stream, const ClownAssembler_TextOutput *error_callbacks);
+cc_bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &output_stream, std::ostream &error_stream);
 
 #endif /* P2BIN_H */

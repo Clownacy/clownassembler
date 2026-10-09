@@ -25,7 +25,6 @@
 #include "io.h"
 
 typedef ClownAssembler_TextInput TextInput;
-typedef ClownAssembler_TextOutput TextOutput;
 
 /* Default FILE-based IO callbacks */
 
@@ -60,20 +59,6 @@ static char* File_ReadLine(void* const user_data, char* const buffer, const size
 	return buffer;
 }
 
-static void File_WriteCharacterTextOutput(void* const user_data, const int character)
-{
-	auto &stream = *static_cast<std::ostream*>(user_data);
-
-	stream.put(character);
-}
-
-static void File_WriteString(void* const user_data, const char* const string)
-{
-	auto &stream = *static_cast<std::ostream*>(user_data);
-
-	stream << string;
-}
-
 
 /* TextInput */
 
@@ -102,30 +87,4 @@ void TextInput_CloseFile(const TextInput* const callbacks)
 char* TextInput_fgets(char* const buffer, const size_t buffer_size, const TextInput* const callbacks)
 {
 	return callbacks->read_line((void*)callbacks->user_data, buffer, buffer_size);
-}
-
-/* TextOutput */
-
-void TextOutput_OpenFILE(TextOutput* const callbacks, std::ostream &file)
-{
-	callbacks->user_data = &file;
-	callbacks->write_character = File_WriteCharacterTextOutput;
-	callbacks->write_string = File_WriteString;
-}
-
-cc_bool TextOutput_exists(const TextOutput* const callbacks)
-{
-	return callbacks != NULL && callbacks->user_data != NULL;
-}
-
-void TextOutput_fputs(const char* const string, const TextOutput* const callbacks)
-{
-	if (TextOutput_exists(callbacks))
-		callbacks->write_string((void*)callbacks->user_data, string);
-}
-
-void TextOutput_fputc(const int character, const TextOutput* const callbacks)
-{
-	if (TextOutput_exists(callbacks))
-		callbacks->write_character((void*)callbacks->user_data, character);
 }

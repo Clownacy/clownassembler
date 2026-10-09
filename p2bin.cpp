@@ -28,7 +28,6 @@
 
 static std::istream *input_stream;
 static std::ostream *output_stream;
-static const ClownAssembler_TextOutput *error_callbacks;
 static cc_bool base_address_found = cc_false;
 static unsigned long base_address;
 
@@ -144,7 +143,7 @@ static void ProcessRecords(void)
 	}
 }
 
-cc_bool ConvertObjectFileToFlatBinary(std::istream &input_stream_parameter, std::ostream &output_stream_parameter, const ClownAssembler_TextOutput* const error_callbacks_parameter)
+cc_bool ConvertObjectFileToFlatBinary(std::istream &input_stream_parameter, std::ostream &output_stream_parameter, std::ostream &error_stream)
 {
 	unsigned char magic[2];
 
@@ -152,7 +151,6 @@ cc_bool ConvertObjectFileToFlatBinary(std::istream &input_stream_parameter, std:
 
 	input_stream = &input_stream_parameter;
 	output_stream = &output_stream_parameter;
-	error_callbacks = error_callbacks_parameter;
 
 	const auto previous_exceptions = input_stream->exceptions();
 	input_stream->exceptions(input_stream->badbit | input_stream->eofbit | input_stream->failbit);
@@ -171,7 +169,7 @@ cc_bool ConvertObjectFileToFlatBinary(std::istream &input_stream_parameter, std:
 	}
 	catch (const std::runtime_error &error)
 	{
-		TextOutput_fputs(error.what(), error_callbacks);
+		error_stream << error.what();
 	}
 
 	input_stream->exceptions(previous_exceptions);
