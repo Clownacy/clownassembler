@@ -46,7 +46,7 @@ static unsigned int ReadByte(void)
 		longjmp(jump_buffer, 1);
 	}
 
-	return (unsigned long)byte;
+	return (unsigned int)byte;
 }
 
 static void ReadBytes(unsigned char* const buffer, const unsigned int total_bytes)
