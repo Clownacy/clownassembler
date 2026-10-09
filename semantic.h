@@ -18,6 +18,7 @@
 #ifndef SEMANTIC_H
 #define SEMANTIC_H
 
+#include <iostream>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -35,11 +36,11 @@ typedef void (*ClownAssembler_AddDefinition)(void *internal, const char *identif
 typedef void (*ClownAssembler_DefinitionCallback)(void *internal, void *user_data, ClownAssembler_AddDefinition add_definition);
 
 cc_bool ClownAssembler_AssembleFile(
-	FILE *input_callbacks,
-	FILE *output_callbacks,
-	FILE *error_callbacks,
-	FILE *listing_callbacks,
-	FILE *symbol_callbacks,
+	std::istream &input_callbacks,
+	std::iostream &output_callbacks,
+	std::ostream &error_callbacks,
+	std::ostream &listing_callbacks,
+	std::iostream &symbol_callbacks,
 	const char *input_file_path,
 	const ClownAssembler_Settings *settings,
 	ClownAssembler_DefinitionCallback definition_callback,

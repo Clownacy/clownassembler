@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <fstream>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -221,31 +222,29 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			FILE *input_file;
+			std::ifstream input_file_stream;
 
-			if (input_file_path == NULL)
-				input_file = stdin;
-			else
-				input_file = fopen(input_file_path, "r");
+			if (input_file_path != NULL)
+				input_file_stream.open(input_file_path);
 
-			if (input_file == NULL)
+			if (input_file_path != NULL && !input_file_stream.is_open())
 			{
 				ERROR("Could not open input file.");
 			}
 			else
 			{
-				FILE *output_file;
+				std::istream &input_file = input_file_path == NULL ? std::cin : input_file_stream;
 
-				output_file = fopen(output_file_path, "wb");
+				std::fstream output_file(output_file_path, output_file.trunc | output_file.in | output_file.out | output_file.binary);
 
-				if (output_file == NULL)
+				if (!output_file.is_open())
 				{
 					ERROR("Could not open output file.");
 				}
 				else
 				{
-					FILE *listing_file;
-					FILE *symbol_file;
+					std::ofstream listing_file;
+					std::fstream symbol_file;
 					cc_bool success;
 
 					if (listing_file_path == NULL)
@@ -254,9 +253,9 @@ int main(int argc, char **argv)
 					}
 					else
 					{
-						listing_file = fopen(listing_file_path, "w");
+						listing_file.open(listing_file_path);
 
-						if (listing_file == NULL)
+						if (!listing_file.is_open())
 							ERROR("Could not open listing file.");
 					}
 
@@ -266,21 +265,21 @@ int main(int argc, char **argv)
 					}
 					else
 					{
-						symbol_file = fopen(symbol_file_path, "wb");
+						symbol_file.open(symbol_file_path, symbol_file.trunc | symbol_file.in | symbol_file.out | symbol_file.binary);
 
-						if (symbol_file == NULL)
+						if (!symbol_file.is_open())
 							ERROR("Could not open symbol file.");
 					}
 
-					success = ClownAssembler_AssembleFile(input_file, output_file, stderr, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", &settings, DefinitionCallback, NULL);
+					success = ClownAssembler_AssembleFile(input_file, output_file, std::cerr, listing_file, symbol_file, input_file_path != NULL ? input_file_path : "STDIN", &settings, DefinitionCallback, NULL);
 
-					if (symbol_file != NULL)
-						fclose(symbol_file);
+					if (symbol_file.is_open())
+						symbol_file.close();
 
-					if (listing_file != NULL)
-						fclose(listing_file);
+					if (listing_file.is_open())
+						listing_file.close();
 
-					fclose(output_file);
+					output_file.close();
 
 					if (!success)
 					{
@@ -291,7 +290,7 @@ int main(int argc, char **argv)
 					}
 				}
 
-				fclose(input_file);
+				input_file_stream.close();
 			}
 		}
 	}

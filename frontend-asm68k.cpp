@@ -16,6 +16,7 @@
 */
 
 #include <ctype.h>
+#include <fstream>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -77,10 +78,10 @@ int main(int argc, char **argv)
 	char *object_file_path;
 	char *symbol_file_path;
 	char *listing_file_path;
-	FILE *source_file;
-	FILE *object_file;
-	FILE *symbol_file;
-	FILE *listing_file;
+	std::ifstream source_file;
+	std::fstream object_file;
+	std::fstream symbol_file;
+	std::ofstream listing_file;
 	enum
 	{
 		OUTPUT_EXECUTABLE,
@@ -105,7 +106,6 @@ int main(int argc, char **argv)
 	settings.optimisation.zero_displacement = cc_false;
 
 	source_file_path = object_file_path = symbol_file_path = listing_file_path = NULL;
-	source_file = object_file = symbol_file = listing_file = NULL;
 
 	output_mode = OUTPUT_EXECUTABLE;
 
@@ -400,10 +400,14 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error: Source file path must be specified.\n");
 		exit_code = EXIT_FAILURE;
 	}
-	else if ((source_file = fopen(source_file_path, "r")) == NULL)
+	else
 	{
-		fprintf(stderr, "Error: Source file could not be opened.\n");
-		exit_code = EXIT_FAILURE;
+		source_file.open(source_file_path);
+		if (!source_file.is_open())
+		{
+			fprintf(stderr, "Error: Source file could not be opened.\n");
+			exit_code = EXIT_FAILURE;
+		}
 	}
 
 	if (object_file_path == NULL || object_file_path[0] == '\0')
@@ -411,17 +415,21 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error: Object file path must be specified.\n");
 		exit_code = EXIT_FAILURE;
 	}
-	else if ((object_file = fopen(object_file_path, "wb")) == NULL)
+	else
 	{
-		fprintf(stderr, "Error: Object file could not be opened.\n");
-		exit_code = EXIT_FAILURE;
+		object_file.open(object_file_path, object_file.trunc | object_file.in | object_file.out | object_file.binary);
+		if (!object_file.is_open())
+		{
+			fprintf(stderr, "Error: Object file could not be opened.\n");
+			exit_code = EXIT_FAILURE;
+		}
 	}
 
 	if (symbol_file_path != NULL && symbol_file_path[0] != '\0')
-		symbol_file = fopen(symbol_file_path, "wb");
+		symbol_file.open(symbol_file_path, symbol_file.trunc | symbol_file.in | symbol_file.out | symbol_file.binary);
 
 	if (listing_file_path != NULL && listing_file_path[0] != '\0')
-		listing_file = fopen(listing_file_path, "w");
+		listing_file.open(listing_file_path);
 
 	/* Make sure that we're using a supported output format. */
 	switch (output_mode)
@@ -443,7 +451,7 @@ int main(int argc, char **argv)
 	/* If we've gotten this far without any errors, then finally run the assembler. */
 	if (exit_code != EXIT_FAILURE)
 	{
-		if (!ClownAssembler_AssembleFile(source_file, object_file, stdout, listing_file, symbol_file, source_file_path, &settings, DefinitionCallback, NULL))
+		if (!ClownAssembler_AssembleFile(source_file, object_file, std::cout, listing_file, symbol_file, source_file_path, &settings, DefinitionCallback, NULL))
 		{
 			fprintf(stderr, "Error: Failed to assemble.\n");
 			exit_code = EXIT_FAILURE;
@@ -452,12 +460,12 @@ int main(int argc, char **argv)
 
 	delete[] combined_arguments;
 
-	if (source_file != NULL)
-		fclose(source_file);
+	if (source_file.is_open())
+		source_file.close();
 
-	if (object_file != NULL)
+	if (object_file.is_open())
 	{
-		fclose(object_file);
+		object_file.close();
 
 		if (exit_code == EXIT_FAILURE)
 		{
@@ -467,11 +475,11 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (listing_file != NULL)
-		fclose(listing_file);
+	if (listing_file.is_open())
+		listing_file.close();
 
-	if (symbol_file != NULL)
-		fclose(symbol_file);
+	if (symbol_file.is_open())
+		symbol_file.close();
 
 	return exit_code;
 }

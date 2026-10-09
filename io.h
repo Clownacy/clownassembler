@@ -18,6 +18,7 @@
 #ifndef IO_H
 #define IO_H
 
+#include <iostream>
 #include <format>
 #include <stdarg.h>
 #include <stddef.h>
@@ -35,20 +36,20 @@ typedef void (*ClownAssembler_WriteString)(void *user_data, const char *string);
 
 typedef struct ClownAssembler_TextInput
 {
-	const void *user_data;
+	void *user_data;
 	ClownAssembler_ReadLine read_line;
 } ClownAssembler_TextInput;
 
 typedef struct ClownAssembler_TextOutput
 {
-	const void *user_data;
+	void *user_data;
 	ClownAssembler_WriteCharacter write_character;
 	ClownAssembler_WriteString write_string;
 } ClownAssembler_TextOutput;
 
 typedef struct ClownAssembler_BinaryStream
 {
-	const void *user_data;
+	void *user_data;
 	ClownAssembler_ReadCharacter read_character;
 	ClownAssembler_ReadCharacters read_characters;
 	ClownAssembler_WriteCharacter write_character;
@@ -56,12 +57,12 @@ typedef struct ClownAssembler_BinaryStream
 	ClownAssembler_Seek seek;
 } ClownAssembler_BinaryStream;
 
-void TextInput_OpenFILE(ClownAssembler_TextInput *callbacks, FILE *file);
+void TextInput_OpenFILE(ClownAssembler_TextInput *callbacks, std::istream &file);
 cc_bool TextInput_OpenFile(ClownAssembler_TextInput *callbacks, const char *path);
 void TextInput_CloseFile(const ClownAssembler_TextInput *callbacks);
 char* TextInput_fgets(char *buffer, size_t buffer_size, const ClownAssembler_TextInput *callbacks);
 
-void TextOutput_OpenFILE(ClownAssembler_TextOutput *callbacks, FILE *file);
+void TextOutput_OpenFILE(ClownAssembler_TextOutput *callbacks, std::ostream &file);
 cc_bool TextOutput_exists(const ClownAssembler_TextOutput *callbacks);
 void TextOutput_fputs(const char *string, const ClownAssembler_TextOutput *callbacks);
 void TextOutput_fputc(int character, const ClownAssembler_TextOutput *callbacks);
@@ -73,9 +74,7 @@ void TextOutput_Format(const ClownAssembler_TextOutput *callbacks, std::format_s
 	TextOutput_fputs(string.c_str(), callbacks);
 }
 
-void BinaryStream_OpenFILE(ClownAssembler_BinaryStream *callbacks, FILE *file);
-cc_bool BinaryStream_OpenFile(ClownAssembler_BinaryStream *callbacks, const char *path, const char *mode);
-void BinaryStream_CloseFile(const ClownAssembler_BinaryStream *callbacks);
+void BinaryStream_OpenFILE(ClownAssembler_BinaryStream *callbacks, std::iostream &file);
 cc_bool BinaryStream_OpenMemory(ClownAssembler_BinaryStream *callbacks);
 void BinaryStream_CloseMemory(ClownAssembler_BinaryStream *callbacks);
 cc_bool BinaryStream_exists(const ClownAssembler_BinaryStream *callbacks);

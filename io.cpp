@@ -15,6 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <cstring>
+#include <fstream>
 #include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,37 +32,89 @@ typedef ClownAssembler_BinaryStream BinaryStream;
 
 static char* File_ReadLine(void* const user_data, char* const buffer, const size_t buffer_size)
 {
-	return fgets(buffer, buffer_size, (FILE*)user_data);
+	// This function needs to emulate 'fgets', which is why
+	// it does so many bizarre things.
+	auto &stream = *static_cast<std::istream*>(user_data);
+
+	stream.clear();
+	stream.getline(buffer, buffer_size);
+
+	if (stream.fail())
+	{
+		// If we had room to read characters but read
+		// nothing, then we reached the end of the file.
+		if (buffer_size > 1 && buffer[0] == '\0')
+			return nullptr;
+
+		// Otherwise, we just could not fit the full line
+		// in the buffer.
+		return buffer;
+	}
+
+	// Append a newline, since we read a full line.
+	// The buffer is guaranteed to not be full, as that
+	// would have caused the fail bit to be set.
+	const auto end = std::strlen(buffer);
+	buffer[end + 0] = '\n';
+	buffer[end + 1] = '\0';
+
+	return buffer;
 }
 
 static void File_Seek(void* const user_data, const size_t position)
 {
-	fseek((FILE*)user_data, position, SEEK_SET);
+	auto &stream = *static_cast<std::iostream*>(user_data);
+	stream.seekg(position);
+	stream.seekp(position);
 }
 
 static int File_ReadCharacter(void* const user_data)
 {
-	return fgetc((FILE*)user_data);
+	auto &stream = *static_cast<std::iostream*>(user_data);
+
+	const auto character = stream.get();
+
+	if (stream.gcount() == 0)
+		return EOF;
+
+	return character;
 }
 
 static size_t File_ReadCharacters(void* const user_data, void* const characters, const size_t total_characters)
 {
-	return fread(characters, 1, total_characters, (FILE*)user_data);
+	auto &stream = *static_cast<std::iostream*>(user_data);
+
+	stream.read(static_cast<char*>(characters), total_characters);
+
+	return stream.gcount();
+}
+
+static void File_WriteCharacterTextOutput(void* const user_data, const int character)
+{
+	auto &stream = *static_cast<std::ostream*>(user_data);
+
+	stream.put(character);
 }
 
 static void File_WriteCharacter(void* const user_data, const int character)
 {
-	fputc(character, (FILE*)user_data);
+	auto &stream = *static_cast<std::iostream*>(user_data);
+
+	stream.put(character);
 }
 
 static void File_WriteCharacters(void* const user_data, const void* const characters, const size_t total_characters)
 {
-	fwrite(characters, 1, total_characters, (FILE*)user_data);
+	auto &stream = *static_cast<std::iostream*>(user_data);
+
+	stream.write(static_cast<const char*>(characters), total_characters);
 }
 
 static void File_WriteString(void* const user_data, const char* const string)
 {
-	fputs(string, (FILE*)user_data);
+	auto &stream = *static_cast<std::ostream*>(user_data);
+
+	stream << string;
 }
 
 /* Memory-based IO callbacks */
@@ -115,26 +169,26 @@ static void Memory_WriteCharacter(void* const user_data, const int character)
 
 /* TextInput */
 
-void TextInput_OpenFILE(TextInput* const callbacks, FILE* const file)
+void TextInput_OpenFILE(TextInput* const callbacks, std::istream &file)
 {
-	callbacks->user_data = file;
+	callbacks->user_data = &file;
 	callbacks->read_line = File_ReadLine;
 }
 
 cc_bool TextInput_OpenFile(TextInput* const callbacks, const char* const path)
 {
-	FILE* const input_file = fopen(path, "r");
+	std::ifstream input_file(path);
 
-	if (input_file == NULL)
+	if (!input_file.is_open())
 		return cc_false;
 
-	TextInput_OpenFILE(callbacks, input_file);
+	TextInput_OpenFILE(callbacks, *new std::ifstream(std::move(input_file)));
 	return cc_true;
 }
 
 void TextInput_CloseFile(const TextInput* const callbacks)
 {
-	fclose((FILE*)callbacks->user_data);
+	delete static_cast<std::ifstream*>(callbacks->user_data);
 }
 
 char* TextInput_fgets(char* const buffer, const size_t buffer_size, const TextInput* const callbacks)
@@ -144,10 +198,10 @@ char* TextInput_fgets(char* const buffer, const size_t buffer_size, const TextIn
 
 /* TextOutput */
 
-void TextOutput_OpenFILE(TextOutput* const callbacks, FILE *file)
+void TextOutput_OpenFILE(TextOutput* const callbacks, std::ostream &file)
 {
-	callbacks->user_data = file;
-	callbacks->write_character = File_WriteCharacter;
+	callbacks->user_data = &file;
+	callbacks->write_character = File_WriteCharacterTextOutput;
 	callbacks->write_string = File_WriteString;
 }
 
@@ -170,30 +224,14 @@ void TextOutput_fputc(const int character, const TextOutput* const callbacks)
 
 /* BinaryStream */
 
-void BinaryStream_OpenFILE(BinaryStream* const callbacks, FILE *file)
+void BinaryStream_OpenFILE(BinaryStream* const callbacks, std::iostream &file)
 {
-	callbacks->user_data = file;
+	callbacks->user_data = &file;
 	callbacks->read_character = File_ReadCharacter;
 	callbacks->read_characters = File_ReadCharacters;
 	callbacks->write_character = File_WriteCharacter;
 	callbacks->write_characters = File_WriteCharacters;
 	callbacks->seek = File_Seek;
-}
-
-cc_bool BinaryStream_OpenFile(BinaryStream* const callbacks, const char* const path, const char* const mode)
-{
-	FILE* const output_file = fopen(path, mode);
-
-	if (output_file == NULL)
-		return cc_false;
-
-	BinaryStream_OpenFILE(callbacks, output_file);
-	return cc_true;
-}
-
-void BinaryStream_CloseFile(const BinaryStream* const callbacks)
-{
-	fclose((FILE*)callbacks->user_data);
 }
 
 cc_bool BinaryStream_OpenMemory(BinaryStream* const callbacks)

@@ -6280,11 +6280,11 @@ cc_bool ClownAssembler_Assemble(
 }
 
 cc_bool ClownAssembler_AssembleFile(
-	FILE* const input_file,
-	FILE* const output_file,
-	FILE* const error_file,
-	FILE* const listing_file,
-	FILE* const symbol_file,
+	std::istream &input_file,
+	std::iostream &output_file,
+	std::ostream &error_file,
+	std::ostream &listing_file,
+	std::iostream &symbol_file,
 	const char* const input_file_path,
 	const ClownAssembler_Settings* const settings,
 	const ClownAssembler_DefinitionCallback definition_callback,
