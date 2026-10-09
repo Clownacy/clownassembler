@@ -29,6 +29,7 @@ template<typename... Args>
 void TextOutput_Format(std::ostream &stream, std::format_string<Args...> &&format_string, Args &&...args)
 {
 	// TODO: Replace this with `std::print` when that is provided by all target platforms.
+	// TODO: This is slowing-down the assembler quite a bit!
 	std::format_to(std::ostream_iterator<char>(stream), std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 }
 
