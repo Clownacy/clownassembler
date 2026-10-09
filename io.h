@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <format>
+#include <iterator>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -33,8 +34,8 @@ char* TextInput_fgets(char *buffer, size_t buffer_size, std::istream &callbacks)
 template<typename... Args>
 void TextOutput_Format(std::ostream &stream, std::format_string<Args...> &&format_string, Args &&...args)
 {
-	// TODO: Replace this with `std::format_to`.
-	stream << std::format(std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+	// TODO: Replace this with `std::print` when that is provided by all target platforms.
+	std::format_to(std::ostream_iterator<char>(stream), std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 }
 
 #endif /* IO_H */
