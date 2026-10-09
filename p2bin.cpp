@@ -22,14 +22,13 @@
 
 #include "p2bin.h"
 
-#include <setjmp.h>
+#include <exception>
 #include <stddef.h>
 #include <string.h>
 
 static std::istream *input_stream;
 static std::ostream *output_stream;
 static const ClownAssembler_TextOutput *error_callbacks;
-static jmp_buf jump_buffer;
 static unsigned char padding_buffer[0x1000];
 static cc_bool base_address_found = cc_false;
 static unsigned long base_address;
@@ -40,24 +39,12 @@ static unsigned int ReadByte(void)
 {
 	const int byte = input_stream->get();
 
-	if (input_stream->gcount() == 0)
-	{
-		TextOutput_fputs("Error: File ended prematurely.\n", error_callbacks);
-		longjmp(jump_buffer, 1);
-	}
-
 	return (unsigned int)byte;
 }
 
 static void ReadBytes(unsigned char* const buffer, const unsigned int total_bytes)
 {
 	input_stream->read(reinterpret_cast<char*>(buffer), total_bytes);
-
-	if (input_stream->gcount() != total_bytes)
-	{
-		TextOutput_fputs("Error: File ended prematurely.\n", error_callbacks);
-		longjmp(jump_buffer, 1);
-	}
 }
 
 static unsigned long ReadInteger(const unsigned int total_bytes)
@@ -102,8 +89,7 @@ static void ProcessSegment(void)
 	}
 	else if (start_address < base_address)
 	{
-		TextOutput_fputs("Error: Segment located before start of file.\n", error_callbacks);
-		longjmp(jump_buffer, 1);
+		throw std::runtime_error("Error: Segment located before start of file.\n");
 	}
 	else if (start_address > maximum_address)
 	{
@@ -134,60 +120,49 @@ static void ProcessSegment(void)
 		maximum_address = end_address;
 }
 
-static cc_bool ProcessRecords(void)
+static void ProcessRecords(void)
 {
 	memset(padding_buffer, padding_value, sizeof(padding_buffer));
 
-	if (setjmp(jump_buffer) == 0)
+	for (;;)
 	{
-		for (;;)
+		const unsigned int record_header = ReadByte();
+		unsigned int granularity;
+
+		switch (record_header)
 		{
-			const unsigned int record_header = ReadByte();
-			unsigned int granularity;
+			case 0:
+				/* Creator string. This marks the end of the file. */
+				return;
 
-			switch (record_header)
-			{
-				case 0:
-					/* Creator string. This marks the end of the file. */
-					return cc_true;
+			case 0x80:
+				/* Entry point. We don't care about this. */
+				ReadLongInt();
+				break;
 
-				case 0x80:
-					/* Entry point. We don't care about this. */
-					ReadLongInt();
-					break;
+			case 0x81:
+				/* Arbitrary segment. */
+				ReadByte(); /* Processor family. We don't care about this. */
+				ReadByte(); /* Segment. We don't care about this. */
+				granularity = ReadByte();
 
-				case 0x81:
-					/* Arbitrary segment. */
-					ReadByte(); /* Processor family. We don't care about this. */
-					ReadByte(); /* Segment. We don't care about this. */
-					granularity = ReadByte();
+				if (granularity != 1)
+					throw std::runtime_error(std::format("Error: Unsupported granularity of {} (only 1 is supported).\n", granularity));
 
-					if (granularity != 1)
-					{
-						TextOutput_Format(error_callbacks, "Error: Unsupported granularity of {} (only 1 is supported).\n", granularity);
-						return cc_false;
-					}
+				ProcessSegment();
 
-					ProcessSegment();
+				break;
 
-					break;
+			default:
+				if (record_header >= 0x80)
+					throw std::runtime_error(std::format("Error: Unrecognised record header value (0x{:02X}).\n", record_header));
 
-				default:
-					if (record_header >= 0x80)
-					{
-						TextOutput_Format(error_callbacks, "Error: Unrecognised record header value (0x{:02X}).\n", record_header);
-						return cc_false;
-					}
+				/* Legacy CODE segment. */
+				ProcessSegment();
 
-					/* Legacy CODE segment. */
-					ProcessSegment();
-
-					break;
-			}
+				break;
 		}
 	}
-
-	return cc_false;
 }
 
 cc_bool ConvertObjectFileToFlatBinary(std::istream &input_stream_parameter, std::ostream &output_stream_parameter, const ClownAssembler_TextOutput* const error_callbacks_parameter)
@@ -200,15 +175,27 @@ cc_bool ConvertObjectFileToFlatBinary(std::istream &input_stream_parameter, std:
 	output_stream = &output_stream_parameter;
 	error_callbacks = error_callbacks_parameter;
 
-	/* Read and check the header's magic number. */
-	input_stream->read(reinterpret_cast<char*>(magic), sizeof(magic));
+	const auto previous_exceptions = input_stream->exceptions();
+	input_stream->exceptions(input_stream->badbit | input_stream->eofbit | input_stream->failbit);
 
-	if (input_stream->gcount() != sizeof(magic))
-		TextOutput_fputs("Error: Could not read header magic value.\n", error_callbacks);
-	else if (magic[0] != 0x89 || magic[1] != 0x14)
-		TextOutput_Format(error_callbacks, "Error: Invalid header magic value - expected 0x8914 but got 0x{:02X}{:02X}.\nInput file is either corrupt or not a valid AS code file.\n", magic[0], magic[1]);
-	else if (ProcessRecords())
+	try
+	{
+		/* Read and check the header's magic number. */
+		input_stream->read(reinterpret_cast<char*>(magic), sizeof(magic));
+
+		if (magic[0] != 0x89 || magic[1] != 0x14)
+			throw std::runtime_error(std::format("Error: Invalid header magic value - expected 0x8914 but got 0x{:02X}{:02X}.\nInput file is either corrupt or not a valid AS code file.\n", magic[0], magic[1]));
+
+		ProcessRecords();
+
 		success = cc_true;
+	}
+	catch (const std::runtime_error &error)
+	{
+		TextOutput_fputs(error.what(), error_callbacks);
+	}
+
+	input_stream->exceptions(previous_exceptions);
 
 	return success;
 }
