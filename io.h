@@ -18,18 +18,12 @@
 #ifndef IO_H
 #define IO_H
 
+#include <cstddef>
 #include <iostream>
 #include <format>
 #include <iterator>
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdio.h>
 
-#include "clowncommon/clowncommon.h"
-
-typedef char* (*ClownAssembler_ReadLine)(std::istream &callbacks, char *buffer, size_t buffer_size);
-
-char* TextInput_fgets(char *buffer, size_t buffer_size, std::istream &callbacks);
+char* TextInput_fgets(char *buffer, std::size_t buffer_size, std::istream &callbacks);
 
 template<typename... Args>
 void TextOutput_Format(std::ostream &stream, std::format_string<Args...> &&format_string, Args &&...args)

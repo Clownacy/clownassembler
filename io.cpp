@@ -15,16 +15,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <cstring>
-#include <fstream>
-#include <sstream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "io.h"
 
-char* TextInput_fgets(char* const buffer, const size_t buffer_size, std::istream &stream)
+#include <cstddef>
+#include <cstring>
+#include <iostream>
+
+char* TextInput_fgets(char* const buffer, const std::size_t buffer_size, std::istream &stream)
 {
 	// This function needs to emulate 'fgets', which is why
 	// it does so many bizarre things.
@@ -50,4 +47,5 @@ char* TextInput_fgets(char* const buffer, const size_t buffer_size, std::istream
 	buffer[end + 0] = '\n';
 	buffer[end + 1] = '\0';
 
-	return buffer;}
+	return buffer;
+}
