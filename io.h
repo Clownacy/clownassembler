@@ -27,11 +27,7 @@
 #include "clowncommon/clowncommon.h"
 
 typedef char* (*ClownAssembler_ReadLine)(void *user_data, char *buffer, size_t buffer_size);
-typedef void (*ClownAssembler_Seek)(void *user_data, size_t position);
-typedef int (*ClownAssembler_ReadCharacter)(void *user_data);
-typedef size_t (*ClownAssembler_ReadCharacters)(void *user_data, void *characters, size_t total_characters);
 typedef void (*ClownAssembler_WriteCharacter)(void *user_data, int character);
-typedef void (*ClownAssembler_WriteCharacters)(void *user_data, const void *characters, size_t total_characters);
 typedef void (*ClownAssembler_WriteString)(void *user_data, const char *string);
 
 typedef struct ClownAssembler_TextInput
@@ -46,16 +42,6 @@ typedef struct ClownAssembler_TextOutput
 	ClownAssembler_WriteCharacter write_character;
 	ClownAssembler_WriteString write_string;
 } ClownAssembler_TextOutput;
-
-typedef struct ClownAssembler_BinaryStream
-{
-	void *user_data;
-	ClownAssembler_ReadCharacter read_character;
-	ClownAssembler_ReadCharacters read_characters;
-	ClownAssembler_WriteCharacter write_character;
-	ClownAssembler_WriteCharacters write_characters;
-	ClownAssembler_Seek seek;
-} ClownAssembler_BinaryStream;
 
 void TextInput_OpenFILE(ClownAssembler_TextInput *callbacks, std::istream &file);
 cc_bool TextInput_OpenFile(ClownAssembler_TextInput *callbacks, const char *path);

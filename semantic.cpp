@@ -43,7 +43,6 @@
 #include "lexical.h"
 
 typedef ClownAssembler_TextInput TextInput;
-typedef ClownAssembler_BinaryStream BinaryStream;
 typedef ClownAssembler_TextOutput TextOutput;
 
 using SourceLineList = std::deque<String>;

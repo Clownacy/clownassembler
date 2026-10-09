@@ -26,7 +26,6 @@
 
 typedef ClownAssembler_TextInput TextInput;
 typedef ClownAssembler_TextOutput TextOutput;
-typedef ClownAssembler_BinaryStream BinaryStream;
 
 /* Default FILE-based IO callbacks */
 
@@ -61,53 +60,11 @@ static char* File_ReadLine(void* const user_data, char* const buffer, const size
 	return buffer;
 }
 
-static void File_Seek(void* const user_data, const size_t position)
-{
-	auto &stream = *static_cast<std::iostream*>(user_data);
-	stream.seekg(position);
-	stream.seekp(position);
-}
-
-static int File_ReadCharacter(void* const user_data)
-{
-	auto &stream = *static_cast<std::iostream*>(user_data);
-
-	const auto character = stream.get();
-
-	if (stream.gcount() == 0)
-		return EOF;
-
-	return character;
-}
-
-static size_t File_ReadCharacters(void* const user_data, void* const characters, const size_t total_characters)
-{
-	auto &stream = *static_cast<std::iostream*>(user_data);
-
-	stream.read(static_cast<char*>(characters), total_characters);
-
-	return stream.gcount();
-}
-
 static void File_WriteCharacterTextOutput(void* const user_data, const int character)
 {
 	auto &stream = *static_cast<std::ostream*>(user_data);
 
 	stream.put(character);
-}
-
-static void File_WriteCharacter(void* const user_data, const int character)
-{
-	auto &stream = *static_cast<std::iostream*>(user_data);
-
-	stream.put(character);
-}
-
-static void File_WriteCharacters(void* const user_data, const void* const characters, const size_t total_characters)
-{
-	auto &stream = *static_cast<std::iostream*>(user_data);
-
-	stream.write(static_cast<const char*>(characters), total_characters);
 }
 
 static void File_WriteString(void* const user_data, const char* const string)
@@ -117,55 +74,6 @@ static void File_WriteString(void* const user_data, const char* const string)
 	stream << string;
 }
 
-/* Memory-based IO callbacks */
-
-typedef struct MemoryIO
-{
-	std::stringstream stream;
-} MemoryIO;
-
-static void Memory_Seek(void* const user_data, const size_t position)
-{
-	MemoryIO* const state = (MemoryIO*)user_data;
-
-	state->stream.seekg(position);
-	state->stream.seekp(position);
-}
-
-static int Memory_ReadCharacter(void* const user_data)
-{
-	MemoryIO* const state = (MemoryIO*)user_data;
-
-	const auto character = state->stream.get();
-
-	if (state->stream.gcount() == 0)
-		return EOF;
-
-	return character;
-}
-
-static size_t Memory_ReadCharacters(void* const user_data, void* const characters, const size_t total_characters)
-{
-	MemoryIO* const state = (MemoryIO*)user_data;
-
-	state->stream.read(static_cast<char*>(characters), total_characters);
-
-	return state->stream.gcount();
-}
-
-static void Memory_WriteCharacters(void* const user_data, const void* const characters, const size_t total_characters)
-{
-	MemoryIO* const state = (MemoryIO*)user_data;
-
-	state->stream.write(static_cast<const char*>(characters), total_characters);
-}
-
-static void Memory_WriteCharacter(void* const user_data, const int character)
-{
-	MemoryIO* const state = (MemoryIO*)user_data;
-
-	state->stream.put(character);
-}
 
 /* TextInput */
 
