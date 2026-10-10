@@ -334,13 +334,6 @@ struct ExpressionTypeWithNumber
 	unsigned long value;
 };
 
-typedef struct ExpressionListNode
-{
-	struct ExpressionListNode *next;
-
-	Expression expression;
-} ExpressionListNode;
-
 using ExpressionList = std::deque<Expression>;
 using IdentifierList = std::deque<String>;
 
@@ -390,7 +383,7 @@ typedef struct StatementEmpty
 typedef struct StatementInstruction
 {
 	Opcode opcode;
-	Operand operands[2];
+	std::array<Operand, 2> operands;
 } StatementInstruction;
 
 typedef struct StatementDc
@@ -643,7 +636,7 @@ using Statement = std::variant<
 >;
 
 
-#line 647 "syntactic.h"
+#line 640 "syntactic.h"
 
 
 # include <cstdlib> // std::abort
@@ -787,7 +780,7 @@ using Statement = std::variant<
 
 #line 25 "syntactic.y"
 namespace m68kasm {
-#line 791 "syntactic.h"
+#line 784 "syntactic.h"
 
 
 
@@ -5774,17 +5767,17 @@ switch (yykind)
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 5778 "syntactic.h"
+#line 5771 "syntactic.h"
 
 
 // "%code provides" blocks.
-#line 636 "syntactic.y"
+#line 629 "syntactic.y"
 
 
 #define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner)
 
 
-#line 5788 "syntactic.h"
+#line 5781 "syntactic.h"
 
 
 #endif // !YY_M68KASM_SYNTACTIC_H_INCLUDED

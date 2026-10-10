@@ -323,13 +323,6 @@ struct ExpressionTypeWithNumber
 	unsigned long value;
 };
 
-typedef struct ExpressionListNode
-{
-	struct ExpressionListNode *next;
-
-	Expression expression;
-} ExpressionListNode;
-
 using ExpressionList = std::deque<Expression>;
 using IdentifierList = std::deque<String>;
 
@@ -379,7 +372,7 @@ typedef struct StatementEmpty
 typedef struct StatementInstruction
 {
 	Opcode opcode;
-	Operand operands[2];
+	std::array<Operand, 2> operands;
 } StatementInstruction;
 
 typedef struct StatementDc
