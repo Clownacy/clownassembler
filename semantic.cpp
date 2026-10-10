@@ -4429,31 +4429,29 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 	if (!ToStandardPath(String_View(include->path), standard_path))
 	{
 		OutOfMemoryError(state);
+		return;
 	}
-	else
+
+	std::ifstream input_stream(standard_path);
+
+	if (!input_stream.is_open())
 	{
-		std::ifstream input_stream(standard_path);
-
-		if (!input_stream.is_open())
-		{
-			SemanticError(state, "File '{}' could not be opened.", include->path);
-		}
-		else
-		{
-			std::istream* const previous_input_stream = state->input_stream;
-
-			/* Add file path and line number to the location list. */
-			state->location.emplace_front(include->path, 0);
-
-			state->input_stream = &input_stream;
-
-			AssembleFile(state);
-
-			state->input_stream = previous_input_stream;
-
-			state->location.pop_front();
-		}
+		SemanticError(state, "File '{}' could not be opened.", include->path);
+		return;
 	}
+
+	std::istream* const previous_input_stream = state->input_stream;
+
+	/* Add file path and line number to the location list. */
+	state->location.emplace_front(include->path, 0);
+
+	state->input_stream = &input_stream;
+
+	AssembleFile(state);
+
+	state->input_stream = previous_input_stream;
+
+	state->location.pop_front();
 }
 
 static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
