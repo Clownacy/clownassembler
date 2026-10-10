@@ -1178,13 +1178,13 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 
 		case EXPRESSION_FILESIZE:
 		{
-			const char* const file_path = String_CStr(&expression->shared.string);
-			FILE* const file = fopen(file_path, "rb");
+			const StringView* const file_path = String_View(&expression->shared.string);
+			FILE* const file = fopen_backslash(file_path, "rb");
 
 			if (file == NULL)
 			{
 				success = cc_false;
-				SemanticError(state, "File '%s' could not be opened.", file_path);
+				SemanticError(state, "File '%.*s' could not be opened.", (int)StringView_Length(file_path), StringView_Data(file_path));
 			}
 			else
 			{
