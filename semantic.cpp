@@ -375,7 +375,7 @@ static void OutOfMemoryError(SemanticState *state)
 	state->success = cc_false;
 }
 
-void m68kasm_warning(void *scanner, const char *message)
+void m68kasm_warning(void *scanner, const std::string_view &message)
 {
 	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
 
@@ -387,7 +387,7 @@ void m68kasm_warning(void *scanner, const char *message)
 	}
 }
 
-void m68kasm_warning_pedantic(void *scanner, const char *message)
+void m68kasm_warning_pedantic(void *scanner, const std::string_view &message)
 {
 	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
 
@@ -395,7 +395,7 @@ void m68kasm_warning_pedantic(void *scanner, const char *message)
 		m68kasm_warning(scanner, message);
 }
 
-void m68kasm_error(void *scanner, const char *message)
+void m68kasm_error(void *scanner, const std::string_view &message)
 {
 	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
 

@@ -1365,8 +1365,8 @@ static const flex_int16_t yy_chk[2255] =
 
 #include "syntactic.h"
 
-void m68kasm_warning(void *scanner, const char *message);
-void m68kasm_error(void *scanner, const char *message);
+void m68kasm_warning(void *scanner, const std::string_view &message);
+void m68kasm_error(void *scanner, const std::string_view &message);
 
 static cc_bool CharacterToInteger(unsigned int* const value, const unsigned int character)
 {

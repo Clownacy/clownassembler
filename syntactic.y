@@ -645,11 +645,12 @@ using Statement = std::variant<
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string_view>
 
 YY_DECL;
-void m68kasm_warning(void *scanner, const char *message);
-void m68kasm_warning_pedantic(void *scanner, const char *message);
-void m68kasm_error(void *scanner, const char *message);
+void m68kasm_warning(void *scanner, const std::string_view &message);
+void m68kasm_warning_pedantic(void *scanner, const std::string_view &message);
+void m68kasm_error(void *scanner, const std::string_view &message);
 
 static void DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression)
 {
@@ -670,7 +671,7 @@ static void DoExpression(Expression &expression, ExpressionArithmetic2Operand::T
 
 void m68kasm::parser::error(const std::string &message)
 {
-	m68kasm_error(scanner, message.c_str());
+	m68kasm_error(scanner, message);
 }
 
 }
