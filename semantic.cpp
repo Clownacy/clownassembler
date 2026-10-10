@@ -492,17 +492,6 @@ static cc_bool ToStandardPath(const StringView &input_path, String &output_path)
 	return success;
 }
 
-static FILE* fopen_backslash(const StringView &path, const char *mode)
-{
-	FILE *file = NULL;
-	String path_copy;
-
-	if (ToStandardPath(path, path_copy))
-		file = fopen(String_CStr(path_copy), mode);
-
-	return file;
-}
-
 static void ListSourceLine(SemanticState *state)
 {
 	/* Output line to listing file. */
@@ -4469,63 +4458,73 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 
 static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 {
-	FILE* const input_file = fopen_backslash(String_View(incbin->path), "rb");
+	String standard_path;
 
-	if (input_file == NULL)
+	if (!ToStandardPath(String_View(incbin->path), standard_path))
+	{
+		OutOfMemoryError(state);
+		return;
+	}
+
+	std::ifstream input_file(standard_path, input_file.binary);
+
+	if (!input_file.is_open())
 	{
 		SemanticError(state, "File '{}' could not be opened.", incbin->path);
+		return;
+	}
+
+	unsigned long value;
+
+	if (!ResolveExpression(state, &incbin->start, &value))
+	{
+		SemanticError(state, "Start value must be evaluable on the first pass.");
+		value = 0;
+	}
+
+	input_file.seekg(value);
+
+	if (input_file.fail())
+		SemanticError(state, "Start value is not a valid location in the file.");
+
+	if (incbin->has_length)
+	{
+		unsigned long length;
+		unsigned long i;
+
+		if (!ResolveExpression(state, &incbin->length, &length))
+		{
+			SemanticError(state, "Length value must be evaluable on the first pass.");
+			length = 0;
+		}
+
+		for (i = 0; i < length; ++i)
+		{
+			const int character = input_file.get();
+
+			if (input_file.gcount() == 0)
+			{
+				SemanticError(state, "Length value is larger than the remaining number of bytes in the file.");
+				break;
+			}
+
+			AdvanceProgramCounter(state, 1);
+			OutputWriteSegmentByte(state, character);
+		}
 	}
 	else
 	{
-		unsigned long value;
-
-		if (!ResolveExpression(state, &incbin->start, &value))
+		/* TODO: Batch bytes to make this faster? */
+		for (;;)
 		{
-			SemanticError(state, "Start value must be evaluable on the first pass.");
-			value = 0;
+			const int character = input_file.get();
+
+			if (input_file.gcount() == 0)
+				break;
+
+			AdvanceProgramCounter(state, 1);
+			OutputWriteSegmentByte(state, character);
 		}
-
-		if (fseek(input_file, value, SEEK_SET) != 0)
-			SemanticError(state, "Start value is not a valid location in the file.");
-
-		if (incbin->has_length)
-		{
-			unsigned long length;
-			unsigned long i;
-
-			if (!ResolveExpression(state, &incbin->length, &length))
-			{
-				SemanticError(state, "Length value must be evaluable on the first pass.");
-				length = 0;
-			}
-
-			for (i = 0; i < length; ++i)
-			{
-				const int character = fgetc(input_file);
-
-				if (character == EOF)
-				{
-					SemanticError(state, "Length value is larger than the remaining number of bytes in the file.");
-					break;
-				}
-
-				AdvanceProgramCounter(state, 1);
-				OutputWriteSegmentByte(state, character);
-			}
-		}
-		else
-		{
-			int character;
-
-			/* TODO: Batch bytes to make this faster? */
-			while ((character = fgetc(input_file)) != EOF)
-			{
-				AdvanceProgramCounter(state, 1);
-				OutputWriteSegmentByte(state, character);
-			}
-		}
-
-		fclose(input_file);
 	}
 }
 
