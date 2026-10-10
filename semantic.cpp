@@ -5719,7 +5719,7 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 {
 	String source_line;
 	size_t label_length;
-	const char *source_line_pointer;
+	StringView source_line_subview;
 	StringView label;
 	size_t directive_length;
 	StringView directive_and_operands, directive;
@@ -5766,7 +5766,7 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 	}
 	else
 	{
-		source_line_pointer = String_CStr(*state->source_line);
+		source_line_subview = String_View(*state->source_line);
 
 		/* Despite the fact that we're using Flex and Bison to parse the
 		   language for us, we unfortunately have to do quite a bit of
@@ -5777,7 +5777,7 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 		/* Let's begin by parsing the label (if there is one). */
 
 		/* Determine the length of the label. */
-		label_length = strspn(source_line_pointer, LABEL_CHARS);
+		label_length = StringView_StrSpn(source_line_subview, LABEL_CHARS);
 
 		if (label_length != 0)
 		{
@@ -5788,16 +5788,16 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 			/* Maybe the label has some whitespace before it: check again. */
 
 			/* Skip whitespace. */
-			source_line_pointer += strspn(source_line_pointer, " \t");
+			StringView_RemovePrefix(source_line_subview, StringView_StrSpn(source_line_subview, " \t"));
 
 			/* Determine the length of the label again. */
-			label_length = strspn(source_line_pointer, LABEL_CHARS);
+			label_length = StringView_StrSpn(source_line_subview, LABEL_CHARS);
 
 			if (label_length != 0)
 			{
 				/* Since we've encountered whitespace, it's ambiguous whether this is a label or a statement.
 				   To figure it out, we have to rely on the label having a ':' after it. */
-				if (source_line_pointer[label_length] == ':')
+				if (label_length < StringView_Length(source_line_subview) && StringView_At(source_line_subview, label_length) == ':')
 				{
 					/* We've found the label. */
 				}
@@ -5810,29 +5810,29 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 		}
 
 		/* Duplicate the label (if any) for later. */
-		StringView_Create(label, source_line_pointer, label_length);
+		StringView_SubStr(label, source_line_subview, 0, label_length);
 
 		if (label_length != 0)
 		{
 			/* Advance past the label in the source string. */
-			source_line_pointer += label_length;
+			StringView_RemovePrefix(source_line_subview, label_length);
 
 			/* Skip past the colon at the end, if one exists. */
-			if (source_line_pointer[0] == ':')
-				++source_line_pointer;
+			if (!StringView_Empty(source_line_subview) && StringView_Front(source_line_subview) == ':')
+				StringView_RemovePrefix(source_line_subview, 1);
 		}
 
 		/* Skip the whitespace between the label and the directive. */
-		source_line_pointer += strspn(source_line_pointer, " \t");
+		StringView_RemovePrefix(source_line_subview, StringView_StrSpn(source_line_subview, " \t"));
 
 		/* Next let's process the directive. If it's an if-statement or a macro
 		   invocation, then we'll need to handle it manually. If not, then we
 		   can pass it to Flex and Bison. */
 
 		/* Determine the length of the directive. */
-		directive_length = strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
+		directive_length = StringView_StrSpn(source_line_subview, DIRECTIVE_OR_MACRO_CHARS);
 
-		StringView_Create(directive_and_operands, source_line_pointer, (String_Data(*state->source_line) + String_Length(*state->source_line)) - source_line_pointer);
+		directive_and_operands = source_line_subview;
 		StringView_SubStr(directive, directive_and_operands, 0, directive_length);
 
 		/* This is either a directive, or a macro. */
@@ -5877,7 +5877,7 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 						if (macro != NULL /*&& !macro->is_short*/)
 						{
 							/* Regular macros are only expanded when needed. */
-							InvokeMacro(state, macro, label, source_line_pointer);
+							InvokeMacro(state, macro, label, source_line_subview);
 						}
 						else
 						{
