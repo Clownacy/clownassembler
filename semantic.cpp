@@ -651,8 +651,6 @@ static cc_bool ResolveExpressionWithoutFolding(SemanticState *state, Expression 
 
 static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifier, const cc_bool must_evaluate_on_first_pass, unsigned long* const value)
 {
-	cc_bool success = cc_true;
-
 	SymbolDictionary::Entry *dictionary_entry;
 
 	dictionary_entry = LookupSymbol(state, identifier, NULL);
@@ -666,70 +664,70 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 		else
 			state->fixup_needed = cc_true;
 
-		success = cc_false;
+		return cc_false;
 	}
-	else
-	{
-		std::visit(
-			CC_VisitHelper{
-				[&](SymbolSpecial &symbol)
-				{
-					switch (symbol.type)
-					{
-						case SymbolSpecial::Type::RS:
-							*value = state->rs;
-							break;
 
-						case SymbolSpecial::Type::NARG:
-							if (!CurrentlyExpandingMacro(state))
-							{
-								SemanticWarning(state, "Symbol '{}' cannot be used outside of a macro.", identifier);
-								success = cc_false;
-							}
-							else
-							{
-								*value = state->macro.total_arguments_at_start;
-							}
+	return std::visit(
+		CC_VisitHelper{
+			[&](SymbolSpecial &symbol)
+			{
+				switch (symbol.type)
+				{
+					case SymbolSpecial::Type::RS:
+						*value = state->rs;
+						break;
 
-							break;
+					case SymbolSpecial::Type::NARG:
+						if (!CurrentlyExpandingMacro(state))
+						{
+							SemanticWarning(state, "Symbol '{}' cannot be used outside of a macro.", identifier);
+							return cc_false;
+						}
 
-						default:
-							// Should never happen.
-							assert(cc_false);
-							success = cc_false;
-							break;
-					}
-				},
-				[&](SymbolVariable &symbol)
-				{
-					if (state->doing_fixup_pass)
-						SemanticWarning(state, "Symbol '{}' forward-referenced despite being a redefineable variable.", identifier);
+						*value = state->macro.total_arguments_at_start;
 
-					*value = symbol.value;
-				},
-				[&](SymbolLabel &symbol)
-				{
-					*value = symbol.value;
-				},
-				[&](SymbolConstant &symbol)
-				{
-					*value = symbol.value;
-				},
-				[&](SymbolExpressionConstant &symbol)
-				{
-					if (!ResolveExpression(state, &symbol.expression, value))
-						success = cc_false;
-				},
-				[&](auto&)
-				{
-					SemanticError(state, "Symbol '{}' is not a label, constant, or variable.", identifier);
-					success = cc_false;
+						break;
+
+					default:
+						// Should never happen.
+						assert(cc_false);
+						return cc_false;
 				}
-			}, *dictionary_entry
-		);
-	}
 
-	return success;
+				return cc_true;
+			},
+			[&](SymbolVariable &symbol)
+			{
+				if (state->doing_fixup_pass)
+					SemanticWarning(state, "Symbol '{}' forward-referenced despite being a redefineable variable.", identifier);
+
+				*value = symbol.value;
+				return cc_true;
+			},
+			[&](SymbolLabel &symbol)
+			{
+				*value = symbol.value;
+				return cc_true;
+			},
+			[&](SymbolConstant &symbol)
+			{
+				*value = symbol.value;
+				return cc_true;
+			},
+			[&](SymbolExpressionConstant &symbol)
+			{
+				if (!ResolveExpression(state, &symbol.expression, value))
+					return cc_false;
+
+				return cc_true;
+			},
+			[&](auto&)
+			{
+				SemanticError(state, "Symbol '{}' is not a label, constant, or variable.", identifier);
+				return cc_false;
+			}
+		}, *dictionary_entry
+	);
 }
 
 // TODO: Just inline this.
@@ -740,213 +738,207 @@ static void AddToSourceLineList(SourceLineList &source_line_list, String source_
 
 static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, cc_bool fold)
 {
-	cc_bool success = cc_true;
-
-	std::visit(
+	if (!std::visit(
 		CC_VisitHelper{
 			[&](ExpressionArithmetic2Operand &expression)
 			{
 				unsigned long left_value;
 				unsigned long right_value;
 
-				/* Resolve both of these separately so that they are each properly hardcoded (C short-circuiting could cause the second call to never occur). */
-				if (!ResolveExpression(state, &expression.subexpressions[0], &left_value, fold))
-					success = cc_false;
+				/* Use a binary OR so that both expressions are properly folded (C short-circuiting could cause the second call to never occur if we used a logical OR). */
+				if (!ResolveExpression(state, &expression.subexpressions[0], &left_value, fold) | !ResolveExpression(state, &expression.subexpressions[1], &right_value, fold))
+					return cc_false;
 
-				if (!ResolveExpression(state, &expression.subexpressions[1], &right_value, fold))
-					success = cc_false;
-
-				if (success)
+				switch (expression.type)
 				{
-					switch (expression.type)
+					default:
+						/* This code should never be ran. */
+						assert(cc_false);
+						break;
+
+					case ExpressionArithmetic2Operand::Type::SUBTRACT:
+						*value = left_value - right_value;
+						break;
+
+					case ExpressionArithmetic2Operand::Type::ADD:
+						*value = left_value + right_value;
+						break;
+
+					case ExpressionArithmetic2Operand::Type::MULTIPLY:
+					case ExpressionArithmetic2Operand::Type::DIVIDE:
+					case ExpressionArithmetic2Operand::Type::MODULO:
 					{
-						default:
-							/* This code should never be ran. */
-							assert(cc_false);
-							break;
+						const cc_bool left_value_was_negative  = left_value  >= 0x80000000;
+						const cc_bool right_value_was_negative = right_value >= 0x80000000;
 
-						case ExpressionArithmetic2Operand::Type::SUBTRACT:
-							*value = left_value - right_value;
-							break;
+						/* Make inputs absolute, so we can emulate signed arithmetic with unsigned arithmetic. */
+						left_value  = (left_value  ^ (-(unsigned long)left_value_was_negative  & 0xFFFFFFFF)) + left_value_was_negative;
+						right_value = (right_value ^ (-(unsigned long)right_value_was_negative & 0xFFFFFFFF)) + right_value_was_negative;
 
-						case ExpressionArithmetic2Operand::Type::ADD:
-							*value = left_value + right_value;
-							break;
-
-						case ExpressionArithmetic2Operand::Type::MULTIPLY:
-						case ExpressionArithmetic2Operand::Type::DIVIDE:
-						case ExpressionArithmetic2Operand::Type::MODULO:
+						switch (expression.type)
 						{
-							const cc_bool left_value_was_negative  = left_value  >= 0x80000000;
-							const cc_bool right_value_was_negative = right_value >= 0x80000000;
+							default:
+								assert(cc_false);
+								return cc_false;
 
-							/* Make inputs absolute, so we can emulate signed arithmetic with unsigned arithmetic. */
-							left_value  = (left_value  ^ (-(unsigned long)left_value_was_negative  & 0xFFFFFFFF)) + left_value_was_negative;
-							right_value = (right_value ^ (-(unsigned long)right_value_was_negative & 0xFFFFFFFF)) + right_value_was_negative;
+							case ExpressionArithmetic2Operand::Type::MULTIPLY:
+								*value = left_value * right_value;
 
-							switch (expression.type)
-							{
-								default:
-									assert(cc_false);
-									/* Fallthrough */
-								case ExpressionArithmetic2Operand::Type::MULTIPLY:
-									*value = left_value * right_value;
+								if (left_value_was_negative != right_value_was_negative)
+									*value = -*value;
 
-									if (left_value_was_negative != right_value_was_negative)
-										*value = -*value;
-									break;
+								break;
 
-								case ExpressionArithmetic2Operand::Type::DIVIDE:
-									if (right_value == 0)
-									{
-										SemanticError(state, "Cannot divide by zero.");
-										success = cc_false;
-									}
-									else
-									{
-										*value = left_value / right_value;
+							case ExpressionArithmetic2Operand::Type::DIVIDE:
+								if (right_value == 0)
+								{
+									SemanticError(state, "Cannot divide by zero.");
+									return cc_false;
+								}
 
-										if (left_value_was_negative != right_value_was_negative)
-											*value = -*value;
-									}
-									break;
+								*value = left_value / right_value;
 
-								case ExpressionArithmetic2Operand::Type::MODULO:
-									if (right_value == 0)
-									{
-										SemanticError(state, "Cannot modulo by zero.");
-										success = cc_false;
-									}
-									else
-									{
-										*value = left_value % right_value;
+								if (left_value_was_negative != right_value_was_negative)
+									*value = -*value;
 
-										if (left_value_was_negative)
-											*value = -*value;
-									}
-									break;
-							}
+								break;
 
-							break;
+							case ExpressionArithmetic2Operand::Type::MODULO:
+								if (right_value == 0)
+								{
+									SemanticError(state, "Cannot modulo by zero.");
+									return cc_false;
+								}
+
+								*value = left_value % right_value;
+
+								if (left_value_was_negative)
+									*value = -*value;
+
+								break;
 						}
 
-						case ExpressionArithmetic2Operand::Type::LOGICAL_OR:
-							*value = left_value != 0 || right_value != 0 ? -1 : 0;
-							break;
-
-						case ExpressionArithmetic2Operand::Type::LOGICAL_AND:
-							*value = left_value != 0 && right_value != 0 ? -1 : 0;
-							break;
-
-						case ExpressionArithmetic2Operand::Type::BITWISE_OR:
-							*value = left_value | right_value;
-							break;
-
-						case ExpressionArithmetic2Operand::Type::BITWISE_XOR:
-							*value = left_value ^ right_value;
-							break;
-
-						case ExpressionArithmetic2Operand::Type::BITWISE_AND:
-							*value = left_value & right_value;
-							break;
-
-						case ExpressionArithmetic2Operand::Type::EQUALITY:
-							*value = left_value == right_value ? -1 : 0;
-							break;
-
-						case ExpressionArithmetic2Operand::Type::INEQUALITY:
-							*value = left_value != right_value ? -1 : 0;
-							break;
-
-						case ExpressionArithmetic2Operand::Type::LESS_THAN:
-						case ExpressionArithmetic2Operand::Type::LESS_OR_EQUAL:
-						case ExpressionArithmetic2Operand::Type::MORE_THAN:
-						case ExpressionArithmetic2Operand::Type::MORE_OR_EQUAL:
-							/* Flip the sign bit so we can emulate signed comparisons with unsigned integers. */
-							left_value  ^= 0x80000000;
-							right_value ^= 0x80000000;
-
-							switch (expression.type)
-							{
-								default:
-									assert(cc_false);
-									/* Fallthrough */
-								case ExpressionArithmetic2Operand::Type::LESS_THAN:
-									*value = left_value < right_value;
-									break;
-
-								case ExpressionArithmetic2Operand::Type::LESS_OR_EQUAL:
-									*value = left_value <= right_value;
-									break;
-
-								case ExpressionArithmetic2Operand::Type::MORE_THAN:
-									*value = left_value > right_value;
-									break;
-
-								case ExpressionArithmetic2Operand::Type::MORE_OR_EQUAL:
-									*value = left_value >= right_value;
-									break;
-							}
-
-							*value = -*value;
-							break;
-
-						/* asm68k does 32-bit arithmetic, so it masks the shift amount to 0-31 (though whether this is intentional or just a side-effect of using x86 shift instructions that do this is unknown).
-						   (note: this is also needed to prevent undefined behaviour in C from shifting by an amount greater than or equal to the width of the type). */
-						/* TODO: Print a warning here. */
-						case ExpressionArithmetic2Operand::Type::LEFT_SHIFT:
-							*value = left_value << (right_value % 32);
-							break;
-
-						case ExpressionArithmetic2Operand::Type::RIGHT_SHIFT:
-							*value = left_value >> (right_value % 32);
-							break;
+						break;
 					}
 
-					/* Prevent 'bleeding' out of the 68k's 32-bit range. */
-					*value &= 0xFFFFFFFF;
+					case ExpressionArithmetic2Operand::Type::LOGICAL_OR:
+						*value = left_value != 0 || right_value != 0 ? -1 : 0;
+						break;
+
+					case ExpressionArithmetic2Operand::Type::LOGICAL_AND:
+						*value = left_value != 0 && right_value != 0 ? -1 : 0;
+						break;
+
+					case ExpressionArithmetic2Operand::Type::BITWISE_OR:
+						*value = left_value | right_value;
+						break;
+
+					case ExpressionArithmetic2Operand::Type::BITWISE_XOR:
+						*value = left_value ^ right_value;
+						break;
+
+					case ExpressionArithmetic2Operand::Type::BITWISE_AND:
+						*value = left_value & right_value;
+						break;
+
+					case ExpressionArithmetic2Operand::Type::EQUALITY:
+						*value = left_value == right_value ? -1 : 0;
+						break;
+
+					case ExpressionArithmetic2Operand::Type::INEQUALITY:
+						*value = left_value != right_value ? -1 : 0;
+						break;
+
+					case ExpressionArithmetic2Operand::Type::LESS_THAN:
+					case ExpressionArithmetic2Operand::Type::LESS_OR_EQUAL:
+					case ExpressionArithmetic2Operand::Type::MORE_THAN:
+					case ExpressionArithmetic2Operand::Type::MORE_OR_EQUAL:
+						/* Flip the sign bit so we can emulate signed comparisons with unsigned integers. */
+						left_value  ^= 0x80000000;
+						right_value ^= 0x80000000;
+
+						switch (expression.type)
+						{
+							default:
+								assert(cc_false);
+								return cc_false;
+
+							case ExpressionArithmetic2Operand::Type::LESS_THAN:
+								*value = left_value < right_value;
+								break;
+
+							case ExpressionArithmetic2Operand::Type::LESS_OR_EQUAL:
+								*value = left_value <= right_value;
+								break;
+
+							case ExpressionArithmetic2Operand::Type::MORE_THAN:
+								*value = left_value > right_value;
+								break;
+
+							case ExpressionArithmetic2Operand::Type::MORE_OR_EQUAL:
+								*value = left_value >= right_value;
+								break;
+						}
+
+						*value = -*value;
+						break;
+
+					/* asm68k does 32-bit arithmetic, so it masks the shift amount to 0-31 (though whether this is intentional or just a side-effect of using x86 shift instructions that do this is unknown).
+					   (note: this is also needed to prevent undefined behaviour in C from shifting by an amount greater than or equal to the width of the type). */
+					/* TODO: Print a warning here. */
+					case ExpressionArithmetic2Operand::Type::LEFT_SHIFT:
+						*value = left_value << (right_value % 32);
+						break;
+
+					case ExpressionArithmetic2Operand::Type::RIGHT_SHIFT:
+						*value = left_value >> (right_value % 32);
+						break;
 				}
+
+				/* Prevent 'bleeding' out of the 68k's 32-bit range. */
+				*value &= 0xFFFFFFFF;
+				return cc_true;
 			},
 			[&](ExpressionArithmetic1Operand &expression)
 			{
 				if (!ResolveExpression(state, &*expression.subexpressions, value, fold))
+					return cc_false;
+
+				switch (expression.type)
 				{
-					success = cc_false;
+					default:
+						/* This code should never be ran. */
+						assert(cc_false);
+						return cc_false;
+
+					case ExpressionArithmetic1Operand::Type::NEGATE:
+						*value = 0 - *value;
+						break;
+
+					case ExpressionArithmetic1Operand::Type::BITWISE_NOT:
+						*value = ~*value;
+						break;
+
+					case ExpressionArithmetic1Operand::Type::LOGICAL_NOT:
+						*value = *value == 0 ? -1 : 0;
+						break;
 				}
-				else
-				{
-					switch (expression.type)
-					{
-						default:
-							/* This code should never be ran. */
-							assert(cc_false);
-							break;
 
-						case ExpressionArithmetic1Operand::Type::NEGATE:
-							*value = 0 - *value;
-							break;
-
-						case ExpressionArithmetic1Operand::Type::BITWISE_NOT:
-							*value = ~*value;
-							break;
-
-						case ExpressionArithmetic1Operand::Type::LOGICAL_NOT:
-							*value = *value == 0 ? -1 : 0;
-							break;
-					}
-
-					/* Prevent 'bleeding' out of the 68k's 32-bit range. */
-					*value &= 0xFFFFFFFF;
-				}
+				/* Prevent 'bleeding' out of the 68k's 32-bit range. */
+				*value &= 0xFFFFFFFF;
+				return cc_true;
 			},
 			[&](ExpressionNumber &expression)
 			{
 				*value = expression.value;
+				return cc_true;
 			},
 			[&](ExpressionIdentifier &expression)
 			{
 				if (!GetSymbolInteger(state, String_View(expression.string), cc_false, value))
-					success = cc_false;
+					return cc_false;
+
+				return cc_true;
 			},
 			[&](ExpressionString &expression)
 			{
@@ -954,74 +946,75 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 
 				if (length > 4)
 				{
-					success = cc_false;
 					SemanticError(state, "Character literals cannot be more than 4 characters long.");
+					return cc_false;
 				}
-				else
+
+				*value = 0;
+
+				for (size_t i = 0; i < length; ++i)
 				{
-					size_t i;
-
-					*value = 0;
-
-					for (i = 0; i < length; ++i)
-					{
-						*value <<= 8;
-						*value |= String_At(expression.string, i);
-					}
+					*value <<= 8;
+					*value |= String_At(expression.string, i);
 				}
+
+				return cc_true;
 			},
 			[&](ExpressionProgramCounterOfStatement&)
 			{
 				*value = state->program_counter_of_statement;
+				return cc_true;
 			},
 			[&](ExpressionProgramCounterOfExpression&)
 			{
 				*value = state->program_counter_of_expression;
+				return cc_true;
 			},
 			[&](ExpressionStrlen &expression)
 			{
 				*value = String_Length(expression.string);
+				return cc_true;
 			},
 			[&](ExpressionStrcmp &expression)
 			{
 				*value = String_Compare(expression.string_a, expression.string_b) ? -1 : 0;
+				return cc_true;
 			},
 			[&](ExpressionInstr &expression)
 			{
 				unsigned long position;
 
 				if (!ResolveExpression(state, &expression.subexpressions[0], &position, fold))
-				{
-					success = cc_false;
-					return;
-				}
+					return cc_false;
 
 				const auto expression_string_a = std::get_if<ExpressionString>(&expression.subexpressions[1]);
 				const auto expression_string_b = std::get_if<ExpressionString>(&expression.subexpressions[2]);
 
 				if (expression_string_a == nullptr || expression_string_b == nullptr)
 				{
-					success = cc_false;
 					SemanticError(state, "Last two arguments to `INSTR` must be strings.");
+					return cc_false;
 				}
-				else
-				{
-					/* TODO: What if 'position' is 0? */
-					const size_t found_position = String_Find(expression_string_a->string, String_View(expression_string_b->string), position - 1, state->options->case_insensitive);
-					*value = found_position == STRING_POSITION_INVALID ? 0 : found_position + 1;
-				}
+
+				/* TODO: What if 'position' is 0? */
+				const size_t found_position = String_Find(expression_string_a->string, String_View(expression_string_b->string), position - 1, state->options->case_insensitive);
+				*value = found_position == STRING_POSITION_INVALID ? 0 : found_position + 1;
+				return cc_true;
 			},
 			[&](ExpressionDef &expression)
 			{
 				*value = LookupSymbol(state, String_View(expression.string), NULL) != NULL ? -1 : 0;
+				return cc_true;
 			},
 			[&](ExpressionTypeWithIdentifier&)
 			{
 				*value = 0; /* TODO: This is a placeholder! */
+				return cc_true;
 			},
 			[&](ExpressionTypeWithNumber&)
 			{
 				*value = 1; /* TODO: This is a placeholder! */
+				return cc_true;
 			},
 			[&](ExpressionFilesize &expression)
 			{
@@ -1029,29 +1022,29 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 
 				if (!ToStandardPath(String_View(expression.string), standard_path))
 				{
-					success = cc_false;
 					OutOfMemoryError(state);
-					return;
+					return cc_false;
 				}
 
 				if (!std::filesystem::exists(standard_path))
 				{
-					success = cc_false;
 					SemanticError(state, "File '{}' does not exist.", expression.string);
-					return;
+					return cc_false;
 				}
 
 				*value = std::filesystem::file_size(standard_path);
+				return cc_true;
 			}
 		}, *expression
-	);
+	))
+		return cc_false;
 
 	/* Now that we have resolved the value, let's hardcode it here so that we don't ever have to calculate it again. */
 	/* This is especially useful for fix-ups, which may otherwise depend on identifiers that no longer exist at the time the value is resolved again. */
-	if (success && fold)
+	if (fold)
 		expression->emplace<ExpressionNumber>(*value);
 
-	return success;
+	return cc_true;
 }
 
 static void TerminateIf(SemanticState *state)
