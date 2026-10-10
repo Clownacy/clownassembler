@@ -31,7 +31,7 @@
 
 %param {void *scanner}
 
-%parse-param {Statement *statement}
+%parse-param {Statement &statement}
 
 %define parse.error verbose
 
@@ -650,16 +650,16 @@ using Statement = std::variant<
 #include <string.h>
 
 YY_DECL;
-void m68kasm_warning(void *scanner, Statement *statement, const char *message);
-void m68kasm_warning_pedantic(void *scanner, Statement *statement, const char *message);
-void m68kasm_error(void *scanner, Statement *statement, const char *message);
+void m68kasm_warning(void *scanner, const char *message);
+void m68kasm_warning_pedantic(void *scanner, const char *message);
+void m68kasm_error(void *scanner, const char *message);
 
 static cc_bool DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression);
 static cc_bool DoExpression(Expression &expression, ExpressionArithmetic2Operand::Type type, Expression left_expression, Expression right_expression);
 
 void m68kasm::parser::error(const std::string &message)
 {
-	m68kasm_error(scanner, statement, message.c_str());
+	m68kasm_error(scanner, message.c_str());
 }
 
 }
@@ -901,260 +901,258 @@ void m68kasm::parser::error(const std::string &message)
 statement
 	:
 	{
-		statement->emplace<StatementEmpty>();
+		statement.emplace<StatementEmpty>();
 	}
 	| instruction
 	{
-		statement->emplace<StatementInstruction>($1);
+		statement.emplace<StatementInstruction>($1);
 	}
 	| DIRECTIVE_DC size expression_list
 	{
-		statement->emplace<StatementDc>($2, $3);
+		statement.emplace<StatementDc>($2, $3);
 	}
 	| DIRECTIVE_DCB size expression "," expression
 	{
-		statement->emplace<StatementDcb>($2, $3, $5);
+		statement.emplace<StatementDcb>($2, $3, $5);
 	}
 	| DIRECTIVE_DS size expression
 	{
-		statement->emplace<StatementDs>($2, $3);
+		statement.emplace<StatementDs>($2, $3);
 	}
 	| DIRECTIVE_INCLUDE STRING
 	{
-		statement->emplace<StatementInclude>($2);
+		statement.emplace<StatementInclude>($2);
 	}
 	| DIRECTIVE_INCBIN STRING
 	{		
-		statement->emplace<StatementIncbin>($2, ExpressionNumber{0}, cc_false);
+		statement.emplace<StatementIncbin>($2, ExpressionNumber{0}, cc_false);
 	}
 	| DIRECTIVE_INCBIN STRING "," expression
 	{
-		statement->emplace<StatementIncbin>($2, $4, cc_false);
+		statement.emplace<StatementIncbin>($2, $4, cc_false);
 	}
 	| DIRECTIVE_INCBIN STRING "," "," expression
 	{
-		statement->emplace<StatementIncbin>($2, ExpressionNumber{0}, cc_true, $5);
+		statement.emplace<StatementIncbin>($2, ExpressionNumber{0}, cc_true, $5);
 	}
 	| DIRECTIVE_INCBIN STRING "," expression "," expression
 	{
-		statement->emplace<StatementIncbin>($2, $4, cc_true, $6);
+		statement.emplace<StatementIncbin>($2, $4, cc_true, $6);
 	}
 	| DIRECTIVE_REPT expression
 	{
-		statement->emplace<StatementRept>($2);
+		statement.emplace<StatementRept>($2);
 	}
 	| DIRECTIVE_ENDR
 	{
-		statement->emplace<StatementEndR>();
+		statement.emplace<StatementEndR>();
 	}
 	| DIRECTIVE_MACRO
 	{
-		statement->emplace<StatementMacro>(cc_false);
+		statement.emplace<StatementMacro>(cc_false);
 	}
 	| DIRECTIVE_MACRO "*"
 	{
-		statement->emplace<StatementMacro>(cc_true);
+		statement.emplace<StatementMacro>(cc_true);
 	}
 	| DIRECTIVE_MACRO identifier_list
 	{
-		statement->emplace<StatementMacro>(cc_false, $2);
+		statement.emplace<StatementMacro>(cc_false, $2);
 	}
 	| DIRECTIVE_MACRO "*" "," identifier_list
 	{
-		statement->emplace<StatementMacro>(cc_true, $4);
+		statement.emplace<StatementMacro>(cc_true, $4);
 	}
 	| DIRECTIVE_MACROS
 	{
-		// TODO: Is there a way to make this tidier?
-		statement->emplace<StatementMacroS>(StatementMacro{cc_false, {}});
+		statement.emplace<StatementMacroS>(StatementMacro{cc_false, {}});
 	}
 	| DIRECTIVE_MACROS identifier_list
 	{
-		// TODO: Is there a way to make this tidier?
-		statement->emplace<StatementMacroS>(StatementMacro{cc_false, $2});
+		statement.emplace<StatementMacroS>(StatementMacro{cc_false, $2});
 	}
 	| DIRECTIVE_ENDM
 	{
-		statement->emplace<StatementEndM>();
+		statement.emplace<StatementEndM>();
 	}
 	| DIRECTIVE_EQU expression
 	{
-		statement->emplace<StatementEqu>($2);
+		statement.emplace<StatementEqu>($2);
 	}
 	| DIRECTIVE_EQUS STRING
 	{
-		statement->emplace<StatementEquSString>($2);
+		statement.emplace<StatementEquSString>($2);
 	}
 	| DIRECTIVE_EQUS IDENTIFIER
 	{
-		statement->emplace<StatementEquSIdentifier>($2);
+		statement.emplace<StatementEquSIdentifier>($2);
 	}
 	| DIRECTIVE_SUBSTR "," "," STRING
 	{
 		String string = $4;
 		const auto string_length = String_Length(string);
-		statement->emplace<StatementSubstr>(ExpressionNumber{1}, ExpressionNumber{string_length}, std::move(string));
+		statement.emplace<StatementSubstr>(ExpressionNumber{1}, ExpressionNumber{string_length}, std::move(string));
 	}
 	| DIRECTIVE_SUBSTR expression "," "," STRING
 	{
 		String string = $5;
 		const auto string_length = String_Length(string);
-		statement->emplace<StatementSubstr>($2, ExpressionNumber{string_length}, std::move(string));
+		statement.emplace<StatementSubstr>($2, ExpressionNumber{string_length}, std::move(string));
 	}
 	| DIRECTIVE_SUBSTR "," expression "," STRING
 	{
-		statement->emplace<StatementSubstr>(ExpressionNumber{1}, $3, $5);
+		statement.emplace<StatementSubstr>(ExpressionNumber{1}, $3, $5);
 	}
 	| DIRECTIVE_SUBSTR expression "," expression "," STRING
 	{
-		statement->emplace<StatementSubstr>($2, $4, $6);
+		statement.emplace<StatementSubstr>($2, $4, $6);
 	}
 	| DIRECTIVE_SET expression
 	{
-		statement->emplace<StatementSet>($2);
+		statement.emplace<StatementSet>($2);
 	}
 	| "=" expression
 	{
-		statement->emplace<StatementSet>($2);
+		statement.emplace<StatementSet>($2);
 	}
 	| DIRECTIVE_IF expression
 	{
-		statement->emplace<StatementIf>($2);
+		statement.emplace<StatementIf>($2);
 	}
 	| DIRECTIVE_ELSEIF expression
 	{
-		statement->emplace<StatementElseIf>($2);
+		statement.emplace<StatementElseIf>($2);
 	}
 	| DIRECTIVE_ELSEIF
 	{
-		statement->emplace<StatementElse>();
+		statement.emplace<StatementElse>();
 	}
 	| DIRECTIVE_ELSE
 	{
-		statement->emplace<StatementElse>();
+		statement.emplace<StatementElse>();
 	}
 	| DIRECTIVE_ENDC
 	{
-		statement->emplace<StatementEndC>();
+		statement.emplace<StatementEndC>();
 	}
 	| DIRECTIVE_WHILE expression
 	{
-		statement->emplace<StatementWhile>($2);
+		statement.emplace<StatementWhile>($2);
 	}
 	| DIRECTIVE_ENDW
 	{
-		statement->emplace<StatementEndW>();
+		statement.emplace<StatementEndW>();
 	}
 	| DIRECTIVE_EVEN
 	{
-		statement->emplace<StatementEven>();
+		statement.emplace<StatementEven>();
 	}
 	| DIRECTIVE_CNOP expression "," expression
 	{
-		statement->emplace<StatementCnop>($2, $4);
+		statement.emplace<StatementCnop>($2, $4);
 	}
 	| DIRECTIVE_INFORM expression "," STRING
 	{
-		statement->emplace<StatementInform>($2, $4);
+		statement.emplace<StatementInform>($2, $4);
 	}
 	| DIRECTIVE_INFORM expression "," STRING "," expression_list
 	{
 		/* TODO - parameters */
-		statement->emplace<StatementInform>($2, $4);
+		statement.emplace<StatementInform>($2, $4);
 	}
 	| DIRECTIVE_FAIL
 	{
-		statement->emplace<StatementFail>();
+		statement.emplace<StatementFail>();
 	}
 	| DIRECTIVE_END
 	{
-		statement->emplace<StatementEnd>();
+		statement.emplace<StatementEnd>();
 	}
 	| DIRECTIVE_RS size expression
 	{
-		statement->emplace<StatementRS>($2, $3);
+		statement.emplace<StatementRS>($2, $3);
 	}
 	| DIRECTIVE_RSSET expression
 	{
-		statement->emplace<StatementRSSet>($2);
+		statement.emplace<StatementRSSet>($2);
 	}
 	| DIRECTIVE_RSRESET expression
 	{
 		/* As mentioned in S.N. 68k's manual, this odd hack
 		   is necessary for compatibility with other assemblers. */
-		statement->emplace<StatementRSSet>($2);
+		statement.emplace<StatementRSSet>($2);
 	}
 	| DIRECTIVE_RSRESET
 	{
-		statement->emplace<StatementRSReset>();
+		statement.emplace<StatementRSReset>();
 	}
 	| DIRECTIVE_OBJ expression
 	{
-		statement->emplace<StatementObj>($2);
+		statement.emplace<StatementObj>($2);
 	}
 	| DIRECTIVE_OBJEND
 	{
-		statement->emplace<StatementObjEnd>();
+		statement.emplace<StatementObjEnd>();
 	}
 	| DIRECTIVE_ORG expression
 	{
-		statement->emplace<StatementOrg>($2);
+		statement.emplace<StatementOrg>($2);
 	}
 	| DIRECTIVE_PUSHO
 	{
-		statement->emplace<StatementPushO>();
+		statement.emplace<StatementPushO>();
 	}
 	| DIRECTIVE_POPO
 	{
-		statement->emplace<StatementPopO>();
+		statement.emplace<StatementPopO>();
 	}
 	| DIRECTIVE_OPT option_list
 	{
-		statement->emplace<StatementOpt>($2);
+		statement.emplace<StatementOpt>($2);
 	}
 	| DIRECTIVE_PUSHP STRING
 	{
-		statement->emplace<StatementPushP>($2);
+		statement.emplace<StatementPushP>($2);
 	}
 	| DIRECTIVE_POPP IDENTIFIER
 	{
-		statement->emplace<StatementPopP>($2);
+		statement.emplace<StatementPopP>($2);
 	}
 	| DIRECTIVE_SHIFT
 	{
-		statement->emplace<StatementShift>();
+		statement.emplace<StatementShift>();
 	}
 	| DIRECTIVE_MEXIT
 	{
-		statement->emplace<StatementMExit>();
+		statement.emplace<StatementMExit>();
 	}
 	| DIRECTIVE_LOCAL identifier_list
 	{
-		statement->emplace<StatementLocal>($2);
+		statement.emplace<StatementLocal>($2);
 	}
 	| DIRECTIVE_LIST
 	{
 		/* TODO: Make this actually do something. */
-		statement->emplace<StatementEmpty>();
+		statement.emplace<StatementEmpty>();
 	}
 	| DIRECTIVE_LIST "+"
 	{
 		/* TODO: Make this actually do something. */
-		statement->emplace<StatementEmpty>();
+		statement.emplace<StatementEmpty>();
 	}
 	| DIRECTIVE_LIST "-"
 	{
 		/* TODO: Make this actually do something. */
-		statement->emplace<StatementEmpty>();
+		statement.emplace<StatementEmpty>();
 	}
 	| DIRECTIVE_NOLIST
 	{
 		/* TODO: Make this actually do something. */
-		statement->emplace<StatementEmpty>();
+		statement.emplace<StatementEmpty>();
 	}
 	| DIRECTIVE_PURGE IDENTIFIER
 	{
-		statement->emplace<StatementPurge>($2);
+		statement.emplace<StatementPurge>($2);
 	}
 	;
 
@@ -1228,7 +1226,7 @@ full_opcode
 	{
 		$$ = $1;
 		$$.size = SIZE_UNDEFINED;
-		m68kasm_warning_pedantic(scanner, statement, "Opcode has a dot but no size; either remove the dot or add an explicit size.");
+		m68kasm_warning_pedantic(scanner, "Opcode has a dot but no size; either remove the dot or add an explicit size.");
 	}
 	| opcode size
 	{
@@ -1845,7 +1843,7 @@ operand
 	{
 		const auto data_or_address_register = $4;
 
-		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning_pedantic(scanner, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.emplace<ExpressionNumber>(0);
 		$$.main_register = $2;
@@ -1857,7 +1855,7 @@ operand
 	{
 		const auto data_or_address_register = $5;
 
-		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning_pedantic(scanner, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
 		$$.main_register = $3;
@@ -1869,7 +1867,7 @@ operand
 	{
 		const auto data_or_address_register = $6;
 
-		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning_pedantic(scanner, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $2;
 		$$.main_register = $4;
@@ -1926,7 +1924,7 @@ operand
 	{
 		const auto data_or_address_register = $4;
 
-		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning_pedantic(scanner, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.emplace<ExpressionNumber>(0);
 		$$.index_register = data_or_address_register % 8;
@@ -1937,7 +1935,7 @@ operand
 	{
 		const auto data_or_address_register = $5;
 
-		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning_pedantic(scanner, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
 		$$.index_register = data_or_address_register % 8;
@@ -1948,7 +1946,7 @@ operand
 	{
 		const auto data_or_address_register = $6;
 
-		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning_pedantic(scanner, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $2;
 		$$.index_register = data_or_address_register % 8;

@@ -53,16 +53,16 @@
 #include <string.h>
 
 YY_DECL;
-void m68kasm_warning(void *scanner, Statement *statement, const char *message);
-void m68kasm_warning_pedantic(void *scanner, Statement *statement, const char *message);
-void m68kasm_error(void *scanner, Statement *statement, const char *message);
+void m68kasm_warning(void *scanner, const char *message);
+void m68kasm_warning_pedantic(void *scanner, const char *message);
+void m68kasm_error(void *scanner, const char *message);
 
 static cc_bool DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression);
 static cc_bool DoExpression(Expression &expression, ExpressionArithmetic2Operand::Type type, Expression left_expression, Expression right_expression);
 
 void m68kasm::parser::error(const std::string &message)
 {
-	m68kasm_error(scanner, statement, message.c_str());
+	m68kasm_error(scanner, message.c_str());
 }
 
 
@@ -143,7 +143,7 @@ namespace m68kasm {
 #line 144 "syntactic.cpp"
 
   /// Build a parser object.
-  parser::parser (void *scanner_yyarg, Statement *statement_yyarg)
+  parser::parser (void *scanner_yyarg, Statement &statement_yyarg)
 #if M68KASM_DEBUG
     : yydebug_ (false),
       yycdebug_ (&std::cerr),
@@ -808,7 +808,7 @@ namespace m68kasm {
   case 2: // statement: %empty
 #line 903 "syntactic.y"
         {
-		statement->emplace<StatementEmpty>();
+		statement.emplace<StatementEmpty>();
 	}
 #line 814 "syntactic.cpp"
     break;
@@ -816,7 +816,7 @@ namespace m68kasm {
   case 3: // statement: instruction
 #line 907 "syntactic.y"
         {
-		statement->emplace<StatementInstruction>(YY_MOVE (yystack_[0].value.as < StatementInstruction > ()));
+		statement.emplace<StatementInstruction>(YY_MOVE (yystack_[0].value.as < StatementInstruction > ()));
 	}
 #line 822 "syntactic.cpp"
     break;
@@ -824,7 +824,7 @@ namespace m68kasm {
   case 4: // statement: DIRECTIVE_DC size expression_list
 #line 911 "syntactic.y"
         {
-		statement->emplace<StatementDc>(YY_MOVE (yystack_[1].value.as < Size > ()), YY_MOVE (yystack_[0].value.as < ExpressionList > ()));
+		statement.emplace<StatementDc>(YY_MOVE (yystack_[1].value.as < Size > ()), YY_MOVE (yystack_[0].value.as < ExpressionList > ()));
 	}
 #line 830 "syntactic.cpp"
     break;
@@ -832,7 +832,7 @@ namespace m68kasm {
   case 5: // statement: DIRECTIVE_DCB size expression "," expression
 #line 915 "syntactic.y"
         {
-		statement->emplace<StatementDcb>(YY_MOVE (yystack_[3].value.as < Size > ()), YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementDcb>(YY_MOVE (yystack_[3].value.as < Size > ()), YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 838 "syntactic.cpp"
     break;
@@ -840,7 +840,7 @@ namespace m68kasm {
   case 6: // statement: DIRECTIVE_DS size expression
 #line 919 "syntactic.y"
         {
-		statement->emplace<StatementDs>(YY_MOVE (yystack_[1].value.as < Size > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementDs>(YY_MOVE (yystack_[1].value.as < Size > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 846 "syntactic.cpp"
     break;
@@ -848,7 +848,7 @@ namespace m68kasm {
   case 7: // statement: DIRECTIVE_INCLUDE STRING
 #line 923 "syntactic.y"
         {
-		statement->emplace<StatementInclude>(YY_MOVE (yystack_[0].value.as < String > ()));
+		statement.emplace<StatementInclude>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
 #line 854 "syntactic.cpp"
     break;
@@ -856,7 +856,7 @@ namespace m68kasm {
   case 8: // statement: DIRECTIVE_INCBIN STRING
 #line 927 "syntactic.y"
         {		
-		statement->emplace<StatementIncbin>(YY_MOVE (yystack_[0].value.as < String > ()), ExpressionNumber{0}, cc_false);
+		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[0].value.as < String > ()), ExpressionNumber{0}, cc_false);
 	}
 #line 862 "syntactic.cpp"
     break;
@@ -864,7 +864,7 @@ namespace m68kasm {
   case 9: // statement: DIRECTIVE_INCBIN STRING "," expression
 #line 931 "syntactic.y"
         {
-		statement->emplace<StatementIncbin>(YY_MOVE (yystack_[2].value.as < String > ()), YY_MOVE (yystack_[0].value.as < Expression > ()), cc_false);
+		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[2].value.as < String > ()), YY_MOVE (yystack_[0].value.as < Expression > ()), cc_false);
 	}
 #line 870 "syntactic.cpp"
     break;
@@ -872,7 +872,7 @@ namespace m68kasm {
   case 10: // statement: DIRECTIVE_INCBIN STRING "," "," expression
 #line 935 "syntactic.y"
         {
-		statement->emplace<StatementIncbin>(YY_MOVE (yystack_[3].value.as < String > ()), ExpressionNumber{0}, cc_true, YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[3].value.as < String > ()), ExpressionNumber{0}, cc_true, YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 878 "syntactic.cpp"
     break;
@@ -880,7 +880,7 @@ namespace m68kasm {
   case 11: // statement: DIRECTIVE_INCBIN STRING "," expression "," expression
 #line 939 "syntactic.y"
         {
-		statement->emplace<StatementIncbin>(YY_MOVE (yystack_[4].value.as < String > ()), YY_MOVE (yystack_[2].value.as < Expression > ()), cc_true, YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[4].value.as < String > ()), YY_MOVE (yystack_[2].value.as < Expression > ()), cc_true, YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 886 "syntactic.cpp"
     break;
@@ -888,7 +888,7 @@ namespace m68kasm {
   case 12: // statement: DIRECTIVE_REPT expression
 #line 943 "syntactic.y"
         {
-		statement->emplace<StatementRept>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementRept>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 894 "syntactic.cpp"
     break;
@@ -896,7 +896,7 @@ namespace m68kasm {
   case 13: // statement: DIRECTIVE_ENDR
 #line 947 "syntactic.y"
         {
-		statement->emplace<StatementEndR>();
+		statement.emplace<StatementEndR>();
 	}
 #line 902 "syntactic.cpp"
     break;
@@ -904,7 +904,7 @@ namespace m68kasm {
   case 14: // statement: DIRECTIVE_MACRO
 #line 951 "syntactic.y"
         {
-		statement->emplace<StatementMacro>(cc_false);
+		statement.emplace<StatementMacro>(cc_false);
 	}
 #line 910 "syntactic.cpp"
     break;
@@ -912,7 +912,7 @@ namespace m68kasm {
   case 15: // statement: DIRECTIVE_MACRO "*"
 #line 955 "syntactic.y"
         {
-		statement->emplace<StatementMacro>(cc_true);
+		statement.emplace<StatementMacro>(cc_true);
 	}
 #line 918 "syntactic.cpp"
     break;
@@ -920,7 +920,7 @@ namespace m68kasm {
   case 16: // statement: DIRECTIVE_MACRO identifier_list
 #line 959 "syntactic.y"
         {
-		statement->emplace<StatementMacro>(cc_false, YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
+		statement.emplace<StatementMacro>(cc_false, YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
 	}
 #line 926 "syntactic.cpp"
     break;
@@ -928,7 +928,7 @@ namespace m68kasm {
   case 17: // statement: DIRECTIVE_MACRO "*" "," identifier_list
 #line 963 "syntactic.y"
         {
-		statement->emplace<StatementMacro>(cc_true, YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
+		statement.emplace<StatementMacro>(cc_true, YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
 	}
 #line 934 "syntactic.cpp"
     break;
@@ -936,1561 +936,1559 @@ namespace m68kasm {
   case 18: // statement: DIRECTIVE_MACROS
 #line 967 "syntactic.y"
         {
-		// TODO: Is there a way to make this tidier?
-		statement->emplace<StatementMacroS>(StatementMacro{cc_false, {}});
+		statement.emplace<StatementMacroS>(StatementMacro{cc_false, {}});
 	}
-#line 943 "syntactic.cpp"
+#line 942 "syntactic.cpp"
     break;
 
   case 19: // statement: DIRECTIVE_MACROS identifier_list
-#line 972 "syntactic.y"
+#line 971 "syntactic.y"
         {
-		// TODO: Is there a way to make this tidier?
-		statement->emplace<StatementMacroS>(StatementMacro{cc_false, YY_MOVE (yystack_[0].value.as < IdentifierList > ())});
+		statement.emplace<StatementMacroS>(StatementMacro{cc_false, YY_MOVE (yystack_[0].value.as < IdentifierList > ())});
 	}
-#line 952 "syntactic.cpp"
+#line 950 "syntactic.cpp"
     break;
 
   case 20: // statement: DIRECTIVE_ENDM
-#line 977 "syntactic.y"
+#line 975 "syntactic.y"
         {
-		statement->emplace<StatementEndM>();
+		statement.emplace<StatementEndM>();
 	}
-#line 960 "syntactic.cpp"
+#line 958 "syntactic.cpp"
     break;
 
   case 21: // statement: DIRECTIVE_EQU expression
-#line 981 "syntactic.y"
+#line 979 "syntactic.y"
         {
-		statement->emplace<StatementEqu>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementEqu>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
-#line 968 "syntactic.cpp"
+#line 966 "syntactic.cpp"
     break;
 
   case 22: // statement: DIRECTIVE_EQUS STRING
-#line 985 "syntactic.y"
+#line 983 "syntactic.y"
         {
-		statement->emplace<StatementEquSString>(YY_MOVE (yystack_[0].value.as < String > ()));
+		statement.emplace<StatementEquSString>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
-#line 976 "syntactic.cpp"
+#line 974 "syntactic.cpp"
     break;
 
   case 23: // statement: DIRECTIVE_EQUS IDENTIFIER
-#line 989 "syntactic.y"
+#line 987 "syntactic.y"
         {
-		statement->emplace<StatementEquSIdentifier>(YY_MOVE (yystack_[0].value.as < String > ()));
+		statement.emplace<StatementEquSIdentifier>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
-#line 984 "syntactic.cpp"
+#line 982 "syntactic.cpp"
     break;
 
   case 24: // statement: DIRECTIVE_SUBSTR "," "," STRING
-#line 993 "syntactic.y"
+#line 991 "syntactic.y"
         {
 		String string = YY_MOVE (yystack_[0].value.as < String > ());
 		const auto string_length = String_Length(string);
-		statement->emplace<StatementSubstr>(ExpressionNumber{1}, ExpressionNumber{string_length}, std::move(string));
+		statement.emplace<StatementSubstr>(ExpressionNumber{1}, ExpressionNumber{string_length}, std::move(string));
 	}
-#line 994 "syntactic.cpp"
+#line 992 "syntactic.cpp"
     break;
 
   case 25: // statement: DIRECTIVE_SUBSTR expression "," "," STRING
-#line 999 "syntactic.y"
+#line 997 "syntactic.y"
         {
 		String string = YY_MOVE (yystack_[0].value.as < String > ());
 		const auto string_length = String_Length(string);
-		statement->emplace<StatementSubstr>(YY_MOVE (yystack_[3].value.as < Expression > ()), ExpressionNumber{string_length}, std::move(string));
+		statement.emplace<StatementSubstr>(YY_MOVE (yystack_[3].value.as < Expression > ()), ExpressionNumber{string_length}, std::move(string));
 	}
-#line 1004 "syntactic.cpp"
+#line 1002 "syntactic.cpp"
     break;
 
   case 26: // statement: DIRECTIVE_SUBSTR "," expression "," STRING
-#line 1005 "syntactic.y"
+#line 1003 "syntactic.y"
         {
-		statement->emplace<StatementSubstr>(ExpressionNumber{1}, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < String > ()));
+		statement.emplace<StatementSubstr>(ExpressionNumber{1}, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < String > ()));
 	}
-#line 1012 "syntactic.cpp"
+#line 1010 "syntactic.cpp"
     break;
 
   case 27: // statement: DIRECTIVE_SUBSTR expression "," expression "," STRING
-#line 1009 "syntactic.y"
+#line 1007 "syntactic.y"
         {
-		statement->emplace<StatementSubstr>(YY_MOVE (yystack_[4].value.as < Expression > ()), YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < String > ()));
+		statement.emplace<StatementSubstr>(YY_MOVE (yystack_[4].value.as < Expression > ()), YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < String > ()));
 	}
-#line 1020 "syntactic.cpp"
+#line 1018 "syntactic.cpp"
     break;
 
   case 28: // statement: DIRECTIVE_SET expression
-#line 1013 "syntactic.y"
+#line 1011 "syntactic.y"
         {
-		statement->emplace<StatementSet>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementSet>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
-#line 1028 "syntactic.cpp"
+#line 1026 "syntactic.cpp"
     break;
 
   case 29: // statement: "=" expression
-#line 1017 "syntactic.y"
+#line 1015 "syntactic.y"
         {
-		statement->emplace<StatementSet>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementSet>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
-#line 1036 "syntactic.cpp"
+#line 1034 "syntactic.cpp"
     break;
 
   case 30: // statement: DIRECTIVE_IF expression
-#line 1021 "syntactic.y"
+#line 1019 "syntactic.y"
         {
-		statement->emplace<StatementIf>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementIf>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
-#line 1044 "syntactic.cpp"
+#line 1042 "syntactic.cpp"
     break;
 
   case 31: // statement: DIRECTIVE_ELSEIF expression
-#line 1025 "syntactic.y"
+#line 1023 "syntactic.y"
         {
-		statement->emplace<StatementElseIf>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementElseIf>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
-#line 1052 "syntactic.cpp"
+#line 1050 "syntactic.cpp"
     break;
 
   case 32: // statement: DIRECTIVE_ELSEIF
-#line 1029 "syntactic.y"
+#line 1027 "syntactic.y"
         {
-		statement->emplace<StatementElse>();
+		statement.emplace<StatementElse>();
 	}
-#line 1060 "syntactic.cpp"
+#line 1058 "syntactic.cpp"
     break;
 
   case 33: // statement: DIRECTIVE_ELSE
-#line 1033 "syntactic.y"
+#line 1031 "syntactic.y"
         {
-		statement->emplace<StatementElse>();
+		statement.emplace<StatementElse>();
 	}
-#line 1068 "syntactic.cpp"
+#line 1066 "syntactic.cpp"
     break;
 
   case 34: // statement: DIRECTIVE_ENDC
-#line 1037 "syntactic.y"
+#line 1035 "syntactic.y"
         {
-		statement->emplace<StatementEndC>();
+		statement.emplace<StatementEndC>();
 	}
-#line 1076 "syntactic.cpp"
+#line 1074 "syntactic.cpp"
     break;
 
   case 35: // statement: DIRECTIVE_WHILE expression
-#line 1041 "syntactic.y"
+#line 1039 "syntactic.y"
         {
-		statement->emplace<StatementWhile>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementWhile>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
-#line 1084 "syntactic.cpp"
+#line 1082 "syntactic.cpp"
     break;
 
   case 36: // statement: DIRECTIVE_ENDW
-#line 1045 "syntactic.y"
+#line 1043 "syntactic.y"
         {
-		statement->emplace<StatementEndW>();
+		statement.emplace<StatementEndW>();
 	}
-#line 1092 "syntactic.cpp"
+#line 1090 "syntactic.cpp"
     break;
 
   case 37: // statement: DIRECTIVE_EVEN
-#line 1049 "syntactic.y"
+#line 1047 "syntactic.y"
         {
-		statement->emplace<StatementEven>();
+		statement.emplace<StatementEven>();
 	}
-#line 1100 "syntactic.cpp"
+#line 1098 "syntactic.cpp"
     break;
 
   case 38: // statement: DIRECTIVE_CNOP expression "," expression
-#line 1053 "syntactic.y"
+#line 1051 "syntactic.y"
         {
-		statement->emplace<StatementCnop>(YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementCnop>(YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
-#line 1108 "syntactic.cpp"
+#line 1106 "syntactic.cpp"
     break;
 
   case 39: // statement: DIRECTIVE_INFORM expression "," STRING
-#line 1057 "syntactic.y"
+#line 1055 "syntactic.y"
         {
-		statement->emplace<StatementInform>(YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < String > ()));
+		statement.emplace<StatementInform>(YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < String > ()));
 	}
-#line 1116 "syntactic.cpp"
+#line 1114 "syntactic.cpp"
     break;
 
   case 40: // statement: DIRECTIVE_INFORM expression "," STRING "," expression_list
-#line 1061 "syntactic.y"
+#line 1059 "syntactic.y"
         {
 		/* TODO - parameters */
-		statement->emplace<StatementInform>(YY_MOVE (yystack_[4].value.as < Expression > ()), YY_MOVE (yystack_[2].value.as < String > ()));
+		statement.emplace<StatementInform>(YY_MOVE (yystack_[4].value.as < Expression > ()), YY_MOVE (yystack_[2].value.as < String > ()));
 	}
-#line 1125 "syntactic.cpp"
+#line 1123 "syntactic.cpp"
     break;
 
   case 41: // statement: DIRECTIVE_FAIL
-#line 1066 "syntactic.y"
+#line 1064 "syntactic.y"
         {
-		statement->emplace<StatementFail>();
+		statement.emplace<StatementFail>();
 	}
-#line 1133 "syntactic.cpp"
+#line 1131 "syntactic.cpp"
     break;
 
   case 42: // statement: DIRECTIVE_END
-#line 1070 "syntactic.y"
+#line 1068 "syntactic.y"
         {
-		statement->emplace<StatementEnd>();
+		statement.emplace<StatementEnd>();
 	}
-#line 1141 "syntactic.cpp"
+#line 1139 "syntactic.cpp"
     break;
 
   case 43: // statement: DIRECTIVE_RS size expression
-#line 1074 "syntactic.y"
+#line 1072 "syntactic.y"
         {
-		statement->emplace<StatementRS>(YY_MOVE (yystack_[1].value.as < Size > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementRS>(YY_MOVE (yystack_[1].value.as < Size > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
-#line 1149 "syntactic.cpp"
+#line 1147 "syntactic.cpp"
     break;
 
   case 44: // statement: DIRECTIVE_RSSET expression
-#line 1078 "syntactic.y"
+#line 1076 "syntactic.y"
         {
-		statement->emplace<StatementRSSet>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementRSSet>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
-#line 1157 "syntactic.cpp"
+#line 1155 "syntactic.cpp"
     break;
 
   case 45: // statement: DIRECTIVE_RSRESET expression
-#line 1082 "syntactic.y"
+#line 1080 "syntactic.y"
         {
 		/* As mentioned in S.N. 68k's manual, this odd hack
 		   is necessary for compatibility with other assemblers. */
-		statement->emplace<StatementRSSet>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementRSSet>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
-#line 1167 "syntactic.cpp"
+#line 1165 "syntactic.cpp"
     break;
 
   case 46: // statement: DIRECTIVE_RSRESET
-#line 1088 "syntactic.y"
+#line 1086 "syntactic.y"
         {
-		statement->emplace<StatementRSReset>();
+		statement.emplace<StatementRSReset>();
 	}
-#line 1175 "syntactic.cpp"
+#line 1173 "syntactic.cpp"
     break;
 
   case 47: // statement: DIRECTIVE_OBJ expression
-#line 1092 "syntactic.y"
+#line 1090 "syntactic.y"
         {
-		statement->emplace<StatementObj>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementObj>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
-#line 1183 "syntactic.cpp"
+#line 1181 "syntactic.cpp"
     break;
 
   case 48: // statement: DIRECTIVE_OBJEND
-#line 1096 "syntactic.y"
+#line 1094 "syntactic.y"
         {
-		statement->emplace<StatementObjEnd>();
+		statement.emplace<StatementObjEnd>();
 	}
-#line 1191 "syntactic.cpp"
+#line 1189 "syntactic.cpp"
     break;
 
   case 49: // statement: DIRECTIVE_ORG expression
-#line 1100 "syntactic.y"
+#line 1098 "syntactic.y"
         {
-		statement->emplace<StatementOrg>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementOrg>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
-#line 1199 "syntactic.cpp"
+#line 1197 "syntactic.cpp"
     break;
 
   case 50: // statement: DIRECTIVE_PUSHO
-#line 1104 "syntactic.y"
+#line 1102 "syntactic.y"
         {
-		statement->emplace<StatementPushO>();
+		statement.emplace<StatementPushO>();
 	}
-#line 1207 "syntactic.cpp"
+#line 1205 "syntactic.cpp"
     break;
 
   case 51: // statement: DIRECTIVE_POPO
-#line 1108 "syntactic.y"
+#line 1106 "syntactic.y"
         {
-		statement->emplace<StatementPopO>();
+		statement.emplace<StatementPopO>();
 	}
-#line 1215 "syntactic.cpp"
+#line 1213 "syntactic.cpp"
     break;
 
   case 52: // statement: DIRECTIVE_OPT option_list
-#line 1112 "syntactic.y"
+#line 1110 "syntactic.y"
         {
-		statement->emplace<StatementOpt>(YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
+		statement.emplace<StatementOpt>(YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
 	}
-#line 1223 "syntactic.cpp"
+#line 1221 "syntactic.cpp"
     break;
 
   case 53: // statement: DIRECTIVE_PUSHP STRING
-#line 1116 "syntactic.y"
+#line 1114 "syntactic.y"
         {
-		statement->emplace<StatementPushP>(YY_MOVE (yystack_[0].value.as < String > ()));
+		statement.emplace<StatementPushP>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
-#line 1231 "syntactic.cpp"
+#line 1229 "syntactic.cpp"
     break;
 
   case 54: // statement: DIRECTIVE_POPP IDENTIFIER
-#line 1120 "syntactic.y"
+#line 1118 "syntactic.y"
         {
-		statement->emplace<StatementPopP>(YY_MOVE (yystack_[0].value.as < String > ()));
+		statement.emplace<StatementPopP>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
-#line 1239 "syntactic.cpp"
+#line 1237 "syntactic.cpp"
     break;
 
   case 55: // statement: DIRECTIVE_SHIFT
-#line 1124 "syntactic.y"
+#line 1122 "syntactic.y"
         {
-		statement->emplace<StatementShift>();
+		statement.emplace<StatementShift>();
 	}
-#line 1247 "syntactic.cpp"
+#line 1245 "syntactic.cpp"
     break;
 
   case 56: // statement: DIRECTIVE_MEXIT
-#line 1128 "syntactic.y"
+#line 1126 "syntactic.y"
         {
-		statement->emplace<StatementMExit>();
+		statement.emplace<StatementMExit>();
 	}
-#line 1255 "syntactic.cpp"
+#line 1253 "syntactic.cpp"
     break;
 
   case 57: // statement: DIRECTIVE_LOCAL identifier_list
-#line 1132 "syntactic.y"
+#line 1130 "syntactic.y"
         {
-		statement->emplace<StatementLocal>(YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
+		statement.emplace<StatementLocal>(YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
 	}
-#line 1263 "syntactic.cpp"
+#line 1261 "syntactic.cpp"
     break;
 
   case 58: // statement: DIRECTIVE_LIST
-#line 1136 "syntactic.y"
+#line 1134 "syntactic.y"
         {
 		/* TODO: Make this actually do something. */
-		statement->emplace<StatementEmpty>();
+		statement.emplace<StatementEmpty>();
 	}
-#line 1272 "syntactic.cpp"
+#line 1270 "syntactic.cpp"
     break;
 
   case 59: // statement: DIRECTIVE_LIST "+"
-#line 1141 "syntactic.y"
+#line 1139 "syntactic.y"
         {
 		/* TODO: Make this actually do something. */
-		statement->emplace<StatementEmpty>();
+		statement.emplace<StatementEmpty>();
 	}
-#line 1281 "syntactic.cpp"
+#line 1279 "syntactic.cpp"
     break;
 
   case 60: // statement: DIRECTIVE_LIST "-"
-#line 1146 "syntactic.y"
+#line 1144 "syntactic.y"
         {
 		/* TODO: Make this actually do something. */
-		statement->emplace<StatementEmpty>();
+		statement.emplace<StatementEmpty>();
 	}
-#line 1290 "syntactic.cpp"
+#line 1288 "syntactic.cpp"
     break;
 
   case 61: // statement: DIRECTIVE_NOLIST
-#line 1151 "syntactic.y"
+#line 1149 "syntactic.y"
         {
 		/* TODO: Make this actually do something. */
-		statement->emplace<StatementEmpty>();
+		statement.emplace<StatementEmpty>();
 	}
-#line 1299 "syntactic.cpp"
+#line 1297 "syntactic.cpp"
     break;
 
   case 62: // statement: DIRECTIVE_PURGE IDENTIFIER
-#line 1156 "syntactic.y"
+#line 1154 "syntactic.y"
         {
-		statement->emplace<StatementPurge>(YY_MOVE (yystack_[0].value.as < String > ()));
+		statement.emplace<StatementPurge>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
-#line 1307 "syntactic.cpp"
+#line 1305 "syntactic.cpp"
     break;
 
   case 63: // expression_list: expression
-#line 1163 "syntactic.y"
+#line 1161 "syntactic.y"
         {
 		yylhs.value.as < ExpressionList > ().emplace_back(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
-#line 1315 "syntactic.cpp"
+#line 1313 "syntactic.cpp"
     break;
 
   case 64: // expression_list: expression_list "," expression
-#line 1167 "syntactic.y"
+#line 1165 "syntactic.y"
         {
 		yylhs.value.as < ExpressionList > () = YY_MOVE (yystack_[2].value.as < ExpressionList > ());
 
 		yylhs.value.as < ExpressionList > ().emplace_back(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
-#line 1325 "syntactic.cpp"
+#line 1323 "syntactic.cpp"
     break;
 
   case 65: // identifier_list: IDENTIFIER
-#line 1176 "syntactic.y"
+#line 1174 "syntactic.y"
         {
 		yylhs.value.as < IdentifierList > ().emplace_back(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
-#line 1333 "syntactic.cpp"
+#line 1331 "syntactic.cpp"
     break;
 
   case 66: // identifier_list: identifier_list "," IDENTIFIER
-#line 1180 "syntactic.y"
+#line 1178 "syntactic.y"
         {
 		yylhs.value.as < IdentifierList > () = YY_MOVE (yystack_[2].value.as < IdentifierList > ());
 
 		yylhs.value.as < IdentifierList > ().emplace_back(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
-#line 1343 "syntactic.cpp"
+#line 1341 "syntactic.cpp"
     break;
 
   case 67: // option_list: OPTION
-#line 1189 "syntactic.y"
+#line 1187 "syntactic.y"
         {
 		yylhs.value.as < IdentifierList > ().emplace_back(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
-#line 1351 "syntactic.cpp"
+#line 1349 "syntactic.cpp"
     break;
 
   case 68: // option_list: option_list "," OPTION
-#line 1193 "syntactic.y"
+#line 1191 "syntactic.y"
         {
 		yylhs.value.as < IdentifierList > () = YY_MOVE (yystack_[2].value.as < IdentifierList > ());
 
 		yylhs.value.as < IdentifierList > ().emplace_back(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
-#line 1361 "syntactic.cpp"
+#line 1359 "syntactic.cpp"
     break;
 
   case 69: // instruction: full_opcode
-#line 1202 "syntactic.y"
+#line 1200 "syntactic.y"
         {
 		yylhs.value.as < StatementInstruction > ().opcode = YY_MOVE (yystack_[0].value.as < Opcode > ());
 		yylhs.value.as < StatementInstruction > ().operands[0].type = OPERAND_NONE;
 		yylhs.value.as < StatementInstruction > ().operands[1].type = OPERAND_NONE;
 	}
-#line 1371 "syntactic.cpp"
+#line 1369 "syntactic.cpp"
     break;
 
   case 70: // instruction: full_opcode operand
-#line 1208 "syntactic.y"
+#line 1206 "syntactic.y"
         {
 		yylhs.value.as < StatementInstruction > ().opcode = YY_MOVE (yystack_[1].value.as < Opcode > ());
 		yylhs.value.as < StatementInstruction > ().operands[0] = YY_MOVE (yystack_[0].value.as < Operand > ());
 		yylhs.value.as < StatementInstruction > ().operands[1].type = OPERAND_NONE;
 	}
-#line 1381 "syntactic.cpp"
+#line 1379 "syntactic.cpp"
     break;
 
   case 71: // instruction: full_opcode operand "," operand
-#line 1214 "syntactic.y"
+#line 1212 "syntactic.y"
         {
 		yylhs.value.as < StatementInstruction > ().opcode = YY_MOVE (yystack_[3].value.as < Opcode > ());
 		yylhs.value.as < StatementInstruction > ().operands[0] = YY_MOVE (yystack_[2].value.as < Operand > ());
 		yylhs.value.as < StatementInstruction > ().operands[1] = YY_MOVE (yystack_[0].value.as < Operand > ());
 	}
-#line 1391 "syntactic.cpp"
+#line 1389 "syntactic.cpp"
     break;
 
   case 72: // full_opcode: opcode
-#line 1223 "syntactic.y"
+#line 1221 "syntactic.y"
         {
 		yylhs.value.as < Opcode > () = YY_MOVE (yystack_[0].value.as < Opcode > ());
 		yylhs.value.as < Opcode > ().size = SIZE_UNDEFINED;
 	}
-#line 1400 "syntactic.cpp"
+#line 1398 "syntactic.cpp"
     break;
 
   case 73: // full_opcode: opcode "."
-#line 1228 "syntactic.y"
+#line 1226 "syntactic.y"
         {
 		yylhs.value.as < Opcode > () = YY_MOVE (yystack_[1].value.as < Opcode > ());
 		yylhs.value.as < Opcode > ().size = SIZE_UNDEFINED;
-		m68kasm_warning_pedantic(scanner, statement, "Opcode has a dot but no size; either remove the dot or add an explicit size.");
+		m68kasm_warning_pedantic(scanner, "Opcode has a dot but no size; either remove the dot or add an explicit size.");
 	}
-#line 1410 "syntactic.cpp"
+#line 1408 "syntactic.cpp"
     break;
 
   case 74: // full_opcode: opcode size
-#line 1234 "syntactic.y"
+#line 1232 "syntactic.y"
         {
 		yylhs.value.as < Opcode > () = YY_MOVE (yystack_[1].value.as < Opcode > ());
 		yylhs.value.as < Opcode > ().size = YY_MOVE (yystack_[0].value.as < Size > ());
 	}
-#line 1419 "syntactic.cpp"
+#line 1417 "syntactic.cpp"
     break;
 
   case 75: // opcode: DIRECTIVE_ORI
-#line 1242 "syntactic.y"
+#line 1240 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ORI;
 	}
-#line 1427 "syntactic.cpp"
+#line 1425 "syntactic.cpp"
     break;
 
   case 76: // opcode: DIRECTIVE_ANDI
-#line 1246 "syntactic.y"
+#line 1244 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ANDI;
 	}
-#line 1435 "syntactic.cpp"
+#line 1433 "syntactic.cpp"
     break;
 
   case 77: // opcode: DIRECTIVE_SUBI
-#line 1250 "syntactic.y"
+#line 1248 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_SUBI;
 	}
-#line 1443 "syntactic.cpp"
+#line 1441 "syntactic.cpp"
     break;
 
   case 78: // opcode: DIRECTIVE_ADDI
-#line 1254 "syntactic.y"
+#line 1252 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ADDI;
 	}
-#line 1451 "syntactic.cpp"
+#line 1449 "syntactic.cpp"
     break;
 
   case 79: // opcode: DIRECTIVE_EORI
-#line 1258 "syntactic.y"
+#line 1256 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_EORI;
 	}
-#line 1459 "syntactic.cpp"
+#line 1457 "syntactic.cpp"
     break;
 
   case 80: // opcode: DIRECTIVE_CMPI
-#line 1262 "syntactic.y"
+#line 1260 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_CMPI;
 	}
-#line 1467 "syntactic.cpp"
+#line 1465 "syntactic.cpp"
     break;
 
   case 81: // opcode: DIRECTIVE_BTST
-#line 1266 "syntactic.y"
+#line 1264 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_BTST_STATIC;
 	}
-#line 1475 "syntactic.cpp"
+#line 1473 "syntactic.cpp"
     break;
 
   case 82: // opcode: DIRECTIVE_BCHG
-#line 1270 "syntactic.y"
+#line 1268 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_BCHG_STATIC;
 	}
-#line 1483 "syntactic.cpp"
+#line 1481 "syntactic.cpp"
     break;
 
   case 83: // opcode: DIRECTIVE_BCLR
-#line 1274 "syntactic.y"
+#line 1272 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_BCLR_STATIC;
 	}
-#line 1491 "syntactic.cpp"
+#line 1489 "syntactic.cpp"
     break;
 
   case 84: // opcode: DIRECTIVE_BSET
-#line 1278 "syntactic.y"
+#line 1276 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_BSET_STATIC;
 	}
-#line 1499 "syntactic.cpp"
+#line 1497 "syntactic.cpp"
     break;
 
   case 85: // opcode: DIRECTIVE_MOVEP
-#line 1282 "syntactic.y"
+#line 1280 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_MOVEP_TO_REG;
 	}
-#line 1507 "syntactic.cpp"
+#line 1505 "syntactic.cpp"
     break;
 
   case 86: // opcode: DIRECTIVE_MOVEA
-#line 1286 "syntactic.y"
+#line 1284 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_MOVEA;
 	}
-#line 1515 "syntactic.cpp"
+#line 1513 "syntactic.cpp"
     break;
 
   case 87: // opcode: DIRECTIVE_MOVE
-#line 1290 "syntactic.y"
+#line 1288 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_MOVE;
 	}
-#line 1523 "syntactic.cpp"
+#line 1521 "syntactic.cpp"
     break;
 
   case 88: // opcode: DIRECTIVE_NEGX
-#line 1294 "syntactic.y"
+#line 1292 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_NEGX;
 	}
-#line 1531 "syntactic.cpp"
+#line 1529 "syntactic.cpp"
     break;
 
   case 89: // opcode: DIRECTIVE_CLR
-#line 1298 "syntactic.y"
+#line 1296 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_CLR;
 	}
-#line 1539 "syntactic.cpp"
+#line 1537 "syntactic.cpp"
     break;
 
   case 90: // opcode: DIRECTIVE_NEG
-#line 1302 "syntactic.y"
+#line 1300 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_NEG;
 	}
-#line 1547 "syntactic.cpp"
+#line 1545 "syntactic.cpp"
     break;
 
   case 91: // opcode: DIRECTIVE_NOT
-#line 1306 "syntactic.y"
+#line 1304 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_NOT;
 	}
-#line 1555 "syntactic.cpp"
+#line 1553 "syntactic.cpp"
     break;
 
   case 92: // opcode: DIRECTIVE_EXT
-#line 1310 "syntactic.y"
+#line 1308 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_EXT;
 	}
-#line 1563 "syntactic.cpp"
+#line 1561 "syntactic.cpp"
     break;
 
   case 93: // opcode: DIRECTIVE_NBCD
-#line 1314 "syntactic.y"
+#line 1312 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_NBCD;
 	}
-#line 1571 "syntactic.cpp"
+#line 1569 "syntactic.cpp"
     break;
 
   case 94: // opcode: DIRECTIVE_SWAP
-#line 1318 "syntactic.y"
+#line 1316 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_SWAP;
 	}
-#line 1579 "syntactic.cpp"
+#line 1577 "syntactic.cpp"
     break;
 
   case 95: // opcode: DIRECTIVE_PEA
-#line 1322 "syntactic.y"
+#line 1320 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_PEA;
 	}
-#line 1587 "syntactic.cpp"
+#line 1585 "syntactic.cpp"
     break;
 
   case 96: // opcode: DIRECTIVE_ILLEGAL
-#line 1326 "syntactic.y"
+#line 1324 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ILLEGAL;
 	}
-#line 1595 "syntactic.cpp"
+#line 1593 "syntactic.cpp"
     break;
 
   case 97: // opcode: DIRECTIVE_TAS
-#line 1330 "syntactic.y"
+#line 1328 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_TAS;
 	}
-#line 1603 "syntactic.cpp"
+#line 1601 "syntactic.cpp"
     break;
 
   case 98: // opcode: DIRECTIVE_TST
-#line 1334 "syntactic.y"
+#line 1332 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_TST;
 	}
-#line 1611 "syntactic.cpp"
+#line 1609 "syntactic.cpp"
     break;
 
   case 99: // opcode: DIRECTIVE_TRAP
-#line 1338 "syntactic.y"
+#line 1336 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_TRAP;
 	}
-#line 1619 "syntactic.cpp"
+#line 1617 "syntactic.cpp"
     break;
 
   case 100: // opcode: DIRECTIVE_LINK
-#line 1342 "syntactic.y"
+#line 1340 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_LINK;
 	}
-#line 1627 "syntactic.cpp"
+#line 1625 "syntactic.cpp"
     break;
 
   case 101: // opcode: DIRECTIVE_UNLK
-#line 1346 "syntactic.y"
+#line 1344 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_UNLK;
 	}
-#line 1635 "syntactic.cpp"
+#line 1633 "syntactic.cpp"
     break;
 
   case 102: // opcode: DIRECTIVE_RESET
-#line 1350 "syntactic.y"
+#line 1348 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_RESET;
 	}
-#line 1643 "syntactic.cpp"
+#line 1641 "syntactic.cpp"
     break;
 
   case 103: // opcode: DIRECTIVE_NOP
-#line 1354 "syntactic.y"
+#line 1352 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_NOP;
 	}
-#line 1651 "syntactic.cpp"
+#line 1649 "syntactic.cpp"
     break;
 
   case 104: // opcode: DIRECTIVE_STOP
-#line 1358 "syntactic.y"
+#line 1356 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_STOP;
 	}
-#line 1659 "syntactic.cpp"
+#line 1657 "syntactic.cpp"
     break;
 
   case 105: // opcode: DIRECTIVE_RTE
-#line 1362 "syntactic.y"
+#line 1360 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_RTE;
 	}
-#line 1667 "syntactic.cpp"
+#line 1665 "syntactic.cpp"
     break;
 
   case 106: // opcode: DIRECTIVE_RTS
-#line 1366 "syntactic.y"
+#line 1364 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_RTS;
 	}
-#line 1675 "syntactic.cpp"
+#line 1673 "syntactic.cpp"
     break;
 
   case 107: // opcode: DIRECTIVE_TRAPV
-#line 1370 "syntactic.y"
+#line 1368 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_TRAPV;
 	}
-#line 1683 "syntactic.cpp"
+#line 1681 "syntactic.cpp"
     break;
 
   case 108: // opcode: DIRECTIVE_RTR
-#line 1374 "syntactic.y"
+#line 1372 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_RTR;
 	}
-#line 1691 "syntactic.cpp"
+#line 1689 "syntactic.cpp"
     break;
 
   case 109: // opcode: DIRECTIVE_JSR
-#line 1378 "syntactic.y"
+#line 1376 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_JSR;
 	}
-#line 1699 "syntactic.cpp"
+#line 1697 "syntactic.cpp"
     break;
 
   case 110: // opcode: DIRECTIVE_JMP
-#line 1382 "syntactic.y"
+#line 1380 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_JMP;
 	}
-#line 1707 "syntactic.cpp"
+#line 1705 "syntactic.cpp"
     break;
 
   case 111: // opcode: DIRECTIVE_MOVEM
-#line 1386 "syntactic.y"
+#line 1384 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_MOVEM_TO_REGS;
 	}
-#line 1715 "syntactic.cpp"
+#line 1713 "syntactic.cpp"
     break;
 
   case 112: // opcode: DIRECTIVE_LEA
-#line 1390 "syntactic.y"
+#line 1388 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_LEA;
 	}
-#line 1723 "syntactic.cpp"
+#line 1721 "syntactic.cpp"
     break;
 
   case 113: // opcode: DIRECTIVE_CHK
-#line 1394 "syntactic.y"
+#line 1392 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_CHK;
 	}
-#line 1731 "syntactic.cpp"
+#line 1729 "syntactic.cpp"
     break;
 
   case 114: // opcode: DIRECTIVE_ADDQ
-#line 1398 "syntactic.y"
+#line 1396 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ADDQ;
 	}
-#line 1739 "syntactic.cpp"
+#line 1737 "syntactic.cpp"
     break;
 
   case 115: // opcode: DIRECTIVE_SUBQ
-#line 1402 "syntactic.y"
+#line 1400 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_SUBQ;
 	}
-#line 1747 "syntactic.cpp"
+#line 1745 "syntactic.cpp"
     break;
 
   case 116: // opcode: DIRECTIVE_ST
-#line 1406 "syntactic.y"
+#line 1404 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_TRUE;
 	}
-#line 1756 "syntactic.cpp"
+#line 1754 "syntactic.cpp"
     break;
 
   case 117: // opcode: DIRECTIVE_SF
-#line 1411 "syntactic.y"
+#line 1409 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_FALSE;
 	}
-#line 1765 "syntactic.cpp"
+#line 1763 "syntactic.cpp"
     break;
 
   case 118: // opcode: DIRECTIVE_SHI
-#line 1416 "syntactic.y"
+#line 1414 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_HIGHER;
 	}
-#line 1774 "syntactic.cpp"
+#line 1772 "syntactic.cpp"
     break;
 
   case 119: // opcode: DIRECTIVE_SLS
-#line 1421 "syntactic.y"
+#line 1419 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LOWER_OR_SAME;
 	}
-#line 1783 "syntactic.cpp"
+#line 1781 "syntactic.cpp"
     break;
 
   case 120: // opcode: DIRECTIVE_SCC
-#line 1426 "syntactic.y"
+#line 1424 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_CLEAR;
 	}
-#line 1792 "syntactic.cpp"
+#line 1790 "syntactic.cpp"
     break;
 
   case 121: // opcode: DIRECTIVE_SCS
-#line 1431 "syntactic.y"
+#line 1429 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_SET;
 	}
-#line 1801 "syntactic.cpp"
+#line 1799 "syntactic.cpp"
     break;
 
   case 122: // opcode: DIRECTIVE_SNE
-#line 1436 "syntactic.y"
+#line 1434 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_NOT_EQUAL;
 	}
-#line 1810 "syntactic.cpp"
+#line 1808 "syntactic.cpp"
     break;
 
   case 123: // opcode: DIRECTIVE_SEQ
-#line 1441 "syntactic.y"
+#line 1439 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_EQUAL;
 	}
-#line 1819 "syntactic.cpp"
+#line 1817 "syntactic.cpp"
     break;
 
   case 124: // opcode: DIRECTIVE_SVC
-#line 1446 "syntactic.y"
+#line 1444 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_CLEAR;
 	}
-#line 1828 "syntactic.cpp"
+#line 1826 "syntactic.cpp"
     break;
 
   case 125: // opcode: DIRECTIVE_SVS
-#line 1451 "syntactic.y"
+#line 1449 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_SET;
 	}
-#line 1837 "syntactic.cpp"
+#line 1835 "syntactic.cpp"
     break;
 
   case 126: // opcode: DIRECTIVE_SPL
-#line 1456 "syntactic.y"
+#line 1454 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_PLUS;
 	}
-#line 1846 "syntactic.cpp"
+#line 1844 "syntactic.cpp"
     break;
 
   case 127: // opcode: DIRECTIVE_SMI
-#line 1461 "syntactic.y"
+#line 1459 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_MINUS;
 	}
-#line 1855 "syntactic.cpp"
+#line 1853 "syntactic.cpp"
     break;
 
   case 128: // opcode: DIRECTIVE_SGE
-#line 1466 "syntactic.y"
+#line 1464 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_OR_EQUAL;
 	}
-#line 1864 "syntactic.cpp"
+#line 1862 "syntactic.cpp"
     break;
 
   case 129: // opcode: DIRECTIVE_SLT
-#line 1471 "syntactic.y"
+#line 1469 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_THAN;
 	}
-#line 1873 "syntactic.cpp"
+#line 1871 "syntactic.cpp"
     break;
 
   case 130: // opcode: DIRECTIVE_SGT
-#line 1476 "syntactic.y"
+#line 1474 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_THAN;
 	}
-#line 1882 "syntactic.cpp"
+#line 1880 "syntactic.cpp"
     break;
 
   case 131: // opcode: DIRECTIVE_SLE
-#line 1481 "syntactic.y"
+#line 1479 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_OR_EQUAL;
 	}
-#line 1891 "syntactic.cpp"
+#line 1889 "syntactic.cpp"
     break;
 
   case 132: // opcode: DIRECTIVE_DBT
-#line 1486 "syntactic.y"
+#line 1484 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_TRUE;
 	}
-#line 1900 "syntactic.cpp"
+#line 1898 "syntactic.cpp"
     break;
 
   case 133: // opcode: DIRECTIVE_DBF
-#line 1491 "syntactic.y"
+#line 1489 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_FALSE;
 	}
-#line 1909 "syntactic.cpp"
+#line 1907 "syntactic.cpp"
     break;
 
   case 134: // opcode: DIRECTIVE_DBHI
-#line 1496 "syntactic.y"
+#line 1494 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_HIGHER;
 	}
-#line 1918 "syntactic.cpp"
+#line 1916 "syntactic.cpp"
     break;
 
   case 135: // opcode: DIRECTIVE_DBLS
-#line 1501 "syntactic.y"
+#line 1499 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LOWER_OR_SAME;
 	}
-#line 1927 "syntactic.cpp"
+#line 1925 "syntactic.cpp"
     break;
 
   case 136: // opcode: DIRECTIVE_DBCC
-#line 1506 "syntactic.y"
+#line 1504 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_CLEAR;
 	}
-#line 1936 "syntactic.cpp"
+#line 1934 "syntactic.cpp"
     break;
 
   case 137: // opcode: DIRECTIVE_DBCS
-#line 1511 "syntactic.y"
+#line 1509 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_SET;
 	}
-#line 1945 "syntactic.cpp"
+#line 1943 "syntactic.cpp"
     break;
 
   case 138: // opcode: DIRECTIVE_DBNE
-#line 1516 "syntactic.y"
+#line 1514 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_NOT_EQUAL;
 	}
-#line 1954 "syntactic.cpp"
+#line 1952 "syntactic.cpp"
     break;
 
   case 139: // opcode: DIRECTIVE_DBEQ
-#line 1521 "syntactic.y"
+#line 1519 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_EQUAL;
 	}
-#line 1963 "syntactic.cpp"
+#line 1961 "syntactic.cpp"
     break;
 
   case 140: // opcode: DIRECTIVE_DBVC
-#line 1526 "syntactic.y"
+#line 1524 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_CLEAR;
 	}
-#line 1972 "syntactic.cpp"
+#line 1970 "syntactic.cpp"
     break;
 
   case 141: // opcode: DIRECTIVE_DBVS
-#line 1531 "syntactic.y"
+#line 1529 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_SET;
 	}
-#line 1981 "syntactic.cpp"
+#line 1979 "syntactic.cpp"
     break;
 
   case 142: // opcode: DIRECTIVE_DBPL
-#line 1536 "syntactic.y"
+#line 1534 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_PLUS;
 	}
-#line 1990 "syntactic.cpp"
+#line 1988 "syntactic.cpp"
     break;
 
   case 143: // opcode: DIRECTIVE_DBMI
-#line 1541 "syntactic.y"
+#line 1539 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_MINUS;
 	}
-#line 1999 "syntactic.cpp"
+#line 1997 "syntactic.cpp"
     break;
 
   case 144: // opcode: DIRECTIVE_DBGE
-#line 1546 "syntactic.y"
+#line 1544 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_OR_EQUAL;
 	}
-#line 2008 "syntactic.cpp"
+#line 2006 "syntactic.cpp"
     break;
 
   case 145: // opcode: DIRECTIVE_DBLT
-#line 1551 "syntactic.y"
+#line 1549 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_THAN;
 	}
-#line 2017 "syntactic.cpp"
+#line 2015 "syntactic.cpp"
     break;
 
   case 146: // opcode: DIRECTIVE_DBGT
-#line 1556 "syntactic.y"
+#line 1554 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_THAN;
 	}
-#line 2026 "syntactic.cpp"
+#line 2024 "syntactic.cpp"
     break;
 
   case 147: // opcode: DIRECTIVE_DBLE
-#line 1561 "syntactic.y"
+#line 1559 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_OR_EQUAL;
 	}
-#line 2035 "syntactic.cpp"
+#line 2033 "syntactic.cpp"
     break;
 
   case 148: // opcode: DIRECTIVE_BRA
-#line 1566 "syntactic.y"
+#line 1564 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_BRA;
 	}
-#line 2043 "syntactic.cpp"
+#line 2041 "syntactic.cpp"
     break;
 
   case 149: // opcode: DIRECTIVE_BSR
-#line 1570 "syntactic.y"
+#line 1568 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_BSR;
 	}
-#line 2051 "syntactic.cpp"
+#line 2049 "syntactic.cpp"
     break;
 
   case 150: // opcode: DIRECTIVE_BHI
-#line 1574 "syntactic.y"
+#line 1572 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_HIGHER;
 	}
-#line 2060 "syntactic.cpp"
+#line 2058 "syntactic.cpp"
     break;
 
   case 151: // opcode: DIRECTIVE_BLS
-#line 1579 "syntactic.y"
+#line 1577 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LOWER_OR_SAME;
 	}
-#line 2069 "syntactic.cpp"
+#line 2067 "syntactic.cpp"
     break;
 
   case 152: // opcode: DIRECTIVE_BCC
-#line 1584 "syntactic.y"
+#line 1582 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_CLEAR;
 	}
-#line 2078 "syntactic.cpp"
+#line 2076 "syntactic.cpp"
     break;
 
   case 153: // opcode: DIRECTIVE_BCS
-#line 1589 "syntactic.y"
+#line 1587 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_SET;
 	}
-#line 2087 "syntactic.cpp"
+#line 2085 "syntactic.cpp"
     break;
 
   case 154: // opcode: DIRECTIVE_BNE
-#line 1594 "syntactic.y"
+#line 1592 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_NOT_EQUAL;
 	}
-#line 2096 "syntactic.cpp"
+#line 2094 "syntactic.cpp"
     break;
 
   case 155: // opcode: DIRECTIVE_BEQ
-#line 1599 "syntactic.y"
+#line 1597 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_EQUAL;
 	}
-#line 2105 "syntactic.cpp"
+#line 2103 "syntactic.cpp"
     break;
 
   case 156: // opcode: DIRECTIVE_BVC
-#line 1604 "syntactic.y"
+#line 1602 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_CLEAR;
 	}
-#line 2114 "syntactic.cpp"
+#line 2112 "syntactic.cpp"
     break;
 
   case 157: // opcode: DIRECTIVE_BVS
-#line 1609 "syntactic.y"
+#line 1607 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_SET;
 	}
-#line 2123 "syntactic.cpp"
+#line 2121 "syntactic.cpp"
     break;
 
   case 158: // opcode: DIRECTIVE_BPL
-#line 1614 "syntactic.y"
+#line 1612 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_PLUS;
 	}
-#line 2132 "syntactic.cpp"
+#line 2130 "syntactic.cpp"
     break;
 
   case 159: // opcode: DIRECTIVE_BMI
-#line 1619 "syntactic.y"
+#line 1617 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_MINUS;
 	}
-#line 2141 "syntactic.cpp"
+#line 2139 "syntactic.cpp"
     break;
 
   case 160: // opcode: DIRECTIVE_BGE
-#line 1624 "syntactic.y"
+#line 1622 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_OR_EQUAL;
 	}
-#line 2150 "syntactic.cpp"
+#line 2148 "syntactic.cpp"
     break;
 
   case 161: // opcode: DIRECTIVE_BLT
-#line 1629 "syntactic.y"
+#line 1627 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_THAN;
 	}
-#line 2159 "syntactic.cpp"
+#line 2157 "syntactic.cpp"
     break;
 
   case 162: // opcode: DIRECTIVE_BGT
-#line 1634 "syntactic.y"
+#line 1632 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_THAN;
 	}
-#line 2168 "syntactic.cpp"
+#line 2166 "syntactic.cpp"
     break;
 
   case 163: // opcode: DIRECTIVE_BLE
-#line 1639 "syntactic.y"
+#line 1637 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_OR_EQUAL;
 	}
-#line 2177 "syntactic.cpp"
+#line 2175 "syntactic.cpp"
     break;
 
   case 164: // opcode: DIRECTIVE_MOVEQ
-#line 1644 "syntactic.y"
+#line 1642 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_MOVEQ;
 	}
-#line 2185 "syntactic.cpp"
+#line 2183 "syntactic.cpp"
     break;
 
   case 165: // opcode: DIRECTIVE_DIVU
-#line 1648 "syntactic.y"
+#line 1646 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DIVU;
 	}
-#line 2193 "syntactic.cpp"
+#line 2191 "syntactic.cpp"
     break;
 
   case 166: // opcode: DIRECTIVE_DIVS
-#line 1652 "syntactic.y"
+#line 1650 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DIVS;
 	}
-#line 2201 "syntactic.cpp"
+#line 2199 "syntactic.cpp"
     break;
 
   case 167: // opcode: DIRECTIVE_SBCD
-#line 1656 "syntactic.y"
+#line 1654 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_SBCD_DATA_REGS;
 	}
-#line 2209 "syntactic.cpp"
+#line 2207 "syntactic.cpp"
     break;
 
   case 168: // opcode: DIRECTIVE_OR
-#line 1660 "syntactic.y"
+#line 1658 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_OR_TO_REG;
 	}
-#line 2217 "syntactic.cpp"
+#line 2215 "syntactic.cpp"
     break;
 
   case 169: // opcode: DIRECTIVE_SUB
-#line 1664 "syntactic.y"
+#line 1662 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_SUB_TO_REG;
 	}
-#line 2225 "syntactic.cpp"
+#line 2223 "syntactic.cpp"
     break;
 
   case 170: // opcode: DIRECTIVE_SUBX
-#line 1668 "syntactic.y"
+#line 1666 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_SUBX_DATA_REGS;
 	}
-#line 2233 "syntactic.cpp"
+#line 2231 "syntactic.cpp"
     break;
 
   case 171: // opcode: DIRECTIVE_SUBA
-#line 1672 "syntactic.y"
+#line 1670 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_SUBA;
 	}
-#line 2241 "syntactic.cpp"
+#line 2239 "syntactic.cpp"
     break;
 
   case 172: // opcode: DIRECTIVE_EOR
-#line 1676 "syntactic.y"
+#line 1674 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_EOR;
 	}
-#line 2249 "syntactic.cpp"
+#line 2247 "syntactic.cpp"
     break;
 
   case 173: // opcode: DIRECTIVE_CMPM
-#line 1680 "syntactic.y"
+#line 1678 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_CMPM;
 	}
-#line 2257 "syntactic.cpp"
+#line 2255 "syntactic.cpp"
     break;
 
   case 174: // opcode: DIRECTIVE_CMP
-#line 1684 "syntactic.y"
+#line 1682 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_CMP;
 	}
-#line 2265 "syntactic.cpp"
+#line 2263 "syntactic.cpp"
     break;
 
   case 175: // opcode: DIRECTIVE_CMPA
-#line 1688 "syntactic.y"
+#line 1686 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_CMPA;
 	}
-#line 2273 "syntactic.cpp"
+#line 2271 "syntactic.cpp"
     break;
 
   case 176: // opcode: DIRECTIVE_MULU
-#line 1692 "syntactic.y"
+#line 1690 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_MULU;
 	}
-#line 2281 "syntactic.cpp"
+#line 2279 "syntactic.cpp"
     break;
 
   case 177: // opcode: DIRECTIVE_MULS
-#line 1696 "syntactic.y"
+#line 1694 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_MULS;
 	}
-#line 2289 "syntactic.cpp"
+#line 2287 "syntactic.cpp"
     break;
 
   case 178: // opcode: DIRECTIVE_ABCD
-#line 1700 "syntactic.y"
+#line 1698 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ABCD_DATA_REGS;
 	}
-#line 2297 "syntactic.cpp"
+#line 2295 "syntactic.cpp"
     break;
 
   case 179: // opcode: DIRECTIVE_EXG
-#line 1704 "syntactic.y"
+#line 1702 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_EXG;
 	}
-#line 2305 "syntactic.cpp"
+#line 2303 "syntactic.cpp"
     break;
 
   case 180: // opcode: DIRECTIVE_AND
-#line 1708 "syntactic.y"
+#line 1706 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_AND_TO_REG;
 	}
-#line 2313 "syntactic.cpp"
+#line 2311 "syntactic.cpp"
     break;
 
   case 181: // opcode: DIRECTIVE_ADD
-#line 1712 "syntactic.y"
+#line 1710 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ADD_TO_REG;
 	}
-#line 2321 "syntactic.cpp"
+#line 2319 "syntactic.cpp"
     break;
 
   case 182: // opcode: DIRECTIVE_ADDX
-#line 1716 "syntactic.y"
+#line 1714 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ADDX_DATA_REGS;
 	}
-#line 2329 "syntactic.cpp"
+#line 2327 "syntactic.cpp"
     break;
 
   case 183: // opcode: DIRECTIVE_ADDA
-#line 1720 "syntactic.y"
+#line 1718 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ADDA;
 	}
-#line 2337 "syntactic.cpp"
+#line 2335 "syntactic.cpp"
     break;
 
   case 184: // opcode: DIRECTIVE_ASL
-#line 1724 "syntactic.y"
+#line 1722 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ASL_STATIC;
 	}
-#line 2345 "syntactic.cpp"
+#line 2343 "syntactic.cpp"
     break;
 
   case 185: // opcode: DIRECTIVE_ASR
-#line 1728 "syntactic.y"
+#line 1726 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ASR_STATIC;
 	}
-#line 2353 "syntactic.cpp"
+#line 2351 "syntactic.cpp"
     break;
 
   case 186: // opcode: DIRECTIVE_LSL
-#line 1732 "syntactic.y"
+#line 1730 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_LSL_STATIC;
 	}
-#line 2361 "syntactic.cpp"
+#line 2359 "syntactic.cpp"
     break;
 
   case 187: // opcode: DIRECTIVE_LSR
-#line 1736 "syntactic.y"
+#line 1734 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_LSR_STATIC;
 	}
-#line 2369 "syntactic.cpp"
+#line 2367 "syntactic.cpp"
     break;
 
   case 188: // opcode: DIRECTIVE_ROXL
-#line 1740 "syntactic.y"
+#line 1738 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ROXL_STATIC;
 	}
-#line 2377 "syntactic.cpp"
+#line 2375 "syntactic.cpp"
     break;
 
   case 189: // opcode: DIRECTIVE_ROXR
-#line 1744 "syntactic.y"
+#line 1742 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ROXR_STATIC;
 	}
-#line 2385 "syntactic.cpp"
+#line 2383 "syntactic.cpp"
     break;
 
   case 190: // opcode: DIRECTIVE_ROL
-#line 1748 "syntactic.y"
+#line 1746 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ROL_STATIC;
 	}
-#line 2393 "syntactic.cpp"
+#line 2391 "syntactic.cpp"
     break;
 
   case 191: // opcode: DIRECTIVE_ROR
-#line 1752 "syntactic.y"
+#line 1750 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_ROR_STATIC;
 	}
-#line 2401 "syntactic.cpp"
+#line 2399 "syntactic.cpp"
     break;
 
   case 192: // size: SIZE_BYTE
-#line 1759 "syntactic.y"
+#line 1757 "syntactic.y"
         {
 		yylhs.value.as < Size > () = SIZE_BYTE;
 	}
-#line 2409 "syntactic.cpp"
+#line 2407 "syntactic.cpp"
     break;
 
   case 193: // size: SIZE_SHORT
-#line 1763 "syntactic.y"
+#line 1761 "syntactic.y"
         {
 		yylhs.value.as < Size > () = SIZE_SHORT;
 	}
-#line 2417 "syntactic.cpp"
+#line 2415 "syntactic.cpp"
     break;
 
   case 194: // size: SIZE_WORD
-#line 1767 "syntactic.y"
+#line 1765 "syntactic.y"
         {
 		yylhs.value.as < Size > () = SIZE_WORD;
 	}
-#line 2425 "syntactic.cpp"
+#line 2423 "syntactic.cpp"
     break;
 
   case 195: // size: SIZE_LONGWORD
-#line 1771 "syntactic.y"
+#line 1769 "syntactic.y"
         {
 		yylhs.value.as < Size > () = SIZE_LONGWORD;
 	}
-#line 2433 "syntactic.cpp"
+#line 2431 "syntactic.cpp"
     break;
 
   case 196: // operand: "(" ADDRESS_REGISTER ")"
-#line 1779 "syntactic.y"
+#line 1777 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT;
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 	}
-#line 2442 "syntactic.cpp"
+#line 2440 "syntactic.cpp"
     break;
 
   case 197: // operand: "(" ADDRESS_REGISTER ")" "+"
-#line 1784 "syntactic.y"
+#line 1782 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT;
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 	}
-#line 2451 "syntactic.cpp"
+#line 2449 "syntactic.cpp"
     break;
 
   case 198: // operand: "-" "(" ADDRESS_REGISTER ")"
-#line 1789 "syntactic.y"
+#line 1787 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT;
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 	}
-#line 2460 "syntactic.cpp"
+#line 2458 "syntactic.cpp"
     break;
 
   case 199: // operand: expression "(" ADDRESS_REGISTER ")"
-#line 1794 "syntactic.y"
+#line 1792 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[3].value.as < Expression > ());
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 	}
-#line 2470 "syntactic.cpp"
+#line 2468 "syntactic.cpp"
     break;
 
   case 200: // operand: "(" expression "," ADDRESS_REGISTER ")"
-#line 1800 "syntactic.y"
+#line 1798 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[3].value.as < Expression > ());
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 	}
-#line 2480 "syntactic.cpp"
+#line 2478 "syntactic.cpp"
     break;
 
   case 201: // operand: "(" ADDRESS_REGISTER "," expression ")"
-#line 1806 "syntactic.y"
+#line 1804 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[1].value.as < Expression > ());
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[3].value.as < unsigned long > ());
 	}
-#line 2490 "syntactic.cpp"
+#line 2488 "syntactic.cpp"
     break;
 
   case 202: // operand: "(" ADDRESS_REGISTER "," data_or_address_register size ")"
-#line 1812 "syntactic.y"
+#line 1810 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2501,11 +2499,11 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = YY_MOVE (yystack_[1].value.as < Size > ());
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2505 "syntactic.cpp"
+#line 2503 "syntactic.cpp"
     break;
 
   case 203: // operand: expression "(" ADDRESS_REGISTER "," data_or_address_register size ")"
-#line 1823 "syntactic.y"
+#line 1821 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2516,11 +2514,11 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = YY_MOVE (yystack_[1].value.as < Size > ());
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2520 "syntactic.cpp"
+#line 2518 "syntactic.cpp"
     break;
 
   case 204: // operand: "(" expression "," ADDRESS_REGISTER "," data_or_address_register size ")"
-#line 1834 "syntactic.y"
+#line 1832 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2531,15 +2529,15 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = YY_MOVE (yystack_[1].value.as < Size > ());
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2535 "syntactic.cpp"
+#line 2533 "syntactic.cpp"
     break;
 
   case 205: // operand: "(" ADDRESS_REGISTER "," data_or_address_register ")"
-#line 1845 "syntactic.y"
+#line 1843 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
-		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning_pedantic(scanner, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		yylhs.value.as < Operand > ().literal.emplace<ExpressionNumber>(0);
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[3].value.as < unsigned long > ());
@@ -2547,15 +2545,15 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = SIZE_WORD;
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2551 "syntactic.cpp"
+#line 2549 "syntactic.cpp"
     break;
 
   case 206: // operand: expression "(" ADDRESS_REGISTER "," data_or_address_register ")"
-#line 1857 "syntactic.y"
+#line 1855 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
-		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning_pedantic(scanner, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[5].value.as < Expression > ());
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[3].value.as < unsigned long > ());
@@ -2563,15 +2561,15 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = SIZE_WORD;
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2567 "syntactic.cpp"
+#line 2565 "syntactic.cpp"
     break;
 
   case 207: // operand: "(" expression "," ADDRESS_REGISTER "," data_or_address_register ")"
-#line 1869 "syntactic.y"
+#line 1867 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
-		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning_pedantic(scanner, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[5].value.as < Expression > ());
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[3].value.as < unsigned long > ());
@@ -2579,38 +2577,38 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = SIZE_WORD;
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2583 "syntactic.cpp"
+#line 2581 "syntactic.cpp"
     break;
 
   case 208: // operand: expression "(" PROGRAM_COUNTER ")"
-#line 1881 "syntactic.y"
+#line 1879 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[3].value.as < Expression > ());
 	}
-#line 2592 "syntactic.cpp"
+#line 2590 "syntactic.cpp"
     break;
 
   case 209: // operand: "(" expression "," PROGRAM_COUNTER ")"
-#line 1886 "syntactic.y"
+#line 1884 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[3].value.as < Expression > ());
 	}
-#line 2601 "syntactic.cpp"
+#line 2599 "syntactic.cpp"
     break;
 
   case 210: // operand: "(" PROGRAM_COUNTER "," expression ")"
-#line 1891 "syntactic.y"
+#line 1889 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[1].value.as < Expression > ());
 	}
-#line 2610 "syntactic.cpp"
+#line 2608 "syntactic.cpp"
     break;
 
   case 211: // operand: "(" PROGRAM_COUNTER "," data_or_address_register size ")"
-#line 1896 "syntactic.y"
+#line 1894 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2620,11 +2618,11 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = YY_MOVE (yystack_[1].value.as < Size > ());
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2624 "syntactic.cpp"
+#line 2622 "syntactic.cpp"
     break;
 
   case 212: // operand: expression "(" PROGRAM_COUNTER "," data_or_address_register size ")"
-#line 1906 "syntactic.y"
+#line 1904 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2634,11 +2632,11 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = YY_MOVE (yystack_[1].value.as < Size > ());
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2638 "syntactic.cpp"
+#line 2636 "syntactic.cpp"
     break;
 
   case 213: // operand: "(" expression "," PROGRAM_COUNTER "," data_or_address_register size ")"
-#line 1916 "syntactic.y"
+#line 1914 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2648,109 +2646,109 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = YY_MOVE (yystack_[1].value.as < Size > ());
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2652 "syntactic.cpp"
+#line 2650 "syntactic.cpp"
     break;
 
   case 214: // operand: "(" PROGRAM_COUNTER "," data_or_address_register ")"
-#line 1926 "syntactic.y"
+#line 1924 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
-		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning_pedantic(scanner, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		yylhs.value.as < Operand > ().type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		yylhs.value.as < Operand > ().literal.emplace<ExpressionNumber>(0);
 		yylhs.value.as < Operand > ().index_register = data_or_address_register % 8;
 		yylhs.value.as < Operand > ().size = SIZE_WORD;
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2667 "syntactic.cpp"
+#line 2665 "syntactic.cpp"
     break;
 
   case 215: // operand: expression "(" PROGRAM_COUNTER "," data_or_address_register ")"
-#line 1937 "syntactic.y"
+#line 1935 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
-		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning_pedantic(scanner, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		yylhs.value.as < Operand > ().type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[5].value.as < Expression > ());
 		yylhs.value.as < Operand > ().index_register = data_or_address_register % 8;
 		yylhs.value.as < Operand > ().size = SIZE_WORD;
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2682 "syntactic.cpp"
+#line 2680 "syntactic.cpp"
     break;
 
   case 216: // operand: "(" expression "," PROGRAM_COUNTER "," data_or_address_register ")"
-#line 1948 "syntactic.y"
+#line 1946 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
-		m68kasm_warning_pedantic(scanner, statement, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		m68kasm_warning_pedantic(scanner, "Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		yylhs.value.as < Operand > ().type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[5].value.as < Expression > ());
 		yylhs.value.as < Operand > ().index_register = data_or_address_register % 8;
 		yylhs.value.as < Operand > ().size = SIZE_WORD;
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2697 "syntactic.cpp"
+#line 2695 "syntactic.cpp"
     break;
 
   case 217: // operand: "#" expression
-#line 1960 "syntactic.y"
+#line 1958 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_LITERAL;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
-#line 2706 "syntactic.cpp"
+#line 2704 "syntactic.cpp"
     break;
 
   case 218: // operand: STATUS_REGISTER
-#line 1976 "syntactic.y"
+#line 1974 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_STATUS_REGISTER;
 	}
-#line 2714 "syntactic.cpp"
+#line 2712 "syntactic.cpp"
     break;
 
   case 219: // operand: CONDITION_CODE_REGISTER
-#line 1980 "syntactic.y"
+#line 1978 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_CONDITION_CODE_REGISTER;
 	}
-#line 2722 "syntactic.cpp"
+#line 2720 "syntactic.cpp"
     break;
 
   case 220: // operand: USER_STACK_POINTER_REGISTER
-#line 1984 "syntactic.y"
+#line 1982 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_USER_STACK_POINTER_REGISTER;
 	}
-#line 2730 "syntactic.cpp"
+#line 2728 "syntactic.cpp"
     break;
 
   case 221: // operand: expression
-#line 1989 "syntactic.y"
+#line 1987 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[0].value.as < Expression > ());
 		yylhs.value.as < Operand > ().size = SIZE_UNDEFINED;
 	}
-#line 2740 "syntactic.cpp"
+#line 2738 "syntactic.cpp"
     break;
 
   case 222: // operand: expression size
-#line 1995 "syntactic.y"
+#line 1993 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_ABSOLUTE;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[1].value.as < Expression > ());
 		yylhs.value.as < Operand > ().size = YY_MOVE (yystack_[0].value.as < Size > ());
 	}
-#line 2750 "syntactic.cpp"
+#line 2748 "syntactic.cpp"
     break;
 
   case 223: // operand: register_list
-#line 2002 "syntactic.y"
+#line 2000 "syntactic.y"
         {
 		const auto register_list = YY_MOVE (yystack_[0].value.as < unsigned long > ());
 
@@ -2780,35 +2778,35 @@ namespace m68kasm {
 			yylhs.value.as < Operand > ().main_register = register_list; /* Such a hack... */
 		}
 	}
-#line 2784 "syntactic.cpp"
+#line 2782 "syntactic.cpp"
     break;
 
   case 224: // register_list: register_span
-#line 2035 "syntactic.y"
+#line 2033 "syntactic.y"
         {
 		yylhs.value.as < unsigned long > () = YY_MOVE (yystack_[0].value.as < unsigned long > ());
 	}
-#line 2792 "syntactic.cpp"
+#line 2790 "syntactic.cpp"
     break;
 
   case 225: // register_list: register_span "/" register_list
-#line 2039 "syntactic.y"
+#line 2037 "syntactic.y"
         {
 		yylhs.value.as < unsigned long > () = YY_MOVE (yystack_[2].value.as < unsigned long > ()) | YY_MOVE (yystack_[0].value.as < unsigned long > ());
 	}
-#line 2800 "syntactic.cpp"
+#line 2798 "syntactic.cpp"
     break;
 
   case 226: // register_span: data_or_address_register
-#line 2046 "syntactic.y"
+#line 2044 "syntactic.y"
         {
 		yylhs.value.as < unsigned long > () = 1 << YY_MOVE (yystack_[0].value.as < unsigned long > ());
 	}
-#line 2808 "syntactic.cpp"
+#line 2806 "syntactic.cpp"
     break;
 
   case 227: // register_span: data_or_address_register "-" data_or_address_register
-#line 2050 "syntactic.y"
+#line 2048 "syntactic.y"
         {
 		const auto first_data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 		const auto second_data_or_address_register = YY_MOVE (yystack_[0].value.as < unsigned long > ());
@@ -2833,439 +2831,439 @@ namespace m68kasm {
 		for (i = start; i <= end; ++i)
 			yylhs.value.as < unsigned long > () |= 1 << i;
 	}
-#line 2837 "syntactic.cpp"
+#line 2835 "syntactic.cpp"
     break;
 
   case 228: // data_or_address_register: DATA_REGISTER
-#line 2078 "syntactic.y"
+#line 2076 "syntactic.y"
         {
 		yylhs.value.as < unsigned long > () = 0 + YY_MOVE (yystack_[0].value.as < unsigned long > ());
 	}
-#line 2845 "syntactic.cpp"
+#line 2843 "syntactic.cpp"
     break;
 
   case 229: // data_or_address_register: ADDRESS_REGISTER
-#line 2082 "syntactic.y"
+#line 2080 "syntactic.y"
         {
 		yylhs.value.as < unsigned long > () = 8 + YY_MOVE (yystack_[0].value.as < unsigned long > ());
 	}
-#line 2853 "syntactic.cpp"
+#line 2851 "syntactic.cpp"
     break;
 
   case 230: // expression: expression1
-#line 2095 "syntactic.y"
+#line 2093 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
-#line 2861 "syntactic.cpp"
+#line 2859 "syntactic.cpp"
     break;
 
   case 231: // expression: expression LOGICAL_AND expression1
-#line 2100 "syntactic.y"
+#line 2098 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LOGICAL_AND, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 2870 "syntactic.cpp"
+#line 2868 "syntactic.cpp"
     break;
 
   case 232: // expression: expression LOGICAL_OR expression1
-#line 2106 "syntactic.y"
+#line 2104 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LOGICAL_OR, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 2879 "syntactic.cpp"
+#line 2877 "syntactic.cpp"
     break;
 
   case 233: // expression1: expression2
-#line 2114 "syntactic.y"
+#line 2112 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
-#line 2887 "syntactic.cpp"
+#line 2885 "syntactic.cpp"
     break;
 
   case 234: // expression1: expression1 "=" expression2
-#line 2118 "syntactic.y"
+#line 2116 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::EQUALITY, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 2896 "syntactic.cpp"
+#line 2894 "syntactic.cpp"
     break;
 
   case 235: // expression1: expression1 EQUALITY expression2
-#line 2123 "syntactic.y"
+#line 2121 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::EQUALITY, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 2905 "syntactic.cpp"
+#line 2903 "syntactic.cpp"
     break;
 
   case 236: // expression1: expression1 INEQUALITY expression2
-#line 2128 "syntactic.y"
+#line 2126 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::INEQUALITY, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 2914 "syntactic.cpp"
+#line 2912 "syntactic.cpp"
     break;
 
   case 237: // expression2: expression3
-#line 2136 "syntactic.y"
+#line 2134 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
-#line 2922 "syntactic.cpp"
+#line 2920 "syntactic.cpp"
     break;
 
   case 238: // expression2: expression2 "<" expression3
-#line 2140 "syntactic.y"
+#line 2138 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LESS_THAN, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 2931 "syntactic.cpp"
+#line 2929 "syntactic.cpp"
     break;
 
   case 239: // expression2: expression2 LESS_OR_EQUAL expression3
-#line 2145 "syntactic.y"
+#line 2143 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LESS_OR_EQUAL, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 2940 "syntactic.cpp"
+#line 2938 "syntactic.cpp"
     break;
 
   case 240: // expression2: expression2 ">" expression3
-#line 2150 "syntactic.y"
+#line 2148 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::MORE_THAN, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 2949 "syntactic.cpp"
+#line 2947 "syntactic.cpp"
     break;
 
   case 241: // expression2: expression2 MORE_OR_EQUAL expression3
-#line 2155 "syntactic.y"
+#line 2153 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::MORE_OR_EQUAL, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 2958 "syntactic.cpp"
+#line 2956 "syntactic.cpp"
     break;
 
   case 242: // expression3: expression4
-#line 2163 "syntactic.y"
+#line 2161 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
-#line 2966 "syntactic.cpp"
+#line 2964 "syntactic.cpp"
     break;
 
   case 243: // expression3: expression3 "+" expression4
-#line 2167 "syntactic.y"
+#line 2165 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::ADD, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 2975 "syntactic.cpp"
+#line 2973 "syntactic.cpp"
     break;
 
   case 244: // expression3: expression3 "-" expression4
-#line 2172 "syntactic.y"
+#line 2170 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::SUBTRACT, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 2984 "syntactic.cpp"
+#line 2982 "syntactic.cpp"
     break;
 
   case 245: // expression4: expression5
-#line 2180 "syntactic.y"
+#line 2178 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
-#line 2992 "syntactic.cpp"
+#line 2990 "syntactic.cpp"
     break;
 
   case 246: // expression4: expression4 "*" expression5
-#line 2184 "syntactic.y"
+#line 2182 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::MULTIPLY, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 3001 "syntactic.cpp"
+#line 2999 "syntactic.cpp"
     break;
 
   case 247: // expression4: expression4 "/" expression5
-#line 2189 "syntactic.y"
+#line 2187 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::DIVIDE, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 3010 "syntactic.cpp"
+#line 3008 "syntactic.cpp"
     break;
 
   case 248: // expression4: expression4 "%" expression5
-#line 2194 "syntactic.y"
+#line 2192 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::MODULO, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 3019 "syntactic.cpp"
+#line 3017 "syntactic.cpp"
     break;
 
   case 249: // expression5: expression6
-#line 2202 "syntactic.y"
+#line 2200 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
-#line 3027 "syntactic.cpp"
+#line 3025 "syntactic.cpp"
     break;
 
   case 250: // expression5: expression5 "&" expression6
-#line 2206 "syntactic.y"
+#line 2204 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::BITWISE_AND, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 3036 "syntactic.cpp"
+#line 3034 "syntactic.cpp"
     break;
 
   case 251: // expression5: expression5 "!" expression6
-#line 2211 "syntactic.y"
+#line 2209 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::BITWISE_OR, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 3045 "syntactic.cpp"
+#line 3043 "syntactic.cpp"
     break;
 
   case 252: // expression5: expression5 "|" expression6
-#line 2216 "syntactic.y"
+#line 2214 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::BITWISE_OR, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 3054 "syntactic.cpp"
+#line 3052 "syntactic.cpp"
     break;
 
   case 253: // expression5: expression5 "^" expression6
-#line 2221 "syntactic.y"
+#line 2219 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::BITWISE_XOR, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 3063 "syntactic.cpp"
+#line 3061 "syntactic.cpp"
     break;
 
   case 254: // expression6: expression7
-#line 2229 "syntactic.y"
+#line 2227 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
-#line 3071 "syntactic.cpp"
+#line 3069 "syntactic.cpp"
     break;
 
   case 255: // expression6: expression6 LEFT_SHIFT expression7
-#line 2233 "syntactic.y"
+#line 2231 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LEFT_SHIFT, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 3080 "syntactic.cpp"
+#line 3078 "syntactic.cpp"
     break;
 
   case 256: // expression6: expression6 RIGHT_SHIFT expression7
-#line 2238 "syntactic.y"
+#line 2236 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::RIGHT_SHIFT, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 3089 "syntactic.cpp"
+#line 3087 "syntactic.cpp"
     break;
 
   case 257: // expression7: expression8
-#line 2246 "syntactic.y"
+#line 2244 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
-#line 3097 "syntactic.cpp"
+#line 3095 "syntactic.cpp"
     break;
 
   case 258: // expression7: "+" expression7
-#line 2250 "syntactic.y"
+#line 2248 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
-#line 3105 "syntactic.cpp"
+#line 3103 "syntactic.cpp"
     break;
 
   case 259: // expression7: "-" expression7
-#line 2254 "syntactic.y"
+#line 2252 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic1Operand::Type::NEGATE, YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 3114 "syntactic.cpp"
+#line 3112 "syntactic.cpp"
     break;
 
   case 260: // expression7: "~" expression7
-#line 2259 "syntactic.y"
+#line 2257 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic1Operand::Type::BITWISE_NOT, YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 3123 "syntactic.cpp"
+#line 3121 "syntactic.cpp"
     break;
 
   case 261: // expression7: "!" expression7
-#line 2265 "syntactic.y"
+#line 2263 "syntactic.y"
         {
 		if (!DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic1Operand::Type::LOGICAL_NOT, YY_MOVE (yystack_[0].value.as < Expression > ())))
 			YYNOMEM;
 	}
-#line 3132 "syntactic.cpp"
+#line 3130 "syntactic.cpp"
     break;
 
   case 262: // local_identifier: LOCAL_IDENTIFIER
-#line 2272 "syntactic.y"
+#line 2270 "syntactic.y"
           { yylhs.value.as < String > () = YY_MOVE (yystack_[0].value.as < String > ()); }
-#line 3138 "syntactic.cpp"
+#line 3136 "syntactic.cpp"
     break;
 
   case 263: // local_identifier: SIZE_BYTE
-#line 2274 "syntactic.y"
+#line 2272 "syntactic.y"
         {
 		const StringView literal = STRING_VIEW_INITIALISER(".b");
 		if (!String_CreateCopyView(yylhs.value.as < String > (), literal))
 			YYNOMEM;
 	}
-#line 3148 "syntactic.cpp"
+#line 3146 "syntactic.cpp"
     break;
 
   case 264: // local_identifier: SIZE_SHORT
-#line 2280 "syntactic.y"
+#line 2278 "syntactic.y"
         {
 		const StringView literal = STRING_VIEW_INITIALISER(".s");
 		if (!String_CreateCopyView(yylhs.value.as < String > (), literal))
 			YYNOMEM;
 	}
-#line 3158 "syntactic.cpp"
+#line 3156 "syntactic.cpp"
     break;
 
   case 265: // local_identifier: SIZE_WORD
-#line 2286 "syntactic.y"
+#line 2284 "syntactic.y"
         {
 		const StringView literal = STRING_VIEW_INITIALISER(".w");
 		if (!String_CreateCopyView(yylhs.value.as < String > (), literal))
 			YYNOMEM;
 	}
-#line 3168 "syntactic.cpp"
+#line 3166 "syntactic.cpp"
     break;
 
   case 266: // local_identifier: SIZE_LONGWORD
-#line 2292 "syntactic.y"
+#line 2290 "syntactic.y"
         {
 		const StringView literal = STRING_VIEW_INITIALISER(".l");
 		if (!String_CreateCopyView(yylhs.value.as < String > (), literal))
 			YYNOMEM;
 	}
-#line 3178 "syntactic.cpp"
+#line 3176 "syntactic.cpp"
     break;
 
   case 267: // identifier: IDENTIFIER
-#line 2300 "syntactic.y"
+#line 2298 "syntactic.y"
           { yylhs.value.as < String > () = YY_MOVE (yystack_[0].value.as < String > ()); }
-#line 3184 "syntactic.cpp"
+#line 3182 "syntactic.cpp"
     break;
 
   case 268: // identifier: local_identifier
-#line 2301 "syntactic.y"
+#line 2299 "syntactic.y"
           { yylhs.value.as < String > () = YY_MOVE (yystack_[0].value.as < String > ()); }
-#line 3190 "syntactic.cpp"
+#line 3188 "syntactic.cpp"
     break;
 
   case 269: // identifier: identifier local_identifier
-#line 2303 "syntactic.y"
+#line 2301 "syntactic.y"
         {
 		const cc_bool success = String_CreateAppend(yylhs.value.as < String > (), YY_MOVE (yystack_[1].value.as < String > ()), YY_MOVE (yystack_[0].value.as < String > ()));
 
 		if (!success)
 			YYNOMEM;
 	}
-#line 3201 "syntactic.cpp"
+#line 3199 "syntactic.cpp"
     break;
 
   case 270: // expression8: NUMBER
-#line 2313 "syntactic.y"
+#line 2311 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionNumber>(YY_MOVE (yystack_[0].value.as < unsigned long > ()));
 	}
-#line 3209 "syntactic.cpp"
+#line 3207 "syntactic.cpp"
     break;
 
   case 271: // expression8: identifier
-#line 2317 "syntactic.y"
+#line 2315 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionIdentifier>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
-#line 3217 "syntactic.cpp"
+#line 3215 "syntactic.cpp"
     break;
 
   case 272: // expression8: string
-#line 2321 "syntactic.y"
+#line 2319 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
-#line 3225 "syntactic.cpp"
+#line 3223 "syntactic.cpp"
     break;
 
   case 273: // expression8: "*"
-#line 2325 "syntactic.y"
+#line 2323 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionProgramCounterOfStatement>();
 	}
-#line 3233 "syntactic.cpp"
+#line 3231 "syntactic.cpp"
     break;
 
   case 274: // expression8: "@"
-#line 2329 "syntactic.y"
+#line 2327 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionProgramCounterOfExpression>();
 	}
-#line 3241 "syntactic.cpp"
+#line 3239 "syntactic.cpp"
     break;
 
   case 275: // expression8: "(" expression ")"
-#line 2333 "syntactic.y"
+#line 2331 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[1].value.as < Expression > ());
 	}
-#line 3249 "syntactic.cpp"
+#line 3247 "syntactic.cpp"
     break;
 
   case 276: // expression8: STRLEN "(" STRING ")"
-#line 2337 "syntactic.y"
+#line 2335 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionStrlen>(YY_MOVE (yystack_[1].value.as < String > ()));
 	}
-#line 3257 "syntactic.cpp"
+#line 3255 "syntactic.cpp"
     break;
 
   case 277: // expression8: STRCMP "(" STRING "," STRING ")"
-#line 2341 "syntactic.y"
+#line 2339 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionStrcmp>(YY_MOVE (yystack_[3].value.as < String > ()), YY_MOVE (yystack_[1].value.as < String > ()));
 	}
-#line 3265 "syntactic.cpp"
+#line 3263 "syntactic.cpp"
     break;
 
   case 278: // expression8: INSTR "(" expression "," expression ")"
-#line 2345 "syntactic.y"
+#line 2343 "syntactic.y"
         {
 		auto subexpressions = std::make_unique<Expression[]>(3);
 
@@ -3275,11 +3273,11 @@ namespace m68kasm {
 
 		yylhs.value.as < Expression > ().emplace<ExpressionInstr>(std::move(subexpressions));
 	}
-#line 3279 "syntactic.cpp"
+#line 3277 "syntactic.cpp"
     break;
 
   case 279: // expression8: INSTR "(" expression "," expression "," expression ")"
-#line 2355 "syntactic.y"
+#line 2353 "syntactic.y"
         {
 		auto subexpressions = std::make_unique<Expression[]>(3);
 
@@ -3289,60 +3287,60 @@ namespace m68kasm {
 
 		yylhs.value.as < Expression > ().emplace<ExpressionInstr>(std::move(subexpressions));
 	}
-#line 3293 "syntactic.cpp"
+#line 3291 "syntactic.cpp"
     break;
 
   case 280: // expression8: DEF "(" IDENTIFIER ")"
-#line 2365 "syntactic.y"
+#line 2363 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionDef>(YY_MOVE (yystack_[1].value.as < String > ()));
 	}
-#line 3301 "syntactic.cpp"
+#line 3299 "syntactic.cpp"
     break;
 
   case 281: // expression8: TYPE "(" IDENTIFIER ")"
-#line 2369 "syntactic.y"
+#line 2367 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionTypeWithIdentifier>(YY_MOVE (yystack_[1].value.as < String > ()));
 	}
-#line 3309 "syntactic.cpp"
+#line 3307 "syntactic.cpp"
     break;
 
   case 282: // expression8: TYPE "(" NUMBER ")"
-#line 2373 "syntactic.y"
+#line 2371 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionTypeWithNumber>(YY_MOVE (yystack_[1].value.as < unsigned long > ()));
 	}
-#line 3317 "syntactic.cpp"
+#line 3315 "syntactic.cpp"
     break;
 
   case 283: // expression8: FILESIZE "(" STRING ")"
-#line 2377 "syntactic.y"
+#line 2375 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionFilesize>(YY_MOVE (yystack_[1].value.as < String > ()));
 	}
-#line 3325 "syntactic.cpp"
+#line 3323 "syntactic.cpp"
     break;
 
   case 284: // expression8: OFFSET "(" expression ")"
-#line 2381 "syntactic.y"
+#line 2379 "syntactic.y"
         {
 		/* TODO: Make this actually do something besides pass the expression through. */
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[1].value.as < Expression > ());
 	}
-#line 3334 "syntactic.cpp"
+#line 3332 "syntactic.cpp"
     break;
 
   case 285: // string: STRING
-#line 2389 "syntactic.y"
+#line 2387 "syntactic.y"
         {
 		yylhs.value.as < Expression > ().emplace<ExpressionString>(YY_MOVE (yystack_[0].value.as < String > ()));
 	}
-#line 3342 "syntactic.cpp"
+#line 3340 "syntactic.cpp"
     break;
 
 
-#line 3346 "syntactic.cpp"
+#line 3344 "syntactic.cpp"
 
             default:
               break;
@@ -4170,34 +4168,34 @@ namespace m68kasm {
   parser::yyrline_[] =
   {
        0,   903,   903,   906,   910,   914,   918,   922,   926,   930,
-     934,   938,   942,   946,   950,   954,   958,   962,   966,   971,
-     976,   980,   984,   988,   992,   998,  1004,  1008,  1012,  1016,
-    1020,  1024,  1028,  1032,  1036,  1040,  1044,  1048,  1052,  1056,
-    1060,  1065,  1069,  1073,  1077,  1081,  1087,  1091,  1095,  1099,
-    1103,  1107,  1111,  1115,  1119,  1123,  1127,  1131,  1135,  1140,
-    1145,  1150,  1155,  1162,  1166,  1175,  1179,  1188,  1192,  1201,
-    1207,  1213,  1222,  1227,  1233,  1241,  1245,  1249,  1253,  1257,
-    1261,  1265,  1269,  1273,  1277,  1281,  1285,  1289,  1293,  1297,
-    1301,  1305,  1309,  1313,  1317,  1321,  1325,  1329,  1333,  1337,
-    1341,  1345,  1349,  1353,  1357,  1361,  1365,  1369,  1373,  1377,
-    1381,  1385,  1389,  1393,  1397,  1401,  1405,  1410,  1415,  1420,
-    1425,  1430,  1435,  1440,  1445,  1450,  1455,  1460,  1465,  1470,
-    1475,  1480,  1485,  1490,  1495,  1500,  1505,  1510,  1515,  1520,
-    1525,  1530,  1535,  1540,  1545,  1550,  1555,  1560,  1565,  1569,
-    1573,  1578,  1583,  1588,  1593,  1598,  1603,  1608,  1613,  1618,
-    1623,  1628,  1633,  1638,  1643,  1647,  1651,  1655,  1659,  1663,
-    1667,  1671,  1675,  1679,  1683,  1687,  1691,  1695,  1699,  1703,
-    1707,  1711,  1715,  1719,  1723,  1727,  1731,  1735,  1739,  1743,
-    1747,  1751,  1758,  1762,  1766,  1770,  1778,  1783,  1788,  1793,
-    1799,  1805,  1811,  1822,  1833,  1844,  1856,  1868,  1880,  1885,
-    1890,  1895,  1905,  1915,  1925,  1936,  1947,  1959,  1975,  1979,
-    1983,  1988,  1994,  2001,  2034,  2038,  2045,  2049,  2077,  2081,
-    2094,  2099,  2105,  2113,  2117,  2122,  2127,  2135,  2139,  2144,
-    2149,  2154,  2162,  2166,  2171,  2179,  2183,  2188,  2193,  2201,
-    2205,  2210,  2215,  2220,  2228,  2232,  2237,  2245,  2249,  2253,
-    2258,  2264,  2272,  2273,  2279,  2285,  2291,  2300,  2301,  2302,
-    2312,  2316,  2320,  2324,  2328,  2332,  2336,  2340,  2344,  2354,
-    2364,  2368,  2372,  2376,  2380,  2388
+     934,   938,   942,   946,   950,   954,   958,   962,   966,   970,
+     974,   978,   982,   986,   990,   996,  1002,  1006,  1010,  1014,
+    1018,  1022,  1026,  1030,  1034,  1038,  1042,  1046,  1050,  1054,
+    1058,  1063,  1067,  1071,  1075,  1079,  1085,  1089,  1093,  1097,
+    1101,  1105,  1109,  1113,  1117,  1121,  1125,  1129,  1133,  1138,
+    1143,  1148,  1153,  1160,  1164,  1173,  1177,  1186,  1190,  1199,
+    1205,  1211,  1220,  1225,  1231,  1239,  1243,  1247,  1251,  1255,
+    1259,  1263,  1267,  1271,  1275,  1279,  1283,  1287,  1291,  1295,
+    1299,  1303,  1307,  1311,  1315,  1319,  1323,  1327,  1331,  1335,
+    1339,  1343,  1347,  1351,  1355,  1359,  1363,  1367,  1371,  1375,
+    1379,  1383,  1387,  1391,  1395,  1399,  1403,  1408,  1413,  1418,
+    1423,  1428,  1433,  1438,  1443,  1448,  1453,  1458,  1463,  1468,
+    1473,  1478,  1483,  1488,  1493,  1498,  1503,  1508,  1513,  1518,
+    1523,  1528,  1533,  1538,  1543,  1548,  1553,  1558,  1563,  1567,
+    1571,  1576,  1581,  1586,  1591,  1596,  1601,  1606,  1611,  1616,
+    1621,  1626,  1631,  1636,  1641,  1645,  1649,  1653,  1657,  1661,
+    1665,  1669,  1673,  1677,  1681,  1685,  1689,  1693,  1697,  1701,
+    1705,  1709,  1713,  1717,  1721,  1725,  1729,  1733,  1737,  1741,
+    1745,  1749,  1756,  1760,  1764,  1768,  1776,  1781,  1786,  1791,
+    1797,  1803,  1809,  1820,  1831,  1842,  1854,  1866,  1878,  1883,
+    1888,  1893,  1903,  1913,  1923,  1934,  1945,  1957,  1973,  1977,
+    1981,  1986,  1992,  1999,  2032,  2036,  2043,  2047,  2075,  2079,
+    2092,  2097,  2103,  2111,  2115,  2120,  2125,  2133,  2137,  2142,
+    2147,  2152,  2160,  2164,  2169,  2177,  2181,  2186,  2191,  2199,
+    2203,  2208,  2213,  2218,  2226,  2230,  2235,  2243,  2247,  2251,
+    2256,  2262,  2270,  2271,  2277,  2283,  2289,  2298,  2299,  2300,
+    2310,  2314,  2318,  2322,  2326,  2330,  2334,  2338,  2342,  2352,
+    2362,  2366,  2370,  2374,  2378,  2386
   };
 
   void
@@ -4230,9 +4228,9 @@ namespace m68kasm {
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 4234 "syntactic.cpp"
+#line 4232 "syntactic.cpp"
 
-#line 2393 "syntactic.y"
+#line 2391 "syntactic.y"
 
 
 static cc_bool DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression)

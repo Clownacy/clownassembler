@@ -175,7 +175,7 @@ typedef struct SemanticState
 	std::deque<Location> location;
 	Flex flex_state = {*this};
 	Statement statement;
-	m68kasm::parser parser = {*flex_state, &statement};
+	m68kasm::parser parser = {*flex_state, statement};
 	String line_buffer;
 	const String *source_line = nullptr;
 	Substitute substitutions;
@@ -375,11 +375,9 @@ static void OutOfMemoryError(SemanticState *state)
 	state->success = cc_false;
 }
 
-void m68kasm_warning(void *scanner, Statement *statement, const char *message)
+void m68kasm_warning(void *scanner, const char *message)
 {
 	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
-
-	(void)statement;
 
 	if (state->options->warnings_enabled)
 	{
@@ -389,19 +387,17 @@ void m68kasm_warning(void *scanner, Statement *statement, const char *message)
 	}
 }
 
-void m68kasm_warning_pedantic(void *scanner, Statement *statement, const char *message)
+void m68kasm_warning_pedantic(void *scanner, const char *message)
 {
 	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
 
 	if (state->options->pedantic_warnings_enabled)
-		m68kasm_warning(scanner, statement, message);
+		m68kasm_warning(scanner, message);
 }
 
-void m68kasm_error(void *scanner, Statement *statement, const char *message)
+void m68kasm_error(void *scanner, const char *message)
 {
 	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
-
-	(void)statement;
 
 	TextOutput_Format(*state->error_stream, "Error: {}", message);
 

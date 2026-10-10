@@ -1957,7 +1957,7 @@ switch (yykind)
     };
 
     /// Build a parser object.
-    parser (void *scanner_yyarg, Statement *statement_yyarg);
+    parser (void *scanner_yyarg, Statement &statement_yyarg);
     virtual ~parser ();
 
 #if 201103L <= YY_CPLUSPLUS
@@ -5547,7 +5547,7 @@ switch (yykind)
 
     // User arguments.
     void *scanner;
-    Statement *statement;
+    Statement &statement;
 
   };
 

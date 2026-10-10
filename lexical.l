@@ -31,8 +31,8 @@
 
 #include "syntactic.h"
 
-void m68kasm_warning(void *scanner, Statement *statement, const char *message);
-void m68kasm_error(void *scanner, Statement *statement, const char *message);
+void m68kasm_warning(void *scanner, const char *message);
+void m68kasm_error(void *scanner, const char *message);
 
 static cc_bool CharacterToInteger(unsigned int* const value, const unsigned int character)
 {
@@ -82,7 +82,7 @@ static unsigned long ParseNumber(void* const scanner, const char* const string_s
 	if (!StringTo32BitInteger(&value, string_start, &string_end, base))
 	{
 		/* S.N. 68k silently truncates values that are too large. This is relied upon by old versions of the Sonic 2 August 21st prototype disassembly. */
-		m68kasm_warning(scanner, NULL, "Number is too large and will be truncated.");
+		m68kasm_warning(scanner, "Number is too large and will be truncated.");
 	}
 
 	if (string_end != string_start + string_length)
