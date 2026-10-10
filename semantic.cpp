@@ -404,71 +404,19 @@ void m68kasm_error(void *scanner, const std::string_view &message)
 	ErrorMessageCommon(state);
 }
 
-static unsigned int GetDecimalIntegerStringLength(unsigned long integer)
-{
-	unsigned int string_length;
-
-	string_length = 1;
-
-	while (integer >= 10)
-	{
-		integer /= 10;
-		++string_length;
-	}
-
-	return string_length;
-}
-
-static unsigned int GetHexadecimalIntegerStringLength(unsigned long integer)
-{
-	unsigned int string_length;
-
-	string_length = 1;
-
-	while (integer >= 0x10)
-	{
-		integer /= 0x10;
-		++string_length;
-	}
-
-	return string_length;
-}
-
 static String DecimalIntegerToString(const unsigned long integer)
 {
-	String string;
-
-	const size_t length = GetDecimalIntegerStringLength(integer);
-
-	if (String_ResizeNoFill(string, length))
-		sprintf(String_Data(string), "%lu", integer);
-
-	return string;
+	return std::format("{}", integer);
 }
 
 static String HexadecimalIntegerToString(const unsigned long integer)
 {
-	String string;
-
-	const size_t length = GetHexadecimalIntegerStringLength(integer);
-
-	if (String_ResizeNoFill(string, length))
-		sprintf(String_Data(string), "%lX", integer);
-
-	return string;
+	return std::format("{:X}", integer);
 }
 
 static String ComputeUniqueMacroSuffix(const SemanticState* const state)
 {
-	String string;
-	const unsigned long integer = state->current_macro_invocation;
-
-	const size_t length = GetDecimalIntegerStringLength(integer);
-
-	if (String_ResizeNoFill(string, 1 + length))
-		sprintf(String_Data(string), "_%lu", integer);
-
-	return string;
+	return std::format("_{}", state->current_macro_invocation);
 }
 
 static cc_bool ToStandardPath(const StringView &input_path, String &output_path)
