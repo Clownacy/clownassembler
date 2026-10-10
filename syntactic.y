@@ -651,8 +651,22 @@ void m68kasm_warning(void *scanner, const char *message);
 void m68kasm_warning_pedantic(void *scanner, const char *message);
 void m68kasm_error(void *scanner, const char *message);
 
-static void DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression);
-static void DoExpression(Expression &expression, ExpressionArithmetic2Operand::Type type, Expression left_expression, Expression right_expression);
+static void DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression)
+{
+	auto subexpression_copy = std::make_unique<Expression>(std::move(subexpression));
+
+	expression.emplace<ExpressionArithmetic1Operand>(type, std::move(subexpression_copy));
+}
+
+static void DoExpression(Expression &expression, ExpressionArithmetic2Operand::Type type, Expression left_expression, Expression right_expression)
+{
+	auto subexpressions = std::make_unique<Expression[]>(2);
+
+	subexpressions[0] = std::move(left_expression);
+	subexpressions[1] = std::move(right_expression);
+
+	expression.emplace<ExpressionArithmetic2Operand>(type, std::move(subexpressions));
+}
 
 void m68kasm::parser::error(const std::string &message)
 {
@@ -2354,22 +2368,3 @@ string
 	{
 		$$.emplace<ExpressionString>($1);
 	}
-
-%%
-
-static void DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression)
-{
-	auto subexpression_copy = std::make_unique<Expression>(std::move(subexpression));
-
-	expression.emplace<ExpressionArithmetic1Operand>(type, std::move(subexpression_copy));
-}
-
-static void DoExpression(Expression &expression, ExpressionArithmetic2Operand::Type type, Expression left_expression, Expression right_expression)
-{
-	auto subexpressions = std::make_unique<Expression[]>(2);
-
-	subexpressions[0] = std::move(left_expression);
-	subexpressions[1] = std::move(right_expression);
-
-	expression.emplace<ExpressionArithmetic2Operand>(type, std::move(subexpressions));
-}
