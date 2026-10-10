@@ -76,6 +76,23 @@ size_t StringView_FindCharacter(const StringView* const view, const char charact
 	return found_pointer - StringView_Data(view);
 }
 
+size_t StringView_StrSpn(const StringView* const view, const char* const characters)
+{
+	size_t i;
+
+	for (i = 0; i < StringView_Length(view); ++i)
+		if (strchr(characters, StringView_At(view, i)) == NULL)
+			break;
+
+	return i;
+}
+
+void StringView_RemovePrefix(StringView* const view, const size_t count)
+{
+	view->buffer += count;
+	view->length -= count;
+}
+
 void String_CreateBlank(String* const string)
 {
 	assert(string != NULL);

@@ -52,6 +52,9 @@ size_t StringView_FindCharacter(const StringView *view, char character, size_t p
 #define StringView_SubStr(VIEW, OTHER_VIEW, POSITION, LENGTH) StringView_Create(VIEW, &StringView_At(OTHER_VIEW, POSITION), LENGTH)
 #define StringView_Front(VIEW) StringView_At(VIEW, 0)
 #define StringView_Back(VIEW) StringView_At(VIEW, StringView_Length(VIEW) - 1)
+size_t StringView_StrSpn(const StringView *view, const char *characters);
+void StringView_RemovePrefix(StringView *view, size_t count);
+#define StringView_RemoveSuffix(VIEW, COUNT) ((VIEW)->length -= (COUNT))
 
 #define STRING_INITIALISER(STRING_LITERAL) {STRING_VIEW_INITIALISER(STRING_LITERAL), sizeof(STRING_LITERAL) - 1}
 
