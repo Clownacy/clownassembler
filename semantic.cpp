@@ -5445,7 +5445,7 @@ static void SubstituteAndParseLine(SemanticState *state, const StringView &label
 	ParseLine(state, label, String_View(modified_directive_and_operands));
 }
 
-static void InvokeMacro(SemanticState* const state, const Macro* const macro, const StringView &label, const char *source_line_pointer)
+static void InvokeMacro(SemanticState* const state, const Macro* const macro, const StringView &label, StringView source_line)
 {
 	/* This is a macro invocation. */
 	const SemanticState_Macro previous_macro_state = std::move(state->macro);
@@ -5477,7 +5477,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 
 			state->suppress_listing = cc_true;
 
-			source_line_pointer += strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS);
+			StringView_RemovePrefix(source_line, StringView_StrSpn(source_line, DIRECTIVE_OR_MACRO_CHARS));
 
 			if (!StringView_Empty(label))
 			{
@@ -5490,15 +5490,15 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 			StringView size;
 
 			/* Extract and store the macro size specifier, if one exists. */
-			if (source_line_pointer[0] == '.')
+			if (StringView_Front(source_line) == '.')
 			{
 				/* Skip the '.' character. */
-				++source_line_pointer;
+				StringView_RemovePrefix(source_line, 1);
 
-				StringView_Create(size, source_line_pointer, strspn(source_line_pointer, DIRECTIVE_OR_MACRO_CHARS));
+				StringView_SubStr(size, source_line, 0, StringView_StrSpn(source_line, DIRECTIVE_OR_MACRO_CHARS));
 
 				/* Advance past the size specifier. */
-				source_line_pointer += StringView_Length(size);
+				StringView_RemovePrefix(source_line, StringView_Length(size));
 			}
 			else
 			{
@@ -5506,18 +5506,21 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 			}
 
 			/* Extract combined arguments string. */
-			const char* const arguments_string_start = source_line_pointer + strspn(source_line_pointer, " \t");
-			const char *arguments_string_end = strchr(arguments_string_start, ';');
+			const char* const arguments_string_start = StringView_Data(source_line);
+			const char *arguments_string_end = (const char*)memchr(StringView_Data(source_line), ';', StringView_Length(source_line));
 
 			if (arguments_string_end == NULL)
-				arguments_string_end = String_Data(*state->source_line) + String_Length(*state->source_line);
-
-			/* Remove trailing whitespace. */
-			while (arguments_string_end > arguments_string_start && (arguments_string_end[-1] == ' ' || arguments_string_end[-1] == '\t'))
-				--arguments_string_end;
+				arguments_string_end = StringView_Data(source_line) + StringView_Length(source_line);
 
 			StringView arguments;
 			StringView_Create(arguments, arguments_string_start, arguments_string_end - arguments_string_start);
+
+			/* Remove leading whitespace. */
+			StringView_RemovePrefix(arguments, StringView_StrSpn(arguments, " \t"));
+
+			/* Remove trailing whitespace. */
+			while (!StringView_Empty(arguments) && (StringView_Back(arguments) == ' ' || StringView_Back(arguments) == '\t'))
+				StringView_RemoveSuffix(arguments, 1);
 
 			const String unique_suffix = ComputeUniqueMacroSuffix(state);
 			String symbol_value_string;
@@ -5606,72 +5609,58 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 
 			/* Extract and store the individual macro arguments, if they exist. */
 			{
-				char character;
+				size_t i;
+				size_t argument_string_start = 0;
+				unsigned int argument_depth = 0;
 
-				do
+				for (i = 0; i <= StringView_Length(arguments); ++i)
 				{
-					const char* const argument_string_start = source_line_pointer += strspn(source_line_pointer, " \t");
+					const cc_bool at_the_end = i == StringView_Length(arguments);
+					const char character = at_the_end ? ',' : StringView_At(arguments, i);
 
-					do
+					switch (character)
 					{
-						character = *source_line_pointer++;
+						case '(':
+							++argument_depth;
+							break;
 
-						/* If commas appear between parentheses, then we shouldn't separate on them. */
-						/* This is because of the possibility of code such as '(a0,d0.w)' being passed as an argument. */
-						/* To do this, manually skip characters until we find a closing parenthesis. */
-						if (character == '(')
-						{
-							unsigned int argument_depth = 1;
+						case ')':
+							--argument_depth;
+							break;
 
-							while (argument_depth != 0)
+						case ',':
+							if (argument_depth == 0)
 							{
-								character = *source_line_pointer++;
+								/* Extract argument. */
+								StringView argument;
+								StringView_SubStr(argument, arguments, argument_string_start, i - argument_string_start);
+								argument_string_start = i + 1;
 
-								if (character == '(')
-									++argument_depth;
-								else if (character == ')')
-									--argument_depth;
-								else if (character == ';' || character == '\0')
-									break;
-							}
-						}
+								/* Remove leading whitespace. */
+								StringView_RemovePrefix(argument, StringView_StrSpn(argument, " \t"));
 
-						/* If we encounter a comma, a comment, or the end of the line, then split this off as a macro argument. */
-						if (character == ',' || character == ';' || character == '\0')
-						{
-							/* Extract argument. */
-							StringView argument;
-							StringView_Create(argument, argument_string_start, source_line_pointer - argument_string_start - 1);
+								/* Remove trailing whitespace. */
+								while (!StringView_Empty(argument) && (StringView_Back(argument) == ' ' || StringView_Back(argument) == '\t'))
+									StringView_RemoveSuffix(argument, 1);
 
-							/* Remove trailing whitespace. */
-							while (StringView_Length(argument) != 0)
-							{
-								const char character = StringView_Back(argument);
-
-								if (character != ' ' && character != '\t')
+								/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
+								if (StringView_Empty(argument) && at_the_end && state->macro.total_arguments == 0)
 									break;
 
-								StringView_SubStr(argument, argument, 0, StringView_Length(argument) - 1);
+								/* Add to argument list. */
+								state->macro.argument_list.emplace_back();
+								String_CreateCopyView(state->macro.argument_list[state->macro.total_arguments], argument);
+
+								if (StringView_Length(argument) != 0 && StringView_At(argument, 0) != '"' && StringView_At(argument, 0) != '\'' && state->options->case_insensitive)
+									String_ToLower(state->macro.argument_list[state->macro.total_arguments]);
+
+								++state->macro.total_arguments;
+								++state->macro.total_arguments_at_start;
 							}
-
-							/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
-							if (StringView_Length(argument) == 0 && (character == ';' || character == '\0') && state->macro.total_arguments == 0)
-								break;
-
-							/* Add to argument list. */
-							state->macro.argument_list.emplace_back();
-							String_CreateCopyView(state->macro.argument_list[state->macro.total_arguments], argument);
-
-							if (StringView_Length(argument) != 0 && StringView_At(argument, 0) != '"' && StringView_At(argument, 0) != '\'' && state->options->case_insensitive)
-								String_ToLower(state->macro.argument_list[state->macro.total_arguments]);
-
-							++state->macro.total_arguments;
-							++state->macro.total_arguments_at_start;
 
 							break;
-						}
-					} while (character != ';' && character != '\0');
-				} while (character != ';' && character != '\0');
+					}
+				}
 
 				/* Add identifier substitute. */
 				PushMacroArgumentSubstitutions(state);

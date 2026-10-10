@@ -36,6 +36,7 @@ using StringView = std::string_view;
 #define StringView_Length(x) ((x).length())
 #define StringView_Empty(x) ((x).empty())
 #define StringView_At(x, i) ((x).data()[i])
+#define StringView_Front(x) ((x).front())
 #define StringView_Back(x) ((x).back())
 #define String_At(x, i) ((x).data()[i])
 #define String_CStr(x) ((x).c_str())
@@ -86,6 +87,12 @@ inline cc_bool String_CreateAppend(String &string, const String &other_string_a,
 #define StringView_Create(x, buffer, length) ((x) = std::string_view(buffer, length))
 #define StringView_CreateBlank(x) ((x) = {})
 #define StringView_SubStr(VIEW, OTHER_VIEW, POSITION, LENGTH) StringView_Create(VIEW, &StringView_At(OTHER_VIEW, POSITION), LENGTH)
+inline size_t StringView_StrSpn(const StringView &view, const char* const characters)
+{
+	return std::min(view.length(), view.find_first_not_of(characters));
+}
+#define StringView_RemovePrefix(VIEW, COUNT) ((VIEW).remove_prefix(COUNT))
+#define StringView_RemoveSuffix(VIEW, COUNT) ((VIEW).remove_suffix(COUNT))
 
 inline void String_ToLower(String &string)
 {
