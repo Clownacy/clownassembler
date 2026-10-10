@@ -56,9 +56,6 @@
 #include "clowncommon/clowncommon.h"
 #include "string.h"
 
-/* Temporary junk! */
-#define YYNOMEM YYERROR
-
 typedef enum Size
 {
 	SIZE_BYTE      = 1 << 0,
@@ -646,7 +643,7 @@ using Statement = std::variant<
 >;
 
 
-#line 650 "syntactic.h"
+#line 647 "syntactic.h"
 
 
 # include <cstdlib> // std::abort
@@ -790,7 +787,7 @@ using Statement = std::variant<
 
 #line 25 "syntactic.y"
 namespace m68kasm {
-#line 794 "syntactic.h"
+#line 791 "syntactic.h"
 
 
 
@@ -5777,17 +5774,17 @@ switch (yykind)
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 5781 "syntactic.h"
+#line 5778 "syntactic.h"
 
 
 // "%code provides" blocks.
-#line 639 "syntactic.y"
+#line 636 "syntactic.y"
 
 
 #define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner)
 
 
-#line 5791 "syntactic.h"
+#line 5788 "syntactic.h"
 
 
 #endif // !YY_M68KASM_SYNTACTIC_H_INCLUDED

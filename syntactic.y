@@ -45,9 +45,6 @@
 #include "clowncommon/clowncommon.h"
 #include "string.h"
 
-/* Temporary junk! */
-#define YYNOMEM YYERROR
-
 typedef enum Size
 {
 	SIZE_BYTE      = 1 << 0,
@@ -654,8 +651,8 @@ void m68kasm_warning(void *scanner, const char *message);
 void m68kasm_warning_pedantic(void *scanner, const char *message);
 void m68kasm_error(void *scanner, const char *message);
 
-static cc_bool DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression);
-static cc_bool DoExpression(Expression &expression, ExpressionArithmetic2Operand::Type type, Expression left_expression, Expression right_expression);
+static void DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression);
+static void DoExpression(Expression &expression, ExpressionArithmetic2Operand::Type type, Expression left_expression, Expression right_expression);
 
 void m68kasm::parser::error(const std::string &message)
 {
@@ -2096,14 +2093,12 @@ expression
 	/* This is an assembler extension: asm68k doesn't support this. */
 	| expression LOGICAL_AND expression1
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::LOGICAL_AND, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::LOGICAL_AND, $1, $3);
 	}
 	/* This is an assembler extension: asm68k doesn't support this. */
 	| expression LOGICAL_OR expression1
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::LOGICAL_OR, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::LOGICAL_OR, $1, $3);
 	}
 	;
 
@@ -2114,18 +2109,15 @@ expression1
 	}
 	| expression1 "=" expression2
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::EQUALITY, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::EQUALITY, $1, $3);
 	}
 	| expression1 EQUALITY expression2
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::EQUALITY, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::EQUALITY, $1, $3);
 	}
 	| expression1 INEQUALITY expression2
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::INEQUALITY, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::INEQUALITY, $1, $3);
 	}
 	;
 
@@ -2136,23 +2128,19 @@ expression2
 	}
 	| expression2 "<" expression3
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::LESS_THAN, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::LESS_THAN, $1, $3);
 	}
 	| expression2 LESS_OR_EQUAL expression3
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::LESS_OR_EQUAL, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::LESS_OR_EQUAL, $1, $3);
 	}
 	| expression2 ">" expression3
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::MORE_THAN, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::MORE_THAN, $1, $3);
 	}
 	| expression2 MORE_OR_EQUAL expression3
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::MORE_OR_EQUAL, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::MORE_OR_EQUAL, $1, $3);
 	}
 	;
 
@@ -2163,13 +2151,11 @@ expression3
 	}
 	| expression3 "+" expression4
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::ADD, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::ADD, $1, $3);
 	}
 	| expression3 "-" expression4
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::SUBTRACT, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::SUBTRACT, $1, $3);
 	}
 	;
 
@@ -2180,18 +2166,15 @@ expression4
 	}
 	| expression4 "*" expression5
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::MULTIPLY, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::MULTIPLY, $1, $3);
 	}
 	| expression4 "/" expression5
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::DIVIDE, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::DIVIDE, $1, $3);
 	}
 	| expression4 "%" expression5
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::MODULO, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::MODULO, $1, $3);
 	}
 	;
 
@@ -2202,23 +2185,19 @@ expression5
 	}
 	| expression5 "&" expression6
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::BITWISE_AND, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::BITWISE_AND, $1, $3);
 	}
 	| expression5 "!" expression6
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::BITWISE_OR, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::BITWISE_OR, $1, $3);
 	}
 	| expression5 "|" expression6
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::BITWISE_OR, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::BITWISE_OR, $1, $3);
 	}
 	| expression5 "^" expression6
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::BITWISE_XOR, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::BITWISE_XOR, $1, $3);
 	}
 	;
 
@@ -2229,13 +2208,11 @@ expression6
 	}
 	| expression6 LEFT_SHIFT expression7
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::LEFT_SHIFT, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::LEFT_SHIFT, $1, $3);
 	}
 	| expression6 RIGHT_SHIFT expression7
 	{
-		if (!DoExpression($$, ExpressionArithmetic2Operand::Type::RIGHT_SHIFT, $1, $3))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic2Operand::Type::RIGHT_SHIFT, $1, $3);
 	}
 	;
 
@@ -2250,19 +2227,16 @@ expression7
 	}
 	| "-" expression7
 	{
-		if (!DoExpression($$, ExpressionArithmetic1Operand::Type::NEGATE, $2))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic1Operand::Type::NEGATE, $2);
 	}
 	| "~" expression7
 	{
-		if (!DoExpression($$, ExpressionArithmetic1Operand::Type::BITWISE_NOT, $2))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic1Operand::Type::BITWISE_NOT, $2);
 	}
 	/* This is an assembler extension: asm68k doesn't support this. */
 	| "!" expression7
 	{
-		if (!DoExpression($$, ExpressionArithmetic1Operand::Type::LOGICAL_NOT, $2))
-			YYNOMEM;
+		DoExpression($$, ExpressionArithmetic1Operand::Type::LOGICAL_NOT, $2);
 	}
 	;
 
@@ -2271,26 +2245,22 @@ local_identifier
 	| SIZE_BYTE
 	{
 		const StringView literal = STRING_VIEW_INITIALISER(".b");
-		if (!String_CreateCopyView($$, literal))
-			YYNOMEM;
+		String_CreateCopyView($$, literal);
 	}
 	| SIZE_SHORT
 	{
 		const StringView literal = STRING_VIEW_INITIALISER(".s");
-		if (!String_CreateCopyView($$, literal))
-			YYNOMEM;
+		String_CreateCopyView($$, literal);
 	}
 	| SIZE_WORD
 	{
 		const StringView literal = STRING_VIEW_INITIALISER(".w");
-		if (!String_CreateCopyView($$, literal))
-			YYNOMEM;
+		String_CreateCopyView($$, literal);
 	}
 	| SIZE_LONGWORD
 	{
 		const StringView literal = STRING_VIEW_INITIALISER(".l");
-		if (!String_CreateCopyView($$, literal))
-			YYNOMEM;
+		String_CreateCopyView($$, literal);
 	}
 	;
 
@@ -2299,10 +2269,7 @@ identifier
 	| local_identifier
 	| identifier local_identifier
 	{
-		const cc_bool success = String_CreateAppend($$, $1, $2);
-
-		if (!success)
-			YYNOMEM;
+		String_CreateAppend($$, $1, $2);
 	}
 	;
 
@@ -2390,16 +2357,14 @@ string
 
 %%
 
-static cc_bool DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression)
+static void DoExpression(Expression &expression, ExpressionArithmetic1Operand::Type type, Expression subexpression)
 {
 	auto subexpression_copy = std::make_unique<Expression>(std::move(subexpression));
 
 	expression.emplace<ExpressionArithmetic1Operand>(type, std::move(subexpression_copy));
-
-	return cc_true;
 }
 
-static cc_bool DoExpression(Expression &expression, ExpressionArithmetic2Operand::Type type, Expression left_expression, Expression right_expression)
+static void DoExpression(Expression &expression, ExpressionArithmetic2Operand::Type type, Expression left_expression, Expression right_expression)
 {
 	auto subexpressions = std::make_unique<Expression[]>(2);
 
@@ -2407,6 +2372,4 @@ static cc_bool DoExpression(Expression &expression, ExpressionArithmetic2Operand
 	subexpressions[1] = std::move(right_expression);
 
 	expression.emplace<ExpressionArithmetic2Operand>(type, std::move(subexpressions));
-
-	return cc_true;
 }
