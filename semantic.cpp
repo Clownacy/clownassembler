@@ -21,6 +21,7 @@
 
 #include <assert.h>
 #include <deque>
+#include <filesystem>
 #include <fstream>
 #include <limits.h>
 #include <memory>
@@ -1024,21 +1025,23 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			},
 			[&](ExpressionFilesize &expression)
 			{
-				const char* const file_path = String_CStr(expression.string);
-				FILE* const file = fopen(file_path, "rb");
+				String standard_path;
 
-				if (file == NULL)
+				if (!ToStandardPath(String_View(expression.string), standard_path))
 				{
 					success = cc_false;
-					SemanticError(state, "File '{}' could not be opened.", file_path);
+					OutOfMemoryError(state);
+					return;
 				}
-				else
-				{
-					fseek(file, 0, SEEK_END);
-					*value = ftell(file);
 
-					fclose(file);
+				if (!std::filesystem::exists(standard_path))
+				{
+					success = cc_false;
+					SemanticError(state, "File '{}' does not exist.", expression.string);
+					return;
 				}
+
+				*value = std::filesystem::file_size(standard_path);
 			}
 		}, *expression
 	);
