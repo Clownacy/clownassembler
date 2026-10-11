@@ -419,22 +419,15 @@ static String ComputeUniqueMacroSuffix(const SemanticState* const state)
 	return std::format("_{}", state->current_macro_invocation);
 }
 
-static cc_bool ToStandardPath(const StringView &input_path, String &output_path)
+static String ToStandardPath(const StringView &input_path)
 {
-	cc_bool success = cc_false;
+	String output_path(input_path);
 
-	if (String_CreateCopyView(output_path, input_path))
-	{
-		size_t i;
+	for (auto &character : output_path)
+		if (character == '\\')
+			character = '/';
 
-		for (i = 0; i < StringView_Length(input_path); ++i)
-			if (String_At(output_path, i) == '\\')
-				String_At(output_path, i) = '/';
-
-		success = cc_true;
-	}
-
-	return success;
+	return output_path;
 }
 
 static void ListSourceLine(SemanticState *state)
@@ -962,13 +955,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			},
 			[&](ExpressionFilesize &expression)
 			{
-				String standard_path;
-
-				if (!ToStandardPath(String_View(expression.string), standard_path))
-				{
-					OutOfMemoryError(state);
-					return cc_false;
-				}
+				const String standard_path = ToStandardPath(String_View(expression.string));
 
 				if (!std::filesystem::exists(standard_path))
 				{
@@ -4364,15 +4351,7 @@ static void ProcessDs(SemanticState *state, StatementDs *ds)
 
 static void ProcessInclude(SemanticState *state, const StatementInclude *include)
 {
-	String standard_path;
-
-	if (!ToStandardPath(String_View(include->path), standard_path))
-	{
-		OutOfMemoryError(state);
-		return;
-	}
-
-	std::ifstream input_stream(standard_path);
+	std::ifstream input_stream(ToStandardPath(String_View(include->path)));
 
 	if (!input_stream.is_open())
 	{
@@ -4396,15 +4375,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 
 static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 {
-	String standard_path;
-
-	if (!ToStandardPath(String_View(incbin->path), standard_path))
-	{
-		OutOfMemoryError(state);
-		return;
-	}
-
-	std::ifstream input_file(standard_path, input_file.binary);
+	std::ifstream input_file(ToStandardPath(String_View(incbin->path)), input_file.binary);
 
 	if (!input_file.is_open())
 	{

@@ -45,40 +45,30 @@ using StringView = std::string_view;
 #define String_Length(x) ((x).length())
 #define String_Reserve(x, size) ((x).reserve(size))
 #define String_Capacity(x) ((x).capacity())
-inline cc_bool String_ResizeNoFill(String &string, std::size_t size)
-{
-	string.resize(size);
-	return cc_true;
-}
 
-inline cc_bool String_CreateCopyView(String &string, const StringView &view)
+inline void String_CreateCopyView(String &string, const StringView &view)
 {
 	string = view;
-	return cc_true;
 }
 
-inline cc_bool String_Create(String &string, const char *buffer, size_t length)
+inline void String_Create(String &string, const char *buffer, size_t length)
 {
 	string = {buffer, length};
-	return cc_true;
 }
 
-inline cc_bool String_CreateCopy(String &string, const String &other_string)
+inline void String_CreateCopy(String &string, const String &other_string)
 {
 	string = other_string;
-	return cc_true;
 }
 
-inline cc_bool String_CreateMove(String &string, String &other_string)
+inline void String_CreateMove(String &string, String &other_string)
 {
 	string = std::move(other_string);
-	return cc_true;
 }
 
-inline cc_bool String_CreateAppend(String &string, const String &other_string_a, const String &other_string_b)
+inline void String_CreateAppend(String &string, const String &other_string_a, const String &other_string_b)
 {
 	string = other_string_a + other_string_b;
-	return cc_true;
 }
 
 #define String_View(x) (std::string_view((x)))
@@ -127,12 +117,12 @@ inline size_t StringView_Find(const StringView &view, const StringView &sub_view
 
 inline size_t StringView_FindCharacter(const StringView &view, const char character, const size_t position)
 {
-	const char* const found_pointer = (const char*)memchr(StringView_Data(view) + position, character, StringView_Length(view) - position);
+	const auto found_position = view.find(character, position);
 
-	if (found_pointer == NULL)
+	if (found_position == view.npos)
 		return STRING_POSITION_INVALID;
 
-	return found_pointer - StringView_Data(view);
+	return found_position;
 }
 
 #define String_Find(string, sub_view, position, case_insensitive) StringView_Find(String_View(string), sub_view, position, case_insensitive)

@@ -1408,7 +1408,7 @@ static cc_bool StringTo32BitInteger(unsigned long* const value, const char* cons
 	return success;
 }
 
-static unsigned long ParseNumber(void* const scanner, const char* const string_start, const size_t string_length, const unsigned long base)
+static auto ParseNumber(void* const scanner, const char* const string_start, const size_t string_length, const unsigned long base)
 {
 	unsigned long value;
 	const char *string_end;
@@ -1422,7 +1422,7 @@ static unsigned long ParseNumber(void* const scanner, const char* const string_s
 	if (string_end != string_start + string_length)
 		throw m68kasm::parser::syntax_error("Number is invalid and cannot be parsed.");
 
-	return value;
+	return m68kasm::parser::make_NUMBER(value);
 }
 
 #line 1428 "lexical.cpp"
@@ -2935,7 +2935,7 @@ case 234:
 YY_RULE_SETUP
 #line 364 "lexical.l"
 {
-	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext, yyleng, 10));
+	return ParseNumber(yyscanner, yytext, yyleng, 10);
 }
 	YY_BREAK
 /* Hexadecimal number (68k). */
@@ -2943,7 +2943,7 @@ case 235:
 YY_RULE_SETUP
 #line 369 "lexical.l"
 {
-	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext + 1, yyleng - 1, 16));
+	return ParseNumber(yyscanner, yytext + 1, yyleng - 1, 16);
 }
 	YY_BREAK
 /* Binary number (68k). */
@@ -2951,7 +2951,7 @@ case 236:
 YY_RULE_SETUP
 #line 374 "lexical.l"
 {
-	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext + 1, yyleng - 1, 2));
+	return ParseNumber(yyscanner, yytext + 1, yyleng - 1, 2);
 }
 	YY_BREAK
 /* Hexadecimal number (Z80). */
@@ -2959,7 +2959,7 @@ case 237:
 YY_RULE_SETUP
 #line 379 "lexical.l"
 {
-	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext, yyleng - 1, 16));
+	return ParseNumber(yyscanner, yytext, yyleng - 1, 16);
 }
 	YY_BREAK
 /* Binary number (Z80). */
@@ -2967,7 +2967,7 @@ case 238:
 YY_RULE_SETUP
 #line 384 "lexical.l"
 {
-	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext, yyleng - 1, 2));
+	return ParseNumber(yyscanner, yytext, yyleng - 1, 2);
 }
 	YY_BREAK
 /* Hexadecimal number (C). */
@@ -2975,7 +2975,7 @@ case 239:
 YY_RULE_SETUP
 #line 389 "lexical.l"
 {
-	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext + 2, yyleng - 2, 16));
+	return ParseNumber(yyscanner, yytext + 2, yyleng - 2, 16);
 }
 	YY_BREAK
 /* Binary number (GNU C). */
@@ -2983,7 +2983,7 @@ case 240:
 YY_RULE_SETUP
 #line 394 "lexical.l"
 {
-	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext + 2, yyleng - 2, 2));
+	return ParseNumber(yyscanner, yytext + 2, yyleng - 2, 2);
 }
 	YY_BREAK
 /* String. */
@@ -2995,10 +2995,6 @@ case 242:
 YY_RULE_SETUP
 #line 400 "lexical.l"
 {
-	char previous_character;
-
-	const char quotation_character = yytext[0];
-
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
@@ -3008,7 +3004,9 @@ YY_RULE_SETUP
 	string.reserve(StringView_Length(view));
 
 	/* Copy string, turning escaped (paired) quotes into regular (lone) quotes. */
-	previous_character = '\0';
+	char previous_character = '\0';
+
+	const char quotation_character = yytext[0];
 
 	for (const char character : view)
 	{
@@ -3029,7 +3027,7 @@ YY_RULE_SETUP
 case 243:
 /* rule 243 can match eol */
 YY_RULE_SETUP
-#line 432 "lexical.l"
+#line 430 "lexical.l"
 {
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
@@ -3040,7 +3038,7 @@ YY_RULE_SETUP
 /* Identifier, data register, or address register. */
 case 244:
 YY_RULE_SETUP
-#line 440 "lexical.l"
+#line 438 "lexical.l"
 {
 	if (yyleng == 2 && (yytext[0] == 'd' || yytext[0] == 'D' || yytext[0] == 'a' || yytext[0] == 'A') && yytext[1] >= '0' && yytext[1] <= '7')
 	{
@@ -3058,7 +3056,7 @@ YY_RULE_SETUP
 /* Local label. */
 case 245:
 YY_RULE_SETUP
-#line 455 "lexical.l"
+#line 453 "lexical.l"
 {
 	return m68kasm::parser::make_LOCAL_IDENTIFIER({yytext, static_cast<std::size_t>(yyleng)});
 }
@@ -3066,7 +3064,7 @@ YY_RULE_SETUP
 /* Option. */
 case 246:
 YY_RULE_SETUP
-#line 460 "lexical.l"
+#line 458 "lexical.l"
 {
 	return m68kasm::parser::make_OPTION({yytext, static_cast<std::size_t>(yyleng)});
 }
@@ -3074,8 +3072,10 @@ YY_RULE_SETUP
 /* Make Bison signal a syntax error for unrecognised symbols */
 case 247:
 YY_RULE_SETUP
-#line 465 "lexical.l"
-throw m68kasm::parser::syntax_error(std::format("Invalid character '{}'.", std::string_view{yytext, static_cast<std::size_t>(yyleng)}));
+#line 463 "lexical.l"
+{
+	throw m68kasm::parser::syntax_error(std::format("Invalid character '{}'.", std::string_view{yytext, static_cast<std::size_t>(yyleng)}));
+}
 	YY_BREAK
 case 248:
 YY_RULE_SETUP

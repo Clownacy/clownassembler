@@ -74,7 +74,7 @@ static cc_bool StringTo32BitInteger(unsigned long* const value, const char* cons
 	return success;
 }
 
-static unsigned long ParseNumber(void* const scanner, const char* const string_start, const size_t string_length, const unsigned long base)
+static auto ParseNumber(void* const scanner, const char* const string_start, const size_t string_length, const unsigned long base)
 {
 	unsigned long value;
 	const char *string_end;
@@ -88,7 +88,7 @@ static unsigned long ParseNumber(void* const scanner, const char* const string_s
 	if (string_end != string_start + string_length)
 		throw m68kasm::parser::syntax_error("Number is invalid and cannot be parsed.");
 
-	return value;
+	return m68kasm::parser::make_NUMBER(value);
 }
 
 %}
@@ -361,46 +361,42 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 
  /* Decimal number. */
 {decimal} {
-	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext, yyleng, 10));
+	return ParseNumber(yyscanner, yytext, yyleng, 10);
 }
 
  /* Hexadecimal number (68k). */
 \${hexadecimal} {
-	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext + 1, yyleng - 1, 16));
+	return ParseNumber(yyscanner, yytext + 1, yyleng - 1, 16);
 }
 
  /* Binary number (68k). */
 \%{binary} {
-	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext + 1, yyleng - 1, 2));
+	return ParseNumber(yyscanner, yytext + 1, yyleng - 1, 2);
 }
 
  /* Hexadecimal number (Z80). */
 [0-9]{hexadecimal}?h {
-	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext, yyleng - 1, 16));
+	return ParseNumber(yyscanner, yytext, yyleng - 1, 16);
 }
 
  /* Binary number (Z80). */
 {binary}b {
-	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext, yyleng - 1, 2));
+	return ParseNumber(yyscanner, yytext, yyleng - 1, 2);
 }
 
  /* Hexadecimal number (C). */
 0x{hexadecimal} {
-	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext + 2, yyleng - 2, 16));
+	return ParseNumber(yyscanner, yytext + 2, yyleng - 2, 16);
 }
 
  /* Binary number (GNU C). */
 0b{binary} {
-	return m68kasm::parser::make_NUMBER(ParseNumber(yyscanner, yytext + 2, yyleng - 2, 2));
+	return ParseNumber(yyscanner, yytext + 2, yyleng - 2, 2);
 }
 
  /* String. */
 (?:\"[^\"]*\")+ |
 (?:\'[^\']*\')+ {
-	char previous_character;
-
-	const char quotation_character = yytext[0];
-
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
@@ -410,7 +406,9 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 	string.reserve(StringView_Length(view));
 
 	/* Copy string, turning escaped (paired) quotes into regular (lone) quotes. */
-	previous_character = '\0';
+	char previous_character = '\0';
+
+	const char quotation_character = yytext[0];
 
 	for (const char character : view)
 	{
@@ -461,6 +459,8 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 }
 
  /* Make Bison signal a syntax error for unrecognised symbols */
-.        throw m68kasm::parser::syntax_error(std::format("Invalid character '{}'.", std::string_view{yytext, static_cast<std::size_t>(yyleng)}));
+. {
+	throw m68kasm::parser::syntax_error(std::format("Invalid character '{}'.", std::string_view{yytext, static_cast<std::size_t>(yyleng)}));
+}
 
 %%
