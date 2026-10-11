@@ -54,11 +54,6 @@ inline void String_CreateCopyView(String &string, const StringView &view)
 	string = view;
 }
 
-inline void String_Create(String &string, const char *buffer, size_t length)
-{
-	string = {buffer, length};
-}
-
 inline void String_CreateCopy(String &string, const String &other_string)
 {
 	string = other_string;
@@ -93,15 +88,6 @@ inline void String_ToLower(String &string)
 
 	for (auto &character : string)
 		character = to_lower(character);
-}
-
-inline cc_bool StringView_CompareCStrCaseInsensitive(const StringView &view, const char* const c_string)
-{
-	assert(c_string != NULL);
-
-	constexpr Case::StringCompare string_compare(true);
-
-	return string_compare(view, c_string);
 }
 
 #define String_CompareCStrCaseInsensitive(string, c_string) StringView_CompareCStrCaseInsensitive(String_View(string), c_string)

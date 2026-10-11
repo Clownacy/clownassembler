@@ -5110,59 +5110,59 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				for (const auto &option : statement.options)
 				{
 					/* TODO: A lot of these are unimplemented... */
-					if (String_CompareCStrCaseInsensitive(option, "ae+"))
+					if (Case::CompareStringsCaseInsensitive(option, "ae+"))
 						state->options->automatic_even = cc_true;
-					else if (String_CompareCStrCaseInsensitive(option, "ae-"))
+					else if (Case::CompareStringsCaseInsensitive(option, "ae-"))
 						state->options->automatic_even = cc_false;
-					else if (String_CompareCStrCaseInsensitive(option, "an+"))
+					else if (Case::CompareStringsCaseInsensitive(option, "an+"))
 						;
-					else if (String_CompareCStrCaseInsensitive(option, "an-"))
+					else if (Case::CompareStringsCaseInsensitive(option, "an-"))
 						;
-					else if (String_CompareCStrCaseInsensitive(option, "c+"))
+					else if (Case::CompareStringsCaseInsensitive(option, "c+"))
 						state->options->case_insensitive = cc_false;
-					else if (String_CompareCStrCaseInsensitive(option, "c-"))
+					else if (Case::CompareStringsCaseInsensitive(option, "c-"))
 						state->options->case_insensitive = cc_true;
-					else if (String_CompareCStrCaseInsensitive(option, "d+"))
+					else if (Case::CompareStringsCaseInsensitive(option, "d+"))
 						state->options->equ_set_descope_local_labels = cc_true;
-					else if (String_CompareCStrCaseInsensitive(option, "d-"))
+					else if (Case::CompareStringsCaseInsensitive(option, "d-"))
 						state->options->equ_set_descope_local_labels = cc_false;
-					else if (String_CompareCStrCaseInsensitive(option, "e+"))
+					else if (Case::CompareStringsCaseInsensitive(option, "e+"))
 						;
-					else if (String_CompareCStrCaseInsensitive(option, "e-"))
+					else if (Case::CompareStringsCaseInsensitive(option, "e-"))
 						;
-					else if (String_CompareCStrCaseInsensitive(option, "l+"))
+					else if (Case::CompareStringsCaseInsensitive(option, "l+"))
 						state->options->local_signifier = '.';
-					else if (String_CompareCStrCaseInsensitive(option, "l-"))
+					else if (Case::CompareStringsCaseInsensitive(option, "l-"))
 						state->options->local_signifier = '@';
 					else if (String_Length(option) == 2 && (String_At(option, 0) == 'l' || String_At(option, 0) == 'L'))
 						state->options->local_signifier = String_At(option, 1);
-					/*else if (String_CompareCStrCaseInsensitive(option, "s+"))
+					/*else if (Case::CompareStringsCaseInsensitive(option, "s+"))
 						;*/
-					else if (String_CompareCStrCaseInsensitive(option, "s-"))
+					else if (Case::CompareStringsCaseInsensitive(option, "s-"))
 						;
-					else if (String_CompareCStrCaseInsensitive(option, "m+"))
+					else if (Case::CompareStringsCaseInsensitive(option, "m+"))
 						state->options->expand_all_macros = cc_true;
-					else if (String_CompareCStrCaseInsensitive(option, "m-"))
+					else if (Case::CompareStringsCaseInsensitive(option, "m-"))
 						state->options->expand_all_macros = cc_false;
-					else if (String_CompareCStrCaseInsensitive(option, "oz+"))
+					else if (Case::CompareStringsCaseInsensitive(option, "oz+"))
 						state->options->optimisation.zero_displacement = cc_true;
-					else if (String_CompareCStrCaseInsensitive(option, "oz-"))
+					else if (Case::CompareStringsCaseInsensitive(option, "oz-"))
 						state->options->optimisation.zero_displacement = cc_false;
-					else if (String_CompareCStrCaseInsensitive(option, "v+"))
+					else if (Case::CompareStringsCaseInsensitive(option, "v+"))
 						state->options->output_local_labels_to_sym_file = cc_true;
-					else if (String_CompareCStrCaseInsensitive(option, "v-"))
+					else if (Case::CompareStringsCaseInsensitive(option, "v-"))
 						state->options->output_local_labels_to_sym_file = cc_false;
-					else if (String_CompareCStrCaseInsensitive(option, "w+"))
+					else if (Case::CompareStringsCaseInsensitive(option, "w+"))
 						state->options->warnings_enabled = cc_true;
-					else if (String_CompareCStrCaseInsensitive(option, "w-"))
+					else if (Case::CompareStringsCaseInsensitive(option, "w-"))
 						state->options->warnings_enabled = cc_false;
-					else if (String_CompareCStrCaseInsensitive(option, "wp+"))
+					else if (Case::CompareStringsCaseInsensitive(option, "wp+"))
 						state->options->pedantic_warnings_enabled = cc_true;
-					else if (String_CompareCStrCaseInsensitive(option, "wp-"))
+					else if (Case::CompareStringsCaseInsensitive(option, "wp-"))
 						state->options->pedantic_warnings_enabled = cc_false;
-					else if (String_CompareCStrCaseInsensitive(option, "ws+"))
+					else if (Case::CompareStringsCaseInsensitive(option, "ws+"))
 						;
-					else if (String_CompareCStrCaseInsensitive(option, "ws-"))
+					else if (Case::CompareStringsCaseInsensitive(option, "ws-"))
 						;
 					else
 						SemanticWarning(state, "Unrecognised option '{}'.", option);
@@ -5378,14 +5378,14 @@ static void SubstituteAndParseLine(SemanticState *state, const StringView &label
 
 	/* Because of the below hack, we have to filter-out directives that do not use expressions or operands,
 	   to prevent them from accidentally being substituted. This is needed for the Natsumi Z80 macros. */
-	if (StringView_CompareCStrCaseInsensitive(directive, "binclude")
-	 || StringView_CompareCStrCaseInsensitive(directive, "equs")
-	 || StringView_CompareCStrCaseInsensitive(directive, "incbin")
-	 || StringView_CompareCStrCaseInsensitive(directive, "include")
-	 || StringView_CompareCStrCaseInsensitive(directive, "macro")
-	 || StringView_CompareCStrCaseInsensitive(directive, "macros")
-	 || StringView_CompareCStrCaseInsensitive(directive, "opt")
-	 || StringView_CompareCStrCaseInsensitive(directive, "popp"))
+	if (Case::CompareStringsCaseInsensitive(directive, "binclude")
+	 || Case::CompareStringsCaseInsensitive(directive, "equs")
+	 || Case::CompareStringsCaseInsensitive(directive, "incbin")
+	 || Case::CompareStringsCaseInsensitive(directive, "include")
+	 || Case::CompareStringsCaseInsensitive(directive, "macro")
+	 || Case::CompareStringsCaseInsensitive(directive, "macros")
+	 || Case::CompareStringsCaseInsensitive(directive, "opt")
+	 || Case::CompareStringsCaseInsensitive(directive, "popp"))
 	{
 		ParseLine(state, label, directive_and_operands);
 		return;
@@ -5804,16 +5804,16 @@ static void AssembleLine(SemanticState *state, const StringView &source_line_raw
 					if (state->false_if_level != 0)
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
-						if (StringView_CompareCStrCaseInsensitive(directive, "if"))
+						if (Case::CompareStringsCaseInsensitive(directive, "if"))
 						{
 							/* If-statements that are nested within the false part of another if-statement
 							   are themselves false, so create a false if-statement here and process it. */
 							++state->current_if_level;
 						}
-						else if (StringView_CompareCStrCaseInsensitive(directive, "elseif")
-						      || StringView_CompareCStrCaseInsensitive(directive, "else"  )
-						      || StringView_CompareCStrCaseInsensitive(directive, "endc"  )
-						      || StringView_CompareCStrCaseInsensitive(directive, "endif" ))
+						else if (Case::CompareStringsCaseInsensitive(directive, "elseif")
+						      || Case::CompareStringsCaseInsensitive(directive, "else"  )
+						      || Case::CompareStringsCaseInsensitive(directive, "endc"  )
+						      || Case::CompareStringsCaseInsensitive(directive, "endif" ))
 						{
 							/* These can be processed normally too. */
 							SubstituteAndParseLine(state, label, directive_and_operands, directive);
@@ -5845,14 +5845,14 @@ static void AssembleLine(SemanticState *state, const StringView &source_line_raw
 				[&](SemanticState::ModeRept &rept_state)
 				{
 					/* If this line is an 'ENDR' directive, then exit REPT mode. Otherwise, add the line to the REPT. */
-					if (StringView_CompareCStrCaseInsensitive(directive, "endr") && rept_state.nesting-- == 0)
+					if (Case::CompareStringsCaseInsensitive(directive, "endr") && rept_state.nesting-- == 0)
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
 						ParseLine(state, label, directive_and_operands);
 					}
 					else
 					{
-						if (StringView_CompareCStrCaseInsensitive(directive, "rept"))
+						if (Case::CompareStringsCaseInsensitive(directive, "rept"))
 							++rept_state.nesting;
 
 						AddToSourceLineList(rept_state.source_line_list, state->source_line);
@@ -5861,7 +5861,7 @@ static void AssembleLine(SemanticState *state, const StringView &source_line_raw
 				[&](SemanticState::ModeMacro &macro_state)
 				{
 					/* If this line is an 'ENDM' directive, then exit macro mode. Otherwise, add the line to the macro. */
-					if (StringView_CompareCStrCaseInsensitive(directive, "endm"))
+					if (Case::CompareStringsCaseInsensitive(directive, "endm"))
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
 						if (macro_state.metadata.is_short)
@@ -5899,14 +5899,14 @@ static void AssembleLine(SemanticState *state, const StringView &source_line_raw
 				[&](SemanticState::ModeWhile &while_state)
 				{
 					/* If this line is an 'ENDW' directive, then exit 'WHILE' mode. Otherwise, add the line to the 'WHILE'. */
-					if (StringView_CompareCStrCaseInsensitive(directive, "endw") && while_state.nesting-- == 0)
+					if (Case::CompareStringsCaseInsensitive(directive, "endw") && while_state.nesting-- == 0)
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
 						ParseLine(state, label, directive_and_operands);
 					}
 					else
 					{
-						if (StringView_CompareCStrCaseInsensitive(directive, "while"))
+						if (Case::CompareStringsCaseInsensitive(directive, "while"))
 							++while_state.nesting;
 
 						AddToSourceLineList(while_state.source_line_list, state->source_line);

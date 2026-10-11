@@ -94,6 +94,13 @@ namespace Case
 			return std::equal(std::begin(lhs), std::end(lhs), std::begin(rhs), std::end(rhs), char_compare);
 		}
 	};
+
+	inline bool CompareStringsCaseInsensitive(const std::string_view &lhs, const std::string_view &rhs)
+	{
+		constexpr StringCompare string_compare(true);
+
+		return string_compare(lhs, rhs);
+	}
 }
 
 #endif // CASE_H
