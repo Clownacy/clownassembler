@@ -46,13 +46,13 @@
 
 using SourceLineList = std::deque<String>;
 
-typedef struct Macro
+struct Macro
 {
 	cc_bool is_short, uses_label;
 	String name;
 	IdentifierList parameter_names;
 	SourceLineList source_line_list;
-} Macro;
+};
 
 struct SymbolNone {};
 
@@ -99,13 +99,13 @@ using SymbolDictionaryEntry = std::variant<SymbolNone, SymbolConstant, SymbolVar
 
 using SymbolDictionary = Dictionary<SymbolDictionaryEntry>;
 
-typedef struct Location
+struct Location
 {
 	String file_path; /* TODO: This should really be a `StringView`, but fix-ups need deep copies... */
 	unsigned long line_number;
-} Location;
+};
 
-typedef struct FixUp
+struct FixUp
 {
 	Statement statement;
 	std::shared_ptr<SymbolDictionary> macro_dictionary;
@@ -117,9 +117,9 @@ typedef struct FixUp
 	std::deque<Location> location;
 	String label;
 	Options options;
-} FixUp;
+};
 
-typedef struct SemanticState_Macro
+struct SemanticState_Macro
 {
 	const Macro *metadata = nullptr;
 	std::shared_ptr<SymbolDictionary> dictionary;
@@ -130,9 +130,9 @@ typedef struct SemanticState_Macro
 	unsigned int starting_if_level = 0;
 	unsigned int depth = 0;
 	cc_bool active = cc_false;
-} SemanticState_Macro;
+};
 
-typedef struct SemanticState
+struct SemanticState
 {
 	class Flex
 	{
@@ -237,7 +237,7 @@ typedef struct SemanticState
 		: options(std::move(default_options))
 		, dictionary(options->case_insensitive)
 	{}
-} SemanticState;
+};
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
 static void AssembleFile(SemanticState *state);
@@ -1665,14 +1665,14 @@ static void OptimiseInstruction(SemanticState* const state, StatementInstruction
 	}
 }
 
-typedef struct InstructionMetadata
+struct InstructionMetadata
 {
 	const char *name;
 
 	unsigned int allowed_sizes;
 
 	unsigned int allowed_operands[2];
-} InstructionMetadata;
+};
 
 /* The order of this array absolutely must match the order of the OperandType enum! */
 static const InstructionMetadata instruction_metadata_all[] = {

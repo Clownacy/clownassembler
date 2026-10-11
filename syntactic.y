@@ -45,16 +45,16 @@
 #include "clowncommon/clowncommon.h"
 #include "string.h"
 
-typedef enum Size
+enum Size
 {
 	SIZE_BYTE      = 1 << 0,
 	SIZE_SHORT     = 1 << 1,
 	SIZE_WORD      = 1 << 2,
 	SIZE_LONGWORD  = 1 << 3,
 	SIZE_UNDEFINED = 1 << 4
-} Size;
+};
 
-typedef enum Condition
+enum Condition
 {
 	CONDITION_TRUE,
 	CONDITION_FALSE,
@@ -72,9 +72,9 @@ typedef enum Condition
 	CONDITION_LESS_THAN,
 	CONDITION_GREATER_THAN,
 	CONDITION_LESS_OR_EQUAL
-} Condition;
+};
 
-typedef enum OpCodeType
+enum OpcodeType
 {
 	OPCODE_ORI_TO_CCR,
 	OPCODE_ORI_TO_SR,
@@ -191,7 +191,7 @@ typedef enum OpCodeType
 	OPCODE_ROXR_SINGLE,
 	OPCODE_ROL_SINGLE,
 	OPCODE_ROR_SINGLE
-} OpcodeType;
+};
 
 struct ExpressionArithmetic1Operand;
 struct ExpressionArithmetic2Operand;
@@ -326,14 +326,14 @@ struct ExpressionTypeWithNumber
 using ExpressionList = std::deque<Expression>;
 using IdentifierList = std::deque<String>;
 
-typedef struct Opcode
+struct Opcode
 {
 	OpcodeType type;
 	Condition condition;
 	Size size;
-} Opcode;
+};
 
-typedef enum OperandType
+enum OperandType
 {
 	OPERAND_NONE                                                           = 0,
 	OPERAND_DATA_REGISTER                                                  = 1 << 0,
@@ -352,9 +352,9 @@ typedef enum OperandType
 	OPERAND_CONDITION_CODE_REGISTER                                        = 1 << 13,
 	OPERAND_USER_STACK_POINTER_REGISTER                                    = 1 << 14,
 	OPERAND_REGISTER_LIST                                                  = 1 << 15
-} OperandType;
+};
 
-typedef struct Operand
+struct Operand
 {
 	OperandType type;
 
@@ -363,220 +363,220 @@ typedef struct Operand
 	Size size;
 	Expression literal;
 	cc_bool index_register_is_address_register;
-} Operand;
+};
 
-typedef struct StatementEmpty
+struct StatementEmpty
 {
-} StatementEmpty;
+};
 
-typedef struct StatementInstruction
+struct StatementInstruction
 {
 	Opcode opcode;
 	std::array<Operand, 2> operands;
-} StatementInstruction;
+};
 
-typedef struct StatementDc
+struct StatementDc
 {
 	Size size;
 	ExpressionList values;
-} StatementDc;
+};
 
-typedef struct StatementDcb
+struct StatementDcb
 {
 	Size size;
 	Expression repetitions;
 	Expression value;
-} StatementDcb;
+};
 
-typedef struct StatementDs
+struct StatementDs
 {
 	Size size;
 	Expression length;
-} StatementDs;
+};
 
-typedef struct StatementInclude
+struct StatementInclude
 {
 	String path;
-} StatementInclude;
+};
 
-typedef struct StatementIncbin
+struct StatementIncbin
 {
 	String path;
 	Expression start;
 	cc_bool has_length;
 	Expression length;
-} StatementIncbin;
+};
 
-typedef struct StatementRept
+struct StatementRept
 {
 	Expression repetitions;
-} StatementRept;
+};
 
-typedef struct StatementEndR
+struct StatementEndR
 {
-} StatementEndR;
+};
 
-typedef struct StatementMacro
+struct StatementMacro
 {
 	cc_bool uses_label;
 	IdentifierList parameter_names;
-} StatementMacro;
+};
 
-typedef struct StatementMacroS
+struct StatementMacroS
 {
 	StatementMacro macro;
-} StatementMacroS;
+};
 
-typedef struct StatementEndM
+struct StatementEndM
 {
-} StatementEndM;
+};
 
-typedef struct StatementEqu
+struct StatementEqu
 {
 	Expression expression;
-} StatementEqu;
+};
 
-typedef struct StatementEquSString
+struct StatementEquSString
 {
 	String string;
-} StatementEquSString;
+};
 
-typedef struct StatementEquSIdentifier
+struct StatementEquSIdentifier
 {
 	String string;
-} StatementEquSIdentifier;
+};
 
-typedef struct StatementSubstr
+struct StatementSubstr
 {
 	Expression start, end;
 	String string;
-} StatementSubstr;
+};
 
-typedef struct StatementSet
+struct StatementSet
 {
 	Expression expression;
-} StatementSet;
+};
 
-typedef struct StatementIf
+struct StatementIf
 {
 	Expression expression;
-} StatementIf;
+};
 
-typedef struct StatementElseIf
+struct StatementElseIf
 {
 	Expression expression;
-} StatementElseIf;
+};
 
-typedef struct StatementElse
+struct StatementElse
 {
-} StatementElse;
+};
 
-typedef struct StatementEndC
+struct StatementEndC
 {
-} StatementEndC;
+};
 
-typedef struct StatementWhile
+struct StatementWhile
 {
 	Expression expression;
-} StatementWhile;
+};
 
-typedef struct StatementEndW
+struct StatementEndW
 {
-} StatementEndW;
+};
 
-typedef struct StatementEven
+struct StatementEven
 {
-} StatementEven;
+};
 
-typedef struct StatementCnop
+struct StatementCnop
 {
 	Expression offset;
 	Expression size_boundary;
-} StatementCnop;
+};
 
-typedef struct StatementInform
+struct StatementInform
 {
 	Expression severity;
 	String message;
-} StatementInform;
+};
 
-typedef struct StatementFail
+struct StatementFail
 {
-} StatementFail;
+};
 
-typedef struct StatementEnd
+struct StatementEnd
 {
-} StatementEnd;
+};
 
-typedef struct StatementRS
+struct StatementRS
 {
 	Size size;
 	Expression length;
-} StatementRS;
+};
 
-typedef struct StatementRSSet
+struct StatementRSSet
 {
 	Expression expression;
-} StatementRSSet;
+};
 
-typedef struct StatementRSReset
+struct StatementRSReset
 {
-} StatementRSReset;
+};
 
-typedef struct StatementObj
-{
-	Expression expression;
-} StatementObj;
-
-typedef struct StatementObjEnd
-{
-} StatementObjEnd;
-
-typedef struct StatementOrg
+struct StatementObj
 {
 	Expression expression;
-} StatementOrg;
+};
 
-typedef struct StatementPushO
+struct StatementObjEnd
 {
-} StatementPushO;
+};
 
-typedef struct StatementPopO
+struct StatementOrg
 {
-} StatementPopO;
+	Expression expression;
+};
 
-typedef struct StatementOpt
+struct StatementPushO
+{
+};
+
+struct StatementPopO
+{
+};
+
+struct StatementOpt
 {
 	IdentifierList options;
-} StatementOpt;
+};
 
-typedef struct StatementPushP
+struct StatementPushP
 {
 	String string;
-} StatementPushP;
+};
 
-typedef struct StatementPopP
+struct StatementPopP
 {
 	String string;
-} StatementPopP;
+};
 
-typedef struct StatementShift
+struct StatementShift
 {
-} StatementShift;
+};
 
-typedef struct StatementMExit
+struct StatementMExit
 {
-} StatementMExit;
+};
 
-typedef struct StatementLocal
+struct StatementLocal
 {
 	IdentifierList identifiers;
-} StatementLocal;
+};
 
-typedef struct StatementPurge
+struct StatementPurge
 {
 	String string;
-} StatementPurge;
+};
 
 using Statement = std::variant<
 	StatementEmpty,

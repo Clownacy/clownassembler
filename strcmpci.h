@@ -20,7 +20,7 @@
 
 #include <stddef.h>
 
-typedef int (*MemoryComparisionFunction)(const void *lhs, const void *rhs, size_t count);
+using MemoryComparisionFunction = int (*)(const void *lhs, const void *rhs, size_t count);
 
 #define strcmpci(lhs, rhs) strncmpci(lhs, rhs, (size_t)-1)
 int strncmpci(const char *lhs, const char *rhs, size_t count);
