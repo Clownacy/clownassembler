@@ -22,8 +22,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "case-insensitive.h"
 #include "semantic.h"
-#include "strcmpci.h"
 
 static int total_arguments;
 static char **arguments;
@@ -157,44 +157,44 @@ int main(int argc, char **argv)
 
 						for (option = strtok(argv[i], ","); option != NULL; option = strtok(NULL, ","))
 						{
-							if (strcmpci(option, "ae+") == 0)
+							if (CaseInsensitive::CompareStrings(option, "ae+"))
 							{
 								settings.automatic_even = cc_true;
 							}
-							else if (strcmpci(option, "ae-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "ae-"))
 							{
 								settings.automatic_even = cc_false;
 							}
-							else if (strcmpci(option, "an+") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "an+"))
 							{
 								/* Quietly accept this even though it isn't configurable. */
 							}
-							else if (strcmpci(option, "an-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "an-"))
 							{
 								fprintf(stderr, "Warning: Option '%s' has no effect, as alternate numeric specifiers are always enabled.\n", option);
 							}
-							else if (strcmpci(option, "c+") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "c+"))
 							{
 								settings.case_insensitive = cc_false;
 							}
-							else if (strcmpci(option, "c-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "c-"))
 							{
 								settings.case_insensitive = cc_true;
 							}
-							else if (strcmpci(option, "d+") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "d+"))
 							{
 								settings.equ_set_descope_local_labels = cc_true;
 							}
-							else if (strcmpci(option, "d-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "d-"))
 							{
 								settings.equ_set_descope_local_labels = cc_false;
 							}
-							else if (strcmpci(option, "e+") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "e+"))
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", option);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(option, "e-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "e-"))
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", option);
 								exit_code = EXIT_FAILURE;
@@ -218,110 +218,110 @@ int main(int argc, char **argv)
 										break;
 								}
 							}
-							else if (strcmpci(option, "s+") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "s+"))
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", option);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(option, "s-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "s-"))
 							{
 								/* This is always disabled. */
 							}
-							else if (strcmpci(option, "v+") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "v+"))
 							{
 								settings.output_local_labels_to_sym_file = cc_true;
 							}
-							else if (strcmpci(option, "v-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "v-"))
 							{
 								settings.output_local_labels_to_sym_file = cc_false;
 							}
-							else if (strcmpci(option, "w+") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "w+"))
 							{
 								settings.warnings_enabled = cc_true;
 							}
-							else if (strcmpci(option, "w-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "w-"))
 							{
 								settings.warnings_enabled = cc_false;
 							}
-							else if (strcmpci(option, "wp+") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "wp+"))
 							{
 								settings.pedantic_warnings_enabled = cc_true;
 							}
-							else if (strcmpci(option, "wp-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "wp-"))
 							{
 								settings.pedantic_warnings_enabled = cc_false;
 							}
-							else if (strcmpci(option, "ws+") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "ws+"))
 							{
 								/* This is always enabled. */
 							}
-							else if (strcmpci(option, "ws-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "ws-"))
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", option);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(option, "x+") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "x+"))
 							{
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", option);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (strcmpci(option, "x-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "x-"))
 							{
 								/* This is always disabled. */
 							}
-							else if (strcmpci(option, "op+") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "op+"))
 							{
 								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
 							}
-							else if (strcmpci(option, "op-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "op-"))
 							{
 								/* This is always disabled. */
 							}
-							else if (strcmpci(option, "os+") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "os+"))
 							{
 								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
 							}
-							else if (strcmpci(option, "os-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "os-"))
 							{
 								/* This is always disabled. */
 							}
-							else if (strcmpci(option, "ow+") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "ow+"))
 							{
 								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
 							}
-							else if (strcmpci(option, "ow-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "ow-"))
 							{
 								/* This is always disabled. */
 							}
-							else if (strcmpci(option, "oz+") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "oz+"))
 							{
 								settings.optimisation.zero_displacement = cc_true;
 							}
-							else if (strcmpci(option, "oz-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "oz-"))
 							{
 								settings.optimisation.zero_displacement = cc_false;
 							}
-							else if (strcmpci(option, "oaq+") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "oaq+"))
 							{
 								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
 							}
-							else if (strcmpci(option, "oaq-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "oaq-"))
 							{
 								/* This is always disabled. */
 							}
-							else if (strcmpci(option, "osq+") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "osq+"))
 							{
 								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
 							}
-							else if (strcmpci(option, "osq-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "osq-"))
 							{
 								/* This is always disabled. */
 							}
-							else if (strcmpci(option, "omq+") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "omq+"))
 							{
 								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
 							}
-							else if (strcmpci(option, "omq-") == 0)
+							else if (CaseInsensitive::CompareStrings(option, "omq-"))
 							{
 								/* This is always disabled. */
 							}

@@ -26,7 +26,6 @@
 #include <string_view>
 
 #include "case-insensitive.h"
-#include "strcmpci.h"
 
 #define STRING_POSITION_INVALID ((size_t)-1)
 
