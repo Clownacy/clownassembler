@@ -136,5 +136,6 @@ inline size_t StringView_FindCharacter(const StringView &view, const char charac
 }
 
 #define String_Find(string, sub_view, position, case_insensitive) StringView_Find(String_View(string), sub_view, position, case_insensitive)
+#define String_StrSpn(STRING, CHARACTERS) StringView_StrSpn(String_View(STRING), CHARACTERS)
 
 #endif /* STRING_H */
