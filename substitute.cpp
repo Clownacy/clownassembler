@@ -93,7 +93,7 @@ std::optional<StringView> Substitute::FindEarliestSubstitute(Substitute* const o
 
 			/* Absorb trailing backslash. */
 			/* TODO: Check if it already ends in a backslash? */
-			if (StringView_At(view_to_search, found_position + found_length) == '\\')
+			if (found_position + found_length < StringView_Length(view_to_search) && StringView_At(view_to_search, found_position + found_length) == '\\')
 				++*earliest_found_length;
 		}
 	}

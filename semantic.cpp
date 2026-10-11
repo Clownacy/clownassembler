@@ -5487,7 +5487,12 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 
 				for (*found_position = starting_position; (*found_position = StringView_FindCharacter(view_to_search, '\\', *found_position)) != STRING_POSITION_INVALID; ++(*found_position))
 				{
-					const char symbol = StringView_At(view_to_search, *found_position + 1);
+					const std::size_t symbol_position = *found_position + 1;
+
+					if (symbol_position == StringView_Length(view_to_search))
+						break;
+
+					const char symbol = StringView_At(view_to_search, symbol_position);
 
 					*found_length = 2;
 
@@ -5497,7 +5502,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 							return size;
 
 						case '_':
-							if (Substitute::IsSubstituteBlockingCharacter(StringView_At(view_to_search, *found_position + *found_length)))
+							if (*found_position + *found_length < StringView_Length(view_to_search) && Substitute::IsSubstituteBlockingCharacter(StringView_At(view_to_search, *found_position + *found_length)))
 								continue;
 
 							return arguments;
@@ -5514,14 +5519,15 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 							StringView identifier;
 							unsigned long value;
 
-							identifier = view_to_search;
-							StringView_RemovePrefix(identifier, *found_position + 2);
-							StringView_SubStr(identifier, identifier, 0, StringView_StrSpn(identifier, DIRECTIVE_OR_MACRO_CHARS));
+							const std::size_t identifier_position_start = symbol_position + 1;
+							const std::size_t identifier_position_end = StringView_StrSpn(view_to_search, DIRECTIVE_OR_MACRO_CHARS, identifier_position_start);
+
+							StringView_SubStr(identifier, view_to_search, identifier_position_start, identifier_position_end - identifier_position_start);
 
 							*found_length += StringView_Length(identifier);
 
 							/* Absorb trailing backslash. */
-							if (StringView_At(identifier, StringView_Length(identifier)) == '\\')
+							if (identifier_position_end < StringView_Length(view_to_search) && StringView_At(view_to_search, identifier_position_end) == '\\')
 								++*found_length;
 
 							if (!GetSymbolInteger(state, identifier, cc_true, &value))
@@ -5540,7 +5546,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 							char *end;
 
 							/* Obtain numerical index of the parameter. */
-							const char* const start = &StringView_At(view_to_search, *found_position + 1);
+							const char* const start = &StringView_At(view_to_search, symbol_position);
 							const unsigned long parameter_index = strtoul(start, &end, 10) - 1;
 
 							/* Check if conversion failed. */
