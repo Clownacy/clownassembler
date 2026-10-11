@@ -4468,48 +4468,32 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 
 static cc_bool ReadSourceLineRaw(SemanticState *state, size_t &line_buffer_write_position)
 {
-	cc_bool data_read = cc_false;
+	if (state->input_stream->eof())
+		return cc_false;
 
-	/* Repeatedly read into the string until we've fit a whole line (or an error occurs). */
-	while (TextInput_fgets(&state->line_buffer[line_buffer_write_position], state->line_buffer.size() - line_buffer_write_position, *state->input_stream) != NULL)
+	for (;;)
 	{
-		line_buffer_write_position += strlen(&state->line_buffer[line_buffer_write_position]);
+		state->input_stream->getline(&state->line_buffer[line_buffer_write_position], state->line_buffer.size() - line_buffer_write_position);
+		line_buffer_write_position += state->input_stream->gcount();
 
-		if (line_buffer_write_position != 0)
-		{
-			const char character_before_end = state->line_buffer[line_buffer_write_position - 1];
-
-			data_read = cc_true;
-
-			/* Finding a newline means that a whole line has been read! */
-			if (character_before_end == '\r' || character_before_end == '\n')
-			{
-				/* Discard the newline. */
-				--line_buffer_write_position;
-
-				/* Discard the other newline, if one exists. */
-				if (character_before_end == '\n' && line_buffer_write_position != 0)
-				{
-					const char character_before_newline = state->line_buffer[line_buffer_write_position - 1];
-
-					if (character_before_newline == '\r')
-						--line_buffer_write_position;
-				}
-
-				break;
-			}
-		}
-
-		/* If the buffer is not full but there is no newline, then we must have reached the end of the file, so we can exit now. */
-		if (line_buffer_write_position != state->line_buffer.size())
+		if (state->input_stream->eof())
 			break;
 
-		/* If there the buffer is full and there is no newline, then the line must be longer than the buffer, so make the buffer bigger! */
+		/* Do not count the newline. */
+		--line_buffer_write_position;
+
+		/* Failure indicates the buffer was not big enough; if it
+		   is not set, then we have read a full line and can exit. */
+		if (!state->input_stream->fail())
+			break;
+
+		/* Make more room for the line. */
 		state->line_buffer.resize(state->line_buffer.size() * 2);
+
 		/* Now loop back around and read more of the line! */
 	}
 
-	return data_read;
+	return cc_true;
 }
 
 static cc_bool ReadSourceLine(SemanticState *state, StringView &source_line)

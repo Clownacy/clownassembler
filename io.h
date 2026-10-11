@@ -23,8 +23,6 @@
 #include <format>
 #include <iterator>
 
-char* TextInput_fgets(char *buffer, std::size_t buffer_size, std::istream &callbacks);
-
 template<typename... Args>
 void TextOutput_Format(std::ostream &stream, std::format_string<Args...> &&format_string, Args &&...args)
 {
