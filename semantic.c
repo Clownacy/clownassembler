@@ -5736,16 +5736,17 @@ static const StringView* MacroCustomSubstituteSearch(void* const user_data, cons
 			case '#':
 			case '$':
 			{
-				unsigned long value;
-				const char* const identifier_start = &StringView_At(view_to_search, *found_position + 2);
-				const size_t identifier_length = strspn(identifier_start, DIRECTIVE_OR_MACRO_CHARS);
 				StringView identifier;
+				unsigned long value;
 
-				StringView_Create(&identifier, identifier_start, identifier_length);
+				identifier = *view_to_search;
+				StringView_RemovePrefix(&identifier, *found_position + 2);
+				StringView_SubStr(&identifier, &identifier, 0, StringView_StrSpn(&identifier, DIRECTIVE_OR_MACRO_CHARS));
 
-				*found_length += identifier_length;
+				*found_length += StringView_Length(&identifier);
+
 				/* Absorb trailing backslash. */
-				if (identifier_start[identifier_length] == '\\')
+				if (StringView_At(&identifier, StringView_Length(&identifier)) == '\\')
 					++*found_length;
 
 				String_Destroy(&closure->symbol_value_string);
@@ -6321,7 +6322,8 @@ static void AssembleLine(SemanticState *state, const String *source_line_raw, co
 				if (state->shared.macro.is_short)
 				{
 					/* Short macros automatically terminate after one statement. */
-					const char first_nonwhitespace_character = String_At(state->source_line, strspn(String_CStr(state->source_line), " \t"));
+					const size_t first_nonwhitespace_position = String_StrSpn(state->source_line, " \t");
+					const char first_nonwhitespace_character = first_nonwhitespace_position == String_Length(state->source_line) ? '\0' : String_At(state->source_line, first_nonwhitespace_position);
 
 					if (!StringView_Empty(&label))
 						SemanticError(state, "Short macros shouldn't create labels.");

@@ -87,5 +87,6 @@ void String_ToLower(String *string);
 #define String_SubStr(STRING, VIEW, POSITION, LENGTH) String_Create(STRING, &StringView_At(VIEW, POSITION), LENGTH)
 #define String_Front(STRING) StringView_Front(String_View(STRING))
 #define String_Back(STRING) StringView_Back(String_View(STRING))
+#define String_StrSpn(STRING, CHARACTERS) StringView_StrSpn(String_View(STRING), CHARACTERS)
 
 #endif /* STRING_H */
