@@ -177,7 +177,7 @@ typedef struct SemanticState
 	Statement statement;
 	m68kasm::parser parser = {*flex_state, statement};
 	String line_buffer;
-	const String *source_line = nullptr;
+	StringView source_line;
 	Substitute substitutions;
 	std::stack<String> string_stack;
 	SemanticState_Macro macro;
@@ -326,7 +326,7 @@ static void ErrorMessageCommon(SemanticState *state)
 	for (const auto &location : state->location)
 		TextOutput_Format(*state->error_stream, "\nOn line {} of '{}'...", location.line_number, location.file_path);
 
-	TextOutput_Format(*state->error_stream, "\n{}\n\n", state->source_line == NULL ? "[No source line]" : *state->source_line);
+	TextOutput_Format(*state->error_stream, "\n{}\n\n", state->source_line.empty() ? "[No source line]" : state->source_line);
 }
 
 template<typename... Args>
@@ -442,7 +442,7 @@ static void ListSourceLine(SemanticState *state)
 	/* Output line to listing file. */
 	if (state->listing_stream != nullptr)
 	{
-		if (!state->line_listed && state->source_line != NULL)
+		if (!state->line_listed)
 		{
 			unsigned int i;
 
@@ -453,7 +453,7 @@ static void ListSourceLine(SemanticState *state)
 
 			state->listing_stream->put(state->listing_macro ? 'M' : ' ');
 
-			TextOutput_Format(*state->listing_stream, " {}\n", *state->source_line);
+			TextOutput_Format(*state->listing_stream, " {}\n", state->source_line);
 		}
 	}
 }
@@ -675,9 +675,9 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 }
 
 // TODO: Just inline this.
-static void AddToSourceLineList(SourceLineList &source_line_list, String source_line)
+static void AddToSourceLineList(SourceLineList &source_line_list, const StringView &source_line)
 {
-	source_line_list.emplace_back(std::move(source_line));
+	source_line_list.emplace_back(source_line);
 }
 
 static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, cc_bool fold)
@@ -1173,7 +1173,7 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 
 static void TerminateWhile(SemanticState *state, SemanticState::ModeWhile &while_state)
 {
-	const String* const old_source_line = state->source_line;
+	const StringView old_source_line = state->source_line;
 
 	/* Back-up some state into local variables, in case a nested WHILE statement clobbers it. */
 	auto while_state_copy = std::move(while_state);
@@ -1187,7 +1187,7 @@ static void TerminateWhile(SemanticState *state, SemanticState::ModeWhile &while
 	{
 		unsigned long value;
 
-		state->source_line = &while_state_copy.source_line;
+		state->source_line = while_state_copy.source_line;
 
 		/* We absolutely do not want to fold (cache) this expression, because
 		   while-loops depend on variables mutating from previous values;
@@ -4925,7 +4925,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				   want its sub-expressions to be automatically freed when the statement is freed. */
 				mode.expression.emplace<ExpressionNumber>(0);
 				std::swap(mode.expression, while_statement.expression);
-				String_CreateCopy(mode.source_line, *state->source_line);
+				String_CreateCopyView(mode.source_line, state->source_line);
 
 				mode.line_number = state->location.front().line_number;
 				mode.nesting = 0;
@@ -5333,7 +5333,7 @@ static void ParseLine(SemanticState* const state, const StringView &label, const
 			fixup.output_position = starting_output_position;
 			fixup.segment_length = starting_segment_length;
 			String_CreateCopy(fixup.last_global_label, state->last_global_label);
-			String_CreateCopy(fixup.source_line, *state->source_line);
+			String_CreateCopyView(fixup.source_line, state->source_line);
 			String_CreateCopyView(fixup.label, label);
 			fixup.options = *state->options;
 
@@ -5725,7 +5725,7 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 	size_t directive_length;
 	StringView directive_and_operands, directive;
 
-	const String* const old_source_line = state->source_line;
+	const StringView old_source_line = state->source_line;
 
 	/* Assert a few preconditions to ensure we're in a non-insane state. */
 	assert(CurrentlyExpandingMacro(state) == (state->macro.depth > 0));
@@ -5752,22 +5752,22 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 	{
 		String_CreateCopy(source_line, source_line_raw);
 		PerformSubstitutions(state, source_line, cc_false);
-		state->source_line = &source_line;
+		state->source_line = source_line;
 	}
 	else
 	{
-		state->source_line = &source_line_raw;
+		state->source_line = source_line_raw;
 	}
 
 	++state->location.front().line_number;
 
-	if (String_At(*state->source_line, 0) == '*')
+	if (!StringView_Empty(state->source_line) && StringView_At(state->source_line, 0) == '*')
 	{
 		/* This whole line is a comment. */
 	}
 	else
 	{
-		source_line_subview = String_View(*state->source_line);
+		source_line_subview = state->source_line;
 
 		/* Despite the fact that we're using Flex and Bison to parse the
 		   language for us, we unfortunately have to do quite a bit of
@@ -5900,7 +5900,7 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 						if (StringView_CompareCStrCaseInsensitive(directive, "rept"))
 							++rept_state.nesting;
 
-						AddToSourceLineList(rept_state.source_line_list, *state->source_line);
+						AddToSourceLineList(rept_state.source_line_list, state->source_line);
 					}
 				},
 				[&](SemanticState::ModeMacro &macro_state)
@@ -5919,8 +5919,8 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 						if (macro_state.metadata.is_short)
 						{
 							/* Short macros automatically terminate after one statement. */
-							const size_t first_nonwhitespace_position = String_StrSpn(*state->source_line, " \t");
-							const char first_nonwhitespace_character = first_nonwhitespace_position == String_Length(*state->source_line) ? '\0' : String_At(*state->source_line, first_nonwhitespace_position);
+							const size_t first_nonwhitespace_position = String_StrSpn(state->source_line, " \t");
+							const char first_nonwhitespace_character = first_nonwhitespace_position == String_Length(state->source_line) ? '\0' : String_At(state->source_line, first_nonwhitespace_position);
 
 							if (!StringView_Empty(label))
 								SemanticError(state, "Short macros shouldn't create labels.");
@@ -5931,13 +5931,13 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 							}
 							else
 							{
-								AddToSourceLineList(macro_state.metadata.source_line_list, *state->source_line);
+								AddToSourceLineList(macro_state.metadata.source_line_list, state->source_line);
 								TerminateMacro(state, macro_state);
 							}
 						}
 						else
 						{
-							AddToSourceLineList(macro_state.metadata.source_line_list, *state->source_line);
+							AddToSourceLineList(macro_state.metadata.source_line_list, state->source_line);
 						}
 					}
 				},
@@ -5954,7 +5954,7 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 						if (StringView_CompareCStrCaseInsensitive(directive, "while"))
 							++while_state.nesting;
 
-						AddToSourceLineList(while_state.source_line_list, *state->source_line);
+						AddToSourceLineList(while_state.source_line_list, state->source_line);
 					}
 				}
 			}, state->mode
@@ -6096,7 +6096,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 			OutputSeek(&state, fixup.output_position);
 			state.segment_length = fixup.segment_length;
 			String_CreateMove(state.last_global_label, fixup.last_global_label);
-			state.source_line = &fixup.source_line;
+			state.source_line = fixup.source_line;
 			state.location = std::move(fixup.location);
 			*state.options = fixup.options;
 
