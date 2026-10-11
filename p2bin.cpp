@@ -22,157 +22,132 @@
 
 #include "p2bin.h"
 
+#include <array>
 #include <exception>
-#include <stddef.h>
-#include <string.h>
+#include <format>
+#include <optional>
 
-static std::istream *input_stream;
-static std::ostream *output_stream;
-static cc_bool base_address_found = cc_false;
-static unsigned long base_address;
-
-static unsigned int ReadByte(void)
+bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &output_stream, std::ostream &error_stream)
 {
-	const int byte = input_stream->get();
+	std::optional<unsigned long> base_address;
 
-	return (unsigned int)byte;
-}
-
-static void ReadBytes(unsigned char* const buffer, const unsigned int total_bytes)
-{
-	input_stream->read(reinterpret_cast<char*>(buffer), total_bytes);
-}
-
-static unsigned long ReadInteger(const unsigned int total_bytes)
-{
-	unsigned long value;
-	unsigned int i;
-
-	value = 0;
-
-	for (i = 0; i < total_bytes; ++i)
-		value |= (unsigned long)ReadByte() << (i * 8);
-
-	return value;
-}
-
-static unsigned int ReadWord(void)
-{
-	return ReadInteger(2);
-}
-
-static unsigned long ReadLongInt(void)
-{
-	return ReadInteger(4);
-}
-
-static void ProcessSegment(void)
-{
-	/* TODO: 'malloc' this? */
-	static unsigned char copy_buffer[0x1000];
-
-	unsigned long i;
-
-	const unsigned long start_address = ReadLongInt();
-	const unsigned int length = ReadWord();
-	
-	if (!base_address_found)
+	const auto &ReadByte = [&]() -> unsigned int
 	{
-		base_address_found = cc_true;
-		base_address = start_address;
-	}
-	else if (start_address < base_address)
-	{
-		throw std::runtime_error("Error: Segment located before start of file.\n");
-	}
-	else
-	{
-		output_stream->seekp(start_address - base_address);
-	}
+		return input_stream.get();
+	};
 
-	/* Copy segment data. We do some batching using a buffer to improve performance. */
-	for (i = 0; i < length; i += sizeof(copy_buffer))
+	const auto &ReadInteger = [&](const unsigned int total_bytes) -> unsigned long
 	{
-		const unsigned long bytes_to_do = CC_MIN(sizeof(copy_buffer), length - i);
+		unsigned long value = 0;
 
-		ReadBytes(copy_buffer, bytes_to_do);
-		output_stream->write(reinterpret_cast<const char*>(copy_buffer), bytes_to_do);
-	}
-}
+		for (unsigned int i = 0; i < total_bytes; ++i)
+			value |= static_cast<unsigned long>(ReadByte()) << (i * 8);
 
-static void ProcessRecords(void)
-{
-	for (;;)
+		return value;
+	};
+
+	const auto &ReadWord = [&]() -> unsigned int
 	{
-		const unsigned int record_header = ReadByte();
-		unsigned int granularity;
+		return ReadInteger(2);
+	};
 
-		switch (record_header)
+	const auto &ReadLongInt = [&]() -> unsigned long
+	{
+		return ReadInteger(4);
+	};
+
+	const auto &ProcessSegment = [&]()
+	{
+		const auto start_address = ReadLongInt();
+		const auto length = ReadWord();
+
+		if (!base_address.has_value())
+			base_address = start_address;
+		else if (start_address < *base_address)
+			throw std::runtime_error("Error: Segment located before start of file.\n");
+		else
+			output_stream.seekp(start_address - *base_address);
+
+		std::array<unsigned char, 0x100> copy_buffer;
+
+		/* Copy segment data. We do some batching using a buffer to improve performance. */
+		for (unsigned int i = 0; i < length; i += std::size(copy_buffer))
 		{
-			case 0:
-				/* Creator string. This marks the end of the file. */
-				return;
+			const auto bytes_to_do = std::min<unsigned int>(std::size(copy_buffer), length - i);
 
-			case 0x80:
-				/* Entry point. We don't care about this. */
-				ReadLongInt();
-				break;
-
-			case 0x81:
-				/* Arbitrary segment. */
-				ReadByte(); /* Processor family. We don't care about this. */
-				ReadByte(); /* Segment. We don't care about this. */
-				granularity = ReadByte();
-
-				if (granularity != 1)
-					throw std::runtime_error(std::format("Error: Unsupported granularity of {} (only 1 is supported).\n", granularity));
-
-				ProcessSegment();
-
-				break;
-
-			default:
-				if (record_header >= 0x80)
-					throw std::runtime_error(std::format("Error: Unrecognised record header value (0x{:02X}).\n", record_header));
-
-				/* Legacy CODE segment. */
-				ProcessSegment();
-
-				break;
+			input_stream.read(reinterpret_cast<char*>(std::data(copy_buffer)), bytes_to_do);
+			output_stream.write(reinterpret_cast<const char*>(std::data(copy_buffer)), bytes_to_do);
 		}
-	}
-}
+	};
 
-cc_bool ConvertObjectFileToFlatBinary(std::istream &input_stream_parameter, std::ostream &output_stream_parameter, std::ostream &error_stream)
-{
-	unsigned char magic[2];
+	const auto &ProcessRecords = [&]()
+	{
+		for (;;)
+		{
+			const auto record_header = ReadByte();
 
-	cc_bool success = cc_false;
+			switch (record_header)
+			{
+				case 0:
+					/* Creator string. This marks the end of the file. */
+					return;
 
-	input_stream = &input_stream_parameter;
-	output_stream = &output_stream_parameter;
+				case 0x80:
+					/* Entry point. We don't care about this. */
+					ReadLongInt();
+					break;
 
-	const auto previous_exceptions = input_stream->exceptions();
-	input_stream->exceptions(input_stream->badbit | input_stream->eofbit | input_stream->failbit);
+				case 0x81:
+				{
+					/* Arbitrary segment. */
+					ReadByte(); /* Processor family. We don't care about this. */
+					ReadByte(); /* Segment. We don't care about this. */
+					const auto granularity = ReadByte();
+
+					if (granularity != 1)
+						throw std::runtime_error(std::format("Error: Unsupported granularity of {} (only 1 is supported).\n", granularity));
+
+					ProcessSegment();
+
+					break;
+				}
+
+				default:
+					if (record_header >= 0x80)
+						throw std::runtime_error(std::format("Error: Unrecognised record header value (0x{:02X}).\n", record_header));
+
+					/* Legacy CODE segment. */
+					ProcessSegment();
+
+					break;
+			}
+		}
+	};
+
+	bool success = false;
+
+	const auto previous_exceptions = input_stream.exceptions();
+	input_stream.exceptions(input_stream.badbit | input_stream.eofbit | input_stream.failbit);
 
 	try
 	{
 		/* Read and check the header's magic number. */
-		input_stream->read(reinterpret_cast<char*>(magic), sizeof(magic));
+		std::array<unsigned char, 2> magic;
+		input_stream.read(reinterpret_cast<char*>(std::data(magic)), std::size(magic));
 
 		if (magic[0] != 0x89 || magic[1] != 0x14)
 			throw std::runtime_error(std::format("Error: Invalid header magic value - expected 0x8914 but got 0x{:02X}{:02X}.\nInput file is either corrupt or not a valid AS code file.\n", magic[0], magic[1]));
 
 		ProcessRecords();
 
-		success = cc_true;
+		success = true;
 	}
 	catch (const std::runtime_error &error)
 	{
 		error_stream << error.what();
 	}
 
-	input_stream->exceptions(previous_exceptions);
+	input_stream.exceptions(previous_exceptions);
 
 	return success;
 }

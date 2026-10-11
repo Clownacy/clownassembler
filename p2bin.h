@@ -18,12 +18,8 @@
 #ifndef P2BIN_H
 #define P2BIN_H
 
-#include <sstream>
+#include <iostream>
 
-#include "clowncommon/clowncommon.h"
-
-#include "io.h"
-
-cc_bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &output_stream, std::ostream &error_stream);
+bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &output_stream, std::ostream &error_stream);
 
 #endif /* P2BIN_H */
