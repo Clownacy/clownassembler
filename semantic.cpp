@@ -366,15 +366,6 @@ static void InternalError(SemanticState *state, std::format_string<Args...> &&fo
 	state->success = cc_false;
 }
 
-static void OutOfMemoryError(SemanticState *state)
-{
-	*state->error_stream << "Out-of-memory error.";
-
-	ErrorMessageCommon(state);
-
-	state->success = cc_false;
-}
-
 void m68kasm_warning(void *scanner, const std::string_view &message)
 {
 	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
@@ -5237,19 +5228,10 @@ static cc_bool ParseStatement(SemanticState* const state, const StringView &view
 {
 	/* Parse the source line with Flex and Bison (Lex and Yacc). */
 	const YY_BUFFER_STATE buffer = m68kasm__scan_bytes(StringView_Data(view), StringView_Length(view), *state->flex_state);
-	int parse_result;
-
-	parse_result = state->parser.parse();
+	const int parse_result = state->parser.parse();
 	m68kasm__delete_buffer(buffer, *state->flex_state);
 
-	if (parse_result == 0)
-		return cc_true;
-
-	/* Out of memory. */
-	if (parse_result == 2)
-		OutOfMemoryError(state);
-
-	return cc_false;
+	return parse_result == 0;
 }
 
 static void ParseLine(SemanticState* const state, const StringView &label, const StringView &directive_and_operands)
@@ -5415,262 +5397,255 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 		/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
 		state->macro.dictionary = std::make_shared<SymbolDictionary>(state->options->case_insensitive);
 
-		if (state->macro.dictionary == NULL)
+		state->macro.argument_list = {};
+		state->macro.total_arguments = 0;
+		state->macro.total_arguments_at_start = 0;
+		state->macro.starting_if_level = state->current_if_level;
+		state->macro.active = cc_true;
+		++state->macro.depth;
+
+		++state->current_macro_invocation;
+
+		state->suppress_listing = cc_true;
+
+		StringView_RemovePrefix(source_line, StringView_StrSpn(source_line, DIRECTIVE_OR_MACRO_CHARS));
+
+		if (!StringView_Empty(label))
 		{
-			OutOfMemoryError(state);
+			SetLastGlobalLabel(state, label);
+
+			if (!macro->uses_label)
+				AddToSymbolTable(state, label, SymbolLabel{state->program_counter});
+		}
+
+		StringView size;
+
+		/* Extract and store the macro size specifier, if one exists. */
+		if (!StringView_Empty(source_line) && StringView_Front(source_line) == '.')
+		{
+			/* Skip the '.' character. */
+			StringView_RemovePrefix(source_line, 1);
+
+			StringView_SubStr(size, source_line, 0, StringView_StrSpn(source_line, DIRECTIVE_OR_MACRO_CHARS));
+
+			/* Advance past the size specifier. */
+			StringView_RemovePrefix(source_line, StringView_Length(size));
 		}
 		else
 		{
-			state->macro.argument_list = {};
-			state->macro.total_arguments = 0;
-			state->macro.total_arguments_at_start = 0;
-			state->macro.starting_if_level = state->current_if_level;
-			state->macro.active = cc_true;
-			++state->macro.depth;
+			StringView_CreateBlank(size);
+		}
 
-			++state->current_macro_invocation;
+		/* Extract combined arguments string. */
+		const char* const arguments_string_start = StringView_Data(source_line);
+		const char *arguments_string_end = (const char*)memchr(StringView_Data(source_line), ';', StringView_Length(source_line));
 
-			state->suppress_listing = cc_true;
+		if (arguments_string_end == NULL)
+			arguments_string_end = StringView_Data(source_line) + StringView_Length(source_line);
 
-			StringView_RemovePrefix(source_line, StringView_StrSpn(source_line, DIRECTIVE_OR_MACRO_CHARS));
+		StringView arguments;
+		StringView_Create(arguments, arguments_string_start, arguments_string_end - arguments_string_start);
 
-			if (!StringView_Empty(label))
+		/* Remove leading whitespace. */
+		StringView_RemovePrefix(arguments, StringView_StrSpn(arguments, " \t"));
+
+		/* Remove trailing whitespace. */
+		while (!StringView_Empty(arguments) && (StringView_Back(arguments) == ' ' || StringView_Back(arguments) == '\t'))
+			StringView_RemoveSuffix(arguments, 1);
+
+		const String unique_suffix = ComputeUniqueMacroSuffix(state);
+		String symbol_value_string;
+
+		state->macro.custom_search = [state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const StringView &view_to_search, size_t starting_position, cc_bool case_insensitive, size_t* const found_position, size_t* const found_length) -> std::optional<StringView>
+		{
+			/* `view_to_search` always points to a null-terminated string. */
+			(void)case_insensitive;
+
+			for (*found_position = starting_position; (*found_position = StringView_FindCharacter(view_to_search, '\\', *found_position)) != STRING_POSITION_INVALID; ++(*found_position))
 			{
-				SetLastGlobalLabel(state, label);
+				const std::size_t symbol_position = *found_position + 1;
 
-				if (!macro->uses_label)
-					AddToSymbolTable(state, label, SymbolLabel{state->program_counter});
-			}
+				if (symbol_position == StringView_Length(view_to_search))
+					break;
 
-			StringView size;
+				const char symbol = StringView_At(view_to_search, symbol_position);
 
-			/* Extract and store the macro size specifier, if one exists. */
-			if (!StringView_Empty(source_line) && StringView_Front(source_line) == '.')
-			{
-				/* Skip the '.' character. */
-				StringView_RemovePrefix(source_line, 1);
+				*found_length = 2;
 
-				StringView_SubStr(size, source_line, 0, StringView_StrSpn(source_line, DIRECTIVE_OR_MACRO_CHARS));
-
-				/* Advance past the size specifier. */
-				StringView_RemovePrefix(source_line, StringView_Length(size));
-			}
-			else
-			{
-				StringView_CreateBlank(size);
-			}
-
-			/* Extract combined arguments string. */
-			const char* const arguments_string_start = StringView_Data(source_line);
-			const char *arguments_string_end = (const char*)memchr(StringView_Data(source_line), ';', StringView_Length(source_line));
-
-			if (arguments_string_end == NULL)
-				arguments_string_end = StringView_Data(source_line) + StringView_Length(source_line);
-
-			StringView arguments;
-			StringView_Create(arguments, arguments_string_start, arguments_string_end - arguments_string_start);
-
-			/* Remove leading whitespace. */
-			StringView_RemovePrefix(arguments, StringView_StrSpn(arguments, " \t"));
-
-			/* Remove trailing whitespace. */
-			while (!StringView_Empty(arguments) && (StringView_Back(arguments) == ' ' || StringView_Back(arguments) == '\t'))
-				StringView_RemoveSuffix(arguments, 1);
-
-			const String unique_suffix = ComputeUniqueMacroSuffix(state);
-			String symbol_value_string;
-
-			state->macro.custom_search = [state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const StringView &view_to_search, size_t starting_position, cc_bool case_insensitive, size_t* const found_position, size_t* const found_length) -> std::optional<StringView>
-			{
-				/* `view_to_search` always points to a null-terminated string. */
-				(void)case_insensitive;
-
-				for (*found_position = starting_position; (*found_position = StringView_FindCharacter(view_to_search, '\\', *found_position)) != STRING_POSITION_INVALID; ++(*found_position))
+				switch (symbol)
 				{
-					const std::size_t symbol_position = *found_position + 1;
+					case '0':
+						return size;
 
-					if (symbol_position == StringView_Length(view_to_search))
-						break;
+					case '_':
+						if (*found_position + *found_length < StringView_Length(view_to_search) && Substitute::IsSubstituteBlockingCharacter(StringView_At(view_to_search, *found_position + *found_length)))
+							continue;
 
-					const char symbol = StringView_At(view_to_search, symbol_position);
+						return arguments;
 
-					*found_length = 2;
+					case '*':
+						return label;
 
-					switch (symbol)
+					case '@':
+						return String_View(unique_suffix);
+
+					case '#':
+					case '$':
 					{
-						case '0':
-							return size;
+						StringView identifier;
+						unsigned long value;
 
-						case '_':
-							if (*found_position + *found_length < StringView_Length(view_to_search) && Substitute::IsSubstituteBlockingCharacter(StringView_At(view_to_search, *found_position + *found_length)))
-								continue;
+						const std::size_t identifier_position_start = symbol_position + 1;
+						const std::size_t identifier_position_end = StringView_StrSpn(view_to_search, DIRECTIVE_OR_MACRO_CHARS, identifier_position_start);
 
-							return arguments;
+						StringView_SubStr(identifier, view_to_search, identifier_position_start, identifier_position_end - identifier_position_start);
 
-						case '*':
-							return label;
+						*found_length += StringView_Length(identifier);
 
-						case '@':
-							return String_View(unique_suffix);
+						/* Absorb trailing backslash. */
+						if (identifier_position_end < StringView_Length(view_to_search) && StringView_At(view_to_search, identifier_position_end) == '\\')
+							++*found_length;
 
-						case '#':
-						case '$':
+						if (!GetSymbolInteger(state, identifier, cc_true, &value))
+							value = 0;
+
+						if (symbol == '#')
+							symbol_value_string = DecimalIntegerToString(value);
+						else /*if (symbol == '$')*/
+							symbol_value_string = HexadecimalIntegerToString(value);
+
+						return String_View(symbol_value_string);
+					}
+
+					default:
+					{
+						char *end;
+
+						/* Obtain numerical index of the parameter. */
+						const char* const start = &StringView_At(view_to_search, symbol_position);
+						const unsigned long parameter_index = strtoul(start, &end, 10) - 1;
+
+						/* Check if conversion failed. */
+						if (end == start)
+							continue;
+
+						*found_length = 1 + (end - start);
+
+						if (parameter_index >= state->macro.total_arguments)
 						{
-							StringView identifier;
-							unsigned long value;
-
-							const std::size_t identifier_position_start = symbol_position + 1;
-							const std::size_t identifier_position_end = StringView_StrSpn(view_to_search, DIRECTIVE_OR_MACRO_CHARS, identifier_position_start);
-
-							StringView_SubStr(identifier, view_to_search, identifier_position_start, identifier_position_end - identifier_position_start);
-
-							*found_length += StringView_Length(identifier);
-
-							/* Absorb trailing backslash. */
-							if (identifier_position_end < StringView_Length(view_to_search) && StringView_At(view_to_search, identifier_position_end) == '\\')
-								++*found_length;
-
-							if (!GetSymbolInteger(state, identifier, cc_true, &value))
-								value = 0;
-
-							if (symbol == '#')
-								symbol_value_string = DecimalIntegerToString(value);
-							else /*if (symbol == '$')*/
-								symbol_value_string = HexadecimalIntegerToString(value);
-
-							return String_View(symbol_value_string);
+							static const StringView blank_argument = STRING_VIEW_INITIALISER_BLANK;
+							return blank_argument;
 						}
 
-						default:
-						{
-							char *end;
-
-							/* Obtain numerical index of the parameter. */
-							const char* const start = &StringView_At(view_to_search, symbol_position);
-							const unsigned long parameter_index = strtoul(start, &end, 10) - 1;
-
-							/* Check if conversion failed. */
-							if (end == start)
-								continue;
-
-							*found_length = 1 + (end - start);
-
-							if (parameter_index >= state->macro.total_arguments)
-							{
-								static const StringView blank_argument = STRING_VIEW_INITIALISER_BLANK;
-								return blank_argument;
-							}
-
-							return String_View(state->macro.argument_list[parameter_index]);
-						}
+						return String_View(state->macro.argument_list[parameter_index]);
 					}
 				}
-
-				return std::nullopt;
-			};
-
-			/* Extract and store the individual macro arguments, if they exist. */
-			{
-				size_t i;
-				size_t argument_string_start = 0;
-				unsigned int argument_depth = 0;
-
-				for (i = 0; i <= StringView_Length(arguments); ++i)
-				{
-					const cc_bool at_the_end = i == StringView_Length(arguments);
-					const char character = at_the_end ? ',' : StringView_At(arguments, i);
-
-					switch (character)
-					{
-						case '(':
-							++argument_depth;
-							break;
-
-						case ')':
-							--argument_depth;
-							break;
-
-						case ',':
-							if (argument_depth == 0)
-							{
-								/* Extract argument. */
-								StringView argument;
-								StringView_SubStr(argument, arguments, argument_string_start, i - argument_string_start);
-								argument_string_start = i + 1;
-
-								/* Remove leading whitespace. */
-								StringView_RemovePrefix(argument, StringView_StrSpn(argument, " \t"));
-
-								/* Remove trailing whitespace. */
-								while (!StringView_Empty(argument) && (StringView_Back(argument) == ' ' || StringView_Back(argument) == '\t'))
-									StringView_RemoveSuffix(argument, 1);
-
-								/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
-								if (StringView_Empty(argument) && at_the_end && state->macro.total_arguments == 0)
-									break;
-
-								/* Add to argument list. */
-								state->macro.argument_list.emplace_back();
-								String_CreateCopyView(state->macro.argument_list[state->macro.total_arguments], argument);
-
-								if (StringView_Length(argument) != 0 && StringView_At(argument, 0) != '"' && StringView_At(argument, 0) != '\'' && state->options->case_insensitive)
-									String_ToLower(state->macro.argument_list[state->macro.total_arguments]);
-
-								++state->macro.total_arguments;
-								++state->macro.total_arguments_at_start;
-							}
-
-							break;
-					}
-				}
-
-				/* Add identifier substitute. */
-				PushMacroArgumentSubstitutions(state);
 			}
 
-			/* Finally, invoke the macro. */
+			return std::nullopt;
+		};
+
+		/* Extract and store the individual macro arguments, if they exist. */
+		{
+			size_t i;
+			size_t argument_string_start = 0;
+			unsigned int argument_depth = 0;
+
+			for (i = 0; i <= StringView_Length(arguments); ++i)
 			{
-				const cc_bool previous_listing_macro = state->listing_macro;
+				const cc_bool at_the_end = i == StringView_Length(arguments);
+				const char character = at_the_end ? ',' : StringView_At(arguments, i);
 
-				/* Flush line before changing this state, so that the macro line is not given the 'M' label. */
-				ListSourceLine(state);
-				state->listing_macro = cc_true;
-
-				/* Push a new location (this macro).*/
-				state->location.emplace_front(macro->name, 0);
-
-				/* Iterate over each line of the macro, sending it to be processed. */
-				for (const auto &source_line : macro->source_line_list)
+				switch (character)
 				{
-					/* TODO: This is redundant and wrong: these substitutions are already done later, and this should only be doing the macro arguments! */
-					if (macro->is_short)
-					{
-						String expanded_source_line;
-						String_CreateCopy(expanded_source_line, source_line);
-						PerformSubstitutions(state, expanded_source_line, cc_false);
-						AssembleLine(state, expanded_source_line, state->options->expand_all_macros);
-					}
-					else
-					{
-						AssembleLine(state, source_line, state->options->expand_all_macros);
-					}
+					case '(':
+						++argument_depth;
+						break;
 
-					if (!CurrentlyExpandingMacro(state))
+					case ')':
+						--argument_depth;
+						break;
+
+					case ',':
+						if (argument_depth == 0)
+						{
+							/* Extract argument. */
+							StringView argument;
+							StringView_SubStr(argument, arguments, argument_string_start, i - argument_string_start);
+							argument_string_start = i + 1;
+
+							/* Remove leading whitespace. */
+							StringView_RemovePrefix(argument, StringView_StrSpn(argument, " \t"));
+
+							/* Remove trailing whitespace. */
+							while (!StringView_Empty(argument) && (StringView_Back(argument) == ' ' || StringView_Back(argument) == '\t'))
+								StringView_RemoveSuffix(argument, 1);
+
+							/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
+							if (StringView_Empty(argument) && at_the_end && state->macro.total_arguments == 0)
+								break;
+
+							/* Add to argument list. */
+							state->macro.argument_list.emplace_back();
+							String_CreateCopyView(state->macro.argument_list[state->macro.total_arguments], argument);
+
+							if (StringView_Length(argument) != 0 && StringView_At(argument, 0) != '"' && StringView_At(argument, 0) != '\'' && state->options->case_insensitive)
+								String_ToLower(state->macro.argument_list[state->macro.total_arguments]);
+
+							++state->macro.total_arguments;
+							++state->macro.total_arguments_at_start;
+						}
+
 						break;
 				}
+			}
 
-				if (!macro->is_short)
+			/* Add identifier substitute. */
+			PushMacroArgumentSubstitutions(state);
+		}
+
+		/* Finally, invoke the macro. */
+		{
+			const cc_bool previous_listing_macro = state->listing_macro;
+
+			/* Flush line before changing this state, so that the macro line is not given the 'M' label. */
+			ListSourceLine(state);
+			state->listing_macro = cc_true;
+
+			/* Push a new location (this macro).*/
+			state->location.emplace_front(macro->name, 0);
+
+			/* Iterate over each line of the macro, sending it to be processed. */
+			for (const auto &source_line : macro->source_line_list)
+			{
+				/* TODO: This is redundant and wrong: these substitutions are already done later, and this should only be doing the macro arguments! */
+				if (macro->is_short)
 				{
-					/* 'MEXIT' may have ended us midway through an if-statement, so unwind to the original if-level here. */
-					while (state->current_if_level != state->macro.starting_if_level)
-						TerminateIf(state);
+					String expanded_source_line;
+					String_CreateCopy(expanded_source_line, source_line);
+					PerformSubstitutions(state, expanded_source_line, cc_false);
+					AssembleLine(state, expanded_source_line, state->options->expand_all_macros);
+				}
+				else
+				{
+					AssembleLine(state, source_line, state->options->expand_all_macros);
 				}
 
-				/* Pop location. */
-				state->location.pop_front();
-
-				state->listing_macro = previous_listing_macro;
+				if (!CurrentlyExpandingMacro(state))
+					break;
 			}
+
+			if (!macro->is_short)
+			{
+				/* 'MEXIT' may have ended us midway through an if-statement, so unwind to the original if-level here. */
+				while (state->current_if_level != state->macro.starting_if_level)
+					TerminateIf(state);
+			}
+
+			/* Pop location. */
+			state->location.pop_front();
+
+			state->listing_macro = previous_listing_macro;
 		}
 	}
 
