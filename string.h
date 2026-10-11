@@ -25,10 +25,6 @@
 #include <string>
 #include <string_view>
 
-#include "case-insensitive.h"
-
-#define STRING_POSITION_INVALID ((size_t)-1)
-
 using String = std::string;
 using StringView = std::string_view;
 
@@ -84,37 +80,6 @@ inline size_t StringView_StrSpn(const StringView &view, const char* const charac
 #define StringView_RemovePrefix(VIEW, COUNT) ((VIEW).remove_prefix(COUNT))
 #define StringView_RemoveSuffix(VIEW, COUNT) ((VIEW).remove_suffix(COUNT))
 
-inline void String_ToLower(String &string)
-{
-	constexpr CaseInsensitive::ToLower to_lower(true);
-
-	for (auto &character : string)
-		character = to_lower(character);
-}
-
-#define String_CompareCStrCaseInsensitive(string, c_string) StringView_CompareCStrCaseInsensitive(String_View(string), c_string)
-
-inline size_t StringView_Find(const StringView &view, const StringView &sub_view, const size_t position, const cc_bool case_insensitive)
-{
-	const auto it = std::search(std::begin(view) + position, std::end(view), std::begin(sub_view), std::end(sub_view), CaseInsensitive::CharComparer(case_insensitive));
-
-	if (it == std::end(view))
-		return STRING_POSITION_INVALID;
-
-	return std::distance(std::begin(view), it);
-}
-
-inline size_t StringView_FindCharacter(const StringView &view, const char character, const size_t position)
-{
-	const auto found_position = view.find(character, position);
-
-	if (found_position == view.npos)
-		return STRING_POSITION_INVALID;
-
-	return found_position;
-}
-
-#define String_Find(string, sub_view, position, case_insensitive) StringView_Find(String_View(string), sub_view, position, case_insensitive)
 #define String_StrSpn(STRING, CHARACTERS) StringView_StrSpn(String_View(STRING), CHARACTERS)
 
 #endif /* STRING_H */

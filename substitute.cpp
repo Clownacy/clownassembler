@@ -34,11 +34,9 @@ void Substitute::PopSubstitute()
 
 cc_bool Substitute::FindSubstitute(const StringView &view_to_search, const std::size_t starting_position, const StringView &substitute, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t* const found_position, std::size_t* const found_length)
 {
-	std::size_t match_start;
-
 	/* Find identifier within string. */
 	/* Obviously bail if the identifier wasn't found. */
-	for (match_start = starting_position; (match_start = StringView_Find(view_to_search, substitute, match_start, case_insensitive)) != STRING_POSITION_INVALID; ++match_start)
+	for (std::size_t match_start = starting_position; (match_start = CaseInsensitive::FindString(view_to_search, substitute, match_start, case_insensitive)) != view_to_search.npos; ++match_start)
 	{
 		std::size_t match_length = StringView_Length(substitute);
 

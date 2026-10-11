@@ -18,6 +18,7 @@
 #ifndef CASE_H
 #define CASE_H
 
+#include <algorithm>
 #include <cstddef>
 #include <string_view>
 
@@ -100,6 +101,24 @@ namespace CaseInsensitive
 		constexpr StringComparer string_comparer(true);
 
 		return string_comparer(lhs, rhs);
+	}
+
+	inline std::size_t FindString(const std::string_view &view, const std::string_view &sub_view, const std::size_t position, const bool case_insensitive)
+	{
+		const auto it = std::search(std::begin(view) + position, std::end(view), std::begin(sub_view), std::end(sub_view), CaseInsensitive::CharComparer(case_insensitive));
+
+		if (it == std::end(view))
+			return view.npos;
+
+		return std::distance(std::begin(view), it);
+	}
+
+	inline void ToLower(std::string &string)
+	{
+		constexpr ToLower to_lower(true);
+
+		for (auto &character : string)
+			character = to_lower(character);
 	}
 }
 

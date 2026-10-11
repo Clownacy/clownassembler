@@ -925,8 +925,8 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 				}
 
 				/* TODO: What if 'position' is 0? */
-				const size_t found_position = String_Find(expression_string_a->string, String_View(expression_string_b->string), position - 1, state->options->case_insensitive);
-				*value = found_position == STRING_POSITION_INVALID ? 0 : found_position + 1;
+				const size_t found_position = CaseInsensitive::FindString(expression_string_a->string, String_View(expression_string_b->string), position - 1, state->options->case_insensitive);
+				*value = found_position == expression_string_a->string.npos ? 0 : found_position + 1;
 				return cc_true;
 			},
 			[&](ExpressionDef &expression)
@@ -5461,7 +5461,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 			/* `view_to_search` always points to a null-terminated string. */
 			(void)case_insensitive;
 
-			for (*found_position = starting_position; (*found_position = StringView_FindCharacter(view_to_search, '\\', *found_position)) != STRING_POSITION_INVALID; ++(*found_position))
+			for (*found_position = starting_position; (*found_position = view_to_search.find('\\', *found_position)) != view_to_search.npos; ++(*found_position))
 			{
 				const std::size_t symbol_position = *found_position + 1;
 
@@ -5590,7 +5590,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 							String_CreateCopyView(state->macro.argument_list[state->macro.total_arguments], argument);
 
 							if (StringView_Length(argument) != 0 && StringView_At(argument, 0) != '"' && StringView_At(argument, 0) != '\'' && state->options->case_insensitive)
-								String_ToLower(state->macro.argument_list[state->macro.total_arguments]);
+								CaseInsensitive::ToLower(state->macro.argument_list[state->macro.total_arguments]);
 
 							++state->macro.total_arguments;
 							++state->macro.total_arguments_at_start;
