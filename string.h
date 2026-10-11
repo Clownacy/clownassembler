@@ -84,7 +84,7 @@ inline size_t StringView_StrSpn(const StringView &view, const char* const charac
 
 inline void String_ToLower(String &string)
 {
-	constexpr Case::ToLower to_lower(true);
+	constexpr CaseInsensitive::ToLower to_lower(true);
 
 	for (auto &character : string)
 		character = to_lower(character);
@@ -94,7 +94,7 @@ inline void String_ToLower(String &string)
 
 inline size_t StringView_Find(const StringView &view, const StringView &sub_view, const size_t position, const cc_bool case_insensitive)
 {
-	const auto it = std::search(std::begin(view) + position, std::end(view), std::begin(sub_view), std::end(sub_view), Case::CharCompare(case_insensitive));
+	const auto it = std::search(std::begin(view) + position, std::end(view), std::begin(sub_view), std::end(sub_view), CaseInsensitive::CharComparer(case_insensitive));
 
 	if (it == std::end(view))
 		return STRING_POSITION_INVALID;

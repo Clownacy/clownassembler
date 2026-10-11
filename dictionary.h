@@ -35,10 +35,10 @@ class Dictionary
 public:
 	using Entry = EntryArgument;
 
-	std::unordered_map<std::string, Entry, Case::StringHash, Case::StringCompare> internal;
+	std::unordered_map<std::string, Entry, CaseInsensitive::StringHasher, CaseInsensitive::StringComparer> internal;
 
 	Dictionary(bool case_insensitive)
-		: internal(0, Case::StringHash{}, Case::StringCompare{case_insensitive})
+		: internal(0, CaseInsensitive::StringHasher{}, CaseInsensitive::StringComparer{case_insensitive})
 	{}
 
 	Entry& LookUpAndCreateIfNotExist(const StringView &identifier)

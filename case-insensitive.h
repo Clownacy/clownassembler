@@ -21,7 +21,7 @@
 #include <cstddef>
 #include <string_view>
 
-namespace Case
+namespace CaseInsensitive
 {
 	class ToLower
 	{
@@ -39,7 +39,7 @@ namespace Case
 		}
 	};
 
-	class StringHash
+	class StringHasher
 	{
 	public:
 		using is_transparent = void;
@@ -59,7 +59,7 @@ namespace Case
 		}
 	};
 
-	class CharCompare
+	class CharComparer
 	{
 	private:
 		const ToLower to_lower;
@@ -67,7 +67,7 @@ namespace Case
 	public:
 		using is_transparent = void;
 
-		constexpr CharCompare(const bool case_insensitive)
+		constexpr CharComparer(const bool case_insensitive)
 			: to_lower(case_insensitive)
 		{}
 
@@ -77,29 +77,29 @@ namespace Case
 		}
 	};
 
-	class StringCompare
+	class StringComparer
 	{
 	private:
-		const CharCompare char_compare;
+		const CharComparer char_comparer;
 
 	public:
 		using is_transparent = void;
 
-		constexpr StringCompare(const bool case_insensitive)
-			: char_compare(case_insensitive)
+		constexpr StringComparer(const bool case_insensitive)
+			: char_comparer(case_insensitive)
 		{}
 
 		constexpr bool operator()(const std::string_view &lhs, const std::string_view &rhs) const
 		{
-			return std::equal(std::begin(lhs), std::end(lhs), std::begin(rhs), std::end(rhs), char_compare);
+			return std::equal(std::begin(lhs), std::end(lhs), std::begin(rhs), std::end(rhs), char_comparer);
 		}
 	};
 
-	inline bool CompareStringsCaseInsensitive(const std::string_view &lhs, const std::string_view &rhs)
+	inline bool CompareStrings(const std::string_view &lhs, const std::string_view &rhs)
 	{
-		constexpr StringCompare string_compare(true);
+		constexpr StringComparer string_comparer(true);
 
-		return string_compare(lhs, rhs);
+		return string_comparer(lhs, rhs);
 	}
 }
 
