@@ -176,7 +176,7 @@ typedef struct SemanticState
 	Flex flex_state = {*this};
 	Statement statement;
 	m68kasm::parser parser = {*flex_state, statement};
-	String line_buffer;
+	std::vector<char> line_buffer = std::vector<char>(0x100); // Room for 256 characters by default; will expand when necessary.
 	StringView source_line;
 	Substitute substitutions;
 	std::stack<String> string_stack;
@@ -241,7 +241,7 @@ typedef struct SemanticState
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
 static void AssembleFile(SemanticState *state);
-static void AssembleLine(SemanticState *state, const String &source_line, const cc_bool write_line_to_listing_file);
+static void AssembleLine(SemanticState *state, const StringView &source_line, const cc_bool write_line_to_listing_file);
 
 static const StringView string_rs = STRING_VIEW_INITIALISER("__rs");
 static const StringView string_narg = STRING_VIEW_INITIALISER("narg");
@@ -4466,18 +4466,18 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 	}
 }
 
-static cc_bool ReadSourceLineRaw(SemanticState *state, size_t line_buffer_write_position)
+static cc_bool ReadSourceLineRaw(SemanticState *state, size_t &line_buffer_write_position)
 {
 	cc_bool data_read = cc_false;
 
 	/* Repeatedly read into the string until we've fit a whole line (or an error occurs). */
-	while (TextInput_fgets(&String_At(state->line_buffer, line_buffer_write_position), String_Length(state->line_buffer) + 1 - line_buffer_write_position, *state->input_stream) != NULL)
+	while (TextInput_fgets(&state->line_buffer[line_buffer_write_position], state->line_buffer.size() - line_buffer_write_position, *state->input_stream) != NULL)
 	{
-		line_buffer_write_position += strlen(&String_At(state->line_buffer, line_buffer_write_position));
+		line_buffer_write_position += strlen(&state->line_buffer[line_buffer_write_position]);
 
 		if (line_buffer_write_position != 0)
 		{
-			const char character_before_end = String_At(state->line_buffer, line_buffer_write_position - 1);
+			const char character_before_end = state->line_buffer[line_buffer_write_position - 1];
 
 			data_read = cc_true;
 
@@ -4490,7 +4490,7 @@ static cc_bool ReadSourceLineRaw(SemanticState *state, size_t line_buffer_write_
 				/* Discard the other newline, if one exists. */
 				if (character_before_end == '\n' && line_buffer_write_position != 0)
 				{
-					const char character_before_newline = String_At(state->line_buffer, line_buffer_write_position - 1);
+					const char character_before_newline = state->line_buffer[line_buffer_write_position - 1];
 
 					if (character_before_newline == '\r')
 						--line_buffer_write_position;
@@ -4501,24 +4501,21 @@ static cc_bool ReadSourceLineRaw(SemanticState *state, size_t line_buffer_write_
 		}
 
 		/* If the buffer is not full but there is no newline, then we must have reached the end of the file, so we can exit now. */
-		if (line_buffer_write_position != String_Length(state->line_buffer))
+		if (line_buffer_write_position != state->line_buffer.size())
 			break;
 
 		/* If there the buffer is full and there is no newline, then the line must be longer than the buffer, so make the buffer bigger! */
-		String_ResizeNoFill(state->line_buffer, ((String_Length(state->line_buffer) + 1) * 2) - 1);
+		state->line_buffer.resize(state->line_buffer.size() * 2);
 		/* Now loop back around and read more of the line! */
 	}
-
-	/* Correct line length. */
-	String_ResizeNoFill(state->line_buffer, line_buffer_write_position);
 
 	return data_read;
 }
 
-static cc_bool ReadSourceLine(SemanticState *state)
+static cc_bool ReadSourceLine(SemanticState *state, StringView &source_line)
 {
 	cc_bool data_read = cc_false;
-	size_t line_buffer_write_position = 0;
+	size_t line_buffer_read_position = 0, line_buffer_write_position = 0;
 
 	while (ReadSourceLineRaw(state, line_buffer_write_position))
 	{
@@ -4533,9 +4530,9 @@ static cc_bool ReadSourceLine(SemanticState *state)
 		/* TODO: Does S.N. 68k actually concatenate when a '&' occurs before a comment? */
 		quote_character = '\0';
 
-		for (; line_buffer_write_position < String_Length(state->line_buffer); ++line_buffer_write_position)
+		for (; line_buffer_read_position < line_buffer_write_position; ++line_buffer_read_position)
 		{
-			const char character = String_At(state->line_buffer, line_buffer_write_position);
+			const char character = state->line_buffer[line_buffer_read_position];
 
 			if (quote_character == '\0')
 			{
@@ -4552,14 +4549,17 @@ static cc_bool ReadSourceLine(SemanticState *state)
 
 		/* An '&' at the end of a line is like a '\' at the end of a line in C:
 		   it signals that the current line is continued on the next line. */
-		if (line_buffer_write_position == 0 || String_At(state->line_buffer, line_buffer_write_position - 1) != '&')
+		if (line_buffer_read_position == 0 || state->line_buffer[line_buffer_read_position - 1] != '&')
 			break;
 
 		/* Discard the '&'. */
+		--line_buffer_read_position;
 		--line_buffer_write_position;
 
 		/* Go back and get another line. */
 	}
+
+	StringView_Create(source_line, state->line_buffer.data(), line_buffer_read_position);
 
 	return data_read;
 }
@@ -5490,7 +5490,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 			StringView size;
 
 			/* Extract and store the macro size specifier, if one exists. */
-			if (StringView_Front(source_line) == '.')
+			if (!StringView_Empty(source_line) && StringView_Front(source_line) == '.')
 			{
 				/* Skip the '.' character. */
 				StringView_RemovePrefix(source_line, 1);
@@ -5716,7 +5716,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 	state->macro = previous_macro_state;
 }
 
-static void AssembleLine(SemanticState *state, const String &source_line_raw, const cc_bool write_line_to_listing_file)
+static void AssembleLine(SemanticState *state, const StringView &source_line_raw, const cc_bool write_line_to_listing_file)
 {
 	String source_line;
 	size_t label_length;
@@ -5750,7 +5750,7 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 	   can have unique expansions! */
 	if (std::holds_alternative<SemanticState::ModeNormal>(state->mode))
 	{
-		String_CreateCopy(source_line, source_line_raw);
+		String_CreateCopyView(source_line, source_line_raw);
 		PerformSubstitutions(state, source_line, cc_false);
 		state->source_line = source_line;
 	}
@@ -5969,9 +5969,11 @@ static void AssembleLine(SemanticState *state, const String &source_line_raw, co
 
 static void AssembleFile(SemanticState *state)
 {
+	StringView source_line;
+
 	/* Read lines one at a time, feeding them to the 'AssembleLine' function. */
-	while (!state->end && ReadSourceLine(state))
-		AssembleLine(state, state->line_buffer, cc_true);
+	while (!state->end && ReadSourceLine(state, source_line))
+		AssembleLine(state, source_line, cc_true);
 
 	/* If we're not in normal mode when a file ends, then something is wrong. */
 	while (!std::holds_alternative<SemanticState::ModeNormal>(state->mode))
