@@ -26,7 +26,7 @@
 
 #include "clowncommon/clowncommon.h"
 
-#include "case.h"
+#include "case-insensitive.h"
 #include "string.h"
 
 template<typename EntryArgument>
