@@ -26,80 +26,19 @@
 
 #include "clowncommon/clowncommon.h"
 
+#include "case.h"
 #include "string.h"
 
 template<typename EntryArgument>
 class Dictionary
 {
-private:
-	class ToLower
-	{
-	private:
-		const int delta;
-
-	public:
-		constexpr ToLower(const cc_bool enabled)
-			: delta(enabled ? 'a' - 'A' : 0)
-		{}
-
-		constexpr auto operator()(const auto &value) const
-		{
-			return value + (value >= 'A' && value <= 'Z' ? delta : 0);
-		}
-	};
-
-	class StringHash
-	{
-	public:
-		using is_transparent = void;
-
-		std::size_t operator()(const std::string_view &string) const
-		{
-			constexpr ToLower to_lower(cc_true);
-
-			// Hash the identifier using djb2.
-			// http://www.cse.yorku.ca/~oz/hash.html
-			std::size_t hash = 5381;
-
-			for (const auto &character : string)
-				hash = hash * 33 + to_lower(character); // Hash the identifier in lower-case form, so that case-insensitive mode works.
-
-			return hash;
-		}
-	};
-
-	class StringCompare
-	{
-	private:
-		const ToLower to_lower;
-
-	public:
-		using is_transparent = void;
-
-		constexpr StringCompare(const cc_bool enabled)
-			: to_lower(enabled)
-		{}
-
-		constexpr bool operator()(const auto &lhs, const auto &rhs) const
-		{
-			if (std::size(lhs) != std::size(rhs))
-				return false;
-
-			for (std::size_t i = 0; i < std::size(lhs); ++i)
-				if (to_lower(lhs[i]) != to_lower(rhs[i]))
-					return false;
-
-			return true;
-		}
-	};
-
 public:
 	using Entry = EntryArgument;
 
-	std::unordered_map<std::string, Entry, StringHash, StringCompare> internal;
+	std::unordered_map<std::string, Entry, Case::StringHash, Case::StringCompare> internal;
 
-	Dictionary(cc_bool case_insensitive)
-		: internal(0, StringHash{}, StringCompare{case_insensitive})
+	Dictionary(bool case_insensitive)
+		: internal(0, Case::StringHash{}, Case::StringCompare{case_insensitive})
 	{}
 
 	Entry& LookUpAndCreateIfNotExist(const StringView &identifier)

@@ -18,11 +18,14 @@
 #ifndef STRING_H
 #define STRING_H
 
+#include <algorithm>
 #include <cassert>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <string_view>
 
+#include "case.h"
 #include "strcmpci.h"
 
 #define STRING_POSITION_INVALID ((size_t)-1)
@@ -86,33 +89,31 @@ inline size_t StringView_StrSpn(const StringView &view, const char* const charac
 
 inline void String_ToLower(String &string)
 {
+	constexpr Case::ToLower to_lower(true);
+
 	for (auto &character : string)
-		character = std::tolower(character);
+		character = to_lower(character);
 }
 
 inline cc_bool StringView_CompareCStrCaseInsensitive(const StringView &view, const char* const c_string)
 {
 	assert(c_string != NULL);
 
-	return StringView_Length(view) != 0 && strncmpci(StringView_Data(view), c_string, StringView_Length(view)) == 0;
+	constexpr Case::StringCompare string_compare(true);
+
+	return string_compare(view, c_string);
 }
 
 #define String_CompareCStrCaseInsensitive(string, c_string) StringView_CompareCStrCaseInsensitive(String_View(string), c_string)
 
 inline size_t StringView_Find(const StringView &view, const StringView &sub_view, const size_t position, const cc_bool case_insensitive)
 {
-	size_t i;
+	const auto it = std::search(std::begin(view) + position, std::end(view), std::begin(sub_view), std::end(sub_view), Case::CharCompare(case_insensitive));
 
-	const MemoryComparisionFunction compare = case_insensitive ? memcasecmp : memcmp;
-
-	if (StringView_Length(view) < StringView_Length(sub_view))
+	if (it == std::end(view))
 		return STRING_POSITION_INVALID;
 
-	for (i = position; i <= StringView_Length(view) - StringView_Length(sub_view); ++i)
-		if (compare(&StringView_At(view, i), StringView_Data(sub_view), StringView_Length(sub_view)) == 0)
-			return i;
-
-	return STRING_POSITION_INVALID;
+	return std::distance(std::begin(view), it);
 }
 
 inline size_t StringView_FindCharacter(const StringView &view, const char character, const size_t position)
