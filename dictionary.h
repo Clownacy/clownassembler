@@ -24,8 +24,6 @@
 #include <string_view>
 #include <unordered_map>
 
-#include "clowncommon/clowncommon.h"
-
 #include "case-insensitive.h"
 
 template<typename EntryArgument>

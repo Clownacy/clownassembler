@@ -20,8 +20,6 @@
 
 #include <stack>
 
-#include "clowncommon/clowncommon.h"
-
 struct Options
 {
 	char local_signifier;

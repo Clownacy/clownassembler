@@ -25,8 +25,6 @@
 #include <string>
 #include <string_view>
 
-#include "clowncommon/clowncommon.h"
-
 class Substitute
 {
 public:

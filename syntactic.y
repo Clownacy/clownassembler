@@ -44,8 +44,6 @@
 #include <string_view>
 #include <variant>
 
-#include "clowncommon/clowncommon.h"
-
 enum Size
 {
 	SIZE_BYTE      = 1 << 0,
