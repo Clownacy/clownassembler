@@ -6041,18 +6041,12 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 					if (symbol_label != NULL)
 					{
-						const char *label;
-						size_t label_length;
-						cc_bool is_local_label;
+						const auto local_symbol_position = identifier.find_last_of(state.options->local_signifier);
+						const std::string_view label = identifier.substr(local_symbol_position == identifier.npos ? 0 : local_symbol_position);
 
-						/* TODO: Surely this string access will trigger an assert... */
-						for (label = &identifier[identifier.length()], label_length = 0; label_length != identifier.length(); --label, ++label_length)
-							if (*label == state.options->local_signifier)
-								break;
+						const cc_bool is_local_label = label.length() != identifier.length();
 
-						is_local_label = label_length != identifier.length();
-
-						if (label_length < 0x100 && (!is_local_label || state.options->output_local_labels_to_sym_file))
+						if (label.length() < 0x100 && (!is_local_label || state.options->output_local_labels_to_sym_file))
 						{
 							unsigned int i;
 
@@ -6064,10 +6058,10 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 							symbol_stream->put(is_local_label ? 6 : 2);
 
 							/* Output the length of the label. */
-							symbol_stream->put(label_length);
+							symbol_stream->put(label.length());
 
 							/* Output the label itself. */
-							symbol_stream->write(label, label_length);
+							*symbol_stream << label;
 						}
 					}
 

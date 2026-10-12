@@ -41,7 +41,7 @@ include(CTest)
 add_executable(clownassembler_hash "tests/hash/hash.c")
 
 # Misc. test
-add_test(NAME misc_assemble COMMAND clownassembler -p -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/shim.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/misc.bin" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/")
+add_test(NAME misc_assemble COMMAND clownassembler -p -v -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/shim.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/misc.bin" -s "${CMAKE_CURRENT_BINARY_DIR}/misc.sym" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/")
 
 add_test(NAME misc_compare COMMAND clownassembler_hash "${CMAKE_CURRENT_BINARY_DIR}/misc.bin" "e581e15b39cfc3141fe361a057454213")
 set_tests_properties(misc_compare PROPERTIES DEPENDS misc_assemble)
