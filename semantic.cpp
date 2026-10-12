@@ -4483,13 +4483,13 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 		StatementInform,
 		StatementFail,
 		StatementEnd,
-		StatementPushO,
-		StatementPopO,
+		StatementPusho,
+		StatementPopo,
 		StatementOpt,
-		StatementPushP,
-		StatementPopP,
+		StatementPushp,
+		StatementPopp,
 		StatementShift,
-		StatementMExit,
+		StatementMexit,
 		StatementLocal,
 		StatementPurge
 	>(*statement))
@@ -4502,16 +4502,16 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 		}
 	}
 	else if (CC_VariantHoldsAnyOf<
-		StatementEndR,
-		StatementEndM,
-		StatementElseIf,
+		StatementEndr,
+		StatementEndm,
+		StatementElseif,
 		StatementElse,
-		StatementEndC,
-		StatementEndW,
-		StatementRSSet,
-		StatementRSReset,
+		StatementEndc,
+		StatementEndw,
+		StatementRsset,
+		StatementRsreset,
 		StatementObj,
-		StatementObjEnd,
+		StatementObjend,
 		StatementOrg
 	>(*statement))
 	{
@@ -4520,10 +4520,10 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 	}
 	else if (CC_VariantHoldsAnyOf<
 		StatementMacro,
-		StatementMacroS,
+		StatementMacros,
 		StatementEqu,
-		StatementEquSString,
-		StatementEquSIdentifier,
+		StatementEqusString,
+		StatementEqusIdentifier,
 		StatementSubstr,
 		StatementSet
 	>(*statement))
@@ -4536,7 +4536,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 		}
 	}
 	else if (CC_VariantHoldsAnyOf<
-		StatementRS
+		StatementRs
 	>(*statement))
 	{
 		/* Handled later. */
@@ -4573,7 +4573,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 			{
 				ProcessRept(state, &statement);
 			},
-			[&](StatementEndR&)
+			[&](StatementEndr&)
 			{
 				/* Exit REPT mode. */
 				const auto mode = std::get_if<SemanticState::ModeRept>(&state.mode);
@@ -4587,11 +4587,11 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 			{
 				ProcessMacro(state, &statement, label, false);
 			},
-			[&](StatementMacroS &statement)
+			[&](StatementMacros &statement)
 			{
 				ProcessMacro(state, &statement.macro, label, true);
 			},
-			[&](StatementEndM&)
+			[&](StatementEndm&)
 			{
 				/* Exit MACRO mode. */
 				const auto mode = std::get_if<SemanticState::ModeMacro>(&state.mode);
@@ -4625,11 +4625,11 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 				/* Hack: We ABSOLUTELY DO NOT want this line adding to the fix-up list!!! */
 				state.fixup_needed = false;
 			},
-			[&](StatementEquSString &statement)
+			[&](StatementEqusString &statement)
 			{
 				PushSubstitute(state, label, statement.string);
 			},
-			[&](StatementEquSIdentifier &statement)
+			[&](StatementEqusIdentifier &statement)
 			{
 				const SymbolDictionary::Entry* const dictionary_entry = LookupSymbol(state, statement.string, nullptr);
 
@@ -4696,7 +4696,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 			{
 				ProcessIf(state, &statement.expression);
 			},
-			[&](StatementElseIf &statement)
+			[&](StatementElseif &statement)
 			{
 				if (state.current_if_level == 0)
 				{
@@ -4751,7 +4751,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 					}
 				}
 			},
-			[&](StatementEndC&)
+			[&](StatementEndc&)
 			{
 				if (state.current_if_level == 0)
 					state.error_manager.Error("This stray ENDC/ENDIF has no preceeding IF.");
@@ -4772,7 +4772,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 				mode.line_number = state.location.front().line_number;
 				mode.nesting = 0;
 			},
-			[&](StatementEndW&)
+			[&](StatementEndw&)
 			{
 				/* Exit WHILE mode. */
 				const auto mode = std::get_if<SemanticState::ModeWhile>(&state.mode);
@@ -4862,7 +4862,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 			{
 				state.end = true;
 			},
-			[&](StatementRS &statement)
+			[&](StatementRs &statement)
 			{
 				unsigned long length;
 
@@ -4907,7 +4907,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 
 				state.rs += length;
 			},
-			[&](StatementRSSet &statement)
+			[&](StatementRsset &statement)
 			{
 				/* Set '__rs' to value. */
 				unsigned long value;
@@ -4917,7 +4917,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 				else
 					state.rs = value;
 			},
-			[&](StatementRSReset&)
+			[&](StatementRsreset&)
 			{
 				/* Set '__rs' to 0. */
 				state.rs = 0;
@@ -4940,7 +4940,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 				state.obj_active = true;
 				AdvanceProgramCounter(state, state.obj_delta);
 			},
-			[&](StatementObjEnd&)
+			[&](StatementObjend&)
 			{
 				if (!state.obj_active)
 				{
@@ -4974,11 +4974,11 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 
 				state.program_counter = value;
 			},
-			[&](StatementPushO&)
+			[&](StatementPusho&)
 			{
 				state.options.Push();
 			},
-			[&](StatementPopO&)
+			[&](StatementPopo&)
 			{
 				state.options.Pop();
 			},
@@ -5045,11 +5045,11 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 						state.error_manager.Warning("Unrecognised option '{}'.", option);
 				}
 			},
-			[&](StatementPushP &statement)
+			[&](StatementPushp &statement)
 			{
 				state.string_stack.push(statement.string);
 			},
-			[&](StatementPopP &statement)
+			[&](StatementPopp &statement)
 			{
 				if (state.string_stack.empty())
 				{
@@ -5082,7 +5082,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 				state.macro.argument_list.pop_back();
 				PushMacroArgumentSubstitutions(state);
 			},
-			[&](StatementMExit&)
+			[&](StatementMexit&)
 			{
 				state.macro.active = false;
 			},

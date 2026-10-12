@@ -905,7 +905,7 @@ namespace m68kasm {
   case 13: // statement: DIRECTIVE_ENDR
 #line 947 "syntactic.y"
         {
-		statement.emplace<StatementEndR>();
+		statement.emplace<StatementEndr>();
 	}
 #line 911 "syntactic.cpp"
     break;
@@ -945,7 +945,7 @@ namespace m68kasm {
   case 18: // statement: DIRECTIVE_MACROS
 #line 967 "syntactic.y"
         {
-		statement.emplace<StatementMacroS>(StatementMacro{false, {}});
+		statement.emplace<StatementMacros>(StatementMacro{false, {}});
 	}
 #line 951 "syntactic.cpp"
     break;
@@ -953,7 +953,7 @@ namespace m68kasm {
   case 19: // statement: DIRECTIVE_MACROS identifier_list
 #line 971 "syntactic.y"
         {
-		statement.emplace<StatementMacroS>(StatementMacro{false, YY_MOVE (yystack_[0].value.as < IdentifierList > ())});
+		statement.emplace<StatementMacros>(StatementMacro{false, YY_MOVE (yystack_[0].value.as < IdentifierList > ())});
 	}
 #line 959 "syntactic.cpp"
     break;
@@ -961,7 +961,7 @@ namespace m68kasm {
   case 20: // statement: DIRECTIVE_ENDM
 #line 975 "syntactic.y"
         {
-		statement.emplace<StatementEndM>();
+		statement.emplace<StatementEndm>();
 	}
 #line 967 "syntactic.cpp"
     break;
@@ -977,7 +977,7 @@ namespace m68kasm {
   case 22: // statement: DIRECTIVE_EQUS STRING
 #line 983 "syntactic.y"
         {
-		statement.emplace<StatementEquSString>(YY_MOVE (yystack_[0].value.as < std::string > ()));
+		statement.emplace<StatementEqusString>(YY_MOVE (yystack_[0].value.as < std::string > ()));
 	}
 #line 983 "syntactic.cpp"
     break;
@@ -985,7 +985,7 @@ namespace m68kasm {
   case 23: // statement: DIRECTIVE_EQUS IDENTIFIER
 #line 987 "syntactic.y"
         {
-		statement.emplace<StatementEquSIdentifier>(YY_MOVE (yystack_[0].value.as < std::string > ()));
+		statement.emplace<StatementEqusIdentifier>(YY_MOVE (yystack_[0].value.as < std::string > ()));
 	}
 #line 991 "syntactic.cpp"
     break;
@@ -1053,7 +1053,7 @@ namespace m68kasm {
   case 31: // statement: DIRECTIVE_ELSEIF expression
 #line 1023 "syntactic.y"
         {
-		statement.emplace<StatementElseIf>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementElseif>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 1059 "syntactic.cpp"
     break;
@@ -1077,7 +1077,7 @@ namespace m68kasm {
   case 34: // statement: DIRECTIVE_ENDC
 #line 1035 "syntactic.y"
         {
-		statement.emplace<StatementEndC>();
+		statement.emplace<StatementEndc>();
 	}
 #line 1083 "syntactic.cpp"
     break;
@@ -1093,7 +1093,7 @@ namespace m68kasm {
   case 36: // statement: DIRECTIVE_ENDW
 #line 1043 "syntactic.y"
         {
-		statement.emplace<StatementEndW>();
+		statement.emplace<StatementEndw>();
 	}
 #line 1099 "syntactic.cpp"
     break;
@@ -1150,7 +1150,7 @@ namespace m68kasm {
   case 43: // statement: DIRECTIVE_RS size expression
 #line 1072 "syntactic.y"
         {
-		statement.emplace<StatementRS>(YY_MOVE (yystack_[1].value.as < Size > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementRs>(YY_MOVE (yystack_[1].value.as < Size > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 1156 "syntactic.cpp"
     break;
@@ -1158,7 +1158,7 @@ namespace m68kasm {
   case 44: // statement: DIRECTIVE_RSSET expression
 #line 1076 "syntactic.y"
         {
-		statement.emplace<StatementRSSet>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementRsset>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 1164 "syntactic.cpp"
     break;
@@ -1168,7 +1168,7 @@ namespace m68kasm {
         {
 		/* As mentioned in S.N. 68k's manual, this odd hack
 		   is necessary for compatibility with other assemblers. */
-		statement.emplace<StatementRSSet>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementRsset>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 1174 "syntactic.cpp"
     break;
@@ -1176,7 +1176,7 @@ namespace m68kasm {
   case 46: // statement: DIRECTIVE_RSRESET
 #line 1086 "syntactic.y"
         {
-		statement.emplace<StatementRSReset>();
+		statement.emplace<StatementRsreset>();
 	}
 #line 1182 "syntactic.cpp"
     break;
@@ -1192,7 +1192,7 @@ namespace m68kasm {
   case 48: // statement: DIRECTIVE_OBJEND
 #line 1094 "syntactic.y"
         {
-		statement.emplace<StatementObjEnd>();
+		statement.emplace<StatementObjend>();
 	}
 #line 1198 "syntactic.cpp"
     break;
@@ -1208,7 +1208,7 @@ namespace m68kasm {
   case 50: // statement: DIRECTIVE_PUSHO
 #line 1102 "syntactic.y"
         {
-		statement.emplace<StatementPushO>();
+		statement.emplace<StatementPusho>();
 	}
 #line 1214 "syntactic.cpp"
     break;
@@ -1216,7 +1216,7 @@ namespace m68kasm {
   case 51: // statement: DIRECTIVE_POPO
 #line 1106 "syntactic.y"
         {
-		statement.emplace<StatementPopO>();
+		statement.emplace<StatementPopo>();
 	}
 #line 1222 "syntactic.cpp"
     break;
@@ -1232,7 +1232,7 @@ namespace m68kasm {
   case 53: // statement: DIRECTIVE_PUSHP STRING
 #line 1114 "syntactic.y"
         {
-		statement.emplace<StatementPushP>(YY_MOVE (yystack_[0].value.as < std::string > ()));
+		statement.emplace<StatementPushp>(YY_MOVE (yystack_[0].value.as < std::string > ()));
 	}
 #line 1238 "syntactic.cpp"
     break;
@@ -1240,7 +1240,7 @@ namespace m68kasm {
   case 54: // statement: DIRECTIVE_POPP IDENTIFIER
 #line 1118 "syntactic.y"
         {
-		statement.emplace<StatementPopP>(YY_MOVE (yystack_[0].value.as < std::string > ()));
+		statement.emplace<StatementPopp>(YY_MOVE (yystack_[0].value.as < std::string > ()));
 	}
 #line 1246 "syntactic.cpp"
     break;
@@ -1256,7 +1256,7 @@ namespace m68kasm {
   case 56: // statement: DIRECTIVE_MEXIT
 #line 1126 "syntactic.y"
         {
-		statement.emplace<StatementMExit>();
+		statement.emplace<StatementMexit>();
 	}
 #line 1262 "syntactic.cpp"
     break;

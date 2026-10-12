@@ -424,7 +424,7 @@ struct StatementRept
 	Expression repetitions;
 };
 
-struct StatementEndR
+struct StatementEndr
 {
 };
 
@@ -434,12 +434,12 @@ struct StatementMacro
 	IdentifierList parameter_names;
 };
 
-struct StatementMacroS
+struct StatementMacros
 {
 	StatementMacro macro;
 };
 
-struct StatementEndM
+struct StatementEndm
 {
 };
 
@@ -448,12 +448,12 @@ struct StatementEqu
 	Expression expression;
 };
 
-struct StatementEquSString
+struct StatementEqusString
 {
 	std::string string;
 };
 
-struct StatementEquSIdentifier
+struct StatementEqusIdentifier
 {
 	std::string string;
 };
@@ -474,7 +474,7 @@ struct StatementIf
 	Expression expression;
 };
 
-struct StatementElseIf
+struct StatementElseif
 {
 	Expression expression;
 };
@@ -483,7 +483,7 @@ struct StatementElse
 {
 };
 
-struct StatementEndC
+struct StatementEndc
 {
 };
 
@@ -492,7 +492,7 @@ struct StatementWhile
 	Expression expression;
 };
 
-struct StatementEndW
+struct StatementEndw
 {
 };
 
@@ -520,18 +520,18 @@ struct StatementEnd
 {
 };
 
-struct StatementRS
+struct StatementRs
 {
 	Size size;
 	Expression length;
 };
 
-struct StatementRSSet
+struct StatementRsset
 {
 	Expression expression;
 };
 
-struct StatementRSReset
+struct StatementRsreset
 {
 };
 
@@ -540,7 +540,7 @@ struct StatementObj
 	Expression expression;
 };
 
-struct StatementObjEnd
+struct StatementObjend
 {
 };
 
@@ -549,11 +549,11 @@ struct StatementOrg
 	Expression expression;
 };
 
-struct StatementPushO
+struct StatementPusho
 {
 };
 
-struct StatementPopO
+struct StatementPopo
 {
 };
 
@@ -562,12 +562,12 @@ struct StatementOpt
 	IdentifierList options;
 };
 
-struct StatementPushP
+struct StatementPushp
 {
 	std::string string;
 };
 
-struct StatementPopP
+struct StatementPopp
 {
 	std::string string;
 };
@@ -576,7 +576,7 @@ struct StatementShift
 {
 };
 
-struct StatementMExit
+struct StatementMexit
 {
 };
 
@@ -599,39 +599,39 @@ using Statement = std::variant<
 	StatementInclude,
 	StatementIncbin,
 	StatementRept,
-	StatementEndR,
+	StatementEndr,
 	StatementMacro,
-	StatementMacroS,
-	StatementEndM,
+	StatementMacros,
+	StatementEndm,
 	StatementEqu,
-	StatementEquSString,
-	StatementEquSIdentifier,
+	StatementEqusString,
+	StatementEqusIdentifier,
 	StatementSubstr,
 	StatementSet,
 	StatementIf,
-	StatementElseIf,
+	StatementElseif,
 	StatementElse,
-	StatementEndC,
+	StatementEndc,
 	StatementWhile,
-	StatementEndW,
+	StatementEndw,
 	StatementEven,
 	StatementCnop,
 	StatementInform,
 	StatementFail,
 	StatementEnd,
-	StatementRS,
-	StatementRSSet,
-	StatementRSReset,
+	StatementRs,
+	StatementRsset,
+	StatementRsreset,
 	StatementObj,
-	StatementObjEnd,
+	StatementObjend,
 	StatementOrg,
-	StatementPushO,
-	StatementPopO,
+	StatementPusho,
+	StatementPopo,
 	StatementOpt,
-	StatementPushP,
-	StatementPopP,
+	StatementPushp,
+	StatementPopp,
 	StatementShift,
-	StatementMExit,
+	StatementMexit,
 	StatementLocal,
 	StatementPurge
 >;
