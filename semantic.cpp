@@ -5809,8 +5809,8 @@ static bool ClownAssembler_AssembleToObjectFile(
 	if (!AddToSymbolTable(state, "__rs", SymbolSpecial{SymbolSpecial::Type::RS}))
 		return false;
 
-	 if (!AddToSymbolTable(state, "narg", SymbolSpecial{SymbolSpecial::Type::NARG}))
-		 return false;
+	if (!AddToSymbolTable(state, "narg", SymbolSpecial{SymbolSpecial::Type::NARG}))
+		return false;
 
 	if (definition_callback != nullptr)
 		definition_callback(&state, (void*)user_data, AddDefinition);
