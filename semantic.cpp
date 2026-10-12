@@ -5402,7 +5402,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 
 		state->suppress_listing = cc_true;
 
-		source_line.remove_prefix(Utilities::String::Span(source_line, DIRECTIVE_OR_MACRO_CHARS));
+		Utilities::String::RemoveLeading(source_line, DIRECTIVE_OR_MACRO_CHARS);
 
 		if (!label.empty())
 		{
@@ -5429,12 +5429,8 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 		/* Extract combined arguments string. */
 		std::string_view arguments = source_line.substr(0, source_line.find(';'));
 
-		/* Remove leading whitespace. */
-		arguments.remove_prefix(Utilities::String::Span(arguments, " \t"));
-
-		/* Remove trailing whitespace. */
-		while (!arguments.empty() && (arguments.back() == ' ' || arguments.back() == '\t'))
-			arguments.remove_suffix(1);
+		/* Remove surrounding whitespace. */
+		Utilities::String::RemoveLeadingAndTrailing(arguments, " \t");
 
 		const std::string unique_suffix = ComputeUniqueMacroSuffix(state);
 		std::string symbol_value_string;
@@ -5553,12 +5549,8 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 							std::string_view argument = arguments.substr(argument_string_start, i - argument_string_start);
 							argument_string_start = i + 1;
 
-							/* Remove leading whitespace. */
-							argument.remove_prefix(Utilities::String::Span(argument, " \t"));
-
-							/* Remove trailing whitespace. */
-							while (!argument.empty() && (argument.back() == ' ' || argument.back() == '\t'))
-								argument.remove_suffix(1);
+							/* Remove surrounding whitespace. */
+							Utilities::String::RemoveLeadingAndTrailing(argument, " \t");
 
 							/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
 							if (argument.empty() && at_the_end && state->macro.total_arguments == 0)
@@ -5702,7 +5694,7 @@ static void AssembleLine(SemanticState *state, const std::string_view &source_li
 			/* Maybe the label has some whitespace before it: check again. */
 
 			/* Skip whitespace. */
-			source_line_subview.remove_prefix(Utilities::String::Span(source_line_subview, " \t"));
+			Utilities::String::RemoveLeading(source_line_subview, " \t");
 
 			/* Determine the length of the label again. */
 			label_length = Utilities::String::Span(source_line_subview, LABEL_CHARS);
@@ -5737,7 +5729,7 @@ static void AssembleLine(SemanticState *state, const std::string_view &source_li
 		}
 
 		/* Skip the whitespace between the label and the directive. */
-		source_line_subview.remove_prefix(Utilities::String::Span(source_line_subview, " \t"));
+		Utilities::String::RemoveLeading(source_line_subview, " \t");
 
 		/* Next let's process the directive. If it's an if-statement or a macro
 		   invocation, then we'll need to handle it manually. If not, then we
