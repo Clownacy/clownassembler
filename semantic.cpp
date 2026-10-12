@@ -161,7 +161,6 @@ struct SemanticState
 
 	/* Callbacks. */
 	std::ostream &output_stream;
-	std::ostream &error_stream;
 	std::ostream* const listing_stream;
 
 	/* Global stuff. */
@@ -238,7 +237,6 @@ struct SemanticState
 		Options default_options
 	)
 		: output_stream(output_stream)
-		, error_stream(error_stream)
 		, listing_stream(listing_stream)
 		, options(std::move(default_options))
 		, dictionary(options->case_insensitive)
@@ -4854,7 +4852,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				switch (severity)
 				{
 					case 0:
-						TextOutput_Format(state->error_stream, "INFORM: '{}'\n", inform.message);
+						state->error_manager.Information("INFORM: '{}'", inform.message);
 						break;
 
 					case 1:

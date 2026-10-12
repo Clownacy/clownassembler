@@ -51,6 +51,19 @@ private:
 
 public:
 	template<typename... Args>
+	void Information(std::format_string<Args...> &&format_string, Args &&...args)
+	{
+		error_stream << "Information: ";
+
+		TextOutput_Format(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+	}
+
+	void Information(const std::string_view &message)
+	{
+		error_stream << "Information: " << message;
+	}
+
+	template<typename... Args>
 	void Warning(std::format_string<Args...> &&format_string, Args &&...args)
 	{
 		if (warnings_enabled)
