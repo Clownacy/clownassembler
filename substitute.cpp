@@ -145,11 +145,6 @@ void Substitute::ProcessSubString(Substitute* const other_state, std::string &st
 	std::size_t starting_position = 0;
 
 	const std::size_t offset_into_string = view_to_search.data() - string.data();
-	const char removed_character = string[offset_into_string + view_to_search.length()];
-
-	/* Null-terminate the view, so that search logic can use C's silly null-terminated string functions. */
-	/* TODO: Is this actually necessary any more? */
-	string[offset_into_string + view_to_search.length()] = '\0';
 
 	for (;;)
 	{
@@ -169,9 +164,6 @@ void Substitute::ProcessSubString(Substitute* const other_state, std::string &st
 		/* Limit the next search to after this. */
 		starting_position = found_position + found_substitute->length();
 	}
-
-	/* Restore the character that we replaced with a null character earlier. */
-	string[offset_into_string + view_to_search.length()] = removed_character;
 }
 
 void Substitute::ProcessString(Substitute* const other_state, std::string &string, const CustomSearch &custom_search_callback, const cc_bool allow_implicit_matches, const cc_bool case_insensitive)

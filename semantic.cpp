@@ -5501,14 +5501,15 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 
 					default:
 					{
-						char *end;
-
 						/* Obtain numerical index of the parameter. */
-						const char* const start = &view_to_search[symbol_position];
-						const unsigned long parameter_index = strtoul(start, &end, 10) - 1;
+						unsigned int parameter_index;
+						const auto start = view_to_search.data() + symbol_position;
+						const auto [end, error_code] = std::from_chars(start, view_to_search.data() + view_to_search.length(), parameter_index);
+
+						--parameter_index;
 
 						/* Check if conversion failed. */
-						if (end == start)
+						if (error_code != std::errc{})
 							continue;
 
 						*found_length = 1 + (end - start);
