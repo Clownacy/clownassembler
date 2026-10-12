@@ -6,6 +6,7 @@ project(clownassembler VERSION 2.0 LANGUAGES C CXX)
 add_library(clownassembler_core STATIC
 	"case-insensitive.h"
 	"dictionary.h"
+	"error.h"
 	"io.h"
 	"lexical.cpp"
 	"lexical.h"
