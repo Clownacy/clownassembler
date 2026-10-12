@@ -273,7 +273,7 @@ int main(int argc, char **argv)
 							ERROR("Could not open symbol file.");
 					}
 
-					success = ClownAssembler_AssembleFile(input_file, output_file, std::cerr, listing_file, symbol_stream, input_file_path != nullptr ? input_file_path : "STDIN", &settings, DefinitionCallback, nullptr);
+					success = ClownAssembler_AssembleFile(input_file, output_file, std::cerr, listing_file, symbol_stream, input_file_path != nullptr ? input_file_path : "STDIN", settings, DefinitionCallback, nullptr);
 
 					if (symbol_file.is_open())
 						symbol_file.close();

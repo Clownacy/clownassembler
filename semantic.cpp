@@ -165,10 +165,9 @@ struct SemanticState
 	cc_bool success = cc_true;
 
 	/* Callbacks. */
-	std::istream *input_stream = nullptr;
-	std::ostream *output_stream = nullptr;
-	std::ostream *listing_stream = nullptr;
-	std::ostream *error_stream = nullptr;
+	std::ostream &output_stream;
+	std::ostream &error_stream;
+	std::ostream* const listing_stream;
 
 	/* Global stuff. */
 	OptionsStack options;
@@ -233,28 +232,42 @@ struct SemanticState
 		SourceLineList source_line_list;
 	};
 
-	std::variant<ModeNormal, ModeRept, ModeMacro, ModeWhile> mode;
+	std::variant<ModeNormal, ModeRept, ModeMacro, ModeWhile> mode = SemanticState::ModeNormal{};
 
-	SemanticState(Options default_options)
-		: options(std::move(default_options))
+	SemanticState(
+		std::ostream &output_stream,
+		std::ostream &error_stream,
+		std::ostream* const listing_stream,
+		const char* const input_file_path,
+		Options default_options
+	)
+		: output_stream(output_stream)
+		, error_stream(error_stream)
+		, listing_stream(listing_stream)
+		, options(std::move(default_options))
 		, dictionary(options->case_insensitive)
-	{}
+	{
+		/* For error messages, we want to maintain a list of filenames and line
+		   numbers that describe the location and nesting of the erroneous
+		   line. This is the first entry in that list. */
+		location.emplace_front(input_file_path, 0);
+	}
 };
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
-static void AssembleFile(SemanticState *state);
+static void AssembleFile(SemanticState *state, std::istream &input_stream);
 static void AssembleLine(SemanticState *state, const std::string_view &source_line, const cc_bool write_line_to_listing_file);
 
 static void OutputWriteRawByte(SemanticState* const state, const unsigned char byte)
 {
 	++state->output_position;
-	state->output_stream->put(byte);
+	state->output_stream.put(byte);
 }
 
 static void OutputSeek(SemanticState* const state, const std::size_t position)
 {
 	state->output_position = position;
-	state->output_stream->seekp(position);
+	state->output_stream.seekp(position);
 }
 
 static void TerminatePreviousRecordSegment(SemanticState *state)
@@ -322,9 +335,9 @@ static void OutputWriteSegmentByte(SemanticState* const state, const unsigned ch
 static void ErrorMessageCommon(SemanticState *state)
 {
 	for (const auto &location : state->location)
-		TextOutput_Format(*state->error_stream, "\nOn line {} of '{}'...", location.line_number, location.file_path);
+		TextOutput_Format(state->error_stream, "\nOn line {} of '{}'...", location.line_number, location.file_path);
 
-	TextOutput_Format(*state->error_stream, "\n{}\n\n", state->source_line.empty() ? "[No source line]" : state->source_line);
+	TextOutput_Format(state->error_stream, "\n{}\n\n", state->source_line.empty() ? "[No source line]" : state->source_line);
 }
 
 template<typename... Args>
@@ -332,9 +345,9 @@ static void SemanticWarning(SemanticState *state, std::format_string<Args...> &&
 {
 	if (state->options->warnings_enabled)
 	{
-		*state->error_stream << "Warning: ";
+		state->error_stream << "Warning: ";
 
-		TextOutput_Format(*state->error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+		TextOutput_Format(state->error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 
 		ErrorMessageCommon(state);
 	}
@@ -343,9 +356,9 @@ static void SemanticWarning(SemanticState *state, std::format_string<Args...> &&
 template<typename... Args>
 static void SemanticError(SemanticState *state, std::format_string<Args...> &&format_string, Args &&...args)
 {
-	*state->error_stream << "Error: ";
+	state->error_stream << "Error: ";
 
-	TextOutput_Format(*state->error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+	TextOutput_Format(state->error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 
 	ErrorMessageCommon(state);
 
@@ -355,9 +368,9 @@ static void SemanticError(SemanticState *state, std::format_string<Args...> &&fo
 template<typename... Args>
 static void InternalError(SemanticState *state, std::format_string<Args...> &&format_string, Args &&...args)
 {
-	*state->error_stream << "Internal error: ";
+	state->error_stream << "Internal error: ";
 
-	TextOutput_Format(*state->error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+	TextOutput_Format(state->error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 
 	ErrorMessageCommon(state);
 
@@ -370,7 +383,7 @@ void m68kasm_warning(void *scanner, const std::string_view &message)
 
 	if (state->options->warnings_enabled)
 	{
-		TextOutput_Format(*state->error_stream, "Warning: {}", message);
+		TextOutput_Format(state->error_stream, "Warning: {}", message);
 
 		ErrorMessageCommon(state);
 	}
@@ -388,7 +401,7 @@ void m68kasm_error(void *scanner, const std::string_view &message)
 {
 	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
 
-	TextOutput_Format(*state->error_stream, "Error: {}", message);
+	TextOutput_Format(state->error_stream, "Error: {}", message);
 
 	ErrorMessageCommon(state);
 }
@@ -4340,16 +4353,10 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 		return;
 	}
 
-	std::istream* const previous_input_stream = state->input_stream;
-
 	/* Add file path and line number to the location list. */
 	state->location.emplace_front(include->path, 0);
 
-	state->input_stream = &input_stream;
-
-	AssembleFile(state);
-
-	state->input_stream = previous_input_stream;
+	AssembleFile(state, input_stream);
 
 	state->location.pop_front();
 }
@@ -4418,17 +4425,17 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 	}
 }
 
-static cc_bool ReadSourceLineRaw(SemanticState *state, std::size_t &line_buffer_write_position)
+static cc_bool ReadSourceLineRaw(SemanticState *state, std::istream &input_stream, std::size_t &line_buffer_write_position)
 {
-	if (state->input_stream->eof())
+	if (input_stream.eof())
 		return cc_false;
 
 	for (;;)
 	{
-		state->input_stream->getline(&state->line_buffer[line_buffer_write_position], state->line_buffer.size() - line_buffer_write_position);
-		line_buffer_write_position += state->input_stream->gcount();
+		input_stream.getline(&state->line_buffer[line_buffer_write_position], state->line_buffer.size() - line_buffer_write_position);
+		line_buffer_write_position += input_stream.gcount();
 
-		if (state->input_stream->eof())
+		if (input_stream.eof())
 			break;
 
 		/* Do not count the newline. */
@@ -4436,7 +4443,7 @@ static cc_bool ReadSourceLineRaw(SemanticState *state, std::size_t &line_buffer_
 
 		/* Failure indicates the buffer was not big enough; if it
 		   is not set, then we have read a full line and can exit. */
-		if (!state->input_stream->fail())
+		if (!input_stream.fail())
 			break;
 
 		/* Make more room for the line. */
@@ -4448,12 +4455,12 @@ static cc_bool ReadSourceLineRaw(SemanticState *state, std::size_t &line_buffer_
 	return cc_true;
 }
 
-static cc_bool ReadSourceLine(SemanticState *state, std::string_view &source_line)
+static cc_bool ReadSourceLine(SemanticState *state, std::istream &input_stream, std::string_view &source_line)
 {
 	cc_bool data_read = cc_false;
 	std::size_t line_buffer_read_position = 0, line_buffer_write_position = 0;
 
-	while (ReadSourceLineRaw(state, line_buffer_write_position))
+	while (ReadSourceLineRaw(state, input_stream, line_buffer_write_position))
 	{
 		char quote_character;
 
@@ -4940,7 +4947,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				switch (severity)
 				{
 					case 0:
-						TextOutput_Format(*state->error_stream, "INFORM: '{}'\n", inform.message);
+						TextOutput_Format(state->error_stream, "INFORM: '{}'\n", inform.message);
 						break;
 
 					case 1:
@@ -5848,12 +5855,12 @@ static void AssembleLine(SemanticState *state, const std::string_view &source_li
 	state->source_line = old_source_line;
 }
 
-static void AssembleFile(SemanticState *state)
+static void AssembleFile(SemanticState *state, std::istream &input_stream)
 {
 	std::string_view source_line;
 
 	/* Read lines one at a time, feeding them to the 'AssembleLine' function. */
-	while (!state->end && ReadSourceLine(state, source_line))
+	while (!state->end && ReadSourceLine(state, input_stream, source_line))
 		AssembleLine(state, source_line, cc_true);
 
 	/* If we're not in normal mode when a file ends, then something is wrong. */
@@ -5905,139 +5912,132 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	std::ostream &output_stream,
 	std::ostream &error_stream,
 	std::ostream* const listing_stream,
-	std::ostream *symbol_stream,
+	std::ostream* const symbol_stream,
 	const char* const input_file_path,
-	const ClownAssembler_Settings* const initial_options,
+	ClownAssembler_Settings initial_options,
 	const ClownAssembler_DefinitionCallback definition_callback,
 	const void* const user_data)
 {
-	SemanticState state(*initial_options);
+	SemanticState state(
+		output_stream,
+		error_stream,
+		listing_stream,
+		input_file_path,
+		std::move(initial_options)
+	);
 
-	/* For error messages, we want to maintain a list of filenames and line
-	   numbers that describe the location and nesting of the erroneous
-	   line. This is the first entry in that list. */
-	state.location.emplace_front(input_file_path, 0);
+	if (!AddToSymbolTable(&state, "__rs", SymbolSpecial{SymbolSpecial::Type::RS}))
+		return cc_false;
 
-	/* Initialise the state's non-default values. */
-	state.input_stream = &input_stream;
-	state.output_stream = &output_stream;
-	state.error_stream = &error_stream;
-	state.listing_stream = listing_stream;
+	 if (!AddToSymbolTable(&state, "narg", SymbolSpecial{SymbolSpecial::Type::NARG}))
+		 return cc_false;
 
-	state.mode.emplace<SemanticState::ModeNormal>();
+	if (definition_callback != nullptr)
+		definition_callback(&state, (void*)user_data, AddDefinition);
 
-	if (AddToSymbolTable(&state, "__rs", SymbolSpecial{SymbolSpecial::Type::RS})
-	 && AddToSymbolTable(&state, "narg", SymbolSpecial{SymbolSpecial::Type::NARG}))
+	/* Enable Bison debugging if available and requested by the user. */
+#if M68KASM_DEBUG
+	if (state.options->debug)
+		m68kasm_debug = 1;
+#endif
+
+	/* Object file magic number. */
+	OutputWriteRawByte(&state, 0x89);
+	OutputWriteRawByte(&state, 0x14);
+
+	/* Begin first segment. */
+	WriteRecordSegment(&state);
+
+	/* Perform first pass of assembly, creating a list of fix-ups. */
+	AssembleFile(&state, input_stream);
+
+	/* Finalise the segment record data. */
+	TerminatePreviousRecordSegment(&state);
+
+	/* Write terminating record. */
+	OutputWriteRawByte(&state, 0x00);
+	output_stream << CLOWNASSEMBLER_VERSION_STRING;
+
+	/* Perform some sanity checks to make sure we're not somehow in an invalid state. */
+	if (state.current_if_level != 0)
+		SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
+	if (state.obj_active)
+		SemanticError(&state, "An OBJ statement somewhere is missing its OBJEND.");
+
+	/* Process the fix-ups: reassemble instructions and reprocess
+	   directives that could not be completed in the first pass. */
+	state.doing_fixup_pass = cc_true;
+
+	while (!state.fixup_list.empty())
 	{
-		if (definition_callback != nullptr)
-			definition_callback(&state, (void*)user_data, AddDefinition);
+		/* Pop fix-up from list. */
+		FixUp &fixup = state.fixup_list.front();
 
-		/* Enable Bison debugging if available and requested by the user. */
-	#if M68KASM_DEBUG
-		if (state.options->debug)
-			m68kasm_debug = 1;
-	#endif
+		/* Reset some state to how it was at the time the statement was first processed. */
+		state.macro.dictionary = fixup.macro_dictionary;
+		state.program_counter = fixup.program_counter;
+		OutputSeek(&state, fixup.output_position);
+		state.segment_length = fixup.segment_length;
+		state.last_global_label = std::move(fixup.last_global_label);
+		state.source_line = fixup.source_line;
+		state.location = std::move(fixup.location);
+		*state.options = fixup.options;
 
-		/* Object file magic number. */
-		OutputWriteRawByte(&state, 0x89);
-		OutputWriteRawByte(&state, 0x14);
+		/* Re-process statement. */
+		ProcessStatement(&state, &fixup.statement, fixup.label);
 
-		/* Begin first segment. */
-		WriteRecordSegment(&state);
+		/* We're done with this statement: delete it. */
+		state.fixup_list.pop_front();
+	}
 
-		/* Perform first pass of assembly, creating a list of fix-ups. */
-		AssembleFile(&state);
+	/* Produce asm68k symbol file, if requested. */
+	if (symbol_stream != nullptr)
+	{
+		/* Some kind of header. */
+		symbol_stream->put('M');
+		symbol_stream->put('N');
+		symbol_stream->put('D');
+		symbol_stream->put(1);
+		symbol_stream->put(0);
+		symbol_stream->put(0);
+		symbol_stream->put(0);
+		symbol_stream->put(0);
 
-		/* Finalise the segment record data. */
-		TerminatePreviousRecordSegment(&state);
+		state.dictionary.Filter(
+			[&](const SymbolDictionary::Entry &entry, const std::string_view &identifier) -> cc_bool
+			{
+				/* The symbol file only contains labels. */
+				/* Labels longer than 0xFF characters are silently ignored. */
+				/* Local labels are also silently ignored (unless 'v+' is specified). */
+				const SymbolLabel* const symbol_label = std::get_if<SymbolLabel>(&entry);
 
-		/* Write terminating record. */
-		OutputWriteRawByte(&state, 0x00);
-		output_stream << CLOWNASSEMBLER_VERSION_STRING;
-
-		/* Perform some sanity checks to make sure we're not somehow in an invalid state. */
-		if (state.current_if_level != 0)
-			SemanticError(&state, "An IF statement somewhere is missing its ENDC/ENDIF.");
-		if (state.obj_active)
-			SemanticError(&state, "An OBJ statement somewhere is missing its OBJEND.");
-
-		/* Process the fix-ups: reassemble instructions and reprocess
-		   directives that could not be completed in the first pass. */
-		state.doing_fixup_pass = cc_true;
-
-		while (!state.fixup_list.empty())
-		{
-			/* Pop fix-up from list. */
-			FixUp &fixup = state.fixup_list.front();
-
-			/* Reset some state to how it was at the time the statement was first processed. */
-			state.macro.dictionary = fixup.macro_dictionary;
-			state.program_counter = fixup.program_counter;
-			OutputSeek(&state, fixup.output_position);
-			state.segment_length = fixup.segment_length;
-			state.last_global_label = std::move(fixup.last_global_label);
-			state.source_line = fixup.source_line;
-			state.location = std::move(fixup.location);
-			*state.options = fixup.options;
-
-			/* Re-process statement. */
-			ProcessStatement(&state, &fixup.statement, fixup.label);
-
-			/* We're done with this statement: delete it. */
-			state.fixup_list.pop_front();
-		}
-
-		/* Produce asm68k symbol file, if requested. */
-		if (symbol_stream != nullptr)
-		{
-			/* Some kind of header. */
-			symbol_stream->put('M');
-			symbol_stream->put('N');
-			symbol_stream->put('D');
-			symbol_stream->put(1);
-			symbol_stream->put(0);
-			symbol_stream->put(0);
-			symbol_stream->put(0);
-			symbol_stream->put(0);
-
-			state.dictionary.Filter(
-				[&](const SymbolDictionary::Entry &entry, const std::string_view &identifier) -> cc_bool
+				if (symbol_label != nullptr)
 				{
-					/* The symbol file only contains labels. */
-					/* Labels longer than 0xFF characters are silently ignored. */
-					/* Local labels are also silently ignored (unless 'v+' is specified). */
-					const SymbolLabel* const symbol_label = std::get_if<SymbolLabel>(&entry);
+					const auto local_symbol_position = identifier.find_last_of(state.options->local_signifier);
+					const std::string_view label = identifier.substr(local_symbol_position == identifier.npos ? 0 : local_symbol_position);
 
-					if (symbol_label != nullptr)
+					const cc_bool is_local_label = label.length() != identifier.length();
+
+					if (label.length() < 0x100 && (!is_local_label || state.options->output_local_labels_to_sym_file))
 					{
-						const auto local_symbol_position = identifier.find_last_of(state.options->local_signifier);
-						const std::string_view label = identifier.substr(local_symbol_position == identifier.npos ? 0 : local_symbol_position);
+						/* Output the address of the label. */
+						for (unsigned int i = 0; i < 4; ++i)
+							symbol_stream->put((symbol_label->value >> (i * 8)) & 0xFF);
 
-						const cc_bool is_local_label = label.length() != identifier.length();
+						/* I have no idea what this means. */
+						symbol_stream->put(is_local_label ? 6 : 2);
 
-						if (label.length() < 0x100 && (!is_local_label || state.options->output_local_labels_to_sym_file))
-						{
-							unsigned int i;
+						/* Output the length of the label. */
+						symbol_stream->put(label.length());
 
-							/* Output the address of the label. */
-							for (i = 0; i < 4; ++i)
-								symbol_stream->put((symbol_label->value >> (i * 8)) & 0xFF);
-
-							/* I have no idea what this means. */
-							symbol_stream->put(is_local_label ? 6 : 2);
-
-							/* Output the length of the label. */
-							symbol_stream->put(label.length());
-
-							/* Output the label itself. */
-							*symbol_stream << label;
-						}
+						/* Output the label itself. */
+						*symbol_stream << label;
 					}
-
-					return cc_true;
 				}
-			);
-		}
+
+				return cc_true;
+			}
+		);
 	}
 
 	return state.success;
@@ -6050,7 +6050,7 @@ cc_bool ClownAssembler_Assemble(
 	std::ostream* const listing_stream,
 	std::ostream* const symbol_stream,
 	const char* const input_file_path,
-	const ClownAssembler_Settings* const initial_options,
+	ClownAssembler_Settings settings,
 	const ClownAssembler_DefinitionCallback definition_callback,
 	const void* const user_data)
 {
@@ -6058,7 +6058,7 @@ cc_bool ClownAssembler_Assemble(
 
 	std::stringstream object_stream;
 
-	if (ClownAssembler_AssembleToObjectFile(input_stream, object_stream, error_stream, listing_stream, symbol_stream, input_file_path, initial_options, definition_callback, user_data))
+	if (ClownAssembler_AssembleToObjectFile(input_stream, object_stream, error_stream, listing_stream, symbol_stream, input_file_path, std::move(settings), definition_callback, user_data))
 	{
 		if (ConvertObjectFileToFlatBinary(object_stream, output_stream, error_stream))
 			success = cc_true;
@@ -6074,9 +6074,9 @@ cc_bool ClownAssembler_AssembleFile(
 	std::ostream &listing_stream,
 	std::ostream* const symbol_stream,
 	const char* const input_file_path,
-	const ClownAssembler_Settings* const settings,
+	ClownAssembler_Settings settings,
 	const ClownAssembler_DefinitionCallback definition_callback,
 	const void* const user_data)
 {
-	return ClownAssembler_Assemble(input_stream, output_stream, error_stream, &listing_stream, symbol_stream, input_file_path, settings, definition_callback, user_data);
+	return ClownAssembler_Assemble(input_stream, output_stream, error_stream, &listing_stream, symbol_stream, input_file_path, std::move(settings), definition_callback, user_data);
 }

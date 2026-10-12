@@ -455,7 +455,7 @@ int main(int argc, char **argv)
 	/* If we've gotten this far without any errors, then finally run the assembler. */
 	if (exit_code != EXIT_FAILURE)
 	{
-		if (!ClownAssembler_AssembleFile(source_file, object_file, std::cout, listing_file, symbol_stream, source_file_path, &settings, DefinitionCallback, nullptr))
+		if (!ClownAssembler_AssembleFile(source_file, object_file, std::cout, listing_file, symbol_stream, source_file_path, settings, DefinitionCallback, nullptr))
 		{
 			fprintf(stderr, "Error: Failed to assemble.\n");
 			exit_code = EXIT_FAILURE;

@@ -42,7 +42,7 @@ cc_bool ClownAssembler_AssembleFile(
 	std::ostream &listing_callbacks,
 	std::ostream *symbol_callbacks,
 	const char *input_file_path,
-	const ClownAssembler_Settings *settings,
+	ClownAssembler_Settings settings,
 	ClownAssembler_DefinitionCallback definition_callback,
 	const void *user_data);
 
@@ -53,7 +53,7 @@ cc_bool ClownAssembler_Assemble(
 	std::ostream *listing_callbacks,
 	std::ostream *symbol_callbacks,
 	const char *input_file_path,
-	const ClownAssembler_Settings *settings,
+	ClownAssembler_Settings settings,
 	ClownAssembler_DefinitionCallback definition_callback,
 	const void *user_data);
 
