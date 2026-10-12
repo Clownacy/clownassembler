@@ -32,7 +32,7 @@ void Substitute::PopSubstitute()
 	list.pop_front();
 }
 
-cc_bool Substitute::FindSubstitute(const std::string_view &view_to_search, const std::size_t starting_position, const std::string_view &substitute, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t &found_position, std::size_t &found_length)
+bool Substitute::FindSubstitute(const std::string_view &view_to_search, const std::size_t starting_position, const std::string_view &substitute, const bool allow_implicit_matches, const bool case_insensitive, std::size_t &found_position, std::size_t &found_length)
 {
 	/* Find identifier within string. */
 	/* Obviously bail if the identifier wasn't found. */
@@ -65,13 +65,13 @@ cc_bool Substitute::FindSubstitute(const std::string_view &view_to_search, const
 
 		found_position = match_start;
 		found_length = match_length;
-		return cc_true;
+		return true;
 	}
 
-	return cc_false;
+	return false;
 }
 
-std::optional<std::string_view> Substitute::FindEarliestSubstitute(Substitute* const other_state, const std::string_view &view_to_search, const std::size_t starting_position, const CustomSearch &custom_search_callback, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t &earliest_found_position, std::size_t &earliest_found_length)
+std::optional<std::string_view> Substitute::FindEarliestSubstitute(Substitute* const other_state, const std::string_view &view_to_search, const std::size_t starting_position, const CustomSearch &custom_search_callback, const bool allow_implicit_matches, const bool case_insensitive, std::size_t &earliest_found_position, std::size_t &earliest_found_length)
 {
 	std::optional<std::string_view> found_substitute;
 
@@ -124,7 +124,7 @@ std::optional<std::string_view> Substitute::FindEarliestSubstitute(Substitute* c
 	return found_substitute;
 }
 
-void Substitute::ProcessSubString(Substitute* const other_state, std::string &string, std::string_view &view_to_search, const CustomSearch &custom_search_callback, const cc_bool allow_implicit_matches, const cc_bool case_insensitive)
+void Substitute::ProcessSubString(Substitute* const other_state, std::string &string, std::string_view &view_to_search, const CustomSearch &custom_search_callback, const bool allow_implicit_matches, const bool case_insensitive)
 {
 	std::size_t starting_position = 0;
 
@@ -150,13 +150,13 @@ void Substitute::ProcessSubString(Substitute* const other_state, std::string &st
 	}
 }
 
-void Substitute::ProcessString(Substitute* const other_state, std::string &string, const CustomSearch &custom_search_callback, const cc_bool allow_implicit_matches, const cc_bool case_insensitive)
+void Substitute::ProcessString(Substitute* const other_state, std::string &string, const CustomSearch &custom_search_callback, const bool allow_implicit_matches, const bool case_insensitive)
 {
 	std::string_view view = string;
 	ProcessSubString(other_state, string, view, custom_search_callback, allow_implicit_matches, case_insensitive);
 }
 
-cc_bool Substitute::IsBlockingCharacter(const char character)
+bool Substitute::IsBlockingCharacter(const char character)
 {
 	return (character >= '0' && character <= '9')
 	    || (character >= 'a' && character <= 'z')

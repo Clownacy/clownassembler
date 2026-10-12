@@ -69,7 +69,7 @@ int main(int argc, char **argv)
 {
 	int exit_code = EXIT_SUCCESS;
 
-	cc_bool print_usage;
+	bool print_usage;
 	const char *input_file_path;
 	const char *output_file_path;
 	const char *listing_file_path;
@@ -80,21 +80,21 @@ int main(int argc, char **argv)
 	total_arguments = argc;
 	arguments = argv;
 
-	print_usage = cc_false;
+	print_usage = false;
 	input_file_path = nullptr;
 	output_file_path = nullptr;
 	listing_file_path = nullptr;
 	symbol_file_path = nullptr;
 	settings.local_signifier = '@';
-	settings.case_insensitive = cc_false;
-	settings.debug = cc_false;
-	settings.equ_set_descope_local_labels = cc_false;
-	settings.output_local_labels_to_sym_file = cc_false;
-	settings.warnings_enabled = cc_true;
-	settings.pedantic_warnings_enabled = cc_true;
-	settings.expand_all_macros = cc_false;
-	settings.automatic_even = cc_false;
-	settings.optimisation.zero_displacement = cc_false;
+	settings.case_insensitive = false;
+	settings.debug = false;
+	settings.equ_set_descope_local_labels = false;
+	settings.output_local_labels_to_sym_file = false;
+	settings.warnings_enabled = true;
+	settings.pedantic_warnings_enabled = true;
+	settings.expand_all_macros = false;
+	settings.automatic_even = false;
+	settings.optimisation.zero_displacement = false;
 
 	for (i = 1; i < argc; ++i)
 	{
@@ -103,7 +103,7 @@ int main(int argc, char **argv)
 			switch (argv[i][1])
 			{
 				case 'h':
-					print_usage = cc_true;
+					print_usage = true;
 					continue;
 
 				case 'i':
@@ -143,19 +143,19 @@ int main(int argc, char **argv)
 					continue;
 
 				case 'a':
-					settings.automatic_even = cc_true;
+					settings.automatic_even = true;
 					continue;
 
 				case 'c':
-					settings.case_insensitive = cc_true;
+					settings.case_insensitive = true;
 					continue;
 
 				case 'b':
-					settings.debug = cc_true;
+					settings.debug = true;
 					continue;
 
 				case 'd':
-					settings.equ_set_descope_local_labels = cc_true;
+					settings.equ_set_descope_local_labels = true;
 					continue;
 
 				case 'e':
@@ -166,19 +166,19 @@ int main(int argc, char **argv)
 					continue;
 
 				case 'm':
-					settings.expand_all_macros = cc_true;
+					settings.expand_all_macros = true;
 					continue;
 
 				case 'p':
-					settings.pedantic_warnings_enabled = cc_false;
+					settings.pedantic_warnings_enabled = false;
 					continue;
 
 				case 'v':
-					settings.output_local_labels_to_sym_file = cc_true;
+					settings.output_local_labels_to_sym_file = true;
 					continue;
 
 				case 'w':
-					settings.warnings_enabled = cc_false;
+					settings.warnings_enabled = false;
 					continue;
 
 				case '.':
@@ -246,7 +246,7 @@ int main(int argc, char **argv)
 					std::ofstream listing_file;
 					std::ostream *symbol_stream;
 					std::ofstream symbol_file;
-					cc_bool success;
+					bool success;
 
 					if (listing_file_path == nullptr)
 					{

@@ -1369,7 +1369,7 @@ static const flex_int16_t yy_chk[2255] =
 void m68kasm_warning(void *scanner, const std::string_view &message);
 void m68kasm_error(void *scanner, const std::string_view &message);
 
-static cc_bool CharacterToInteger(unsigned int* const value, const unsigned int character)
+static bool CharacterToInteger(unsigned int* const value, const unsigned int character)
 {
 	if (character >= '0' && character <= '9')
 		*value = 0x0 + (character - '0');
@@ -1378,15 +1378,15 @@ static cc_bool CharacterToInteger(unsigned int* const value, const unsigned int 
 	else if (character >= 'a' && character <= 'z')
 		*value = 0xA + (character - 'a');
 	else
-		return cc_false;
+		return false;
 
-	return cc_true;
+	return true;
 }
 
 /* Like `strtoul`, except this one returns a truncated value when parsing a number that is too large. */
-static cc_bool StringTo32BitInteger(unsigned long* const value, const char* const string_start, const char** const string_end, const unsigned long base)
+static bool StringTo32BitInteger(unsigned long* const value, const char* const string_start, const char** const string_end, const unsigned long base)
 {
-	cc_bool success = cc_true;
+	bool success = true;
 	const unsigned long limit = 0xFFFFFFFF / base;
 	const char* string_pointer;
 
@@ -1399,7 +1399,7 @@ static cc_bool StringTo32BitInteger(unsigned long* const value, const char* cons
 			break;
 
 		if (*value > limit)
-			success = cc_false;
+			success = false;
 
 		*value *= base;
 		*value += digit;

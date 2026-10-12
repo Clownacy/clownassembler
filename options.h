@@ -25,17 +25,17 @@
 struct Options
 {
 	char local_signifier;
-	cc_bool debug;
-	cc_bool case_insensitive;
-	cc_bool equ_set_descope_local_labels;
-	cc_bool output_local_labels_to_sym_file;
-	cc_bool warnings_enabled;
-	cc_bool pedantic_warnings_enabled;
-	cc_bool expand_all_macros;
-	cc_bool automatic_even;
+	bool debug;
+	bool case_insensitive;
+	bool equ_set_descope_local_labels;
+	bool output_local_labels_to_sym_file;
+	bool warnings_enabled;
+	bool pedantic_warnings_enabled;
+	bool expand_all_macros;
+	bool automatic_even;
 	struct
 	{
-		cc_bool zero_displacement;
+		bool zero_displacement;
 	} optimisation;
 };
 

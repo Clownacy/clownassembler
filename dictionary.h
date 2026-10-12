@@ -68,7 +68,7 @@ public:
 		internal.erase(it);
 	}
 
-	void Filter(const std::function<cc_bool(const Entry &entry, const std::string_view &identifier)> &filter_function)
+	void Filter(const std::function<bool(const Entry &entry, const std::string_view &identifier)> &filter_function)
 	{
 		std::erase_if(internal,
 			[&](auto &entry)

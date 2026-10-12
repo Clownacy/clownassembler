@@ -35,7 +35,7 @@ using ClownAssembler_Settings = Options;
 using ClownAssembler_AddDefinition = void (*)(void *internal, const char *identifier, std::size_t identifier_length, unsigned long value);
 using ClownAssembler_DefinitionCallback = void (*)(void *internal, void *user_data, ClownAssembler_AddDefinition add_definition);
 
-cc_bool ClownAssembler_AssembleFile(
+bool ClownAssembler_AssembleFile(
 	std::istream &input_callbacks,
 	std::ostream &output_callbacks,
 	std::ostream &error_callbacks,
@@ -46,7 +46,7 @@ cc_bool ClownAssembler_AssembleFile(
 	ClownAssembler_DefinitionCallback definition_callback,
 	const void *user_data);
 
-cc_bool ClownAssembler_Assemble(
+bool ClownAssembler_Assemble(
 	std::istream &input_callbacks,
 	std::ostream &output_callbacks,
 	std::ostream &error_callbacks,

@@ -50,7 +50,7 @@ using SourceLineList = std::deque<std::string>;
 
 struct Macro
 {
-	cc_bool is_short, uses_label;
+	bool is_short, uses_label;
 	std::string name;
 	IdentifierList parameter_names;
 	SourceLineList source_line_list;
@@ -131,7 +131,7 @@ struct SemanticState_Macro
 	std::size_t total_arguments = 0, total_arguments_at_start = 0;
 	unsigned int starting_if_level = 0;
 	unsigned int depth = 0;
-	cc_bool active = cc_false;
+	bool active = false;
 };
 
 struct SemanticState
@@ -162,7 +162,7 @@ struct SemanticState
 		}
 	};
 
-	cc_bool success = cc_true;
+	bool success = true;
 
 	/* Callbacks. */
 	std::ostream &output_stream;
@@ -187,27 +187,27 @@ struct SemanticState
 	unsigned long program_counter = 0, program_counter_of_statement = 0, program_counter_of_expression = 0;
 	unsigned long current_macro_invocation = 0;
 	unsigned long rs = 0;
-	cc_bool end = cc_false;
+	bool end = false;
 
 	/* Fix-ups. */
 	std::deque<FixUp> fixup_list;
-	cc_bool fixup_needed = cc_false;
-	cc_bool doing_fixup_pass = cc_false;
+	bool fixup_needed = false;
+	bool doing_fixup_pass = false;
 
 	/* If-statements. */
 	unsigned int current_if_level = 0;
 	unsigned int false_if_level = 0;
-	cc_bool true_already_found = cc_false;
+	bool true_already_found = false;
 
 	/* OBJ directive. */
-	cc_bool obj_active = cc_false;
+	bool obj_active = false;
 	unsigned long obj_delta = 0;
 
 	/* Listing. */
 	unsigned int listing_counter = 0;
-	cc_bool line_listed = cc_false;
-	cc_bool suppress_listing = cc_false;
-	cc_bool listing_macro = cc_false;
+	bool line_listed = false;
+	bool suppress_listing = false;
+	bool listing_macro = false;
 
 	/* Modes. */
 	struct ModeNormal {};
@@ -256,7 +256,7 @@ struct SemanticState
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
 static void AssembleFile(SemanticState *state, std::istream &input_stream);
-static void AssembleLine(SemanticState *state, const std::string_view &source_line, const cc_bool write_line_to_listing_file);
+static void AssembleLine(SemanticState *state, const std::string_view &source_line, const bool write_line_to_listing_file);
 
 static void OutputWriteRawByte(SemanticState* const state, const unsigned char byte)
 {
@@ -362,7 +362,7 @@ static void SemanticError(SemanticState *state, std::format_string<Args...> &&fo
 
 	ErrorMessageCommon(state);
 
-	state->success = cc_false;
+	state->success = false;
 }
 
 template<typename... Args>
@@ -374,7 +374,7 @@ static void InternalError(SemanticState *state, std::format_string<Args...> &&fo
 
 	ErrorMessageCommon(state);
 
-	state->success = cc_false;
+	state->success = false;
 }
 
 void m68kasm_warning(void *scanner, const std::string_view &message)
@@ -441,7 +441,7 @@ static void ListSourceLine(SemanticState *state)
 		{
 			unsigned int i;
 
-			state->line_listed = cc_true;
+			state->line_listed = true;
 
 			for (i = state->listing_counter; i < 26; ++i)
 				state->listing_stream->put(' ');
@@ -497,7 +497,7 @@ static void OutputByte(SemanticState *state, unsigned int byte)
 	OutputWriteSegmentByte(state, byte);
 }
 
-static cc_bool CurrentlyExpandingMacro(const SemanticState* const state)
+static bool CurrentlyExpandingMacro(const SemanticState* const state)
 {
 	return state->macro.active;
 }
@@ -581,14 +581,14 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *s
 	return dictionary_entry;
 }
 
-static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, cc_bool fold = cc_true);
+static bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, bool fold = true);
 
-static cc_bool ResolveExpressionWithoutFolding(SemanticState *state, Expression *expression, unsigned long *value)
+static bool ResolveExpressionWithoutFolding(SemanticState *state, Expression *expression, unsigned long *value)
 {
-	return ResolveExpression(state, expression, value, cc_false);
+	return ResolveExpression(state, expression, value, false);
 }
 
-static cc_bool GetSymbolInteger(SemanticState *state, const std::string_view &identifier, const cc_bool must_evaluate_on_first_pass, unsigned long* const value)
+static bool GetSymbolInteger(SemanticState *state, const std::string_view &identifier, const bool must_evaluate_on_first_pass, unsigned long* const value)
 {
 	SymbolDictionary::Entry *dictionary_entry;
 
@@ -601,9 +601,9 @@ static cc_bool GetSymbolInteger(SemanticState *state, const std::string_view &id
 		else if (state->doing_fixup_pass)
 			SemanticError(state, "Symbol '{}' does not exist.", identifier);
 		else
-			state->fixup_needed = cc_true;
+			state->fixup_needed = true;
 
-		return cc_false;
+		return false;
 	}
 
 	return std::visit(
@@ -620,7 +620,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const std::string_view &id
 						if (!CurrentlyExpandingMacro(state))
 						{
 							SemanticWarning(state, "Symbol '{}' cannot be used outside of a macro.", identifier);
-							return cc_false;
+							return false;
 						}
 
 						*value = state->macro.total_arguments_at_start;
@@ -629,11 +629,11 @@ static cc_bool GetSymbolInteger(SemanticState *state, const std::string_view &id
 
 					default:
 						// Should never happen.
-						assert(cc_false);
-						return cc_false;
+						assert(false);
+						return false;
 				}
 
-				return cc_true;
+				return true;
 			},
 			[&](SymbolVariable &symbol)
 			{
@@ -641,35 +641,35 @@ static cc_bool GetSymbolInteger(SemanticState *state, const std::string_view &id
 					SemanticWarning(state, "Symbol '{}' forward-referenced despite being a redefineable variable.", identifier);
 
 				*value = symbol.value;
-				return cc_true;
+				return true;
 			},
 			[&](SymbolLabel &symbol)
 			{
 				*value = symbol.value;
-				return cc_true;
+				return true;
 			},
 			[&](SymbolConstant &symbol)
 			{
 				*value = symbol.value;
-				return cc_true;
+				return true;
 			},
 			[&](SymbolExpressionConstant &symbol)
 			{
 				if (!ResolveExpression(state, &symbol.expression, value))
-					return cc_false;
+					return false;
 
-				return cc_true;
+				return true;
 			},
 			[&](auto&)
 			{
 				SemanticError(state, "Symbol '{}' is not a label, constant, or variable.", identifier);
-				return cc_false;
+				return false;
 			}
 		}, *dictionary_entry
 	);
 }
 
-static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, cc_bool fold)
+static bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, bool fold)
 {
 	if (!std::visit(
 		CC_VisitHelper{
@@ -680,13 +680,13 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 
 				/* Use a binary OR so that both expressions are properly folded (C short-circuiting could cause the second call to never occur if we used a logical OR). */
 				if (!ResolveExpression(state, &expression.subexpressions[0], &left_value, fold) | !ResolveExpression(state, &expression.subexpressions[1], &right_value, fold))
-					return cc_false;
+					return false;
 
 				switch (expression.type)
 				{
 					default:
 						/* This code should never be ran. */
-						assert(cc_false);
+						assert(false);
 						break;
 
 					case ExpressionArithmetic2Operand::Type::SUBTRACT:
@@ -701,8 +701,8 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 					case ExpressionArithmetic2Operand::Type::DIVIDE:
 					case ExpressionArithmetic2Operand::Type::MODULO:
 					{
-						const cc_bool left_value_was_negative  = left_value  >= 0x80000000;
-						const cc_bool right_value_was_negative = right_value >= 0x80000000;
+						const bool left_value_was_negative  = left_value  >= 0x80000000;
+						const bool right_value_was_negative = right_value >= 0x80000000;
 
 						/* Make inputs absolute, so we can emulate signed arithmetic with unsigned arithmetic. */
 						left_value  = (left_value  ^ (-(unsigned long)left_value_was_negative  & 0xFFFFFFFF)) + left_value_was_negative;
@@ -711,8 +711,8 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 						switch (expression.type)
 						{
 							default:
-								assert(cc_false);
-								return cc_false;
+								assert(false);
+								return false;
 
 							case ExpressionArithmetic2Operand::Type::MULTIPLY:
 								*value = left_value * right_value;
@@ -726,7 +726,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 								if (right_value == 0)
 								{
 									SemanticError(state, "Cannot divide by zero.");
-									return cc_false;
+									return false;
 								}
 
 								*value = left_value / right_value;
@@ -740,7 +740,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 								if (right_value == 0)
 								{
 									SemanticError(state, "Cannot modulo by zero.");
-									return cc_false;
+									return false;
 								}
 
 								*value = left_value % right_value;
@@ -793,8 +793,8 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 						switch (expression.type)
 						{
 							default:
-								assert(cc_false);
-								return cc_false;
+								assert(false);
+								return false;
 
 							case ExpressionArithmetic2Operand::Type::LESS_THAN:
 								*value = left_value < right_value;
@@ -830,19 +830,19 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 
 				/* Prevent 'bleeding' out of the 68k's 32-bit range. */
 				*value &= 0xFFFFFFFF;
-				return cc_true;
+				return true;
 			},
 			[&](ExpressionArithmetic1Operand &expression)
 			{
 				if (!ResolveExpression(state, &*expression.subexpressions, value, fold))
-					return cc_false;
+					return false;
 
 				switch (expression.type)
 				{
 					default:
 						/* This code should never be ran. */
-						assert(cc_false);
-						return cc_false;
+						assert(false);
+						return false;
 
 					case ExpressionArithmetic1Operand::Type::NEGATE:
 						*value = 0 - *value;
@@ -859,19 +859,19 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 
 				/* Prevent 'bleeding' out of the 68k's 32-bit range. */
 				*value &= 0xFFFFFFFF;
-				return cc_true;
+				return true;
 			},
 			[&](ExpressionNumber &expression)
 			{
 				*value = expression.value;
-				return cc_true;
+				return true;
 			},
 			[&](ExpressionIdentifier &expression)
 			{
-				if (!GetSymbolInteger(state, expression.string, cc_false, value))
-					return cc_false;
+				if (!GetSymbolInteger(state, expression.string, false, value))
+					return false;
 
-				return cc_true;
+				return true;
 			},
 			[&](ExpressionString &expression)
 			{
@@ -880,7 +880,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 				if (length > 4)
 				{
 					SemanticError(state, "Character literals cannot be more than 4 characters long.");
-					return cc_false;
+					return false;
 				}
 
 				*value = 0;
@@ -891,34 +891,34 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 					*value |= expression.string[i];
 				}
 
-				return cc_true;
+				return true;
 			},
 			[&](ExpressionProgramCounterOfStatement&)
 			{
 				*value = state->program_counter_of_statement;
-				return cc_true;
+				return true;
 			},
 			[&](ExpressionProgramCounterOfExpression&)
 			{
 				*value = state->program_counter_of_expression;
-				return cc_true;
+				return true;
 			},
 			[&](ExpressionStrlen &expression)
 			{
 				*value = expression.string.length();
-				return cc_true;
+				return true;
 			},
 			[&](ExpressionStrcmp &expression)
 			{
 				*value = expression.string_a == expression.string_b ? -1 : 0;
-				return cc_true;
+				return true;
 			},
 			[&](ExpressionInstr &expression)
 			{
 				unsigned long position;
 
 				if (!ResolveExpression(state, &expression.subexpressions[0], &position, fold))
-					return cc_false;
+					return false;
 
 				const auto expression_string_a = std::get_if<ExpressionString>(&expression.subexpressions[1]);
 				const auto expression_string_b = std::get_if<ExpressionString>(&expression.subexpressions[2]);
@@ -926,28 +926,28 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 				if (expression_string_a == nullptr || expression_string_b == nullptr)
 				{
 					SemanticError(state, "Last two arguments to `INSTR` must be strings.");
-					return cc_false;
+					return false;
 				}
 
 				/* TODO: What if 'position' is 0? */
 				const std::size_t found_position = CaseInsensitive::FindString(expression_string_a->string, expression_string_b->string, position - 1, state->options->case_insensitive);
 				*value = found_position == expression_string_a->string.npos ? 0 : found_position + 1;
-				return cc_true;
+				return true;
 			},
 			[&](ExpressionDef &expression)
 			{
 				*value = LookupSymbol(state, expression.string, nullptr) != nullptr ? -1 : 0;
-				return cc_true;
+				return true;
 			},
 			[&](ExpressionTypeWithIdentifier&)
 			{
 				*value = 0; /* TODO: This is a placeholder! */
-				return cc_true;
+				return true;
 			},
 			[&](ExpressionTypeWithNumber&)
 			{
 				*value = 1; /* TODO: This is a placeholder! */
-				return cc_true;
+				return true;
 			},
 			[&](ExpressionFilesize &expression)
 			{
@@ -956,29 +956,29 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 				if (!std::filesystem::exists(standard_path))
 				{
 					SemanticError(state, "File '{}' does not exist.", expression.string);
-					return cc_false;
+					return false;
 				}
 
 				*value = std::filesystem::file_size(standard_path);
-				return cc_true;
+				return true;
 			}
 		}, *expression
 	))
-		return cc_false;
+		return false;
 
 	/* Now that we have resolved the value, let's hardcode it here so that we don't ever have to calculate it again. */
 	/* This is especially useful for fix-ups, which may otherwise depend on identifiers that no longer exist at the time the value is resolved again. */
 	if (fold)
 		expression->emplace<ExpressionNumber>(*value);
 
-	return cc_true;
+	return true;
 }
 
 static void TerminateIf(SemanticState *state)
 {
 	if (state->false_if_level == state->current_if_level || state->false_if_level == 0)
 	{
-		state->true_already_found = cc_true;
+		state->true_already_found = true;
 		state->false_if_level = 0;
 	}
 
@@ -1007,7 +1007,7 @@ static void TerminateRept(SemanticState *state, SemanticState::ModeRept &rept_st
 	++state->location.front().line_number;
 }
 
-static void PurgeMacro(SemanticState* const state, std::string_view identifier, const cc_bool allow_undefined)
+static void PurgeMacro(SemanticState* const state, std::string_view identifier, const bool allow_undefined)
 {
 	SymbolDictionary *dictionary;
 	SymbolDictionary::Entry* const entry = LookupSymbol(state, identifier, &dictionary);
@@ -1039,105 +1039,105 @@ static void PurgeMacro(SemanticState* const state, std::string_view identifier, 
 	}
 }
 
-static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolVariable symbol_contents)
+static bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolVariable symbol_contents)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolVariable>(state, identifier, nullptr);
 
 	if (symbol == nullptr)
-		return cc_false;
+		return false;
 
 	symbol->emplace<SymbolVariable>(std::move(symbol_contents));
 
-	return cc_true;
+	return true;
 }
 
-static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolConstant symbol_contents)
+static bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolConstant symbol_contents)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolConstant>(state, identifier, nullptr);
 
 	if (symbol == nullptr)
-		return cc_false;
+		return false;
 
 	const auto constant_symbol = std::get_if<SymbolConstant>(symbol);
 
 	if (constant_symbol != nullptr && constant_symbol->value != symbol_contents.value)
 	{
 		SemanticError(state, "Constant '{}' cannot be redefined to a different value.", identifier);
-		return cc_false;
+		return false;
 	}
 
 	symbol->emplace<SymbolConstant>(std::move(symbol_contents));
 
-	return cc_true;
+	return true;
 }
 
-static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolLabel symbol_contents)
+static bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolLabel symbol_contents)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolLabel>(state, identifier, nullptr);
 
 	if (symbol == nullptr)
-		return cc_false;
+		return false;
 
 	if (std::holds_alternative<SymbolLabel>(*symbol))
 	{
 		SemanticError(state, "Label '{}' cannot be redefined.", identifier);
-		return cc_false;
+		return false;
 	}
 
 	symbol->emplace<SymbolLabel>(std::move(symbol_contents));
 
-	return cc_true;
+	return true;
 }
 
-static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolExpressionConstant symbol_contents)
+static bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolExpressionConstant symbol_contents)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolExpressionConstant>(state, identifier, nullptr);
 
 	if (symbol == nullptr)
-		return cc_false;
+		return false;
 
 	symbol->emplace<SymbolExpressionConstant>(std::move(symbol_contents));
 
-	return cc_true;
+	return true;
 }
 
-static cc_bool AddToSymbolTable(SemanticState *state, SymbolMacro symbol_contents)
+static bool AddToSymbolTable(SemanticState *state, SymbolMacro symbol_contents)
 {
 	const std::string_view &identifier = symbol_contents.macro.name;
 
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolMacro>(state, identifier, nullptr);
 
 	if (symbol == nullptr)
-		return cc_false;
+		return false;
 
 	if (std::holds_alternative<SymbolMacro>(*symbol))
 	{
 		SemanticError(state, "Macro '{}' cannot be redefined.", identifier);
-		return cc_false;
+		return false;
 	}
 
 	symbol->emplace<SymbolMacro>(std::move(symbol_contents));
 
-	return cc_true;
+	return true;
 }
 
-static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolSpecial symbol_contents)
+static bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolSpecial symbol_contents)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolSpecial>(state, identifier, nullptr);
 
 	if (symbol == nullptr)
-		return cc_false;
+		return false;
 
 	symbol->emplace<SymbolSpecial>(std::move(symbol_contents));
 
-	return cc_true;
+	return true;
 }
 
 static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro_state)
 {
 	const std::string_view &identifier = macro_state.metadata.name;
 
-	PurgeMacro(state, identifier, cc_true);
+	PurgeMacro(state, identifier, true);
 
 	if (CurrentlyExpandingMacro(state))
 	{
@@ -1164,7 +1164,7 @@ static void TerminateWhile(SemanticState *state, SemanticState::ModeWhile &while
 	/* Exit WHILE mode. */
 	state->mode.emplace<SemanticState::ModeNormal>();
 
-	state->suppress_listing = cc_true;
+	state->suppress_listing = true;
 
 	for (;;)
 	{
@@ -1189,7 +1189,7 @@ static void TerminateWhile(SemanticState *state, SemanticState::ModeWhile &while
 
 		/* Process the WHILE's nested statements. */
 		for (const auto &source_line : while_state_copy.source_line_list)
-			AssembleLine(state, source_line, cc_false);
+			AssembleLine(state, source_line, false);
 	}
 
 	/* Increment past the ENDW line number. */
@@ -1214,7 +1214,7 @@ static unsigned int ConstructSizeBits(Size size)
 			return 0x0080;
 	}
 
-	assert(cc_false);
+	assert(false);
 	return 0x0000;
 }
 
@@ -1226,7 +1226,7 @@ static unsigned int ConstructEffectiveAddressBits(SemanticState *state, const Op
 	{
 		default:
 		case OPERAND_NONE:
-			assert(cc_false);
+			assert(false);
 			m = 0;
 			xn = 0;
 			break;
@@ -2858,7 +2858,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 		}
 		else
 		{
-			cc_bool good_operands = cc_true;
+			bool good_operands = true;
 
 			/* Check whether the operands are of the correct types. */
 			for (i = 0; i < total_operands_have && instruction_metadata->allowed_operands[i] != 0; ++i)
@@ -2871,7 +2871,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 					{
 						default:
 						case OPERAND_NONE:
-							assert(cc_false);
+							assert(false);
 							/* Fallthrough */
 						case OPERAND_DATA_REGISTER:
 							operand_string = "a data register";
@@ -2939,7 +2939,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 					}
 
 					SemanticError(state, "{} operand cannot be {}.", i == 0 ? "First" : "Second", operand_string);
-					good_operands = cc_false;
+					good_operands = false;
 				}
 			}
 
@@ -3053,7 +3053,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
-								assert(cc_false);
+								assert(false);
 								break;
 						}
 
@@ -3080,7 +3080,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
-								assert(cc_false);
+								assert(false);
 								break;
 						}
 
@@ -3199,7 +3199,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
-								assert(cc_false);
+								assert(false);
 								break;
 						}
 
@@ -3503,7 +3503,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
-								assert(cc_false);
+								assert(false);
 								break;
 						}
 
@@ -3635,7 +3635,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
-								assert(cc_false);
+								assert(false);
 								break;
 						}
 
@@ -3696,7 +3696,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
-								assert(cc_false);
+								assert(false);
 								break;
 						}
 
@@ -3733,7 +3733,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
-								assert(cc_false);
+								assert(false);
 								break;
 						}
 
@@ -3855,7 +3855,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
-								assert(cc_false);
+								assert(false);
 								break;
 						}
 
@@ -3894,7 +3894,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
-								assert(cc_false);
+								assert(false);
 								break;
 						}
 
@@ -3958,7 +3958,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								break;
 
 							default:
-								assert(cc_false);
+								assert(false);
 								break;
 						}
 
@@ -4015,7 +4015,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 					switch (operand->type)
 					{
 						case OPERAND_NONE:
-							assert(cc_false);
+							assert(false);
 							break;
 
 						case OPERAND_DATA_REGISTER:
@@ -4169,7 +4169,7 @@ static void PushSubstitute(SemanticState* const state, const std::string_view &i
 				[&](auto&)
 				{
 					// Should never be ran, since `LookupSymbolAndCreateIfNotExist` rejects mismatched types.
-					assert(cc_false);
+					assert(false);
 				},
 			}, *dictionary_entry
 		);
@@ -4243,7 +4243,7 @@ static void OutputDcValue(SemanticState *state, const Size size, unsigned long v
 
 		case SIZE_UNDEFINED:
 			/* Should never occur. */
-			assert(cc_false);
+			assert(false);
 			break;
 	}
 
@@ -4263,7 +4263,7 @@ static void PerformEven(SemanticState* const state)
 	}
 }
 
-static cc_bool ShouldPerformAutomaticEven(SemanticState* const state, const Size size)
+static bool ShouldPerformAutomaticEven(SemanticState* const state, const Size size)
 {
 	return state->options->automatic_even && size != SIZE_BYTE;
 }
@@ -4425,10 +4425,10 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 	}
 }
 
-static cc_bool ReadSourceLineRaw(SemanticState *state, std::istream &input_stream, std::size_t &line_buffer_write_position)
+static bool ReadSourceLineRaw(SemanticState *state, std::istream &input_stream, std::size_t &line_buffer_write_position)
 {
 	if (input_stream.eof())
-		return cc_false;
+		return false;
 
 	for (;;)
 	{
@@ -4452,19 +4452,19 @@ static cc_bool ReadSourceLineRaw(SemanticState *state, std::istream &input_strea
 		/* Now loop back around and read more of the line! */
 	}
 
-	return cc_true;
+	return true;
 }
 
-static cc_bool ReadSourceLine(SemanticState *state, std::istream &input_stream, std::string_view &source_line)
+static bool ReadSourceLine(SemanticState *state, std::istream &input_stream, std::string_view &source_line)
 {
-	cc_bool data_read = cc_false;
+	bool data_read = false;
 	std::size_t line_buffer_read_position = 0, line_buffer_write_position = 0;
 
 	while (ReadSourceLineRaw(state, input_stream, line_buffer_write_position))
 	{
 		char quote_character;
 
-		data_read = cc_true;
+		data_read = true;
 
 		/* Find where the code ends and a comment begins.
 		   Note that terminating at ';' prevents a trailing '&' from being recognised
@@ -4522,7 +4522,7 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 	mode.nesting = 0;
 }
 
-static void ProcessMacro(SemanticState *state, StatementMacro *macro, const std::string_view &label, cc_bool is_short)
+static void ProcessMacro(SemanticState *state, StatementMacro *macro, const std::string_view &label, bool is_short)
 {
 	/* Enter MACRO mode. */
 	auto &mode = state->mode.emplace<SemanticState::ModeMacro>();
@@ -4678,11 +4678,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 			},
 			[&](StatementMacro &statement)
 			{
-				ProcessMacro(state, &statement, label, cc_false);
+				ProcessMacro(state, &statement, label, false);
 			},
 			[&](StatementMacroS &statement)
 			{
-				ProcessMacro(state, &statement.macro, label, cc_true);
+				ProcessMacro(state, &statement.macro, label, true);
 			},
 			[&](StatementEndM&)
 			{
@@ -4718,7 +4718,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				}
 
 				/* Hack: We ABSOLUTELY DO NOT want this line adding to the fix-up list!!! */
-				state->fixup_needed = cc_false;
+				state->fixup_needed = false;
 			},
 			[&](StatementEquSString &statement)
 			{
@@ -4819,7 +4819,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 						else
 						{
 							state->false_if_level = 0;
-							state->true_already_found = cc_true;
+							state->true_already_found = true;
 						}
 					}
 				}
@@ -4967,7 +4967,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 			},
 			[&](StatementEnd&)
 			{
-				state->end = cc_true;
+				state->end = true;
 			},
 			[&](StatementRS &statement)
 			{
@@ -5010,7 +5010,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 
 						case SIZE_UNDEFINED:
 							/* Should never happen. */
-							assert(cc_false);
+							assert(false);
 							break;
 					}
 
@@ -5047,7 +5047,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 					else
 						state->obj_delta = value - state->program_counter;
 
-					state->obj_active = cc_true;
+					state->obj_active = true;
 					AdvanceProgramCounter(state, state->obj_delta);
 				}
 			},
@@ -5060,7 +5060,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				else
 				{
 					RegressProgramCounter(state, state->obj_delta);
-					state->obj_active = cc_false;
+					state->obj_active = false;
 				}
 			},
 			[&](StatementOrg &statement)
@@ -5099,21 +5099,21 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				{
 					/* TODO: A lot of these are unimplemented... */
 					if (CaseInsensitive::CompareStrings(option, "ae+"))
-						state->options->automatic_even = cc_true;
+						state->options->automatic_even = true;
 					else if (CaseInsensitive::CompareStrings(option, "ae-"))
-						state->options->automatic_even = cc_false;
+						state->options->automatic_even = false;
 					else if (CaseInsensitive::CompareStrings(option, "an+"))
 						;
 					else if (CaseInsensitive::CompareStrings(option, "an-"))
 						;
 					else if (CaseInsensitive::CompareStrings(option, "c+"))
-						state->options->case_insensitive = cc_false;
+						state->options->case_insensitive = false;
 					else if (CaseInsensitive::CompareStrings(option, "c-"))
-						state->options->case_insensitive = cc_true;
+						state->options->case_insensitive = true;
 					else if (CaseInsensitive::CompareStrings(option, "d+"))
-						state->options->equ_set_descope_local_labels = cc_true;
+						state->options->equ_set_descope_local_labels = true;
 					else if (CaseInsensitive::CompareStrings(option, "d-"))
-						state->options->equ_set_descope_local_labels = cc_false;
+						state->options->equ_set_descope_local_labels = false;
 					else if (CaseInsensitive::CompareStrings(option, "e+"))
 						;
 					else if (CaseInsensitive::CompareStrings(option, "e-"))
@@ -5129,25 +5129,25 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 					else if (CaseInsensitive::CompareStrings(option, "s-"))
 						;
 					else if (CaseInsensitive::CompareStrings(option, "m+"))
-						state->options->expand_all_macros = cc_true;
+						state->options->expand_all_macros = true;
 					else if (CaseInsensitive::CompareStrings(option, "m-"))
-						state->options->expand_all_macros = cc_false;
+						state->options->expand_all_macros = false;
 					else if (CaseInsensitive::CompareStrings(option, "oz+"))
-						state->options->optimisation.zero_displacement = cc_true;
+						state->options->optimisation.zero_displacement = true;
 					else if (CaseInsensitive::CompareStrings(option, "oz-"))
-						state->options->optimisation.zero_displacement = cc_false;
+						state->options->optimisation.zero_displacement = false;
 					else if (CaseInsensitive::CompareStrings(option, "v+"))
-						state->options->output_local_labels_to_sym_file = cc_true;
+						state->options->output_local_labels_to_sym_file = true;
 					else if (CaseInsensitive::CompareStrings(option, "v-"))
-						state->options->output_local_labels_to_sym_file = cc_false;
+						state->options->output_local_labels_to_sym_file = false;
 					else if (CaseInsensitive::CompareStrings(option, "w+"))
-						state->options->warnings_enabled = cc_true;
+						state->options->warnings_enabled = true;
 					else if (CaseInsensitive::CompareStrings(option, "w-"))
-						state->options->warnings_enabled = cc_false;
+						state->options->warnings_enabled = false;
 					else if (CaseInsensitive::CompareStrings(option, "wp+"))
-						state->options->pedantic_warnings_enabled = cc_true;
+						state->options->pedantic_warnings_enabled = true;
 					else if (CaseInsensitive::CompareStrings(option, "wp-"))
-						state->options->pedantic_warnings_enabled = cc_false;
+						state->options->pedantic_warnings_enabled = false;
 					else if (CaseInsensitive::CompareStrings(option, "ws+"))
 						;
 					else if (CaseInsensitive::CompareStrings(option, "ws-"))
@@ -5195,7 +5195,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 			},
 			[&](StatementMExit&)
 			{
-				state->macro.active = cc_false;
+				state->macro.active = false;
 			},
 			[&](StatementLocal &statement)
 			{
@@ -5211,7 +5211,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 			},
 			[&](StatementPurge &statement)
 			{
-				PurgeMacro(state, statement.string, cc_false);
+				PurgeMacro(state, statement.string, false);
 			}
 		}, *statement
 	);
@@ -5221,7 +5221,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 	state->program_counter_of_expression = state->program_counter;
 }
 
-static cc_bool ParseStatement(SemanticState* const state, const std::string_view &view)
+static bool ParseStatement(SemanticState* const state, const std::string_view &view)
 {
 	/* Parse the source line with Flex and Bison (Lex and Yacc). */
 	const YY_BUFFER_STATE buffer = m68kasm__scan_bytes(view.data(), view.length(), *state->flex_state);
@@ -5243,11 +5243,11 @@ static void ParseLine(SemanticState* const state, const std::string_view &label,
 	if (!ParseStatement(state, directive_and_operands))
 	{
 		/* An error message will have already been printed, so we don't need to do one here. */
-		state->success = cc_false;
+		state->success = false;
 	}
 	else
 	{
-		state->fixup_needed = cc_false;
+		state->fixup_needed = false;
 
 		ProcessStatement(state, &state->statement, label);
 
@@ -5274,7 +5274,7 @@ static void ParseLine(SemanticState* const state, const std::string_view &label,
 			/* Clone the location. */
 			fixup.location = state->location;
 
-			state->fixup_needed = cc_false;
+			state->fixup_needed = false;
 		}
 	}
 }
@@ -5282,9 +5282,9 @@ static void ParseLine(SemanticState* const state, const std::string_view &label,
 #define DIRECTIVE_OR_MACRO_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_"
 #define LABEL_CHARS DIRECTIVE_OR_MACRO_CHARS ".@"
 
-static void PerformSubstitutionsOnSubString(SemanticState* const state, std::string &string, std::string_view &view_to_search, const cc_bool allow_implicit_matches)
+static void PerformSubstitutionsOnSubString(SemanticState* const state, std::string &string, std::string_view &view_to_search, const bool allow_implicit_matches)
 {
-	const cc_bool case_insensitive = state->options->case_insensitive;
+	const bool case_insensitive = state->options->case_insensitive;
 
 	if (state->macro.custom_search)
 		state->substitutions.ProcessSubString(&state->macro.substitutions, string, view_to_search, state->macro.custom_search, allow_implicit_matches, case_insensitive);
@@ -5292,7 +5292,7 @@ static void PerformSubstitutionsOnSubString(SemanticState* const state, std::str
 		state->substitutions.ProcessSubString(nullptr, string, view_to_search, nullptr, allow_implicit_matches, case_insensitive);
 }
 
-static void PerformSubstitutions(SemanticState* const state, std::string &string, const cc_bool allow_implicit_matches)
+static void PerformSubstitutions(SemanticState* const state, std::string &string, const bool allow_implicit_matches)
 {
 	std::string_view view = string;
 	PerformSubstitutionsOnSubString(state, string, view, allow_implicit_matches);
@@ -5315,7 +5315,7 @@ static std::optional<std::string_view> FindQuotedStringInSourceLine(const std::s
 
 /* Performs string substitutions only in parts of the string that are not wrapped in quotations. */
 /* This is needed to simulate how SN 68k does not expand string constants in strings, only expressions and operands. */
-static void PerformSubstitutionsExcludingQuotedStrings(SemanticState* const state, std::string &source_line, const std::size_t starting_position, const cc_bool allow_implicit_matches)
+static void PerformSubstitutionsExcludingQuotedStrings(SemanticState* const state, std::string &source_line, const std::size_t starting_position, const bool allow_implicit_matches)
 {
 	std::string_view source_line_subview = std::string_view(source_line).substr(starting_position);
 
@@ -5363,7 +5363,7 @@ static void SubstituteAndParseLine(SemanticState *state, const std::string_view 
 	   SN 68k achieves this by expanding string constants in its operand and expression evaluators,
 	   which is absolutely insane, so this trick approximates it instead. */
 	modified_directive_and_operands = directive_and_operands;
-	PerformSubstitutionsExcludingQuotedStrings(state, modified_directive_and_operands, directive.length(), cc_true);
+	PerformSubstitutionsExcludingQuotedStrings(state, modified_directive_and_operands, directive.length(), true);
 
 	ParseLine(state, label, modified_directive_and_operands);
 }
@@ -5387,12 +5387,12 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 		state->macro.total_arguments = 0;
 		state->macro.total_arguments_at_start = 0;
 		state->macro.starting_if_level = state->current_if_level;
-		state->macro.active = cc_true;
+		state->macro.active = true;
 		++state->macro.depth;
 
 		++state->current_macro_invocation;
 
-		state->suppress_listing = cc_true;
+		state->suppress_listing = true;
 
 		Utilities::String::RemoveLeading(source_line, DIRECTIVE_OR_MACRO_CHARS);
 
@@ -5427,7 +5427,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 		const std::string unique_suffix = ComputeUniqueMacroSuffix(state);
 		std::string symbol_value_string;
 
-		state->macro.custom_search = [state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, std::size_t starting_position, cc_bool case_insensitive, std::size_t &found_position, std::size_t &found_length) -> std::optional<std::string_view>
+		state->macro.custom_search = [state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, std::size_t starting_position, bool case_insensitive, std::size_t &found_position, std::size_t &found_length) -> std::optional<std::string_view>
 		{
 			/* `view_to_search` always points to a null-terminated string. */
 			(void)case_insensitive;
@@ -5476,7 +5476,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 						if (identifier_position_end < view_to_search.length() && view_to_search[identifier_position_end] == '\\')
 							++found_length;
 
-						if (!GetSymbolInteger(state, identifier, cc_true, &value))
+						if (!GetSymbolInteger(state, identifier, true, &value))
 							value = 0;
 
 						if (symbol == '#')
@@ -5521,7 +5521,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 
 			for (i = 0; i <= arguments.length(); ++i)
 			{
-				const cc_bool at_the_end = i == arguments.length();
+				const bool at_the_end = i == arguments.length();
 				const char character = at_the_end ? ',' : arguments[i];
 
 				switch (character)
@@ -5568,11 +5568,11 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 
 		/* Finally, invoke the macro. */
 		{
-			const cc_bool previous_listing_macro = state->listing_macro;
+			const bool previous_listing_macro = state->listing_macro;
 
 			/* Flush line before changing this state, so that the macro line is not given the 'M' label. */
 			ListSourceLine(state);
-			state->listing_macro = cc_true;
+			state->listing_macro = true;
 
 			/* Push a new location (this macro).*/
 			state->location.emplace_front(macro->name, 0);
@@ -5584,7 +5584,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 				if (macro->is_short)
 				{
 					std::string expanded_source_line = source_line;
-					PerformSubstitutions(state, expanded_source_line, cc_false);
+					PerformSubstitutions(state, expanded_source_line, false);
 					AssembleLine(state, expanded_source_line, state->options->expand_all_macros);
 				}
 				else
@@ -5613,7 +5613,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 	state->macro = previous_macro_state;
 }
 
-static void AssembleLine(SemanticState *state, const std::string_view &source_line_raw, const cc_bool write_line_to_listing_file)
+static void AssembleLine(SemanticState *state, const std::string_view &source_line_raw, const bool write_line_to_listing_file)
 {
 	const std::string_view old_source_line = state->source_line;
 
@@ -5627,10 +5627,10 @@ static void AssembleLine(SemanticState *state, const std::string_view &source_li
 		/* Output program counter to listing file. */
 		if (state->listing_stream != nullptr)
 		{
-			state->line_listed = cc_false;
+			state->line_listed = false;
 
 			state->listing_counter = 0;
-			state->suppress_listing = cc_false;
+			state->suppress_listing = false;
 			TextOutput_Format(*state->listing_stream, "{:08X}", state->program_counter);
 		}
 	}
@@ -5643,7 +5643,7 @@ static void AssembleLine(SemanticState *state, const std::string_view &source_li
 	if (std::holds_alternative<SemanticState::ModeNormal>(state->mode))
 	{
 		source_line_expanded = source_line_raw;
-		PerformSubstitutions(state, source_line_expanded, cc_false);
+		PerformSubstitutions(state, source_line_expanded, false);
 		state->source_line = source_line_expanded;
 	}
 	else
@@ -5861,7 +5861,7 @@ static void AssembleFile(SemanticState *state, std::istream &input_stream)
 
 	/* Read lines one at a time, feeding them to the 'AssembleLine' function. */
 	while (!state->end && ReadSourceLine(state, input_stream, source_line))
-		AssembleLine(state, source_line, cc_true);
+		AssembleLine(state, source_line, true);
 
 	/* If we're not in normal mode when a file ends, then something is wrong. */
 	while (!std::holds_alternative<SemanticState::ModeNormal>(state->mode))
@@ -5871,7 +5871,7 @@ static void AssembleFile(SemanticState *state, std::istream &input_stream)
 				[&](SemanticState::ModeNormal&)
 				{
 					/* We can't reach this since we just checked for it. */
-					assert(cc_false);
+					assert(false);
 				},
 				[&](SemanticState::ModeRept &rept_state)
 				{
@@ -5907,7 +5907,7 @@ static void AddDefinition(void* const internal, const char* const identifier_buf
 	AddToSymbolTable(state, {identifier_buffer, identifier_length}, SymbolConstant{value});
 }
 
-static cc_bool ClownAssembler_AssembleToObjectFile(
+static bool ClownAssembler_AssembleToObjectFile(
 	std::istream &input_stream,
 	std::ostream &output_stream,
 	std::ostream &error_stream,
@@ -5927,10 +5927,10 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	);
 
 	if (!AddToSymbolTable(&state, "__rs", SymbolSpecial{SymbolSpecial::Type::RS}))
-		return cc_false;
+		return false;
 
 	 if (!AddToSymbolTable(&state, "narg", SymbolSpecial{SymbolSpecial::Type::NARG}))
-		 return cc_false;
+		 return false;
 
 	if (definition_callback != nullptr)
 		definition_callback(&state, (void*)user_data, AddDefinition);
@@ -5966,7 +5966,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 	/* Process the fix-ups: reassemble instructions and reprocess
 	   directives that could not be completed in the first pass. */
-	state.doing_fixup_pass = cc_true;
+	state.doing_fixup_pass = true;
 
 	while (!state.fixup_list.empty())
 	{
@@ -6004,7 +6004,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 		symbol_stream->put(0);
 
 		state.dictionary.Filter(
-			[&](const SymbolDictionary::Entry &entry, const std::string_view &identifier) -> cc_bool
+			[&](const SymbolDictionary::Entry &entry, const std::string_view &identifier) -> bool
 			{
 				/* The symbol file only contains labels. */
 				/* Labels longer than 0xFF characters are silently ignored. */
@@ -6016,7 +6016,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 					const auto local_symbol_position = identifier.find_last_of(state.options->local_signifier);
 					const std::string_view label = identifier.substr(local_symbol_position == identifier.npos ? 0 : local_symbol_position);
 
-					const cc_bool is_local_label = label.length() != identifier.length();
+					const bool is_local_label = label.length() != identifier.length();
 
 					if (label.length() < 0x100 && (!is_local_label || state.options->output_local_labels_to_sym_file))
 					{
@@ -6035,7 +6035,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 					}
 				}
 
-				return cc_true;
+				return true;
 			}
 		);
 	}
@@ -6043,7 +6043,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	return state.success;
 }
 
-cc_bool ClownAssembler_Assemble(
+bool ClownAssembler_Assemble(
 	std::istream &input_stream,
 	std::ostream &output_stream,
 	std::ostream &error_stream,
@@ -6054,20 +6054,20 @@ cc_bool ClownAssembler_Assemble(
 	const ClownAssembler_DefinitionCallback definition_callback,
 	const void* const user_data)
 {
-	cc_bool success = cc_false;
+	bool success = false;
 
 	std::stringstream object_stream;
 
 	if (ClownAssembler_AssembleToObjectFile(input_stream, object_stream, error_stream, listing_stream, symbol_stream, input_file_path, std::move(settings), definition_callback, user_data))
 	{
 		if (ConvertObjectFileToFlatBinary(object_stream, output_stream, error_stream))
-			success = cc_true;
+			success = true;
 	}
 
 	return success;
 }
 
-cc_bool ClownAssembler_AssembleFile(
+bool ClownAssembler_AssembleFile(
 	std::istream &input_stream,
 	std::ostream &output_stream,
 	std::ostream &error_stream,

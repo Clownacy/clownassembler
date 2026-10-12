@@ -865,7 +865,7 @@ namespace m68kasm {
   case 8: // statement: DIRECTIVE_INCBIN STRING
 #line 927 "syntactic.y"
         {		
-		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[0].value.as < std::string > ()), ExpressionNumber{0}, cc_false);
+		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[0].value.as < std::string > ()), ExpressionNumber{0}, false);
 	}
 #line 871 "syntactic.cpp"
     break;
@@ -873,7 +873,7 @@ namespace m68kasm {
   case 9: // statement: DIRECTIVE_INCBIN STRING "," expression
 #line 931 "syntactic.y"
         {
-		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[2].value.as < std::string > ()), YY_MOVE (yystack_[0].value.as < Expression > ()), cc_false);
+		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[2].value.as < std::string > ()), YY_MOVE (yystack_[0].value.as < Expression > ()), false);
 	}
 #line 879 "syntactic.cpp"
     break;
@@ -881,7 +881,7 @@ namespace m68kasm {
   case 10: // statement: DIRECTIVE_INCBIN STRING "," "," expression
 #line 935 "syntactic.y"
         {
-		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[3].value.as < std::string > ()), ExpressionNumber{0}, cc_true, YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[3].value.as < std::string > ()), ExpressionNumber{0}, true, YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 887 "syntactic.cpp"
     break;
@@ -889,7 +889,7 @@ namespace m68kasm {
   case 11: // statement: DIRECTIVE_INCBIN STRING "," expression "," expression
 #line 939 "syntactic.y"
         {
-		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[4].value.as < std::string > ()), YY_MOVE (yystack_[2].value.as < Expression > ()), cc_true, YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[4].value.as < std::string > ()), YY_MOVE (yystack_[2].value.as < Expression > ()), true, YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 895 "syntactic.cpp"
     break;
@@ -913,7 +913,7 @@ namespace m68kasm {
   case 14: // statement: DIRECTIVE_MACRO
 #line 951 "syntactic.y"
         {
-		statement.emplace<StatementMacro>(cc_false);
+		statement.emplace<StatementMacro>(false);
 	}
 #line 919 "syntactic.cpp"
     break;
@@ -921,7 +921,7 @@ namespace m68kasm {
   case 15: // statement: DIRECTIVE_MACRO "*"
 #line 955 "syntactic.y"
         {
-		statement.emplace<StatementMacro>(cc_true);
+		statement.emplace<StatementMacro>(true);
 	}
 #line 927 "syntactic.cpp"
     break;
@@ -929,7 +929,7 @@ namespace m68kasm {
   case 16: // statement: DIRECTIVE_MACRO identifier_list
 #line 959 "syntactic.y"
         {
-		statement.emplace<StatementMacro>(cc_false, YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
+		statement.emplace<StatementMacro>(false, YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
 	}
 #line 935 "syntactic.cpp"
     break;
@@ -937,7 +937,7 @@ namespace m68kasm {
   case 17: // statement: DIRECTIVE_MACRO "*" "," identifier_list
 #line 963 "syntactic.y"
         {
-		statement.emplace<StatementMacro>(cc_true, YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
+		statement.emplace<StatementMacro>(true, YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
 	}
 #line 943 "syntactic.cpp"
     break;
@@ -945,7 +945,7 @@ namespace m68kasm {
   case 18: // statement: DIRECTIVE_MACROS
 #line 967 "syntactic.y"
         {
-		statement.emplace<StatementMacroS>(StatementMacro{cc_false, {}});
+		statement.emplace<StatementMacroS>(StatementMacro{false, {}});
 	}
 #line 951 "syntactic.cpp"
     break;
@@ -953,7 +953,7 @@ namespace m68kasm {
   case 19: // statement: DIRECTIVE_MACROS identifier_list
 #line 971 "syntactic.y"
         {
-		statement.emplace<StatementMacroS>(StatementMacro{cc_false, YY_MOVE (yystack_[0].value.as < IdentifierList > ())});
+		statement.emplace<StatementMacroS>(StatementMacro{false, YY_MOVE (yystack_[0].value.as < IdentifierList > ())});
 	}
 #line 959 "syntactic.cpp"
     break;

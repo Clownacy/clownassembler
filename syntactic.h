@@ -374,7 +374,7 @@ struct Operand
 	unsigned int index_register;
 	Size size;
 	Expression literal;
-	cc_bool index_register_is_address_register;
+	bool index_register_is_address_register;
 };
 
 struct StatementEmpty
@@ -415,7 +415,7 @@ struct StatementIncbin
 {
 	std::string path;
 	Expression start;
-	cc_bool has_length;
+	bool has_length;
 	Expression length;
 };
 
@@ -430,7 +430,7 @@ struct StatementEndR
 
 struct StatementMacro
 {
-	cc_bool uses_label;
+	bool uses_label;
 	IdentifierList parameter_names;
 };
 

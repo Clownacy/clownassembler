@@ -363,7 +363,7 @@ struct Operand
 	unsigned int index_register;
 	Size size;
 	Expression literal;
-	cc_bool index_register_is_address_register;
+	bool index_register_is_address_register;
 };
 
 struct StatementEmpty
@@ -404,7 +404,7 @@ struct StatementIncbin
 {
 	std::string path;
 	Expression start;
-	cc_bool has_length;
+	bool has_length;
 	Expression length;
 };
 
@@ -419,7 +419,7 @@ struct StatementEndR
 
 struct StatementMacro
 {
-	cc_bool uses_label;
+	bool uses_label;
 	IdentifierList parameter_names;
 };
 
@@ -925,19 +925,19 @@ statement
 	}
 	| DIRECTIVE_INCBIN STRING
 	{		
-		statement.emplace<StatementIncbin>($2, ExpressionNumber{0}, cc_false);
+		statement.emplace<StatementIncbin>($2, ExpressionNumber{0}, false);
 	}
 	| DIRECTIVE_INCBIN STRING "," expression
 	{
-		statement.emplace<StatementIncbin>($2, $4, cc_false);
+		statement.emplace<StatementIncbin>($2, $4, false);
 	}
 	| DIRECTIVE_INCBIN STRING "," "," expression
 	{
-		statement.emplace<StatementIncbin>($2, ExpressionNumber{0}, cc_true, $5);
+		statement.emplace<StatementIncbin>($2, ExpressionNumber{0}, true, $5);
 	}
 	| DIRECTIVE_INCBIN STRING "," expression "," expression
 	{
-		statement.emplace<StatementIncbin>($2, $4, cc_true, $6);
+		statement.emplace<StatementIncbin>($2, $4, true, $6);
 	}
 	| DIRECTIVE_REPT expression
 	{
@@ -949,27 +949,27 @@ statement
 	}
 	| DIRECTIVE_MACRO
 	{
-		statement.emplace<StatementMacro>(cc_false);
+		statement.emplace<StatementMacro>(false);
 	}
 	| DIRECTIVE_MACRO "*"
 	{
-		statement.emplace<StatementMacro>(cc_true);
+		statement.emplace<StatementMacro>(true);
 	}
 	| DIRECTIVE_MACRO identifier_list
 	{
-		statement.emplace<StatementMacro>(cc_false, $2);
+		statement.emplace<StatementMacro>(false, $2);
 	}
 	| DIRECTIVE_MACRO "*" "," identifier_list
 	{
-		statement.emplace<StatementMacro>(cc_true, $4);
+		statement.emplace<StatementMacro>(true, $4);
 	}
 	| DIRECTIVE_MACROS
 	{
-		statement.emplace<StatementMacroS>(StatementMacro{cc_false, {}});
+		statement.emplace<StatementMacroS>(StatementMacro{false, {}});
 	}
 	| DIRECTIVE_MACROS identifier_list
 	{
-		statement.emplace<StatementMacroS>(StatementMacro{cc_false, $2});
+		statement.emplace<StatementMacroS>(StatementMacro{false, $2});
 	}
 	| DIRECTIVE_ENDM
 	{

@@ -95,15 +95,15 @@ int main(int argc, char **argv)
 	combined_arguments = nullptr;
 
 	settings.local_signifier = '@';
-	settings.debug = cc_false;
-	settings.case_insensitive = cc_true;
-	settings.equ_set_descope_local_labels = cc_false;
-	settings.output_local_labels_to_sym_file = cc_false;
-	settings.warnings_enabled = cc_true;
-	settings.pedantic_warnings_enabled = cc_false;
-	settings.expand_all_macros = cc_false;
-	settings.automatic_even = cc_true;
-	settings.optimisation.zero_displacement = cc_false;
+	settings.debug = false;
+	settings.case_insensitive = true;
+	settings.equ_set_descope_local_labels = false;
+	settings.output_local_labels_to_sym_file = false;
+	settings.warnings_enabled = true;
+	settings.pedantic_warnings_enabled = false;
+	settings.expand_all_macros = false;
+	settings.automatic_even = true;
+	settings.optimisation.zero_displacement = false;
 
 	source_file_path = object_file_path = symbol_file_path = listing_file_path = nullptr;
 
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 					break;
 
 				case 'm':
-					settings.expand_all_macros = cc_true;
+					settings.expand_all_macros = true;
 					break;
 
 				case 'p': /* And 'ps'. */
@@ -159,11 +159,11 @@ int main(int argc, char **argv)
 						{
 							if (CaseInsensitive::CompareStrings(option, "ae+"))
 							{
-								settings.automatic_even = cc_true;
+								settings.automatic_even = true;
 							}
 							else if (CaseInsensitive::CompareStrings(option, "ae-"))
 							{
-								settings.automatic_even = cc_false;
+								settings.automatic_even = false;
 							}
 							else if (CaseInsensitive::CompareStrings(option, "an+"))
 							{
@@ -175,19 +175,19 @@ int main(int argc, char **argv)
 							}
 							else if (CaseInsensitive::CompareStrings(option, "c+"))
 							{
-								settings.case_insensitive = cc_false;
+								settings.case_insensitive = false;
 							}
 							else if (CaseInsensitive::CompareStrings(option, "c-"))
 							{
-								settings.case_insensitive = cc_true;
+								settings.case_insensitive = true;
 							}
 							else if (CaseInsensitive::CompareStrings(option, "d+"))
 							{
-								settings.equ_set_descope_local_labels = cc_true;
+								settings.equ_set_descope_local_labels = true;
 							}
 							else if (CaseInsensitive::CompareStrings(option, "d-"))
 							{
-								settings.equ_set_descope_local_labels = cc_false;
+								settings.equ_set_descope_local_labels = false;
 							}
 							else if (CaseInsensitive::CompareStrings(option, "e+"))
 							{
@@ -229,27 +229,27 @@ int main(int argc, char **argv)
 							}
 							else if (CaseInsensitive::CompareStrings(option, "v+"))
 							{
-								settings.output_local_labels_to_sym_file = cc_true;
+								settings.output_local_labels_to_sym_file = true;
 							}
 							else if (CaseInsensitive::CompareStrings(option, "v-"))
 							{
-								settings.output_local_labels_to_sym_file = cc_false;
+								settings.output_local_labels_to_sym_file = false;
 							}
 							else if (CaseInsensitive::CompareStrings(option, "w+"))
 							{
-								settings.warnings_enabled = cc_true;
+								settings.warnings_enabled = true;
 							}
 							else if (CaseInsensitive::CompareStrings(option, "w-"))
 							{
-								settings.warnings_enabled = cc_false;
+								settings.warnings_enabled = false;
 							}
 							else if (CaseInsensitive::CompareStrings(option, "wp+"))
 							{
-								settings.pedantic_warnings_enabled = cc_true;
+								settings.pedantic_warnings_enabled = true;
 							}
 							else if (CaseInsensitive::CompareStrings(option, "wp-"))
 							{
-								settings.pedantic_warnings_enabled = cc_false;
+								settings.pedantic_warnings_enabled = false;
 							}
 							else if (CaseInsensitive::CompareStrings(option, "ws+"))
 							{
@@ -295,11 +295,11 @@ int main(int argc, char **argv)
 							}
 							else if (CaseInsensitive::CompareStrings(option, "oz+"))
 							{
-								settings.optimisation.zero_displacement = cc_true;
+								settings.optimisation.zero_displacement = true;
 							}
 							else if (CaseInsensitive::CompareStrings(option, "oz-"))
 							{
-								settings.optimisation.zero_displacement = cc_false;
+								settings.optimisation.zero_displacement = false;
 							}
 							else if (CaseInsensitive::CompareStrings(option, "oaq+"))
 							{
