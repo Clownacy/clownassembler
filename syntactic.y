@@ -45,7 +45,6 @@
 #include <variant>
 
 #include "clowncommon/clowncommon.h"
-#include "string.h"
 
 enum Size
 {

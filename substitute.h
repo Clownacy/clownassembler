@@ -27,8 +27,6 @@
 
 #include "clowncommon/clowncommon.h"
 
-#include "string.h"
-
 class Substitute
 {
 public:

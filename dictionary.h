@@ -27,7 +27,6 @@
 #include "clowncommon/clowncommon.h"
 
 #include "case-insensitive.h"
-#include "string.h"
 
 template<typename EntryArgument>
 class Dictionary

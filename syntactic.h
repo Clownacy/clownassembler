@@ -56,7 +56,6 @@
 #include <variant>
 
 #include "clowncommon/clowncommon.h"
-#include "string.h"
 
 enum Size
 {
@@ -638,7 +637,7 @@ using Statement = std::variant<
 >;
 
 
-#line 642 "syntactic.h"
+#line 641 "syntactic.h"
 
 
 # include <cstdlib> // std::abort
@@ -782,7 +781,7 @@ using Statement = std::variant<
 
 #line 25 "syntactic.y"
 namespace m68kasm {
-#line 786 "syntactic.h"
+#line 785 "syntactic.h"
 
 
 
@@ -5769,17 +5768,17 @@ switch (yykind)
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 5773 "syntactic.h"
+#line 5772 "syntactic.h"
 
 
 // "%code provides" blocks.
-#line 631 "syntactic.y"
+#line 630 "syntactic.y"
 
 
 #define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner)
 
 
-#line 5783 "syntactic.h"
+#line 5782 "syntactic.h"
 
 
 #endif // !YY_M68KASM_SYNTACTIC_H_INCLUDED

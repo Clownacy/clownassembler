@@ -40,7 +40,6 @@
 
 #include "dictionary.h"
 #include "p2bin.h"
-#include "string.h"
 #include "substitute.h"
 #include "syntactic.h"
 #define YY_NO_UNISTD_H
