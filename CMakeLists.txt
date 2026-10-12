@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16.3)
 
-project(clownassembler VERSION 1.1.3 LANGUAGES C CXX)
+project(clownassembler VERSION 2.0 LANGUAGES C CXX)
 
 # Core
 add_library(clownassembler_core STATIC

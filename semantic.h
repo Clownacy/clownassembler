@@ -28,7 +28,7 @@
 #include "io.h"
 #include "options.h"
 
-#define CLOWNASSEMBLER_VERSION_STRING "ClownAssembler v1.1.3"
+#define CLOWNASSEMBLER_VERSION_STRING "ClownAssembler v2.0"
 
 using ClownAssembler_Settings = Options;
 
