@@ -51,7 +51,7 @@ private:
 
 public:
 	template<typename... Args>
-	void SemanticWarning(std::format_string<Args...> &&format_string, Args &&...args)
+	void Warning(std::format_string<Args...> &&format_string, Args &&...args)
 	{
 		if (warnings_enabled)
 		{
@@ -63,8 +63,31 @@ public:
 		}
 	}
 
+	void Warning(const std::string_view &message)
+	{
+		if (warnings_enabled)
+		{
+			error_stream << "Warning: " << message;
+
+			ErrorMessageCommon();
+		}
+	}
+
 	template<typename... Args>
-	void SemanticError(std::format_string<Args...> &&format_string, Args &&...args)
+	void WarningPedantic(std::format_string<Args...> &&format_string, Args &&...args)
+	{
+		if (pedantic_warnings_enabled)
+			Warning(std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+	}
+
+	void WarningPedantic(const std::string_view &message)
+	{
+		if (pedantic_warnings_enabled)
+			Warning(message);
+	}
+
+	template<typename... Args>
+	void Error(std::format_string<Args...> &&format_string, Args &&...args)
 	{
 		error_stream << "Error: ";
 
@@ -75,25 +98,9 @@ public:
 		error_encountered = true;
 	}
 
-	void ParserWarning(const std::string_view &message)
+	void Error(const std::string_view &message)
 	{
-		if (warnings_enabled)
-		{
-			TextOutput_Format(error_stream, "Warning: {}", message);
-
-			ErrorMessageCommon();
-		}
-	}
-
-	void ParserWarningPedantic(const std::string_view &message)
-	{
-		if (pedantic_warnings_enabled)
-			ParserWarning(message);
-	}
-
-	void ParserError(const std::string_view &message)
-	{
-		TextOutput_Format(error_stream, "Error: {}", message);
+		error_stream << "Error: " << message;
 
 		ErrorMessageCommon();
 

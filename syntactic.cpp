@@ -70,7 +70,7 @@ static void DoExpression(Expression &expression, ExpressionArithmetic2Operand::T
 
 void m68kasm::parser::error(const std::string &message)
 {
-	error_manager.ParserError(message);
+	error_manager.Error(message);
 }
 
 
@@ -1411,7 +1411,7 @@ namespace m68kasm {
         {
 		yylhs.value.as < Opcode > () = YY_MOVE (yystack_[1].value.as < Opcode > ());
 		yylhs.value.as < Opcode > ().size = SIZE_UNDEFINED;
-		error_manager.ParserWarningPedantic("Opcode has a dot but no size; either remove the dot or add an explicit size.");
+		error_manager.WarningPedantic("Opcode has a dot but no size; either remove the dot or add an explicit size.");
 	}
 #line 1417 "syntactic.cpp"
     break;
@@ -2546,7 +2546,7 @@ namespace m68kasm {
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
-		error_manager.ParserWarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		error_manager.WarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		yylhs.value.as < Operand > ().literal.emplace<ExpressionNumber>(0);
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[3].value.as < unsigned long > ());
@@ -2562,7 +2562,7 @@ namespace m68kasm {
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
-		error_manager.ParserWarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		error_manager.WarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[5].value.as < Expression > ());
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[3].value.as < unsigned long > ());
@@ -2578,7 +2578,7 @@ namespace m68kasm {
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
-		error_manager.ParserWarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		error_manager.WarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[5].value.as < Expression > ());
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[3].value.as < unsigned long > ());
@@ -2663,7 +2663,7 @@ namespace m68kasm {
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
-		error_manager.ParserWarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		error_manager.WarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		yylhs.value.as < Operand > ().type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		yylhs.value.as < Operand > ().literal.emplace<ExpressionNumber>(0);
 		yylhs.value.as < Operand > ().index_register = data_or_address_register % 8;
@@ -2678,7 +2678,7 @@ namespace m68kasm {
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
-		error_manager.ParserWarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		error_manager.WarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		yylhs.value.as < Operand > ().type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[5].value.as < Expression > ());
 		yylhs.value.as < Operand > ().index_register = data_or_address_register % 8;
@@ -2693,7 +2693,7 @@ namespace m68kasm {
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
-		error_manager.ParserWarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		error_manager.WarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		yylhs.value.as < Operand > ().type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[5].value.as < Expression > ());
 		yylhs.value.as < Operand > ().index_register = data_or_address_register % 8;

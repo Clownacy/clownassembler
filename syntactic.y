@@ -659,7 +659,7 @@ static void DoExpression(Expression &expression, ExpressionArithmetic2Operand::T
 
 void m68kasm::parser::error(const std::string &message)
 {
-	error_manager.ParserError(message);
+	error_manager.Error(message);
 }
 
 }
@@ -1226,7 +1226,7 @@ full_opcode
 	{
 		$$ = $1;
 		$$.size = SIZE_UNDEFINED;
-		error_manager.ParserWarningPedantic("Opcode has a dot but no size; either remove the dot or add an explicit size.");
+		error_manager.WarningPedantic("Opcode has a dot but no size; either remove the dot or add an explicit size.");
 	}
 	| opcode size
 	{
@@ -1843,7 +1843,7 @@ operand
 	{
 		const auto data_or_address_register = $4;
 
-		error_manager.ParserWarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		error_manager.WarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.emplace<ExpressionNumber>(0);
 		$$.main_register = $2;
@@ -1855,7 +1855,7 @@ operand
 	{
 		const auto data_or_address_register = $5;
 
-		error_manager.ParserWarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		error_manager.WarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
 		$$.main_register = $3;
@@ -1867,7 +1867,7 @@ operand
 	{
 		const auto data_or_address_register = $6;
 
-		error_manager.ParserWarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		error_manager.WarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $2;
 		$$.main_register = $4;
@@ -1924,7 +1924,7 @@ operand
 	{
 		const auto data_or_address_register = $4;
 
-		error_manager.ParserWarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		error_manager.WarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal.emplace<ExpressionNumber>(0);
 		$$.index_register = data_or_address_register % 8;
@@ -1935,7 +1935,7 @@ operand
 	{
 		const auto data_or_address_register = $5;
 
-		error_manager.ParserWarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		error_manager.WarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $1;
 		$$.index_register = data_or_address_register % 8;
@@ -1946,7 +1946,7 @@ operand
 	{
 		const auto data_or_address_register = $6;
 
-		error_manager.ParserWarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
+		error_manager.WarningPedantic("Index register lacks a size specifier (assuming word-size for now, but you should really add an explicit size).");
 		$$.type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER;
 		$$.literal = $2;
 		$$.index_register = data_or_address_register % 8;

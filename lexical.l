@@ -81,7 +81,7 @@ static auto ParseNumber(ErrorManager &error_manager, const char* const string_st
 	if (!StringTo32BitInteger(&value, string_start, &string_end, base))
 	{
 		/* S.N. 68k silently truncates values that are too large. This is relied upon by old versions of the Sonic 2 August 21st prototype disassembly. */
-		error_manager.ParserWarning("Number is too large and will be truncated.");
+		error_manager.Warning("Number is too large and will be truncated.");
 	}
 
 	if (string_end != string_start + string_length)
