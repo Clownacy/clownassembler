@@ -4610,13 +4610,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				if (state->options->equ_set_descope_local_labels)
 					SetLastGlobalLabel(state, label);
 
-				auto &equ = statement;
-
-				if (!ResolveExpression(state, &equ.expression, &value))
+				if (!ResolveExpression(state, &statement.expression, &value))
 				{
-					AddToSymbolTable(state, label, SymbolExpressionConstant{std::move(equ.expression)});
+					AddToSymbolTable(state, label, SymbolExpressionConstant{std::move(statement.expression)});
 					// TODO: Why does removing this result in a crash?
-					equ.expression.emplace<ExpressionNumber>(0);
+					statement.expression.emplace<ExpressionNumber>(0);
 				}
 				else
 				{
@@ -4647,15 +4645,13 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				unsigned long start, end;
 				std::string_view substring;
 
-				auto &substr = statement;
-
-				if (!ResolveExpression(state, &substr.start, &start))
+				if (!ResolveExpression(state, &statement.start, &start))
 				{
 					state->error_manager.Error("Start must be evaluable on the first pass.");
 					return;
 				}
 
-				if (!ResolveExpression(state, &substr.end, &end))
+				if (!ResolveExpression(state, &statement.end, &end))
 				{
 					state->error_manager.Error("End must be evaluable on the first pass.");
 					return;
@@ -4672,12 +4668,12 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 
 				/* Clamp start and end to make it so that, if the string would go beyond the end, it is truncated appropriately instead of going out-of-bounds */
 				/* (this matches asm68k, as far as I can see). */
-				if (start > substr.string.length())
-					start = substr.string.length() + 1;
-				if (end > substr.string.length())
-					end = substr.string.length();
+				if (start > statement.string.length())
+					start = statement.string.length() + 1;
+				if (end > statement.string.length())
+					end = statement.string.length();
 
-				substring = substr.string.substr(start - 1, end - start + 1);
+				substring = statement.string.substr(start - 1, end - start + 1);
 				PushSubstitute(state, label, substring);
 			},
 			[&](StatementSet &statement)
@@ -4767,12 +4763,10 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				/* Enter WHILE mode. */
 				auto &mode = state->mode.emplace<SemanticState::ModeWhile>();
 
-				auto &while_statement = statement;
-
 				/* Dummy-out the statement's expression, since the state now owns it, and we don't
 				   want its sub-expressions to be automatically freed when the statement is freed. */
 				mode.expression.emplace<ExpressionNumber>(0);
-				std::swap(mode.expression, while_statement.expression);
+				std::swap(mode.expression, statement.expression);
 				mode.source_line = state->source_line;
 
 				mode.line_number = state->location.front().line_number;
@@ -4794,11 +4788,9 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 			},
 			[&](StatementCnop &statement)
 			{
-				auto &cnop = statement;
-
 				unsigned long offset;
 
-				if (!ResolveExpression(state, &cnop.offset, &offset))
+				if (!ResolveExpression(state, &statement.offset, &offset))
 				{
 					state->error_manager.Error("Offset must be evaluable on the first pass.");
 					return;
@@ -4806,7 +4798,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 
 				unsigned long size_boundary;
 
-				if (!ResolveExpression(state, &cnop.size_boundary, &size_boundary))
+				if (!ResolveExpression(state, &statement.size_boundary, &size_boundary))
 				{
 					state->error_manager.Error("Size boundary must be evaluable on the first pass.");
 					return;
@@ -4819,11 +4811,9 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 					return;
 				}
 
-				unsigned long target;
-
 				const unsigned long position_within_boundary = state->program_counter % size_boundary;
 
-				target = state->program_counter - position_within_boundary + offset;
+				unsigned long target = state->program_counter - position_within_boundary + offset;
 
 				if (position_within_boundary > offset)
 					target += size_boundary;
@@ -4837,12 +4827,10 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 			},
 			[&](StatementInform &statement)
 			{
-				auto &inform = statement;
-
 				unsigned long severity;
 
 				/* Definitely an 'INFORM'... */
-				if (!ResolveExpression(state, &inform.severity, &severity))
+				if (!ResolveExpression(state, &statement.severity, &severity))
 				{
 					state->error_manager.Error("Severity must be evaluable on the first pass.");
 					severity = 0;
@@ -4852,16 +4840,16 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				switch (severity)
 				{
 					case 0:
-						state->error_manager.Information("INFORM: '{}'", inform.message);
+						state->error_manager.Information("INFORM: '{}'", statement.message);
 						break;
 
 					case 1:
-						state->error_manager.Warning("INFORM: '{}'", inform.message);
+						state->error_manager.Warning("INFORM: '{}'", statement.message);
 						break;
 
 					case 2:
 					case 3: /* TODO: Halt assembly. */
-						state->error_manager.Error("INFORM: '{}'", inform.message);
+						state->error_manager.Error("INFORM: '{}'", statement.message);
 						break;
 				}
 			},
@@ -4876,15 +4864,13 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 			},
 			[&](StatementRS &statement)
 			{
-				auto &rs = statement;
-
 				unsigned long length;
 
-				if (ShouldPerformAutomaticEven(state, rs.size))
+				if (ShouldPerformAutomaticEven(state, statement.size))
 					if ((state->rs & 1) != 0)
 						++state->rs;
 
-				if (!ResolveExpression(state, &rs.length, &length))
+				if (!ResolveExpression(state, &statement.length, &length))
 				{
 					state->error_manager.Error("Length must be evaluable on the first pass.");
 					return;
@@ -4898,7 +4884,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				}
 
 				/* Advance '__rs' by the specified amount. */
-				switch (rs.size)
+				switch (statement.size)
 				{
 					case SIZE_BYTE:
 					case SIZE_SHORT:
@@ -5143,41 +5129,37 @@ static void ParseLine(SemanticState* const state, const std::string_view &label,
 	const std::size_t starting_segment_length = state->segment_length;
 
 	if (!ParseStatement(state, directive_and_operands))
-	{
-		/* An error message will have already been printed, so we don't need to do one here. */
-	}
-	else
-	{
-		state->fixup_needed = false;
+		return;
 
-		ProcessStatement(state, &state->statement, label);
+	state->fixup_needed = false;
 
-		if (state->fixup_needed)
-		{
-			/* If the statement cannot currently be processed because of undefined symbols,
-			   add it to the fix-up list so we can try again later. */
-			FixUp &fixup = state->fixup_list.emplace_back();
+	ProcessStatement(state, &state->statement, label);
+
+	if (!state->fixup_needed)
+		return;
+
+	/* If the statement cannot currently be processed because of undefined symbols,
+	   add it to the fix-up list so we can try again later. */
+	FixUp &fixup = state->fixup_list.emplace_back();
 
 
-			/* Backup the statement. */
-			fixup.statement = std::move(state->statement);
+	/* Backup the statement. */
+	fixup.statement = std::move(state->statement);
 
-			/* Backup some state. */
-			fixup.macro_dictionary = state->macro.dictionary;
-			fixup.program_counter = starting_program_counter;
-			fixup.output_position = starting_output_position;
-			fixup.segment_length = starting_segment_length;
-			fixup.last_global_label = state->last_global_label;
-			fixup.source_line = state->source_line;
-			fixup.label = label;
-			fixup.options = *state->options;
+	/* Backup some state. */
+	fixup.macro_dictionary = state->macro.dictionary;
+	fixup.program_counter = starting_program_counter;
+	fixup.output_position = starting_output_position;
+	fixup.segment_length = starting_segment_length;
+	fixup.last_global_label = state->last_global_label;
+	fixup.source_line = state->source_line;
+	fixup.label = label;
+	fixup.options = *state->options;
 
-			/* Clone the location. */
-			fixup.location = state->location;
+	/* Clone the location. */
+	fixup.location = state->location;
 
-			state->fixup_needed = false;
-		}
-	}
+	state->fixup_needed = false;
 }
 
 #define DIRECTIVE_OR_MACRO_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_"
