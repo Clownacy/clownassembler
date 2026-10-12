@@ -635,11 +635,6 @@ using Statement = std::variant<
 
 %code {
 
-#include <assert.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-
 YY_DECL;
 void m68kasm_warning(void *scanner, const std::string_view &message);
 void m68kasm_warning_pedantic(void *scanner, const std::string_view &message);
