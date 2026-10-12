@@ -92,7 +92,7 @@ int main(int argc, char **argv)
 	total_arguments = argc;
 	arguments = argv;
 
-	combined_arguments = NULL;
+	combined_arguments = nullptr;
 
 	settings.local_signifier = '@';
 	settings.debug = cc_false;
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 	settings.automatic_even = cc_true;
 	settings.optimisation.zero_displacement = cc_false;
 
-	source_file_path = object_file_path = symbol_file_path = listing_file_path = NULL;
+	source_file_path = object_file_path = symbol_file_path = listing_file_path = nullptr;
 
 	output_mode = OUTPUT_EXECUTABLE;
 
@@ -155,7 +155,7 @@ int main(int argc, char **argv)
 					{
 						const char *option;
 
-						for (option = strtok(argv[i], ","); option != NULL; option = strtok(NULL, ","))
+						for (option = strtok(argv[i], ","); option != nullptr; option = strtok(nullptr, ","))
 						{
 							if (CaseInsensitive::CompareStrings(option, "ae+"))
 							{
@@ -363,28 +363,28 @@ int main(int argc, char **argv)
 			source_file_path = combined_arguments;
 			comma = strchr(source_file_path, ',');
 
-			if (comma != NULL)
+			if (comma != nullptr)
 			{
 				comma[0] = '\0';
 
 				object_file_path = comma + 1;
 				comma = strchr(object_file_path, ',');
 
-				if (comma != NULL)
+				if (comma != nullptr)
 				{
 					comma[0] = '\0';
 
 					symbol_file_path = comma + 1;
 					comma = strchr(symbol_file_path, ',');
 
-					if (comma != NULL)
+					if (comma != nullptr)
 					{
 						comma[0] = '\0';
 
 						listing_file_path = comma + 1;
 						comma = strchr(listing_file_path, ',');
 
-						if (comma != NULL)
+						if (comma != nullptr)
 							comma[0] = '\0';
 					}
 				}
@@ -395,7 +395,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Open files. */
-	if (source_file_path == NULL || source_file_path[0] == '\0')
+	if (source_file_path == nullptr || source_file_path[0] == '\0')
 	{
 		fprintf(stderr, "Error: Source file path must be specified.\n");
 		exit_code = EXIT_FAILURE;
@@ -410,7 +410,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (object_file_path == NULL || object_file_path[0] == '\0')
+	if (object_file_path == nullptr || object_file_path[0] == '\0')
 	{
 		fprintf(stderr, "Error: Object file path must be specified.\n");
 		exit_code = EXIT_FAILURE;
@@ -425,14 +425,14 @@ int main(int argc, char **argv)
 		}
 	}
 
-	std::ostream *symbol_stream = NULL;
-	if (symbol_file_path != NULL && symbol_file_path[0] != '\0')
+	std::ostream *symbol_stream = nullptr;
+	if (symbol_file_path != nullptr && symbol_file_path[0] != '\0')
 	{
 		symbol_stream = &symbol_file;
 		symbol_file.open(symbol_file_path, symbol_file.binary);
 	}
 
-	if (listing_file_path != NULL && listing_file_path[0] != '\0')
+	if (listing_file_path != nullptr && listing_file_path[0] != '\0')
 		listing_file.open(listing_file_path);
 
 	/* Make sure that we're using a supported output format. */
@@ -455,7 +455,7 @@ int main(int argc, char **argv)
 	/* If we've gotten this far without any errors, then finally run the assembler. */
 	if (exit_code != EXIT_FAILURE)
 	{
-		if (!ClownAssembler_AssembleFile(source_file, object_file, std::cout, listing_file, symbol_stream, source_file_path, &settings, DefinitionCallback, NULL))
+		if (!ClownAssembler_AssembleFile(source_file, object_file, std::cout, listing_file, symbol_stream, source_file_path, &settings, DefinitionCallback, nullptr))
 		{
 			fprintf(stderr, "Error: Failed to assemble.\n");
 			exit_code = EXIT_FAILURE;

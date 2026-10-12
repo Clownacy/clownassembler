@@ -505,30 +505,30 @@ static std::string_view ExpandIdentifier(SemanticState *state, const std::string
 
 static SymbolDictionary::Entry* LookupSymbol(SemanticState *state, std::string_view identifier, SymbolDictionary **dictionary)
 {
-	SymbolDictionary::Entry *dictionary_entry = NULL;
+	SymbolDictionary::Entry *dictionary_entry = nullptr;
 
 	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
 	std::string expanded_identifier;
 	identifier = ExpandIdentifier(state, identifier, expanded_identifier);
 
-	if (state->macro.dictionary != NULL)
+	if (state->macro.dictionary != nullptr)
 	{
-		if (dictionary != NULL)
+		if (dictionary != nullptr)
 			*dictionary = &*state->macro.dictionary;
 
 		dictionary_entry = state->macro.dictionary->LookUp(identifier);
 	}
 
-	if (dictionary_entry == NULL)
+	if (dictionary_entry == nullptr)
 	{
-		if (dictionary != NULL)
+		if (dictionary != nullptr)
 			*dictionary = &state->dictionary;
 
 		dictionary_entry = state->dictionary.LookUp(identifier);
 
-		if (dictionary_entry == NULL)
-			if (dictionary != NULL)
-				*dictionary = NULL;
+		if (dictionary_entry == nullptr)
+			if (dictionary != nullptr)
+				*dictionary = nullptr;
 	}
 
 	return dictionary_entry;
@@ -538,23 +538,23 @@ template<typename SymbolType>
 static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, std::string_view identifier, SymbolDictionary **dictionary)
 {
 	/* TODO: Deduplicate this with `LookupSymbol`. */
-	SymbolDictionary::Entry *dictionary_entry = NULL;
+	SymbolDictionary::Entry *dictionary_entry = nullptr;
 
 	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
 	std::string expanded_identifier;
 	identifier = ExpandIdentifier(state, identifier, expanded_identifier);
 
-	if (state->macro.dictionary != NULL)
+	if (state->macro.dictionary != nullptr)
 	{
-		if (dictionary != NULL)
+		if (dictionary != nullptr)
 			*dictionary = &*state->macro.dictionary;
 
 		dictionary_entry = state->macro.dictionary->LookUp(identifier);
 	}
 
-	if (dictionary_entry == NULL)
+	if (dictionary_entry == nullptr)
 	{
-		if (dictionary != NULL)
+		if (dictionary != nullptr)
 			*dictionary = &state->dictionary;
 
 		dictionary_entry = &state->dictionary.LookUpAndCreateIfNotExist(identifier);
@@ -563,7 +563,7 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *s
 	if (!std::holds_alternative<SymbolNone>(*dictionary_entry) && !std::holds_alternative<SymbolType>(*dictionary_entry))
 	{
 		SemanticError(state, "Attempted to redefine symbol '{}' as a different type.", identifier);
-		dictionary_entry = NULL;
+		dictionary_entry = nullptr;
 	}
 
 	return dictionary_entry;
@@ -580,9 +580,9 @@ static cc_bool GetSymbolInteger(SemanticState *state, const std::string_view &id
 {
 	SymbolDictionary::Entry *dictionary_entry;
 
-	dictionary_entry = LookupSymbol(state, identifier, NULL);
+	dictionary_entry = LookupSymbol(state, identifier, nullptr);
 
-	if (dictionary_entry == NULL || std::holds_alternative<SymbolNone>(*dictionary_entry))
+	if (dictionary_entry == nullptr || std::holds_alternative<SymbolNone>(*dictionary_entry))
 	{
 		if (must_evaluate_on_first_pass)
 			SemanticError(state, "Symbol '{}' must be evaluable on first pass.", identifier);
@@ -930,7 +930,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			},
 			[&](ExpressionDef &expression)
 			{
-				*value = LookupSymbol(state, expression.string, NULL) != NULL ? -1 : 0;
+				*value = LookupSymbol(state, expression.string, nullptr) != nullptr ? -1 : 0;
 				return cc_true;
 			},
 			[&](ExpressionTypeWithIdentifier&)
@@ -1006,7 +1006,7 @@ static void PurgeMacro(SemanticState* const state, std::string_view identifier, 
 	SymbolDictionary *dictionary;
 	SymbolDictionary::Entry* const entry = LookupSymbol(state, identifier, &dictionary);
 
-	if (entry == NULL)
+	if (entry == nullptr)
 	{
 		if (!allow_undefined)
 			SemanticError(state, "Cannot purge '{}' as it does not exist.\n", identifier);
@@ -1035,9 +1035,9 @@ static void PurgeMacro(SemanticState* const state, std::string_view identifier, 
 
 static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolVariable symbol_contents)
 {
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolVariable>(state, identifier, NULL);
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolVariable>(state, identifier, nullptr);
 
-	if (symbol == NULL)
+	if (symbol == nullptr)
 		return cc_false;
 
 	symbol->emplace<SymbolVariable>(std::move(symbol_contents));
@@ -1047,9 +1047,9 @@ static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &id
 
 static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolConstant symbol_contents)
 {
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolConstant>(state, identifier, NULL);
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolConstant>(state, identifier, nullptr);
 
-	if (symbol == NULL)
+	if (symbol == nullptr)
 		return cc_false;
 
 	const auto constant_symbol = std::get_if<SymbolConstant>(symbol);
@@ -1067,9 +1067,9 @@ static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &id
 
 static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolLabel symbol_contents)
 {
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolLabel>(state, identifier, NULL);
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolLabel>(state, identifier, nullptr);
 
-	if (symbol == NULL)
+	if (symbol == nullptr)
 		return cc_false;
 
 	if (std::holds_alternative<SymbolLabel>(*symbol))
@@ -1085,9 +1085,9 @@ static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &id
 
 static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolExpressionConstant symbol_contents)
 {
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolExpressionConstant>(state, identifier, NULL);
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolExpressionConstant>(state, identifier, nullptr);
 
-	if (symbol == NULL)
+	if (symbol == nullptr)
 		return cc_false;
 
 	symbol->emplace<SymbolExpressionConstant>(std::move(symbol_contents));
@@ -1099,9 +1099,9 @@ static cc_bool AddToSymbolTable(SemanticState *state, SymbolMacro symbol_content
 {
 	const std::string_view &identifier = symbol_contents.macro.name;
 
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolMacro>(state, identifier, NULL);
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolMacro>(state, identifier, nullptr);
 
-	if (symbol == NULL)
+	if (symbol == nullptr)
 		return cc_false;
 
 	if (std::holds_alternative<SymbolMacro>(*symbol))
@@ -1117,9 +1117,9 @@ static cc_bool AddToSymbolTable(SemanticState *state, SymbolMacro symbol_content
 
 static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolSpecial symbol_contents)
 {
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolSpecial>(state, identifier, NULL);
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolSpecial>(state, identifier, nullptr);
 
-	if (symbol == NULL)
+	if (symbol == nullptr)
 		return cc_false;
 
 	symbol->emplace<SymbolSpecial>(std::move(symbol_contents));
@@ -3247,7 +3247,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							machine_code |= value;
 
 						/* The operand is embedded directly into the machine code, so we don't need to output it separately. */
-						operands_to_output[0] = NULL;
+						operands_to_output[0] = nullptr;
 
 						break;
 					}
@@ -3419,7 +3419,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 						machine_code |= (value & 7) << 9;
 
 						/* Skip the immediate operand since that goes in the machine code instead. */
-						operands_to_output[0] = NULL;
+						operands_to_output[0] = nullptr;
 
 						break;
 					}
@@ -3444,7 +3444,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 
 						/* Construct a custom operand to hold the destination offset. */
 						operands_to_output[0] = &custom_operands[0];
-						operands_to_output[1] = NULL;
+						operands_to_output[1] = nullptr;
 						custom_operands[0].type = OPERAND_LITERAL;
 
 						/* Calculate the destination offset. */
@@ -3549,7 +3549,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 							machine_code |= offset & 0xFF;
 
 							/* The operand is embedded directly into the machine code, so we don't need to output it separately. */
-							operands_to_output[0] = NULL;
+							operands_to_output[0] = nullptr;
 						}
 						else
 						{
@@ -3580,8 +3580,8 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 						machine_code |= instruction->operands[1].main_register << 9;
 
 						/* MOVEQ's operands are embedded directly into the machine code, so we don't need to output them separately. */
-						operands_to_output[0] = NULL;
-						operands_to_output[1] = NULL;
+						operands_to_output[0] = nullptr;
+						operands_to_output[1] = nullptr;
 
 						break;
 					}
@@ -3918,7 +3918,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 								machine_code |= ConstructSizeBits(instruction->opcode.size);
 
 								/* Skip the immediate operand since that goes in the machine code instead. */
-								operands_to_output[0] = NULL;
+								operands_to_output[0] = nullptr;
 
 								break;
 							}
@@ -3972,7 +3972,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 	{
 		Operand* const operand = operands_to_output[i];
 
-		if (operand != NULL)
+		if (operand != nullptr)
 		{
 			switch (operand->type)
 			{
@@ -4145,7 +4145,7 @@ static void PushSubstitute(SemanticState* const state, const std::string_view &i
 	SymbolDictionary *dictionary;
 	SymbolDictionary::Entry* const dictionary_entry = LookupSymbolAndCreateIfNotExist<SymbolStringConstant>(state, identifier, &dictionary);
 
-	if (dictionary_entry != NULL)
+	if (dictionary_entry != nullptr)
 	{
 		std::visit(
 			CC_VisitHelper{
@@ -4726,11 +4726,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 			},
 			[&](StatementEquSIdentifier &statement)
 			{
-				const SymbolDictionary::Entry* const dictionary_entry = LookupSymbol(state, statement.string, NULL);
+				const SymbolDictionary::Entry* const dictionary_entry = LookupSymbol(state, statement.string, nullptr);
 
-				const SymbolStringConstant* const symbol_string_constant = dictionary_entry == NULL ? NULL : std::get_if<SymbolStringConstant>(dictionary_entry);
+				const SymbolStringConstant* const symbol_string_constant = dictionary_entry == nullptr ? nullptr : std::get_if<SymbolStringConstant>(dictionary_entry);
 
-				if (symbol_string_constant == NULL)
+				if (symbol_string_constant == nullptr)
 					SemanticError(state, "String constant can only be defined as a string or another string constant.");
 				else
 					PushSubstitute(state, label, symbol_string_constant->value);
@@ -5289,7 +5289,7 @@ static void PerformSubstitutionsOnSubString(SemanticState* const state, std::str
 	if (state->macro.custom_search)
 		state->substitutions.ProcessSubString(&state->macro.substitutions, string, view_to_search, state->macro.custom_search, allow_implicit_matches, case_insensitive);
 	else
-		state->substitutions.ProcessSubString(NULL, string, view_to_search, NULL, allow_implicit_matches, case_insensitive);
+		state->substitutions.ProcessSubString(nullptr, string, view_to_search, nullptr, allow_implicit_matches, case_insensitive);
 }
 
 static void PerformSubstitutions(SemanticState* const state, std::string &string, const cc_bool allow_implicit_matches)
@@ -5776,11 +5776,11 @@ static void AssembleLine(SemanticState *state, const std::string_view &source_li
 					else
 					{
 						/* Look up the directive in the dictionary to see if it's actually a macro. */
-						const SymbolDictionary::Entry* const macro_dictionary_entry = LookupSymbol(state, directive, NULL);
-						const SymbolMacro* const symbol_macro = macro_dictionary_entry == NULL ? NULL : std::get_if<SymbolMacro>(macro_dictionary_entry);
-						const Macro* const macro = symbol_macro == NULL ? NULL : &symbol_macro->macro;
+						const SymbolDictionary::Entry* const macro_dictionary_entry = LookupSymbol(state, directive, nullptr);
+						const SymbolMacro* const symbol_macro = macro_dictionary_entry == nullptr ? nullptr : std::get_if<SymbolMacro>(macro_dictionary_entry);
+						const Macro* const macro = symbol_macro == nullptr ? nullptr : &symbol_macro->macro;
 
-						if (macro != NULL /*&& !macro->is_short*/)
+						if (macro != nullptr /*&& !macro->is_short*/)
 						{
 							/* Regular macros are only expanded when needed. */
 							InvokeMacro(state, macro, label, source_line_subview);
@@ -5953,7 +5953,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 	if (AddToSymbolTable(&state, "__rs", SymbolSpecial{SymbolSpecial::Type::RS})
 	 && AddToSymbolTable(&state, "narg", SymbolSpecial{SymbolSpecial::Type::NARG}))
 	{
-		if (definition_callback != NULL)
+		if (definition_callback != nullptr)
 			definition_callback(&state, (void*)user_data, AddDefinition);
 
 		/* Enable Bison debugging if available and requested by the user. */
@@ -6032,7 +6032,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 					/* Local labels are also silently ignored (unless 'v+' is specified). */
 					const SymbolLabel* const symbol_label = std::get_if<SymbolLabel>(&entry);
 
-					if (symbol_label != NULL)
+					if (symbol_label != nullptr)
 					{
 						const auto local_symbol_position = identifier.find_last_of(state.options->local_signifier);
 						const std::string_view label = identifier.substr(local_symbol_position == identifier.npos ? 0 : local_symbol_position);

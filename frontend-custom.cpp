@@ -81,10 +81,10 @@ int main(int argc, char **argv)
 	arguments = argv;
 
 	print_usage = cc_false;
-	input_file_path = NULL;
-	output_file_path = NULL;
-	listing_file_path = NULL;
-	symbol_file_path = NULL;
+	input_file_path = nullptr;
+	output_file_path = nullptr;
+	listing_file_path = nullptr;
+	symbol_file_path = nullptr;
 	settings.local_signifier = '@';
 	settings.case_insensitive = cc_false;
 	settings.debug = cc_false;
@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		if (output_file_path == NULL)
+		if (output_file_path == nullptr)
 		{
 			ERROR("Output file path must be specified with '-o'.");
 		}
@@ -224,16 +224,16 @@ int main(int argc, char **argv)
 		{
 			std::ifstream input_file_stream;
 
-			if (input_file_path != NULL)
+			if (input_file_path != nullptr)
 				input_file_stream.open(input_file_path);
 
-			if (input_file_path != NULL && !input_file_stream.is_open())
+			if (input_file_path != nullptr && !input_file_stream.is_open())
 			{
 				ERROR("Could not open input file.");
 			}
 			else
 			{
-				std::istream &input_file = input_file_path == NULL ? std::cin : input_file_stream;
+				std::istream &input_file = input_file_path == nullptr ? std::cin : input_file_stream;
 
 				std::ofstream output_file(output_file_path, output_file.binary);
 
@@ -248,9 +248,9 @@ int main(int argc, char **argv)
 					std::ofstream symbol_file;
 					cc_bool success;
 
-					if (listing_file_path == NULL)
+					if (listing_file_path == nullptr)
 					{
-						listing_file = NULL;
+						listing_file = nullptr;
 					}
 					else
 					{
@@ -260,9 +260,9 @@ int main(int argc, char **argv)
 							ERROR("Could not open listing file.");
 					}
 
-					if (symbol_file_path == NULL)
+					if (symbol_file_path == nullptr)
 					{
-						symbol_stream = NULL;
+						symbol_stream = nullptr;
 					}
 					else
 					{
@@ -273,7 +273,7 @@ int main(int argc, char **argv)
 							ERROR("Could not open symbol file.");
 					}
 
-					success = ClownAssembler_AssembleFile(input_file, output_file, std::cerr, listing_file, symbol_stream, input_file_path != NULL ? input_file_path : "STDIN", &settings, DefinitionCallback, NULL);
+					success = ClownAssembler_AssembleFile(input_file, output_file, std::cerr, listing_file, symbol_stream, input_file_path != nullptr ? input_file_path : "STDIN", &settings, DefinitionCallback, nullptr);
 
 					if (symbol_file.is_open())
 						symbol_file.close();
