@@ -40,6 +40,8 @@
 #include <array>
 #include <deque>
 #include <memory>
+#include <string>
+#include <string_view>
 #include <variant>
 
 #include "clowncommon/clowncommon.h"
@@ -270,37 +272,37 @@ struct ExpressionInstr
 
 struct ExpressionStrcmp
 {
-	String string_a, string_b;
+	std::string string_a, string_b;
 };
 
 struct ExpressionIdentifier
 {
-	String string;
+	std::string string;
 };
 
 struct ExpressionString
 {
-	String string;
+	std::string string;
 };
 
 struct ExpressionStrlen
 {
-	String string;
+	std::string string;
 };
 
 struct ExpressionDef
 {
-	String string;
+	std::string string;
 };
 
 struct ExpressionTypeWithIdentifier
 {
-	String string;
+	std::string string;
 };
 
 struct ExpressionFilesize
 {
-	String string;
+	std::string string;
 };
 
 struct ExpressionNumber
@@ -324,7 +326,7 @@ struct ExpressionTypeWithNumber
 };
 
 using ExpressionList = std::deque<Expression>;
-using IdentifierList = std::deque<String>;
+using IdentifierList = std::deque<std::string>;
 
 struct Opcode
 {
@@ -396,12 +398,12 @@ struct StatementDs
 
 struct StatementInclude
 {
-	String path;
+	std::string path;
 };
 
 struct StatementIncbin
 {
-	String path;
+	std::string path;
 	Expression start;
 	cc_bool has_length;
 	Expression length;
@@ -438,18 +440,18 @@ struct StatementEqu
 
 struct StatementEquSString
 {
-	String string;
+	std::string string;
 };
 
 struct StatementEquSIdentifier
 {
-	String string;
+	std::string string;
 };
 
 struct StatementSubstr
 {
 	Expression start, end;
-	String string;
+	std::string string;
 };
 
 struct StatementSet
@@ -497,7 +499,7 @@ struct StatementCnop
 struct StatementInform
 {
 	Expression severity;
-	String message;
+	std::string message;
 };
 
 struct StatementFail
@@ -552,12 +554,12 @@ struct StatementOpt
 
 struct StatementPushP
 {
-	String string;
+	std::string string;
 };
 
 struct StatementPopP
 {
-	String string;
+	std::string string;
 };
 
 struct StatementShift
@@ -575,7 +577,7 @@ struct StatementLocal
 
 struct StatementPurge
 {
-	String string;
+	std::string string;
 };
 
 using Statement = std::variant<
@@ -638,7 +640,6 @@ using Statement = std::variant<
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <string_view>
 
 YY_DECL;
 void m68kasm_warning(void *scanner, const std::string_view &message);
@@ -837,10 +838,10 @@ void m68kasm::parser::error(const std::string &message)
 %token<unsigned long> DATA_REGISTER
 %token<unsigned long> ADDRESS_REGISTER
 %token<unsigned long> NUMBER
-%token<String> IDENTIFIER
-%token<String> LOCAL_IDENTIFIER
-%token<String> STRING
-%token<String> OPTION
+%token<std::string> IDENTIFIER
+%token<std::string> LOCAL_IDENTIFIER
+%token<std::string> STRING
+%token<std::string> OPTION
 %token STATUS_REGISTER
 %token CONDITION_CODE_REGISTER
 %token USER_STACK_POINTER_REGISTER
@@ -892,7 +893,7 @@ void m68kasm::parser::error(const std::string &message)
 %type<ExpressionList> expression_list
 %type<IdentifierList> identifier_list option_list
 %type<Expression> expression expression1 expression2 expression3 expression4 expression5 expression6 expression7 expression8 string
-%type<String> local_identifier identifier
+%type<std::string> local_identifier identifier
 
 /* Hack to resolve ambiguity around size tokens. */
 %precedence LOWER_PRECEDENCE_THAN_SIZE
@@ -994,14 +995,14 @@ statement
 	}
 	| DIRECTIVE_SUBSTR "," "," STRING
 	{
-		String string = $4;
-		const auto string_length = String_Length(string);
+		std::string string = $4;
+		const auto string_length = string.length();
 		statement.emplace<StatementSubstr>(ExpressionNumber{1}, ExpressionNumber{string_length}, std::move(string));
 	}
 	| DIRECTIVE_SUBSTR expression "," "," STRING
 	{
-		String string = $5;
-		const auto string_length = String_Length(string);
+		std::string string = $5;
+		const auto string_length = string.length();
 		statement.emplace<StatementSubstr>($2, ExpressionNumber{string_length}, std::move(string));
 	}
 	| DIRECTIVE_SUBSTR "," expression "," STRING
@@ -2252,23 +2253,19 @@ local_identifier
 	: LOCAL_IDENTIFIER
 	| SIZE_BYTE
 	{
-		const StringView literal = STRING_VIEW_INITIALISER(".b");
-		String_CreateCopyView($$, literal);
+		$$ = ".b";
 	}
 	| SIZE_SHORT
 	{
-		const StringView literal = STRING_VIEW_INITIALISER(".s");
-		String_CreateCopyView($$, literal);
+		$$ = ".s";
 	}
 	| SIZE_WORD
 	{
-		const StringView literal = STRING_VIEW_INITIALISER(".w");
-		String_CreateCopyView($$, literal);
+		$$ = ".w";
 	}
 	| SIZE_LONGWORD
 	{
-		const StringView literal = STRING_VIEW_INITIALISER(".l");
-		String_CreateCopyView($$, literal);
+		$$ = ".l";
 	}
 	;
 
@@ -2277,7 +2274,7 @@ identifier
 	| local_identifier
 	| identifier local_identifier
 	{
-		String_CreateAppend($$, $1, $2);
+		$$ = $1 + $2;
 	}
 	;
 

@@ -13,7 +13,6 @@ add_library(clownassembler_core STATIC
 	"p2bin.h"
 	"semantic.cpp"
 	"semantic.h"
-	"string.h"
 	"substitute.cpp"
 	"substitute.h"
 	"syntactic.cpp"

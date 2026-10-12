@@ -41,7 +41,7 @@ public:
 		: internal(0, CaseInsensitive::StringHasher{}, CaseInsensitive::StringComparer{case_insensitive})
 	{}
 
-	Entry& LookUpAndCreateIfNotExist(const StringView &identifier)
+	Entry& LookUpAndCreateIfNotExist(const std::string_view &identifier)
 	{
 		// All of this crap to work-around C++ not having a decent `operator[]` before C++26... fuck me.
 		auto it = internal.find(identifier);
@@ -49,7 +49,7 @@ public:
 		return it != internal.end() ? it->second : internal.emplace(std::piecewise_construct, std::forward_as_tuple(identifier), std::tuple<>()).first->second; // Nightmare Difficulty C++
 	}
 
-	Entry* LookUp(const StringView &identifier)
+	Entry* LookUp(const std::string_view &identifier)
 	{
 		auto it = internal.find(identifier);
 
@@ -59,7 +59,7 @@ public:
 		return &it->second;
 	}
 
-	void Remove(const StringView &identifier)
+	void Remove(const std::string_view &identifier)
 	{
 		auto it = internal.find(identifier);
 
@@ -69,7 +69,7 @@ public:
 		internal.erase(it);
 	}
 
-	void Filter(const std::function<cc_bool(const Entry &entry, const StringView &identifier)> &filter_function)
+	void Filter(const std::function<cc_bool(const Entry &entry, const std::string_view &identifier)> &filter_function)
 	{
 		std::erase_if(internal,
 			[&](auto &entry)

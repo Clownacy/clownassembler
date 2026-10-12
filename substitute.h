@@ -22,6 +22,8 @@
 #include <forward_list>
 #include <functional>
 #include <optional>
+#include <string>
+#include <string_view>
 
 #include "clowncommon/clowncommon.h"
 
@@ -30,26 +32,26 @@
 class Substitute
 {
 public:
-	using CustomSearch = std::function<std::optional<StringView>(const StringView &view_to_search, std::size_t starting_position, cc_bool case_insensitive, std::size_t* const found_position, std::size_t* const found_length)>;
+	using CustomSearch = std::function<std::optional<std::string_view>(const std::string_view &view_to_search, std::size_t starting_position, cc_bool case_insensitive, std::size_t* const found_position, std::size_t* const found_length)>;
 
 private:
 	struct ListEntry
 	{
-		String identifier;
-		const String *value;
+		std::string identifier;
+		const std::string *value;
 	};
 
 	std::forward_list<ListEntry> list;
 
-	static cc_bool FindSubstitute(const StringView &view_to_search, const std::size_t starting_position, const StringView &substitute, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t* const found_position, std::size_t* const found_length);
-	std::optional<StringView> FindEarliestSubstitute(Substitute *other_state, const StringView &view_to_search, const std::size_t starting_position, const CustomSearch &custom_search_callback, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t* const earliest_found_position, std::size_t* const earliest_found_length);
+	static cc_bool FindSubstitute(const std::string_view &view_to_search, const std::size_t starting_position, const std::string_view &substitute, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t* const found_position, std::size_t* const found_length);
+	std::optional<std::string_view> FindEarliestSubstitute(Substitute *other_state, const std::string_view &view_to_search, const std::size_t starting_position, const CustomSearch &custom_search_callback, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t* const earliest_found_position, std::size_t* const earliest_found_length);
 
 public:
-	cc_bool PushSubstitute(const StringView &identifier, const String &value);
+	cc_bool PushSubstitute(const std::string_view &identifier, const std::string &value);
 	void PopSubstitute();
 
-	void ProcessSubString(Substitute *other_state, String &string, StringView &view_to_search, const CustomSearch &custom_search_callback, cc_bool allow_implicit_matches, cc_bool case_insensitive);
-	void ProcessString(Substitute *other_state, String &string, const CustomSearch &custom_search_callback, cc_bool allow_implicit_matches, cc_bool case_insensitive);
+	void ProcessSubString(Substitute *other_state, std::string &string, std::string_view &view_to_search, const CustomSearch &custom_search_callback, cc_bool allow_implicit_matches, cc_bool case_insensitive);
+	void ProcessString(Substitute *other_state, std::string &string, const CustomSearch &custom_search_callback, cc_bool allow_implicit_matches, cc_bool case_insensitive);
 
 	static cc_bool IsSubstituteBlockingCharacter(char character);
 	static cc_bool IsWhitespaceCharacter(char character);

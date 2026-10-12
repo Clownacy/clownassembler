@@ -112,14 +112,6 @@ namespace CaseInsensitive
 
 		return std::distance(std::begin(view), it);
 	}
-
-	inline void ToLower(std::string &string)
-	{
-		constexpr ToLower to_lower(true);
-
-		for (auto &character : string)
-			character = to_lower(character);
-	}
 }
 
 #endif // CASE_H

@@ -31,6 +31,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -43,13 +45,14 @@
 #include "syntactic.h"
 #define YY_NO_UNISTD_H
 #include "lexical.h"
+#include "utilities.h"
 
-using SourceLineList = std::deque<String>;
+using SourceLineList = std::deque<std::string>;
 
 struct Macro
 {
 	cc_bool is_short, uses_label;
-	String name;
+	std::string name;
 	IdentifierList parameter_names;
 	SourceLineList source_line_list;
 };
@@ -87,7 +90,7 @@ struct SymbolSpecial
 
 struct SymbolStringConstant
 {
-	String value;
+	std::string value;
 };
 
 struct SymbolExpressionConstant
@@ -101,7 +104,7 @@ using SymbolDictionary = Dictionary<SymbolDictionaryEntry>;
 
 struct Location
 {
-	String file_path; /* TODO: This should really be a `StringView`, but fix-ups need deep copies... */
+	std::string file_path; /* TODO: This should really be a `std::string_view`, but fix-ups need deep copies... */
 	unsigned long line_number;
 };
 
@@ -112,10 +115,10 @@ struct FixUp
 	unsigned long program_counter;
 	size_t output_position;
 	size_t segment_length;
-	String last_global_label;
-	String source_line;
+	std::string last_global_label;
+	std::string source_line;
 	std::deque<Location> location;
-	String label;
+	std::string label;
 	Options options;
 };
 
@@ -125,7 +128,7 @@ struct SemanticState_Macro
 	std::shared_ptr<SymbolDictionary> dictionary;
 	Substitute substitutions;
 	Substitute::CustomSearch custom_search;
-	std::vector<String> argument_list;
+	std::vector<std::string> argument_list;
 	size_t total_arguments = 0, total_arguments_at_start = 0;
 	unsigned int starting_if_level = 0;
 	unsigned int depth = 0;
@@ -171,15 +174,15 @@ struct SemanticState
 	/* Global stuff. */
 	OptionsStack options;
 	SymbolDictionary dictionary;
-	String last_global_label;
+	std::string last_global_label;
 	std::deque<Location> location;
 	Flex flex_state = {*this};
 	Statement statement;
 	m68kasm::parser parser = {*flex_state, statement};
 	std::vector<char> line_buffer = std::vector<char>(0x100); // Room for 256 characters by default; will expand when necessary.
-	StringView source_line;
+	std::string_view source_line;
 	Substitute substitutions;
-	std::stack<String> string_stack;
+	std::stack<std::string> string_stack;
 	SemanticState_Macro macro;
 	size_t output_position = 0, previous_segment_length_output_position = 0;
 	size_t segment_position = 0, segment_length = 0;
@@ -225,7 +228,7 @@ struct SemanticState
 	struct ModeWhile
 	{
 		Expression expression;
-		String source_line;
+		std::string source_line;
 		unsigned long line_number = 0;
 		unsigned int nesting = 0;
 		SourceLineList source_line_list;
@@ -241,11 +244,7 @@ struct SemanticState
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
 static void AssembleFile(SemanticState *state);
-static void AssembleLine(SemanticState *state, const StringView &source_line, const cc_bool write_line_to_listing_file);
-
-static const StringView string_rs = STRING_VIEW_INITIALISER("__rs");
-static const StringView string_narg = STRING_VIEW_INITIALISER("narg");
-static const StringView string_assembler_identifier = STRING_VIEW_INITIALISER(CLOWNASSEMBLER_VERSION_STRING);
+static void AssembleLine(SemanticState *state, const std::string_view &source_line, const cc_bool write_line_to_listing_file);
 
 static void OutputWriteRawByte(SemanticState* const state, const unsigned char byte)
 {
@@ -395,24 +394,24 @@ void m68kasm_error(void *scanner, const std::string_view &message)
 	ErrorMessageCommon(state);
 }
 
-static String DecimalIntegerToString(const unsigned long integer)
+static std::string DecimalIntegerToString(const unsigned long integer)
 {
 	return std::format("{}", integer);
 }
 
-static String HexadecimalIntegerToString(const unsigned long integer)
+static std::string HexadecimalIntegerToString(const unsigned long integer)
 {
 	return std::format("{:X}", integer);
 }
 
-static String ComputeUniqueMacroSuffix(const SemanticState* const state)
+static std::string ComputeUniqueMacroSuffix(const SemanticState* const state)
 {
 	return std::format("_{}", state->current_macro_invocation);
 }
 
-static String ToStandardPath(const StringView &input_path)
+static std::string ToStandardPath(const std::string_view &input_path)
 {
-	String output_path(input_path);
+	std::string output_path(input_path);
 
 	for (auto &character : output_path)
 		if (character == '\\')
@@ -491,12 +490,12 @@ static cc_bool CurrentlyExpandingMacro(const SemanticState* const state)
 	return state->macro.active;
 }
 
-static StringView ExpandIdentifier(SemanticState *state, const StringView &identifier, String &expanded_identifier)
+static std::string_view ExpandIdentifier(SemanticState *state, const std::string_view &identifier, std::string &expanded_identifier)
 {
-	if (StringView_Empty(identifier) || (StringView_At(identifier, 0) != state->options->local_signifier))
+	if (identifier.empty() || (identifier[0] != state->options->local_signifier))
 		return identifier;
 
-	if (String_Empty(state->last_global_label))
+	if (state->last_global_label.empty())
 		return identifier.substr(1);
 
 	expanded_identifier = std::format("{}{}", state->last_global_label, identifier);
@@ -504,12 +503,12 @@ static StringView ExpandIdentifier(SemanticState *state, const StringView &ident
 	return expanded_identifier;
 }
 
-static SymbolDictionary::Entry* LookupSymbol(SemanticState *state, StringView identifier, SymbolDictionary **dictionary)
+static SymbolDictionary::Entry* LookupSymbol(SemanticState *state, std::string_view identifier, SymbolDictionary **dictionary)
 {
 	SymbolDictionary::Entry *dictionary_entry = NULL;
 
 	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
-	String expanded_identifier;
+	std::string expanded_identifier;
 	identifier = ExpandIdentifier(state, identifier, expanded_identifier);
 
 	if (state->macro.dictionary != NULL)
@@ -536,13 +535,13 @@ static SymbolDictionary::Entry* LookupSymbol(SemanticState *state, StringView id
 }
 
 template<typename SymbolType>
-static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, StringView identifier, SymbolDictionary **dictionary)
+static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *state, std::string_view identifier, SymbolDictionary **dictionary)
 {
 	/* TODO: Deduplicate this with `LookupSymbol`. */
 	SymbolDictionary::Entry *dictionary_entry = NULL;
 
 	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
-	String expanded_identifier;
+	std::string expanded_identifier;
 	identifier = ExpandIdentifier(state, identifier, expanded_identifier);
 
 	if (state->macro.dictionary != NULL)
@@ -577,7 +576,7 @@ static cc_bool ResolveExpressionWithoutFolding(SemanticState *state, Expression 
 	return ResolveExpression(state, expression, value, cc_false);
 }
 
-static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifier, const cc_bool must_evaluate_on_first_pass, unsigned long* const value)
+static cc_bool GetSymbolInteger(SemanticState *state, const std::string_view &identifier, const cc_bool must_evaluate_on_first_pass, unsigned long* const value)
 {
 	SymbolDictionary::Entry *dictionary_entry;
 
@@ -659,7 +658,7 @@ static cc_bool GetSymbolInteger(SemanticState *state, const StringView &identifi
 }
 
 // TODO: Just inline this.
-static void AddToSourceLineList(SourceLineList &source_line_list, const StringView &source_line)
+static void AddToSourceLineList(SourceLineList &source_line_list, const std::string_view &source_line)
 {
 	source_line_list.emplace_back(source_line);
 }
@@ -863,14 +862,14 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			},
 			[&](ExpressionIdentifier &expression)
 			{
-				if (!GetSymbolInteger(state, String_View(expression.string), cc_false, value))
+				if (!GetSymbolInteger(state, expression.string, cc_false, value))
 					return cc_false;
 
 				return cc_true;
 			},
 			[&](ExpressionString &expression)
 			{
-				const size_t length = String_Length(expression.string);
+				const size_t length = expression.string.length();
 
 				if (length > 4)
 				{
@@ -883,7 +882,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 				for (size_t i = 0; i < length; ++i)
 				{
 					*value <<= 8;
-					*value |= String_At(expression.string, i);
+					*value |= expression.string[i];
 				}
 
 				return cc_true;
@@ -900,12 +899,12 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			},
 			[&](ExpressionStrlen &expression)
 			{
-				*value = String_Length(expression.string);
+				*value = expression.string.length();
 				return cc_true;
 			},
 			[&](ExpressionStrcmp &expression)
 			{
-				*value = String_Compare(expression.string_a, expression.string_b) ? -1 : 0;
+				*value = expression.string_a == expression.string_b ? -1 : 0;
 				return cc_true;
 			},
 			[&](ExpressionInstr &expression)
@@ -925,13 +924,13 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 				}
 
 				/* TODO: What if 'position' is 0? */
-				const size_t found_position = CaseInsensitive::FindString(expression_string_a->string, String_View(expression_string_b->string), position - 1, state->options->case_insensitive);
+				const size_t found_position = CaseInsensitive::FindString(expression_string_a->string, expression_string_b->string, position - 1, state->options->case_insensitive);
 				*value = found_position == expression_string_a->string.npos ? 0 : found_position + 1;
 				return cc_true;
 			},
 			[&](ExpressionDef &expression)
 			{
-				*value = LookupSymbol(state, String_View(expression.string), NULL) != NULL ? -1 : 0;
+				*value = LookupSymbol(state, expression.string, NULL) != NULL ? -1 : 0;
 				return cc_true;
 			},
 			[&](ExpressionTypeWithIdentifier&)
@@ -946,7 +945,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			},
 			[&](ExpressionFilesize &expression)
 			{
-				const String standard_path = ToStandardPath(String_View(expression.string));
+				const std::string standard_path = ToStandardPath(expression.string);
 
 				if (!std::filesystem::exists(standard_path))
 				{
@@ -1002,7 +1001,7 @@ static void TerminateRept(SemanticState *state, SemanticState::ModeRept &rept_st
 	++state->location.front().line_number;
 }
 
-static void PurgeMacro(SemanticState* const state, StringView identifier, const cc_bool allow_undefined)
+static void PurgeMacro(SemanticState* const state, std::string_view identifier, const cc_bool allow_undefined)
 {
 	SymbolDictionary *dictionary;
 	SymbolDictionary::Entry* const entry = LookupSymbol(state, identifier, &dictionary);
@@ -1027,14 +1026,14 @@ static void PurgeMacro(SemanticState* const state, StringView identifier, const 
 	else
 	{
 		/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
-		String expanded_identifier;
+		std::string expanded_identifier;
 		identifier = ExpandIdentifier(state, identifier, expanded_identifier);
 
 		dictionary->Remove(identifier);
 	}
 }
 
-static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifier, SymbolVariable symbol_contents)
+static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolVariable symbol_contents)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolVariable>(state, identifier, NULL);
 
@@ -1046,7 +1045,7 @@ static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifi
 	return cc_true;
 }
 
-static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifier, SymbolConstant symbol_contents)
+static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolConstant symbol_contents)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolConstant>(state, identifier, NULL);
 
@@ -1066,7 +1065,7 @@ static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifi
 	return cc_true;
 }
 
-static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifier, SymbolLabel symbol_contents)
+static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolLabel symbol_contents)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolLabel>(state, identifier, NULL);
 
@@ -1084,7 +1083,7 @@ static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifi
 	return cc_true;
 }
 
-static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifier, SymbolExpressionConstant symbol_contents)
+static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolExpressionConstant symbol_contents)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolExpressionConstant>(state, identifier, NULL);
 
@@ -1098,7 +1097,7 @@ static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifi
 
 static cc_bool AddToSymbolTable(SemanticState *state, SymbolMacro symbol_contents)
 {
-	const StringView &identifier = symbol_contents.macro.name;
+	const std::string_view &identifier = symbol_contents.macro.name;
 
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolMacro>(state, identifier, NULL);
 
@@ -1116,7 +1115,7 @@ static cc_bool AddToSymbolTable(SemanticState *state, SymbolMacro symbol_content
 	return cc_true;
 }
 
-static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifier, SymbolSpecial symbol_contents)
+static cc_bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolSpecial symbol_contents)
 {
 	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolSpecial>(state, identifier, NULL);
 
@@ -1130,7 +1129,7 @@ static cc_bool AddToSymbolTable(SemanticState *state, const StringView &identifi
 
 static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro_state)
 {
-	const StringView &identifier = String_View(macro_state.metadata.name);
+	const std::string_view &identifier = macro_state.metadata.name;
 
 	PurgeMacro(state, identifier, cc_true);
 
@@ -1139,7 +1138,7 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 		/* See comment in PurgeMacro after the check for the same condition for more details. */
 		SemanticError(state, "Cannot define macro '{}' during macro expansion.\n", identifier);
 	}
-	else if (!StringView_Empty(identifier))
+	else if (!identifier.empty())
 	{
 		/* Add the macro to the symbol table. */
 		AddToSymbolTable(state, SymbolMacro{std::move(macro_state.metadata)});
@@ -1151,7 +1150,7 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 
 static void TerminateWhile(SemanticState *state, SemanticState::ModeWhile &while_state)
 {
-	const StringView old_source_line = state->source_line;
+	const std::string_view old_source_line = state->source_line;
 
 	/* Back-up some state into local variables, in case a nested WHILE statement clobbers it. */
 	auto while_state_copy = std::move(while_state);
@@ -1321,14 +1320,14 @@ static unsigned int ToAlternateEffectiveAddressBits(unsigned int bits)
 	return (m << 6) | (dn << 9);
 }
 
-static void SetLastGlobalLabel(SemanticState *state, const StringView &label)
+static void SetLastGlobalLabel(SemanticState *state, const std::string_view &label)
 {
-	const char first_character = StringView_At(label, 0);
+	const char first_character = label[0];
 
 	if (first_character != state->options->local_signifier)
 	{
 		/* This is a global label - cache it for later. */
-		String_CreateCopyView(state->last_global_label, label);
+		state->last_global_label = label;
 	}
 }
 
@@ -4141,7 +4140,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 	}
 }
 
-static void PushSubstitute(SemanticState* const state, const StringView &identifier, const StringView &value)
+static void PushSubstitute(SemanticState* const state, const std::string_view &identifier, const std::string_view &value)
 {
 	SymbolDictionary *dictionary;
 	SymbolDictionary::Entry* const dictionary_entry = LookupSymbolAndCreateIfNotExist<SymbolStringConstant>(state, identifier, &dictionary);
@@ -4153,13 +4152,13 @@ static void PushSubstitute(SemanticState* const state, const StringView &identif
 				[&](SymbolNone&)
 				{
 					auto &symbol = dictionary_entry->emplace<SymbolStringConstant>();
-					String_CreateCopyView(symbol.value, value);
+					symbol.value = value;
 					auto &substitute = dictionary == &state->dictionary ? state->substitutions : state->macro.substitutions;
 					substitute.PushSubstitute(identifier, symbol.value);
 				},
 				[&](SymbolStringConstant &symbol)
 				{
-					String_CreateCopyView(symbol.value, value);
+					symbol.value = value;
 				},
 				[&](auto&)
 				{
@@ -4173,12 +4172,12 @@ static void PushSubstitute(SemanticState* const state, const StringView &identif
 
 static void PushMacroArgumentSubstitutions(SemanticState* const state)
 {
-	const StringView blank_argument = STRING_VIEW_INITIALISER_BLANK;
+	const std::string_view blank_argument;
 
 	for (size_t argument_index = 0; argument_index < state->macro.metadata->parameter_names.size(); ++argument_index)
 	{
-		const StringView &parameter = String_View(state->macro.metadata->parameter_names[argument_index]);
-		const StringView &argument = argument_index >= state->macro.total_arguments ? blank_argument : String_View(state->macro.argument_list[argument_index]);
+		const std::string_view &parameter = state->macro.metadata->parameter_names[argument_index];
+		const std::string_view &argument = argument_index >= state->macro.total_arguments ? blank_argument : state->macro.argument_list[argument_index];
 
 		SymbolDictionary::Entry &dictionary_entry = state->macro.dictionary->LookUpAndCreateIfNotExist(parameter);
 
@@ -4188,12 +4187,12 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 				[&](SymbolNone&)
 				{
 					auto &symbol = dictionary_entry.emplace<SymbolStringConstant>();
-					String_CreateCopyView(symbol.value, argument);
+					symbol.value = argument;
 					state->macro.substitutions.PushSubstitute(parameter, symbol.value);
 				},
 				[&](SymbolStringConstant &symbol)
 				{
-					String_CreateCopyView(symbol.value, argument);
+					symbol.value = argument;
 				},
 				[&](auto&)
 				{
@@ -4276,10 +4275,8 @@ static void ProcessDc(SemanticState *state, StatementDc *dc)
 		{
 			/* If this is a 'dc.b', and the value is a raw string, then output each character as a single byte. */
 			/* This allows 'dc.b' to be used to embed strings into the output. */
-			size_t i;
-
-			for (i = 0; i < String_Length(expression_string->string); ++i)
-				OutputDcValue(state, dc->size, String_At(expression_string->string, i));
+			for (const char character : expression_string->string)
+				OutputDcValue(state, dc->size, character);
 		}
 		else
 		{
@@ -4342,7 +4339,7 @@ static void ProcessDs(SemanticState *state, StatementDs *ds)
 
 static void ProcessInclude(SemanticState *state, const StatementInclude *include)
 {
-	std::ifstream input_stream(ToStandardPath(String_View(include->path)));
+	std::ifstream input_stream(ToStandardPath(include->path));
 
 	if (!input_stream.is_open())
 	{
@@ -4366,7 +4363,7 @@ static void ProcessInclude(SemanticState *state, const StatementInclude *include
 
 static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 {
-	std::ifstream input_file(ToStandardPath(String_View(incbin->path)), input_file.binary);
+	std::ifstream input_file(ToStandardPath(incbin->path), input_file.binary);
 
 	if (!input_file.is_open())
 	{
@@ -4458,7 +4455,7 @@ static cc_bool ReadSourceLineRaw(SemanticState *state, size_t &line_buffer_write
 	return cc_true;
 }
 
-static cc_bool ReadSourceLine(SemanticState *state, StringView &source_line)
+static cc_bool ReadSourceLine(SemanticState *state, std::string_view &source_line)
 {
 	cc_bool data_read = cc_false;
 	size_t line_buffer_read_position = 0, line_buffer_write_position = 0;
@@ -4505,7 +4502,7 @@ static cc_bool ReadSourceLine(SemanticState *state, StringView &source_line)
 		/* Go back and get another line. */
 	}
 
-	StringView_Create(source_line, state->line_buffer.data(), line_buffer_read_position);
+	source_line = {state->line_buffer.data(), line_buffer_read_position};
 
 	return data_read;
 }
@@ -4525,12 +4522,12 @@ static void ProcessRept(SemanticState *state, StatementRept *rept)
 	mode.nesting = 0;
 }
 
-static void ProcessMacro(SemanticState *state, StatementMacro *macro, const StringView &label, cc_bool is_short)
+static void ProcessMacro(SemanticState *state, StatementMacro *macro, const std::string_view &label, cc_bool is_short)
 {
 	/* Enter MACRO mode. */
 	auto &mode = state->mode.emplace<SemanticState::ModeMacro>();
 
-	String_CreateCopyView(mode.metadata.name, label);
+	mode.metadata.name = label;
 	mode.line_number = state->location.front().line_number;
 	mode.metadata.parameter_names = std::move(macro->parameter_names);
 	mode.metadata.is_short = is_short;
@@ -4556,7 +4553,7 @@ static void ProcessIf(SemanticState *state, Expression *expression)
 	state->true_already_found = value != 0;
 }
 
-static void ProcessStatement(SemanticState *state, Statement *statement, const StringView &label)
+static void ProcessStatement(SemanticState *state, Statement *statement, const std::string_view &label)
 {
 	/* Bizarrely, depending on the context, the program counter can be one
 	   of two values, so we need to maintain two separate copies of it. */
@@ -4590,7 +4587,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		StatementPurge
 	>(*statement))
 	{
-		if (!StringView_Empty(label) && !state->doing_fixup_pass)
+		if (!label.empty() && !state->doing_fixup_pass)
 		{
 			/* Handle the label here, instead of passing it onto a later function. */
 			SetLastGlobalLabel(state, label);
@@ -4611,7 +4608,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		StatementOrg
 	>(*statement))
 	{
-		if (!StringView_Empty(label))
+		if (!label.empty())
 			SemanticError(state, "There cannot be a label on this type of statement.");
 	}
 	else if (CC_VariantHoldsAnyOf<
@@ -4624,7 +4621,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 		StatementSet
 	>(*statement))
 	{
-		if (StringView_Empty(label))
+		if (label.empty())
 		{
 			SemanticError(state, "This type of statement must have a label.");
 			/* Bail, to avoid null pointer dereferences. */
@@ -4725,23 +4722,23 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 			},
 			[&](StatementEquSString &statement)
 			{
-				PushSubstitute(state, label, String_View(statement.string));
+				PushSubstitute(state, label, statement.string);
 			},
 			[&](StatementEquSIdentifier &statement)
 			{
-				const SymbolDictionary::Entry* const dictionary_entry = LookupSymbol(state, String_View(statement.string), NULL);
+				const SymbolDictionary::Entry* const dictionary_entry = LookupSymbol(state, statement.string, NULL);
 
 				const SymbolStringConstant* const symbol_string_constant = dictionary_entry == NULL ? NULL : std::get_if<SymbolStringConstant>(dictionary_entry);
 
 				if (symbol_string_constant == NULL)
 					SemanticError(state, "String constant can only be defined as a string or another string constant.");
 				else
-					PushSubstitute(state, label, String_View(symbol_string_constant->value));
+					PushSubstitute(state, label, symbol_string_constant->value);
 			},
 			[&](StatementSubstr &statement)
 			{
 				unsigned long start, end;
-				StringView substring;
+				std::string_view substring;
 
 				auto &substr = statement;
 
@@ -4768,12 +4765,12 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 
 				/* Clamp start and end to make it so that, if the string would go beyond the end, it is truncated appropriately instead of going out-of-bounds */
 				/* (this matches asm68k, as far as I can see). */
-				if (start > String_Length(substr.string))
-					start = String_Length(substr.string) + 1;
-				if (end > String_Length(substr.string))
-					end = String_Length(substr.string);
+				if (start > substr.string.length())
+					start = substr.string.length() + 1;
+				if (end > substr.string.length())
+					end = substr.string.length();
 
-				StringView_SubStr(substring, String_View(substr.string), start - 1, end - start + 1);
+				substring = substr.string.substr(start - 1, end - start + 1);
 				PushSubstitute(state, label, substring);
 			},
 			[&](StatementSet &statement)
@@ -4871,7 +4868,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				   want its sub-expressions to be automatically freed when the statement is freed. */
 				mode.expression.emplace<ExpressionNumber>(0);
 				std::swap(mode.expression, while_statement.expression);
-				String_CreateCopyView(mode.source_line, state->source_line);
+				mode.source_line = state->source_line;
 
 				mode.line_number = state->location.front().line_number;
 				mode.nesting = 0;
@@ -4989,7 +4986,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				else
 				{
 					/* Add label to symbol table. */
-					if (!StringView_Empty(label))
+					if (!label.empty())
 					{
 						AddToSymbolTable(state, label, SymbolConstant{state->rs});
 						ListIdentifierValue(state, state->rs);
@@ -5125,8 +5122,8 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 						state->options->local_signifier = '.';
 					else if (CaseInsensitive::CompareStrings(option, "l-"))
 						state->options->local_signifier = '@';
-					else if (String_Length(option) == 2 && (String_At(option, 0) == 'l' || String_At(option, 0) == 'L'))
-						state->options->local_signifier = String_At(option, 1);
+					else if (option.length() == 2 && (option[0] == 'l' || option[0] == 'L'))
+						state->options->local_signifier = option[1];
 					/*else if (CaseInsensitive::CompareStrings(option, "s+"))
 						;*/
 					else if (CaseInsensitive::CompareStrings(option, "s-"))
@@ -5171,7 +5168,7 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				}
 				else
 				{
-					PushSubstitute(state, String_View(statement.string), state->string_stack.top());
+					PushSubstitute(state, statement.string, state->string_stack.top());
 					state->string_stack.pop();
 				}
 			},
@@ -5209,12 +5206,12 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 				else
 				{
 					for (const auto &identifier : statement.identifiers)
-						state->macro.dictionary->LookUpAndCreateIfNotExist(String_View(identifier));
+						state->macro.dictionary->LookUpAndCreateIfNotExist(identifier);
 				}
 			},
 			[&](StatementPurge &statement)
 			{
-				PurgeMacro(state, String_View(statement.string), cc_false);
+				PurgeMacro(state, statement.string, cc_false);
 			}
 		}, *statement
 	);
@@ -5224,17 +5221,17 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const S
 	state->program_counter_of_expression = state->program_counter;
 }
 
-static cc_bool ParseStatement(SemanticState* const state, const StringView &view)
+static cc_bool ParseStatement(SemanticState* const state, const std::string_view &view)
 {
 	/* Parse the source line with Flex and Bison (Lex and Yacc). */
-	const YY_BUFFER_STATE buffer = m68kasm__scan_bytes(StringView_Data(view), StringView_Length(view), *state->flex_state);
+	const YY_BUFFER_STATE buffer = m68kasm__scan_bytes(view.data(), view.length(), *state->flex_state);
 	const int parse_result = state->parser.parse();
 	m68kasm__delete_buffer(buffer, *state->flex_state);
 
 	return parse_result == 0;
 }
 
-static void ParseLine(SemanticState* const state, const StringView &label, const StringView &directive_and_operands)
+static void ParseLine(SemanticState* const state, const std::string_view &label, const std::string_view &directive_and_operands)
 {
 	/* This is a normal assembly line. */
 
@@ -5269,9 +5266,9 @@ static void ParseLine(SemanticState* const state, const StringView &label, const
 			fixup.program_counter = starting_program_counter;
 			fixup.output_position = starting_output_position;
 			fixup.segment_length = starting_segment_length;
-			String_CreateCopy(fixup.last_global_label, state->last_global_label);
-			String_CreateCopyView(fixup.source_line, state->source_line);
-			String_CreateCopyView(fixup.label, label);
+			fixup.last_global_label = state->last_global_label;
+			fixup.source_line = state->source_line;
+			fixup.label = label;
 			fixup.options = *state->options;
 
 			/* Clone the location. */
@@ -5285,7 +5282,7 @@ static void ParseLine(SemanticState* const state, const StringView &label, const
 #define DIRECTIVE_OR_MACRO_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_"
 #define LABEL_CHARS DIRECTIVE_OR_MACRO_CHARS ".@"
 
-static void PerformSubstitutionsOnSubString(SemanticState* const state, String &string, StringView &view_to_search, const cc_bool allow_implicit_matches)
+static void PerformSubstitutionsOnSubString(SemanticState* const state, std::string &string, std::string_view &view_to_search, const cc_bool allow_implicit_matches)
 {
 	const cc_bool case_insensitive = state->options->case_insensitive;
 
@@ -5295,68 +5292,65 @@ static void PerformSubstitutionsOnSubString(SemanticState* const state, String &
 		state->substitutions.ProcessSubString(NULL, string, view_to_search, NULL, allow_implicit_matches, case_insensitive);
 }
 
-static void PerformSubstitutions(SemanticState* const state, String &string, const cc_bool allow_implicit_matches)
+static void PerformSubstitutions(SemanticState* const state, std::string &string, const cc_bool allow_implicit_matches)
 {
-	StringView view = String_View(string);
+	std::string_view view = string;
 	PerformSubstitutionsOnSubString(state, string, view, allow_implicit_matches);
 }
 
-static cc_bool FindStringInSourceLine(const String &string, const size_t starting_position, StringView &view)
+static cc_bool FindStringInSourceLine(const std::string &string, const size_t starting_position, std::string_view &view)
 {
-	const char *start_pointer, *end_pointer;
+	const auto start_position = string.find_first_of("'\"", starting_position);
 
-	start_pointer = strpbrk(&String_At(string, starting_position), "'\"");
-
-	if (start_pointer == NULL)
+	if (start_position == string.npos)
 		return cc_false;
 
-	end_pointer = strchr(start_pointer + 1, *start_pointer);
+	const auto end_position = string.find_first_of(string[start_position], start_position + 1);
 
-	if (end_pointer == NULL)
+	if (end_position == string.npos)
 		return cc_false;
 
-	StringView_Create(view, start_pointer, end_pointer - start_pointer + 1);
+	view = std::string_view(string).substr(start_position, end_position - start_position);
 	return cc_true;
 }
 
 /* Performs string substitutions only in parts of the string that are not wrapped in quotations. */
 /* This is needed to simulate how SN 68k does not expand string constants in strings, only expressions and operands. */
-static void PerformSubstitutionsExcludingQuotedStrings(SemanticState* const state, String &string, const size_t starting_position, const cc_bool allow_implicit_matches)
+static void PerformSubstitutionsExcludingQuotedStrings(SemanticState* const state, std::string &string, const size_t starting_position, const cc_bool allow_implicit_matches)
 {
 	cc_bool string_in_source_line_found;
 	size_t position = starting_position;
 
 	do
 	{
-		StringView string_in_source_line;
+		std::string_view string_in_source_line;
 
 		string_in_source_line_found = FindStringInSourceLine(string, position, string_in_source_line);
 
 		/* Pretend there's a string at the end of the line, so that we can repurpose the code below. */
 		if (!string_in_source_line_found)
-			StringView_Create(string_in_source_line, String_Data(string) + String_Length(string), 0);
+			string_in_source_line = std::string_view(string).substr(string.length());
 
 		/* We've found a string! Perform substitutions on the part of the line before it. */
 		{
-			StringView view_to_search;
 			/* Define the region that we will perform substitutions on. */
-			const char* const search_start = &String_At(string, position);
-			const size_t search_length = StringView_Data(string_in_source_line) - search_start;
+			const size_t search_start = position;
+			const size_t search_end = string_in_source_line.data() - string.data();
 
 			/* Perform the substitutions. */
-			StringView_Create(view_to_search, search_start, search_length);
+			std::string_view view_to_search = std::string_view(string).substr(search_start, search_end - search_start);
 			PerformSubstitutionsOnSubString(state, string, view_to_search, allow_implicit_matches);
 
 			/* Move to after the string so that we can continue searching. */
-			position += StringView_Length(view_to_search) + StringView_Length(string_in_source_line);
+			position += view_to_search.length() + string_in_source_line.length();
 		}
 	}
 	while (string_in_source_line_found);
 }
 
-static void SubstituteAndParseLine(SemanticState *state, const StringView &label, const StringView &directive_and_operands, const StringView &directive)
+static void SubstituteAndParseLine(SemanticState *state, const std::string_view &label, const std::string_view &directive_and_operands, const std::string_view &directive)
 {
-	String modified_directive_and_operands;
+	std::string modified_directive_and_operands;
 
 	/* Because of the below hack, we have to filter-out directives that do not use expressions or operands,
 	   to prevent them from accidentally being substituted. This is needed for the Natsumi Z80 macros. */
@@ -5376,13 +5370,13 @@ static void SubstituteAndParseLine(SemanticState *state, const StringView &label
 	/* Perform implicit (backslash-less) string substitutions on the operands.
 	   SN 68k achieves this by expanding string constants in its operand and expression evaluators,
 	   which is absolutely insane, so this trick approximates it instead. */
-	String_CreateCopyView(modified_directive_and_operands, directive_and_operands);
-	PerformSubstitutionsExcludingQuotedStrings(state, modified_directive_and_operands, StringView_Length(directive), cc_true);
+	modified_directive_and_operands = directive_and_operands;
+	PerformSubstitutionsExcludingQuotedStrings(state, modified_directive_and_operands, directive.length(), cc_true);
 
-	ParseLine(state, label, String_View(modified_directive_and_operands));
+	ParseLine(state, label, modified_directive_and_operands);
 }
 
-static void InvokeMacro(SemanticState* const state, const Macro* const macro, const StringView &label, StringView source_line)
+static void InvokeMacro(SemanticState* const state, const Macro* const macro, const std::string_view &label, std::string_view source_line)
 {
 	/* This is a macro invocation. */
 	const SemanticState_Macro previous_macro_state = std::move(state->macro);
@@ -5408,9 +5402,9 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 
 		state->suppress_listing = cc_true;
 
-		StringView_RemovePrefix(source_line, StringView_StrSpn(source_line, DIRECTIVE_OR_MACRO_CHARS));
+		source_line.remove_prefix(Utilities::String::Span(source_line, DIRECTIVE_OR_MACRO_CHARS));
 
-		if (!StringView_Empty(label))
+		if (!label.empty())
 		{
 			SetLastGlobalLabel(state, label);
 
@@ -5418,45 +5412,34 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 				AddToSymbolTable(state, label, SymbolLabel{state->program_counter});
 		}
 
-		StringView size;
+		std::string_view size;
 
 		/* Extract and store the macro size specifier, if one exists. */
-		if (!StringView_Empty(source_line) && StringView_Front(source_line) == '.')
+		if (!source_line.empty() && source_line.front() == '.')
 		{
 			/* Skip the '.' character. */
-			StringView_RemovePrefix(source_line, 1);
+			source_line.remove_prefix(1);
 
-			StringView_SubStr(size, source_line, 0, StringView_StrSpn(source_line, DIRECTIVE_OR_MACRO_CHARS));
+			size = source_line.substr(0, Utilities::String::Span(source_line, DIRECTIVE_OR_MACRO_CHARS));
 
 			/* Advance past the size specifier. */
-			StringView_RemovePrefix(source_line, StringView_Length(size));
-		}
-		else
-		{
-			StringView_CreateBlank(size);
+			source_line.remove_prefix(size.length());
 		}
 
 		/* Extract combined arguments string. */
-		const char* const arguments_string_start = StringView_Data(source_line);
-		const char *arguments_string_end = (const char*)memchr(StringView_Data(source_line), ';', StringView_Length(source_line));
-
-		if (arguments_string_end == NULL)
-			arguments_string_end = StringView_Data(source_line) + StringView_Length(source_line);
-
-		StringView arguments;
-		StringView_Create(arguments, arguments_string_start, arguments_string_end - arguments_string_start);
+		std::string_view arguments = source_line.substr(0, source_line.find(';'));
 
 		/* Remove leading whitespace. */
-		StringView_RemovePrefix(arguments, StringView_StrSpn(arguments, " \t"));
+		arguments.remove_prefix(Utilities::String::Span(arguments, " \t"));
 
 		/* Remove trailing whitespace. */
-		while (!StringView_Empty(arguments) && (StringView_Back(arguments) == ' ' || StringView_Back(arguments) == '\t'))
-			StringView_RemoveSuffix(arguments, 1);
+		while (!arguments.empty() && (arguments.back() == ' ' || arguments.back() == '\t'))
+			arguments.remove_suffix(1);
 
-		const String unique_suffix = ComputeUniqueMacroSuffix(state);
-		String symbol_value_string;
+		const std::string unique_suffix = ComputeUniqueMacroSuffix(state);
+		std::string symbol_value_string;
 
-		state->macro.custom_search = [state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const StringView &view_to_search, size_t starting_position, cc_bool case_insensitive, size_t* const found_position, size_t* const found_length) -> std::optional<StringView>
+		state->macro.custom_search = [state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, size_t starting_position, cc_bool case_insensitive, size_t* const found_position, size_t* const found_length) -> std::optional<std::string_view>
 		{
 			/* `view_to_search` always points to a null-terminated string. */
 			(void)case_insensitive;
@@ -5465,10 +5448,10 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 			{
 				const std::size_t symbol_position = *found_position + 1;
 
-				if (symbol_position == StringView_Length(view_to_search))
+				if (symbol_position == view_to_search.length())
 					break;
 
-				const char symbol = StringView_At(view_to_search, symbol_position);
+				const char symbol = view_to_search[symbol_position];
 
 				*found_length = 2;
 
@@ -5478,7 +5461,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 						return size;
 
 					case '_':
-						if (*found_position + *found_length < StringView_Length(view_to_search) && Substitute::IsSubstituteBlockingCharacter(StringView_At(view_to_search, *found_position + *found_length)))
+						if (*found_position + *found_length < view_to_search.length() && Substitute::IsSubstituteBlockingCharacter(view_to_search[*found_position + *found_length]))
 							continue;
 
 						return arguments;
@@ -5487,23 +5470,22 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 						return label;
 
 					case '@':
-						return String_View(unique_suffix);
+						return unique_suffix;
 
 					case '#':
 					case '$':
 					{
-						StringView identifier;
 						unsigned long value;
 
 						const std::size_t identifier_position_start = symbol_position + 1;
-						const std::size_t identifier_position_end = StringView_StrSpn(view_to_search, DIRECTIVE_OR_MACRO_CHARS, identifier_position_start);
+						const std::size_t identifier_position_end = Utilities::String::Span(view_to_search, DIRECTIVE_OR_MACRO_CHARS, identifier_position_start);
 
-						StringView_SubStr(identifier, view_to_search, identifier_position_start, identifier_position_end - identifier_position_start);
+						const std::string_view identifier = view_to_search.substr(identifier_position_start, identifier_position_end - identifier_position_start);
 
-						*found_length += StringView_Length(identifier);
+						*found_length += identifier.length();
 
 						/* Absorb trailing backslash. */
-						if (identifier_position_end < StringView_Length(view_to_search) && StringView_At(view_to_search, identifier_position_end) == '\\')
+						if (identifier_position_end < view_to_search.length() && view_to_search[identifier_position_end] == '\\')
 							++*found_length;
 
 						if (!GetSymbolInteger(state, identifier, cc_true, &value))
@@ -5514,7 +5496,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 						else /*if (symbol == '$')*/
 							symbol_value_string = HexadecimalIntegerToString(value);
 
-						return String_View(symbol_value_string);
+						return symbol_value_string;
 					}
 
 					default:
@@ -5522,7 +5504,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 						char *end;
 
 						/* Obtain numerical index of the parameter. */
-						const char* const start = &StringView_At(view_to_search, symbol_position);
+						const char* const start = &view_to_search[symbol_position];
 						const unsigned long parameter_index = strtoul(start, &end, 10) - 1;
 
 						/* Check if conversion failed. */
@@ -5532,12 +5514,9 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 						*found_length = 1 + (end - start);
 
 						if (parameter_index >= state->macro.total_arguments)
-						{
-							static const StringView blank_argument = STRING_VIEW_INITIALISER_BLANK;
-							return blank_argument;
-						}
+							return "";
 
-						return String_View(state->macro.argument_list[parameter_index]);
+						return state->macro.argument_list[parameter_index];
 					}
 				}
 			}
@@ -5551,10 +5530,10 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 			size_t argument_string_start = 0;
 			unsigned int argument_depth = 0;
 
-			for (i = 0; i <= StringView_Length(arguments); ++i)
+			for (i = 0; i <= arguments.length(); ++i)
 			{
-				const cc_bool at_the_end = i == StringView_Length(arguments);
-				const char character = at_the_end ? ',' : StringView_At(arguments, i);
+				const cc_bool at_the_end = i == arguments.length();
+				const char character = at_the_end ? ',' : arguments[i];
 
 				switch (character)
 				{
@@ -5570,27 +5549,25 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 						if (argument_depth == 0)
 						{
 							/* Extract argument. */
-							StringView argument;
-							StringView_SubStr(argument, arguments, argument_string_start, i - argument_string_start);
+							std::string_view argument = arguments.substr(argument_string_start, i - argument_string_start);
 							argument_string_start = i + 1;
 
 							/* Remove leading whitespace. */
-							StringView_RemovePrefix(argument, StringView_StrSpn(argument, " \t"));
+							argument.remove_prefix(Utilities::String::Span(argument, " \t"));
 
 							/* Remove trailing whitespace. */
-							while (!StringView_Empty(argument) && (StringView_Back(argument) == ' ' || StringView_Back(argument) == '\t'))
-								StringView_RemoveSuffix(argument, 1);
+							while (!argument.empty() && (argument.back() == ' ' || argument.back() == '\t'))
+								argument.remove_suffix(1);
 
 							/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
-							if (StringView_Empty(argument) && at_the_end && state->macro.total_arguments == 0)
+							if (argument.empty() && at_the_end && state->macro.total_arguments == 0)
 								break;
 
 							/* Add to argument list. */
-							state->macro.argument_list.emplace_back();
-							String_CreateCopyView(state->macro.argument_list[state->macro.total_arguments], argument);
+							state->macro.argument_list.emplace_back(argument);
 
-							if (StringView_Length(argument) != 0 && StringView_At(argument, 0) != '"' && StringView_At(argument, 0) != '\'' && state->options->case_insensitive)
-								CaseInsensitive::ToLower(state->macro.argument_list[state->macro.total_arguments]);
+							if (argument.length() != 0 && argument[0] != '"' && argument[0] != '\'' && state->options->case_insensitive)
+								Utilities::String::ToLower(state->macro.argument_list[state->macro.total_arguments]);
 
 							++state->macro.total_arguments;
 							++state->macro.total_arguments_at_start;
@@ -5621,8 +5598,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 				/* TODO: This is redundant and wrong: these substitutions are already done later, and this should only be doing the macro arguments! */
 				if (macro->is_short)
 				{
-					String expanded_source_line;
-					String_CreateCopy(expanded_source_line, source_line);
+					std::string expanded_source_line = source_line;
 					PerformSubstitutions(state, expanded_source_line, cc_false);
 					AssembleLine(state, expanded_source_line, state->options->expand_all_macros);
 				}
@@ -5652,16 +5628,16 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 	state->macro = previous_macro_state;
 }
 
-static void AssembleLine(SemanticState *state, const StringView &source_line_raw, const cc_bool write_line_to_listing_file)
+static void AssembleLine(SemanticState *state, const std::string_view &source_line_raw, const cc_bool write_line_to_listing_file)
 {
-	String source_line;
+	std::string source_line;
 	size_t label_length;
-	StringView source_line_subview;
-	StringView label;
+	std::string_view source_line_subview;
+	std::string_view label;
 	size_t directive_length;
-	StringView directive_and_operands, directive;
+	std::string_view directive_and_operands, directive;
 
-	const StringView old_source_line = state->source_line;
+	const std::string_view old_source_line = state->source_line;
 
 	/* Assert a few preconditions to ensure we're in a non-insane state. */
 	assert(CurrentlyExpandingMacro(state) == (state->macro.depth > 0));
@@ -5686,7 +5662,7 @@ static void AssembleLine(SemanticState *state, const StringView &source_line_raw
 	   can have unique expansions! */
 	if (std::holds_alternative<SemanticState::ModeNormal>(state->mode))
 	{
-		String_CreateCopyView(source_line, source_line_raw);
+		source_line = source_line_raw;
 		PerformSubstitutions(state, source_line, cc_false);
 		state->source_line = source_line;
 	}
@@ -5697,7 +5673,7 @@ static void AssembleLine(SemanticState *state, const StringView &source_line_raw
 
 	++state->location.front().line_number;
 
-	if (!StringView_Empty(state->source_line) && StringView_At(state->source_line, 0) == '*')
+	if (!state->source_line.empty() && state->source_line[0] == '*')
 	{
 		/* This whole line is a comment. */
 	}
@@ -5714,7 +5690,7 @@ static void AssembleLine(SemanticState *state, const StringView &source_line_raw
 		/* Let's begin by parsing the label (if there is one). */
 
 		/* Determine the length of the label. */
-		label_length = StringView_StrSpn(source_line_subview, LABEL_CHARS);
+		label_length = Utilities::String::Span(source_line_subview, LABEL_CHARS);
 
 		if (label_length != 0)
 		{
@@ -5725,16 +5701,16 @@ static void AssembleLine(SemanticState *state, const StringView &source_line_raw
 			/* Maybe the label has some whitespace before it: check again. */
 
 			/* Skip whitespace. */
-			StringView_RemovePrefix(source_line_subview, StringView_StrSpn(source_line_subview, " \t"));
+			source_line_subview.remove_prefix(Utilities::String::Span(source_line_subview, " \t"));
 
 			/* Determine the length of the label again. */
-			label_length = StringView_StrSpn(source_line_subview, LABEL_CHARS);
+			label_length = Utilities::String::Span(source_line_subview, LABEL_CHARS);
 
 			if (label_length != 0)
 			{
 				/* Since we've encountered whitespace, it's ambiguous whether this is a label or a statement.
 				   To figure it out, we have to rely on the label having a ':' after it. */
-				if (label_length < StringView_Length(source_line_subview) && StringView_At(source_line_subview, label_length) == ':')
+				if (label_length < source_line_subview.length() && source_line_subview[label_length] == ':')
 				{
 					/* We've found the label. */
 				}
@@ -5747,30 +5723,30 @@ static void AssembleLine(SemanticState *state, const StringView &source_line_raw
 		}
 
 		/* Duplicate the label (if any) for later. */
-		StringView_SubStr(label, source_line_subview, 0, label_length);
+		label = source_line_subview.substr(0, label_length);
 
 		if (label_length != 0)
 		{
 			/* Advance past the label in the source string. */
-			StringView_RemovePrefix(source_line_subview, label_length);
+			source_line_subview.remove_prefix(label_length);
 
 			/* Skip past the colon at the end, if one exists. */
-			if (!StringView_Empty(source_line_subview) && StringView_Front(source_line_subview) == ':')
-				StringView_RemovePrefix(source_line_subview, 1);
+			if (!source_line_subview.empty() && source_line_subview.front() == ':')
+				source_line_subview.remove_prefix(1);
 		}
 
 		/* Skip the whitespace between the label and the directive. */
-		StringView_RemovePrefix(source_line_subview, StringView_StrSpn(source_line_subview, " \t"));
+		source_line_subview.remove_prefix(Utilities::String::Span(source_line_subview, " \t"));
 
 		/* Next let's process the directive. If it's an if-statement or a macro
 		   invocation, then we'll need to handle it manually. If not, then we
 		   can pass it to Flex and Bison. */
 
 		/* Determine the length of the directive. */
-		directive_length = StringView_StrSpn(source_line_subview, DIRECTIVE_OR_MACRO_CHARS);
+		directive_length = Utilities::String::Span(source_line_subview, DIRECTIVE_OR_MACRO_CHARS);
 
 		directive_and_operands = source_line_subview;
-		StringView_SubStr(directive, directive_and_operands, 0, directive_length);
+		directive = directive_and_operands.substr(0, directive_length);
 
 		/* This is either a directive, or a macro. */
 		std::visit(
@@ -5855,10 +5831,10 @@ static void AssembleLine(SemanticState *state, const StringView &source_line_raw
 						if (macro_state.metadata.is_short)
 						{
 							/* Short macros automatically terminate after one statement. */
-							const size_t first_nonwhitespace_position = String_StrSpn(state->source_line, " \t");
-							const char first_nonwhitespace_character = first_nonwhitespace_position == String_Length(state->source_line) ? '\0' : String_At(state->source_line, first_nonwhitespace_position);
+							const size_t first_nonwhitespace_position = Utilities::String::Span(state->source_line, " \t");
+							const char first_nonwhitespace_character = first_nonwhitespace_position == state->source_line.length() ? '\0' : state->source_line[first_nonwhitespace_position];
 
-							if (!StringView_Empty(label))
+							if (!label.empty())
 								SemanticError(state, "Short macros shouldn't create labels.");
 
 							if (first_nonwhitespace_character == '\0' || first_nonwhitespace_character == ';')
@@ -5905,7 +5881,7 @@ static void AssembleLine(SemanticState *state, const StringView &source_line_raw
 
 static void AssembleFile(SemanticState *state)
 {
-	StringView source_line;
+	std::string_view source_line;
 
 	/* Read lines one at a time, feeding them to the 'AssembleLine' function. */
 	while (!state->end && ReadSourceLine(state, source_line))
@@ -5951,11 +5927,8 @@ static void AddDefinition(void* const internal, const char* const identifier_buf
 {
 	SemanticState* const state = (SemanticState*)internal;
 
-	StringView identifier;
-	StringView_Create(identifier, identifier_buffer, identifier_length);
-
 	/* TODO: Does asm68k create a constant or a variable? */
-	AddToSymbolTable(state, identifier, SymbolConstant{value});
+	AddToSymbolTable(state, {identifier_buffer, identifier_length}, SymbolConstant{value});
 }
 
 static cc_bool ClownAssembler_AssembleToObjectFile(
@@ -5984,8 +5957,8 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 	state.mode.emplace<SemanticState::ModeNormal>();
 
-	if (AddToSymbolTable(&state, string_rs,   SymbolSpecial{SymbolSpecial::Type::RS})
-	 && AddToSymbolTable(&state, string_narg, SymbolSpecial{SymbolSpecial::Type::NARG}))
+	if (AddToSymbolTable(&state, "__rs", SymbolSpecial{SymbolSpecial::Type::RS})
+	 && AddToSymbolTable(&state, "narg", SymbolSpecial{SymbolSpecial::Type::NARG}))
 	{
 		if (definition_callback != NULL)
 			definition_callback(&state, (void*)user_data, AddDefinition);
@@ -6011,7 +5984,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 
 		/* Write terminating record. */
 		OutputWriteRawByte(&state, 0x00);
-		output_stream.write(StringView_Data(string_assembler_identifier), StringView_Length(string_assembler_identifier));
+		output_stream << CLOWNASSEMBLER_VERSION_STRING;
 
 		/* Perform some sanity checks to make sure we're not somehow in an invalid state. */
 		if (state.current_if_level != 0)
@@ -6033,13 +6006,13 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 			state.program_counter = fixup.program_counter;
 			OutputSeek(&state, fixup.output_position);
 			state.segment_length = fixup.segment_length;
-			String_CreateMove(state.last_global_label, fixup.last_global_label);
+			state.last_global_label = std::move(fixup.last_global_label);
 			state.source_line = fixup.source_line;
 			state.location = std::move(fixup.location);
 			*state.options = fixup.options;
 
 			/* Re-process statement. */
-			ProcessStatement(&state, &fixup.statement, String_View(fixup.label));
+			ProcessStatement(&state, &fixup.statement, fixup.label);
 
 			/* We're done with this statement: delete it. */
 			state.fixup_list.pop_front();
@@ -6059,7 +6032,7 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 			symbol_stream->put(0);
 
 			state.dictionary.Filter(
-				[&](const SymbolDictionary::Entry &entry, const StringView &identifier) -> cc_bool
+				[&](const SymbolDictionary::Entry &entry, const std::string_view &identifier) -> cc_bool
 				{
 					/* The symbol file only contains labels. */
 					/* Labels longer than 0xFF characters are silently ignored. */
@@ -6072,11 +6045,12 @@ static cc_bool ClownAssembler_AssembleToObjectFile(
 						size_t label_length;
 						cc_bool is_local_label;
 
-						for (label = &StringView_At(identifier, StringView_Length(identifier)), label_length = 0; label_length != StringView_Length(identifier); --label, ++label_length)
+						/* TODO: Surely this string access will trigger an assert... */
+						for (label = &identifier[identifier.length()], label_length = 0; label_length != identifier.length(); --label, ++label_length)
 							if (*label == state.options->local_signifier)
 								break;
 
-						is_local_label = label_length != StringView_Length(identifier);
+						is_local_label = label_length != identifier.length();
 
 						if (label_length < 0x100 && (!is_local_label || state.options->output_local_labels_to_sym_file))
 						{

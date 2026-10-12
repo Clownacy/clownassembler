@@ -27,6 +27,7 @@
 #include <format>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <string_view>
 
 #include "syntactic.h"
@@ -400,10 +401,10 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 	/* Escape PATH mode so that the following arguments use the correct rules. */
 	BEGIN(OPERANDS);
 
-	StringView view(yytext + 1, yyleng - 2);
+	std::string_view view(yytext + 1, yyleng - 2);
 	std::string string;
 
-	string.reserve(StringView_Length(view));
+	string.reserve(view.length());
 
 	/* Copy string, turning escaped (paired) quotes into regular (lone) quotes. */
 	char previous_character = '\0';

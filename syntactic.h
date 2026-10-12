@@ -51,6 +51,8 @@
 #include <array>
 #include <deque>
 #include <memory>
+#include <string>
+#include <string_view>
 #include <variant>
 
 #include "clowncommon/clowncommon.h"
@@ -281,37 +283,37 @@ struct ExpressionInstr
 
 struct ExpressionStrcmp
 {
-	String string_a, string_b;
+	std::string string_a, string_b;
 };
 
 struct ExpressionIdentifier
 {
-	String string;
+	std::string string;
 };
 
 struct ExpressionString
 {
-	String string;
+	std::string string;
 };
 
 struct ExpressionStrlen
 {
-	String string;
+	std::string string;
 };
 
 struct ExpressionDef
 {
-	String string;
+	std::string string;
 };
 
 struct ExpressionTypeWithIdentifier
 {
-	String string;
+	std::string string;
 };
 
 struct ExpressionFilesize
 {
-	String string;
+	std::string string;
 };
 
 struct ExpressionNumber
@@ -335,7 +337,7 @@ struct ExpressionTypeWithNumber
 };
 
 using ExpressionList = std::deque<Expression>;
-using IdentifierList = std::deque<String>;
+using IdentifierList = std::deque<std::string>;
 
 struct Opcode
 {
@@ -407,12 +409,12 @@ struct StatementDs
 
 struct StatementInclude
 {
-	String path;
+	std::string path;
 };
 
 struct StatementIncbin
 {
-	String path;
+	std::string path;
 	Expression start;
 	cc_bool has_length;
 	Expression length;
@@ -449,18 +451,18 @@ struct StatementEqu
 
 struct StatementEquSString
 {
-	String string;
+	std::string string;
 };
 
 struct StatementEquSIdentifier
 {
-	String string;
+	std::string string;
 };
 
 struct StatementSubstr
 {
 	Expression start, end;
-	String string;
+	std::string string;
 };
 
 struct StatementSet
@@ -508,7 +510,7 @@ struct StatementCnop
 struct StatementInform
 {
 	Expression severity;
-	String message;
+	std::string message;
 };
 
 struct StatementFail
@@ -563,12 +565,12 @@ struct StatementOpt
 
 struct StatementPushP
 {
-	String string;
+	std::string string;
 };
 
 struct StatementPopP
 {
-	String string;
+	std::string string;
 };
 
 struct StatementShift
@@ -586,7 +588,7 @@ struct StatementLocal
 
 struct StatementPurge
 {
-	String string;
+	std::string string;
 };
 
 using Statement = std::variant<
@@ -636,7 +638,7 @@ using Statement = std::variant<
 >;
 
 
-#line 640 "syntactic.h"
+#line 642 "syntactic.h"
 
 
 # include <cstdlib> // std::abort
@@ -780,7 +782,7 @@ using Statement = std::variant<
 
 #line 25 "syntactic.y"
 namespace m68kasm {
-#line 784 "syntactic.h"
+#line 786 "syntactic.h"
 
 
 
@@ -1014,7 +1016,7 @@ namespace m68kasm {
       // OPTION
       // local_identifier
       // identifier
-      char dummy8[sizeof (String)];
+      char dummy8[sizeof (std::string)];
 
       // DATA_REGISTER
       // ADDRESS_REGISTER
@@ -1613,7 +1615,7 @@ namespace m68kasm {
       case symbol_kind::S_OPTION: // OPTION
       case symbol_kind::S_local_identifier: // local_identifier
       case symbol_kind::S_identifier: // identifier
-        value.move< String > (std::move (that.value));
+        value.move< std::string > (std::move (that.value));
         break;
 
       case symbol_kind::S_DATA_REGISTER: // DATA_REGISTER
@@ -1731,12 +1733,12 @@ namespace m68kasm {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, String&& v)
+      basic_symbol (typename Base::kind_type t, std::string&& v)
         : Base (t)
         , value (std::move (v))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const String& v)
+      basic_symbol (typename Base::kind_type t, const std::string& v)
         : Base (t)
         , value (v)
       {}
@@ -1823,7 +1825,7 @@ switch (yykind)
       case symbol_kind::S_OPTION: // OPTION
       case symbol_kind::S_local_identifier: // local_identifier
       case symbol_kind::S_identifier: // identifier
-        value.template destroy< String > ();
+        value.template destroy< std::string > ();
         break;
 
       case symbol_kind::S_DATA_REGISTER: // DATA_REGISTER
@@ -1929,10 +1931,10 @@ switch (yykind)
 #endif
       {}
 #if 201103L <= YY_CPLUSPLUS
-      symbol_type (int tok, String v)
+      symbol_type (int tok, std::string v)
         : super_type (token_kind_type (tok), std::move (v))
 #else
-      symbol_type (int tok, const String& v)
+      symbol_type (int tok, const std::string& v)
         : super_type (token_kind_type (tok), v)
 #endif
       {}
@@ -4529,14 +4531,14 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_IDENTIFIER (String v)
+      make_IDENTIFIER (std::string v)
       {
         return symbol_type (token::TOKEN_IDENTIFIER, std::move (v));
       }
 #else
       static
       symbol_type
-      make_IDENTIFIER (const String& v)
+      make_IDENTIFIER (const std::string& v)
       {
         return symbol_type (token::TOKEN_IDENTIFIER, v);
       }
@@ -4544,14 +4546,14 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_LOCAL_IDENTIFIER (String v)
+      make_LOCAL_IDENTIFIER (std::string v)
       {
         return symbol_type (token::TOKEN_LOCAL_IDENTIFIER, std::move (v));
       }
 #else
       static
       symbol_type
-      make_LOCAL_IDENTIFIER (const String& v)
+      make_LOCAL_IDENTIFIER (const std::string& v)
       {
         return symbol_type (token::TOKEN_LOCAL_IDENTIFIER, v);
       }
@@ -4559,14 +4561,14 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_STRING (String v)
+      make_STRING (std::string v)
       {
         return symbol_type (token::TOKEN_STRING, std::move (v));
       }
 #else
       static
       symbol_type
-      make_STRING (const String& v)
+      make_STRING (const std::string& v)
       {
         return symbol_type (token::TOKEN_STRING, v);
       }
@@ -4574,14 +4576,14 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_OPTION (String v)
+      make_OPTION (std::string v)
       {
         return symbol_type (token::TOKEN_OPTION, std::move (v));
       }
 #else
       static
       symbol_type
-      make_OPTION (const String& v)
+      make_OPTION (const std::string& v)
       {
         return symbol_type (token::TOKEN_OPTION, v);
       }
@@ -5601,7 +5603,7 @@ switch (yykind)
       case symbol_kind::S_OPTION: // OPTION
       case symbol_kind::S_local_identifier: // local_identifier
       case symbol_kind::S_identifier: // identifier
-        value.copy< String > (YY_MOVE (that.value));
+        value.copy< std::string > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_DATA_REGISTER: // DATA_REGISTER
@@ -5689,7 +5691,7 @@ switch (yykind)
       case symbol_kind::S_OPTION: // OPTION
       case symbol_kind::S_local_identifier: // local_identifier
       case symbol_kind::S_identifier: // identifier
-        value.move< String > (YY_MOVE (s.value));
+        value.move< std::string > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_DATA_REGISTER: // DATA_REGISTER
@@ -5767,17 +5769,17 @@ switch (yykind)
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 5771 "syntactic.h"
+#line 5773 "syntactic.h"
 
 
 // "%code provides" blocks.
-#line 629 "syntactic.y"
+#line 631 "syntactic.y"
 
 
 #define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner)
 
 
-#line 5781 "syntactic.h"
+#line 5783 "syntactic.h"
 
 
 #endif // !YY_M68KASM_SYNTACTIC_H_INCLUDED
