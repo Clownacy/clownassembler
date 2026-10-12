@@ -5292,54 +5292,46 @@ static void PerformSubstitutions(SemanticState* const state, std::string &string
 	PerformSubstitutionsOnSubString(state, string, view, allow_implicit_matches);
 }
 
-static cc_bool FindStringInSourceLine(const std::string &string, const std::size_t starting_position, std::string_view &view)
+static std::optional<std::string_view> FindQuotedStringInSourceLine(const std::string_view &string)
 {
-	const auto start_position = string.find_first_of("'\"", starting_position);
+	const auto start_position = string.find_first_of("'\"");
 
 	if (start_position == string.npos)
-		return cc_false;
+		return std::nullopt;
 
 	const auto end_position = string.find_first_of(string[start_position], start_position + 1);
 
 	if (end_position == string.npos)
-		return cc_false;
+		return std::nullopt;
 
-	view = std::string_view(string).substr(start_position, end_position - start_position);
-	return cc_true;
+	return string.substr(start_position, end_position - start_position);
 }
 
 /* Performs string substitutions only in parts of the string that are not wrapped in quotations. */
 /* This is needed to simulate how SN 68k does not expand string constants in strings, only expressions and operands. */
-static void PerformSubstitutionsExcludingQuotedStrings(SemanticState* const state, std::string &string, const std::size_t starting_position, const cc_bool allow_implicit_matches)
+static void PerformSubstitutionsExcludingQuotedStrings(SemanticState* const state, std::string &source_line, const std::size_t starting_position, const cc_bool allow_implicit_matches)
 {
-	cc_bool string_in_source_line_found;
-	std::size_t position = starting_position;
+	std::string_view source_line_subview = std::string_view(source_line).substr(starting_position);
 
-	do
+	for (;;)
 	{
-		std::string_view string_in_source_line;
-
-		string_in_source_line_found = FindStringInSourceLine(string, position, string_in_source_line);
-
-		/* Pretend there's a string at the end of the line, so that we can repurpose the code below. */
-		if (!string_in_source_line_found)
-			string_in_source_line = std::string_view(string).substr(string.length());
+		/* If no string was found, then pretend there's a string at the end of the line, so that we can repurpose the code below. */
+		const auto quoted_string = FindQuotedStringInSourceLine(source_line_subview).value_or(source_line_subview.substr(source_line_subview.length()));
 
 		/* We've found a string! Perform substitutions on the part of the line before it. */
-		{
-			/* Define the region that we will perform substitutions on. */
-			const std::size_t search_start = position;
-			const std::size_t search_end = string_in_source_line.data() - string.data();
 
-			/* Perform the substitutions. */
-			std::string_view view_to_search = std::string_view(string).substr(search_start, search_end - search_start);
-			PerformSubstitutionsOnSubString(state, string, view_to_search, allow_implicit_matches);
+		/* Define the region that we will perform substitutions on. */
+		auto view_to_search = source_line_subview.substr(0, quoted_string.data() - source_line_subview.data());
 
-			/* Move to after the string so that we can continue searching. */
-			position += view_to_search.length() + string_in_source_line.length();
-		}
+		/* Perform the substitutions. */
+		PerformSubstitutionsOnSubString(state, source_line, view_to_search, allow_implicit_matches);
+
+		if (quoted_string.empty())
+			break;
+
+		/* Move to after the string so that we can continue searching. */
+		source_line_subview = source_line_subview.substr(view_to_search.length() + quoted_string.length());
 	}
-	while (string_in_source_line_found);
 }
 
 static void SubstituteAndParseLine(SemanticState *state, const std::string_view &label, const std::string_view &directive_and_operands, const std::string_view &directive)
