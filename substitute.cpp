@@ -17,9 +17,6 @@
 
 #include "substitute.h"
 
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
 #include <string>
 #include <string_view>
 
@@ -35,7 +32,7 @@ void Substitute::PopSubstitute()
 	list.pop_front();
 }
 
-cc_bool Substitute::FindSubstitute(const std::string_view &view_to_search, const std::size_t starting_position, const std::string_view &substitute, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t* const found_position, std::size_t* const found_length)
+cc_bool Substitute::FindSubstitute(const std::string_view &view_to_search, const std::size_t starting_position, const std::string_view &substitute, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t &found_position, std::size_t &found_length)
 {
 	/* Find identifier within string. */
 	/* Obviously bail if the identifier wasn't found. */
@@ -66,75 +63,63 @@ cc_bool Substitute::FindSubstitute(const std::string_view &view_to_search, const
 			continue;
 		}
 
-		*found_position = match_start;
-		*found_length = match_length;
+		found_position = match_start;
+		found_length = match_length;
 		return cc_true;
 	}
 
 	return cc_false;
 }
 
-std::optional<std::string_view> Substitute::FindEarliestSubstitute(Substitute* const other_state, const std::string_view &view_to_search, const std::size_t starting_position, const CustomSearch &custom_search_callback, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t* const earliest_found_position, std::size_t* const earliest_found_length)
+std::optional<std::string_view> Substitute::FindEarliestSubstitute(Substitute* const other_state, const std::string_view &view_to_search, const std::size_t starting_position, const CustomSearch &custom_search_callback, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t &earliest_found_position, std::size_t &earliest_found_length)
 {
 	std::optional<std::string_view> found_substitute;
 
-	*earliest_found_position = (std::size_t)-1;
-	*earliest_found_length = 0;
+	earliest_found_position = static_cast<std::size_t>(-1);
+	earliest_found_length = 0;
 
 	if (custom_search_callback)
 	{
 		std::size_t found_position, found_length;
 
-		found_substitute = custom_search_callback(view_to_search, starting_position, case_insensitive, &found_position, &found_length);
+		found_substitute = custom_search_callback(view_to_search, starting_position, case_insensitive, found_position, found_length);
 
 		if (found_substitute.has_value())
 		{
-			*earliest_found_position = found_position;
-			*earliest_found_length = found_length;
+			earliest_found_position = found_position;
+			earliest_found_length = found_length;
 
 			/* Absorb trailing backslash. */
 			/* TODO: Check if it already ends in a backslash? */
 			if (found_position + found_length < view_to_search.length() && view_to_search[found_position + found_length] == '\\')
-				++*earliest_found_length;
+				++earliest_found_length;
 		}
 	}
 
-	if (other_state != nullptr)
+	const auto &DoList = [&](const List &list)
 	{
 		/* Search all substitutes, looking for the earliest. */
-		for (const auto &entry : other_state->list)
+		for (const auto &entry : list)
 		{
 			std::size_t found_position, found_length;
 
-			if (FindSubstitute(view_to_search, starting_position, entry.identifier, allow_implicit_matches, case_insensitive, &found_position, &found_length))
+			if (FindSubstitute(view_to_search, starting_position, entry.identifier, allow_implicit_matches, case_insensitive, found_position, found_length))
 			{
 				/* Record if this substitute occurs first. */
-				if (*earliest_found_position > found_position)
+				if (earliest_found_position > found_position)
 				{
 					found_substitute = entry.value;
-					*earliest_found_position = found_position;
-					*earliest_found_length = found_length;
+					earliest_found_position = found_position;
+					earliest_found_length = found_length;
 				}
 			}
 		}
-	}
+	};
 
-	/* Search all substitutes, looking for the earliest. */
-	for (const auto &entry : list)
-	{
-		std::size_t found_position, found_length;
+	if (other_state != nullptr)
+		DoList(other_state->list);
 
-		if (FindSubstitute(view_to_search, starting_position, entry.identifier, allow_implicit_matches, case_insensitive, &found_position, &found_length))
-		{
-			/* Record if this substitute occurs first. */
-			if (*earliest_found_position > found_position)
-			{
-				found_substitute = entry.value;
-				*earliest_found_position = found_position;
-				*earliest_found_length = found_length;
-			}
-		}
-	}
+	DoList(list);
 
 	return found_substitute;
 }
@@ -149,7 +134,7 @@ void Substitute::ProcessSubString(Substitute* const other_state, std::string &st
 	{
 		/* Find a substitute. */
 		std::size_t found_position, found_length;
-		const std::optional<std::string_view> found_substitute = FindEarliestSubstitute(other_state, view_to_search, starting_position, custom_search_callback, allow_implicit_matches, case_insensitive, &found_position, &found_length);
+		const std::optional<std::string_view> found_substitute = FindEarliestSubstitute(other_state, view_to_search, starting_position, custom_search_callback, allow_implicit_matches, case_insensitive, found_position, found_length);
 
 		if (!found_substitute.has_value())
 			break;
@@ -173,14 +158,10 @@ void Substitute::ProcessString(Substitute* const other_state, std::string &strin
 
 cc_bool Substitute::IsBlockingCharacter(const char character)
 {
-	return (isalpha((unsigned char)character) != 0
-	     || isdigit((unsigned char)character) != 0
-	     || character == '$'
-	     || character == '_'
-	     || character == '.');
-}
-
-cc_bool Substitute::IsWhitespaceCharacter(const char character)
-{
-	return isspace((unsigned char)character) != 0;
+	return (character >= '0' && character <= '9')
+	    || (character >= 'a' && character <= 'z')
+	    || (character >= 'A' && character <= 'Z')
+	    ||  character == '$'
+	    ||  character == '_'
+	    ||  character == '.';
 }

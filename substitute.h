@@ -32,7 +32,7 @@
 class Substitute
 {
 public:
-	using CustomSearch = std::function<std::optional<std::string_view>(const std::string_view &view_to_search, std::size_t starting_position, cc_bool case_insensitive, std::size_t* const found_position, std::size_t* const found_length)>;
+	using CustomSearch = std::function<std::optional<std::string_view>(const std::string_view &view_to_search, std::size_t starting_position, cc_bool case_insensitive, std::size_t &found_position, std::size_t &found_length)>;
 
 private:
 	struct ListEntry
@@ -41,10 +41,12 @@ private:
 		const std::string &value;
 	};
 
-	std::forward_list<ListEntry> list;
+	using List = std::forward_list<ListEntry>;
 
-	static cc_bool FindSubstitute(const std::string_view &view_to_search, const std::size_t starting_position, const std::string_view &substitute, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t* const found_position, std::size_t* const found_length);
-	std::optional<std::string_view> FindEarliestSubstitute(Substitute *other_state, const std::string_view &view_to_search, const std::size_t starting_position, const CustomSearch &custom_search_callback, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t* const earliest_found_position, std::size_t* const earliest_found_length);
+	List list;
+
+	static cc_bool FindSubstitute(const std::string_view &view_to_search, const std::size_t starting_position, const std::string_view &substitute, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t &found_position, std::size_t &found_length);
+	std::optional<std::string_view> FindEarliestSubstitute(Substitute *other_state, const std::string_view &view_to_search, const std::size_t starting_position, const CustomSearch &custom_search_callback, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t &earliest_found_position, std::size_t &earliest_found_length);
 
 public:
 	void PushSubstitute(const std::string_view &identifier, const std::string &value);
@@ -54,7 +56,6 @@ public:
 	void ProcessString(Substitute *other_state, std::string &string, const CustomSearch &custom_search_callback, cc_bool allow_implicit_matches, cc_bool case_insensitive);
 
 	static cc_bool IsBlockingCharacter(char character);
-	static cc_bool IsWhitespaceCharacter(char character);
 };
 
 #endif /* SUBSTITUTE_H */

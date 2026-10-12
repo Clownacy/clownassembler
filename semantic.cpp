@@ -5421,21 +5421,21 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 		const std::string unique_suffix = ComputeUniqueMacroSuffix(state);
 		std::string symbol_value_string;
 
-		state->macro.custom_search = [state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, std::size_t starting_position, cc_bool case_insensitive, std::size_t* const found_position, std::size_t* const found_length) -> std::optional<std::string_view>
+		state->macro.custom_search = [state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, std::size_t starting_position, cc_bool case_insensitive, std::size_t &found_position, std::size_t &found_length) -> std::optional<std::string_view>
 		{
 			/* `view_to_search` always points to a null-terminated string. */
 			(void)case_insensitive;
 
-			for (*found_position = starting_position; (*found_position = view_to_search.find('\\', *found_position)) != view_to_search.npos; ++(*found_position))
+			for (found_position = starting_position; (found_position = view_to_search.find('\\', found_position)) != view_to_search.npos; ++found_position)
 			{
-				const std::size_t symbol_position = *found_position + 1;
+				const std::size_t symbol_position = found_position + 1;
 
 				if (symbol_position == view_to_search.length())
 					break;
 
 				const char symbol = view_to_search[symbol_position];
 
-				*found_length = 2;
+				found_length = 2;
 
 				switch (symbol)
 				{
@@ -5443,7 +5443,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 						return size;
 
 					case '_':
-						if (*found_position + *found_length < view_to_search.length() && Substitute::IsBlockingCharacter(view_to_search[*found_position + *found_length]))
+						if (found_position + found_length < view_to_search.length() && Substitute::IsBlockingCharacter(view_to_search[found_position + found_length]))
 							continue;
 
 						return arguments;
@@ -5464,11 +5464,11 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 
 						const std::string_view identifier = view_to_search.substr(identifier_position_start, identifier_position_end - identifier_position_start);
 
-						*found_length += identifier.length();
+						found_length += identifier.length();
 
 						/* Absorb trailing backslash. */
 						if (identifier_position_end < view_to_search.length() && view_to_search[identifier_position_end] == '\\')
-							++*found_length;
+							++found_length;
 
 						if (!GetSymbolInteger(state, identifier, cc_true, &value))
 							value = 0;
@@ -5494,7 +5494,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 						if (error_code != std::errc{})
 							continue;
 
-						*found_length = 1 + (end - start);
+						found_length = 1 + (end - start);
 
 						if (parameter_index >= state->macro.total_arguments)
 							return "";
