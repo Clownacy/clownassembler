@@ -30,10 +30,8 @@
 #include <string>
 #include <string_view>
 
+#include "error.h"
 #include "syntactic.h"
-
-void m68kasm_warning(void *scanner, const std::string_view &message);
-void m68kasm_error(void *scanner, const std::string_view &message);
 
 static bool CharacterToInteger(unsigned int* const value, const unsigned int character)
 {
@@ -75,7 +73,7 @@ static bool StringTo32BitInteger(unsigned long* const value, const char* const s
 	return success;
 }
 
-static auto ParseNumber(void* const scanner, const char* const string_start, const size_t string_length, const unsigned long base)
+static auto ParseNumber(ErrorManager &error_manager, const char* const string_start, const size_t string_length, const unsigned long base)
 {
 	unsigned long value;
 	const char *string_end;
@@ -83,7 +81,7 @@ static auto ParseNumber(void* const scanner, const char* const string_start, con
 	if (!StringTo32BitInteger(&value, string_start, &string_end, base))
 	{
 		/* S.N. 68k silently truncates values that are too large. This is relied upon by old versions of the Sonic 2 August 21st prototype disassembly. */
-		m68kasm_warning(scanner, "Number is too large and will be truncated.");
+		error_manager.ParserWarning("Number is too large and will be truncated.");
 	}
 
 	if (string_end != string_start + string_length)
@@ -362,37 +360,37 @@ pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 
  /* Decimal number. */
 {decimal} {
-	return ParseNumber(yyscanner, yytext, yyleng, 10);
+	return ParseNumber(error_manager, yytext, yyleng, 10);
 }
 
  /* Hexadecimal number (68k). */
 \${hexadecimal} {
-	return ParseNumber(yyscanner, yytext + 1, yyleng - 1, 16);
+	return ParseNumber(error_manager, yytext + 1, yyleng - 1, 16);
 }
 
  /* Binary number (68k). */
 \%{binary} {
-	return ParseNumber(yyscanner, yytext + 1, yyleng - 1, 2);
+	return ParseNumber(error_manager, yytext + 1, yyleng - 1, 2);
 }
 
  /* Hexadecimal number (Z80). */
 [0-9]{hexadecimal}?h {
-	return ParseNumber(yyscanner, yytext, yyleng - 1, 16);
+	return ParseNumber(error_manager, yytext, yyleng - 1, 16);
 }
 
  /* Binary number (Z80). */
 {binary}b {
-	return ParseNumber(yyscanner, yytext, yyleng - 1, 2);
+	return ParseNumber(error_manager, yytext, yyleng - 1, 2);
 }
 
  /* Hexadecimal number (C). */
 0x{hexadecimal} {
-	return ParseNumber(yyscanner, yytext + 2, yyleng - 2, 16);
+	return ParseNumber(error_manager, yytext + 2, yyleng - 2, 16);
 }
 
  /* Binary number (GNU C). */
 0b{binary} {
-	return ParseNumber(yyscanner, yytext + 2, yyleng - 2, 2);
+	return ParseNumber(error_manager, yytext + 2, yyleng - 2, 2);
 }
 
  /* String. */

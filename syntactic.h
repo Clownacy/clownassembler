@@ -45,7 +45,7 @@
 #ifndef YY_M68KASM_SYNTACTIC_H_INCLUDED
 # define YY_M68KASM_SYNTACTIC_H_INCLUDED
 // "%code requires" blocks.
-#line 38 "syntactic.y"
+#line 39 "syntactic.y"
 
 
 #include <array>
@@ -54,6 +54,8 @@
 #include <string>
 #include <string_view>
 #include <variant>
+
+class ErrorManager;
 
 enum Size
 {
@@ -635,7 +637,7 @@ using Statement = std::variant<
 >;
 
 
-#line 639 "syntactic.h"
+#line 641 "syntactic.h"
 
 
 # include <cstdlib> // std::abort
@@ -779,7 +781,7 @@ using Statement = std::variant<
 
 #line 25 "syntactic.y"
 namespace m68kasm {
-#line 783 "syntactic.h"
+#line 785 "syntactic.h"
 
 
 
@@ -1946,7 +1948,7 @@ switch (yykind)
     };
 
     /// Build a parser object.
-    parser (void *scanner_yyarg, Statement &statement_yyarg);
+    parser (void *scanner_yyarg, ErrorManager &error_manager_yyarg, Statement &statement_yyarg);
     virtual ~parser ();
 
 #if 201103L <= YY_CPLUSPLUS
@@ -5536,6 +5538,7 @@ switch (yykind)
 
     // User arguments.
     void *scanner;
+    ErrorManager &error_manager;
     Statement &statement;
 
   };
@@ -5766,17 +5769,17 @@ switch (yykind)
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 5770 "syntactic.h"
+#line 5773 "syntactic.h"
 
 
 // "%code provides" blocks.
-#line 628 "syntactic.y"
+#line 631 "syntactic.y"
 
 
-#define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner)
+#define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner, ErrorManager &error_manager)
 
 
-#line 5780 "syntactic.h"
+#line 5783 "syntactic.h"
 
 
 #endif // !YY_M68KASM_SYNTACTIC_H_INCLUDED
