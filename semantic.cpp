@@ -574,7 +574,7 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState *s
 	if (!std::holds_alternative<SymbolNone>(*dictionary_entry) && !std::holds_alternative<SymbolType>(*dictionary_entry))
 	{
 		SemanticError(state, "Attempted to redefine symbol '{}' as a different type.", identifier);
-		dictionary_entry = nullptr;
+		return nullptr;
 	}
 
 	return dictionary_entry;
@@ -1014,28 +1014,32 @@ static void PurgeMacro(SemanticState* const state, std::string_view identifier, 
 	if (entry == nullptr)
 	{
 		if (!allow_undefined)
-			SemanticError(state, "Cannot purge '{}' as it does not exist.\n", identifier);
+			SemanticError(state, "Cannot purge '{}' as it does not exist.", identifier);
+
+		return;
 	}
-	else if (!std::holds_alternative<SymbolMacro>(*entry))
+
+	if (!std::holds_alternative<SymbolMacro>(*entry))
 	{
-		SemanticError(state, "Cannot purge '{}' as it is not a macro.\n", identifier);
+		SemanticError(state, "Cannot purge '{}' as it is not a macro.", identifier);
+		return;
 	}
-	else if (CurrentlyExpandingMacro(state))
+
+	if (CurrentlyExpandingMacro(state))
 	{
 		/* TODO: I don't know if that could be meaningfully supported in some way but for now this just seems like a
 		   "how to crash and burn into UAF/double free" without a bunch of changes to support it, for not much benefit.
 		   We don't check for the name of the currently-expanded macro because one could e.g. invoke a, which invokes b,
 		   which redefines a, and there is currently no simple wey to check the entire macro expansion stack. */
-		SemanticError(state, "Cannot purge '{}' during macro expansion.\n", identifier);
+		SemanticError(state, "Cannot purge '{}' during macro expansion.", identifier);
+		return;
 	}
-	else
-	{
-		/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
-		std::string expanded_identifier;
-		identifier = ExpandIdentifier(state, identifier, expanded_identifier);
 
-		dictionary->Remove(identifier);
-	}
+	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
+	std::string expanded_identifier;
+	identifier = ExpandIdentifier(state, identifier, expanded_identifier);
+
+	dictionary->Remove(identifier);
 }
 
 static bool AddToSymbolTable(SemanticState *state, const std::string_view &identifier, SymbolVariable symbol_contents)
@@ -1138,15 +1142,18 @@ static void TerminateMacro(SemanticState *state, SemanticState::ModeMacro &macro
 
 	PurgeMacro(state, identifier, true);
 
-	if (CurrentlyExpandingMacro(state))
+	if (!identifier.empty())
 	{
-		/* See comment in PurgeMacro after the check for the same condition for more details. */
-		SemanticError(state, "Cannot define macro '{}' during macro expansion.\n", identifier);
-	}
-	else if (!identifier.empty())
-	{
-		/* Add the macro to the symbol table. */
-		AddToSymbolTable(state, SymbolMacro{std::move(macro_state.metadata)});
+		if (CurrentlyExpandingMacro(state))
+		{
+			/* See comment in PurgeMacro after the check for the same condition for more details. */
+			SemanticError(state, "Cannot define macro '{}' during macro expansion.", identifier);
+		}
+		else
+		{
+			/* Add the macro to the symbol table. */
+			AddToSymbolTable(state, SymbolMacro{std::move(macro_state.metadata)});
+		}
 	}
 
 	/* Exit macro mode. */
@@ -4124,16 +4131,12 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 			}
 
 			case OPERAND_REGISTER_LIST:
-			{
-				unsigned int bytes_to_write;
-
 				AdvanceProgramCounter(state, 2);
 
-				for (bytes_to_write = 2; bytes_to_write-- > 0; )
+				for (unsigned int bytes_to_write = 2; bytes_to_write-- > 0; )
 					OutputByte(state, (operand->main_register >> (8 * bytes_to_write)) & 0xFF);
 
 				break;
-			}
 		}
 	}
 }
@@ -4301,17 +4304,16 @@ static void ProcessDcb(SemanticState *state, StatementDcb *dcb)
 	if (!ResolveExpression(state, &dcb->repetitions, &repetitions))
 	{
 		SemanticError(state, "Repetition value must be evaluable on first pass.");
+		return;
 	}
-	else
-	{
-		unsigned long value;
 
-		if (!ResolveExpression(state, &dcb->value, &value))
-			value = 0;
+	unsigned long value;
 
-		for (unsigned long i = 0; i < repetitions; ++i)
-			OutputDcValue(state, dcb->size, value);
-	}
+	if (!ResolveExpression(state, &dcb->value, &value))
+		value = 0;
+
+	for (unsigned long i = 0; i < repetitions; ++i)
+		OutputDcValue(state, dcb->size, value);
 }
 
 static void ProcessDs(SemanticState *state, StatementDs *ds)
@@ -4324,12 +4326,11 @@ static void ProcessDs(SemanticState *state, StatementDs *ds)
 	if (!ResolveExpression(state, &ds->length, &length))
 	{
 		SemanticError(state, "Repetition value must be evaluable on first pass.");
+		return;
 	}
-	else
-	{
-		for (unsigned long i = 0; i < length; ++i)
-			OutputDcValue(state, ds->size, 0);
-	}
+
+	for (unsigned long i = 0; i < length; ++i)
+		OutputDcValue(state, ds->size, 0);
 }
 
 static void ProcessInclude(SemanticState *state, const StatementInclude *include)
@@ -4786,29 +4787,28 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				if (state->current_if_level == 0)
 				{
 					SemanticError(state, "This stray ELSEIF has no preceeding IF.");
+					return;
 				}
-				else
+
+				if (state->false_if_level == state->current_if_level || state->false_if_level == 0)
 				{
-					if (state->false_if_level == state->current_if_level || state->false_if_level == 0)
+					unsigned long value;
+
+					if (!ResolveExpression(state, &statement.expression, &value))
 					{
-						unsigned long value;
+						SemanticError(state, "Condition must be evaluable on the first pass.");
+						value = 1;
+					}
 
-						if (!ResolveExpression(state, &statement.expression, &value))
-						{
-							SemanticError(state, "Condition must be evaluable on the first pass.");
-							value = 1;
-						}
-
-						/* If this condition is false, then mark this as the false if-level. */
-						if (state->true_already_found || value == 0)
-						{
-							state->false_if_level = state->current_if_level;
-						}
-						else
-						{
-							state->false_if_level = 0;
-							state->true_already_found = true;
-						}
+					/* If this condition is false, then mark this as the false if-level. */
+					if (state->true_already_found || value == 0)
+					{
+						state->false_if_level = state->current_if_level;
+					}
+					else
+					{
+						state->false_if_level = 0;
+						state->true_already_found = true;
 					}
 				}
 			},
@@ -4817,24 +4817,23 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				if (state->current_if_level == 0)
 				{
 					SemanticError(state, "This stray ELSE has no preceeding IF.");
+					return;
 				}
-				else
+
+				if (state->false_if_level == state->current_if_level || state->false_if_level == 0)
 				{
-					if (state->false_if_level == state->current_if_level || state->false_if_level == 0)
+					if (state->true_already_found)
 					{
-						if (state->true_already_found)
-						{
+						state->false_if_level = state->current_if_level;
+					}
+					else
+					{
+						/* If this is the false if-level, then it isn't anymore. */
+						/* Likewise, if there is no false if-level, then there is now. */
+						if (state->false_if_level == state->current_if_level)
+							state->false_if_level = 0;
+						else /*if (state->false_if_level == 0)*/
 							state->false_if_level = state->current_if_level;
-						}
-						else
-						{
-							/* If this is the false if-level, then it isn't anymore. */
-							/* Likewise, if there is no false if-level, then there is now. */
-							if (state->false_if_level == state->current_if_level)
-								state->false_if_level = 0;
-							else /*if (state->false_if_level == 0)*/
-								state->false_if_level = state->current_if_level;
-						}
 					}
 				}
 			},
@@ -4884,38 +4883,38 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				if (!ResolveExpression(state, &cnop.offset, &offset))
 				{
 					SemanticError(state, "Offset must be evaluable on the first pass.");
+					return;
 				}
-				else
+
+				unsigned long size_boundary;
+
+				if (!ResolveExpression(state, &cnop.size_boundary, &size_boundary))
 				{
-					unsigned long size_boundary;
+					SemanticError(state, "Size boundary must be evaluable on the first pass.");
+					return;
+				}
 
-					if (!ResolveExpression(state, &cnop.size_boundary, &size_boundary))
-					{
-						SemanticError(state, "Size boundary must be evaluable on the first pass.");
-					}
-					else if (size_boundary == 0)
-					{
-						/* I don't know if there's a way to make this have meaningfully useful semantics. asm68k errors on this, so for now we will too. */
-						SemanticError(state, "Size boundary cannot be zero.");
-					}
-					else
-					{
-						unsigned long target;
+				if (size_boundary == 0)
+				{
+					/* I don't know if there's a way to make this have meaningfully useful semantics. asm68k errors on this, so for now we will too. */
+					SemanticError(state, "Size boundary cannot be zero.");
+					return;
+				}
 
-						const unsigned long position_within_boundary = state->program_counter % size_boundary;
+				unsigned long target;
 
-						target = state->program_counter - position_within_boundary + offset;
+				const unsigned long position_within_boundary = state->program_counter % size_boundary;
 
-						if (position_within_boundary > offset)
-							target += size_boundary;
+				target = state->program_counter - position_within_boundary + offset;
 
-						/* Pad to the desired offset. */
-						while (state->program_counter != target)
-						{
-							OutputByte(state, 0);
-							AdvanceProgramCounter(state, 1);
-						}
-					}
+				if (position_within_boundary > offset)
+					target += size_boundary;
+
+				/* Pad to the desired offset. */
+				while (state->program_counter != target)
+				{
+					OutputByte(state, 0);
+					AdvanceProgramCounter(state, 1);
 				}
 			},
 			[&](StatementInform &statement)
@@ -4970,40 +4969,39 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				if (!ResolveExpression(state, &rs.length, &length))
 				{
 					SemanticError(state, "Length must be evaluable on the first pass.");
+					return;
 				}
-				else
+
+				/* Add label to symbol table. */
+				if (!label.empty())
 				{
-					/* Add label to symbol table. */
-					if (!label.empty())
-					{
-						AddToSymbolTable(state, label, SymbolConstant{state->rs});
-						ListIdentifierValue(state, state->rs);
-					}
-
-					/* Advance '__rs' by the specified amount. */
-					switch (rs.size)
-					{
-						case SIZE_BYTE:
-						case SIZE_SHORT:
-							length *= 1;
-							break;
-
-						case SIZE_WORD:
-							length *= 2;
-							break;
-
-						case SIZE_LONGWORD:
-							length *= 4;
-							break;
-
-						case SIZE_UNDEFINED:
-							/* Should never happen. */
-							assert(false);
-							break;
-					}
-
-					state->rs += length;
+					AddToSymbolTable(state, label, SymbolConstant{state->rs});
+					ListIdentifierValue(state, state->rs);
 				}
+
+				/* Advance '__rs' by the specified amount. */
+				switch (rs.size)
+				{
+					case SIZE_BYTE:
+					case SIZE_SHORT:
+						length *= 1;
+						break;
+
+					case SIZE_WORD:
+						length *= 2;
+						break;
+
+					case SIZE_LONGWORD:
+						length *= 4;
+						break;
+
+					case SIZE_UNDEFINED:
+						/* Should never happen. */
+						assert(false);
+						break;
+				}
+
+				state->rs += length;
 			},
 			[&](StatementRSSet &statement)
 			{
@@ -5025,31 +5023,29 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				if (state->obj_active)
 				{
 					SemanticError(state, "OBJ statements cannot be nested.");
+					return;
 				}
+
+				unsigned long value;
+
+				if (!ResolveExpression(state, &statement.expression, &value))
+					SemanticError(state, "Value must be evaluable on the first pass.");
 				else
-				{
-					unsigned long value;
+					state->obj_delta = value - state->program_counter;
 
-					if (!ResolveExpression(state, &statement.expression, &value))
-						SemanticError(state, "Value must be evaluable on the first pass.");
-					else
-						state->obj_delta = value - state->program_counter;
-
-					state->obj_active = true;
-					AdvanceProgramCounter(state, state->obj_delta);
-				}
+				state->obj_active = true;
+				AdvanceProgramCounter(state, state->obj_delta);
 			},
 			[&](StatementObjEnd&)
 			{
 				if (!state->obj_active)
 				{
 					SemanticError(state, "This stray OBJEND has no preceeding OBJ.");
+					return;
 				}
-				else
-				{
-					RegressProgramCounter(state, state->obj_delta);
-					state->obj_active = false;
-				}
+
+				RegressProgramCounter(state, state->obj_delta);
+				state->obj_active = false;
 			},
 			[&](StatementOrg &statement)
 			{
@@ -5058,20 +5054,21 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				if (!ResolveExpression(state, &statement.expression, &value))
 				{
 					SemanticError(state, "Value must be evaluable on the first pass.");
+					return;
 				}
-				else if (value > 0xFFFFFFFF)
+
+				if (value > 0xFFFFFFFF)
 				{
 					SemanticError(state, "Value cannot be larger than 0xFFFFFFFF (was 0x{:X}).", value);
+					return;
 				}
-				else
-				{
-					/* Begin a new segment! */
-					state->segment_position = value;
-					WriteRecordSegment(state);
-					state->segment_length = 0;
 
-					state->program_counter = value;
-				}
+				/* Begin a new segment! */
+				state->segment_position = value;
+				WriteRecordSegment(state);
+				state->segment_length = 0;
+
+				state->program_counter = value;
 			},
 			[&](StatementPushO&)
 			{
@@ -5153,33 +5150,33 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				if (state->string_stack.empty())
 				{
 					SemanticError(state, "POPP used but the string stack was empty.");
+					return;
 				}
-				else
-				{
-					PushSubstitute(state, statement.string, state->string_stack.top());
-					state->string_stack.pop();
-				}
+
+				PushSubstitute(state, statement.string, state->string_stack.top());
+				state->string_stack.pop();
 			},
 			[&](StatementShift&)
 			{
 				if (!CurrentlyExpandingMacro(state))
 				{
 					SemanticError(state, "SHIFT used outside of macro.");
+					return;
 				}
-				else if (state->macro.total_arguments == 0)
+
+				if (state->macro.total_arguments == 0)
 				{
 					/* TODO: What if there are already 0 arguments? */
 					/* This prevents crashing for now but perhaps it could be handled differently. */
 					SemanticError(state, "SHIFT used but there are no macro arguments to shift.");
+					return;
 				}
-				else
-				{
-					--state->macro.total_arguments;
-					for (unsigned int i = 0; i < state->macro.total_arguments; ++i)
-						state->macro.argument_list[i] = std::move(state->macro.argument_list[i + 1]);
-					state->macro.argument_list.pop_back();
-					PushMacroArgumentSubstitutions(state);
-				}
+
+				--state->macro.total_arguments;
+				for (unsigned int i = 0; i < state->macro.total_arguments; ++i)
+					state->macro.argument_list[i] = std::move(state->macro.argument_list[i + 1]);
+				state->macro.argument_list.pop_back();
+				PushMacroArgumentSubstitutions(state);
 			},
 			[&](StatementMExit&)
 			{
@@ -5190,12 +5187,11 @@ static void ProcessStatement(SemanticState *state, Statement *statement, const s
 				if (!CurrentlyExpandingMacro(state))
 				{
 					SemanticError(state, "LOCAL used outside of macro.");
+					return;
 				}
-				else
-				{
-					for (const auto &identifier : statement.identifiers)
-						state->macro.dictionary->LookUpAndCreateIfNotExist(identifier);
-				}
+
+				for (const auto &identifier : statement.identifiers)
+					state->macro.dictionary->LookUpAndCreateIfNotExist(identifier);
 			},
 			[&](StatementPurge &statement)
 			{
@@ -5358,243 +5354,241 @@ static void SubstituteAndParseLine(SemanticState *state, const std::string_view 
 
 static void InvokeMacro(SemanticState* const state, const Macro* const macro, const std::string_view &label, std::string_view source_line)
 {
-	/* This is a macro invocation. */
-	const SemanticState_Macro previous_macro_state = std::move(state->macro);
-
 	if (state->macro.depth >= 0x100)
 	{
 		SemanticError(state, "Macro expansion depth exceeded.");
+		return;
 	}
-	else
+
+	const SemanticState_Macro previous_macro_state = std::move(state->macro);
+
+	state->macro.metadata = macro;
+	/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
+	state->macro.dictionary = std::make_shared<SymbolDictionary>(state->options->case_insensitive);
+
+	state->macro.argument_list = {};
+	state->macro.total_arguments = 0;
+	state->macro.total_arguments_at_start = 0;
+	state->macro.starting_if_level = state->current_if_level;
+	state->macro.active = true;
+	++state->macro.depth;
+
+	++state->current_macro_invocation;
+
+	state->suppress_listing = true;
+
+	Utilities::String::RemoveLeading(source_line, DIRECTIVE_OR_MACRO_CHARS);
+
+	if (!label.empty())
 	{
-		state->macro.metadata = macro;
-		/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
-		state->macro.dictionary = std::make_shared<SymbolDictionary>(state->options->case_insensitive);
+		SetLastGlobalLabel(state, label);
 
-		state->macro.argument_list = {};
-		state->macro.total_arguments = 0;
-		state->macro.total_arguments_at_start = 0;
-		state->macro.starting_if_level = state->current_if_level;
-		state->macro.active = true;
-		++state->macro.depth;
+		if (!macro->uses_label)
+			AddToSymbolTable(state, label, SymbolLabel{state->program_counter});
+	}
 
-		++state->current_macro_invocation;
+	std::string_view size;
 
-		state->suppress_listing = true;
+	/* Extract and store the macro size specifier, if one exists. */
+	if (!source_line.empty() && source_line.front() == '.')
+	{
+		/* Skip the '.' character. */
+		source_line.remove_prefix(1);
 
-		Utilities::String::RemoveLeading(source_line, DIRECTIVE_OR_MACRO_CHARS);
+		size = Utilities::String::ExtractLeading(source_line, DIRECTIVE_OR_MACRO_CHARS);
 
-		if (!label.empty())
+		/* Advance past the size specifier. */
+		source_line.remove_prefix(size.length());
+	}
+
+	/* Extract combined arguments string. */
+	std::string_view arguments = source_line.substr(0, source_line.find(';'));
+
+	/* Remove surrounding whitespace. */
+	Utilities::String::RemoveLeadingAndTrailing(arguments, " \t");
+
+	const std::string unique_suffix = ComputeUniqueMacroSuffix(state);
+	std::string symbol_value_string;
+
+	state->macro.custom_search = [state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, std::size_t starting_position, bool case_insensitive, std::size_t &found_position, std::size_t &found_length) -> std::optional<std::string_view>
+	{
+		/* `view_to_search` always points to a null-terminated string. */
+		(void)case_insensitive;
+
+		for (found_position = starting_position; (found_position = view_to_search.find('\\', found_position)) != view_to_search.npos; ++found_position)
 		{
-			SetLastGlobalLabel(state, label);
+			const std::size_t symbol_position = found_position + 1;
 
-			if (!macro->uses_label)
-				AddToSymbolTable(state, label, SymbolLabel{state->program_counter});
-		}
+			if (symbol_position == view_to_search.length())
+				break;
 
-		std::string_view size;
+			const char symbol = view_to_search[symbol_position];
 
-		/* Extract and store the macro size specifier, if one exists. */
-		if (!source_line.empty() && source_line.front() == '.')
-		{
-			/* Skip the '.' character. */
-			source_line.remove_prefix(1);
+			found_length = 2;
 
-			size = Utilities::String::ExtractLeading(source_line, DIRECTIVE_OR_MACRO_CHARS);
-
-			/* Advance past the size specifier. */
-			source_line.remove_prefix(size.length());
-		}
-
-		/* Extract combined arguments string. */
-		std::string_view arguments = source_line.substr(0, source_line.find(';'));
-
-		/* Remove surrounding whitespace. */
-		Utilities::String::RemoveLeadingAndTrailing(arguments, " \t");
-
-		const std::string unique_suffix = ComputeUniqueMacroSuffix(state);
-		std::string symbol_value_string;
-
-		state->macro.custom_search = [state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, std::size_t starting_position, bool case_insensitive, std::size_t &found_position, std::size_t &found_length) -> std::optional<std::string_view>
-		{
-			/* `view_to_search` always points to a null-terminated string. */
-			(void)case_insensitive;
-
-			for (found_position = starting_position; (found_position = view_to_search.find('\\', found_position)) != view_to_search.npos; ++found_position)
+			switch (symbol)
 			{
-				const std::size_t symbol_position = found_position + 1;
+				case '0':
+					return size;
 
-				if (symbol_position == view_to_search.length())
+				case '_':
+					if (found_position + found_length < view_to_search.length() && Substitute::IsBlockingCharacter(view_to_search[found_position + found_length]))
+						continue;
+
+					return arguments;
+
+				case '*':
+					return label;
+
+				case '@':
+					return unique_suffix;
+
+				case '#':
+				case '$':
+				{
+					unsigned long value;
+
+					const std::size_t identifier_position_start = symbol_position + 1;
+					const std::size_t identifier_position_end = Utilities::String::GetLeadingLength(view_to_search, DIRECTIVE_OR_MACRO_CHARS, identifier_position_start);
+
+					const std::string_view identifier = view_to_search.substr(identifier_position_start, identifier_position_end - identifier_position_start);
+
+					found_length += identifier.length();
+
+					/* Absorb trailing backslash. */
+					if (identifier_position_end < view_to_search.length() && view_to_search[identifier_position_end] == '\\')
+						++found_length;
+
+					if (!GetSymbolInteger(state, identifier, true, &value))
+						value = 0;
+
+					if (symbol == '#')
+						symbol_value_string = DecimalIntegerToString(value);
+					else /*if (symbol == '$')*/
+						symbol_value_string = HexadecimalIntegerToString(value);
+
+					return symbol_value_string;
+				}
+
+				default:
+				{
+					/* Obtain numerical index of the parameter. */
+					unsigned int parameter_index;
+					const auto start = view_to_search.data() + symbol_position;
+					const auto [end, error_code] = std::from_chars(start, view_to_search.data() + view_to_search.length(), parameter_index);
+
+					--parameter_index;
+
+					/* Check if conversion failed. */
+					if (error_code != std::errc{})
+						continue;
+
+					found_length = 1 + (end - start);
+
+					if (parameter_index >= state->macro.total_arguments)
+						return "";
+
+					return state->macro.argument_list[parameter_index];
+				}
+			}
+		}
+
+		return std::nullopt;
+	};
+
+	/* Extract and store the individual macro arguments, if they exist. */
+	{
+		std::size_t argument_string_start = 0;
+		unsigned int argument_depth = 0;
+
+		for (std::size_t i = 0; i <= arguments.length(); ++i)
+		{
+			const bool at_the_end = i == arguments.length();
+			const char character = at_the_end ? ',' : arguments[i];
+
+			switch (character)
+			{
+				case '(':
+					++argument_depth;
 					break;
 
-				const char symbol = view_to_search[symbol_position];
+				case ')':
+					--argument_depth;
+					break;
 
-				found_length = 2;
-
-				switch (symbol)
-				{
-					case '0':
-						return size;
-
-					case '_':
-						if (found_position + found_length < view_to_search.length() && Substitute::IsBlockingCharacter(view_to_search[found_position + found_length]))
-							continue;
-
-						return arguments;
-
-					case '*':
-						return label;
-
-					case '@':
-						return unique_suffix;
-
-					case '#':
-					case '$':
+				case ',':
+					if (argument_depth == 0)
 					{
-						unsigned long value;
+						/* Extract argument. */
+						std::string_view argument = arguments.substr(argument_string_start, i - argument_string_start);
+						argument_string_start = i + 1;
 
-						const std::size_t identifier_position_start = symbol_position + 1;
-						const std::size_t identifier_position_end = Utilities::String::GetLeadingLength(view_to_search, DIRECTIVE_OR_MACRO_CHARS, identifier_position_start);
+						/* Remove surrounding whitespace. */
+						Utilities::String::RemoveLeadingAndTrailing(argument, " \t");
 
-						const std::string_view identifier = view_to_search.substr(identifier_position_start, identifier_position_end - identifier_position_start);
+						/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
+						if (argument.empty() && at_the_end && state->macro.total_arguments == 0)
+							break;
 
-						found_length += identifier.length();
+						/* Add to argument list. */
+						state->macro.argument_list.emplace_back(argument);
 
-						/* Absorb trailing backslash. */
-						if (identifier_position_end < view_to_search.length() && view_to_search[identifier_position_end] == '\\')
-							++found_length;
+						if (argument.length() != 0 && argument[0] != '"' && argument[0] != '\'' && state->options->case_insensitive)
+							Utilities::String::ToLower(state->macro.argument_list[state->macro.total_arguments]);
 
-						if (!GetSymbolInteger(state, identifier, true, &value))
-							value = 0;
-
-						if (symbol == '#')
-							symbol_value_string = DecimalIntegerToString(value);
-						else /*if (symbol == '$')*/
-							symbol_value_string = HexadecimalIntegerToString(value);
-
-						return symbol_value_string;
+						++state->macro.total_arguments;
+						++state->macro.total_arguments_at_start;
 					}
 
-					default:
-					{
-						/* Obtain numerical index of the parameter. */
-						unsigned int parameter_index;
-						const auto start = view_to_search.data() + symbol_position;
-						const auto [end, error_code] = std::from_chars(start, view_to_search.data() + view_to_search.length(), parameter_index);
-
-						--parameter_index;
-
-						/* Check if conversion failed. */
-						if (error_code != std::errc{})
-							continue;
-
-						found_length = 1 + (end - start);
-
-						if (parameter_index >= state->macro.total_arguments)
-							return "";
-
-						return state->macro.argument_list[parameter_index];
-					}
-				}
-			}
-
-			return std::nullopt;
-		};
-
-		/* Extract and store the individual macro arguments, if they exist. */
-		{
-			std::size_t argument_string_start = 0;
-			unsigned int argument_depth = 0;
-
-			for (std::size_t i = 0; i <= arguments.length(); ++i)
-			{
-				const bool at_the_end = i == arguments.length();
-				const char character = at_the_end ? ',' : arguments[i];
-
-				switch (character)
-				{
-					case '(':
-						++argument_depth;
-						break;
-
-					case ')':
-						--argument_depth;
-						break;
-
-					case ',':
-						if (argument_depth == 0)
-						{
-							/* Extract argument. */
-							std::string_view argument = arguments.substr(argument_string_start, i - argument_string_start);
-							argument_string_start = i + 1;
-
-							/* Remove surrounding whitespace. */
-							Utilities::String::RemoveLeadingAndTrailing(argument, " \t");
-
-							/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
-							if (argument.empty() && at_the_end && state->macro.total_arguments == 0)
-								break;
-
-							/* Add to argument list. */
-							state->macro.argument_list.emplace_back(argument);
-
-							if (argument.length() != 0 && argument[0] != '"' && argument[0] != '\'' && state->options->case_insensitive)
-								Utilities::String::ToLower(state->macro.argument_list[state->macro.total_arguments]);
-
-							++state->macro.total_arguments;
-							++state->macro.total_arguments_at_start;
-						}
-
-						break;
-				}
-			}
-
-			/* Add identifier substitute. */
-			PushMacroArgumentSubstitutions(state);
-		}
-
-		/* Finally, invoke the macro. */
-		{
-			const bool previous_listing_macro = state->listing_macro;
-
-			/* Flush line before changing this state, so that the macro line is not given the 'M' label. */
-			ListSourceLine(state);
-			state->listing_macro = true;
-
-			/* Push a new location (this macro).*/
-			state->location.emplace_front(macro->name, 0);
-
-			/* Iterate over each line of the macro, sending it to be processed. */
-			for (const auto &source_line : macro->source_line_list)
-			{
-				/* TODO: This is redundant and wrong: these substitutions are already done later, and this should only be doing the macro arguments! */
-				if (macro->is_short)
-				{
-					std::string expanded_source_line = source_line;
-					PerformSubstitutions(state, expanded_source_line, false);
-					AssembleLine(state, expanded_source_line, state->options->expand_all_macros);
-				}
-				else
-				{
-					AssembleLine(state, source_line, state->options->expand_all_macros);
-				}
-
-				if (!CurrentlyExpandingMacro(state))
 					break;
 			}
+		}
 
-			if (!macro->is_short)
+		/* Add identifier substitute. */
+		PushMacroArgumentSubstitutions(state);
+	}
+
+	/* Finally, invoke the macro. */
+	{
+		const bool previous_listing_macro = state->listing_macro;
+
+		/* Flush line before changing this state, so that the macro line is not given the 'M' label. */
+		ListSourceLine(state);
+		state->listing_macro = true;
+
+		/* Push a new location (this macro).*/
+		state->location.emplace_front(macro->name, 0);
+
+		/* Iterate over each line of the macro, sending it to be processed. */
+		for (const auto &source_line : macro->source_line_list)
+		{
+			/* TODO: This is redundant and wrong: these substitutions are already done later, and this should only be doing the macro arguments! */
+			if (macro->is_short)
 			{
-				/* 'MEXIT' may have ended us midway through an if-statement, so unwind to the original if-level here. */
-				while (state->current_if_level != state->macro.starting_if_level)
-					TerminateIf(state);
+				std::string expanded_source_line = source_line;
+				PerformSubstitutions(state, expanded_source_line, false);
+				AssembleLine(state, expanded_source_line, state->options->expand_all_macros);
+			}
+			else
+			{
+				AssembleLine(state, source_line, state->options->expand_all_macros);
 			}
 
-			/* Pop location. */
-			state->location.pop_front();
-
-			state->listing_macro = previous_listing_macro;
+			if (!CurrentlyExpandingMacro(state))
+				break;
 		}
+
+		if (!macro->is_short)
+		{
+			/* 'MEXIT' may have ended us midway through an if-statement, so unwind to the original if-level here. */
+			while (state->current_if_level != state->macro.starting_if_level)
+				TerminateIf(state);
+		}
+
+		/* Pop location. */
+		state->location.pop_front();
+
+		state->listing_macro = previous_listing_macro;
 	}
 
 	state->macro = previous_macro_state;
