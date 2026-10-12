@@ -23,7 +23,6 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#include "io.h"
 #include "options.h"
 
 #define CLOWNASSEMBLER_VERSION_STRING "ClownAssembler v2.0"

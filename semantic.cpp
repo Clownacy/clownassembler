@@ -40,6 +40,7 @@
 #include "clowncommon/clowncommon.h"
 
 #include "dictionary.h"
+#include "io.h"
 #include "p2bin.h"
 #include "substitute.h"
 #include "syntactic.h"
