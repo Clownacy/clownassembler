@@ -39,7 +39,7 @@ static void DefinitionCallback(void *internal, void* const user_data, const Clow
 		if (arguments[i][0] == '/' && tolower(arguments[i][1]) == 'e')
 		{
 			const char* const identifier = arguments[i + 1];
-			const size_t identifier_length = strcspn(identifier, "=");
+			const std::size_t identifier_length = strcspn(identifier, "=");
 
 			unsigned long value;
 			char *str_end;
@@ -342,7 +342,7 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			size_t combined_arguments_size;
+			std::size_t combined_arguments_size;
 			int j;
 
 			combined_arguments_size = 1; /* The '1' is for the null character. */

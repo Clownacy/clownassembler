@@ -32,7 +32,7 @@
 
 using ClownAssembler_Settings = Options;
 
-using ClownAssembler_AddDefinition = void (*)(void *internal, const char *identifier, size_t identifier_length, unsigned long value);
+using ClownAssembler_AddDefinition = void (*)(void *internal, const char *identifier, std::size_t identifier_length, unsigned long value);
 using ClownAssembler_DefinitionCallback = void (*)(void *internal, void *user_data, ClownAssembler_AddDefinition add_definition);
 
 cc_bool ClownAssembler_AssembleFile(

@@ -41,7 +41,7 @@ static void DefinitionCallback(void *internal, void* const user_data, const Clow
 		if (arguments[i][0] == '-' && arguments[i][1] == 'e')
 		{
 			const char* const identifier = arguments[i + 1];
-			const size_t identifier_length = strcspn(identifier, "=");
+			const std::size_t identifier_length = strcspn(identifier, "=");
 
 			unsigned long value;
 			char *str_end;

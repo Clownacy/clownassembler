@@ -38,7 +38,7 @@ private:
 	struct ListEntry
 	{
 		std::string identifier;
-		const std::string *value;
+		const std::string &value;
 	};
 
 	std::forward_list<ListEntry> list;
@@ -47,13 +47,13 @@ private:
 	std::optional<std::string_view> FindEarliestSubstitute(Substitute *other_state, const std::string_view &view_to_search, const std::size_t starting_position, const CustomSearch &custom_search_callback, const cc_bool allow_implicit_matches, const cc_bool case_insensitive, std::size_t* const earliest_found_position, std::size_t* const earliest_found_length);
 
 public:
-	cc_bool PushSubstitute(const std::string_view &identifier, const std::string &value);
+	void PushSubstitute(const std::string_view &identifier, const std::string &value);
 	void PopSubstitute();
 
 	void ProcessSubString(Substitute *other_state, std::string &string, std::string_view &view_to_search, const CustomSearch &custom_search_callback, cc_bool allow_implicit_matches, cc_bool case_insensitive);
 	void ProcessString(Substitute *other_state, std::string &string, const CustomSearch &custom_search_callback, cc_bool allow_implicit_matches, cc_bool case_insensitive);
 
-	static cc_bool IsSubstituteBlockingCharacter(char character);
+	static cc_bool IsBlockingCharacter(char character);
 	static cc_bool IsWhitespaceCharacter(char character);
 };
 

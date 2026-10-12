@@ -113,8 +113,8 @@ struct FixUp
 	Statement statement;
 	std::shared_ptr<SymbolDictionary> macro_dictionary;
 	unsigned long program_counter;
-	size_t output_position;
-	size_t segment_length;
+	std::size_t output_position;
+	std::size_t segment_length;
 	std::string last_global_label;
 	std::string source_line;
 	std::deque<Location> location;
@@ -129,7 +129,7 @@ struct SemanticState_Macro
 	Substitute substitutions;
 	Substitute::CustomSearch custom_search;
 	std::vector<std::string> argument_list;
-	size_t total_arguments = 0, total_arguments_at_start = 0;
+	std::size_t total_arguments = 0, total_arguments_at_start = 0;
 	unsigned int starting_if_level = 0;
 	unsigned int depth = 0;
 	cc_bool active = cc_false;
@@ -184,8 +184,8 @@ struct SemanticState
 	Substitute substitutions;
 	std::stack<std::string> string_stack;
 	SemanticState_Macro macro;
-	size_t output_position = 0, previous_segment_length_output_position = 0;
-	size_t segment_position = 0, segment_length = 0;
+	std::size_t output_position = 0, previous_segment_length_output_position = 0;
+	std::size_t segment_position = 0, segment_length = 0;
 	unsigned long program_counter = 0, program_counter_of_statement = 0, program_counter_of_expression = 0;
 	unsigned long current_macro_invocation = 0;
 	unsigned long rs = 0;
@@ -252,7 +252,7 @@ static void OutputWriteRawByte(SemanticState* const state, const unsigned char b
 	state->output_stream->put(byte);
 }
 
-static void OutputSeek(SemanticState* const state, const size_t position)
+static void OutputSeek(SemanticState* const state, const std::size_t position)
 {
 	state->output_position = position;
 	state->output_stream->seekp(position);
@@ -270,7 +270,7 @@ static void TerminatePreviousRecordSegment(SemanticState *state)
 		else
 		{
 			/* Write length of previous record. */
-			const size_t previous_output_position = state->output_position;
+			const std::size_t previous_output_position = state->output_position;
 			OutputSeek(state, state->previous_segment_length_output_position);
 			OutputWriteRawByte(state, state->segment_length >> (8 * 0) & 0xFF);
 			OutputWriteRawByte(state, state->segment_length >> (8 * 1) & 0xFF);
@@ -657,12 +657,6 @@ static cc_bool GetSymbolInteger(SemanticState *state, const std::string_view &id
 	);
 }
 
-// TODO: Just inline this.
-static void AddToSourceLineList(SourceLineList &source_line_list, const std::string_view &source_line)
-{
-	source_line_list.emplace_back(source_line);
-}
-
 static cc_bool ResolveExpression(SemanticState *state, Expression *expression, unsigned long *value, cc_bool fold)
 {
 	if (!std::visit(
@@ -869,7 +863,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 			},
 			[&](ExpressionString &expression)
 			{
-				const size_t length = expression.string.length();
+				const std::size_t length = expression.string.length();
 
 				if (length > 4)
 				{
@@ -879,7 +873,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 
 				*value = 0;
 
-				for (size_t i = 0; i < length; ++i)
+				for (std::size_t i = 0; i < length; ++i)
 				{
 					*value <<= 8;
 					*value |= expression.string[i];
@@ -924,7 +918,7 @@ static cc_bool ResolveExpression(SemanticState *state, Expression *expression, u
 				}
 
 				/* TODO: What if 'position' is 0? */
-				const size_t found_position = CaseInsensitive::FindString(expression_string_a->string, expression_string_b->string, position - 1, state->options->case_insensitive);
+				const std::size_t found_position = CaseInsensitive::FindString(expression_string_a->string, expression_string_b->string, position - 1, state->options->case_insensitive);
 				*value = found_position == expression_string_a->string.npos ? 0 : found_position + 1;
 				return cc_true;
 			},
@@ -4174,7 +4168,7 @@ static void PushMacroArgumentSubstitutions(SemanticState* const state)
 {
 	const std::string_view blank_argument;
 
-	for (size_t argument_index = 0; argument_index < state->macro.metadata->parameter_names.size(); ++argument_index)
+	for (std::size_t argument_index = 0; argument_index < state->macro.metadata->parameter_names.size(); ++argument_index)
 	{
 		const std::string_view &parameter = state->macro.metadata->parameter_names[argument_index];
 		const std::string_view &argument = argument_index >= state->macro.total_arguments ? blank_argument : state->macro.argument_list[argument_index];
@@ -4425,7 +4419,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 	}
 }
 
-static cc_bool ReadSourceLineRaw(SemanticState *state, size_t &line_buffer_write_position)
+static cc_bool ReadSourceLineRaw(SemanticState *state, std::size_t &line_buffer_write_position)
 {
 	if (state->input_stream->eof())
 		return cc_false;
@@ -4458,7 +4452,7 @@ static cc_bool ReadSourceLineRaw(SemanticState *state, size_t &line_buffer_write
 static cc_bool ReadSourceLine(SemanticState *state, std::string_view &source_line)
 {
 	cc_bool data_read = cc_false;
-	size_t line_buffer_read_position = 0, line_buffer_write_position = 0;
+	std::size_t line_buffer_read_position = 0, line_buffer_write_position = 0;
 
 	while (ReadSourceLineRaw(state, line_buffer_write_position))
 	{
@@ -5237,8 +5231,8 @@ static void ParseLine(SemanticState* const state, const std::string_view &label,
 
 	/* Back these up, before they get a chance to be modified by ProcessStatement. */
 	const unsigned long starting_program_counter = state->program_counter;
-	const size_t starting_output_position = state->output_position;
-	const size_t starting_segment_length = state->segment_length;
+	const std::size_t starting_output_position = state->output_position;
+	const std::size_t starting_segment_length = state->segment_length;
 
 	if (!ParseStatement(state, directive_and_operands))
 	{
@@ -5298,7 +5292,7 @@ static void PerformSubstitutions(SemanticState* const state, std::string &string
 	PerformSubstitutionsOnSubString(state, string, view, allow_implicit_matches);
 }
 
-static cc_bool FindStringInSourceLine(const std::string &string, const size_t starting_position, std::string_view &view)
+static cc_bool FindStringInSourceLine(const std::string &string, const std::size_t starting_position, std::string_view &view)
 {
 	const auto start_position = string.find_first_of("'\"", starting_position);
 
@@ -5316,10 +5310,10 @@ static cc_bool FindStringInSourceLine(const std::string &string, const size_t st
 
 /* Performs string substitutions only in parts of the string that are not wrapped in quotations. */
 /* This is needed to simulate how SN 68k does not expand string constants in strings, only expressions and operands. */
-static void PerformSubstitutionsExcludingQuotedStrings(SemanticState* const state, std::string &string, const size_t starting_position, const cc_bool allow_implicit_matches)
+static void PerformSubstitutionsExcludingQuotedStrings(SemanticState* const state, std::string &string, const std::size_t starting_position, const cc_bool allow_implicit_matches)
 {
 	cc_bool string_in_source_line_found;
-	size_t position = starting_position;
+	std::size_t position = starting_position;
 
 	do
 	{
@@ -5334,8 +5328,8 @@ static void PerformSubstitutionsExcludingQuotedStrings(SemanticState* const stat
 		/* We've found a string! Perform substitutions on the part of the line before it. */
 		{
 			/* Define the region that we will perform substitutions on. */
-			const size_t search_start = position;
-			const size_t search_end = string_in_source_line.data() - string.data();
+			const std::size_t search_start = position;
+			const std::size_t search_end = string_in_source_line.data() - string.data();
 
 			/* Perform the substitutions. */
 			std::string_view view_to_search = std::string_view(string).substr(search_start, search_end - search_start);
@@ -5420,7 +5414,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 			/* Skip the '.' character. */
 			source_line.remove_prefix(1);
 
-			size = source_line.substr(0, Utilities::String::Span(source_line, DIRECTIVE_OR_MACRO_CHARS));
+			size = Utilities::String::ExtractLeading(source_line, DIRECTIVE_OR_MACRO_CHARS);
 
 			/* Advance past the size specifier. */
 			source_line.remove_prefix(size.length());
@@ -5435,7 +5429,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 		const std::string unique_suffix = ComputeUniqueMacroSuffix(state);
 		std::string symbol_value_string;
 
-		state->macro.custom_search = [state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, size_t starting_position, cc_bool case_insensitive, size_t* const found_position, size_t* const found_length) -> std::optional<std::string_view>
+		state->macro.custom_search = [state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, std::size_t starting_position, cc_bool case_insensitive, std::size_t* const found_position, std::size_t* const found_length) -> std::optional<std::string_view>
 		{
 			/* `view_to_search` always points to a null-terminated string. */
 			(void)case_insensitive;
@@ -5457,7 +5451,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 						return size;
 
 					case '_':
-						if (*found_position + *found_length < view_to_search.length() && Substitute::IsSubstituteBlockingCharacter(view_to_search[*found_position + *found_length]))
+						if (*found_position + *found_length < view_to_search.length() && Substitute::IsBlockingCharacter(view_to_search[*found_position + *found_length]))
 							continue;
 
 						return arguments;
@@ -5474,7 +5468,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 						unsigned long value;
 
 						const std::size_t identifier_position_start = symbol_position + 1;
-						const std::size_t identifier_position_end = Utilities::String::Span(view_to_search, DIRECTIVE_OR_MACRO_CHARS, identifier_position_start);
+						const std::size_t identifier_position_end = Utilities::String::GetLeadingLength(view_to_search, DIRECTIVE_OR_MACRO_CHARS, identifier_position_start);
 
 						const std::string_view identifier = view_to_search.substr(identifier_position_start, identifier_position_end - identifier_position_start);
 
@@ -5523,8 +5517,8 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 
 		/* Extract and store the individual macro arguments, if they exist. */
 		{
-			size_t i;
-			size_t argument_string_start = 0;
+			std::size_t i;
+			std::size_t argument_string_start = 0;
 			unsigned int argument_depth = 0;
 
 			for (i = 0; i <= arguments.length(); ++i)
@@ -5623,13 +5617,6 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 
 static void AssembleLine(SemanticState *state, const std::string_view &source_line_raw, const cc_bool write_line_to_listing_file)
 {
-	std::string source_line;
-	size_t label_length;
-	std::string_view source_line_subview;
-	std::string_view label;
-	size_t directive_length;
-	std::string_view directive_and_operands, directive;
-
 	const std::string_view old_source_line = state->source_line;
 
 	/* Assert a few preconditions to ensure we're in a non-insane state. */
@@ -5653,11 +5640,13 @@ static void AssembleLine(SemanticState *state, const std::string_view &source_li
 	/* Expand string constants and macro parameters only if we're actually parsing code;
 	   it is important that the input of REPT and WHILE is unaltered, so that each iteration
 	   can have unique expansions! */
+	std::string source_line_expanded;
+
 	if (std::holds_alternative<SemanticState::ModeNormal>(state->mode))
 	{
-		source_line = source_line_raw;
-		PerformSubstitutions(state, source_line, cc_false);
-		state->source_line = source_line;
+		source_line_expanded = source_line_raw;
+		PerformSubstitutions(state, source_line_expanded, cc_false);
+		state->source_line = source_line_expanded;
 	}
 	else
 	{
@@ -5672,56 +5661,55 @@ static void AssembleLine(SemanticState *state, const std::string_view &source_li
 	}
 	else
 	{
-		source_line_subview = state->source_line;
-
 		/* Despite the fact that we're using Flex and Bison to parse the
 		   language for us, we unfortunately have to do quite a bit of
 		   parsing manually because of inconsistent whitespace sensitivity
 		   (label recognision) and manipulation of the input string
 		   (macro expansion). */
+		std::string_view source_line_subview = state->source_line;
 
 		/* Let's begin by parsing the label (if there is one). */
+		std::string_view label = source_line_subview;
 
 		/* Determine the length of the label. */
-		label_length = Utilities::String::Span(source_line_subview, LABEL_CHARS);
+		label = Utilities::String::ExtractLeading(label, LABEL_CHARS);
 
-		if (label_length != 0)
+		if (label.length() != 0)
 		{
 			/* We've found a label! */
 		}
 		else
 		{
-			/* Maybe the label has some whitespace before it: check again. */
-
 			/* Skip whitespace. */
 			Utilities::String::RemoveLeading(source_line_subview, " \t");
 
-			/* Determine the length of the label again. */
-			label_length = Utilities::String::Span(source_line_subview, LABEL_CHARS);
+			/* Maybe the label has some whitespace before it: check again. */
+			label = source_line_subview;
 
-			if (label_length != 0)
+			/* Determine the length of the label again. */
+			const auto label_length = Utilities::String::GetLeadingLength(label, LABEL_CHARS);
+
+			if (label.length() != 0)
 			{
 				/* Since we've encountered whitespace, it's ambiguous whether this is a label or a statement.
 				   To figure it out, we have to rely on the label having a ':' after it. */
-				if (label_length < source_line_subview.length() && source_line_subview[label_length] == ':')
+				if (label_length < label.length() && label[label_length] == ':')
 				{
 					/* We've found the label. */
+					label = label.substr(0, label_length);
 				}
 				else
 				{
-					/* Not a label. Set 'label_length' to 0 so that later code knows that no label was found. */
-					label_length = 0;
+					/* Not a label. */
+					label = {};
 				}
 			}
 		}
 
-		/* Duplicate the label (if any) for later. */
-		label = source_line_subview.substr(0, label_length);
-
-		if (label_length != 0)
+		if (label.length() != 0)
 		{
 			/* Advance past the label in the source string. */
-			source_line_subview.remove_prefix(label_length);
+			source_line_subview.remove_prefix(label.length());
 
 			/* Skip past the colon at the end, if one exists. */
 			if (!source_line_subview.empty() && source_line_subview.front() == ':')
@@ -5735,11 +5723,8 @@ static void AssembleLine(SemanticState *state, const std::string_view &source_li
 		   invocation, then we'll need to handle it manually. If not, then we
 		   can pass it to Flex and Bison. */
 
-		/* Determine the length of the directive. */
-		directive_length = Utilities::String::Span(source_line_subview, DIRECTIVE_OR_MACRO_CHARS);
-
-		directive_and_operands = source_line_subview;
-		directive = directive_and_operands.substr(0, directive_length);
+		const std::string_view directive_and_operands = source_line_subview;
+		const std::string_view directive = Utilities::String::ExtractLeading(source_line_subview, DIRECTIVE_OR_MACRO_CHARS);
 
 		/* This is either a directive, or a macro. */
 		std::visit(
@@ -5805,7 +5790,7 @@ static void AssembleLine(SemanticState *state, const std::string_view &source_li
 						if (CaseInsensitive::CompareStrings(directive, "rept"))
 							++rept_state.nesting;
 
-						AddToSourceLineList(rept_state.source_line_list, state->source_line);
+						rept_state.source_line_list.emplace_back(state->source_line);
 					}
 				},
 				[&](SemanticState::ModeMacro &macro_state)
@@ -5824,7 +5809,7 @@ static void AssembleLine(SemanticState *state, const std::string_view &source_li
 						if (macro_state.metadata.is_short)
 						{
 							/* Short macros automatically terminate after one statement. */
-							const size_t first_nonwhitespace_position = Utilities::String::Span(state->source_line, " \t");
+							const std::size_t first_nonwhitespace_position = Utilities::String::GetLeadingLength(state->source_line, " \t");
 							const char first_nonwhitespace_character = first_nonwhitespace_position == state->source_line.length() ? '\0' : state->source_line[first_nonwhitespace_position];
 
 							if (!label.empty())
@@ -5836,13 +5821,13 @@ static void AssembleLine(SemanticState *state, const std::string_view &source_li
 							}
 							else
 							{
-								AddToSourceLineList(macro_state.metadata.source_line_list, state->source_line);
+								macro_state.metadata.source_line_list.emplace_back(state->source_line);
 								TerminateMacro(state, macro_state);
 							}
 						}
 						else
 						{
-							AddToSourceLineList(macro_state.metadata.source_line_list, state->source_line);
+							macro_state.metadata.source_line_list.emplace_back(state->source_line);
 						}
 					}
 				},
@@ -5859,7 +5844,7 @@ static void AssembleLine(SemanticState *state, const std::string_view &source_li
 						if (CaseInsensitive::CompareStrings(directive, "while"))
 							++while_state.nesting;
 
-						AddToSourceLineList(while_state.source_line_list, state->source_line);
+						while_state.source_line_list.emplace_back(state->source_line);
 					}
 				}
 			}, state->mode
@@ -5916,7 +5901,7 @@ static void AssembleFile(SemanticState *state)
 	}
 }
 
-static void AddDefinition(void* const internal, const char* const identifier_buffer, const size_t identifier_length, const unsigned long value)
+static void AddDefinition(void* const internal, const char* const identifier_buffer, const std::size_t identifier_length, const unsigned long value)
 {
 	SemanticState* const state = (SemanticState*)internal;
 

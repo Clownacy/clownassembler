@@ -25,10 +25,9 @@
 
 #include "case-insensitive.h"
 
-cc_bool Substitute::PushSubstitute(const std::string_view &identifier, const std::string &value)
+void Substitute::PushSubstitute(const std::string_view &identifier, const std::string &value)
 {
-	list.emplace_front(std::string(identifier), &value);
-	return cc_true;
+	list.emplace_front(std::string(identifier), value);
 }
 
 void Substitute::PopSubstitute()
@@ -49,7 +48,7 @@ cc_bool Substitute::FindSubstitute(const std::string_view &view_to_search, const
 
 		/* If the identifier was in the middle of a larger block of letters/numbers, then don't replace it. */
 		/* (This is what AS does, and the Sonic 1 disassembly relies on this). */
-		if (IsSubstituteBlockingCharacter(character_before) || IsSubstituteBlockingCharacter(character_after))
+		if (IsBlockingCharacter(character_before) || IsBlockingCharacter(character_after))
 			continue;
 
 		/* If the parameter is surrounded by backslashes, then expand the match to replace those too. */
@@ -112,7 +111,7 @@ std::optional<std::string_view> Substitute::FindEarliestSubstitute(Substitute* c
 				/* Record if this substitute occurs first. */
 				if (*earliest_found_position > found_position)
 				{
-					found_substitute = *entry.value;
+					found_substitute = entry.value;
 					*earliest_found_position = found_position;
 					*earliest_found_length = found_length;
 				}
@@ -130,7 +129,7 @@ std::optional<std::string_view> Substitute::FindEarliestSubstitute(Substitute* c
 			/* Record if this substitute occurs first. */
 			if (*earliest_found_position > found_position)
 			{
-				found_substitute = *entry.value;
+				found_substitute = entry.value;
 				*earliest_found_position = found_position;
 				*earliest_found_length = found_length;
 			}
@@ -172,7 +171,7 @@ void Substitute::ProcessString(Substitute* const other_state, std::string &strin
 	ProcessSubString(other_state, string, view, custom_search_callback, allow_implicit_matches, case_insensitive);
 }
 
-cc_bool Substitute::IsSubstituteBlockingCharacter(const char character)
+cc_bool Substitute::IsBlockingCharacter(const char character)
 {
 	return (isalpha((unsigned char)character) != 0
 	     || isdigit((unsigned char)character) != 0

@@ -28,7 +28,7 @@ namespace Utilities
 {
 	namespace String
 	{
-		inline std::size_t Span(const std::string_view &view, const std::string_view &characters, const std::size_t position = 0)
+		inline std::size_t GetLeadingLength(const std::string_view &view, const std::string_view &characters, const std::size_t position = 0)
 		{
 			const auto result = view.find_first_not_of(characters, position);
 
@@ -38,7 +38,7 @@ namespace Utilities
 			return result;
 		}
 
-		inline std::size_t ReverseSpan(const std::string_view &view, const std::string_view &characters, const std::size_t position = std::string_view::npos)
+		inline std::size_t GetTrailingLength(const std::string_view &view, const std::string_view &characters, const std::size_t position = std::string_view::npos)
 		{
 			const auto result = view.find_last_not_of(characters, position);
 
@@ -50,18 +50,23 @@ namespace Utilities
 
 		inline void RemoveLeading(std::string_view &string_view, const std::string_view &characters)
 		{
-			string_view.remove_prefix(Span(string_view, characters));
+			string_view.remove_prefix(GetLeadingLength(string_view, characters));
 		}
 
 		inline void RemoveTrailing(std::string_view &string_view, const std::string_view &characters)
 		{
-			string_view.remove_suffix(ReverseSpan(string_view, characters));
+			string_view.remove_suffix(GetTrailingLength(string_view, characters));
 		}
 
 		inline void RemoveLeadingAndTrailing(std::string_view &string_view, const std::string_view &characters)
 		{
 			RemoveLeading(string_view, characters);
 			RemoveTrailing(string_view, characters);
+		}
+
+		inline std::string_view ExtractLeading(const std::string_view &string_view, const std::string_view &characters)
+		{
+			return string_view.substr(0, GetLeadingLength(string_view, characters));
 		}
 
 		inline void ToLower(std::string &string)
