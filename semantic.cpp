@@ -367,18 +367,6 @@ static void SemanticError(SemanticState *state, std::format_string<Args...> &&fo
 	state->success = false;
 }
 
-template<typename... Args>
-static void InternalError(SemanticState *state, std::format_string<Args...> &&format_string, Args &&...args)
-{
-	state->error_stream << "Internal error: ";
-
-	TextOutput_Format(state->error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
-
-	ErrorMessageCommon(state);
-
-	state->success = false;
-}
-
 void m68kasm_warning(void *scanner, const std::string_view &message)
 {
 	SemanticState *state = (SemanticState*)m68kasm_get_extra(scanner);
