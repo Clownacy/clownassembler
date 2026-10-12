@@ -19,7 +19,8 @@
 
 #include "semantic.h"
 
-#include <assert.h>
+#include <array>
+#include <cassert>
 #include <deque>
 #include <filesystem>
 #include <fstream>
@@ -1631,18 +1632,14 @@ static void OptimiseInstruction(SemanticState* const state, StatementInstruction
 {
 	if (state->options->optimisation.zero_displacement)
 	{
-		unsigned int i;
-
-		for (i = 0; i < CC_COUNT_OF(instruction->operands); ++i)
+		for (auto &operand : instruction->operands)
 		{
-			Operand* const operand = &instruction->operands[i];
-
-			if (operand->type == OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT)
+			if (operand.type == OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT)
 			{
 				unsigned long value;
 
-				if (ResolveExpression(state, &operand->literal, &value) && value == 0)
-					operand->type = OPERAND_ADDRESS_REGISTER_INDIRECT;
+				if (ResolveExpression(state, &operand.literal, &value) && value == 0)
+					operand.type = OPERAND_ADDRESS_REGISTER_INDIRECT;
 			}
 		}
 	}
@@ -1654,7 +1651,7 @@ struct InstructionMetadata
 
 	unsigned int allowed_sizes;
 
-	unsigned int allowed_operands[2];
+	std::array<unsigned int, 2> allowed_operands;
 };
 
 /* The order of this array absolutely must match the order of the OperandType enum! */
@@ -2752,10 +2749,9 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 {
 	unsigned int machine_code;
 	Size literal_operand_size;
-	Operand *operands_to_output[2];
-	Operand custom_operands[2];
+	std::array<Operand*, 2> operands_to_output;
+	std::array<Operand, 2> custom_operands;
 	const InstructionMetadata *instruction_metadata;
-	unsigned int i;
 
 	/* Default to NOP in case errors occur later on and we can't get the correct machine code. */
 	machine_code = 0x4E71;
@@ -2843,13 +2839,13 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 		/* Count operands that we want. */
 		total_operands_wanted = 0;
 
-		while (total_operands_wanted < CC_COUNT_OF(instruction_metadata->allowed_operands) && instruction_metadata->allowed_operands[total_operands_wanted] != 0)
+		while (total_operands_wanted < std::size(instruction_metadata->allowed_operands) && instruction_metadata->allowed_operands[total_operands_wanted] != 0)
 			++total_operands_wanted;
 
 		/* Count operands that we have. */
 		total_operands_have = 0;
 
-		while (total_operands_have < CC_COUNT_OF(instruction->operands) && instruction->operands[total_operands_have].type != 0)
+		while (total_operands_have < std::size(instruction->operands) && instruction->operands[total_operands_have].type != 0)
 			++total_operands_have;
 
 		if (total_operands_wanted != total_operands_have)
@@ -2861,7 +2857,7 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 			bool good_operands = true;
 
 			/* Check whether the operands are of the correct types. */
-			for (i = 0; i < total_operands_have && instruction_metadata->allowed_operands[i] != 0; ++i)
+			for (unsigned int i = 0; i < total_operands_have && instruction_metadata->allowed_operands[i] != 0; ++i)
 			{
 				if ((instruction->operands[i].type & ~instruction_metadata->allowed_operands[i]) != 0)
 				{
@@ -3970,177 +3966,175 @@ static void ProcessInstruction(SemanticState *state, StatementInstruction *instr
 	}
 
 	/* Output the machine code for the opcode. */
-	for (i = 2; i-- > 0; )
+	for (unsigned int i = 2; i-- > 0; )
 		OutputByte(state, (machine_code >> (8 * i)) & 0xFF);
 
 	/* Output the data for the operands. */
-	for (i = 0; i < CC_COUNT_OF(operands_to_output); ++i)
+	for (const auto &operand : operands_to_output)
 	{
-		Operand* const operand = operands_to_output[i];
+		if (operand == nullptr)
+			continue;
 
-		if (operand != nullptr)
+		switch (operand->type)
 		{
-			switch (operand->type)
+			case OPERAND_NONE:
+			case OPERAND_DATA_REGISTER:
+			case OPERAND_ADDRESS_REGISTER:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
+			case OPERAND_STATUS_REGISTER:
+			case OPERAND_CONDITION_CODE_REGISTER:
+			case OPERAND_USER_STACK_POINTER_REGISTER:
+				break;
+
+			case OPERAND_ADDRESS:
+			case OPERAND_ADDRESS_ABSOLUTE:
+			case OPERAND_LITERAL:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
+			case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
+			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 			{
-				case OPERAND_NONE:
-				case OPERAND_DATA_REGISTER:
-				case OPERAND_ADDRESS_REGISTER:
-				case OPERAND_ADDRESS_REGISTER_INDIRECT:
-				case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
-				case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
-				case OPERAND_STATUS_REGISTER:
-				case OPERAND_CONDITION_CODE_REGISTER:
-				case OPERAND_USER_STACK_POINTER_REGISTER:
-					break;
+				unsigned int bytes_to_write = 2;
+				unsigned long value;
 
-				case OPERAND_ADDRESS:
-				case OPERAND_ADDRESS_ABSOLUTE:
-				case OPERAND_LITERAL:
-				case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
-				case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-				case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
-				case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+				if (!ResolveExpression(state, &operand->literal, &value))
 				{
-					unsigned int bytes_to_write = 2;
-					unsigned long value;
-
-					if (!ResolveExpression(state, &operand->literal, &value))
-					{
-						if (operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT || operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER)
-							value = state->program_counter; /* Prevent out-of-range displacements later on. */
-						else
-							value = 0;
-					}
-
-					switch (operand->type)
-					{
-						case OPERAND_NONE:
-							assert(false);
-							break;
-
-						case OPERAND_DATA_REGISTER:
-						case OPERAND_ADDRESS_REGISTER:
-						case OPERAND_ADDRESS_REGISTER_INDIRECT:
-						case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
-						case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
-						case OPERAND_STATUS_REGISTER:
-						case OPERAND_CONDITION_CODE_REGISTER:
-						case OPERAND_USER_STACK_POINTER_REGISTER:
-						case OPERAND_REGISTER_LIST:
-							break;
-
-						case OPERAND_ADDRESS:
-						case OPERAND_ADDRESS_ABSOLUTE:
-							switch (operand->size)
-							{
-								case SIZE_BYTE:
-								case SIZE_SHORT:
-									SemanticError(state, "The address cannot be byte-sized.");
-									bytes_to_write = 2;
-									break;
-
-								case SIZE_WORD:
-									bytes_to_write = 2;
-
-									if (value >= 0x8000 && value < 0xFFFF8000)
-										SemanticError(state, "Word-sized addresses cannot be higher than $7FFF or lower than $FFFF8000, but was ${:X}.", value);
-
-									break;
-
-								case SIZE_UNDEFINED:
-								case SIZE_LONGWORD:
-									bytes_to_write = 4;
-									break;
-							}
-
-							break;
-
-						case OPERAND_LITERAL:
-							switch (literal_operand_size)
-							{
-								case SIZE_BYTE:
-								case SIZE_SHORT:
-									bytes_to_write = 2;
-
-									if (value >= 0x100 && value < 0xFFFFFF00)
-										SemanticError(state, "Byte-sized literals cannot be larger than $FF or smaller than -$100, but was ${:X}.", value);
-
-									value &= 0xFF;
-
-									break;
-
-								case SIZE_UNDEFINED:
-								case SIZE_WORD:
-									bytes_to_write = 2;
-
-									if (value >= 0x10000 && value < 0xFFFF0000)
-										SemanticError(state, "Word-sized literals cannot be larger than $FFFF or smaller than -$10000, but was ${:X}.", value);
-
-									break;
-
-								case SIZE_LONGWORD:
-									bytes_to_write = 4;
-									break;
-							}
-
-							break;
-
-						case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-							/* Turn the address into a displacement. */
-							value -= state->program_counter;
-							/* Fallthrough */
-						case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
-							bytes_to_write = 2;
-
-							if (value >= 0x80 && value < 0xFFFFFF80)
-								SemanticError(state, "Displacement values cannot be larger than $7F or smaller than -$80, but was ${:X}.", value);
-
-							if (operand->size == SIZE_BYTE || operand->size == SIZE_SHORT)
-								SemanticError(state, "Index registers cannot be byte-sized.");
-
-							value &= 0xFF;
-
-							value |= operand->index_register << 12;
-
-							if (operand->size == SIZE_LONGWORD)
-								value |= 0x800;
-
-							if (operand->index_register_is_address_register)
-								value |= 0x8000;
-
-							break;
-
-						case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
-							value -= state->program_counter;
-							/* Fallthrough */
-						case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
-							bytes_to_write = 2;
-
-							if (value >= 0x8000 && value < 0xFFFF8000)
-								SemanticError(state, "Displacement values cannot be larger than $7FFF or smaller than -$8000, but was ${:X}.", value);
-
-							break;
-					}
-
-					AdvanceProgramCounter(state, bytes_to_write);
-
-					while (bytes_to_write-- > 0)
-						OutputByte(state, (value >> (8 * bytes_to_write)) & 0xFF);
-
-					break;
+					if (operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT || operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER)
+						value = state->program_counter; /* Prevent out-of-range displacements later on. */
+					else
+						value = 0;
 				}
 
-				case OPERAND_REGISTER_LIST:
+				switch (operand->type)
 				{
-					unsigned int bytes_to_write;
+					case OPERAND_NONE:
+						assert(false);
+						break;
 
-					AdvanceProgramCounter(state, 2);
+					case OPERAND_DATA_REGISTER:
+					case OPERAND_ADDRESS_REGISTER:
+					case OPERAND_ADDRESS_REGISTER_INDIRECT:
+					case OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT:
+					case OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT:
+					case OPERAND_STATUS_REGISTER:
+					case OPERAND_CONDITION_CODE_REGISTER:
+					case OPERAND_USER_STACK_POINTER_REGISTER:
+					case OPERAND_REGISTER_LIST:
+						break;
 
-					for (bytes_to_write = 2; bytes_to_write-- > 0; )
-						OutputByte(state, (operand->main_register >> (8 * bytes_to_write)) & 0xFF);
+					case OPERAND_ADDRESS:
+					case OPERAND_ADDRESS_ABSOLUTE:
+						switch (operand->size)
+						{
+							case SIZE_BYTE:
+							case SIZE_SHORT:
+								SemanticError(state, "The address cannot be byte-sized.");
+								bytes_to_write = 2;
+								break;
 
-					break;
+							case SIZE_WORD:
+								bytes_to_write = 2;
+
+								if (value >= 0x8000 && value < 0xFFFF8000)
+									SemanticError(state, "Word-sized addresses cannot be higher than $7FFF or lower than $FFFF8000, but was ${:X}.", value);
+
+								break;
+
+							case SIZE_UNDEFINED:
+							case SIZE_LONGWORD:
+								bytes_to_write = 4;
+								break;
+						}
+
+						break;
+
+					case OPERAND_LITERAL:
+						switch (literal_operand_size)
+						{
+							case SIZE_BYTE:
+							case SIZE_SHORT:
+								bytes_to_write = 2;
+
+								if (value >= 0x100 && value < 0xFFFFFF00)
+									SemanticError(state, "Byte-sized literals cannot be larger than $FF or smaller than -$100, but was ${:X}.", value);
+
+								value &= 0xFF;
+
+								break;
+
+							case SIZE_UNDEFINED:
+							case SIZE_WORD:
+								bytes_to_write = 2;
+
+								if (value >= 0x10000 && value < 0xFFFF0000)
+									SemanticError(state, "Word-sized literals cannot be larger than $FFFF or smaller than -$10000, but was ${:X}.", value);
+
+								break;
+
+							case SIZE_LONGWORD:
+								bytes_to_write = 4;
+								break;
+						}
+
+						break;
+
+					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+						/* Turn the address into a displacement. */
+						value -= state->program_counter;
+						/* Fallthrough */
+					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
+						bytes_to_write = 2;
+
+						if (value >= 0x80 && value < 0xFFFFFF80)
+							SemanticError(state, "Displacement values cannot be larger than $7F or smaller than -$80, but was ${:X}.", value);
+
+						if (operand->size == SIZE_BYTE || operand->size == SIZE_SHORT)
+							SemanticError(state, "Index registers cannot be byte-sized.");
+
+						value &= 0xFF;
+
+						value |= operand->index_register << 12;
+
+						if (operand->size == SIZE_LONGWORD)
+							value |= 0x800;
+
+						if (operand->index_register_is_address_register)
+							value |= 0x8000;
+
+						break;
+
+					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
+						value -= state->program_counter;
+						/* Fallthrough */
+					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
+						bytes_to_write = 2;
+
+						if (value >= 0x8000 && value < 0xFFFF8000)
+							SemanticError(state, "Displacement values cannot be larger than $7FFF or smaller than -$8000, but was ${:X}.", value);
+
+						break;
 				}
+
+				AdvanceProgramCounter(state, bytes_to_write);
+
+				while (bytes_to_write-- > 0)
+					OutputByte(state, (value >> (8 * bytes_to_write)) & 0xFF);
+
+				break;
+			}
+
+			case OPERAND_REGISTER_LIST:
+			{
+				unsigned int bytes_to_write;
+
+				AdvanceProgramCounter(state, 2);
+
+				for (bytes_to_write = 2; bytes_to_write-- > 0; )
+					OutputByte(state, (operand->main_register >> (8 * bytes_to_write)) & 0xFF);
+
+				break;
 			}
 		}
 	}
