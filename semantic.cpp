@@ -503,7 +503,7 @@ static bool CurrentlyExpandingMacro(const SemanticState* const state)
 
 static std::string_view ExpandIdentifier(SemanticState *state, const std::string_view &identifier, std::string &expanded_identifier)
 {
-	if (identifier.empty() || (identifier[0] != state->options->local_signifier))
+	if (identifier.empty() || (identifier.front() != state->options->local_signifier))
 		return identifier;
 
 	if (state->last_global_label.empty())
@@ -1334,9 +1334,7 @@ static unsigned int ToAlternateEffectiveAddressBits(unsigned int bits)
 
 static void SetLastGlobalLabel(SemanticState *state, const std::string_view &label)
 {
-	const char first_character = label[0];
-
-	if (first_character != state->options->local_signifier)
+	if (label.front() != state->options->local_signifier)
 	{
 		/* This is a global label - cache it for later. */
 		state->last_global_label = label;
@@ -5533,7 +5531,7 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 						/* Add to argument list. */
 						state->macro.argument_list.emplace_back(argument);
 
-						if (argument.length() != 0 && argument[0] != '"' && argument[0] != '\'' && state->options->case_insensitive)
+						if (!argument.empty() && argument.front() != '"' && argument.front() != '\'' && state->options->case_insensitive)
 							Utilities::String::ToLower(state->macro.argument_list[state->macro.total_arguments]);
 
 						++state->macro.total_arguments;
@@ -5634,7 +5632,7 @@ static void AssembleLine(SemanticState *state, const std::string_view &source_li
 
 	++state->location.front().line_number;
 
-	if (!state->source_line.empty() && state->source_line[0] == '*')
+	if (!state->source_line.empty() && state->source_line.front() == '*')
 	{
 		/* This whole line is a comment. */
 	}
@@ -5653,7 +5651,7 @@ static void AssembleLine(SemanticState *state, const std::string_view &source_li
 		/* Determine the length of the label. */
 		label = Utilities::String::ExtractLeading(label, LABEL_CHARS);
 
-		if (label.length() != 0)
+		if (!label.empty())
 		{
 			/* We've found a label! */
 		}
@@ -5668,7 +5666,7 @@ static void AssembleLine(SemanticState *state, const std::string_view &source_li
 			/* Determine the length of the label again. */
 			const auto label_length = Utilities::String::GetLeadingLength(label, LABEL_CHARS);
 
-			if (label.length() != 0)
+			if (!label.empty())
 			{
 				/* Since we've encountered whitespace, it's ambiguous whether this is a label or a statement.
 				   To figure it out, we have to rely on the label having a ':' after it. */
@@ -5685,7 +5683,7 @@ static void AssembleLine(SemanticState *state, const std::string_view &source_li
 			}
 		}
 
-		if (label.length() != 0)
+		if (!label.empty())
 		{
 			/* Advance past the label in the source string. */
 			source_line_subview.remove_prefix(label.length());
