@@ -440,11 +440,9 @@ static void ListSourceLine(SemanticState *state)
 	{
 		if (!state->line_listed)
 		{
-			unsigned int i;
-
 			state->line_listed = true;
 
-			for (i = state->listing_counter; i < 26; ++i)
+			for (unsigned int i = state->listing_counter; i < 26; ++i)
 				state->listing_stream->put(' ');
 
 			state->listing_stream->put(state->listing_macro ? 'M' : ' ');
@@ -4307,12 +4305,11 @@ static void ProcessDcb(SemanticState *state, StatementDcb *dcb)
 	else
 	{
 		unsigned long value;
-		unsigned long i;
 
 		if (!ResolveExpression(state, &dcb->value, &value))
 			value = 0;
 
-		for (i = 0; i < repetitions; ++i)
+		for (unsigned long i = 0; i < repetitions; ++i)
 			OutputDcValue(state, dcb->size, value);
 	}
 }
@@ -4330,9 +4327,7 @@ static void ProcessDs(SemanticState *state, StatementDs *ds)
 	}
 	else
 	{
-		unsigned long i;
-
-		for (i = 0; i < length; ++i)
+		for (unsigned long i = 0; i < length; ++i)
 			OutputDcValue(state, ds->size, 0);
 	}
 }
@@ -4381,7 +4376,6 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 	if (incbin->has_length)
 	{
 		unsigned long length;
-		unsigned long i;
 
 		if (!ResolveExpression(state, &incbin->length, &length))
 		{
@@ -4389,7 +4383,7 @@ static void ProcessIncbin(SemanticState *state, StatementIncbin *incbin)
 			length = 0;
 		}
 
-		for (i = 0; i < length; ++i)
+		for (unsigned long i = 0; i < length; ++i)
 		{
 			const int character = input_file.get();
 
@@ -5509,11 +5503,10 @@ static void InvokeMacro(SemanticState* const state, const Macro* const macro, co
 
 		/* Extract and store the individual macro arguments, if they exist. */
 		{
-			std::size_t i;
 			std::size_t argument_string_start = 0;
 			unsigned int argument_depth = 0;
 
-			for (i = 0; i <= arguments.length(); ++i)
+			for (std::size_t i = 0; i <= arguments.length(); ++i)
 			{
 				const bool at_the_end = i == arguments.length();
 				const char character = at_the_end ? ',' : arguments[i];

@@ -30,11 +30,9 @@ static char **arguments;
 
 static void DefinitionCallback(void *internal, void* const user_data, const ClownAssembler_AddDefinition add_definition)
 {
-	int i;
-
 	(void)user_data;
 
-	for (i = 1; i < total_arguments; ++i)
+	for (int i = 1; i < total_arguments; ++i)
 	{
 		if (arguments[i][0] == '/' && tolower(arguments[i][1]) == 'e')
 		{
@@ -71,7 +69,6 @@ int main(int argc, char **argv)
 {
 	int exit_code = EXIT_SUCCESS;
 
-	int i;
 	char *combined_arguments;
 	ClownAssembler_Settings settings = {};
 	char *source_file_path;
@@ -109,7 +106,7 @@ int main(int argc, char **argv)
 
 	output_mode = OUTPUT_EXECUTABLE;
 
-	for (i = 1; i < argc; ++i)
+	for (int i = 1; i < argc; ++i)
 	{
 		if (argv[i][0] == '/')
 		{

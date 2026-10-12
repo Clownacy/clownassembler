@@ -32,11 +32,9 @@ static char **arguments;
 
 static void DefinitionCallback(void *internal, void* const user_data, const ClownAssembler_AddDefinition add_definition)
 {
-	int i;
-
 	(void)user_data;
 
-	for (i = 1; i < total_arguments; ++i)
+	for (int i = 1; i < total_arguments; ++i)
 	{
 		if (arguments[i][0] == '-' && arguments[i][1] == 'e')
 		{
@@ -75,7 +73,6 @@ int main(int argc, char **argv)
 	const char *listing_file_path;
 	const char *symbol_file_path;
 	ClownAssembler_Settings settings = {};
-	int i;
 
 	total_arguments = argc;
 	arguments = argv;
@@ -96,7 +93,7 @@ int main(int argc, char **argv)
 	settings.automatic_even = false;
 	settings.optimisation.zero_displacement = false;
 
-	for (i = 1; i < argc; ++i)
+	for (int i = 1; i < argc; ++i)
 	{
 		if (argv[i][0] == '-')
 		{

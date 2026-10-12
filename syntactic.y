@@ -2051,7 +2051,6 @@ register_span
 
 		unsigned long start;
 		unsigned long end;
-		unsigned long i;
 
 		if (first_data_or_address_register < second_data_or_address_register)
 		{
@@ -2066,7 +2065,7 @@ register_span
 
 		$$ = 0;
 
-		for (i = start; i <= end; ++i)
+		for (unsigned long i = start; i <= end; ++i)
 			$$ |= 1 << i;
 	}
 	;
