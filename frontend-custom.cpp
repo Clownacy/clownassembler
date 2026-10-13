@@ -70,7 +70,7 @@ static void DefinitionCallback(void *internal, void* const user_data, const Clow
 int main(int argc, char **argv)
 {
 	bool print_usage = false;
-	const char *input_file_path_string = "STDIN";
+	std::string_view input_file_path_string = "STDIN";
 	std::filesystem::path input_file_path;
 	std::filesystem::path output_file_path;
 	std::filesystem::path listing_file_path;

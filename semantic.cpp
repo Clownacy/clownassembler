@@ -234,7 +234,7 @@ struct SemanticState
 		std::ostream &output_stream,
 		std::ostream &error_stream,
 		std::ostream* const listing_stream,
-		std::string input_file_path,
+		const std::string_view &input_file_path,
 		Options default_options
 	)
 		: output_stream(output_stream)
@@ -246,7 +246,7 @@ struct SemanticState
 		/* For error messages, we want to maintain a list of filenames and line
 		   numbers that describe the location and nesting of the erroneous
 		   line. This is the first entry in that list. */
-		location.emplace_front(std::move(input_file_path), 0);
+		location.emplace_front(input_file_path, 0);
 	}
 };
 
@@ -5769,7 +5769,7 @@ static bool AssembleToObjectFile(
 	std::ostream &error_stream,
 	std::ostream* const listing_stream,
 	std::ostream* const symbol_stream,
-	std::string input_file_path,
+	const std::string_view &input_file_path,
 	ClownAssembler::Settings initial_options,
 	const ClownAssembler::DefinitionCallback definition_callback,
 	const void* const user_data)
@@ -5778,7 +5778,7 @@ static bool AssembleToObjectFile(
 		output_stream,
 		error_stream,
 		listing_stream,
-		std::move(input_file_path),
+		input_file_path,
 		std::move(initial_options)
 	);
 
@@ -5905,14 +5905,14 @@ bool ClownAssembler::Assemble(
 	std::ostream &error_stream,
 	std::ostream* const listing_stream,
 	std::ostream* const symbol_stream,
-	std::string input_file_path,
+	const std::string_view &input_file_path,
 	Settings settings,
 	const DefinitionCallback definition_callback,
 	const void* const user_data)
 {
 	std::stringstream object_stream;
 
-	if (!AssembleToObjectFile(input_stream, object_stream, error_stream, listing_stream, symbol_stream, std::move(input_file_path), std::move(settings), definition_callback, user_data))
+	if (!AssembleToObjectFile(input_stream, object_stream, error_stream, listing_stream, symbol_stream, input_file_path, std::move(settings), definition_callback, user_data))
 		return false;
 
 	if (!ConvertObjectFileToFlatBinary(object_stream, output_stream, error_stream))

@@ -31,7 +31,17 @@ public:
 	struct Location
 	{
 		std::string file_path; /* TODO: This should really be a `std::string_view`, but fix-ups need deep copies... */
-		unsigned long line_number;
+		unsigned long line_number = 0;
+
+		Location(std::string file_path, const unsigned long line_number = 0)
+			: file_path(std::move(file_path))
+			, line_number(line_number)
+		{}
+
+		Location(const std::string_view &file_path, const unsigned long line_number = 0)
+			: file_path(file_path)
+			, line_number(line_number)
+		{}
 	};
 
 private:

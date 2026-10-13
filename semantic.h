@@ -38,7 +38,7 @@ namespace ClownAssembler
 		std::ostream &error_callbacks,
 		std::ostream *listing_callbacks,
 		std::ostream *symbol_callbacks,
-		std::string input_file_path,
+		const std::string_view &input_file_path,
 		Settings settings,
 		DefinitionCallback definition_callback,
 		const void *user_data);
