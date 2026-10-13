@@ -15,20 +15,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <format>
 #include <fstream>
-#include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "semantic.h"
 
-#define ERROR(message) do { fputs("Error: " message "\n", stderr); exit_code = EXIT_FAILURE;} while (0)
-
 static int total_arguments;
 static char **arguments;
 
-static void DefinitionCallback(void *internal, void* const user_data, const ClownAssembler_AddDefinition add_definition)
+template<typename... Args>
+[[noreturn]] static void ErrorAndExit(std::format_string<Args...> &&format_string, Args &&...args)
+{
+	std::cerr << "Error: " << std::format(std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...) << '\n';
+	std::exit(EXIT_FAILURE);
+}
+
+static void DefinitionCallback(void *internal, void* const user_data, const ClownAssembler::AddDefinition add_definition)
 {
 	(void)user_data;
 
@@ -51,7 +55,7 @@ static void DefinitionCallback(void *internal, void* const user_data, const Clow
 				value = strtoul(&identifier[identifier_length + 1], &str_end, 0);
 
 				if (str_end < strchr(identifier, '\0'))
-					fprintf(stderr, "Error: Value of argument '-e %s' is invalid.\n", arguments[i + 1]);
+					std::cerr << std::format("Error: Value of argument '-e {}' is invalid.\n", arguments[i + 1]);
 			}
 
 			add_definition(internal, identifier, identifier_length, value);
@@ -63,14 +67,12 @@ static void DefinitionCallback(void *internal, void* const user_data, const Clow
 
 int main(int argc, char **argv)
 {
-	int exit_code = EXIT_SUCCESS;
-
 	bool print_usage;
 	const char *input_file_path;
 	const char *output_file_path;
 	const char *listing_file_path;
 	const char *symbol_file_path;
-	ClownAssembler_Settings settings = {};
+	ClownAssembler::Settings settings = {};
 
 	total_arguments = argc;
 	arguments = argv;
@@ -182,13 +184,12 @@ int main(int argc, char **argv)
 			}
 		}
 
-		fprintf(stderr, "Error: Unrecognised option '%s'.\n", argv[i]);
-		exit_code = EXIT_FAILURE;
+		ErrorAndExit("Unrecognised option '{}'.", argv[i]);
 	}
 
 	if (argc < 2 || print_usage)
 	{
-		fputs(
+		std::cout <<
 			CLOWNASSEMBLER_VERSION_STRING " - An assembler for the Motorola 68000.\n"
 			"\n"
 			"Options:\n"
@@ -196,8 +197,6 @@ int main(int argc, char **argv)
 			" -o [path] - Output file.\n"
 			" -l [path] - Listing file. Optional.\n"
 			" -s [path] - asm68k-style symbol file. Optional.\n"
-			, stdout);
-		fputs(
 			" -a        - Enable automatic-even mode.\n"
 			" -c        - Enable case-insensitive mode.\n"
 			" -b        - Enable Bison's debug output.\n"
@@ -207,90 +206,70 @@ int main(int argc, char **argv)
 			" -v        - Include local labels in symbol file.\n"
 			" -w        - Silence warnings.\n"
 			" -.X       - Set local label signifier to character after dot (default '@').\n"
-			, stdout);
+			;
+
+		return EXIT_SUCCESS;
 	}
-	else
+
+	if (output_file_path == nullptr)
+		ErrorAndExit("Output file path must be specified with '-o'.");
+
+	// Open input file.
+
+	std::ifstream input_file_stream;
+
+	if (input_file_path != nullptr)
 	{
-		if (output_file_path == nullptr)
-		{
-			ERROR("Output file path must be specified with '-o'.");
-		}
-		else
-		{
-			std::ifstream input_file_stream;
+		input_file_stream.open(input_file_path);
 
-			if (input_file_path != nullptr)
-				input_file_stream.open(input_file_path);
-
-			if (input_file_path != nullptr && !input_file_stream.is_open())
-			{
-				ERROR("Could not open input file.");
-			}
-			else
-			{
-				std::istream &input_file = input_file_path == nullptr ? std::cin : input_file_stream;
-
-				std::ofstream output_file(output_file_path, output_file.binary);
-
-				if (!output_file.is_open())
-				{
-					ERROR("Could not open output file.");
-				}
-				else
-				{
-					std::ofstream listing_file;
-					std::ostream *symbol_stream;
-					std::ofstream symbol_file;
-					bool success;
-
-					if (listing_file_path == nullptr)
-					{
-						listing_file = nullptr;
-					}
-					else
-					{
-						listing_file.open(listing_file_path);
-
-						if (!listing_file.is_open())
-							ERROR("Could not open listing file.");
-					}
-
-					if (symbol_file_path == nullptr)
-					{
-						symbol_stream = nullptr;
-					}
-					else
-					{
-						symbol_stream = &symbol_file;
-						symbol_file.open(symbol_file_path, symbol_file.binary);
-
-						if (!symbol_file.is_open())
-							ERROR("Could not open symbol file.");
-					}
-
-					success = ClownAssembler_AssembleFile(input_file, output_file, std::cerr, listing_file, symbol_stream, input_file_path != nullptr ? input_file_path : "STDIN", settings, DefinitionCallback, nullptr);
-
-					if (symbol_file.is_open())
-						symbol_file.close();
-
-					if (listing_file.is_open())
-						listing_file.close();
-
-					output_file.close();
-
-					if (!success)
-					{
-						ERROR("Could not assemble.");
-						/* Delete the output file; it will be junk anyway.
-						   Also, leaving a junk file will confuse Make, which will think that the assembler had previously succeeded. */
-						remove(output_file_path);
-					}
-				}
-
-				input_file_stream.close();
-			}
-		}
+		if (!input_file_stream.is_open())
+			ErrorAndExit("Could not open input file.");
 	}
 
-	return exit_code;
+	std::istream &input_file = input_file_path == nullptr ? std::cin : input_file_stream;
+
+	// Open output file.
+
+	std::ofstream output_file(output_file_path, output_file.binary);
+
+	if (!output_file.is_open())
+		ErrorAndExit("Could not open output file.");
+
+	// Open listing file.
+
+	std::ofstream *listing_stream = nullptr;
+	std::ofstream listing_file;
+
+	if (listing_file_path != nullptr)
+	{
+		listing_stream = &listing_file;
+		listing_file.open(listing_file_path);
+
+		if (!listing_file.is_open())
+			ErrorAndExit("Could not open listing file.");
+	}
+
+	// Open symbol file.
+
+	std::ostream *symbol_stream = nullptr;
+	std::ofstream symbol_file;
+
+	if (symbol_file_path != nullptr)
+	{
+		symbol_stream = &symbol_file;
+		symbol_file.open(symbol_file_path, symbol_file.binary);
+
+		if (!symbol_file.is_open())
+			ErrorAndExit("Could not open symbol file.");
+	}
+
+	if (!ClownAssembler::Assemble(input_file, output_file, std::cerr, listing_stream, symbol_stream, input_file_path != nullptr ? input_file_path : "STDIN", settings, DefinitionCallback, nullptr))
+	{
+		/* Delete the output file; it will be junk anyway.
+		   Also, leaving a junk file will confuse Make, which will think that the assembler had previously succeeded. */
+		remove(output_file_path);
+		ErrorAndExit("Could not assemble.");
+	}
+
+	return EXIT_SUCCESS;
 }

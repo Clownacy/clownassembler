@@ -28,7 +28,7 @@
 static int total_arguments;
 static char **arguments;
 
-static void DefinitionCallback(void *internal, void* const user_data, const ClownAssembler_AddDefinition add_definition)
+static void DefinitionCallback(void *internal, void* const user_data, const ClownAssembler::AddDefinition add_definition)
 {
 	(void)user_data;
 
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 	int exit_code = EXIT_SUCCESS;
 
 	char *combined_arguments;
-	ClownAssembler_Settings settings = {};
+	ClownAssembler::Settings settings = {};
 	char *source_file_path;
 	char *object_file_path;
 	char *symbol_file_path;
@@ -429,8 +429,12 @@ int main(int argc, char **argv)
 		symbol_file.open(symbol_file_path, symbol_file.binary);
 	}
 
+	std::ostream *listing_stream = nullptr;
 	if (listing_file_path != nullptr && listing_file_path[0] != '\0')
+	{
+		listing_stream = &listing_file;
 		listing_file.open(listing_file_path);
+	}
 
 	/* Make sure that we're using a supported output format. */
 	switch (output_mode)
@@ -452,7 +456,7 @@ int main(int argc, char **argv)
 	/* If we've gotten this far without any errors, then finally run the assembler. */
 	if (exit_code != EXIT_FAILURE)
 	{
-		if (!ClownAssembler_AssembleFile(source_file, object_file, std::cout, listing_file, symbol_stream, source_file_path, settings, DefinitionCallback, nullptr))
+		if (!ClownAssembler::Assemble(source_file, object_file, std::cout, listing_stream, symbol_stream, source_file_path, settings, DefinitionCallback, nullptr))
 		{
 			fprintf(stderr, "Error: Failed to assemble.\n");
 			exit_code = EXIT_FAILURE;

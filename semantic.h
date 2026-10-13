@@ -27,31 +27,23 @@
 
 #define CLOWNASSEMBLER_VERSION_STRING "ClownAssembler v2.0"
 
-using ClownAssembler_Settings = Options;
+namespace ClownAssembler
+{
+	using Settings = Options;
 
-using ClownAssembler_AddDefinition = void (*)(void *internal, const char *identifier, std::size_t identifier_length, unsigned long value);
-using ClownAssembler_DefinitionCallback = void (*)(void *internal, void *user_data, ClownAssembler_AddDefinition add_definition);
+	using AddDefinition = void (*)(void *internal, const char *identifier, std::size_t identifier_length, unsigned long value);
+	using DefinitionCallback = void (*)(void *internal, void *user_data, AddDefinition add_definition);
 
-bool ClownAssembler_AssembleFile(
-	std::istream &input_callbacks,
-	std::ostream &output_callbacks,
-	std::ostream &error_callbacks,
-	std::ostream &listing_callbacks,
-	std::ostream *symbol_callbacks,
-	const char *input_file_path,
-	ClownAssembler_Settings settings,
-	ClownAssembler_DefinitionCallback definition_callback,
-	const void *user_data);
-
-bool ClownAssembler_Assemble(
-	std::istream &input_callbacks,
-	std::ostream &output_callbacks,
-	std::ostream &error_callbacks,
-	std::ostream *listing_callbacks,
-	std::ostream *symbol_callbacks,
-	const char *input_file_path,
-	ClownAssembler_Settings settings,
-	ClownAssembler_DefinitionCallback definition_callback,
-	const void *user_data);
+	bool Assemble(
+		std::istream &input_callbacks,
+		std::ostream &output_callbacks,
+		std::ostream &error_callbacks,
+		std::ostream *listing_callbacks,
+		std::ostream *symbol_callbacks,
+		const char *input_file_path,
+		Settings settings,
+		DefinitionCallback definition_callback,
+		const void *user_data);
+}
 
 #endif /* SEMANTIC_H */

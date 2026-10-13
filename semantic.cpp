@@ -5773,15 +5773,15 @@ static void AddDefinition(void* const internal, const char* const identifier_buf
 	AddToSymbolTable(state, {identifier_buffer, identifier_length}, SymbolConstant{value});
 }
 
-static bool ClownAssembler_AssembleToObjectFile(
+static bool AssembleToObjectFile(
 	std::istream &input_stream,
 	std::ostream &output_stream,
 	std::ostream &error_stream,
 	std::ostream* const listing_stream,
 	std::ostream* const symbol_stream,
 	const char* const input_file_path,
-	ClownAssembler_Settings initial_options,
-	const ClownAssembler_DefinitionCallback definition_callback,
+	ClownAssembler::Settings initial_options,
+	const ClownAssembler::DefinitionCallback definition_callback,
 	const void* const user_data)
 {
 	SemanticState state(
@@ -5909,40 +5909,24 @@ static bool ClownAssembler_AssembleToObjectFile(
 	return !state.error_manager.GetErrorEncountered();
 }
 
-bool ClownAssembler_Assemble(
+bool ClownAssembler::Assemble(
 	std::istream &input_stream,
 	std::ostream &output_stream,
 	std::ostream &error_stream,
 	std::ostream* const listing_stream,
 	std::ostream* const symbol_stream,
 	const char* const input_file_path,
-	ClownAssembler_Settings settings,
-	const ClownAssembler_DefinitionCallback definition_callback,
+	Settings settings,
+	const DefinitionCallback definition_callback,
 	const void* const user_data)
 {
-	bool success = false;
-
 	std::stringstream object_stream;
 
-	if (ClownAssembler_AssembleToObjectFile(input_stream, object_stream, error_stream, listing_stream, symbol_stream, input_file_path, std::move(settings), definition_callback, user_data))
-	{
-		if (ConvertObjectFileToFlatBinary(object_stream, output_stream, error_stream))
-			success = true;
-	}
+	if (!AssembleToObjectFile(input_stream, object_stream, error_stream, listing_stream, symbol_stream, input_file_path, std::move(settings), definition_callback, user_data))
+		return false;
 
-	return success;
-}
+	if (!ConvertObjectFileToFlatBinary(object_stream, output_stream, error_stream))
+		return false;
 
-bool ClownAssembler_AssembleFile(
-	std::istream &input_stream,
-	std::ostream &output_stream,
-	std::ostream &error_stream,
-	std::ostream &listing_stream,
-	std::ostream* const symbol_stream,
-	const char* const input_file_path,
-	ClownAssembler_Settings settings,
-	const ClownAssembler_DefinitionCallback definition_callback,
-	const void* const user_data)
-{
-	return ClownAssembler_Assemble(input_stream, output_stream, error_stream, &listing_stream, symbol_stream, input_file_path, std::move(settings), definition_callback, user_data);
+	return true;
 }
