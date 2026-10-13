@@ -23,7 +23,9 @@
 #include <string.h>
 
 #include "case-insensitive.h"
+#include "path.h"
 #include "semantic.h"
+#include "utilities.h"
 
 static constexpr CaseInsensitive::ToLower to_lower(true);
 
@@ -71,12 +73,12 @@ int main(int argc, char **argv)
 {
 	int exit_code = EXIT_SUCCESS;
 
-	char *combined_arguments;
 	ClownAssembler::Settings settings = {};
-	char *source_file_path;
-	char *object_file_path;
-	char *symbol_file_path;
-	char *listing_file_path;
+	std::string_view source_file_path_string;
+	std::filesystem::path source_file_path;
+	std::filesystem::path object_file_path;
+	std::filesystem::path symbol_file_path;
+	std::filesystem::path listing_file_path;
 	std::ifstream source_file;
 	std::ofstream object_file;
 	std::ofstream symbol_file;
@@ -91,8 +93,6 @@ int main(int argc, char **argv)
 	total_arguments = argc;
 	arguments = argv;
 
-	combined_arguments = nullptr;
-
 	settings.local_signifier = '@';
 	settings.debug = false;
 	settings.case_insensitive = true;
@@ -103,8 +103,6 @@ int main(int argc, char **argv)
 	settings.expand_all_macros = false;
 	settings.automatic_even = true;
 	settings.optimisation.zero_displacement = false;
-
-	source_file_path = object_file_path = symbol_file_path = listing_file_path = nullptr;
 
 	output_mode = OUTPUT_EXECUTABLE;
 
@@ -341,60 +339,38 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			std::size_t combined_arguments_size;
-			int j;
-
-			combined_arguments_size = 1; /* The '1' is for the null character. */
+			std::string combined_arguments;
 
 			/* We've encountered the file list. */
-			for (j = i; j < argc; ++j)
-				combined_arguments_size += strlen(argv[j]);
+			for (int j = i; j < argc; ++j)
+				combined_arguments += argv[j];
 
-			combined_arguments = new char[combined_arguments_size];
+			std::string_view combined_arguments_subview = combined_arguments;
 
-			char *comma;
-
-			combined_arguments[0] = '\0';
-
-			for (j = i; j < argc; ++j)
-				strcat(combined_arguments, argv[j]);
-
-			source_file_path = combined_arguments;
-			comma = strchr(source_file_path, ',');
-
-			if (comma != nullptr)
+			const auto &DoPath = [&combined_arguments_subview](std::string_view* const path_string = nullptr)
 			{
-				comma[0] = '\0';
+				const auto length = combined_arguments_subview.find(',');
+				const auto path = combined_arguments_subview.substr(0, length);
 
-				object_file_path = comma + 1;
-				comma = strchr(object_file_path, ',');
+				combined_arguments_subview.remove_prefix(std::min(combined_arguments_subview.length(), path.length() + 1));
 
-				if (comma != nullptr)
-				{
-					comma[0] = '\0';
+				if (path_string != nullptr)
+					*path_string = path;
 
-					symbol_file_path = comma + 1;
-					comma = strchr(symbol_file_path, ',');
+				return ToStandardPath(path);
+			};
 
-					if (comma != nullptr)
-					{
-						comma[0] = '\0';
-
-						listing_file_path = comma + 1;
-						comma = strchr(listing_file_path, ',');
-
-						if (comma != nullptr)
-							comma[0] = '\0';
-					}
-				}
-			}
+			source_file_path = DoPath(&source_file_path_string);
+			object_file_path = DoPath();
+			symbol_file_path = DoPath();
+			listing_file_path = DoPath();
 
 			break;
 		}
 	}
 
 	/* Open files. */
-	if (source_file_path == nullptr || source_file_path[0] == '\0')
+	if (source_file_path.empty())
 	{
 		fprintf(stderr, "Error: Source file path must be specified.\n");
 		exit_code = EXIT_FAILURE;
@@ -409,7 +385,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (object_file_path == nullptr || object_file_path[0] == '\0')
+	if (object_file_path.empty())
 	{
 		fprintf(stderr, "Error: Object file path must be specified.\n");
 		exit_code = EXIT_FAILURE;
@@ -425,14 +401,14 @@ int main(int argc, char **argv)
 	}
 
 	std::ostream *symbol_stream = nullptr;
-	if (symbol_file_path != nullptr && symbol_file_path[0] != '\0')
+	if (!symbol_file_path.empty())
 	{
 		symbol_stream = &symbol_file;
 		symbol_file.open(symbol_file_path, symbol_file.binary);
 	}
 
 	std::ostream *listing_stream = nullptr;
-	if (listing_file_path != nullptr && listing_file_path[0] != '\0')
+	if (!listing_file_path.empty())
 	{
 		listing_stream = &listing_file;
 		listing_file.open(listing_file_path);
@@ -458,14 +434,12 @@ int main(int argc, char **argv)
 	/* If we've gotten this far without any errors, then finally run the assembler. */
 	if (exit_code != EXIT_FAILURE)
 	{
-		if (!ClownAssembler::Assemble(source_file, object_file, std::cout, listing_stream, symbol_stream, source_file_path, settings, DefinitionCallback, nullptr))
+		if (!ClownAssembler::Assemble(source_file, object_file, std::cout, listing_stream, symbol_stream, std::string(source_file_path_string), settings, DefinitionCallback, nullptr))
 		{
 			fprintf(stderr, "Error: Failed to assemble.\n");
 			exit_code = EXIT_FAILURE;
 		}
 	}
-
-	delete[] combined_arguments;
 
 	if (source_file.is_open())
 		source_file.close();
