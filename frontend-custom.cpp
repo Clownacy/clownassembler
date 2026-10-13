@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <filesystem>
 #include <format>
 #include <fstream>
 #include <stdlib.h>
@@ -58,7 +59,7 @@ static void DefinitionCallback(void *internal, void* const user_data, const Clow
 					std::cerr << std::format("Error: Value of argument '-e {}' is invalid.\n", arguments[i + 1]);
 			}
 
-			add_definition(internal, identifier, identifier_length, value);
+			add_definition(internal, {identifier, identifier_length}, value);
 
 			++i; /* Skip argument. */
 		}
@@ -267,7 +268,7 @@ int main(int argc, char **argv)
 	{
 		/* Delete the output file; it will be junk anyway.
 		   Also, leaving a junk file will confuse Make, which will think that the assembler had previously succeeded. */
-		remove(output_file_path);
+		std::filesystem::remove(output_file_path);
 		ErrorAndExit("Could not assemble.");
 	}
 

@@ -19,9 +19,7 @@
 #define SEMANTIC_H
 
 #include <iostream>
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdio.h>
+#include <string_view>
 
 #include "options.h"
 
@@ -31,7 +29,7 @@ namespace ClownAssembler
 {
 	using Settings = Options;
 
-	using AddDefinition = void (*)(void *internal, const char *identifier, std::size_t identifier_length, unsigned long value);
+	using AddDefinition = void (*)(void *internal, const std::string_view &identifier, unsigned long value);
 	using DefinitionCallback = void (*)(void *internal, void *user_data, AddDefinition add_definition);
 
 	bool Assemble(
@@ -40,7 +38,7 @@ namespace ClownAssembler
 		std::ostream &error_callbacks,
 		std::ostream *listing_callbacks,
 		std::ostream *symbol_callbacks,
-		const char *input_file_path,
+		std::string input_file_path,
 		Settings settings,
 		DefinitionCallback definition_callback,
 		const void *user_data);

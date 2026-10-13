@@ -233,7 +233,7 @@ struct SemanticState
 		std::ostream &output_stream,
 		std::ostream &error_stream,
 		std::ostream* const listing_stream,
-		const char* const input_file_path,
+		std::string input_file_path,
 		Options default_options
 	)
 		: output_stream(output_stream)
@@ -245,7 +245,7 @@ struct SemanticState
 		/* For error messages, we want to maintain a list of filenames and line
 		   numbers that describe the location and nesting of the erroneous
 		   line. This is the first entry in that list. */
-		location.emplace_front(input_file_path, 0);
+		location.emplace_front(std::move(input_file_path), 0);
 	}
 };
 
@@ -5765,12 +5765,12 @@ static void AssembleFile(SemanticState &state, std::istream &input_stream)
 	}
 }
 
-static void AddDefinition(void* const internal, const char* const identifier_buffer, const std::size_t identifier_length, const unsigned long value)
+static void AddDefinition(void* const internal, const std::string_view &identifier, const unsigned long value)
 {
 	SemanticState &state = *(SemanticState*)internal;
 
 	/* TODO: Does asm68k create a constant or a variable? */
-	AddToSymbolTable(state, {identifier_buffer, identifier_length}, SymbolConstant{value});
+	AddToSymbolTable(state, identifier, SymbolConstant{value});
 }
 
 static bool AssembleToObjectFile(
@@ -5779,7 +5779,7 @@ static bool AssembleToObjectFile(
 	std::ostream &error_stream,
 	std::ostream* const listing_stream,
 	std::ostream* const symbol_stream,
-	const char* const input_file_path,
+	std::string input_file_path,
 	ClownAssembler::Settings initial_options,
 	const ClownAssembler::DefinitionCallback definition_callback,
 	const void* const user_data)
@@ -5788,7 +5788,7 @@ static bool AssembleToObjectFile(
 		output_stream,
 		error_stream,
 		listing_stream,
-		input_file_path,
+		std::move(input_file_path),
 		std::move(initial_options)
 	);
 
@@ -5915,14 +5915,14 @@ bool ClownAssembler::Assemble(
 	std::ostream &error_stream,
 	std::ostream* const listing_stream,
 	std::ostream* const symbol_stream,
-	const char* const input_file_path,
+	std::string input_file_path,
 	Settings settings,
 	const DefinitionCallback definition_callback,
 	const void* const user_data)
 {
 	std::stringstream object_stream;
 
-	if (!AssembleToObjectFile(input_stream, object_stream, error_stream, listing_stream, symbol_stream, input_file_path, std::move(settings), definition_callback, user_data))
+	if (!AssembleToObjectFile(input_stream, object_stream, error_stream, listing_stream, symbol_stream, std::move(input_file_path), std::move(settings), definition_callback, user_data))
 		return false;
 
 	if (!ConvertObjectFileToFlatBinary(object_stream, output_stream, error_stream))

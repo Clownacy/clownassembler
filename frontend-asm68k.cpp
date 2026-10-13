@@ -58,7 +58,7 @@ static void DefinitionCallback(void *internal, void* const user_data, const Clow
 					fprintf(stderr, "Error: Value of argument '/e %s' is invalid.\n", arguments[i + 1]);
 			}
 
-			add_definition(internal, identifier, identifier_length, value);
+			add_definition(internal, {identifier, identifier_length}, value);
 
 			++i; /* Skip argument. */
 		}
