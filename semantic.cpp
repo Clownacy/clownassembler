@@ -500,14 +500,14 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState &s
 	return dictionary_entry;
 }
 
-static bool ResolveExpression(SemanticState &state, Expression *expression, unsigned long *value, bool fold = true);
+static bool ResolveExpression(SemanticState &state, Expression &expression, unsigned long &value, bool fold = true);
 
-static bool ResolveExpressionWithoutFolding(SemanticState &state, Expression *expression, unsigned long *value)
+static bool ResolveExpressionWithoutFolding(SemanticState &state, Expression &expression, unsigned long &value)
 {
 	return ResolveExpression(state, expression, value, false);
 }
 
-static bool GetSymbolInteger(SemanticState &state, const std::string_view &identifier, const bool must_evaluate_on_first_pass, unsigned long* const value)
+static bool GetSymbolInteger(SemanticState &state, const std::string_view &identifier, const bool must_evaluate_on_first_pass, unsigned long &value)
 {
 	SymbolDictionary::Entry *dictionary_entry;
 
@@ -532,7 +532,7 @@ static bool GetSymbolInteger(SemanticState &state, const std::string_view &ident
 				switch (symbol.type)
 				{
 					case SymbolSpecial::Type::RS:
-						*value = state.rs;
+						value = state.rs;
 						break;
 
 					case SymbolSpecial::Type::NARG:
@@ -542,7 +542,7 @@ static bool GetSymbolInteger(SemanticState &state, const std::string_view &ident
 							return false;
 						}
 
-						*value = state.macro.total_arguments_at_start;
+						value = state.macro.total_arguments_at_start;
 
 						break;
 
@@ -559,22 +559,22 @@ static bool GetSymbolInteger(SemanticState &state, const std::string_view &ident
 				if (state.doing_fixup_pass)
 					state.error_manager.Warning("Symbol '{}' forward-referenced despite being a redefineable variable.", identifier);
 
-				*value = symbol.value;
+				value = symbol.value;
 				return true;
 			},
 			[&](SymbolLabel &symbol)
 			{
-				*value = symbol.value;
+				value = symbol.value;
 				return true;
 			},
 			[&](SymbolConstant &symbol)
 			{
-				*value = symbol.value;
+				value = symbol.value;
 				return true;
 			},
 			[&](SymbolExpressionConstant &symbol)
 			{
-				if (!ResolveExpression(state, &symbol.expression, value))
+				if (!ResolveExpression(state, symbol.expression, value))
 					return false;
 
 				return true;
@@ -588,7 +588,7 @@ static bool GetSymbolInteger(SemanticState &state, const std::string_view &ident
 	);
 }
 
-static bool ResolveExpression(SemanticState &state, Expression *expression, unsigned long *value, bool fold)
+static bool ResolveExpression(SemanticState &state, Expression &expression, unsigned long &value, bool fold)
 {
 	if (!std::visit(
 		CC_VisitHelper{
@@ -598,7 +598,7 @@ static bool ResolveExpression(SemanticState &state, Expression *expression, unsi
 				unsigned long right_value;
 
 				/* Use a binary OR so that both expressions are properly folded (C short-circuiting could cause the second call to never occur if we used a logical OR). */
-				if (!ResolveExpression(state, &expression.subexpressions[0], &left_value, fold) | !ResolveExpression(state, &expression.subexpressions[1], &right_value, fold))
+				if (!ResolveExpression(state, expression.subexpressions[0], left_value, fold) | !ResolveExpression(state, expression.subexpressions[1], right_value, fold))
 					return false;
 
 				switch (expression.type)
@@ -609,11 +609,11 @@ static bool ResolveExpression(SemanticState &state, Expression *expression, unsi
 						break;
 
 					case ExpressionArithmetic2Operand::Type::SUBTRACT:
-						*value = left_value - right_value;
+						value = left_value - right_value;
 						break;
 
 					case ExpressionArithmetic2Operand::Type::ADD:
-						*value = left_value + right_value;
+						value = left_value + right_value;
 						break;
 
 					case ExpressionArithmetic2Operand::Type::MULTIPLY:
@@ -634,10 +634,10 @@ static bool ResolveExpression(SemanticState &state, Expression *expression, unsi
 								return false;
 
 							case ExpressionArithmetic2Operand::Type::MULTIPLY:
-								*value = left_value * right_value;
+								value = left_value * right_value;
 
 								if (left_value_was_negative != right_value_was_negative)
-									*value = -*value;
+									value = -value;
 
 								break;
 
@@ -648,10 +648,10 @@ static bool ResolveExpression(SemanticState &state, Expression *expression, unsi
 									return false;
 								}
 
-								*value = left_value / right_value;
+								value = left_value / right_value;
 
 								if (left_value_was_negative != right_value_was_negative)
-									*value = -*value;
+									value = -value;
 
 								break;
 
@@ -662,10 +662,10 @@ static bool ResolveExpression(SemanticState &state, Expression *expression, unsi
 									return false;
 								}
 
-								*value = left_value % right_value;
+								value = left_value % right_value;
 
 								if (left_value_was_negative)
-									*value = -*value;
+									value = -value;
 
 								break;
 						}
@@ -674,31 +674,31 @@ static bool ResolveExpression(SemanticState &state, Expression *expression, unsi
 					}
 
 					case ExpressionArithmetic2Operand::Type::LOGICAL_OR:
-						*value = left_value != 0 || right_value != 0 ? -1 : 0;
+						value = left_value != 0 || right_value != 0 ? -1 : 0;
 						break;
 
 					case ExpressionArithmetic2Operand::Type::LOGICAL_AND:
-						*value = left_value != 0 && right_value != 0 ? -1 : 0;
+						value = left_value != 0 && right_value != 0 ? -1 : 0;
 						break;
 
 					case ExpressionArithmetic2Operand::Type::BITWISE_OR:
-						*value = left_value | right_value;
+						value = left_value | right_value;
 						break;
 
 					case ExpressionArithmetic2Operand::Type::BITWISE_XOR:
-						*value = left_value ^ right_value;
+						value = left_value ^ right_value;
 						break;
 
 					case ExpressionArithmetic2Operand::Type::BITWISE_AND:
-						*value = left_value & right_value;
+						value = left_value & right_value;
 						break;
 
 					case ExpressionArithmetic2Operand::Type::EQUALITY:
-						*value = left_value == right_value ? -1 : 0;
+						value = left_value == right_value ? -1 : 0;
 						break;
 
 					case ExpressionArithmetic2Operand::Type::INEQUALITY:
-						*value = left_value != right_value ? -1 : 0;
+						value = left_value != right_value ? -1 : 0;
 						break;
 
 					case ExpressionArithmetic2Operand::Type::LESS_THAN:
@@ -716,44 +716,44 @@ static bool ResolveExpression(SemanticState &state, Expression *expression, unsi
 								return false;
 
 							case ExpressionArithmetic2Operand::Type::LESS_THAN:
-								*value = left_value < right_value;
+								value = left_value < right_value;
 								break;
 
 							case ExpressionArithmetic2Operand::Type::LESS_OR_EQUAL:
-								*value = left_value <= right_value;
+								value = left_value <= right_value;
 								break;
 
 							case ExpressionArithmetic2Operand::Type::MORE_THAN:
-								*value = left_value > right_value;
+								value = left_value > right_value;
 								break;
 
 							case ExpressionArithmetic2Operand::Type::MORE_OR_EQUAL:
-								*value = left_value >= right_value;
+								value = left_value >= right_value;
 								break;
 						}
 
-						*value = -*value;
+						value = -value;
 						break;
 
 					/* asm68k does 32-bit arithmetic, so it masks the shift amount to 0-31 (though whether this is intentional or just a side-effect of using x86 shift instructions that do this is unknown).
 					   (note: this is also needed to prevent undefined behaviour in C from shifting by an amount greater than or equal to the width of the type). */
 					/* TODO: Print a warning here. */
 					case ExpressionArithmetic2Operand::Type::LEFT_SHIFT:
-						*value = left_value << (right_value % 32);
+						value = left_value << (right_value % 32);
 						break;
 
 					case ExpressionArithmetic2Operand::Type::RIGHT_SHIFT:
-						*value = left_value >> (right_value % 32);
+						value = left_value >> (right_value % 32);
 						break;
 				}
 
 				/* Prevent 'bleeding' out of the 68k's 32-bit range. */
-				*value &= 0xFFFFFFFF;
+				value &= 0xFFFFFFFF;
 				return true;
 			},
 			[&](ExpressionArithmetic1Operand &expression)
 			{
-				if (!ResolveExpression(state, &*expression.subexpressions, value, fold))
+				if (!ResolveExpression(state, *expression.subexpressions, value, fold))
 					return false;
 
 				switch (expression.type)
@@ -764,25 +764,25 @@ static bool ResolveExpression(SemanticState &state, Expression *expression, unsi
 						return false;
 
 					case ExpressionArithmetic1Operand::Type::NEGATE:
-						*value = 0 - *value;
+						value = 0 - value;
 						break;
 
 					case ExpressionArithmetic1Operand::Type::BITWISE_NOT:
-						*value = ~*value;
+						value = ~value;
 						break;
 
 					case ExpressionArithmetic1Operand::Type::LOGICAL_NOT:
-						*value = *value == 0 ? -1 : 0;
+						value = value == 0 ? -1 : 0;
 						break;
 				}
 
 				/* Prevent 'bleeding' out of the 68k's 32-bit range. */
-				*value &= 0xFFFFFFFF;
+				value &= 0xFFFFFFFF;
 				return true;
 			},
 			[&](ExpressionNumber &expression)
 			{
-				*value = expression.value;
+				value = expression.value;
 				return true;
 			},
 			[&](ExpressionIdentifier &expression)
@@ -802,41 +802,41 @@ static bool ResolveExpression(SemanticState &state, Expression *expression, unsi
 					return false;
 				}
 
-				*value = 0;
+				value = 0;
 
 				for (std::size_t i = 0; i < length; ++i)
 				{
-					*value <<= 8;
-					*value |= expression.string[i];
+					value <<= 8;
+					value |= expression.string[i];
 				}
 
 				return true;
 			},
 			[&](ExpressionProgramCounterOfStatement&)
 			{
-				*value = state.program_counter_of_statement;
+				value = state.program_counter_of_statement;
 				return true;
 			},
 			[&](ExpressionProgramCounterOfExpression&)
 			{
-				*value = state.program_counter_of_expression;
+				value = state.program_counter_of_expression;
 				return true;
 			},
 			[&](ExpressionStrlen &expression)
 			{
-				*value = expression.string.length();
+				value = expression.string.length();
 				return true;
 			},
 			[&](ExpressionStrcmp &expression)
 			{
-				*value = expression.string_a == expression.string_b ? -1 : 0;
+				value = expression.string_a == expression.string_b ? -1 : 0;
 				return true;
 			},
 			[&](ExpressionInstr &expression)
 			{
 				unsigned long position;
 
-				if (!ResolveExpression(state, &expression.subexpressions[0], &position, fold))
+				if (!ResolveExpression(state, expression.subexpressions[0], position, fold))
 					return false;
 
 				const auto expression_string_a = std::get_if<ExpressionString>(&expression.subexpressions[1]);
@@ -850,22 +850,22 @@ static bool ResolveExpression(SemanticState &state, Expression *expression, unsi
 
 				/* TODO: What if 'position' is 0? */
 				const std::size_t found_position = CaseInsensitive::FindString(expression_string_a->string, expression_string_b->string, position - 1, state.options->case_insensitive);
-				*value = found_position == expression_string_a->string.npos ? 0 : found_position + 1;
+				value = found_position == expression_string_a->string.npos ? 0 : found_position + 1;
 				return true;
 			},
 			[&](ExpressionDef &expression)
 			{
-				*value = LookupSymbol(state, expression.string, nullptr) != nullptr ? -1 : 0;
+				value = LookupSymbol(state, expression.string, nullptr) != nullptr ? -1 : 0;
 				return true;
 			},
 			[&](ExpressionTypeWithIdentifier&)
 			{
-				*value = 0; /* TODO: This is a placeholder! */
+				value = 0; /* TODO: This is a placeholder! */
 				return true;
 			},
 			[&](ExpressionTypeWithNumber&)
 			{
-				*value = 1; /* TODO: This is a placeholder! */
+				value = 1; /* TODO: This is a placeholder! */
 				return true;
 			},
 			[&](ExpressionFilesize &expression)
@@ -878,17 +878,17 @@ static bool ResolveExpression(SemanticState &state, Expression *expression, unsi
 					return false;
 				}
 
-				*value = std::filesystem::file_size(standard_path);
+				value = std::filesystem::file_size(standard_path);
 				return true;
 			}
-		}, *expression
+		}, expression
 	))
 		return false;
 
 	/* Now that we have resolved the value, let's hardcode it here so that we don't ever have to calculate it again. */
 	/* This is especially useful for fix-ups, which may otherwise depend on identifiers that no longer exist at the time the value is resolved again. */
 	if (fold)
-		expression->emplace<ExpressionNumber>(*value);
+		expression.emplace<ExpressionNumber>(value);
 
 	return true;
 }
@@ -1094,14 +1094,14 @@ static void TerminateWhile(SemanticState &state, SemanticState::ModeWhile &while
 
 	for (;;)
 	{
-		unsigned long value;
-
 		state.source_line = while_state_copy.source_line;
+
+		unsigned long value;
 
 		/* We absolutely do not want to fold (cache) this expression, because
 		   while-loops depend on variables mutating from previous values;
 		   without this, while-loops will never terminate. */
-		if (!ResolveExpressionWithoutFolding(state, &while_state_copy.expression, &value))
+		if (!ResolveExpressionWithoutFolding(state, while_state_copy.expression, value))
 		{
 			state.error_manager.Error("Expression must be evaluable on the first pass.");
 			break;
@@ -1261,180 +1261,180 @@ static void SetLastGlobalLabel(SemanticState &state, const std::string_view &lab
 	}
 }
 
-static void ResolveInstructionAmbiguity(SemanticState &state, StatementInstruction* const instruction)
+static void ResolveInstructionAmbiguity(SemanticState &state, StatementInstruction &instruction)
 {
 	/* Some instructions are ambiguous, so figure them out fully here. */
 	for (;;)
 	{
-		switch (instruction->opcode.type)
+		switch (instruction.opcode.type)
 		{
-			#define ALIAS_AND_LOOP(ALIAS) {instruction->opcode.type = ALIAS; continue;}
+			#define ALIAS_AND_LOOP(ALIAS) {instruction.opcode.type = ALIAS; continue;}
 			#define WARN_ALIAS_AND_LOOP(ALIAS, MESSAGE) {if (state.options->pedantic_warnings_enabled) state.error_manager.Warning(MESSAGE); ALIAS_AND_LOOP(ALIAS)}
 
 			case OPCODE_ORI:
-				if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
+				if (instruction.operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_ORI_TO_CCR)
-				else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
+				else if (instruction.operands[1].type == OPERAND_STATUS_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_ORI_TO_SR)
 
 				break;
 
 			case OPCODE_ANDI:
-				if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
+				if (instruction.operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_ANDI_TO_CCR)
-				else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
+				else if (instruction.operands[1].type == OPERAND_STATUS_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_ANDI_TO_SR)
 
 				break;
 
 			case OPCODE_EORI:
-				if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
+				if (instruction.operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_EORI_TO_CCR)
-				else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
+				else if (instruction.operands[1].type == OPERAND_STATUS_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_EORI_TO_SR)
 
 				break;
 
 			case OPCODE_BTST_STATIC:
-				if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+				if (instruction.operands[0].type == OPERAND_DATA_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_BTST_DYNAMIC)
 
 				break;
 
 			case OPCODE_BCHG_STATIC:
-				if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+				if (instruction.operands[0].type == OPERAND_DATA_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_BCHG_DYNAMIC)
 
 				break;
 
 			case OPCODE_BCLR_STATIC:
-				if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+				if (instruction.operands[0].type == OPERAND_DATA_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_BCLR_DYNAMIC)
 
 				break;
 
 			case OPCODE_BSET_STATIC:
-				if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+				if (instruction.operands[0].type == OPERAND_DATA_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_BSET_DYNAMIC)
 
 				break;
 
 			case OPCODE_MOVEP_TO_REG:
-				if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+				if (instruction.operands[0].type == OPERAND_DATA_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_MOVEP_FROM_REG)
 
 				break;
 
 			case OPCODE_MOVE:
-				if (instruction->operands[0].type == OPERAND_STATUS_REGISTER)
+				if (instruction.operands[0].type == OPERAND_STATUS_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_MOVE_FROM_SR)
-				else if (instruction->operands[1].type == OPERAND_STATUS_REGISTER)
+				else if (instruction.operands[1].type == OPERAND_STATUS_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_MOVE_TO_SR)
-				else if (instruction->operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
+				else if (instruction.operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_MOVE_TO_CCR)
-				else if (instruction->operands[0].type == OPERAND_USER_STACK_POINTER_REGISTER)
+				else if (instruction.operands[0].type == OPERAND_USER_STACK_POINTER_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_MOVE_FROM_USP)
-				else if (instruction->operands[1].type == OPERAND_USER_STACK_POINTER_REGISTER)
+				else if (instruction.operands[1].type == OPERAND_USER_STACK_POINTER_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_MOVE_TO_USP)
-				else if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
+				else if (instruction.operands[1].type == OPERAND_ADDRESS_REGISTER)
 					WARN_ALIAS_AND_LOOP(OPCODE_MOVEA, "MOVE should be MOVEA.")
-				else if (instruction->operands[0].type == OPERAND_REGISTER_LIST)
+				else if (instruction.operands[0].type == OPERAND_REGISTER_LIST)
 					WARN_ALIAS_AND_LOOP(OPCODE_MOVEM_FROM_REGS, "MOVE should be MOVEM.")
-				else if (instruction->operands[1].type == OPERAND_REGISTER_LIST)
+				else if (instruction.operands[1].type == OPERAND_REGISTER_LIST)
 					WARN_ALIAS_AND_LOOP(OPCODE_MOVEM_TO_REGS, "MOVE should be MOVEM.")
 
 				break;
 
 			case OPCODE_MOVEM_TO_REGS:
-				if (instruction->operands[0].type == OPERAND_DATA_REGISTER || instruction->operands[0].type == OPERAND_ADDRESS_REGISTER || instruction->operands[0].type == OPERAND_REGISTER_LIST)
+				if (instruction.operands[0].type == OPERAND_DATA_REGISTER || instruction.operands[0].type == OPERAND_ADDRESS_REGISTER || instruction.operands[0].type == OPERAND_REGISTER_LIST)
 					ALIAS_AND_LOOP(OPCODE_MOVEM_FROM_REGS)
 
 				break;
 
 			case OPCODE_SBCD_DATA_REGS:
-				if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+				if (instruction.operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
 					ALIAS_AND_LOOP(OPCODE_SBCD_ADDRESS_REGS)
 
 				break;
 
 			case OPCODE_OR_TO_REG:
-				if (instruction->operands[0].type == OPERAND_LITERAL)
+				if (instruction.operands[0].type == OPERAND_LITERAL)
 					WARN_ALIAS_AND_LOOP(OPCODE_ORI, "OR should be ORI.")
-				else if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
+				else if (instruction.operands[1].type != OPERAND_DATA_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_OR_FROM_REG)
 
 				break;
 
 			case OPCODE_SUB_TO_REG:
-				if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
+				if (instruction.operands[1].type == OPERAND_ADDRESS_REGISTER)
 					WARN_ALIAS_AND_LOOP(OPCODE_SUBA, "SUB should be SUBA.")
-				else if (instruction->operands[0].type == OPERAND_LITERAL)
+				else if (instruction.operands[0].type == OPERAND_LITERAL)
 					WARN_ALIAS_AND_LOOP(OPCODE_SUBI, "SUB should be SUBI.")
-				else if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
+				else if (instruction.operands[1].type != OPERAND_DATA_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_SUB_FROM_REG)
 
 				break;
 
 			case OPCODE_SUBI:
-				if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
+				if (instruction.operands[1].type == OPERAND_ADDRESS_REGISTER)
 					WARN_ALIAS_AND_LOOP(OPCODE_SUBA, "SUBI should be SUBA.")
 
 				break;
 
 			case OPCODE_SUBX_DATA_REGS:
-				if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+				if (instruction.operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
 					ALIAS_AND_LOOP(OPCODE_SUBX_ADDRESS_REGS)
 
 				break;
 
 			case OPCODE_ABCD_DATA_REGS:
-				if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+				if (instruction.operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
 					ALIAS_AND_LOOP(OPCODE_ABCD_ADDRESS_REGS)
 
 				break;
 
 			case OPCODE_AND_TO_REG:
-				if (instruction->operands[0].type == OPERAND_LITERAL)
+				if (instruction.operands[0].type == OPERAND_LITERAL)
 					WARN_ALIAS_AND_LOOP(OPCODE_ANDI, "AND should be ANDI.")
-				else if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
+				else if (instruction.operands[1].type != OPERAND_DATA_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_AND_FROM_REG)
 
 				break;
 
 			case OPCODE_ADD_TO_REG:
-				if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
+				if (instruction.operands[1].type == OPERAND_ADDRESS_REGISTER)
 					WARN_ALIAS_AND_LOOP(OPCODE_ADDA, "ADD should be ADDA.")
-				else if (instruction->operands[0].type == OPERAND_LITERAL)
+				else if (instruction.operands[0].type == OPERAND_LITERAL)
 					WARN_ALIAS_AND_LOOP(OPCODE_ADDI, "ADD should be ADDI.")
-				else if (instruction->operands[1].type != OPERAND_DATA_REGISTER)
+				else if (instruction.operands[1].type != OPERAND_DATA_REGISTER)
 					ALIAS_AND_LOOP(OPCODE_ADD_FROM_REG)
 
 				break;
 
 			case OPCODE_ADDI:
-				if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
+				if (instruction.operands[1].type == OPERAND_ADDRESS_REGISTER)
 					WARN_ALIAS_AND_LOOP(OPCODE_ADDA, "ADDI should be ADDA.")
 
 				break;
 
 			case OPCODE_ADDX_DATA_REGS:
-				if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
+				if (instruction.operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
 					ALIAS_AND_LOOP(OPCODE_ADDX_ADDRESS_REGS)
 
 				break;
 
 			case OPCODE_CMP:
-				if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
+				if (instruction.operands[1].type == OPERAND_ADDRESS_REGISTER)
 					WARN_ALIAS_AND_LOOP(OPCODE_CMPA, "CMP should be CMPA.")
-				else if (instruction->operands[0].type == OPERAND_LITERAL)
+				else if (instruction.operands[0].type == OPERAND_LITERAL)
 					WARN_ALIAS_AND_LOOP(OPCODE_CMPI, "CMP should be CMPI.")
-				else if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT && instruction->operands[1].type == OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT)
+				else if (instruction.operands[0].type == OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT && instruction.operands[1].type == OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT)
 					WARN_ALIAS_AND_LOOP(OPCODE_CMPM, "CMP should be CMPM.")
 
 				break;
 
 			case OPCODE_EOR:
-				if (instruction->operands[0].type == OPERAND_LITERAL)
+				if (instruction.operands[0].type == OPERAND_LITERAL)
 					WARN_ALIAS_AND_LOOP(OPCODE_EORI, "EOR should be EORI.")
 
 				break;
@@ -1447,11 +1447,11 @@ static void ResolveInstructionAmbiguity(SemanticState &state, StatementInstructi
 			case OPCODE_ROXR_STATIC:
 			case OPCODE_ROL_STATIC:
 			case OPCODE_ROR_STATIC:
-				if (instruction->operands[1].type != 0)
+				if (instruction.operands[1].type != 0)
 				{
-					if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+					if (instruction.operands[0].type == OPERAND_DATA_REGISTER)
 					{
-						switch (instruction->opcode.type)
+						switch (instruction.opcode.type)
 						{
 							case OPCODE_ASL_STATIC:
 								ALIAS_AND_LOOP(OPCODE_ASL_DYNAMIC)
@@ -1492,16 +1492,16 @@ static void ResolveInstructionAmbiguity(SemanticState &state, StatementInstructi
 				}
 				else
 				{
-					if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+					if (instruction.operands[0].type == OPERAND_DATA_REGISTER)
 					{
 						/* If I remember correctly, this syntax is actually officially valid. */
-						instruction->operands[1] = std::move(instruction->operands[0]);
-						instruction->operands[0].type = OPERAND_LITERAL;
-						instruction->operands[0].literal.emplace<ExpressionNumber>(1);
+						instruction.operands[1] = std::move(instruction.operands[0]);
+						instruction.operands[0].type = OPERAND_LITERAL;
+						instruction.operands[0].literal.emplace<ExpressionNumber>(1);
 					}
 					else
 					{
-						switch (instruction->opcode.type)
+						switch (instruction.opcode.type)
 						{
 							case OPCODE_ASL_STATIC:
 								ALIAS_AND_LOOP(OPCODE_ASL_SINGLE)
@@ -1551,17 +1551,17 @@ static void ResolveInstructionAmbiguity(SemanticState &state, StatementInstructi
 	}
 }
 
-static void OptimiseInstruction(SemanticState &state, StatementInstruction* const instruction)
+static void OptimiseInstruction(SemanticState &state, StatementInstruction &instruction)
 {
 	if (state.options->optimisation.zero_displacement)
 	{
-		for (auto &operand : instruction->operands)
+		for (auto &operand : instruction.operands)
 		{
 			if (operand.type == OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT)
 			{
 				unsigned long value;
 
-				if (ResolveExpression(state, &operand.literal, &value) && value == 0)
+				if (ResolveExpression(state, operand.literal, value) && value == 0)
 					operand.type = OPERAND_ADDRESS_REGISTER_INDIRECT;
 			}
 		}
@@ -1578,7 +1578,7 @@ struct InstructionMetadata
 };
 
 /* The order of this array absolutely must match the order of the OperandType enum! */
-static const InstructionMetadata instruction_metadata_all[] = {
+static const auto instruction_metadata_all = std::to_array<InstructionMetadata>({
 	{	/* OPCODE_ORI_TO_CCR */
 		"ORI",
 		SIZE_BYTE | SIZE_UNDEFINED,
@@ -2654,7 +2654,7 @@ static const InstructionMetadata instruction_metadata_all[] = {
 			0,
 		}
 	},
-};
+});
 
 static void AdvanceProgramCounter(SemanticState &state, const unsigned long delta)
 {
@@ -2668,20 +2668,17 @@ static void RegressProgramCounter(SemanticState &state, const unsigned long delt
 	state.program_counter &= 0xFFFFFFFF;
 }
 
-static void ProcessInstruction(SemanticState &state, StatementInstruction *instruction)
+static void ProcessInstruction(SemanticState &state, StatementInstruction &instruction)
 {
-	unsigned int machine_code;
-	Size literal_operand_size;
 	std::array<Operand*, 2> operands_to_output;
 	std::array<Operand, 2> custom_operands;
-	const InstructionMetadata *instruction_metadata;
 
 	/* Default to NOP in case errors occur later on and we can't get the correct machine code. */
-	machine_code = 0x4E71;
+	unsigned int machine_code = 0x4E71;
 
-	literal_operand_size = instruction->opcode.size;
-	operands_to_output[0] = &instruction->operands[0];
-	operands_to_output[1] = &instruction->operands[1];
+	Size literal_operand_size = instruction.opcode.size;
+	operands_to_output[0] = &instruction.operands[0];
+	operands_to_output[1] = &instruction.operands[1];
 
 	/* Instructions on odd addresses cause exceptions on the 68k, so warn the user if they are produced. */
 	if ((state.program_counter & 1) != 0)
@@ -2692,49 +2689,49 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 	ResolveInstructionAmbiguity(state, instruction);
 	OptimiseInstruction(state, instruction);
 
-	instruction_metadata = &instruction_metadata_all[instruction->opcode.type];
+	const auto &instruction_metadata = instruction_metadata_all[instruction.opcode.type];
 
 	/* Check if the instruction is a valid size. */
-	if ((instruction->opcode.size & ~instruction_metadata->allowed_sizes) != 0)
+	if ((instruction.opcode.size & ~instruction_metadata.allowed_sizes) != 0)
 	{
-		const char *newline_byte, *newline_short, *newline_word, *newline_longword, *newline_undefined;
-		const char *opcode_byte, *opcode_short, *opcode_word, *opcode_longword, *opcode_undefined;
-		const char *size_byte, *size_short, *size_word, *size_longword, *size_undefined;
+		std::string_view newline_byte, newline_short, newline_word, newline_longword, newline_undefined;
+		std::string_view opcode_byte, opcode_short, opcode_word, opcode_longword, opcode_undefined;
+		std::string_view size_byte, size_short, size_word, size_longword, size_undefined;
 
 		newline_byte = newline_short = newline_word = newline_longword = newline_undefined = opcode_byte = opcode_short = opcode_word = opcode_longword = opcode_undefined = size_byte = size_short = size_word = size_longword = size_undefined = "";
 
-		if (instruction_metadata->allowed_sizes & SIZE_BYTE)
+		if (instruction_metadata.allowed_sizes & SIZE_BYTE)
 		{
 			newline_byte = "\n";
-			opcode_byte = instruction_metadata->name;
+			opcode_byte = instruction_metadata.name;
 			size_byte = ".B";
 		}
 
-		if (instruction_metadata->allowed_sizes & SIZE_SHORT)
+		if (instruction_metadata.allowed_sizes & SIZE_SHORT)
 		{
 			newline_short = "\n";
-			opcode_short = instruction_metadata->name;
+			opcode_short = instruction_metadata.name;
 			size_short = ".S";
 		}
 
-		if (instruction_metadata->allowed_sizes & SIZE_WORD)
+		if (instruction_metadata.allowed_sizes & SIZE_WORD)
 		{
 			newline_word = "\n";
-			opcode_word = instruction_metadata->name;
+			opcode_word = instruction_metadata.name;
 			size_word = ".W";
 		}
 
-		if (instruction_metadata->allowed_sizes & SIZE_LONGWORD)
+		if (instruction_metadata.allowed_sizes & SIZE_LONGWORD)
 		{
 			newline_longword = "\n";
-			opcode_longword = instruction_metadata->name;
+			opcode_longword = instruction_metadata.name;
 			size_longword = ".L";
 		}
 
-		if (instruction_metadata->allowed_sizes & SIZE_UNDEFINED)
+		if (instruction_metadata.allowed_sizes & SIZE_UNDEFINED)
 		{
 			newline_undefined = "\n";
-			opcode_undefined = instruction_metadata->name;
+			opcode_undefined = instruction_metadata.name;
 			size_undefined = " (no size)";
 		}
 
@@ -2742,33 +2739,30 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 	}
 	else
 	{
-		unsigned int total_operands_wanted;
-		unsigned int total_operands_have;
-
 		/* If the size is undefined, and the instruction has only one valid size, then set the size to that. */
-		if (instruction->opcode.size == SIZE_UNDEFINED)
+		if (instruction.opcode.size == SIZE_UNDEFINED)
 		{
-			switch (instruction_metadata->allowed_sizes & ~SIZE_UNDEFINED)
+			switch (instruction_metadata.allowed_sizes & ~SIZE_UNDEFINED)
 			{
 				case SIZE_BYTE:
 				case SIZE_SHORT:
 				case SIZE_WORD:
 				case SIZE_LONGWORD:
-					instruction->opcode.size = (Size)(instruction_metadata->allowed_sizes & ~SIZE_UNDEFINED);
+					instruction.opcode.size = static_cast<Size>(instruction_metadata.allowed_sizes & ~SIZE_UNDEFINED);
 					break;
 			}
 		}
 
 		/* Count operands that we want. */
-		total_operands_wanted = 0;
+		unsigned int total_operands_wanted = 0;
 
-		while (total_operands_wanted < std::size(instruction_metadata->allowed_operands) && instruction_metadata->allowed_operands[total_operands_wanted] != 0)
+		while (total_operands_wanted < std::size(instruction_metadata.allowed_operands) && instruction_metadata.allowed_operands[total_operands_wanted] != 0)
 			++total_operands_wanted;
 
 		/* Count operands that we have. */
-		total_operands_have = 0;
+		unsigned int total_operands_have = 0;
 
-		while (total_operands_have < std::size(instruction->operands) && instruction->operands[total_operands_have].type != 0)
+		while (total_operands_have < std::size(instruction.operands) && instruction.operands[total_operands_have].type != 0)
 			++total_operands_have;
 
 		if (total_operands_wanted != total_operands_have)
@@ -2780,13 +2774,13 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 			bool good_operands = true;
 
 			/* Check whether the operands are of the correct types. */
-			for (unsigned int i = 0; i < total_operands_have && instruction_metadata->allowed_operands[i] != 0; ++i)
+			for (unsigned int i = 0; i < total_operands_have && instruction_metadata.allowed_operands[i] != 0; ++i)
 			{
-				if ((instruction->operands[i].type & ~instruction_metadata->allowed_operands[i]) != 0)
+				if ((instruction.operands[i].type & ~instruction_metadata.allowed_operands[i]) != 0)
 				{
-					const char *operand_string;
+					std::string_view operand_string;
 
-					switch (instruction->operands[i].type)
+					switch (instruction.operands[i].type)
 					{
 						default:
 						case OPERAND_NONE:
@@ -2865,7 +2859,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 			if (good_operands)
 			{
 				/* Determine the machine code for the opcode and perform sanity-checking. */
-				switch (instruction->opcode.type)
+				switch (instruction.opcode.type)
 				{
 					case OPCODE_ORI_TO_CCR:
 						machine_code = 0x003C;
@@ -2877,8 +2871,8 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 
 					case OPCODE_ORI:
 						machine_code = 0x0000;
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
+						machine_code |= ConstructSizeBits(instruction.opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
 						break;
 
 					case OPCODE_ANDI_TO_CCR:
@@ -2891,20 +2885,20 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 
 					case OPCODE_ANDI:
 						machine_code = 0x0200;
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
+						machine_code |= ConstructSizeBits(instruction.opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
 						break;
 
 					case OPCODE_SUBI:
 						machine_code = 0x0400;
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
+						machine_code |= ConstructSizeBits(instruction.opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
 						break;
 
 					case OPCODE_ADDI:
 						machine_code = 0x0600;
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
+						machine_code |= ConstructSizeBits(instruction.opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
 						break;
 
 					case OPCODE_EORI_TO_CCR:
@@ -2917,14 +2911,14 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 
 					case OPCODE_EORI:
 						machine_code = 0x0A00;
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
+						machine_code |= ConstructSizeBits(instruction.opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
 						break;
 
 					case OPCODE_CMPI:
 						machine_code = 0x0C00;
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
+						machine_code |= ConstructSizeBits(instruction.opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
 						break;
 
 					case OPCODE_BTST_STATIC:
@@ -2935,7 +2929,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 					case OPCODE_BCHG_DYNAMIC:
 					case OPCODE_BCLR_DYNAMIC:
 					case OPCODE_BSET_DYNAMIC:
-						switch (instruction->opcode.type)
+						switch (instruction.opcode.type)
 						{
 							case OPCODE_BTST_STATIC:
 							case OPCODE_BCHG_STATIC:
@@ -2944,11 +2938,11 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 							{
 								unsigned long value;
 
-								if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
+								if (!ResolveExpression(state, instruction.operands[0].literal, value))
 									value = 0;
 
 								/* Check whether the literal value will wrap or not, and warn the user if so. */
-								if (instruction->operands[1].type == OPERAND_DATA_REGISTER)
+								if (instruction.operands[1].type == OPERAND_DATA_REGISTER)
 								{
 									if (value >= 32)
 										state.error_manager.Warning("The bit index will be modulo 32.");
@@ -2968,7 +2962,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 							case OPCODE_BCHG_DYNAMIC:
 							case OPCODE_BCLR_DYNAMIC:
 							case OPCODE_BSET_DYNAMIC:
-								machine_code = 0x0100 | (instruction->operands[0].main_register << 9);
+								machine_code = 0x0100 | (instruction.operands[0].main_register << 9);
 								break;
 
 							default:
@@ -2976,7 +2970,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 								break;
 						}
 
-						switch (instruction->opcode.type)
+						switch (instruction.opcode.type)
 						{
 							case OPCODE_BTST_STATIC:
 							case OPCODE_BTST_DYNAMIC:
@@ -3004,21 +2998,21 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 						}
 
 						/* Check that the opcode size is suitable for the destination operand. */
-						if (instruction->operands[1].type == OPERAND_DATA_REGISTER)
+						if (instruction.operands[1].type == OPERAND_DATA_REGISTER)
 						{
-							if (instruction->opcode.size != SIZE_LONGWORD && instruction->opcode.size != SIZE_UNDEFINED)
+							if (instruction.opcode.size != SIZE_LONGWORD && instruction.opcode.size != SIZE_UNDEFINED)
 								state.error_manager.Error("Instruction must be longword-sized when its destination operand is a data register.");
 						}
 						else
 						{
-							if (instruction->opcode.size != SIZE_BYTE && instruction->opcode.size != SIZE_SHORT && instruction->opcode.size != SIZE_UNDEFINED)
+							if (instruction.opcode.size != SIZE_BYTE && instruction.opcode.size != SIZE_SHORT && instruction.opcode.size != SIZE_UNDEFINED)
 								state.error_manager.Error("Instruction must be byte-sized when its destination operand is memory.");
 						}
 
 						/* Prevent 'btst.l #0,d0' from outputting a longword-sized literal. */
 						literal_operand_size = SIZE_WORD;
 
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
 
 						break;
 
@@ -3028,21 +3022,21 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 						unsigned int data_register;
 						unsigned int address_register;
 
-						if (instruction->operands[0].type == OPERAND_DATA_REGISTER)
+						if (instruction.operands[0].type == OPERAND_DATA_REGISTER)
 						{
-							data_register = instruction->operands[0].main_register;
-							address_register = instruction->operands[1].main_register;
+							data_register = instruction.operands[0].main_register;
+							address_register = instruction.operands[1].main_register;
 						}
-						else /*if (instruction->operands[1].type == OPERAND_DATA_REGISTER)*/
+						else /*if (instruction.operands[1].type == OPERAND_DATA_REGISTER)*/
 						{
-							address_register = instruction->operands[0].main_register;
-							data_register = instruction->operands[1].main_register;
+							address_register = instruction.operands[0].main_register;
+							data_register = instruction.operands[1].main_register;
 						}
 
 						machine_code = 0x0108;
 						machine_code |= data_register << 9;
-						machine_code |= (instruction->operands[0].type == OPERAND_DATA_REGISTER) << 7;
-						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
+						machine_code |= (instruction.operands[0].type == OPERAND_DATA_REGISTER) << 7;
+						machine_code |= (instruction.opcode.size == SIZE_LONGWORD) << 6;
 						machine_code |= address_register;
 
 						break;
@@ -3050,10 +3044,10 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 
 					case OPCODE_MOVEA:
 					case OPCODE_MOVE:
-						if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER && instruction->opcode.size == SIZE_BYTE)
+						if (instruction.operands[0].type == OPERAND_ADDRESS_REGISTER && instruction.opcode.size == SIZE_BYTE)
 							state.error_manager.Error("This instruction cannot be byte-sized when its source is an address register.");
 
-						switch (instruction->opcode.size)
+						switch (instruction.opcode.size)
 						{
 							case SIZE_BYTE:
 							case SIZE_SHORT:
@@ -3070,24 +3064,24 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 								break;
 						}
 
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
-						machine_code |= ToAlternateEffectiveAddressBits(ConstructEffectiveAddressBits(state, &instruction->operands[1]));
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
+						machine_code |= ToAlternateEffectiveAddressBits(ConstructEffectiveAddressBits(state, &instruction.operands[1]));
 
 						break;
 
 					case OPCODE_MOVE_FROM_SR:
 						machine_code = 0x40C0;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
 						break;
 
 					case OPCODE_MOVE_TO_CCR:
 						machine_code = 0x44C0;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
 						break;
 
 					case OPCODE_MOVE_TO_SR:
 						machine_code = 0x46C0;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
 						break;
 
 					case OPCODE_NEGX:
@@ -3095,7 +3089,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 					case OPCODE_NEG:
 					case OPCODE_NOT:
 					case OPCODE_TST:
-						switch (instruction->opcode.type)
+						switch (instruction.opcode.type)
 						{
 							case OPCODE_NEGX:
 								machine_code = 0x4000;
@@ -3122,30 +3116,30 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 								break;
 						}
 
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
+						machine_code |= ConstructSizeBits(instruction.opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
 
 						break;
 
 					case OPCODE_EXT:
 						machine_code = 0x4880;
-						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
+						machine_code |= (instruction.opcode.size == SIZE_LONGWORD) << 6;
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
 						break;
 
 					case OPCODE_NBCD:
 						machine_code = 0x4800;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
 						break;
 
 					case OPCODE_SWAP:
 						machine_code = 0x4840;
-						machine_code |= instruction->operands[0].main_register;
+						machine_code |= instruction.operands[0].main_register;
 						break;
 
 					case OPCODE_PEA:
 						machine_code = 0x4840;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
 						break;
 
 					case OPCODE_ILLEGAL:
@@ -3154,16 +3148,16 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 
 					case OPCODE_TAS:
 						machine_code = 0x4AC0;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
 						break;
 
 					case OPCODE_TRAP:
 					{
-						unsigned long value;
-
 						machine_code = 0x4E40;
 
-						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
+						unsigned long value;
+
+						if (!ResolveExpression(state, instruction.operands[0].literal, value))
 							value = 0;
 
 						if (value > 15)
@@ -3179,22 +3173,22 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 
 					case OPCODE_LINK:
 						machine_code = 0x4E50;
-						machine_code |= instruction->operands[0].main_register;
+						machine_code |= instruction.operands[0].main_register;
 						break;
 
 					case OPCODE_UNLK:
 						machine_code = 0x4E58;
-						machine_code |= instruction->operands[0].main_register;
+						machine_code |= instruction.operands[0].main_register;
 						break;
 
 					case OPCODE_MOVE_TO_USP:
 						machine_code = 0x4E60;
-						machine_code |= instruction->operands[0].main_register;
+						machine_code |= instruction.operands[0].main_register;
 						break;
 
 					case OPCODE_MOVE_FROM_USP:
 						machine_code = 0x4E68;
-						machine_code |= instruction->operands[1].main_register;
+						machine_code |= instruction.operands[1].main_register;
 						break;
 
 					case OPCODE_RESET:
@@ -3227,26 +3221,26 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 
 					case OPCODE_JSR:
 						machine_code = 0x4E80;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
 						break;
 
 					case OPCODE_JMP:
 						machine_code = 0x4EC0;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
 						break;
 
 					case OPCODE_MOVEM_TO_REGS:
 					case OPCODE_MOVEM_FROM_REGS:
 						machine_code = 0x4880;
-						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 6;
+						machine_code |= (instruction.opcode.size == SIZE_LONGWORD) << 6;
 
-						if (instruction->opcode.type == OPCODE_MOVEM_TO_REGS)
+						if (instruction.opcode.type == OPCODE_MOVEM_TO_REGS)
 						{
 							machine_code |= 1 << 10;
 
 							/* Place register list before the other operand. */
-							operands_to_output[0] = &instruction->operands[1];
-							operands_to_output[1] = &instruction->operands[0];
+							operands_to_output[0] = &instruction.operands[1];
+							operands_to_output[1] = &instruction.operands[0];
 						}
 
 						machine_code |= ConstructEffectiveAddressBits(state, operands_to_output[1]);
@@ -3269,7 +3263,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 						if (operands_to_output[1]->type == OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT)
 						{
 							/* Reverse the register list. */
-							static const unsigned int reverse_nibble[0x10] = {0x0, 0x8, 0x4, 0xC, 0x2, 0xA, 0x6, 0xE, 0x1, 0x9, 0x5, 0xD, 0x3, 0xB, 0x7, 0xF};
+							static const std::array<unsigned int, 0x10> reverse_nibble = {0x0, 0x8, 0x4, 0xC, 0x2, 0xA, 0x6, 0xE, 0x1, 0x9, 0x5, 0xD, 0x3, 0xB, 0x7, 0xF};
 
 							custom_operands[0].main_register = reverse_nibble[(custom_operands[0].main_register >> (4 * 0)) & 0xF] << (4 * 3)
 											 | reverse_nibble[(custom_operands[0].main_register >> (4 * 1)) & 0xF] << (4 * 2)
@@ -3287,7 +3281,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 					case OPCODE_DIVS:
 					case OPCODE_MULU:
 					case OPCODE_MULS:
-						switch (instruction->opcode.type)
+						switch (instruction.opcode.type)
 						{
 							case OPCODE_LEA:
 								machine_code = 0x41C0;
@@ -3317,25 +3311,25 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 								break;
 						}
 
-						machine_code |= instruction->operands[1].main_register << 9;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
+						machine_code |= instruction.operands[1].main_register << 9;
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
 
 						break;
 
 					case OPCODE_ADDQ:
 					case OPCODE_SUBQ:
 					{
-						unsigned long value;
-
-						if (instruction->opcode.type == OPCODE_ADDQ)
+						if (instruction.opcode.type == OPCODE_ADDQ)
 							machine_code = 0x5000;
-						else /*if (instruction->opcode.type == OPCODE_SUBQ)*/
+						else /*if (instruction.opcode.type == OPCODE_SUBQ)*/
 							machine_code = 0x5100;
 
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
+						machine_code |= ConstructSizeBits(instruction.opcode.size);
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
 
-						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
+						unsigned long value;
+
+						if (!ResolveExpression(state, instruction.operands[0].literal, value))
 							value = 1;
 
 						if (value < 1 || value > 8)
@@ -3351,20 +3345,20 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 
 					case OPCODE_Scc:
 						machine_code = 0x50C0;
-						machine_code |= instruction->opcode.condition << 8;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
+						machine_code |= instruction.opcode.condition << 8;
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
 						break;
 
 					case OPCODE_DBcc:
 					{
-						unsigned long value;
-
 						machine_code = 0x50C8;
-						machine_code |= instruction->opcode.condition << 8;
-						machine_code |= instruction->operands[0].main_register;
+						machine_code |= instruction.opcode.condition << 8;
+						machine_code |= instruction.operands[0].main_register;
 
 						/* Obtain the destination address. */
-						if (!ResolveExpression(state, &instruction->operands[1].literal, &value))
+						unsigned long value;
+
+						if (!ResolveExpression(state, instruction.operands[1].literal, value))
 							value = state.program_counter - 2;
 
 						/* Construct a custom operand to hold the destination offset. */
@@ -3402,12 +3396,9 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 					case OPCODE_BSR:
 					case OPCODE_Bcc:
 					{
-						unsigned long offset;
-						unsigned long value;
-
 						machine_code = 0x6000;
 
-						switch (instruction->opcode.type)
+						switch (instruction.opcode.type)
 						{
 							case OPCODE_BRA:
 								machine_code |= 0x0000;
@@ -3418,7 +3409,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 								break;
 
 							case OPCODE_Bcc:
-								machine_code |= instruction->opcode.condition << 8;
+								machine_code |= instruction.opcode.condition << 8;
 								break;
 
 							default:
@@ -3427,15 +3418,19 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 						}
 
 						/* Obtain the destination address. */
-						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
+						unsigned long value;
+
+						if (!ResolveExpression(state, instruction.operands[0].literal, value))
 							value = state.program_counter - 2;
 
 						/* Calculate the destination offset. */
+						unsigned long offset;
+
 						if (value >= state.program_counter)
 						{
 							offset = value - state.program_counter;
 
-							if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
+							if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
 							{
 								if (offset == 0)
 									state.error_manager.Error("The destination cannot be 0 bytes away when using a short-sized branch: use a word-sized branch instead.");
@@ -3452,7 +3447,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 						{
 							offset = state.program_counter - value;
 
-							if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
+							if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
 							{
 								if (offset > 0x80)
 									state.error_manager.Error("The destination is too far away: it must be less than $81 bytes before the start of the instruction, but instead it was ${:X} bytes away.", offset);
@@ -3469,7 +3464,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 						if ((value & 1) != 0)
 							state.error_manager.Warning("Branch leads to odd address 0x{:X}.", value);
 
-						if (instruction->opcode.size == SIZE_BYTE || instruction->opcode.size == SIZE_SHORT)
+						if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
 						{
 							machine_code |= offset & 0xFF;
 
@@ -3489,12 +3484,12 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 
 					case OPCODE_MOVEQ:
 					{
-						unsigned long value;
-
 						machine_code = 0x7000;
 
 						/* Obtain the value to be moved. */
-						if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
+						unsigned long value;
+
+						if (!ResolveExpression(state, instruction.operands[0].literal, value))
 							value = 0;
 
 						if (value > 0x7F && value < 0xFFFFFF80)
@@ -3502,7 +3497,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 
 						machine_code |= value & 0xFF;
 
-						machine_code |= instruction->operands[1].main_register << 9;
+						machine_code |= instruction.operands[1].main_register << 9;
 
 						/* MOVEQ's operands are embedded directly into the machine code, so we don't need to output them separately. */
 						operands_to_output[0] = nullptr;
@@ -3519,7 +3514,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 					case OPCODE_ABCD_ADDRESS_REGS:
 					case OPCODE_ADDX_DATA_REGS:
 					case OPCODE_ADDX_ADDRESS_REGS:
-						switch (instruction->opcode.type)
+						switch (instruction.opcode.type)
 						{
 							case OPCODE_SBCD_DATA_REGS:
 								machine_code = 0x8100;
@@ -3558,9 +3553,9 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 								break;
 						}
 
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
-						machine_code |= instruction->operands[0].main_register << 0;
-						machine_code |= instruction->operands[1].main_register << 9;
+						machine_code |= ConstructSizeBits(instruction.opcode.size);
+						machine_code |= instruction.operands[0].main_register << 0;
+						machine_code |= instruction.operands[1].main_register << 9;
 
 						break;
 
@@ -3573,10 +3568,10 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 					case OPCODE_AND_FROM_REG:
 					case OPCODE_ADD_TO_REG:
 					case OPCODE_ADD_FROM_REG:
-						if (instruction->operands[1].type == OPERAND_ADDRESS_REGISTER && instruction->opcode.size == SIZE_BYTE)
+						if (instruction.operands[1].type == OPERAND_ADDRESS_REGISTER && instruction.opcode.size == SIZE_BYTE)
 							state.error_manager.Error("This instruction cannot be byte-sized when its destination is an address register.");
 
-						switch (instruction->opcode.type)
+						switch (instruction.opcode.type)
 						{
 							case OPCODE_OR_TO_REG:
 								machine_code = 0x8000;
@@ -3619,17 +3614,17 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 								break;
 						}
 
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
+						machine_code |= ConstructSizeBits(instruction.opcode.size);
 
-						if (instruction->operands[1].type == OPERAND_DATA_REGISTER)
+						if (instruction.operands[1].type == OPERAND_DATA_REGISTER)
 						{
-							machine_code |= instruction->operands[1].main_register << 9;
-							machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
+							machine_code |= instruction.operands[1].main_register << 9;
+							machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
 						}
 						else
 						{
-							machine_code |= instruction->operands[0].main_register << 9;
-							machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
+							machine_code |= instruction.operands[0].main_register << 9;
+							machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
 						}
 
 						break;
@@ -3637,7 +3632,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 					case OPCODE_SUBA:
 					case OPCODE_CMPA:
 					case OPCODE_ADDA:
-						switch (instruction->opcode.type)
+						switch (instruction.opcode.type)
 						{
 							case OPCODE_SUBA:
 								machine_code = 0x90C0;
@@ -3656,58 +3651,58 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 								break;
 						}
 
-						machine_code |= (instruction->opcode.size == SIZE_LONGWORD) << 8;
-						machine_code |= instruction->operands[1].main_register << 9;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
+						machine_code |= (instruction.opcode.size == SIZE_LONGWORD) << 8;
+						machine_code |= instruction.operands[1].main_register << 9;
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
 
 						break;
 
 					case OPCODE_EOR:
 						machine_code = 0xB100;
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
-						machine_code |= instruction->operands[0].main_register << 9;
-						machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[1]);
+						machine_code |= ConstructSizeBits(instruction.opcode.size);
+						machine_code |= instruction.operands[0].main_register << 9;
+						machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[1]);
 						break;
 
 					case OPCODE_CMPM:
 						machine_code = 0xB108;
-						machine_code |= ConstructSizeBits(instruction->opcode.size);
-						machine_code |= instruction->operands[0].main_register << 0;
-						machine_code |= instruction->operands[1].main_register << 9;
+						machine_code |= ConstructSizeBits(instruction.opcode.size);
+						machine_code |= instruction.operands[0].main_register << 0;
+						machine_code |= instruction.operands[1].main_register << 9;
 
 						break;
 
 					case OPCODE_EXG:
 						machine_code = 0xC100;
 
-						if (instruction->operands[0].type == OPERAND_DATA_REGISTER && instruction->operands[1].type == OPERAND_DATA_REGISTER)
+						if (instruction.operands[0].type == OPERAND_DATA_REGISTER && instruction.operands[1].type == OPERAND_DATA_REGISTER)
 						{
 							machine_code |= 0x0040;
-							machine_code |= instruction->operands[0].main_register << 9;
-							machine_code |= instruction->operands[1].main_register << 0;
+							machine_code |= instruction.operands[0].main_register << 9;
+							machine_code |= instruction.operands[1].main_register << 0;
 						}
-						else if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER && instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
+						else if (instruction.operands[0].type == OPERAND_ADDRESS_REGISTER && instruction.operands[1].type == OPERAND_ADDRESS_REGISTER)
 						{
 							machine_code |= 0x0048;
-							machine_code |= instruction->operands[0].main_register << 9;
-							machine_code |= instruction->operands[1].main_register << 0;
+							machine_code |= instruction.operands[0].main_register << 9;
+							machine_code |= instruction.operands[1].main_register << 0;
 						}
-						else if (instruction->operands[0].type == OPERAND_DATA_REGISTER && instruction->operands[1].type == OPERAND_ADDRESS_REGISTER)
+						else if (instruction.operands[0].type == OPERAND_DATA_REGISTER && instruction.operands[1].type == OPERAND_ADDRESS_REGISTER)
 						{
 							machine_code |= 0x0088;
-							machine_code |= instruction->operands[0].main_register << 9;
-							machine_code |= instruction->operands[1].main_register << 0;
+							machine_code |= instruction.operands[0].main_register << 9;
+							machine_code |= instruction.operands[1].main_register << 0;
 						}
-						else /*if (instruction->operands[0].type == OPERAND_ADDRESS_REGISTER && instruction->operands[1].type == OPERAND_DATA_REGISTER)*/
+						else /*if (instruction.operands[0].type == OPERAND_ADDRESS_REGISTER && instruction.operands[1].type == OPERAND_DATA_REGISTER)*/
 						{
 							machine_code |= 0x0088;
-							machine_code |= instruction->operands[1].main_register << 9;
-							machine_code |= instruction->operands[0].main_register << 0;
+							machine_code |= instruction.operands[1].main_register << 9;
+							machine_code |= instruction.operands[0].main_register << 0;
 						}
 
 						break;
 
-					/* TODO - Split these opcode: this code is a bloody mess. */
+					/* TODO - Split these opcodes: this code is a bloody mess. */
 					case OPCODE_ASL_STATIC:
 					case OPCODE_ASR_STATIC:
 					case OPCODE_LSL_STATIC:
@@ -3735,7 +3730,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 					{
 						unsigned int identifier = 0;
 
-						switch (instruction->opcode.type)
+						switch (instruction.opcode.type)
 						{
 							case OPCODE_ASL_STATIC:
 							case OPCODE_ASR_STATIC:
@@ -3780,7 +3775,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 
 						machine_code = 0xE000;
 
-						switch (instruction->opcode.type)
+						switch (instruction.opcode.type)
 						{
 							case OPCODE_ASR_STATIC:
 							case OPCODE_ASR_DYNAMIC:
@@ -3817,7 +3812,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 								break;
 						}
 
-						switch (instruction->opcode.type)
+						switch (instruction.opcode.type)
 						{
 							case OPCODE_ASL_STATIC:
 							case OPCODE_ASR_STATIC:
@@ -3830,7 +3825,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 							{
 								unsigned long value;
 
-								if (!ResolveExpression(state, &instruction->operands[0].literal, &value))
+								if (!ResolveExpression(state, instruction.operands[0].literal, value))
 									value = 0;
 
 								if (value > 8 || value < 1)
@@ -3839,8 +3834,8 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 								machine_code |= (value & 7) << 9;
 
 								machine_code |= identifier << 3;
-								machine_code |= instruction->operands[1].main_register << 0;
-								machine_code |= ConstructSizeBits(instruction->opcode.size);
+								machine_code |= instruction.operands[1].main_register << 0;
+								machine_code |= ConstructSizeBits(instruction.opcode.size);
 
 								/* Skip the immediate operand since that goes in the machine code instead. */
 								operands_to_output[0] = nullptr;
@@ -3857,10 +3852,10 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 							case OPCODE_ROL_DYNAMIC:
 							case OPCODE_ROR_DYNAMIC:
 								machine_code |= identifier << 3;
-								machine_code |= instruction->operands[0].main_register << 9;
+								machine_code |= instruction.operands[0].main_register << 9;
 								machine_code |= 0x0020;
-								machine_code |= instruction->operands[1].main_register << 0;
-								machine_code |= ConstructSizeBits(instruction->opcode.size);
+								machine_code |= instruction.operands[1].main_register << 0;
+								machine_code |= ConstructSizeBits(instruction.opcode.size);
 								break;
 
 							case OPCODE_ASL_SINGLE:
@@ -3873,7 +3868,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 							case OPCODE_ROR_SINGLE:
 								machine_code |= identifier << 9;
 								machine_code |= 0x00C0;
-								machine_code |= ConstructEffectiveAddressBits(state, &instruction->operands[0]);
+								machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
 								break;
 
 							default:
@@ -3919,16 +3914,17 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction *instr
 			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
 			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 			{
-				unsigned int bytes_to_write = 2;
 				unsigned long value;
 
-				if (!ResolveExpression(state, &operand->literal, &value))
+				if (!ResolveExpression(state, operand->literal, value))
 				{
 					if (operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT || operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER)
 						value = state.program_counter; /* Prevent out-of-range displacements later on. */
 					else
 						value = 0;
 				}
+
+				unsigned int bytes_to_write = 2;
 
 				switch (operand->type)
 				{
@@ -4181,45 +4177,45 @@ static bool ShouldPerformAutomaticEven(SemanticState &state, const Size size)
 	return state.options->automatic_even && size != SIZE_BYTE;
 }
 
-static void ProcessDc(SemanticState &state, StatementDc *dc)
+static void ProcessDc(SemanticState &state, StatementDc &dc)
 {
-	if (ShouldPerformAutomaticEven(state, dc->size))
+	if (ShouldPerformAutomaticEven(state, dc.size))
 		PerformEven(state);
 
-	for (auto &expression : dc->values)
+	for (auto &expression : dc.values)
 	{
 		const auto expression_string = std::get_if<ExpressionString>(&expression);
 
-		if (expression_string != nullptr && (dc->size == SIZE_BYTE || dc->size == SIZE_SHORT))
+		if (expression_string != nullptr && (dc.size == SIZE_BYTE || dc.size == SIZE_SHORT))
 		{
 			/* If this is a 'dc.b', and the value is a raw string, then output each character as a single byte. */
 			/* This allows 'dc.b' to be used to embed strings into the output. */
 			for (const char character : expression_string->string)
-				OutputDcValue(state, dc->size, character);
+				OutputDcValue(state, dc.size, character);
 		}
 		else
 		{
-			unsigned long value;
-
 			/* Update the program counter symbol in between values, to keep it up to date. */
 			state.program_counter_of_expression = state.program_counter;
 
-			if (!ResolveExpression(state, &expression, &value))
+			unsigned long value;
+
+			if (!ResolveExpression(state, expression, value))
 				value = 0;
 
-			OutputDcValue(state, dc->size, value);
+			OutputDcValue(state, dc.size, value);
 		}
 	}
 }
 
-static void ProcessDcb(SemanticState &state, StatementDcb *dcb)
+static void ProcessDcb(SemanticState &state, StatementDcb &dcb)
 {
-	unsigned long repetitions;
-
-	if (ShouldPerformAutomaticEven(state, dcb->size))
+	if (ShouldPerformAutomaticEven(state, dcb.size))
 		PerformEven(state);
 
-	if (!ResolveExpression(state, &dcb->repetitions, &repetitions))
+	unsigned long repetitions;
+
+	if (!ResolveExpression(state, dcb.repetitions, repetitions))
 	{
 		state.error_manager.Error("Repetition value must be evaluable on first pass.");
 		return;
@@ -4227,61 +4223,61 @@ static void ProcessDcb(SemanticState &state, StatementDcb *dcb)
 
 	unsigned long value;
 
-	if (!ResolveExpression(state, &dcb->value, &value))
+	if (!ResolveExpression(state, dcb.value, value))
 		value = 0;
 
 	for (unsigned long i = 0; i < repetitions; ++i)
-		OutputDcValue(state, dcb->size, value);
+		OutputDcValue(state, dcb.size, value);
 }
 
-static void ProcessDs(SemanticState &state, StatementDs *ds)
+static void ProcessDs(SemanticState &state, StatementDs &ds)
 {
-	unsigned long length;
-
-	if (ShouldPerformAutomaticEven(state, ds->size))
+	if (ShouldPerformAutomaticEven(state, ds.size))
 		PerformEven(state);
 
-	if (!ResolveExpression(state, &ds->length, &length))
+	unsigned long length;
+
+	if (!ResolveExpression(state, ds.length, length))
 	{
 		state.error_manager.Error("Repetition value must be evaluable on first pass.");
 		return;
 	}
 
 	for (unsigned long i = 0; i < length; ++i)
-		OutputDcValue(state, ds->size, 0);
+		OutputDcValue(state, ds.size, 0);
 }
 
-static void ProcessInclude(SemanticState &state, const StatementInclude *include)
+static void ProcessInclude(SemanticState &state, const StatementInclude &include)
 {
-	std::ifstream input_stream(ToStandardPath(include->path));
+	std::ifstream input_stream(ToStandardPath(include.path));
 
 	if (!input_stream.is_open())
 	{
-		state.error_manager.Error("File '{}' could not be opened.", include->path);
+		state.error_manager.Error("File '{}' could not be opened.", include.path);
 		return;
 	}
 
 	/* Add file path and line number to the location list. */
-	state.location.emplace_front(include->path, 0);
+	state.location.emplace_front(include.path, 0);
 
 	AssembleFile(state, input_stream);
 
 	state.location.pop_front();
 }
 
-static void ProcessIncbin(SemanticState &state, StatementIncbin *incbin)
+static void ProcessIncbin(SemanticState &state, StatementIncbin &incbin)
 {
-	std::ifstream input_file(ToStandardPath(incbin->path), input_file.binary);
+	std::ifstream input_file(ToStandardPath(incbin.path), input_file.binary);
 
 	if (!input_file.is_open())
 	{
-		state.error_manager.Error("File '{}' could not be opened.", incbin->path);
+		state.error_manager.Error("File '{}' could not be opened.", incbin.path);
 		return;
 	}
 
 	unsigned long value;
 
-	if (!ResolveExpression(state, &incbin->start, &value))
+	if (!ResolveExpression(state, incbin.start, value))
 	{
 		state.error_manager.Error("Start value must be evaluable on the first pass.");
 		value = 0;
@@ -4292,11 +4288,11 @@ static void ProcessIncbin(SemanticState &state, StatementIncbin *incbin)
 	if (input_file.fail())
 		state.error_manager.Error("Start value is not a valid location in the file.");
 
-	if (incbin->has_length)
+	if (incbin.has_length)
 	{
 		unsigned long length;
 
-		if (!ResolveExpression(state, &incbin->length, &length))
+		if (!ResolveExpression(state, incbin.length, length))
 		{
 			state.error_manager.Error("Length value must be evaluable on the first pass.");
 			length = 0;
@@ -4414,12 +4410,12 @@ static bool ReadSourceLine(SemanticState &state, std::istream &input_stream, std
 	return data_read;
 }
 
-static void ProcessRept(SemanticState &state, StatementRept *rept)
+static void ProcessRept(SemanticState &state, StatementRept &rept)
 {
 	/* Enter REPT mode. */
 	auto &mode = state.mode.emplace<SemanticState::ModeRept>();
 
-	if (!ResolveExpression(state, &rept->repetitions, &mode.repetitions))
+	if (!ResolveExpression(state, rept.repetitions, mode.repetitions))
 	{
 		state.error_manager.Error("Repetition value must be evaluable on the first pass.");
 		mode.repetitions = 1;
@@ -4429,25 +4425,25 @@ static void ProcessRept(SemanticState &state, StatementRept *rept)
 	mode.nesting = 0;
 }
 
-static void ProcessMacro(SemanticState &state, StatementMacro *macro, const std::string_view &label, bool is_short)
+static void ProcessMacro(SemanticState &state, StatementMacro &macro, const std::string_view &label, bool is_short)
 {
 	/* Enter MACRO mode. */
 	auto &mode = state.mode.emplace<SemanticState::ModeMacro>();
 
 	mode.metadata.name = label;
 	mode.line_number = state.location.front().line_number;
-	mode.metadata.parameter_names = std::move(macro->parameter_names);
+	mode.metadata.parameter_names = std::move(macro.parameter_names);
 	mode.metadata.is_short = is_short;
-	mode.metadata.uses_label = macro->uses_label;
+	mode.metadata.uses_label = macro.uses_label;
 }
 
-static void ProcessIf(SemanticState &state, Expression *expression)
+static void ProcessIf(SemanticState &state, Expression &expression)
 {
-	unsigned long value;
-
 	++state.current_if_level;
 
-	if (!ResolveExpression(state, expression, &value))
+	unsigned long value;
+
+	if (!ResolveExpression(state, expression, value))
 	{
 		state.error_manager.Error("Condition must be evaluable on the first pass.");
 		value = 1;
@@ -4460,7 +4456,7 @@ static void ProcessIf(SemanticState &state, Expression *expression)
 	state.true_already_found = value != 0;
 }
 
-static void ProcessStatement(SemanticState &state, Statement *statement, const std::string_view &label)
+static void ProcessStatement(SemanticState &state, Statement &statement, const std::string_view &label)
 {
 	/* Bizarrely, depending on the context, the program counter can be one
 	   of two values, so we need to maintain two separate copies of it. */
@@ -4492,7 +4488,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 		StatementMexit,
 		StatementLocal,
 		StatementPurge
-	>(*statement))
+	>(statement))
 	{
 		if (!label.empty() && !state.doing_fixup_pass)
 		{
@@ -4513,7 +4509,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 		StatementObj,
 		StatementObjend,
 		StatementOrg
-	>(*statement))
+	>(statement))
 	{
 		if (!label.empty())
 			state.error_manager.Error("There cannot be a label on this type of statement.");
@@ -4526,7 +4522,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 		StatementEqusIdentifier,
 		StatementSubstr,
 		StatementSet
-	>(*statement))
+	>(statement))
 	{
 		if (label.empty())
 		{
@@ -4537,7 +4533,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 	}
 	else if (CC_VariantHoldsAnyOf<
 		StatementRs
-	>(*statement))
+	>(statement))
 	{
 		/* Handled later. */
 	}
@@ -4547,31 +4543,31 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 			[&](StatementEmpty&) {},
 			[&](StatementInstruction &statement)
 			{
-				ProcessInstruction(state, &statement);
+				ProcessInstruction(state, statement);
 			},
 			[&](StatementDc &statement)
 			{
-				ProcessDc(state, &statement);
+				ProcessDc(state, statement);
 			},
 			[&](StatementDcb &statement)
 			{
-				ProcessDcb(state, &statement);
+				ProcessDcb(state, statement);
 			},
 			[&](StatementDs &statement)
 			{
-				ProcessDs(state, &statement);
+				ProcessDs(state, statement);
 			},
 			[&](StatementInclude &statement)
 			{
-				ProcessInclude(state, &statement);
+				ProcessInclude(state, statement);
 			},
 			[&](StatementIncbin &statement)
 			{
-				ProcessIncbin(state, &statement);
+				ProcessIncbin(state, statement);
 			},
 			[&](StatementRept &statement)
 			{
-				ProcessRept(state, &statement);
+				ProcessRept(state, statement);
 			},
 			[&](StatementEndr&)
 			{
@@ -4585,11 +4581,11 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 			},
 			[&](StatementMacro &statement)
 			{
-				ProcessMacro(state, &statement, label, false);
+				ProcessMacro(state, statement, label, false);
 			},
 			[&](StatementMacros &statement)
 			{
-				ProcessMacro(state, &statement.macro, label, true);
+				ProcessMacro(state, statement.macro, label, true);
 			},
 			[&](StatementEndm&)
 			{
@@ -4605,12 +4601,12 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 			},
 			[&](StatementEqu &statement)
 			{
-				unsigned long value;
-
 				if (state.options->equ_set_descope_local_labels)
 					SetLastGlobalLabel(state, label);
 
-				if (!ResolveExpression(state, &statement.expression, &value))
+				unsigned long value;
+
+				if (!ResolveExpression(state, statement.expression, value))
 				{
 					AddToSymbolTable(state, label, SymbolExpressionConstant{std::move(statement.expression)});
 					// TODO: Why does removing this result in a crash?
@@ -4642,16 +4638,17 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 			},
 			[&](StatementSubstr &statement)
 			{
-				unsigned long start, end;
-				std::string_view substring;
+				unsigned long start;
 
-				if (!ResolveExpression(state, &statement.start, &start))
+				if (!ResolveExpression(state, statement.start, start))
 				{
 					state.error_manager.Error("Start must be evaluable on the first pass.");
 					return;
 				}
 
-				if (!ResolveExpression(state, &statement.end, &end))
+				unsigned long end;
+
+				if (!ResolveExpression(state, statement.end, end))
 				{
 					state.error_manager.Error("End must be evaluable on the first pass.");
 					return;
@@ -4673,17 +4670,16 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 				if (end > statement.string.length())
 					end = statement.string.length();
 
-				substring = statement.string.substr(start - 1, end - start + 1);
-				PushSubstitute(state, label, substring);
+				PushSubstitute(state, label, statement.string.substr(start - 1, end - start + 1));
 			},
 			[&](StatementSet &statement)
 			{
-				unsigned long value;
-
 				if (state.options->equ_set_descope_local_labels)
 					SetLastGlobalLabel(state, label);
 
-				if (!ResolveExpression(state, &statement.expression, &value))
+				unsigned long value;
+
+				if (!ResolveExpression(state, statement.expression, value))
 				{
 					state.error_manager.Error("Value must be evaluable on the first pass.");
 					return;
@@ -4694,7 +4690,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 			},
 			[&](StatementIf &statement)
 			{
-				ProcessIf(state, &statement.expression);
+				ProcessIf(state, statement.expression);
 			},
 			[&](StatementElseif &statement)
 			{
@@ -4708,7 +4704,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 				{
 					unsigned long value;
 
-					if (!ResolveExpression(state, &statement.expression, &value))
+					if (!ResolveExpression(state, statement.expression, value))
 					{
 						state.error_manager.Error("Condition must be evaluable on the first pass.");
 						value = 1;
@@ -4790,7 +4786,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 			{
 				unsigned long offset;
 
-				if (!ResolveExpression(state, &statement.offset, &offset))
+				if (!ResolveExpression(state, statement.offset, offset))
 				{
 					state.error_manager.Error("Offset must be evaluable on the first pass.");
 					return;
@@ -4798,7 +4794,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 
 				unsigned long size_boundary;
 
-				if (!ResolveExpression(state, &statement.size_boundary, &size_boundary))
+				if (!ResolveExpression(state, statement.size_boundary, size_boundary))
 				{
 					state.error_manager.Error("Size boundary must be evaluable on the first pass.");
 					return;
@@ -4827,10 +4823,10 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 			},
 			[&](StatementInform &statement)
 			{
+				/* Definitely an 'INFORM'... */
 				unsigned long severity;
 
-				/* Definitely an 'INFORM'... */
-				if (!ResolveExpression(state, &statement.severity, &severity))
+				if (!ResolveExpression(state, statement.severity, severity))
 				{
 					state.error_manager.Error("Severity must be evaluable on the first pass.");
 					severity = 0;
@@ -4864,13 +4860,13 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 			},
 			[&](StatementRs &statement)
 			{
-				unsigned long length;
-
 				if (ShouldPerformAutomaticEven(state, statement.size))
 					if ((state.rs & 1) != 0)
 						++state.rs;
 
-				if (!ResolveExpression(state, &statement.length, &length))
+				unsigned long length;
+
+				if (!ResolveExpression(state, statement.length, length))
 				{
 					state.error_manager.Error("Length must be evaluable on the first pass.");
 					return;
@@ -4912,7 +4908,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 				/* Set '__rs' to value. */
 				unsigned long value;
 
-				if (!ResolveExpression(state, &statement.expression, &value))
+				if (!ResolveExpression(state, statement.expression, value))
 					state.error_manager.Error("Value must be evaluable on the first pass.");
 				else
 					state.rs = value;
@@ -4932,7 +4928,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 
 				unsigned long value;
 
-				if (!ResolveExpression(state, &statement.expression, &value))
+				if (!ResolveExpression(state, statement.expression, value))
 					state.error_manager.Error("Value must be evaluable on the first pass.");
 				else
 					state.obj_delta = value - state.program_counter;
@@ -4955,7 +4951,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 			{
 				unsigned long value;
 
-				if (!ResolveExpression(state, &statement.expression, &value))
+				if (!ResolveExpression(state, statement.expression, value))
 				{
 					state.error_manager.Error("Value must be evaluable on the first pass.");
 					return;
@@ -5047,7 +5043,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 			},
 			[&](StatementPushp &statement)
 			{
-				state.string_stack.push(statement.string);
+				state.string_stack.emplace(std::move(statement.string));
 			},
 			[&](StatementPopp &statement)
 			{
@@ -5101,7 +5097,7 @@ static void ProcessStatement(SemanticState &state, Statement *statement, const s
 			{
 				PurgeMacro(state, statement.string, false);
 			}
-		}, *statement
+		}, statement
 	);
 
 	/* Update both copies of the program counter again, so that things like WHILE statements don't use stale values in their expressions. */
@@ -5131,9 +5127,7 @@ static void ParseLine(SemanticState &state, const std::string_view &label, const
 	if (!ParseStatement(state, directive_and_operands))
 		return;
 
-	state.fixup_needed = false;
-
-	ProcessStatement(state, &state.statement, label);
+	ProcessStatement(state, state.statement, label);
 
 	if (!state.fixup_needed)
 		return;
@@ -5141,7 +5135,6 @@ static void ParseLine(SemanticState &state, const std::string_view &label, const
 	/* If the statement cannot currently be processed because of undefined symbols,
 	   add it to the fix-up list so we can try again later. */
 	FixUp &fixup = state.fixup_list.emplace_back();
-
 
 	/* Backup the statement. */
 	fixup.statement = std::move(state.statement);
@@ -5309,11 +5302,8 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 	const std::string unique_suffix = ComputeUniqueMacroSuffix(state);
 	std::string symbol_value_string;
 
-	state.macro.custom_search = [&state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, std::size_t starting_position, bool case_insensitive, std::size_t &found_position, std::size_t &found_length) -> std::optional<std::string_view>
+	state.macro.custom_search = [&state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, std::size_t starting_position, [[maybe_unused]] bool case_insensitive, std::size_t &found_position, std::size_t &found_length) -> std::optional<std::string_view>
 	{
-		/* `view_to_search` always points to a null-terminated string. */
-		(void)case_insensitive;
-
 		for (found_position = starting_position; (found_position = view_to_search.find('\\', found_position)) != view_to_search.npos; ++found_position)
 		{
 			const std::size_t symbol_position = found_position + 1;
@@ -5345,8 +5335,6 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 				case '#':
 				case '$':
 				{
-					unsigned long value;
-
 					const std::size_t identifier_position_start = symbol_position + 1;
 					const std::size_t identifier_position_end = Utilities::String::GetLeadingLength(view_to_search, DIRECTIVE_OR_MACRO_CHARS, identifier_position_start);
 
@@ -5358,7 +5346,9 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 					if (identifier_position_end < view_to_search.length() && view_to_search[identifier_position_end] == '\\')
 						++found_length;
 
-					if (!GetSymbolInteger(state, identifier, true, &value))
+					unsigned long value;
+
+					if (!GetSymbolInteger(state, identifier, true, value))
 						value = 0;
 
 					if (symbol == '#')
@@ -5396,99 +5386,95 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 	};
 
 	/* Extract and store the individual macro arguments, if they exist. */
+	std::size_t argument_string_start = 0;
+	unsigned int argument_depth = 0;
+
+	for (std::size_t i = 0; i <= arguments.length(); ++i)
 	{
-		std::size_t argument_string_start = 0;
-		unsigned int argument_depth = 0;
+		const bool at_the_end = i == arguments.length();
+		const char character = at_the_end ? ',' : arguments[i];
 
-		for (std::size_t i = 0; i <= arguments.length(); ++i)
+		switch (character)
 		{
-			const bool at_the_end = i == arguments.length();
-			const char character = at_the_end ? ',' : arguments[i];
+			case '(':
+				++argument_depth;
+				break;
 
-			switch (character)
-			{
-				case '(':
-					++argument_depth;
-					break;
+			case ')':
+				--argument_depth;
+				break;
 
-				case ')':
-					--argument_depth;
-					break;
+			case ',':
+				if (argument_depth == 0)
+				{
+					/* Extract argument. */
+					std::string_view argument = arguments.substr(argument_string_start, i - argument_string_start);
+					argument_string_start = i + 1;
 
-				case ',':
-					if (argument_depth == 0)
-					{
-						/* Extract argument. */
-						std::string_view argument = arguments.substr(argument_string_start, i - argument_string_start);
-						argument_string_start = i + 1;
+					/* Remove surrounding whitespace. */
+					Utilities::String::RemoveLeadingAndTrailing(argument, " \t");
 
-						/* Remove surrounding whitespace. */
-						Utilities::String::RemoveLeadingAndTrailing(argument, " \t");
+					/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
+					if (argument.empty() && at_the_end && state.macro.total_arguments == 0)
+						break;
 
-						/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
-						if (argument.empty() && at_the_end && state.macro.total_arguments == 0)
-							break;
+					/* Add to argument list. */
+					state.macro.argument_list.emplace_back(argument);
 
-						/* Add to argument list. */
-						state.macro.argument_list.emplace_back(argument);
+					if (!argument.empty() && argument.front() != '"' && argument.front() != '\'' && state.options->case_insensitive)
+						Utilities::String::ToLower(state.macro.argument_list[state.macro.total_arguments]);
 
-						if (!argument.empty() && argument.front() != '"' && argument.front() != '\'' && state.options->case_insensitive)
-							Utilities::String::ToLower(state.macro.argument_list[state.macro.total_arguments]);
+					++state.macro.total_arguments;
+					++state.macro.total_arguments_at_start;
+				}
 
-						++state.macro.total_arguments;
-						++state.macro.total_arguments_at_start;
-					}
-
-					break;
-			}
-		}
-
-		/* Add identifier substitute. */
-		PushMacroArgumentSubstitutions(state);
-	}
-
-	/* Finally, invoke the macro. */
-	{
-		const bool previous_listing_macro = state.listing_macro;
-
-		/* Flush line before changing this state, so that the macro line is not given the 'M' label. */
-		ListSourceLine(state);
-		state.listing_macro = true;
-
-		/* Push a new location (this macro).*/
-		state.location.emplace_front(macro->name, 0);
-
-		/* Iterate over each line of the macro, sending it to be processed. */
-		for (const auto &source_line : macro->source_line_list)
-		{
-			/* TODO: This is redundant and wrong: these substitutions are already done later, and this should only be doing the macro arguments! */
-			if (macro->is_short)
-			{
-				std::string expanded_source_line = source_line;
-				PerformSubstitutions(state, expanded_source_line, false);
-				AssembleLine(state, expanded_source_line, state.options->expand_all_macros);
-			}
-			else
-			{
-				AssembleLine(state, source_line, state.options->expand_all_macros);
-			}
-
-			if (!CurrentlyExpandingMacro(state))
 				break;
 		}
+	}
 
-		if (!macro->is_short)
+	/* Add identifier substitute. */
+	PushMacroArgumentSubstitutions(state);
+
+	/* Finally, invoke the macro. */
+	const bool previous_listing_macro = state.listing_macro;
+
+	/* Flush line before changing this state, so that the macro line is not given the 'M' label. */
+	ListSourceLine(state);
+	state.listing_macro = true;
+
+	/* Push a new location (this macro).*/
+	state.location.emplace_front(macro->name, 0);
+
+	/* Iterate over each line of the macro, sending it to be processed. */
+	for (const auto &source_line : macro->source_line_list)
+	{
+		/* TODO: This is redundant and wrong: these substitutions are already done later, and this should only be doing the macro arguments! */
+		if (macro->is_short)
 		{
-			/* 'MEXIT' may have ended us midway through an if-statement, so unwind to the original if-level here. */
-			while (state.current_if_level != state.macro.starting_if_level)
-				TerminateIf(state);
+			std::string expanded_source_line = source_line;
+			PerformSubstitutions(state, expanded_source_line, false);
+			AssembleLine(state, expanded_source_line, state.options->expand_all_macros);
+		}
+		else
+		{
+			AssembleLine(state, source_line, state.options->expand_all_macros);
 		}
 
-		/* Pop location. */
-		state.location.pop_front();
-
-		state.listing_macro = previous_listing_macro;
+		if (!CurrentlyExpandingMacro(state))
+			break;
 	}
+
+	if (!macro->is_short)
+	{
+		/* 'MEXIT' may have ended us midway through an if-statement, so unwind to the original if-level here. */
+		while (state.current_if_level != state.macro.starting_if_level)
+			TerminateIf(state);
+	}
+
+	/* Pop location. */
+	state.location.pop_front();
+
+	state.listing_macro = previous_listing_macro;
 
 	state.macro = previous_macro_state;
 }
@@ -5864,7 +5850,7 @@ static bool ClownAssembler_AssembleToObjectFile(
 		*state.options = fixup.options;
 
 		/* Re-process statement. */
-		ProcessStatement(state, &fixup.statement, fixup.label);
+		ProcessStatement(state, fixup.statement, fixup.label);
 
 		/* We're done with this statement: delete it. */
 		state.fixup_list.pop_front();
