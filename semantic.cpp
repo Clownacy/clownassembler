@@ -342,13 +342,16 @@ static std::string ComputeUniqueMacroSuffix(const SemanticState &state)
 	return std::format("_{}", state.current_macro_invocation);
 }
 
-static std::string ToStandardPath(const std::string_view &input_path)
+static std::filesystem::path ToStandardPath(const std::string_view &input_path)
 {
-	std::string output_path(input_path);
+	std::u8string output_path;
+	output_path.reserve(input_path.length());
 
-	for (auto &character : output_path)
-		if (character == '\\')
-			character = '/';
+	// Convert DOS path separators to standard ones.
+	// Asm68k-based projects often use these, so they need to be
+	// converted for compatibility with platforms such as Linux.
+	for (auto &character : input_path)
+		output_path.push_back(character == '\\' ? '/' : character);
 
 	return output_path;
 }
@@ -870,7 +873,7 @@ static bool ResolveExpression(SemanticState &state, Expression &expression, unsi
 			},
 			[&](ExpressionFilesize &expression)
 			{
-				const std::string standard_path = ToStandardPath(expression.string);
+				const auto &standard_path = ToStandardPath(expression.string);
 
 				if (!std::filesystem::exists(standard_path))
 				{
