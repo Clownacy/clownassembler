@@ -25,6 +25,8 @@
 #include "case-insensitive.h"
 #include "semantic.h"
 
+static constexpr CaseInsensitive::ToLower to_lower(true);
+
 static int total_arguments;
 static char **arguments;
 
@@ -34,7 +36,7 @@ static void DefinitionCallback(void *internal, void* const user_data, const Clow
 
 	for (int i = 1; i < total_arguments; ++i)
 	{
-		if (arguments[i][0] == '/' && tolower(arguments[i][1]) == 'e')
+		if (arguments[i][0] == '/' && to_lower(arguments[i][1]) == 'e')
 		{
 			const char* const identifier = arguments[i + 1];
 			const std::size_t identifier_length = strcspn(identifier, "=");
@@ -111,7 +113,7 @@ int main(int argc, char **argv)
 		if (argv[i][0] == '/')
 		{
 			/* This is a switch. */
-			switch (tolower(argv[i][1]))
+			switch (to_lower(argv[i][1]))
 			{
 				case 'e':
 					/* We'll deal with this later, in DefinitionCallback. */
@@ -137,7 +139,7 @@ int main(int argc, char **argv)
 					break;
 
 				case 'p': /* And 'ps'. */
-					if (tolower(argv[i][2]) == 's')
+					if (to_lower(argv[i][2]) == 's')
 						output_mode = OUTPUT_S_RECORD;
 					else
 						output_mode = OUTPUT_FLAT_BINARY;
@@ -196,9 +198,9 @@ int main(int argc, char **argv)
 								fprintf(stderr, "Error: Unsupported option: '%s'.\n", option);
 								exit_code = EXIT_FAILURE;
 							}
-							else if (tolower(option[0]) == 'l')
+							else if (to_lower(option[0]) == 'l')
 							{
-								const char signifier = tolower(option[1]);
+								const char signifier = to_lower(option[1]);
 
 								switch (signifier)
 								{
