@@ -43,6 +43,7 @@
 #include "error.h"
 #include "io.h"
 #include "p2bin.h"
+#include "path.h"
 #include "substitute.h"
 #include "syntactic.h"
 #define YY_NO_UNISTD_H
@@ -340,20 +341,6 @@ static std::string HexadecimalIntegerToString(const unsigned long integer)
 static std::string ComputeUniqueMacroSuffix(const SemanticState &state)
 {
 	return std::format("_{}", state.current_macro_invocation);
-}
-
-static std::filesystem::path ToStandardPath(const std::string_view &input_path)
-{
-	std::u8string output_path;
-	output_path.reserve(input_path.length());
-
-	// Convert DOS path separators to standard ones.
-	// Asm68k-based projects often use these, so they need to be
-	// converted for compatibility with platforms such as Linux.
-	for (auto &character : input_path)
-		output_path.push_back(character == '\\' ? '/' : character);
-
-	return output_path;
 }
 
 static void ListSourceLine(SemanticState &state)

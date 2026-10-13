@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "path.h"
 #include "semantic.h"
 
 static int total_arguments;
@@ -68,21 +69,17 @@ static void DefinitionCallback(void *internal, void* const user_data, const Clow
 
 int main(int argc, char **argv)
 {
-	bool print_usage;
-	const char *input_file_path;
-	const char *output_file_path;
-	const char *listing_file_path;
-	const char *symbol_file_path;
+	bool print_usage = false;
+	const char *input_file_path_string = "STDIN";
+	std::filesystem::path input_file_path;
+	std::filesystem::path output_file_path;
+	std::filesystem::path listing_file_path;
+	std::filesystem::path symbol_file_path;
 	ClownAssembler::Settings settings = {};
 
 	total_arguments = argc;
 	arguments = argv;
 
-	print_usage = false;
-	input_file_path = nullptr;
-	output_file_path = nullptr;
-	listing_file_path = nullptr;
-	symbol_file_path = nullptr;
 	settings.local_signifier = '@';
 	settings.case_insensitive = false;
 	settings.debug = false;
@@ -108,7 +105,8 @@ int main(int argc, char **argv)
 					if (i < argc && argv[i + 1][0] != '-')
 					{
 						++i;
-						input_file_path = argv[i];
+						input_file_path_string = argv[i];
+						input_file_path = ToStandardPath(argv[i]);
 					}
 
 					continue;
@@ -117,7 +115,7 @@ int main(int argc, char **argv)
 					if (i < argc && argv[i + 1][0] != '-')
 					{
 						++i;
-						output_file_path = argv[i];
+						output_file_path = ToStandardPath(argv[i]);
 					}
 
 					continue;
@@ -126,7 +124,7 @@ int main(int argc, char **argv)
 					if (i < argc && argv[i + 1][0] != '-')
 					{
 						++i;
-						listing_file_path = argv[i];
+						listing_file_path = ToStandardPath(argv[i]);
 					}
 
 					continue;
@@ -135,7 +133,7 @@ int main(int argc, char **argv)
 					if (i < argc && argv[i + 1][0] != '-')
 					{
 						++i;
-						symbol_file_path = argv[i];
+						symbol_file_path = ToStandardPath(argv[i]);
 					}
 
 					continue;
@@ -212,14 +210,14 @@ int main(int argc, char **argv)
 		return EXIT_SUCCESS;
 	}
 
-	if (output_file_path == nullptr)
+	if (output_file_path.empty())
 		ErrorAndExit("Output file path must be specified with '-o'.");
 
 	// Open input file.
 
 	std::ifstream input_file_stream;
 
-	if (input_file_path != nullptr)
+	if (!input_file_path.empty())
 	{
 		input_file_stream.open(input_file_path);
 
@@ -227,7 +225,7 @@ int main(int argc, char **argv)
 			ErrorAndExit("Could not open input file.");
 	}
 
-	std::istream &input_file = input_file_path == nullptr ? std::cin : input_file_stream;
+	std::istream &input_file = input_file_path.empty() ? std::cin : input_file_stream;
 
 	// Open output file.
 
@@ -241,7 +239,7 @@ int main(int argc, char **argv)
 	std::ofstream *listing_stream = nullptr;
 	std::ofstream listing_file;
 
-	if (listing_file_path != nullptr)
+	if (!listing_file_path.empty())
 	{
 		listing_stream = &listing_file;
 		listing_file.open(listing_file_path);
@@ -255,7 +253,7 @@ int main(int argc, char **argv)
 	std::ostream *symbol_stream = nullptr;
 	std::ofstream symbol_file;
 
-	if (symbol_file_path != nullptr)
+	if (!symbol_file_path.empty())
 	{
 		symbol_stream = &symbol_file;
 		symbol_file.open(symbol_file_path, symbol_file.binary);
@@ -264,7 +262,7 @@ int main(int argc, char **argv)
 			ErrorAndExit("Could not open symbol file.");
 	}
 
-	if (!ClownAssembler::Assemble(input_file, output_file, std::cerr, listing_stream, symbol_stream, input_file_path != nullptr ? input_file_path : "STDIN", settings, DefinitionCallback, nullptr))
+	if (!ClownAssembler::Assemble(input_file, output_file, std::cerr, listing_stream, symbol_stream, input_file_path_string, settings, DefinitionCallback, nullptr))
 	{
 		/* Delete the output file; it will be junk anyway.
 		   Also, leaving a junk file will confuse Make, which will think that the assembler had previously succeeded. */
