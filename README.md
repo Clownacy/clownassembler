@@ -16,8 +16,8 @@ http://antime.kapsi.fi/sega/files/SATMAN.pdf
 
 ## Compiling
 
-This assembler is written in portable ANSI C (a.k.a. C89), and so should be
-able to be built with virtually any C compiler.
+This assembler is written in portable C++20, and so should be able to be built
+with virtually any modern C++ compiler.
 
 To build with Make, run `make assemblers` in this directory. Alternatively,
 the assembler can be built using CMake.
