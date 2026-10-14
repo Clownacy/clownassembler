@@ -76,7 +76,7 @@ typedef enum Condition
 	CONDITION_LESS_OR_EQUAL
 } Condition;
 
-typedef enum OpCodeType
+typedef enum OpcodeType
 {
 	OPCODE_ORI_TO_CCR,
 	OPCODE_ORI_TO_SR,
