@@ -5,6 +5,9 @@
 This is ClownAssembler, an assembler for Motorola 68000 assembly language. It
 mimics the behaviour of SN 68k (also known as 'asm68k').
 
+This branch is for the modern C++ codebase; the older ANSI C codebase can be
+found in the `ansi-c` branch.
+
 
 ## Usage
 
