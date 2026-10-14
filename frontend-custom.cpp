@@ -265,7 +265,7 @@ int main(int argc, char **argv)
 	if (!ClownAssembler::Assemble(input_file, output_file, std::cerr, listing_stream, symbol_stream, input_file_path_string, settings, DefinitionCallback, nullptr))
 	{
 		/* Delete the output file; it will be junk anyway.
-		   Also, leaving a junk file will confuse Make, which will think that the assembler had previously succeeded. */
+		   Also, leaving a junk file will confuse CMake, which will think that the assembler had previously succeeded. */
 		std::filesystem::remove(output_file_path);
 		ErrorAndExit("Could not assemble.");
 	}

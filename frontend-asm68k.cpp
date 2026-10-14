@@ -451,7 +451,7 @@ int main(int argc, char **argv)
 		if (exit_code == EXIT_FAILURE)
 		{
 			/* Delete the output file; it will be junk anyway.
-			   Also, leaving a junk file will confuse Make, which will think that the assembler had previously succeeded. */
+			   Also, leaving a junk file will confuse CMake, which will think that the assembler had previously succeeded. */
 			remove(object_file_path);
 		}
 	}
