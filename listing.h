@@ -30,10 +30,10 @@ private:
 	bool &doing_fixup_pass;
 
 	unsigned int listing_counter = 0;
-	bool line_listed = false;
+	bool line_in_progress = false;
+	bool suppress_listing = false;
 
 public:
-	bool suppress_listing = false;
 	bool listing_macro = false;
 
 	ListingWriter(std::ostream* const listing_stream, bool &doing_fixup_pass)
@@ -41,49 +41,47 @@ public:
 		, doing_fixup_pass(doing_fixup_pass)
 	{}
 
-	void WriteByte(const unsigned int value)
+	void BeginLine(const unsigned long program_counter)
 	{
-		if (listing_stream != nullptr && !doing_fixup_pass && !suppress_listing)
-		{
-			/* We can only write up to 10 bytes. */
-			if (listing_counter <= 25)
-			{
-				if (listing_counter == 25)
-				{
-					/* After the last byte, we output a '+' to signal there's more. */
-					listing_stream->put('+');
-					++listing_counter;
-				}
-				else
-				{
-					if (listing_counter % 5 == 0)
-					{
-						listing_stream->put(' ');
-						++listing_counter;
-					}
+		if (listing_stream == nullptr)
+			return;
 
-					IO::Print(*listing_stream, "{:02X}", value);
-					listing_counter += 2;
-				}
-			}
-		}
+		line_in_progress = true;
+
+		listing_counter = 0;
+		suppress_listing = false;
+		IO::Print(*listing_stream, "{:08X}", program_counter);
 	}
 
-	void WriteSourceLine(const std::string_view &source_line)
+	void SuppressLine()
 	{
-		/* Output line to listing file. */
-		if (listing_stream != nullptr)
+		suppress_listing = true;
+	}
+
+	void WriteByte(const unsigned int value)
+	{
+		if (listing_stream == nullptr || doing_fixup_pass || suppress_listing)
+			return;
+
+		/* We can only write up to 10 bytes. */
+		if (listing_counter <= 25)
 		{
-			if (!line_listed)
+			if (listing_counter == 25)
 			{
-				line_listed = true;
-
-				for (unsigned int i = listing_counter; i < 26; ++i)
+				/* After the last byte, we output a '+' to signal there's more. */
+				listing_stream->put('+');
+				++listing_counter;
+			}
+			else
+			{
+				if (listing_counter % 5 == 0)
+				{
 					listing_stream->put(' ');
+					++listing_counter;
+				}
 
-				listing_stream->put(listing_macro ? 'M' : ' ');
-
-				IO::Print(*listing_stream, " {}\n", source_line);
+				IO::Print(*listing_stream, "{:02X}", value);
+				listing_counter += 2;
 			}
 		}
 	}
@@ -91,23 +89,30 @@ public:
 	void WriteIdentifierValue(const unsigned long value)
 	{
 		/* Output line to listing file. */
-		if (listing_stream != nullptr && !doing_fixup_pass && !suppress_listing)
-		{
-			IO::Print(*listing_stream, " ={:08X}", value);
+		if (listing_stream == nullptr || doing_fixup_pass || suppress_listing)
+			return;
 
-			listing_counter += 2 + 8;
-		}
+		IO::Print(*listing_stream, " ={:08X}", value);
+
+		listing_counter += 2 + 8;
 	}
 
-	void WriteProgramCounter(const unsigned long program_counter)
+	void EndLine(const std::string_view &source_line)
 	{
-		if (listing_stream != nullptr)
-		{
-			line_listed = false;
+		/* Output line to listing file. */
+		if (listing_stream == nullptr)
+			return;
 
-			listing_counter = 0;
-			suppress_listing = false;
-			IO::Print(*listing_stream, "{:08X}", program_counter);
+		if (line_in_progress)
+		{
+			line_in_progress = false;
+
+			for (unsigned int i = listing_counter; i < 26; ++i)
+				listing_stream->put(' ');
+
+			listing_stream->put(listing_macro ? 'M' : ' ');
+
+			IO::Print(*listing_stream, " {}\n", source_line);
 		}
 	}
 };

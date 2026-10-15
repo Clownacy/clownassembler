@@ -985,7 +985,7 @@ static void TerminateWhile(SemanticState &state, SemanticState::ModeWhile &while
 	/* Exit WHILE mode. */
 	state.mode.emplace<SemanticState::ModeNormal>();
 
-	state.listing_writer.suppress_listing = true;
+	state.listing_writer.SuppressLine();
 
 	for (;;)
 	{
@@ -5125,7 +5125,7 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 
 	++state.current_macro_invocation;
 
-	state.listing_writer.suppress_listing = true;
+	state.listing_writer.SuppressLine();
 
 	Utilities::String::RemoveLeading(source_line, DIRECTIVE_OR_MACRO_CHARS);
 
@@ -5297,7 +5297,7 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 	const bool previous_listing_macro = state.listing_writer.listing_macro;
 
 	/* Flush line before changing this state, so that the macro line is not given the 'M' label. */
-	state.listing_writer.WriteSourceLine(state.source_line);
+	state.listing_writer.EndLine(state.source_line);
 	state.listing_writer.listing_macro = true;
 
 	/* Push a new location (this macro).*/
@@ -5346,8 +5346,8 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 
 	if (write_line_to_listing_file)
 	{
-		state.listing_writer.WriteSourceLine(state.source_line);
-		state.listing_writer.WriteProgramCounter(state.program_counter);
+		state.listing_writer.EndLine(state.source_line);
+		state.listing_writer.BeginLine(state.program_counter);
 	}
 
 	/* Expand string constants and macro parameters only if we're actually parsing code;
@@ -5565,7 +5565,7 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 	}
 
 	if (write_line_to_listing_file)
-		state.listing_writer.WriteSourceLine(state.source_line);
+		state.listing_writer.EndLine(state.source_line);
 
 	state.source_line = old_source_line;
 }
