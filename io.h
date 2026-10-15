@@ -132,31 +132,6 @@ namespace IO
 	{
 		return ReadIntegerLE(stream, 4);
 	}
-
-	inline void WriteU8(std::ostream &stream, const unsigned int value)
-	{
-		StreamIntegerWriter(stream).WriteU8(value);
-	}
-
-	inline void WriteU16LE(std::ostream &stream, const unsigned int value)
-	{
-		StreamIntegerWriter(stream).WriteU16LE(value);
-	}
-
-	inline void WriteU32LE(std::ostream &stream, const unsigned int value)
-	{
-		StreamIntegerWriter(stream).WriteU32LE(value);
-	}
-
-	inline void WriteU16BE(std::ostream &stream, const unsigned int value)
-	{
-		StreamIntegerWriter(stream).WriteU16BE(value);
-	}
-
-	inline void WriteU32BE(std::ostream &stream, const unsigned int value)
-	{
-		StreamIntegerWriter(stream).WriteU32BE(value);
-	}
 }
 
 #endif /* IO_H */
