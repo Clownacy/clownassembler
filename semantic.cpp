@@ -42,6 +42,7 @@
 #include "dictionary.h"
 #include "error.h"
 #include "io.h"
+#include "listing.h"
 #include "object.h"
 #include "p2bin.h"
 #include "path.h"
@@ -182,9 +183,6 @@ struct SemanticState
 		}
 	};
 
-	/* Streams. */
-	std::ostream* const listing_stream;
-
 	/* Global stuff. */
 	OptionsStack options;
 	SymbolDictionary dictionary;
@@ -200,6 +198,7 @@ struct SemanticState
 	std::stack<std::string> string_stack;
 	SemanticState_Macro macro;
 	ObjectWriter object_writer;
+	ListingWriter listing_writer;
 	unsigned long program_counter = 0, program_counter_of_statement = 0, program_counter_of_expression = 0;
 	unsigned long current_macro_invocation = 0;
 	unsigned long rs = 0;
@@ -218,12 +217,6 @@ struct SemanticState
 	/* OBJ directive. */
 	bool obj_active = false;
 	unsigned long obj_delta = 0;
-
-	/* Listing. */
-	unsigned int listing_counter = 0;
-	bool line_listed = false;
-	bool suppress_listing = false;
-	bool listing_macro = false;
 
 	/* Modes. */
 	struct ModeNormal {};
@@ -257,11 +250,11 @@ struct SemanticState
 		const std::string_view &input_file_path,
 		Options default_options
 	)
-		: listing_stream(listing_stream)
-		, options(std::move(default_options))
+		: options(std::move(default_options))
 		, dictionary(options->case_insensitive)
 		, error_manager(error_stream, location, source_line, options->warnings_enabled, options->pedantic_warnings_enabled)
 		, object_writer(*this, output_stream)
+		, listing_writer(listing_stream, doing_fixup_pass)
 	{
 		/* For error messages, we want to maintain a list of filenames and line
 		   numbers that describe the location and nesting of the erroneous
@@ -289,30 +282,7 @@ static void RegressProgramCounter(SemanticState &state, const unsigned long delt
 void ObjectWriter::WriteU8(const unsigned int value)
 {
 	/* Write to listing file. */
-	if (state.listing_stream != nullptr && !state.doing_fixup_pass && !state.suppress_listing)
-	{
-		/* We can only write up to 10 bytes. */
-		if (state.listing_counter <= 25)
-		{
-			if (state.listing_counter == 25)
-			{
-				/* After the last byte, we output a '+' to signal there's more. */
-				state.listing_stream->put('+');
-				++state.listing_counter;
-			}
-			else
-			{
-				if (state.listing_counter % 5 == 0)
-				{
-					state.listing_stream->put(' ');
-					++state.listing_counter;
-				}
-
-				IO::Print(*state.listing_stream, "{:02X}", value);
-				state.listing_counter += 2;
-			}
-		}
-	}
+	state.listing_writer.WriteByte(value);
 
 	/* Write to output file. */
 	WriteU8WithoutListing(value);
@@ -339,36 +309,6 @@ static std::string HexadecimalIntegerToString(const unsigned long integer)
 static std::string ComputeUniqueMacroSuffix(const SemanticState &state)
 {
 	return std::format("_{}", state.current_macro_invocation);
-}
-
-static void ListSourceLine(SemanticState &state)
-{
-	/* Output line to listing file. */
-	if (state.listing_stream != nullptr)
-	{
-		if (!state.line_listed)
-		{
-			state.line_listed = true;
-
-			for (unsigned int i = state.listing_counter; i < 26; ++i)
-				state.listing_stream->put(' ');
-
-			state.listing_stream->put(state.listing_macro ? 'M' : ' ');
-
-			IO::Print(*state.listing_stream, " {}\n", state.source_line);
-		}
-	}
-}
-
-static void ListIdentifierValue(SemanticState &state, unsigned long value)
-{
-	/* Output line to listing file. */
-	if (state.listing_stream != nullptr && !state.doing_fixup_pass && !state.suppress_listing)
-	{
-		IO::Print(*state.listing_stream, " ={:08X}", value);
-
-		state.listing_counter += 2 + 8;
-	}
 }
 
 static bool CurrentlyExpandingMacro(const SemanticState &state)
@@ -1045,7 +985,7 @@ static void TerminateWhile(SemanticState &state, SemanticState::ModeWhile &while
 	/* Exit WHILE mode. */
 	state.mode.emplace<SemanticState::ModeNormal>();
 
-	state.suppress_listing = true;
+	state.listing_writer.suppress_listing = true;
 
 	for (;;)
 	{
@@ -4541,7 +4481,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 				else
 				{
 					AddToSymbolTable(state, label, SymbolConstant{value});
-					ListIdentifierValue(state, value);
+					state.listing_writer.WriteIdentifierValue(value);
 				}
 
 				/* Hack: We ABSOLUTELY DO NOT want this line adding to the fix-up list!!! */
@@ -4612,7 +4552,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 				}
 
 				AddToSymbolTable(state, label, SymbolVariable{value});
-				ListIdentifierValue(state, value);
+				state.listing_writer.WriteIdentifierValue(value);
 			},
 			[&](StatementIf &statement)
 			{
@@ -4799,7 +4739,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 				if (!label.empty())
 				{
 					AddToSymbolTable(state, label, SymbolConstant{state.rs});
-					ListIdentifierValue(state, state.rs);
+					state.listing_writer.WriteIdentifierValue(state.rs);
 				}
 
 				/* Advance '__rs' by the specified amount. */
@@ -5185,7 +5125,7 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 
 	++state.current_macro_invocation;
 
-	state.suppress_listing = true;
+	state.listing_writer.suppress_listing = true;
 
 	Utilities::String::RemoveLeading(source_line, DIRECTIVE_OR_MACRO_CHARS);
 
@@ -5354,11 +5294,11 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 	PushMacroArgumentSubstitutions(state);
 
 	/* Finally, invoke the macro. */
-	const bool previous_listing_macro = state.listing_macro;
+	const bool previous_listing_macro = state.listing_writer.listing_macro;
 
 	/* Flush line before changing this state, so that the macro line is not given the 'M' label. */
-	ListSourceLine(state);
-	state.listing_macro = true;
+	state.listing_writer.WriteSourceLine(state.source_line);
+	state.listing_writer.listing_macro = true;
 
 	/* Push a new location (this macro).*/
 	state.location.emplace_front(macro->name, 0);
@@ -5392,7 +5332,7 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 	/* Pop location. */
 	state.location.pop_front();
 
-	state.listing_macro = previous_listing_macro;
+	state.listing_writer.listing_macro = previous_listing_macro;
 
 	state.macro = previous_macro_state;
 }
@@ -5406,17 +5346,8 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 
 	if (write_line_to_listing_file)
 	{
-		ListSourceLine(state);
-
-		/* Output program counter to listing file. */
-		if (state.listing_stream != nullptr)
-		{
-			state.line_listed = false;
-
-			state.listing_counter = 0;
-			state.suppress_listing = false;
-			IO::Print(*state.listing_stream, "{:08X}", state.program_counter);
-		}
+		state.listing_writer.WriteSourceLine(state.source_line);
+		state.listing_writer.WriteProgramCounter(state.program_counter);
 	}
 
 	/* Expand string constants and macro parameters only if we're actually parsing code;
@@ -5634,7 +5565,7 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 	}
 
 	if (write_line_to_listing_file)
-		ListSourceLine(state);
+		state.listing_writer.WriteSourceLine(state.source_line);
 
 	state.source_line = old_source_line;
 }
