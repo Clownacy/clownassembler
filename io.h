@@ -50,7 +50,9 @@ namespace IO
 
 	class IntegerWriter
 	{
-	private:
+	public:
+		virtual void WriteU8(unsigned int value) = 0;
+
 		void WriteIntegerLE(unsigned long value, const unsigned int total_bytes)
 		{
 			for (unsigned int i = 0; i < total_bytes; ++i)
@@ -60,18 +62,6 @@ namespace IO
 			}
 		}
 
-		void WriteIntegerBE(unsigned long value, const unsigned int total_bytes)
-		{
-			for (unsigned int i = 0; i < total_bytes; ++i)
-			{
-				WriteU8((value >> (total_bytes - 1) * 8) & 0xFF);
-				value <<= 8;
-			}
-		}
-
-	public:
-		virtual void WriteU8(unsigned int value) = 0;
-
 		void WriteU16LE(const unsigned int value)
 		{
 			WriteIntegerLE(value, 2);
@@ -80,6 +70,15 @@ namespace IO
 		void WriteU32LE(const unsigned int value)
 		{
 			WriteIntegerLE(value, 4);
+		}
+
+		void WriteIntegerBE(unsigned long value, const unsigned int total_bytes)
+		{
+			for (unsigned int i = 0; i < total_bytes; ++i)
+			{
+				WriteU8((value >> (total_bytes - 1) * 8) & 0xFF);
+				value <<= 8;
+			}
 		}
 
 		void WriteU16BE(const unsigned int value)

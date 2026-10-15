@@ -106,6 +106,21 @@ using SymbolDictionaryEntry = std::variant<SymbolNone, SymbolConstant, SymbolVar
 
 using SymbolDictionary = Dictionary<SymbolDictionaryEntry>;
 
+class SemanticState;
+
+class ObjectIntegerWriter : public IO::IntegerWriter
+{
+private:
+	SemanticState &state;
+
+public:
+	ObjectIntegerWriter(SemanticState &state)
+		: state(state)
+	{}
+
+	void WriteU8(unsigned int value) override final;
+};
+
 struct FixUp
 {
 	Statement statement;
@@ -178,6 +193,7 @@ struct SemanticState
 	std::stack<std::string> string_stack;
 	SemanticState_Macro macro;
 	Object::Writer object_writer;
+	ObjectIntegerWriter object_integer_writer = {*this};
 	unsigned long program_counter = 0, program_counter_of_statement = 0, program_counter_of_expression = 0;
 	unsigned long current_macro_invocation = 0;
 	unsigned long rs = 0;
@@ -270,6 +286,38 @@ static void OutputWriteSegmentByte(SemanticState &state, const unsigned char byt
 	AdvanceProgramCounter(state, 1);
 }
 
+void ObjectIntegerWriter::WriteU8(const unsigned int value)
+{
+	/* Write to listing file. */
+	if (state.listing_stream != nullptr && !state.doing_fixup_pass && !state.suppress_listing)
+	{
+		/* We can only write up to 10 bytes. */
+		if (state.listing_counter <= 25)
+		{
+			if (state.listing_counter == 25)
+			{
+				/* After the last byte, we output a '+' to signal there's more. */
+				state.listing_stream->put('+');
+				++state.listing_counter;
+			}
+			else
+			{
+				if (state.listing_counter % 5 == 0)
+				{
+					state.listing_stream->put(' ');
+					++state.listing_counter;
+				}
+
+				IO::Print(*state.listing_stream, "{:02X}", value);
+				state.listing_counter += 2;
+			}
+		}
+	}
+
+	/* Write to output file. */
+	OutputWriteSegmentByte(state, value);
+}
+
 /* Other stuff */
 
 static std::string DecimalIntegerToString(const unsigned long integer)
@@ -315,39 +363,6 @@ static void ListIdentifierValue(SemanticState &state, unsigned long value)
 
 		state.listing_counter += 2 + 8;
 	}
-}
-
-/* TODO: Duplicate this and use function pointers. */
-static void OutputByte(SemanticState &state, unsigned int byte)
-{
-	/* Write to listing file. */
-	if (state.listing_stream != nullptr && !state.doing_fixup_pass && !state.suppress_listing)
-	{
-		/* We can only write up to 10 bytes. */
-		if (state.listing_counter <= 25)
-		{
-			if (state.listing_counter == 25)
-			{
-				/* After the last byte, we output a '+' to signal there's more. */
-				state.listing_stream->put('+');
-				++state.listing_counter;
-			}
-			else
-			{
-				if (state.listing_counter % 5 == 0)
-				{
-					state.listing_stream->put(' ');
-					++state.listing_counter;
-				}
-
-				IO::Print(*state.listing_stream, "{:02X}", byte);
-				state.listing_counter += 2;
-			}
-		}
-	}
-
-	/* Write to output file. */
-	OutputWriteSegmentByte(state, byte);
 }
 
 static bool CurrentlyExpandingMacro(const SemanticState &state)
@@ -3806,8 +3821,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 	}
 
 	/* Output the machine code for the opcode. */
-	for (unsigned int i = 2; i-- > 0; )
-		OutputByte(state, (machine_code >> (8 * i)) & 0xFF);
+	state.object_integer_writer.WriteU16BE(machine_code);
 
 	/* Output the data for the operands. */
 	for (const auto &operand : operands_to_output)
@@ -3958,16 +3972,13 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 						break;
 				}
 
-				while (bytes_to_write-- > 0)
-					OutputByte(state, (value >> (8 * bytes_to_write)) & 0xFF);
+				state.object_integer_writer.WriteIntegerBE(value, bytes_to_write);
 
 				break;
 			}
 
 			case OPERAND_REGISTER_LIST:
-				for (unsigned int bytes_to_write = 2; bytes_to_write-- > 0; )
-					OutputByte(state, (operand->main_register >> (8 * bytes_to_write)) & 0xFF);
-
+				state.object_integer_writer.WriteU16BE(operand->main_register);
 				break;
 		}
 	}
@@ -4074,15 +4085,14 @@ static void OutputDcValue(SemanticState &state, const Size size, unsigned long v
 			break;
 	}
 
-	while (bytes_to_write-- != 0)
-		OutputByte(state, (value >> (bytes_to_write * 8)) & 0xFF);
+	state.object_integer_writer.WriteIntegerBE(value, bytes_to_write);
 }
 
 static void PerformEven(SemanticState &state)
 {
 	/* Pad to the nearest even address. */
 	if (state.program_counter & 1)
-		OutputByte(state, 0);
+		state.object_integer_writer.WriteU8(0);
 }
 
 static bool ShouldPerformAutomaticEven(SemanticState &state, const Size size)
@@ -4726,7 +4736,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 
 				/* Pad to the desired offset. */
 				while (state.program_counter != target)
-					OutputByte(state, 0);
+					state.object_integer_writer.WriteU8(0);
 			},
 			[&](StatementInform &statement)
 			{
