@@ -266,11 +266,6 @@ static void RegressProgramCounter(SemanticState &state, const unsigned long delt
 	state.program_counter &= 0xFFFFFFFF;
 }
 
-static void OutputWriteRawByte(SemanticState &state, const unsigned char byte)
-{
-	state.output_stream.put(byte);
-}
-
 static void TerminatePreviousRecordSegment(SemanticState &state)
 {
 	if (state.previous_segment_length_output_position != 0)
@@ -286,8 +281,8 @@ static void TerminatePreviousRecordSegment(SemanticState &state)
 			/* Write length of previous record. */
 			const auto previous_output_position = state.output_stream.tellp();
 			state.output_stream.seekp(state.previous_segment_length_output_position);
-			OutputWriteRawByte(state, state.segment_length >> (8 * 0) & 0xFF);
-			OutputWriteRawByte(state, state.segment_length >> (8 * 1) & 0xFF);
+			state.output_stream.put(state.segment_length >> (8 * 0) & 0xFF);
+			state.output_stream.put(state.segment_length >> (8 * 1) & 0xFF);
 			state.output_stream.seekp(previous_output_position);
 		}
 	}
@@ -299,16 +294,16 @@ static void WriteRecordSegment(SemanticState &state)
 	TerminatePreviousRecordSegment(state);
 
 	/* CPU architecture (68000). */
-	OutputWriteRawByte(state, 0x01);
+	state.output_stream.put(0x01);
 	/* Start address. */
-	OutputWriteRawByte(state, state.segment_position >> (8 * 0) & 0xFF);
-	OutputWriteRawByte(state, state.segment_position >> (8 * 1) & 0xFF);
-	OutputWriteRawByte(state, state.segment_position >> (8 * 2) & 0xFF);
-	OutputWriteRawByte(state, state.segment_position >> (8 * 3) & 0xFF);
+	state.output_stream.put(state.segment_position >> (8 * 0) & 0xFF);
+	state.output_stream.put(state.segment_position >> (8 * 1) & 0xFF);
+	state.output_stream.put(state.segment_position >> (8 * 2) & 0xFF);
+	state.output_stream.put(state.segment_position >> (8 * 3) & 0xFF);
 	/* Length (placeholder). */
 	state.previous_segment_length_output_position = state.output_stream.tellp();
-	OutputWriteRawByte(state, 0);
-	OutputWriteRawByte(state, 0);
+	state.output_stream.put(0);
+	state.output_stream.put(0);
 }
 
 static void OutputWriteSegmentByte(SemanticState &state, const unsigned char byte)
@@ -331,7 +326,7 @@ static void OutputWriteSegmentByte(SemanticState &state, const unsigned char byt
 
 	AdvanceProgramCounter(state, 1);
 
-	OutputWriteRawByte(state, byte);
+	state.output_stream.put(byte);
 }
 
 /* Other stuff */
@@ -5780,8 +5775,8 @@ static bool AssembleToObjectFile(
 #endif
 
 	/* Object file magic number. */
-	OutputWriteRawByte(state, 0x89);
-	OutputWriteRawByte(state, 0x14);
+	state.output_stream.put(-0x77);
+	state.output_stream.put( 0x14);
 
 	/* Begin first segment. */
 	WriteRecordSegment(state);
@@ -5793,7 +5788,7 @@ static bool AssembleToObjectFile(
 	TerminatePreviousRecordSegment(state);
 
 	/* Write terminating record. */
-	OutputWriteRawByte(state, 0x00);
+	state.output_stream.put(0x00);
 	output_stream << CLOWNASSEMBLER_VERSION_STRING;
 
 	/* Perform some sanity checks to make sure we're not somehow in an invalid state. */
