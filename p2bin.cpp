@@ -27,6 +27,8 @@
 #include <format>
 #include <optional>
 
+#include "io.h"
+
 bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &output_stream, std::ostream &error_stream)
 {
 	std::optional<unsigned long> base_address;
@@ -68,16 +70,8 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 		else
 			output_stream.seekp(start_address - *base_address);
 
-		std::array<unsigned char, 0x100> copy_buffer;
-
-		/* Copy segment data. We do some batching using a buffer to improve performance. */
-		for (unsigned int i = 0; i < length; i += std::size(copy_buffer))
-		{
-			const auto bytes_to_do = std::min<unsigned int>(std::size(copy_buffer), length - i);
-
-			input_stream.read(reinterpret_cast<char*>(std::data(copy_buffer)), bytes_to_do);
-			output_stream.write(reinterpret_cast<const char*>(std::data(copy_buffer)), bytes_to_do);
-		}
+		/* Copy segment data. */
+		IO::CopyBytes(input_stream, output_stream, bytes_to_do);
 	};
 
 	const auto &ProcessRecords = [&]()

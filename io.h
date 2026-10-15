@@ -32,6 +32,20 @@ namespace IO
 		// TODO: This is slowing-down the assembler quite a bit!
 		std::format_to(std::ostream_iterator<char>(stream), std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 	}
+
+	inline void CopyBytes(std::istream &input, std::ostream &output, const std::size_t total_bytes)
+	{
+		// We do some batching using a buffer to improve performance.
+		std::array<char, 0x100> buffer;
+
+		for (std::size_t i = 0; i < total_bytes; i += std::size(buffer))
+		{
+			const auto bytes_to_do = std::min(std::size(buffer), total_bytes - i);
+
+			input.read(std::data(buffer), bytes_to_do);
+			output.write(std::data(buffer), bytes_to_do);
+		}
+	}
 }
 
 #endif /* IO_H */
