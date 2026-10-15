@@ -1465,10 +1465,8 @@ static void OptimiseInstruction(SemanticState &state, StatementInstruction &inst
 
 struct InstructionMetadata
 {
-	const char *name;
-
+	std::string_view name;
 	unsigned int allowed_sizes;
-
 	std::array<unsigned int, 2> allowed_operands;
 };
 
