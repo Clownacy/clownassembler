@@ -131,6 +131,29 @@ namespace IO
 	{
 		return ReadIntegerLE(stream, 4);
 	}
+
+	inline unsigned long ReadIntegerBE(std::istream &stream, const unsigned int total_bytes)
+	{
+		unsigned long value = 0;
+
+		for (unsigned int i = 0; i < total_bytes; ++i)
+		{
+			value <<= 8;
+			value |= ReadU8(stream);
+		}
+
+		return value;
+	}
+
+	inline unsigned int ReadU16BE(std::istream &stream)
+	{
+		return ReadIntegerBE(stream, 2);
+	}
+
+	inline unsigned long ReadU32BE(std::istream &stream)
+	{
+		return ReadIntegerBE(stream, 4);
+	}
 }
 
 #endif /* IO_H */

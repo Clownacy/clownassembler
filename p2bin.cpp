@@ -101,11 +101,11 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 	try
 	{
 		/* Read and check the header's magic number. */
-		std::array<unsigned char, 2> magic;
-		input_stream.read(reinterpret_cast<char*>(std::data(magic)), std::size(magic));
+		const auto magic = IO::ReadU16BE(input_stream);
 
-		if (magic[0] != 0x89 || magic[1] != 0x14)
-			throw std::runtime_error(std::format("Error: Invalid header magic value - expected 0x8914 but got 0x{:02X}{:02X}.\nInput file is either corrupt or not a valid AS code file.\n", magic[0], magic[1]));
+		/* TODO: Use error message manager for this. */
+		if (magic != 0x8914)
+			throw std::runtime_error(std::format("Error: Invalid header magic value - expected 0x8914 but got 0x{:04X}.\nInput file is either corrupt or not a valid AS code file.\n", magic));
 
 		ProcessRecords();
 

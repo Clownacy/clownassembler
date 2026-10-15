@@ -88,7 +88,7 @@ namespace Object
 		void WriteHeader()
 		{
 			/* Object file magic number. */
-			output.WriteU16LE(0x1489);
+			output.WriteU16BE(0x8914);
 
 			/* Begin first segment. */
 			WriteRecordSegment();
