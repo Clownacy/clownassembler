@@ -42,6 +42,7 @@
 #include "dictionary.h"
 #include "error.h"
 #include "io.h"
+#include "object.h"
 #include "p2bin.h"
 #include "path.h"
 #include "substitute.h"
@@ -110,13 +111,12 @@ struct FixUp
 	Statement statement;
 	std::shared_ptr<SymbolDictionary> macro_dictionary;
 	unsigned long program_counter;
-	std::ostream::pos_type output_position;
-	std::size_t segment_length;
+	Object::Writer::Position object_writer_position;
 	std::string last_global_label;
 	std::string source_line;
-	std::deque<ErrorManager::Location> location;
 	std::string label;
 	Options options;
+	std::deque<ErrorManager::Location> location;
 };
 
 struct SemanticState_Macro
@@ -160,8 +160,7 @@ struct SemanticState
 		}
 	};
 
-	/* Callbacks. */
-	std::ostream &output_stream;
+	/* Streams. */
 	std::ostream* const listing_stream;
 
 	/* Global stuff. */
@@ -178,8 +177,7 @@ struct SemanticState
 	Substitute substitutions;
 	std::stack<std::string> string_stack;
 	SemanticState_Macro macro;
-	std::ostream::pos_type previous_segment_length_output_position;
-	std::size_t segment_position = 0, segment_length = 0;
+	Object::Writer object_writer;
 	unsigned long program_counter = 0, program_counter_of_statement = 0, program_counter_of_expression = 0;
 	unsigned long current_macro_invocation = 0;
 	unsigned long rs = 0;
@@ -237,11 +235,11 @@ struct SemanticState
 		const std::string_view &input_file_path,
 		Options default_options
 	)
-		: output_stream(output_stream)
-		, listing_stream(listing_stream)
+		: listing_stream(listing_stream)
 		, options(std::move(default_options))
 		, dictionary(options->case_insensitive)
 		, error_manager(error_stream, location, source_line, options->warnings_enabled, options->pedantic_warnings_enabled)
+		, object_writer(output_stream)
 	{
 		/* For error messages, we want to maintain a list of filenames and line
 		   numbers that describe the location and nesting of the erroneous
@@ -266,67 +264,10 @@ static void RegressProgramCounter(SemanticState &state, const unsigned long delt
 	state.program_counter &= 0xFFFFFFFF;
 }
 
-static void TerminatePreviousRecordSegment(SemanticState &state)
-{
-	if (state.previous_segment_length_output_position != 0)
-	{
-		if (state.segment_length == 0)
-		{
-			/* Previous segment contained nothing; make the new segment overwrite it. */
-			state.output_stream.seekp(state.previous_segment_length_output_position);
-			state.output_stream.seekp(-5, state.output_stream.cur);
-		}
-		else
-		{
-			/* Write length of previous record. */
-			const auto previous_output_position = state.output_stream.tellp();
-			state.output_stream.seekp(state.previous_segment_length_output_position);
-			state.output_stream.put(state.segment_length >> (8 * 0) & 0xFF);
-			state.output_stream.put(state.segment_length >> (8 * 1) & 0xFF);
-			state.output_stream.seekp(previous_output_position);
-		}
-	}
-}
-
-/* TODO: Don't write empty segments! */
-static void WriteRecordSegment(SemanticState &state)
-{
-	TerminatePreviousRecordSegment(state);
-
-	/* CPU architecture (68000). */
-	state.output_stream.put(0x01);
-	/* Start address. */
-	state.output_stream.put(state.segment_position >> (8 * 0) & 0xFF);
-	state.output_stream.put(state.segment_position >> (8 * 1) & 0xFF);
-	state.output_stream.put(state.segment_position >> (8 * 2) & 0xFF);
-	state.output_stream.put(state.segment_position >> (8 * 3) & 0xFF);
-	/* Length (placeholder). */
-	state.previous_segment_length_output_position = state.output_stream.tellp();
-	state.output_stream.put(0);
-	state.output_stream.put(0);
-}
-
 static void OutputWriteSegmentByte(SemanticState &state, const unsigned char byte)
 {
-	if (state.segment_length == 0xFFFF)
-	{
-		state.segment_position += state.segment_length;
-
-		/* Avoid rewriting the record header when doing fix-ups,
-		   as the length field will be left blank. */
-		if (state.doing_fixup_pass)
-			state.output_stream.seekp(1 + 4 + 2, state.output_stream.cur);
-		else
-			WriteRecordSegment(state);
-
-		state.segment_length = 0;
-	}
-
-	++state.segment_length;
-
+	state.object_writer.WriteByte(byte, state.doing_fixup_pass);
 	AdvanceProgramCounter(state, 1);
-
-	state.output_stream.put(byte);
 }
 
 /* Other stuff */
@@ -4930,10 +4871,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 					return;
 				}
 
-				/* Begin a new segment! */
-				state.segment_position = value;
-				WriteRecordSegment(state);
-				state.segment_length = 0;
+				state.object_writer.BeginNewSegment(value);
 
 				state.program_counter = value;
 			},
@@ -5088,8 +5026,7 @@ static void ParseLine(SemanticState &state, const std::string_view &label, const
 
 	/* Back these up, before they get a chance to be modified by ProcessStatement. */
 	const unsigned long starting_program_counter = state.program_counter;
-	const auto starting_output_position = state.output_stream.tellp();
-	const std::size_t starting_segment_length = state.segment_length;
+	const auto starting_object_writer_position = state.object_writer.Tell();
 
 	if (!ParseStatement(state, directive_and_operands))
 		return;
@@ -5101,23 +5038,22 @@ static void ParseLine(SemanticState &state, const std::string_view &label, const
 
 	/* If the statement cannot currently be processed because of undefined symbols,
 	   add it to the fix-up list so we can try again later. */
-	FixUp &fixup = state.fixup_list.emplace_back();
+	state.fixup_list.emplace_back(
+		/* Backup the statement. */
+		std::move(state.statement),
 
-	/* Backup the statement. */
-	fixup.statement = std::move(state.statement);
+		/* Backup some state. */
+		state.macro.dictionary,
+		starting_program_counter,
+		starting_object_writer_position,
+		state.last_global_label,
+		std::string(state.source_line),
+		std::string(label),
+		*state.options,
 
-	/* Backup some state. */
-	fixup.macro_dictionary = state.macro.dictionary;
-	fixup.program_counter = starting_program_counter;
-	fixup.output_position = starting_output_position;
-	fixup.segment_length = starting_segment_length;
-	fixup.last_global_label = state.last_global_label;
-	fixup.source_line = state.source_line;
-	fixup.label = label;
-	fixup.options = *state.options;
-
-	/* Clone the location. */
-	fixup.location = state.location;
+		/* Clone the location. */
+		state.location
+	);
 
 	state.fixup_needed = false;
 }
@@ -5774,22 +5710,10 @@ static bool AssembleToObjectFile(
 		m68kasm_debug = 1;
 #endif
 
-	/* Object file magic number. */
-	state.output_stream.put(-0x77);
-	state.output_stream.put( 0x14);
-
-	/* Begin first segment. */
-	WriteRecordSegment(state);
-
 	/* Perform first pass of assembly, creating a list of fix-ups. */
+	state.object_writer.WriteHeader();
 	AssembleFile(state, input_stream);
-
-	/* Finalise the segment record data. */
-	TerminatePreviousRecordSegment(state);
-
-	/* Write terminating record. */
-	state.output_stream.put(0x00);
-	output_stream << CLOWNASSEMBLER_VERSION_STRING;
+	state.object_writer.WriteFooter();
 
 	/* Perform some sanity checks to make sure we're not somehow in an invalid state. */
 	if (state.current_if_level != 0)
@@ -5809,8 +5733,7 @@ static bool AssembleToObjectFile(
 		/* Reset some state to how it was at the time the statement was first processed. */
 		state.macro.dictionary = fixup.macro_dictionary;
 		state.program_counter = fixup.program_counter;
-		state.output_stream.seekp(fixup.output_position);
-		state.segment_length = fixup.segment_length;
+		state.object_writer.Seek(fixup.object_writer_position);
 		state.last_global_label = std::move(fixup.last_global_label);
 		state.source_line = fixup.source_line;
 		state.location = std::move(fixup.location);
