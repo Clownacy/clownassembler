@@ -110,7 +110,7 @@ struct FixUp
 	Statement statement;
 	std::shared_ptr<SymbolDictionary> macro_dictionary;
 	unsigned long program_counter;
-	std::size_t output_position;
+	std::ostream::pos_type output_position;
 	std::size_t segment_length;
 	std::string last_global_label;
 	std::string source_line;
@@ -178,7 +178,7 @@ struct SemanticState
 	Substitute substitutions;
 	std::stack<std::string> string_stack;
 	SemanticState_Macro macro;
-	std::size_t output_position = 0, previous_segment_length_output_position = 0;
+	std::ostream::pos_type previous_segment_length_output_position;
 	std::size_t segment_position = 0, segment_length = 0;
 	unsigned long program_counter = 0, program_counter_of_statement = 0, program_counter_of_expression = 0;
 	unsigned long current_macro_invocation = 0;
@@ -268,14 +268,7 @@ static void RegressProgramCounter(SemanticState &state, const unsigned long delt
 
 static void OutputWriteRawByte(SemanticState &state, const unsigned char byte)
 {
-	++state.output_position;
 	state.output_stream.put(byte);
-}
-
-static void OutputSeek(SemanticState &state, const std::size_t position)
-{
-	state.output_position = position;
-	state.output_stream.seekp(position);
 }
 
 static void TerminatePreviousRecordSegment(SemanticState &state)
@@ -285,16 +278,17 @@ static void TerminatePreviousRecordSegment(SemanticState &state)
 		if (state.segment_length == 0)
 		{
 			/* Previous segment contained nothing; make the new segment overwrite it. */
-			OutputSeek(state, state.previous_segment_length_output_position - 5);
+			state.output_stream.seekp(state.previous_segment_length_output_position);
+			state.output_stream.seekp(-5, state.output_stream.cur);
 		}
 		else
 		{
 			/* Write length of previous record. */
-			const std::size_t previous_output_position = state.output_position;
-			OutputSeek(state, state.previous_segment_length_output_position);
+			const auto previous_output_position = state.output_stream.tellp();
+			state.output_stream.seekp(state.previous_segment_length_output_position);
 			OutputWriteRawByte(state, state.segment_length >> (8 * 0) & 0xFF);
 			OutputWriteRawByte(state, state.segment_length >> (8 * 1) & 0xFF);
-			OutputSeek(state, previous_output_position);
+			state.output_stream.seekp(previous_output_position);
 		}
 	}
 }
@@ -312,7 +306,7 @@ static void WriteRecordSegment(SemanticState &state)
 	OutputWriteRawByte(state, state.segment_position >> (8 * 2) & 0xFF);
 	OutputWriteRawByte(state, state.segment_position >> (8 * 3) & 0xFF);
 	/* Length (placeholder). */
-	state.previous_segment_length_output_position = state.output_position;
+	state.previous_segment_length_output_position = state.output_stream.tellp();
 	OutputWriteRawByte(state, 0);
 	OutputWriteRawByte(state, 0);
 }
@@ -326,7 +320,7 @@ static void OutputWriteSegmentByte(SemanticState &state, const unsigned char byt
 		/* Avoid rewriting the record header when doing fix-ups,
 		   as the length field will be left blank. */
 		if (state.doing_fixup_pass)
-			OutputSeek(state, state.output_position + 1 + 4 + 2);
+			state.output_stream.seekp(1 + 4 + 2, state.output_stream.cur);
 		else
 			WriteRecordSegment(state);
 
@@ -5099,7 +5093,7 @@ static void ParseLine(SemanticState &state, const std::string_view &label, const
 
 	/* Back these up, before they get a chance to be modified by ProcessStatement. */
 	const unsigned long starting_program_counter = state.program_counter;
-	const std::size_t starting_output_position = state.output_position;
+	const auto starting_output_position = state.output_stream.tellp();
 	const std::size_t starting_segment_length = state.segment_length;
 
 	if (!ParseStatement(state, directive_and_operands))
@@ -5820,7 +5814,7 @@ static bool AssembleToObjectFile(
 		/* Reset some state to how it was at the time the statement was first processed. */
 		state.macro.dictionary = fixup.macro_dictionary;
 		state.program_counter = fixup.program_counter;
-		OutputSeek(state, fixup.output_position);
+		state.output_stream.seekp(fixup.output_position);
 		state.segment_length = fixup.segment_length;
 		state.last_global_label = std::move(fixup.last_global_label);
 		state.source_line = fixup.source_line;
