@@ -215,8 +215,7 @@ struct SemanticState
 	bool true_already_found = false;
 
 	/* OBJ directive. */
-	bool obj_active = false;
-	unsigned long obj_delta = 0;
+	std::optional<unsigned long> obj_delta;
 
 	/* Modes. */
 	struct ModeNormal {};
@@ -4781,7 +4780,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			},
 			[&](StatementObj &statement)
 			{
-				if (state.obj_active)
+				if (state.obj_delta.has_value())
 				{
 					state.error_manager.Error("OBJ statements cannot be nested.");
 					return;
@@ -4790,23 +4789,24 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 				unsigned long value;
 
 				if (!ResolveExpression(state, statement.expression, value))
+				{
 					state.error_manager.Error("Value must be evaluable on the first pass.");
-				else
-					state.obj_delta = value - state.program_counter;
+					value = state.program_counter;
+				}
 
-				state.obj_active = true;
-				AdvanceProgramCounter(state, state.obj_delta);
+				state.obj_delta = value - state.program_counter;
+				AdvanceProgramCounter(state, *state.obj_delta);
 			},
 			[&](StatementObjend&)
 			{
-				if (!state.obj_active)
+				if (!state.obj_delta.has_value())
 				{
 					state.error_manager.Error("This stray OBJEND has no preceeding OBJ.");
 					return;
 				}
 
-				RegressProgramCounter(state, state.obj_delta);
-				state.obj_active = false;
+				RegressProgramCounter(state, *state.obj_delta);
+				state.obj_delta = std::nullopt;
 			},
 			[&](StatementOrg &statement)
 			{
@@ -5662,7 +5662,7 @@ static bool AssembleToObjectFile(
 	/* Perform some sanity checks to make sure we're not somehow in an invalid state. */
 	if (state.current_if_level != 0)
 		state.error_manager.Error("An IF statement somewhere is missing its ENDC/ENDIF.");
-	if (state.obj_active)
+	if (state.obj_delta.has_value())
 		state.error_manager.Error("An OBJ statement somewhere is missing its OBJEND.");
 
 	/* Process the fix-ups: reassemble instructions and reprocess
