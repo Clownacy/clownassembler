@@ -254,6 +254,18 @@ struct SemanticState
 static void AssembleFile(SemanticState &state, std::istream &input_stream);
 static void AssembleLine(SemanticState &state, const std::string_view &source_line, const bool write_line_to_listing_file);
 
+static void AdvanceProgramCounter(SemanticState &state, const unsigned long delta)
+{
+	state.program_counter += delta;
+	state.program_counter &= 0xFFFFFFFF;
+}
+
+static void RegressProgramCounter(SemanticState &state, const unsigned long delta)
+{
+	state.program_counter -= delta;
+	state.program_counter &= 0xFFFFFFFF;
+}
+
 static void OutputWriteRawByte(SemanticState &state, const unsigned char byte)
 {
 	++state.output_position;
@@ -322,6 +334,8 @@ static void OutputWriteSegmentByte(SemanticState &state, const unsigned char byt
 	}
 
 	++state.segment_length;
+
+	AdvanceProgramCounter(state, 1);
 
 	OutputWriteRawByte(state, byte);
 }
@@ -2646,18 +2660,6 @@ static const auto instruction_metadata_all = std::to_array<InstructionMetadata>(
 	},
 });
 
-static void AdvanceProgramCounter(SemanticState &state, const unsigned long delta)
-{
-	state.program_counter += delta;
-	state.program_counter &= 0xFFFFFFFF;
-}
-
-static void RegressProgramCounter(SemanticState &state, const unsigned long delta)
-{
-	state.program_counter -= delta;
-	state.program_counter &= 0xFFFFFFFF;
-}
-
 static void ProcessInstruction(SemanticState &state, StatementInstruction &instruction)
 {
 	std::array<Operand*, 2> operands_to_output;
@@ -2674,7 +2676,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 	if ((state.program_counter & 1) != 0)
 		state.error_manager.Warning("Instruction is at an odd address.");
 
-	AdvanceProgramCounter(state, 2);
+	const auto address_after_opcode = state.program_counter + 2;
 
 	ResolveInstructionAmbiguity(state, instruction);
 	OptimiseInstruction(state, instruction);
@@ -3349,7 +3351,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 						unsigned long value;
 
 						if (!ResolveExpression(state, instruction.operands[1].literal, value))
-							value = state.program_counter - 2;
+							value = state.program_counter;
 
 						/* Construct a custom operand to hold the destination offset. */
 						operands_to_output[0] = &custom_operands[0];
@@ -3357,9 +3359,9 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 						custom_operands[0].type = OPERAND_LITERAL;
 
 						/* Calculate the destination offset. */
-						if (value >= state.program_counter)
+						if (value >= address_after_opcode)
 						{
-							const unsigned long offset = value - state.program_counter;
+							const unsigned long offset = value - address_after_opcode;
 
 							if (offset > 0x7FFF)
 								state.error_manager.Error("The destination is too far away: it must be less than $8000 bytes after the start of the instruction, but instead it was ${:X} bytes away.", offset);
@@ -3368,7 +3370,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 						}
 						else
 						{
-							const unsigned long offset = state.program_counter - value;
+							const unsigned long offset = address_after_opcode - value;
 
 							if (offset > 0x8000)
 								state.error_manager.Error("The destination is too far away: it must be less than $8001 bytes before the start of the instruction, but instead it was ${:X} bytes away.", offset);
@@ -3411,14 +3413,14 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 						unsigned long value;
 
 						if (!ResolveExpression(state, instruction.operands[0].literal, value))
-							value = state.program_counter - 2;
+							value = state.program_counter;
 
 						/* Calculate the destination offset. */
 						unsigned long offset;
 
-						if (value >= state.program_counter)
+						if (value >= address_after_opcode)
 						{
-							offset = value - state.program_counter;
+							offset = value - address_after_opcode;
 
 							if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
 							{
@@ -3435,7 +3437,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 						}
 						else
 						{
-							offset = state.program_counter - value;
+							offset = address_after_opcode - value;
 
 							if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
 							{
@@ -4026,8 +4028,6 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 						break;
 				}
 
-				AdvanceProgramCounter(state, bytes_to_write);
-
 				while (bytes_to_write-- > 0)
 					OutputByte(state, (value >> (8 * bytes_to_write)) & 0xFF);
 
@@ -4035,8 +4035,6 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 			}
 
 			case OPERAND_REGISTER_LIST:
-				AdvanceProgramCounter(state, 2);
-
 				for (unsigned int bytes_to_write = 2; bytes_to_write-- > 0; )
 					OutputByte(state, (operand->main_register >> (8 * bytes_to_write)) & 0xFF);
 
@@ -4146,8 +4144,6 @@ static void OutputDcValue(SemanticState &state, const Size size, unsigned long v
 			break;
 	}
 
-	AdvanceProgramCounter(state, bytes_to_write);
-
 	while (bytes_to_write-- != 0)
 		OutputByte(state, (value >> (bytes_to_write * 8)) & 0xFF);
 }
@@ -4156,10 +4152,7 @@ static void PerformEven(SemanticState &state)
 {
 	/* Pad to the nearest even address. */
 	if (state.program_counter & 1)
-	{
-		AdvanceProgramCounter(state, 1);
 		OutputByte(state, 0);
-	}
 }
 
 static bool ShouldPerformAutomaticEven(SemanticState &state, const Size size)
@@ -4298,7 +4291,6 @@ static void ProcessIncbin(SemanticState &state, StatementIncbin &incbin)
 				break;
 			}
 
-			AdvanceProgramCounter(state, 1);
 			OutputWriteSegmentByte(state, character);
 		}
 	}
@@ -4312,7 +4304,6 @@ static void ProcessIncbin(SemanticState &state, StatementIncbin &incbin)
 			if (input_file.gcount() == 0)
 				break;
 
-			AdvanceProgramCounter(state, 1);
 			OutputWriteSegmentByte(state, character);
 		}
 	}
@@ -4806,10 +4797,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 
 				/* Pad to the desired offset. */
 				while (state.program_counter != target)
-				{
 					OutputByte(state, 0);
-					AdvanceProgramCounter(state, 1);
-				}
 			},
 			[&](StatementInform &statement)
 			{

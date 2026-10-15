@@ -71,7 +71,7 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 			output_stream.seekp(start_address - *base_address);
 
 		/* Copy segment data. */
-		IO::CopyBytes(input_stream, output_stream, bytes_to_do);
+		IO::CopyBytes(input_stream, output_stream, length);
 	};
 
 	const auto &ProcessRecords = [&]()
