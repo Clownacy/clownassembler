@@ -108,17 +108,24 @@ using SymbolDictionary = Dictionary<SymbolDictionaryEntry>;
 
 class SemanticState;
 
-class ObjectIntegerWriter : public IO::IntegerWriter
+// Extends `Object::Writer` with an integer-writing interface, and
+// handles listing as well as incrementing the program counter.
+class ObjectWriter : public IO::IntegerWriter, public Object::Writer
 {
 private:
 	SemanticState &state;
 
 public:
-	ObjectIntegerWriter(SemanticState &state)
-		: state(state)
+	ObjectWriter(SemanticState &state, std::ostream &stream)
+		: Object::Writer(stream)
+		, state(state)
 	{}
 
 	void WriteU8(unsigned int value) override final;
+	void WriteU8WithoutListing(unsigned int value);
+
+	// Do not allow user code to bypass `WriteU8` and `WriteU8WithoutListing`.
+	void WriteByte(unsigned int value, bool doing_fixup_pass) = delete;
 };
 
 struct FixUp
@@ -192,8 +199,7 @@ struct SemanticState
 	Substitute substitutions;
 	std::stack<std::string> string_stack;
 	SemanticState_Macro macro;
-	Object::Writer object_writer;
-	ObjectIntegerWriter object_integer_writer = {*this};
+	ObjectWriter object_writer;
 	unsigned long program_counter = 0, program_counter_of_statement = 0, program_counter_of_expression = 0;
 	unsigned long current_macro_invocation = 0;
 	unsigned long rs = 0;
@@ -255,7 +261,7 @@ struct SemanticState
 		, options(std::move(default_options))
 		, dictionary(options->case_insensitive)
 		, error_manager(error_stream, location, source_line, options->warnings_enabled, options->pedantic_warnings_enabled)
-		, object_writer(output_stream)
+		, object_writer(*this, output_stream)
 	{
 		/* For error messages, we want to maintain a list of filenames and line
 		   numbers that describe the location and nesting of the erroneous
@@ -280,13 +286,7 @@ static void RegressProgramCounter(SemanticState &state, const unsigned long delt
 	state.program_counter &= 0xFFFFFFFF;
 }
 
-static void OutputWriteSegmentByte(SemanticState &state, const unsigned char byte)
-{
-	state.object_writer.WriteByte(byte, state.doing_fixup_pass);
-	AdvanceProgramCounter(state, 1);
-}
-
-void ObjectIntegerWriter::WriteU8(const unsigned int value)
+void ObjectWriter::WriteU8(const unsigned int value)
 {
 	/* Write to listing file. */
 	if (state.listing_stream != nullptr && !state.doing_fixup_pass && !state.suppress_listing)
@@ -315,7 +315,13 @@ void ObjectIntegerWriter::WriteU8(const unsigned int value)
 	}
 
 	/* Write to output file. */
-	OutputWriteSegmentByte(state, value);
+	WriteU8WithoutListing(value);
+}
+
+void ObjectWriter::WriteU8WithoutListing(const unsigned int value)
+{
+	Object::Writer::WriteByte(value, state.doing_fixup_pass);
+	AdvanceProgramCounter(state, 1);
 }
 
 /* Other stuff */
@@ -3821,7 +3827,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 	}
 
 	/* Output the machine code for the opcode. */
-	state.object_integer_writer.WriteU16BE(machine_code);
+	state.object_writer.WriteU16BE(machine_code);
 
 	/* Output the data for the operands. */
 	for (const auto &operand : operands_to_output)
@@ -3972,13 +3978,13 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 						break;
 				}
 
-				state.object_integer_writer.WriteIntegerBE(value, bytes_to_write);
+				state.object_writer.WriteIntegerBE(value, bytes_to_write);
 
 				break;
 			}
 
 			case OPERAND_REGISTER_LIST:
-				state.object_integer_writer.WriteU16BE(operand->main_register);
+				state.object_writer.WriteU16BE(operand->main_register);
 				break;
 		}
 	}
@@ -4085,14 +4091,14 @@ static void OutputDcValue(SemanticState &state, const Size size, unsigned long v
 			break;
 	}
 
-	state.object_integer_writer.WriteIntegerBE(value, bytes_to_write);
+	state.object_writer.WriteIntegerBE(value, bytes_to_write);
 }
 
 static void PerformEven(SemanticState &state)
 {
 	/* Pad to the nearest even address. */
 	if (state.program_counter & 1)
-		state.object_integer_writer.WriteU8(0);
+		state.object_writer.WriteU8(0);
 }
 
 static bool ShouldPerformAutomaticEven(SemanticState &state, const Size size)
@@ -4231,7 +4237,7 @@ static void ProcessIncbin(SemanticState &state, StatementIncbin &incbin)
 				break;
 			}
 
-			OutputWriteSegmentByte(state, character);
+			state.object_writer.WriteU8WithoutListing(character);
 		}
 	}
 	else
@@ -4243,7 +4249,7 @@ static void ProcessIncbin(SemanticState &state, StatementIncbin &incbin)
 			if (input_file.gcount() == 0)
 				break;
 
-			OutputWriteSegmentByte(state, character);
+			state.object_writer.WriteU8WithoutListing(character);
 		}
 	}
 }
@@ -4736,7 +4742,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 
 				/* Pad to the desired offset. */
 				while (state.program_counter != target)
-					state.object_integer_writer.WriteU8(0);
+					state.object_writer.WriteU8(0);
 			},
 			[&](StatementInform &statement)
 			{
