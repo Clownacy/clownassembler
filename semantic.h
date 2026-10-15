@@ -23,8 +23,6 @@
 
 #include "options.h"
 
-#define CLOWNASSEMBLER_VERSION_STRING "ClownAssembler v2.0"
-
 namespace ClownAssembler
 {
 	using Settings = Options;

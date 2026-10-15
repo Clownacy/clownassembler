@@ -23,6 +23,7 @@
 
 #include "path.h"
 #include "semantic.h"
+#include "version.h"
 
 static int total_arguments;
 static char **arguments;

@@ -20,6 +20,8 @@
 
 #include <iostream>
 
+#include "version.h"
+
 namespace Object
 {
 	class Writer
