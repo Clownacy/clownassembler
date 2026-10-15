@@ -28,7 +28,7 @@ namespace Object
 	class Writer
 	{
 	private:
-		std::ostream &stream;
+		IO::StreamIntegerWriter output;
 		std::ostream::pos_type previous_segment_length_output_position;
 		std::size_t segment_position = 0, segment_length = 0;
 
@@ -39,16 +39,16 @@ namespace Object
 				if (segment_length == 0)
 				{
 					/* Previous segment contained nothing; make the new segment overwrite it. */
-					stream.seekp(previous_segment_length_output_position);
-					stream.seekp(-5, stream.cur);
+					output.stream.seekp(previous_segment_length_output_position);
+					output.stream.seekp(-5, output.stream.cur);
 				}
 				else
 				{
 					/* Write length of previous record. */
-					const auto previous_output_position = stream.tellp();
-					stream.seekp(previous_segment_length_output_position);
-					IO::WriteU16LE(stream, segment_length);
-					stream.seekp(previous_output_position);
+					const auto previous_output_position = output.stream.tellp();
+					output.stream.seekp(previous_segment_length_output_position);
+					output.WriteU16LE(segment_length);
+					output.stream.seekp(previous_output_position);
 				}
 			}
 		}
@@ -58,12 +58,12 @@ namespace Object
 			TerminatePreviousRecordSegment();
 
 			/* CPU architecture (68000). */
-			IO::WriteU8(stream, 0x01);
+			output.WriteU8(0x01);
 			/* Start address. */
-			IO::WriteU32LE(stream, segment_position);
+			output.WriteU32LE(segment_position);
 			/* Length (placeholder). */
-			previous_segment_length_output_position = stream.tellp();
-			IO::WriteU16LE(stream, 0x0000);
+			previous_segment_length_output_position = output.stream.tellp();
+			output.WriteU16LE(0x0000);
 		}
 
 	public:
@@ -82,13 +82,13 @@ namespace Object
 		};
 
 		Writer(std::ostream &stream)
-			: stream(stream)
+			: output(stream)
 		{}
 
 		void WriteHeader()
 		{
 			/* Object file magic number. */
-			IO::WriteU16LE(stream, 0x1489);
+			output.WriteU16LE(0x1489);
 
 			/* Begin first segment. */
 			WriteRecordSegment();
@@ -100,8 +100,8 @@ namespace Object
 			TerminatePreviousRecordSegment();
 
 			/* Write terminating record. */
-			IO::WriteU8(stream, 0x00);
-			stream << CLOWNASSEMBLER_VERSION_STRING;
+			output.WriteU8(0x00);
+			output.stream << CLOWNASSEMBLER_VERSION_STRING;
 		}
 
 		void WriteByte(const unsigned int value, const bool doing_fixup_pass)
@@ -114,7 +114,7 @@ namespace Object
 				   as the length field will be left blank. */
 				/* TODO: Make this boolean less dumb. */
 				if (doing_fixup_pass)
-					stream.seekp(1 + 4 + 2, stream.cur);
+					output.stream.seekp(1 + 4 + 2, output.stream.cur);
 				else
 					WriteRecordSegment();
 
@@ -123,7 +123,7 @@ namespace Object
 
 			++segment_length;
 
-			stream.put(value);
+			output.WriteU8(value);
 		}
 
 		void BeginNewSegment(const std::size_t position)
@@ -136,12 +136,12 @@ namespace Object
 
 		Position Tell() const
 		{
-			return {stream.tellp(), segment_length};
+			return {output.stream.tellp(), segment_length};
 		}
 
 		void Seek(Position &position)
 		{
-			stream.seekp(position.position);
+			output.stream.seekp(position.position);
 			segment_length = position.segment_length;
 		}
 	};

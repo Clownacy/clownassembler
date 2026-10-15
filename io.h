@@ -95,10 +95,9 @@ namespace IO
 
 	class StreamIntegerWriter : public IntegerWriter
 	{
-	private:
+	public:
 		std::ostream &stream;
 
-	public:
 		StreamIntegerWriter(std::ostream &stream)
 			: stream(stream)
 		{}
