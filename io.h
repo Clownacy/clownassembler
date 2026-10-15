@@ -18,6 +18,7 @@
 #ifndef IO_H
 #define IO_H
 
+#include <algorithm>
 #include <cstddef>
 #include <iostream>
 #include <format>
@@ -45,6 +46,31 @@ namespace IO
 			input.read(std::data(buffer), bytes_to_do);
 			output.write(std::data(buffer), bytes_to_do);
 		}
+	}
+
+	inline unsigned int ReadU8(std::istream &stream)
+	{
+		return stream.get();
+	}
+
+	inline unsigned long ReadIntegerLE(std::istream &stream, const unsigned int total_bytes)
+	{
+		unsigned long value = 0;
+
+		for (unsigned int i = 0; i < total_bytes; ++i)
+			value |= static_cast<unsigned long>(ReadU8(stream)) << (i * 8);
+
+		return value;
+	}
+
+	inline unsigned int ReadU16LE(std::istream &stream)
+	{
+		return ReadIntegerLE(stream, 2);
+	}
+
+	inline unsigned long ReadU32LE(std::istream &stream)
+	{
+		return ReadIntegerLE(stream, 4);
 	}
 }
 

@@ -33,35 +33,10 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 {
 	std::optional<unsigned long> base_address;
 
-	const auto &ReadByte = [&]() -> unsigned int
-	{
-		return input_stream.get();
-	};
-
-	const auto &ReadInteger = [&](const unsigned int total_bytes) -> unsigned long
-	{
-		unsigned long value = 0;
-
-		for (unsigned int i = 0; i < total_bytes; ++i)
-			value |= static_cast<unsigned long>(ReadByte()) << (i * 8);
-
-		return value;
-	};
-
-	const auto &ReadWord = [&]() -> unsigned int
-	{
-		return ReadInteger(2);
-	};
-
-	const auto &ReadLongInt = [&]() -> unsigned long
-	{
-		return ReadInteger(4);
-	};
-
 	const auto &ProcessSegment = [&]()
 	{
-		const auto start_address = ReadLongInt();
-		const auto length = ReadWord();
+		const auto start_address = IO::ReadU32LE(input_stream);
+		const auto length = IO::ReadU16LE(input_stream);
 
 		if (!base_address.has_value())
 			base_address = start_address;
@@ -78,7 +53,7 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 	{
 		for (;;)
 		{
-			const auto record_header = ReadByte();
+			const auto record_header = IO::ReadU8(input_stream);
 
 			switch (record_header)
 			{
@@ -88,15 +63,15 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 
 				case 0x80:
 					/* Entry point. We don't care about this. */
-					ReadLongInt();
+					IO::ReadU32LE(input_stream);
 					break;
 
 				case 0x81:
 				{
 					/* Arbitrary segment. */
-					ReadByte(); /* Processor family. We don't care about this. */
-					ReadByte(); /* Segment. We don't care about this. */
-					const auto granularity = ReadByte();
+					IO::ReadU8(input_stream); /* Processor family. We don't care about this. */
+					IO::ReadU8(input_stream); /* Segment. We don't care about this. */
+					const auto granularity = IO::ReadU8(input_stream);
 
 					if (granularity != 1)
 						throw std::runtime_error(std::format("Error: Unsupported granularity of {} (only 1 is supported).\n", granularity));
