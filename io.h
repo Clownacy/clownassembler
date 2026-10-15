@@ -48,6 +48,67 @@ namespace IO
 		}
 	}
 
+	class IntegerWriter
+	{
+	private:
+		void WriteIntegerLE(unsigned long value, const unsigned int total_bytes)
+		{
+			for (unsigned int i = 0; i < total_bytes; ++i)
+			{
+				WriteU8(value & 0xFF);
+				value >>= 8;
+			}
+		}
+
+		void WriteIntegerBE(unsigned long value, const unsigned int total_bytes)
+		{
+			for (unsigned int i = 0; i < total_bytes; ++i)
+			{
+				WriteU8((value >> (total_bytes - 1) * 8) & 0xFF);
+				value <<= 8;
+			}
+		}
+
+	public:
+		virtual void WriteU8(unsigned int value) = 0;
+
+		void WriteU16LE(const unsigned int value)
+		{
+			WriteIntegerLE(value, 2);
+		}
+
+		void WriteU32LE(const unsigned int value)
+		{
+			WriteIntegerLE(value, 4);
+		}
+
+		void WriteU16BE(const unsigned int value)
+		{
+			WriteIntegerBE(value, 2);
+		}
+
+		void WriteU32BE(const unsigned int value)
+		{
+			WriteIntegerBE(value, 4);
+		}
+	};
+
+	class StreamIntegerWriter : public IntegerWriter
+	{
+	private:
+		std::ostream &stream;
+
+	public:
+		StreamIntegerWriter(std::ostream &stream)
+			: stream(stream)
+		{}
+
+		void WriteU8(const unsigned int value) override final
+		{
+			stream.put(value);
+		}
+	};
+
 	inline unsigned int ReadU8(std::istream &stream)
 	{
 		return stream.get();
@@ -73,48 +134,29 @@ namespace IO
 		return ReadIntegerLE(stream, 4);
 	}
 
-
 	inline void WriteU8(std::ostream &stream, const unsigned int value)
 	{
-		stream.put(value);
-	}
-
-	inline void WriteIntegerLE(std::ostream &stream, unsigned long value, const unsigned int total_bytes)
-	{
-		for (unsigned int i = 0; i < total_bytes; ++i)
-		{
-			WriteU8(stream, value & 0xFF);
-			value >>= 8;
-		}
+		StreamIntegerWriter(stream).WriteU8(value);
 	}
 
 	inline void WriteU16LE(std::ostream &stream, const unsigned int value)
 	{
-		WriteIntegerLE(stream, value, 2);
+		StreamIntegerWriter(stream).WriteU16LE(value);
 	}
 
 	inline void WriteU32LE(std::ostream &stream, const unsigned int value)
 	{
-		WriteIntegerLE(stream, value, 4);
-	}
-
-	inline void WriteIntegerBE(std::ostream &stream, unsigned long value, const unsigned int total_bytes)
-	{
-		for (unsigned int i = 0; i < total_bytes; ++i)
-		{
-			WriteU8(stream, (value >> (total_bytes - 1) * 8) & 0xFF);
-			value <<= 8;
-		}
+		StreamIntegerWriter(stream).WriteU32LE(value);
 	}
 
 	inline void WriteU16BE(std::ostream &stream, const unsigned int value)
 	{
-		WriteIntegerBE(stream, value, 2);
+		StreamIntegerWriter(stream).WriteU16BE(value);
 	}
 
 	inline void WriteU32BE(std::ostream &stream, const unsigned int value)
 	{
-		WriteIntegerBE(stream, value, 4);
+		StreamIntegerWriter(stream).WriteU32BE(value);
 	}
 }
 
