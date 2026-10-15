@@ -4226,7 +4226,6 @@ static void ProcessIncbin(SemanticState &state, StatementIncbin &incbin)
 	}
 	else
 	{
-		/* TODO: Batch bytes to make this faster? */
 		for (;;)
 		{
 			const int character = input_file.get();
