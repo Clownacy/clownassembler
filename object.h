@@ -20,6 +20,7 @@
 
 #include <iostream>
 
+#include "io.h"
 #include "version.h"
 
 namespace Object
@@ -46,8 +47,7 @@ namespace Object
 					/* Write length of previous record. */
 					const auto previous_output_position = stream.tellp();
 					stream.seekp(previous_segment_length_output_position);
-					stream.put(segment_length >> (8 * 0) & 0xFF);
-					stream.put(segment_length >> (8 * 1) & 0xFF);
+					IO::WriteU16LE(stream, segment_length);
 					stream.seekp(previous_output_position);
 				}
 			}
@@ -58,16 +58,12 @@ namespace Object
 			TerminatePreviousRecordSegment();
 
 			/* CPU architecture (68000). */
-			stream.put(0x01);
+			IO::WriteU8(stream, 0x01);
 			/* Start address. */
-			stream.put(segment_position >> (8 * 0) & 0xFF);
-			stream.put(segment_position >> (8 * 1) & 0xFF);
-			stream.put(segment_position >> (8 * 2) & 0xFF);
-			stream.put(segment_position >> (8 * 3) & 0xFF);
+			IO::WriteU32LE(stream, segment_position);
 			/* Length (placeholder). */
 			previous_segment_length_output_position = stream.tellp();
-			stream.put(0);
-			stream.put(0);
+			IO::WriteU16LE(stream, 0x0000);
 		}
 
 	public:
@@ -92,8 +88,7 @@ namespace Object
 		void WriteHeader()
 		{
 			/* Object file magic number. */
-			stream.put(-0x77);
-			stream.put( 0x14);
+			IO::WriteU16LE(stream, 0x1489);
 
 			/* Begin first segment. */
 			WriteRecordSegment();
@@ -105,7 +100,7 @@ namespace Object
 			TerminatePreviousRecordSegment();
 
 			/* Write terminating record. */
-			stream.put(0x00);
+			IO::WriteU8(stream, 0x00);
 			stream << CLOWNASSEMBLER_VERSION_STRING;
 		}
 

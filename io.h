@@ -72,6 +72,50 @@ namespace IO
 	{
 		return ReadIntegerLE(stream, 4);
 	}
+
+
+	inline void WriteU8(std::ostream &stream, const unsigned int value)
+	{
+		stream.put(value);
+	}
+
+	inline void WriteIntegerLE(std::ostream &stream, unsigned long value, const unsigned int total_bytes)
+	{
+		for (unsigned int i = 0; i < total_bytes; ++i)
+		{
+			WriteU8(stream, value & 0xFF);
+			value >>= 8;
+		}
+	}
+
+	inline void WriteU16LE(std::ostream &stream, const unsigned int value)
+	{
+		WriteIntegerLE(stream, value, 2);
+	}
+
+	inline void WriteU32LE(std::ostream &stream, const unsigned int value)
+	{
+		WriteIntegerLE(stream, value, 4);
+	}
+
+	inline void WriteIntegerBE(std::ostream &stream, unsigned long value, const unsigned int total_bytes)
+	{
+		for (unsigned int i = 0; i < total_bytes; ++i)
+		{
+			WriteU8(stream, (value >> (total_bytes - 1) * 8) & 0xFF);
+			value <<= 8;
+		}
+	}
+
+	inline void WriteU16BE(std::ostream &stream, const unsigned int value)
+	{
+		WriteIntegerBE(stream, value, 2);
+	}
+
+	inline void WriteU32BE(std::ostream &stream, const unsigned int value)
+	{
+		WriteIntegerBE(stream, value, 4);
+	}
 }
 
 #endif /* IO_H */

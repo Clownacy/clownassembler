@@ -5750,14 +5750,14 @@ static bool AssembleToObjectFile(
 	if (symbol_stream != nullptr)
 	{
 		/* Some kind of header. */
-		symbol_stream->put('M');
-		symbol_stream->put('N');
-		symbol_stream->put('D');
-		symbol_stream->put(1);
-		symbol_stream->put(0);
-		symbol_stream->put(0);
-		symbol_stream->put(0);
-		symbol_stream->put(0);
+		IO::WriteU8(*symbol_stream, 'M');
+		IO::WriteU8(*symbol_stream, 'N');
+		IO::WriteU8(*symbol_stream, 'D');
+		IO::WriteU8(*symbol_stream, 1);
+		IO::WriteU8(*symbol_stream, 0);
+		IO::WriteU8(*symbol_stream, 0);
+		IO::WriteU8(*symbol_stream, 0);
+		IO::WriteU8(*symbol_stream, 0);
 
 		state.dictionary.Filter(
 			[&](const SymbolDictionary::Entry &entry, const std::string_view &identifier) -> bool
@@ -5777,14 +5777,13 @@ static bool AssembleToObjectFile(
 					if (label.length() < 0x100 && (!is_local_label || state.options->output_local_labels_to_sym_file))
 					{
 						/* Output the address of the label. */
-						for (unsigned int i = 0; i < 4; ++i)
-							symbol_stream->put((symbol_label->value >> (i * 8)) & 0xFF);
+						IO::WriteU32LE(*symbol_stream, symbol_label->value);
 
 						/* I have no idea what this means. */
-						symbol_stream->put(is_local_label ? 6 : 2);
+						IO::WriteU8(*symbol_stream, is_local_label ? 6 : 2);
 
 						/* Output the length of the label. */
-						symbol_stream->put(label.length());
+						IO::WriteU8(*symbol_stream, label.length());
 
 						/* Output the label itself. */
 						*symbol_stream << label;
