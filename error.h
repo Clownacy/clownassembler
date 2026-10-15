@@ -54,9 +54,9 @@ private:
 	void ErrorMessageCommon()
 	{
 		for (const auto &location : locations)
-			TextOutput_Format(error_stream, "\nOn line {} of '{}'...", location.line_number, location.file_path);
+			IO::Print(error_stream, "\nOn line {} of '{}'...", location.line_number, location.file_path);
 
-		TextOutput_Format(error_stream, "\n{}\n\n", source_line.empty() ? "[No source line]" : source_line);
+		IO::Print(error_stream, "\n{}\n\n", source_line.empty() ? "[No source line]" : source_line);
 	}
 
 public:
@@ -65,7 +65,7 @@ public:
 	{
 		error_stream << "Information: ";
 
-		TextOutput_Format(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+		IO::Print(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 	}
 
 	void Information(const std::string_view &message)
@@ -80,7 +80,7 @@ public:
 		{
 			error_stream << "Warning: ";
 
-			TextOutput_Format(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+			IO::Print(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 
 			ErrorMessageCommon();
 		}
@@ -114,7 +114,7 @@ public:
 	{
 		error_stream << "Error: ";
 
-		TextOutput_Format(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+		IO::Print(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 
 		ErrorMessageCommon();
 

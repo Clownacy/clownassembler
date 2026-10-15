@@ -357,7 +357,7 @@ static void ListSourceLine(SemanticState &state)
 
 			state.listing_stream->put(state.listing_macro ? 'M' : ' ');
 
-			TextOutput_Format(*state.listing_stream, " {}\n", state.source_line);
+			IO::Print(*state.listing_stream, " {}\n", state.source_line);
 		}
 	}
 }
@@ -367,7 +367,7 @@ static void ListIdentifierValue(SemanticState &state, unsigned long value)
 	/* Output line to listing file. */
 	if (state.listing_stream != nullptr && !state.doing_fixup_pass && !state.suppress_listing)
 	{
-		TextOutput_Format(*state.listing_stream, " ={:08X}", value);
+		IO::Print(*state.listing_stream, " ={:08X}", value);
 
 		state.listing_counter += 2 + 8;
 	}
@@ -396,7 +396,7 @@ static void OutputByte(SemanticState &state, unsigned int byte)
 					++state.listing_counter;
 				}
 
-				TextOutput_Format(*state.listing_stream, "{:02X}", byte);
+				IO::Print(*state.listing_stream, "{:02X}", byte);
 				state.listing_counter += 2;
 			}
 		}
@@ -5487,7 +5487,7 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 
 			state.listing_counter = 0;
 			state.suppress_listing = false;
-			TextOutput_Format(*state.listing_stream, "{:08X}", state.program_counter);
+			IO::Print(*state.listing_stream, "{:08X}", state.program_counter);
 		}
 	}
 
