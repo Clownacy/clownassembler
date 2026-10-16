@@ -10,14 +10,23 @@ add_library(clownassembler_core STATIC
 	"io.h"
 	"lexical.cpp"
 	"lexical.h"
+	"listing.h"
+	"object.h"
+	"object-writer.h"
+	"options.h"
 	"p2bin.cpp"
 	"p2bin.h"
+	"parser.h"
+	"path.h"
+	"program-counter.h"
 	"semantic.cpp"
 	"semantic.h"
 	"substitute.cpp"
 	"substitute.h"
 	"syntactic.cpp"
 	"syntactic.h"
+	"utilities.h"
+	"version.h"
 )
 
 set_target_properties(clownassembler_core PROPERTIES CXX_STANDARD 20)
