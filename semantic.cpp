@@ -46,12 +46,10 @@
 #include "object.h"
 #include "object-writer.h"
 #include "p2bin.h"
+#include "parser.h"
 #include "path.h"
 #include "program-counter.h"
 #include "substitute.h"
-#include "syntactic.h"
-#define YY_NO_UNISTD_H
-#include "lexical.h"
 #include "utilities.h"
 
 using SourceLineList = std::deque<std::string>;
@@ -127,32 +125,6 @@ struct SemanticState
 {
 	using MacroMetadata = Macro;
 
-	class Flex
-	{
-	private:
-		yyscan_t internal;
-
-	public:
-		Flex()
-		{
-			if (m68kasm_lex_init(&internal) != 0)
-				throw std::runtime_error("m68kasm_lex_init failed.");
-		}
-
-		~Flex()
-		{
-			m68kasm_lex_destroy(internal);
-		}
-
-		Flex(const Flex &other) = delete;
-		Flex& operator=(const Flex &other) = delete;
-
-		yyscan_t& operator*()
-		{
-			return internal;
-		}
-	};
-
 	struct Macro
 	{
 		const MacroMetadata *metadata = nullptr;
@@ -172,12 +144,10 @@ struct SemanticState
 	ErrorManager error_manager;
 	ListingWriter listing_writer;
 	ObjectWriter object_writer;
+	Parser parser;
 	std::deque<ErrorManager::Location> location;
 	std::string_view source_line;
 	std::string last_global_label;
-	Flex flex_state;
-	Statement statement;
-	m68kasm::parser parser = {*flex_state, error_manager, statement};
 	std::vector<char> line_buffer = std::vector<char>(0x100); // Room for 256 characters by default; will expand when necessary.
 	Substitute substitutions;
 	std::stack<std::string> string_stack;
@@ -238,6 +208,7 @@ struct SemanticState
 		, error_manager(error_stream, location, source_line, options->warnings_enabled, options->pedantic_warnings_enabled)
 		, listing_writer(listing_stream, doing_fixup_pass)
 		, object_writer(output_stream, listing_writer, program_counter, doing_fixup_pass)
+		, parser(error_manager)
 	{
 		/* For error messages, we want to maintain a list of filenames and line
 		   numbers that describe the location and nesting of the erroneous
@@ -4920,16 +4891,6 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 	state.program_counter_of_expression = state.program_counter;
 }
 
-static bool ParseStatement(SemanticState &state, const std::string_view &view)
-{
-	/* Parse the source line with Flex and Bison (Lex and Yacc). */
-	const YY_BUFFER_STATE buffer = m68kasm__scan_bytes(view.data(), view.length(), *state.flex_state);
-	const int parse_result = state.parser.parse();
-	m68kasm__delete_buffer(buffer, *state.flex_state);
-
-	return parse_result == 0;
-}
-
 static void ParseLine(SemanticState &state, const std::string_view &label, const std::string_view &directive_and_operands)
 {
 	/* This is a normal assembly line. */
@@ -4938,10 +4899,12 @@ static void ParseLine(SemanticState &state, const std::string_view &label, const
 	const unsigned long starting_program_counter = state.program_counter;
 	const auto starting_object_writer_position = state.object_writer.Tell();
 
-	if (!ParseStatement(state, directive_and_operands))
+	Statement* const statement = state.parser.ParseStatement(directive_and_operands);
+
+	if (statement == nullptr)
 		return;
 
-	ProcessStatement(state, state.statement, label);
+	ProcessStatement(state, *statement, label);
 
 	if (!state.fixup_needed)
 		return;
@@ -4950,7 +4913,7 @@ static void ParseLine(SemanticState &state, const std::string_view &label, const
 	   add it to the fix-up list so we can try again later. */
 	state.fixup_list.emplace_back(
 		/* Backup the statement. */
-		std::move(state.statement),
+		std::move(*statement),
 
 		/* Backup some state. */
 		state.macro.dictionary,
