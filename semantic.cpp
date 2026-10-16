@@ -108,19 +108,26 @@ using SymbolDictionaryEntry = std::variant<SymbolNone, SymbolConstant, SymbolVar
 
 using SymbolDictionary = Dictionary<SymbolDictionaryEntry>;
 
-class SemanticState;
-
 // Extends `Object::Writer` with an integer-writing interface, and
 // handles listing as well as incrementing the program counter.
 class ObjectWriter : public IO::IntegerWriter, public Object::Writer
 {
 private:
-	SemanticState &state;
+	ListingWriter &listing_writer;
+	ProgramCounter &program_counter;
+	bool &doing_fixup_pass;
 
 public:
-	ObjectWriter(SemanticState &state, std::ostream &stream)
+	ObjectWriter(
+		std::ostream &stream,
+		ListingWriter &listing_writer,
+		ProgramCounter &program_counter,
+		bool &doing_fixup_pass
+	)
 		: Object::Writer(stream)
-		, state(state)
+		, listing_writer(listing_writer)
+		, program_counter(program_counter)
+		, doing_fixup_pass(doing_fixup_pass)
 	{}
 
 	void WriteU8(unsigned int value) override final;
@@ -198,8 +205,8 @@ struct SemanticState
 	Substitute substitutions;
 	std::stack<std::string> string_stack;
 	SemanticState_Macro macro;
-	ObjectWriter object_writer;
 	ListingWriter listing_writer;
+	ObjectWriter object_writer;
 	ProgramCounter program_counter;
 	unsigned long program_counter_of_statement = 0, program_counter_of_expression = 0;
 	unsigned long current_macro_invocation = 0;
@@ -254,8 +261,8 @@ struct SemanticState
 		: options(std::move(default_options))
 		, dictionary(options->case_insensitive)
 		, error_manager(error_stream, location, source_line, options->warnings_enabled, options->pedantic_warnings_enabled)
-		, object_writer(*this, output_stream)
 		, listing_writer(listing_stream, doing_fixup_pass)
+		, object_writer(output_stream, listing_writer, program_counter, doing_fixup_pass)
 	{
 		/* For error messages, we want to maintain a list of filenames and line
 		   numbers that describe the location and nesting of the erroneous
@@ -271,7 +278,7 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 void ObjectWriter::WriteU8(const unsigned int value)
 {
 	/* Write to listing file. */
-	state.listing_writer.WriteByte(value);
+	listing_writer.WriteByte(value);
 
 	/* Write to output file. */
 	WriteU8WithoutListing(value);
@@ -279,8 +286,8 @@ void ObjectWriter::WriteU8(const unsigned int value)
 
 void ObjectWriter::WriteU8WithoutListing(const unsigned int value)
 {
-	Object::Writer::WriteByte(value, state.doing_fixup_pass);
-	state.program_counter += 1;
+	Object::Writer::WriteByte(value, doing_fixup_pass);
+	program_counter += 1;
 }
 
 /* Other stuff */
