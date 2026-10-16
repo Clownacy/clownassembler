@@ -35,7 +35,7 @@ namespace Utilities
 			if (result == view.npos)
 				return view.length();
 
-			return result;
+			return result - position;
 		}
 
 		inline std::size_t GetTrailingLength(const std::string_view &view, const std::string_view &characters, const std::size_t position = std::string_view::npos)
@@ -45,7 +45,7 @@ namespace Utilities
 			if (result == view.npos)
 				return view.length();
 
-			return view.length() - result - 1;
+			return std::min(view.length(), position) - result - 1;
 		}
 
 		inline void RemoveLeading(std::string_view &string_view, const std::string_view &characters)

@@ -5099,9 +5099,10 @@ static void InvokeMacro(SemanticState &state, const Macro &macro, const std::str
 				case '$':
 				{
 					const std::size_t identifier_position_start = symbol_position + 1;
-					const std::size_t identifier_position_end = Utilities::String::GetLeadingLength(view_to_search, DIRECTIVE_OR_MACRO_CHARS, identifier_position_start);
+					const std::size_t identifier_length = Utilities::String::GetLeadingLength(view_to_search, DIRECTIVE_OR_MACRO_CHARS, identifier_position_start);
+					const std::size_t identifier_position_end = identifier_position_start + identifier_length;
 
-					const std::string_view identifier = view_to_search.substr(identifier_position_start, identifier_position_end - identifier_position_start);
+					const std::string_view identifier = view_to_search.substr(identifier_position_start, identifier_length);
 
 					found_length += identifier.length();
 
