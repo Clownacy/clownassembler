@@ -150,21 +150,11 @@ struct FixUp
 	std::deque<ErrorManager::Location> location;
 };
 
-struct SemanticState_Macro
-{
-	const Macro *metadata = nullptr;
-	std::shared_ptr<SymbolDictionary> dictionary;
-	Substitute substitutions;
-	Substitute::CustomSearch custom_search;
-	std::vector<std::string> argument_list;
-	std::size_t total_arguments = 0, total_arguments_at_start = 0;
-	unsigned int starting_if_level = 0;
-	unsigned int depth = 0;
-	bool active = false;
-};
 
 struct SemanticState
 {
+	using MacroMetadata = Macro;
+
 	class Flex
 	{
 	private:
@@ -191,12 +181,27 @@ struct SemanticState
 		}
 	};
 
+	struct Macro
+	{
+		const MacroMetadata *metadata = nullptr;
+		std::shared_ptr<SymbolDictionary> dictionary;
+		Substitute substitutions;
+		Substitute::CustomSearch custom_search;
+		std::vector<std::string> argument_list;
+		std::size_t total_arguments = 0, total_arguments_at_start = 0;
+		unsigned int starting_if_level = 0;
+		unsigned int depth = 0;
+		bool active = false;
+	};
+
 	/* Global stuff. */
 	OptionsStack options;
 	SymbolDictionary dictionary;
+	ErrorManager error_manager;
+	ListingWriter listing_writer;
+	ObjectWriter object_writer;
 	std::deque<ErrorManager::Location> location;
 	std::string_view source_line;
-	ErrorManager error_manager;
 	std::string last_global_label;
 	Flex flex_state;
 	Statement statement;
@@ -204,9 +209,7 @@ struct SemanticState
 	std::vector<char> line_buffer = std::vector<char>(0x100); // Room for 256 characters by default; will expand when necessary.
 	Substitute substitutions;
 	std::stack<std::string> string_stack;
-	SemanticState_Macro macro;
-	ListingWriter listing_writer;
-	ObjectWriter object_writer;
+	Macro macro;
 	ProgramCounter program_counter;
 	unsigned long program_counter_of_statement = 0, program_counter_of_expression = 0;
 	unsigned long current_macro_invocation = 0;
@@ -238,7 +241,7 @@ struct SemanticState
 	struct ModeMacro
 	{
 		unsigned long line_number = 0;
-		Macro metadata;
+		MacroMetadata metadata;
 	};
 	struct ModeWhile
 	{
@@ -5105,7 +5108,7 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 		return;
 	}
 
-	const SemanticState_Macro previous_macro_state = std::move(state.macro);
+	const SemanticState::Macro previous_macro_state = std::move(state.macro);
 
 	state.macro.metadata = macro;
 	/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
