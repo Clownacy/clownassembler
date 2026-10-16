@@ -41,7 +41,6 @@
 
 #include "dictionary.h"
 #include "error.h"
-#include "io.h"
 #include "listing.h"
 #include "object.h"
 #include "object-writer.h"
@@ -49,6 +48,7 @@
 #include "parser.h"
 #include "program-counter.h"
 #include "substitute.h"
+#include "utilities/io.h"
 #include "utilities/path.h"
 #include "utilities/string.h"
 

@@ -20,7 +20,7 @@
 #include <iostream>
 #include <string_view>
 
-#include "io.h"
+#include "utilities/io.h"
 
 void ListingWriter::BeginLine(const unsigned long program_counter)
 {

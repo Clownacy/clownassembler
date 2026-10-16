@@ -27,7 +27,7 @@
 #include <format>
 #include <optional>
 
-#include "io.h"
+#include "utilities/io.h"
 
 bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &output_stream, std::ostream &error_stream)
 {

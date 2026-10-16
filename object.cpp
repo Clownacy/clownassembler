@@ -19,7 +19,7 @@
 
 #include <iostream>
 
-#include "io.h"
+#include "utilities/io.h"
 #include "version.h"
 
 void Object::Writer::TerminatePreviousRecordSegment()
