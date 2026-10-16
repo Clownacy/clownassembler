@@ -48,6 +48,70 @@ namespace IO
 		}
 	}
 
+	class BinaryReader
+	{
+	public:
+		virtual unsigned int ReadU8() = 0;
+
+		unsigned long ReadIntegerLE(const unsigned int total_bytes)
+		{
+			unsigned long value = 0;
+
+			for (unsigned int i = 0; i < total_bytes; ++i)
+				value |= static_cast<unsigned long>(ReadU8()) << (i * 8);
+
+			return value;
+		}
+
+		unsigned int ReadU16LE()
+		{
+			return ReadIntegerLE(2);
+		}
+
+		unsigned long ReadU32LE()
+		{
+			return ReadIntegerLE(4);
+		}
+
+		unsigned long ReadIntegerBE(const unsigned int total_bytes)
+		{
+			unsigned long value = 0;
+
+			for (unsigned int i = 0; i < total_bytes; ++i)
+			{
+				value <<= 8;
+				value |= ReadU8();
+			}
+
+			return value;
+		}
+
+		unsigned int ReadU16BE()
+		{
+			return ReadIntegerBE(2);
+		}
+
+		unsigned long ReadU32BE()
+		{
+			return ReadIntegerBE(4);
+		}
+	};
+
+	class StreamBinaryReader : public BinaryReader
+	{
+	public:
+		std::istream &stream;
+
+		StreamBinaryReader(std::istream &stream)
+			: stream(stream)
+		{}
+
+		unsigned int ReadU8() override final
+		{
+			return stream.get();
+		}
+	};
+
 	class BinaryWriter
 	{
 	public:
@@ -106,54 +170,6 @@ namespace IO
 			stream.put(value);
 		}
 	};
-
-	inline unsigned int ReadU8(std::istream &stream)
-	{
-		return stream.get();
-	}
-
-	inline unsigned long ReadIntegerLE(std::istream &stream, const unsigned int total_bytes)
-	{
-		unsigned long value = 0;
-
-		for (unsigned int i = 0; i < total_bytes; ++i)
-			value |= static_cast<unsigned long>(ReadU8(stream)) << (i * 8);
-
-		return value;
-	}
-
-	inline unsigned int ReadU16LE(std::istream &stream)
-	{
-		return ReadIntegerLE(stream, 2);
-	}
-
-	inline unsigned long ReadU32LE(std::istream &stream)
-	{
-		return ReadIntegerLE(stream, 4);
-	}
-
-	inline unsigned long ReadIntegerBE(std::istream &stream, const unsigned int total_bytes)
-	{
-		unsigned long value = 0;
-
-		for (unsigned int i = 0; i < total_bytes; ++i)
-		{
-			value <<= 8;
-			value |= ReadU8(stream);
-		}
-
-		return value;
-	}
-
-	inline unsigned int ReadU16BE(std::istream &stream)
-	{
-		return ReadIntegerBE(stream, 2);
-	}
-
-	inline unsigned long ReadU32BE(std::istream &stream)
-	{
-		return ReadIntegerBE(stream, 4);
-	}
 }
 
 #endif /* IO_H */

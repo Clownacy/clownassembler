@@ -31,12 +31,14 @@
 
 bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &output_stream, std::ostream &error_stream)
 {
+	IO::StreamBinaryReader input(input_stream);
+
 	std::optional<unsigned long> base_address;
 
 	const auto &ProcessSegment = [&]()
 	{
-		const auto start_address = IO::ReadU32LE(input_stream);
-		const auto length = IO::ReadU16LE(input_stream);
+		const auto start_address = input.ReadU32LE();
+		const auto length = input.ReadU16LE();
 
 		if (!base_address.has_value())
 			base_address = start_address;
@@ -46,14 +48,14 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 			output_stream.seekp(start_address - *base_address);
 
 		/* Copy segment data. */
-		IO::CopyBytes(input_stream, output_stream, length);
+		IO::CopyBytes(input.stream, output_stream, length);
 	};
 
 	const auto &ProcessRecords = [&]()
 	{
 		for (;;)
 		{
-			const auto record_header = IO::ReadU8(input_stream);
+			const auto record_header = input.ReadU8();
 
 			switch (record_header)
 			{
@@ -63,15 +65,15 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 
 				case 0x80:
 					/* Entry point. We don't care about this. */
-					IO::ReadU32LE(input_stream);
+					input.ReadU32LE();
 					break;
 
 				case 0x81:
 				{
 					/* Arbitrary segment. */
-					IO::ReadU8(input_stream); /* Processor family. We don't care about this. */
-					IO::ReadU8(input_stream); /* Segment. We don't care about this. */
-					const auto granularity = IO::ReadU8(input_stream);
+					input.ReadU8(); /* Processor family. We don't care about this. */
+					input.ReadU8(); /* Segment. We don't care about this. */
+					const auto granularity = input.ReadU8();
 
 					if (granularity != 1)
 						throw std::runtime_error(std::format("Error: Unsupported granularity of {} (only 1 is supported).\n", granularity));
@@ -95,13 +97,13 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 
 	bool success = false;
 
-	const auto previous_exceptions = input_stream.exceptions();
-	input_stream.exceptions(input_stream.badbit | input_stream.eofbit | input_stream.failbit);
+	const auto previous_exceptions = input.stream.exceptions();
+	input.stream.exceptions(input.stream.badbit | input.stream.eofbit | input.stream.failbit);
 
 	try
 	{
 		/* Read and check the header's magic number. */
-		const auto magic = IO::ReadU16BE(input_stream);
+		const auto magic = input.ReadU16BE();
 
 		/* TODO: Use error message manager for this. */
 		if (magic != 0x8914)
@@ -116,7 +118,7 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 		error_stream << error.what();
 	}
 
-	input_stream.exceptions(previous_exceptions);
+	input.stream.exceptions(previous_exceptions);
 
 	return success;
 }
