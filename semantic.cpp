@@ -46,6 +46,7 @@
 #include "object.h"
 #include "p2bin.h"
 #include "path.h"
+#include "program-counter.h"
 #include "substitute.h"
 #include "syntactic.h"
 #define YY_NO_UNISTD_H
@@ -199,7 +200,8 @@ struct SemanticState
 	SemanticState_Macro macro;
 	ObjectWriter object_writer;
 	ListingWriter listing_writer;
-	unsigned long program_counter = 0, program_counter_of_statement = 0, program_counter_of_expression = 0;
+	ProgramCounter program_counter;
+	unsigned long program_counter_of_statement = 0, program_counter_of_expression = 0;
 	unsigned long current_macro_invocation = 0;
 	unsigned long rs = 0;
 	bool end = false;
@@ -266,18 +268,6 @@ struct SemanticState
 static void AssembleFile(SemanticState &state, std::istream &input_stream);
 static void AssembleLine(SemanticState &state, const std::string_view &source_line, const bool write_line_to_listing_file);
 
-static void AdvanceProgramCounter(SemanticState &state, const unsigned long delta)
-{
-	state.program_counter += delta;
-	state.program_counter &= 0xFFFFFFFF;
-}
-
-static void RegressProgramCounter(SemanticState &state, const unsigned long delta)
-{
-	state.program_counter -= delta;
-	state.program_counter &= 0xFFFFFFFF;
-}
-
 void ObjectWriter::WriteU8(const unsigned int value)
 {
 	/* Write to listing file. */
@@ -290,7 +280,7 @@ void ObjectWriter::WriteU8(const unsigned int value)
 void ObjectWriter::WriteU8WithoutListing(const unsigned int value)
 {
 	Object::Writer::WriteByte(value, state.doing_fixup_pass);
-	AdvanceProgramCounter(state, 1);
+	state.program_counter.Advance(1);
 }
 
 /* Other stuff */
@@ -2561,10 +2551,10 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 	operands_to_output[1] = &instruction.operands[1];
 
 	/* Instructions on odd addresses cause exceptions on the 68k, so warn the user if they are produced. */
-	if ((state.program_counter & 1) != 0)
+	if ((state.program_counter.value & 1) != 0)
 		state.error_manager.Warning("Instruction is at an odd address.");
 
-	const auto address_after_opcode = state.program_counter + 2;
+	const auto address_after_opcode = state.program_counter.value + 2;
 
 	ResolveInstructionAmbiguity(state, instruction);
 	OptimiseInstruction(state, instruction);
@@ -3239,7 +3229,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 						unsigned long value;
 
 						if (!ResolveExpression(state, instruction.operands[1].literal, value))
-							value = state.program_counter;
+							value = state.program_counter.value;
 
 						/* Construct a custom operand to hold the destination offset. */
 						operands_to_output[0] = &custom_operands[0];
@@ -3301,7 +3291,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 						unsigned long value;
 
 						if (!ResolveExpression(state, instruction.operands[0].literal, value))
-							value = state.program_counter;
+							value = state.program_counter.value;
 
 						/* Calculate the destination offset. */
 						unsigned long offset;
@@ -3798,7 +3788,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 				if (!ResolveExpression(state, operand->literal, value))
 				{
 					if (operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT || operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER)
-						value = state.program_counter; /* Prevent out-of-range displacements later on. */
+						value = state.program_counter.value; /* Prevent out-of-range displacements later on. */
 					else
 						value = 0;
 				}
@@ -3880,7 +3870,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 
 					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 						/* Turn the address into a displacement. */
-						value -= state.program_counter;
+						value -= state.program_counter.value;
 						/* Fallthrough */
 					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 						bytes_to_write = 2;
@@ -3904,7 +3894,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 						break;
 
 					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
-						value -= state.program_counter;
+						value -= state.program_counter.value;
 						/* Fallthrough */
 					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
 						bytes_to_write = 2;
@@ -4034,7 +4024,7 @@ static void OutputDcValue(SemanticState &state, const Size size, unsigned long v
 static void PerformEven(SemanticState &state)
 {
 	/* Pad to the nearest even address. */
-	if (state.program_counter & 1)
+	if ((state.program_counter.value & 1) != 0)
 		state.object_writer.WriteU8(0);
 }
 
@@ -4062,7 +4052,7 @@ static void ProcessDc(SemanticState &state, StatementDc &dc)
 		else
 		{
 			/* Update the program counter symbol in between values, to keep it up to date. */
-			state.program_counter_of_expression = state.program_counter;
+			state.program_counter_of_expression = state.program_counter.value;
 
 			unsigned long value;
 
@@ -4323,8 +4313,8 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 {
 	/* Bizarrely, depending on the context, the program counter can be one
 	   of two values, so we need to maintain two separate copies of it. */
-	state.program_counter_of_statement = state.program_counter;
-	state.program_counter_of_expression = state.program_counter;
+	state.program_counter_of_statement = state.program_counter.value;
+	state.program_counter_of_expression = state.program_counter.value;
 
 	if (CC_VariantHoldsAnyOf<
 		StatementEmpty,
@@ -4357,7 +4347,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 		{
 			/* Handle the label here, instead of passing it onto a later function. */
 			SetLastGlobalLabel(state, label);
-			AddToSymbolTable(state, label, SymbolLabel{state.program_counter});
+			AddToSymbolTable(state, label, SymbolLabel{state.program_counter.value});
 		}
 	}
 	else if (CC_VariantHoldsAnyOf<
@@ -4670,15 +4660,15 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 					return;
 				}
 
-				const unsigned long position_within_boundary = state.program_counter % size_boundary;
+				const unsigned long position_within_boundary = state.program_counter.value % size_boundary;
 
-				unsigned long target = state.program_counter - position_within_boundary + offset;
+				unsigned long target = state.program_counter.value - position_within_boundary + offset;
 
 				if (position_within_boundary > offset)
 					target += size_boundary;
 
 				/* Pad to the desired offset. */
-				while (state.program_counter != target)
+				while (state.program_counter.value != target)
 					state.object_writer.WriteU8(0);
 			},
 			[&](StatementInform &statement)
@@ -4791,11 +4781,11 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 				if (!ResolveExpression(state, statement.expression, value))
 				{
 					state.error_manager.Error("Value must be evaluable on the first pass.");
-					value = state.program_counter;
+					value = state.program_counter.value;
 				}
 
-				state.obj_delta = value - state.program_counter;
-				AdvanceProgramCounter(state, *state.obj_delta);
+				state.obj_delta = value - state.program_counter.value;
+				state.program_counter.Advance(*state.obj_delta);
 			},
 			[&](StatementObjend&)
 			{
@@ -4805,7 +4795,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 					return;
 				}
 
-				RegressProgramCounter(state, *state.obj_delta);
+				state.program_counter.Regress(*state.obj_delta);
 				state.obj_delta = std::nullopt;
 			},
 			[&](StatementOrg &statement)
@@ -4826,7 +4816,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 
 				state.object_writer.BeginNewSegment(value);
 
-				state.program_counter = value;
+				state.program_counter.value = value;
 			},
 			[&](StatementPusho&)
 			{
@@ -4959,8 +4949,8 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 	);
 
 	/* Update both copies of the program counter again, so that things like WHILE statements don't use stale values in their expressions. */
-	state.program_counter_of_statement = state.program_counter;
-	state.program_counter_of_expression = state.program_counter;
+	state.program_counter_of_statement = state.program_counter.value;
+	state.program_counter_of_expression = state.program_counter.value;
 }
 
 static bool ParseStatement(SemanticState &state, const std::string_view &view)
@@ -4978,7 +4968,7 @@ static void ParseLine(SemanticState &state, const std::string_view &label, const
 	/* This is a normal assembly line. */
 
 	/* Back these up, before they get a chance to be modified by ProcessStatement. */
-	const unsigned long starting_program_counter = state.program_counter;
+	const unsigned long starting_program_counter = state.program_counter.value;
 	const auto starting_object_writer_position = state.object_writer.Tell();
 
 	if (!ParseStatement(state, directive_and_operands))
@@ -5132,7 +5122,7 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 		SetLastGlobalLabel(state, label);
 
 		if (!macro->uses_label)
-			AddToSymbolTable(state, label, SymbolLabel{state.program_counter});
+			AddToSymbolTable(state, label, SymbolLabel{state.program_counter.value});
 	}
 
 	std::string_view size;
@@ -5345,7 +5335,7 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 	if (write_line_to_listing_file)
 	{
 		state.listing_writer.EndLine(state.source_line);
-		state.listing_writer.BeginLine(state.program_counter);
+		state.listing_writer.BeginLine(state.program_counter.value);
 	}
 
 	/* Expand string constants and macro parameters only if we're actually parsing code;
@@ -5676,7 +5666,7 @@ static bool AssembleToObjectFile(
 
 		/* Reset some state to how it was at the time the statement was first processed. */
 		state.macro.dictionary = fixup.macro_dictionary;
-		state.program_counter = fixup.program_counter;
+		state.program_counter.value = fixup.program_counter;
 		state.object_writer.Seek(fixup.object_writer_position);
 		state.last_global_label = std::move(fixup.last_global_label);
 		state.source_line = fixup.source_line;
