@@ -267,6 +267,7 @@ int main(int argc, char **argv)
 	{
 		/* Delete the output file; it will be junk anyway.
 		   Also, leaving a junk file will confuse CMake, which will think that the assembler had previously succeeded. */
+		output_file.close();
 		std::filesystem::remove(output_file_path);
 		ErrorAndExit("Could not assemble.");
 	}
