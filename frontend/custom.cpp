@@ -24,16 +24,10 @@
 #include "../semantic.h"
 #include "../utilities/path.h"
 #include "../version.h"
+#include "common.h"
 
 static int total_arguments;
 static char **arguments;
-
-template<typename... Args>
-[[noreturn]] static void ErrorAndExit(std::format_string<Args...> &&format_string, Args &&...args)
-{
-	std::cerr << "Error: " << std::format(std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...) << '\n';
-	std::exit(EXIT_FAILURE);
-}
 
 static void DefinitionCallback(void *internal, void* const user_data, const ClownAssembler::AddDefinition add_definition)
 {

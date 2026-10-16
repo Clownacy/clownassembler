@@ -26,6 +26,7 @@
 #include "../utilities/case-insensitive.h"
 #include "../utilities/path.h"
 #include "../utilities/string.h"
+#include "common.h"
 
 static constexpr Utilities::CaseInsensitive::ToLower to_lower(true);
 
@@ -71,8 +72,6 @@ static void DefinitionCallback(void *internal, void* const user_data, const Clow
 
 int main(int argc, char **argv)
 {
-	int exit_code = EXIT_SUCCESS;
-
 	ClownAssembler::Settings settings = {};
 	std::string_view source_file_path_string;
 	std::filesystem::path source_file_path;
@@ -129,7 +128,7 @@ int main(int argc, char **argv)
 				case 'l':
 				case 'w':
 				case 'z': /* And 'zd'. */
-					fprintf(stderr, "Warning: Unsupported option: '%s'.\n", argv[i]);
+					Warning("Unsupported option: '{}'.", argv[i]);
 					break;
 
 				case 'm':
@@ -150,9 +149,7 @@ int main(int argc, char **argv)
 
 					if (i < argc)
 					{
-						const char *option;
-
-						for (option = strtok(argv[i], ","); option != nullptr; option = strtok(nullptr, ","))
+						for (const char *option = strtok(argv[i], ","); option != nullptr; option = strtok(nullptr, ","))
 						{
 							if (Utilities::CaseInsensitive::CompareStrings(option, "ae+"))
 							{
@@ -168,7 +165,7 @@ int main(int argc, char **argv)
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "an-"))
 							{
-								fprintf(stderr, "Warning: Option '%s' has no effect, as alternate numeric specifiers are always enabled.\n", option);
+								Warning("Option '{}' has no effect, as alternate numeric specifiers are always enabled.", option);
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "c+"))
 							{
@@ -188,13 +185,11 @@ int main(int argc, char **argv)
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "e+"))
 							{
-								fprintf(stderr, "Error: Unsupported option: '%s'.\n", option);
-								exit_code = EXIT_FAILURE;
+								ErrorAndExit("Unsupported option: '{}'.", option);
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "e-"))
 							{
-								fprintf(stderr, "Error: Unsupported option: '%s'.\n", option);
-								exit_code = EXIT_FAILURE;
+								ErrorAndExit("Unsupported option: '{}'.", option);
 							}
 							else if (to_lower(option[0]) == 'l')
 							{
@@ -217,8 +212,7 @@ int main(int argc, char **argv)
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "s+"))
 							{
-								fprintf(stderr, "Error: Unsupported option: '%s'.\n", option);
-								exit_code = EXIT_FAILURE;
+								ErrorAndExit("Unsupported option: '{}'.", option);
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "s-"))
 							{
@@ -254,13 +248,11 @@ int main(int argc, char **argv)
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "ws-"))
 							{
-								fprintf(stderr, "Error: Unsupported option: '%s'.\n", option);
-								exit_code = EXIT_FAILURE;
+								ErrorAndExit("Unsupported option: '{}'.", option);
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "x+"))
 							{
-								fprintf(stderr, "Error: Unsupported option: '%s'.\n", option);
-								exit_code = EXIT_FAILURE;
+								ErrorAndExit("Unsupported option: '{}'.", option);
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "x-"))
 							{
@@ -268,7 +260,7 @@ int main(int argc, char **argv)
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "op+"))
 							{
-								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
+								Warning("Unsupported option: '{}'.", option);
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "op-"))
 							{
@@ -276,7 +268,7 @@ int main(int argc, char **argv)
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "os+"))
 							{
-								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
+								Warning("Unsupported option: '{}'.", option);
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "os-"))
 							{
@@ -284,7 +276,7 @@ int main(int argc, char **argv)
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "ow+"))
 							{
-								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
+								Warning("Unsupported option: '{}'.", option);
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "ow-"))
 							{
@@ -300,7 +292,7 @@ int main(int argc, char **argv)
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "oaq+"))
 							{
-								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
+								Warning("Unsupported option: '{}'.", option);
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "oaq-"))
 							{
@@ -308,7 +300,7 @@ int main(int argc, char **argv)
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "osq+"))
 							{
-								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
+								Warning("Unsupported option: '{}'.", option);
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "osq-"))
 							{
@@ -316,7 +308,7 @@ int main(int argc, char **argv)
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "omq+"))
 							{
-								fprintf(stderr, "Warning: Unsupported option: '%s'.\n", option);
+								Warning("Unsupported option: '{}'.", option);
 							}
 							else if (Utilities::CaseInsensitive::CompareStrings(option, "omq-"))
 							{
@@ -324,7 +316,7 @@ int main(int argc, char **argv)
 							}
 							else
 							{
-								fprintf(stderr, "Warning: Unrecognised option: '%s'.\n", option);
+								Warning("Unrecognised option: '{}'.", option);
 							}
 						}
 					}
@@ -332,9 +324,7 @@ int main(int argc, char **argv)
 					break;
 
 				default:
-					fprintf(stderr, "Error: Unrecognised switch: '%s'.\n", argv[i]);
-					exit_code = EXIT_FAILURE;
-					break;
+					ErrorAndExit("Unrecognised switch: '{}'.", argv[i]);
 			}
 		}
 		else
@@ -371,34 +361,18 @@ int main(int argc, char **argv)
 
 	/* Open files. */
 	if (source_file_path.empty())
-	{
-		fprintf(stderr, "Error: Source file path must be specified.\n");
-		exit_code = EXIT_FAILURE;
-	}
-	else
-	{
-		source_file.open(source_file_path);
-		if (!source_file.is_open())
-		{
-			fprintf(stderr, "Error: Source file could not be opened.\n");
-			exit_code = EXIT_FAILURE;
-		}
-	}
+		ErrorAndExit("Source file path must be specified.");
+
+	source_file.open(source_file_path);
+	if (!source_file.is_open())
+		ErrorAndExit("Source file could not be opened.");
 
 	if (object_file_path.empty())
-	{
-		fprintf(stderr, "Error: Object file path must be specified.\n");
-		exit_code = EXIT_FAILURE;
-	}
-	else
-	{
-		object_file.open(object_file_path, object_file.binary);
-		if (!object_file.is_open())
-		{
-			fprintf(stderr, "Error: Object file could not be opened.\n");
-			exit_code = EXIT_FAILURE;
-		}
-	}
+		ErrorAndExit("Object file path must be specified.");
+
+	object_file.open(object_file_path, object_file.binary);
+	if (!object_file.is_open())
+		ErrorAndExit("Object file could not be opened.");
 
 	std::ostream *symbol_stream = nullptr;
 	if (!symbol_file_path.empty())
@@ -418,49 +392,24 @@ int main(int argc, char **argv)
 	switch (output_mode)
 	{
 		case OUTPUT_EXECUTABLE:
-			fprintf(stderr, "Error: Executable output format is not supported: use '/p' for outputting a flat binary instead.\n");
-			exit_code = EXIT_FAILURE;
-			break;
+			ErrorAndExit("Executable output format is not supported: use '/p' for outputting a flat binary instead.");
 
 		case OUTPUT_FLAT_BINARY:
 			break;
 
 		case OUTPUT_S_RECORD:
-			fprintf(stderr, "Error: S-record output format is not supported: use '/p' for outputting a flat binary instead.\n");
-			exit_code = EXIT_FAILURE;
-			break;
+			ErrorAndExit("S-record output format is not supported: use '/p' for outputting a flat binary instead.");
 	}
 
-	/* If we've gotten this far without any errors, then finally run the assembler. */
-	if (exit_code != EXIT_FAILURE)
+	/* Finally, run the assembler. */
+	if (!ClownAssembler::Assemble(source_file, object_file, std::cout, listing_stream, symbol_stream, source_file_path_string, settings, DefinitionCallback, nullptr))
 	{
-		if (!ClownAssembler::Assemble(source_file, object_file, std::cout, listing_stream, symbol_stream, source_file_path_string, settings, DefinitionCallback, nullptr))
-		{
-			fprintf(stderr, "Error: Failed to assemble.\n");
-			exit_code = EXIT_FAILURE;
-		}
-	}
-
-	if (source_file.is_open())
-		source_file.close();
-
-	if (object_file.is_open())
-	{
+		/* Delete the output file; it will be junk anyway.
+		   Also, leaving a junk file will confuse CMake, which will think that the assembler had previously succeeded. */
 		object_file.close();
-
-		if (exit_code == EXIT_FAILURE)
-		{
-			/* Delete the output file; it will be junk anyway.
-			   Also, leaving a junk file will confuse CMake, which will think that the assembler had previously succeeded. */
-			remove(object_file_path);
-		}
+		std::filesystem::remove(object_file_path);
+		ErrorAndExit("Failed to assemble.");
 	}
 
-	if (listing_file.is_open())
-		listing_file.close();
-
-	if (symbol_file.is_open())
-		symbol_file.close();
-
-	return exit_code;
+	return EXIT_SUCCESS;
 }
