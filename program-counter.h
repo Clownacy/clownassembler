@@ -18,21 +18,43 @@
 #ifndef PROGRAM_COUNTER_H
 #define PROGRAM_COUNTER_H
 
+#include <cassert>
+
 class ProgramCounter
 {
-public:
+private:
 	unsigned long value = 0;
 
-	void Advance(const unsigned long delta)
+public:
+	// The 68000 has 32-bit addresses, so never let the program counter exceed this range!
+	ProgramCounter& operator=(const unsigned long new_value)
+	{
+		assert(new_value <= 0xFFFFFFFF);
+
+		value = new_value;
+
+		return *this;
+	}
+
+	ProgramCounter& operator+=(const auto delta)
 	{
 		value += delta;
 		value &= 0xFFFFFFFF;
+
+		return *this;
 	}
 
-	void Regress(const unsigned long delta)
+	ProgramCounter& operator-=(const auto delta)
 	{
 		value -= delta;
 		value &= 0xFFFFFFFF;
+
+		return *this;
+	}
+
+	operator unsigned long() const
+	{
+		return value;
 	}
 };
 
