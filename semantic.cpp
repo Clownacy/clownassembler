@@ -103,9 +103,7 @@ struct SymbolExpressionConstant
 	Expression expression;
 };
 
-using SymbolDictionaryEntry = std::variant<SymbolNone, SymbolConstant, SymbolVariable, SymbolLabel, SymbolMacro, SymbolSpecial, SymbolStringConstant, SymbolExpressionConstant>;
-
-using SymbolDictionary = Dictionary<SymbolDictionaryEntry>;
+using SymbolDictionary = Dictionary<std::variant<SymbolNone, SymbolConstant, SymbolVariable, SymbolLabel, SymbolMacro, SymbolSpecial, SymbolStringConstant, SymbolExpressionConstant>>;
 
 struct FixUp
 {
