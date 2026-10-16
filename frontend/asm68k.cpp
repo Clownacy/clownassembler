@@ -22,10 +22,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "case-insensitive.h"
-#include "path.h"
-#include "semantic.h"
-#include "utilities.h"
+#include "../case-insensitive.h"
+#include "../path.h"
+#include "../semantic.h"
+#include "../utilities.h"
 
 static constexpr CaseInsensitive::ToLower to_lower(true);
 

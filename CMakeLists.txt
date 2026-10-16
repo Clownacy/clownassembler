@@ -35,14 +35,14 @@ set_target_properties(clownassembler_core PROPERTIES CXX_STANDARD 20)
 
 # Custom frontend
 add_executable(clownassembler
-	"frontend-custom.cpp"
+	"frontend/custom.cpp"
 )
 
 target_link_libraries(clownassembler clownassembler_core)
 
 # asm68k frontend
 add_executable(clownassembler_asm68k
-	"frontend-asm68k.cpp"
+	"frontend/asm68k.cpp"
 )
 
 target_link_libraries(clownassembler_asm68k clownassembler_core)
