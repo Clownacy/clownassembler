@@ -126,15 +126,13 @@ struct SemanticState
 	{
 		struct Expansion
 		{
-			bool active = false;
 			const MacroMetadata *metadata = nullptr;
 			Substitute::CustomSearch custom_search;
 			std::vector<std::string> argument_list;
 			std::size_t total_arguments = 0, total_arguments_at_start = 0;
-			unsigned int starting_if_level = 0;
 		};
 
-		Expansion expansion;
+		std::optional<Expansion> expansion;
 		std::shared_ptr<SymbolDictionary> dictionary;
 		Substitute substitutions;
 	};
@@ -242,7 +240,7 @@ static std::string ComputeUniqueMacroSuffix(const SemanticState &state)
 
 static bool CurrentlyExpandingMacro(const SemanticState &state)
 {
-	return state.macro.expansion.active;
+	return state.macro.expansion.has_value();
 }
 
 static std::string_view ExpandIdentifier(SemanticState &state, const std::string_view &identifier, std::string &expanded_identifier)
@@ -366,7 +364,7 @@ static bool GetSymbolInteger(SemanticState &state, const std::string_view &ident
 							return false;
 						}
 
-						value = state.macro.expansion.total_arguments_at_start;
+						value = state.macro.expansion->total_arguments_at_start;
 
 						break;
 
@@ -3891,10 +3889,10 @@ static void PushMacroArgumentSubstitutions(SemanticState &state)
 {
 	const std::string_view blank_argument;
 
-	for (std::size_t argument_index = 0; argument_index < state.macro.expansion.metadata->parameter_names.size(); ++argument_index)
+	for (std::size_t argument_index = 0; argument_index < state.macro.expansion->metadata->parameter_names.size(); ++argument_index)
 	{
-		const std::string_view &parameter = state.macro.expansion.metadata->parameter_names[argument_index];
-		const std::string_view &argument = argument_index >= state.macro.expansion.total_arguments ? blank_argument : state.macro.expansion.argument_list[argument_index];
+		const std::string_view &parameter = state.macro.expansion->metadata->parameter_names[argument_index];
+		const std::string_view &argument = argument_index >= state.macro.expansion->total_arguments ? blank_argument : state.macro.expansion->argument_list[argument_index];
 
 		SymbolDictionary::Entry &dictionary_entry = state.macro.dictionary->LookUpAndCreateIfNotExist(parameter);
 
@@ -4852,7 +4850,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 					return;
 				}
 
-				if (state.macro.expansion.total_arguments == 0)
+				if (state.macro.expansion->total_arguments == 0)
 				{
 					/* TODO: What if there are already 0 arguments? */
 					/* This prevents crashing for now but perhaps it could be handled differently. */
@@ -4860,15 +4858,15 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 					return;
 				}
 
-				--state.macro.expansion.total_arguments;
-				for (unsigned int i = 0; i < state.macro.expansion.total_arguments; ++i)
-					state.macro.expansion.argument_list[i] = std::move(state.macro.expansion.argument_list[i + 1]);
-				state.macro.expansion.argument_list.pop_back();
+				--state.macro.expansion->total_arguments;
+				for (unsigned int i = 0; i < state.macro.expansion->total_arguments; ++i)
+					state.macro.expansion->argument_list[i] = std::move(state.macro.expansion->argument_list[i + 1]);
+				state.macro.expansion->argument_list.pop_back();
 				PushMacroArgumentSubstitutions(state);
 			},
 			[&](StatementMexit&)
 			{
-				state.macro.expansion.active = false;
+				state.macro.expansion = std::nullopt;
 			},
 			[&](StatementLocal &statement)
 			{
@@ -4941,7 +4939,7 @@ static void PerformSubstitutionsOnSubString(SemanticState &state, std::string &s
 	const bool case_insensitive = state.options->case_insensitive;
 
 	if (CurrentlyExpandingMacro(state))
-		state.substitutions.ProcessSubString(&state.macro.substitutions, string, view_to_search, state.macro.expansion.custom_search, allow_implicit_matches, case_insensitive);
+		state.substitutions.ProcessSubString(&state.macro.substitutions, string, view_to_search, state.macro.expansion->custom_search, allow_implicit_matches, case_insensitive);
 	else
 		state.substitutions.ProcessSubString(nullptr, string, view_to_search, nullptr, allow_implicit_matches, case_insensitive);
 }
@@ -5032,15 +5030,16 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 
 	++state.macro_depth;
 
+	const auto starting_if_level = state.current_if_level;
+
 	SemanticState::Macro previous_macro_state;
 	std::swap(previous_macro_state, state.macro);
 
 	/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
 	state.macro.dictionary = std::make_shared<SymbolDictionary>(state.options->case_insensitive);
 
-	state.macro.expansion.active = true;
-	state.macro.expansion.metadata = macro;
-	state.macro.expansion.starting_if_level = state.current_if_level;
+	state.macro.expansion.emplace();
+	state.macro.expansion->metadata = macro;
 
 	++state.current_macro_invocation;
 
@@ -5079,7 +5078,7 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 	const std::string unique_suffix = ComputeUniqueMacroSuffix(state);
 	std::string symbol_value_string;
 
-	state.macro.expansion.custom_search = [&state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, std::size_t starting_position, [[maybe_unused]] bool case_insensitive, std::size_t &found_position, std::size_t &found_length) -> std::optional<std::string_view>
+	state.macro.expansion->custom_search = [&state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, std::size_t starting_position, [[maybe_unused]] bool case_insensitive, std::size_t &found_position, std::size_t &found_length) -> std::optional<std::string_view>
 	{
 		for (found_position = starting_position; (found_position = view_to_search.find('\\', found_position)) != view_to_search.npos; ++found_position)
 		{
@@ -5151,10 +5150,10 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 
 					found_length = 1 + (end - start);
 
-					if (parameter_index >= state.macro.expansion.total_arguments)
+					if (parameter_index >= state.macro.expansion->total_arguments)
 						return "";
 
-					return state.macro.expansion.argument_list[parameter_index];
+					return state.macro.expansion->argument_list[parameter_index];
 				}
 			}
 		}
@@ -5192,17 +5191,17 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 					Utilities::String::RemoveLeadingAndTrailing(argument, " \t");
 
 					/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
-					if (argument.empty() && at_the_end && state.macro.expansion.total_arguments == 0)
+					if (argument.empty() && at_the_end && state.macro.expansion->total_arguments == 0)
 						break;
 
 					/* Add to argument list. */
-					state.macro.expansion.argument_list.emplace_back(argument);
+					state.macro.expansion->argument_list.emplace_back(argument);
 
 					if (!argument.empty() && argument.front() != '"' && argument.front() != '\'' && state.options->case_insensitive)
-						Utilities::String::ToLower(state.macro.expansion.argument_list[state.macro.expansion.total_arguments]);
+						Utilities::String::ToLower(state.macro.expansion->argument_list[state.macro.expansion->total_arguments]);
 
-					++state.macro.expansion.total_arguments;
-					++state.macro.expansion.total_arguments_at_start;
+					++state.macro.expansion->total_arguments;
+					++state.macro.expansion->total_arguments_at_start;
 				}
 
 				break;
@@ -5244,7 +5243,7 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 	if (!macro->is_short)
 	{
 		/* 'MEXIT' may have ended us midway through an if-statement, so unwind to the original if-level here. */
-		while (state.current_if_level != state.macro.expansion.starting_if_level)
+		while (state.current_if_level != starting_if_level)
 			TerminateIf(state);
 	}
 
