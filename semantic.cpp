@@ -47,10 +47,10 @@
 #include "object-writer.h"
 #include "p2bin.h"
 #include "parser.h"
-#include "path.h"
 #include "program-counter.h"
 #include "substitute.h"
-#include "utilities.h"
+#include "utilities/path.h"
+#include "utilities/string.h"
 
 using SourceLineList = std::deque<std::string>;
 

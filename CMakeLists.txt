@@ -4,7 +4,6 @@ project(clownassembler VERSION 2.0 LANGUAGES C CXX)
 
 # Core
 add_library(clownassembler_core STATIC
-	"case-insensitive.h"
 	"dictionary.h"
 	"error.h"
 	"io.h"
@@ -19,7 +18,6 @@ add_library(clownassembler_core STATIC
 	"p2bin.cpp"
 	"p2bin.h"
 	"parser.h"
-	"path.h"
 	"program-counter.h"
 	"semantic.cpp"
 	"semantic.h"
@@ -27,7 +25,9 @@ add_library(clownassembler_core STATIC
 	"substitute.h"
 	"syntactic.cpp"
 	"syntactic.h"
-	"utilities.h"
+	"utilities/case-insensitive.h"
+	"utilities/path.h"
+	"utilities/string.h"
 	"version.h"
 )
 

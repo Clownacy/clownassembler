@@ -24,7 +24,7 @@
 #include <string_view>
 #include <unordered_map>
 
-#include "case-insensitive.h"
+#include "utilities/case-insensitive.h"
 
 template<typename EntryArgument>
 class Dictionary

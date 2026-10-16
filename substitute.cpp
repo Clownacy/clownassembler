@@ -20,7 +20,7 @@
 #include <string>
 #include <string_view>
 
-#include "case-insensitive.h"
+#include "utilities/case-insensitive.h"
 
 void Substitute::PushSubstitute(const std::string_view &identifier, const std::string &value)
 {

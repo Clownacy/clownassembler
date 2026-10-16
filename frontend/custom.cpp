@@ -21,8 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../path.h"
 #include "../semantic.h"
+#include "../utilities/path.h"
 #include "../version.h"
 
 static int total_arguments;
