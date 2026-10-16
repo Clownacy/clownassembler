@@ -21,7 +21,6 @@
 #include <iostream>
 
 #include "io.h"
-#include "version.h"
 
 namespace Object
 {
@@ -32,39 +31,8 @@ namespace Object
 		std::ostream::pos_type previous_segment_length_output_position;
 		std::size_t segment_position = 0, segment_length = 0;
 
-		void TerminatePreviousRecordSegment()
-		{
-			if (previous_segment_length_output_position != 0)
-			{
-				if (segment_length == 0)
-				{
-					/* Previous segment contained nothing; make the new segment overwrite it. */
-					output.stream.seekp(previous_segment_length_output_position);
-					output.stream.seekp(-5, output.stream.cur);
-				}
-				else
-				{
-					/* Write length of previous record. */
-					const auto previous_output_position = output.stream.tellp();
-					output.stream.seekp(previous_segment_length_output_position);
-					output.WriteU16LE(segment_length);
-					output.stream.seekp(previous_output_position);
-				}
-			}
-		}
-
-		void WriteRecordSegment()
-		{
-			TerminatePreviousRecordSegment();
-
-			/* CPU architecture (68000). */
-			output.WriteU8(0x01);
-			/* Start address. */
-			output.WriteU32LE(segment_position);
-			/* Length (placeholder). */
-			previous_segment_length_output_position = output.stream.tellp();
-			output.WriteU16LE(0x0000);
-		}
+		void TerminatePreviousRecordSegment();
+		void WriteRecordSegment();
 
 	public:
 		struct Position
@@ -85,54 +53,10 @@ namespace Object
 			: output(stream)
 		{}
 
-		void WriteHeader()
-		{
-			/* Object file magic number. */
-			output.WriteU16BE(0x8914);
-
-			/* Begin first segment. */
-			WriteRecordSegment();
-		}
-
-		void WriteFooter()
-		{
-			/* Finalise the segment record data. */
-			TerminatePreviousRecordSegment();
-
-			/* Write terminating record. */
-			output.WriteU8(0x00);
-			output.stream << CLOWNASSEMBLER_VERSION_STRING;
-		}
-
-		void WriteByte(const unsigned int value, const bool doing_fixup_pass)
-		{
-			if (segment_length == 0xFFFF)
-			{
-				segment_position += segment_length;
-
-				/* Avoid rewriting the record header when doing fix-ups,
-				   as the length field will be left blank. */
-				/* TODO: Make this boolean less dumb. */
-				if (doing_fixup_pass)
-					output.stream.seekp(1 + 4 + 2, output.stream.cur);
-				else
-					WriteRecordSegment();
-
-				segment_length = 0;
-			}
-
-			++segment_length;
-
-			output.WriteU8(value);
-		}
-
-		void BeginNewSegment(const std::size_t position)
-		{
-			/* Begin a new segment! */
-			segment_position = position;
-			WriteRecordSegment();
-			segment_length = 0;
-		}
+		void WriteHeader();
+		void WriteFooter();
+		void WriteByte(unsigned int value, bool doing_fixup_pass);
+		void BeginNewSegment(std::size_t position);
 
 		Position Tell() const
 		{

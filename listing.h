@@ -21,8 +21,6 @@
 #include <iostream>
 #include <string_view>
 
-#include "io.h"
-
 class ListingWriter
 {
 private:
@@ -41,80 +39,15 @@ public:
 		, doing_fixup_pass(doing_fixup_pass)
 	{}
 
-	void BeginLine(const unsigned long program_counter)
-	{
-		if (listing_stream == nullptr)
-			return;
-
-		line_in_progress = true;
-
-		listing_counter = 0;
-		suppress_listing = false;
-		IO::Print(*listing_stream, "{:08X}", program_counter);
-	}
-
 	void SuppressLine()
 	{
 		suppress_listing = true;
 	}
 
-	void WriteByte(const unsigned int value)
-	{
-		if (listing_stream == nullptr || doing_fixup_pass || suppress_listing)
-			return;
-
-		/* We can only write up to 10 bytes. */
-		if (listing_counter <= 25)
-		{
-			if (listing_counter == 25)
-			{
-				/* After the last byte, we output a '+' to signal there's more. */
-				listing_stream->put('+');
-				++listing_counter;
-			}
-			else
-			{
-				if (listing_counter % 5 == 0)
-				{
-					listing_stream->put(' ');
-					++listing_counter;
-				}
-
-				IO::Print(*listing_stream, "{:02X}", value);
-				listing_counter += 2;
-			}
-		}
-	}
-
-	void WriteIdentifierValue(const unsigned long value)
-	{
-		/* Output line to listing file. */
-		if (listing_stream == nullptr || doing_fixup_pass || suppress_listing)
-			return;
-
-		IO::Print(*listing_stream, " ={:08X}", value);
-
-		listing_counter += 2 + 8;
-	}
-
-	void EndLine(const std::string_view &source_line)
-	{
-		/* Output line to listing file. */
-		if (listing_stream == nullptr)
-			return;
-
-		if (line_in_progress)
-		{
-			line_in_progress = false;
-
-			for (unsigned int i = listing_counter; i < 26; ++i)
-				listing_stream->put(' ');
-
-			listing_stream->put(listing_macro ? 'M' : ' ');
-
-			IO::Print(*listing_stream, " {}\n", source_line);
-		}
-	}
+	void BeginLine(unsigned long program_counter);
+	void WriteByte(unsigned int value);
+	void WriteIdentifierValue(unsigned long value);
+	void EndLine(const std::string_view &source_line);
 };
 
 #endif /* LISTING_H */

@@ -24,8 +24,8 @@ syntactic.cpp syntactic.h: syntactic.y
 
 assemblers: clownassembler clownassembler_asm68k
 
-clownassembler_asm68k: frontend-asm68k.cpp lexical.cpp p2bin.cpp semantic.cpp substitute.cpp syntactic.cpp
+clownassembler_asm68k: frontend-asm68k.cpp lexical.cpp listing.cpp object.cpp p2bin.cpp semantic.cpp substitute.cpp syntactic.cpp
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
 
-clownassembler: frontend-custom.cpp lexical.cpp p2bin.cpp semantic.cpp substitute.cpp syntactic.cpp
+clownassembler: frontend-custom.cpp lexical.cpp listing.cpp object.cpp p2bin.cpp semantic.cpp substitute.cpp syntactic.cpp
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
