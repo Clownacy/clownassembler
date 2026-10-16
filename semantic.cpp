@@ -227,21 +227,6 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 
 /* Other stuff */
 
-static std::string DecimalIntegerToString(const unsigned long integer)
-{
-	return std::format("{}", integer);
-}
-
-static std::string HexadecimalIntegerToString(const unsigned long integer)
-{
-	return std::format("{:X}", integer);
-}
-
-static std::string ComputeUniqueMacroSuffix(const SemanticState &state)
-{
-	return std::format("_{}", state.current_macro_invocation);
-}
-
 static bool CurrentlyExpandingMacro(const SemanticState &state)
 {
 	return state.macro.expansion.has_value();
@@ -268,7 +253,7 @@ static SymbolDictionary::Entry* LookupSymbol(SemanticState &state, std::string_v
 	std::string expanded_identifier;
 	identifier = ExpandIdentifier(state, identifier, expanded_identifier);
 
-	if (CurrentlyExpandingMacro(state))
+	if (state.macro.dictionary != nullptr)
 	{
 		if (dictionary != nullptr)
 			*dictionary = &*state.macro.dictionary;
@@ -301,7 +286,7 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState &s
 	std::string expanded_identifier;
 	identifier = ExpandIdentifier(state, identifier, expanded_identifier);
 
-	if (CurrentlyExpandingMacro(state))
+	if (state.macro.dictionary != nullptr)
 	{
 		if (dictionary != nullptr)
 			*dictionary = &*state.macro.dictionary;
@@ -5077,7 +5062,7 @@ static void InvokeMacro(SemanticState &state, const Macro &macro, const std::str
 	/* Remove surrounding whitespace. */
 	Utilities::String::RemoveLeadingAndTrailing(arguments, " \t");
 
-	const std::string unique_suffix = ComputeUniqueMacroSuffix(state);
+	const std::string unique_suffix = std::format("_{}", state.current_macro_invocation);
 	std::string symbol_value_string;
 
 	state.macro.expansion->custom_search = [&state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, std::size_t starting_position, [[maybe_unused]] bool case_insensitive, std::size_t &found_position, std::size_t &found_length) -> std::optional<std::string_view>
@@ -5130,9 +5115,9 @@ static void InvokeMacro(SemanticState &state, const Macro &macro, const std::str
 						value = 0;
 
 					if (symbol == '#')
-						symbol_value_string = DecimalIntegerToString(value);
+						symbol_value_string = std::format("{}", value);
 					else /*if (symbol == '$')*/
-						symbol_value_string = HexadecimalIntegerToString(value);
+						symbol_value_string = std::format("{:X}", value);
 
 					return symbol_value_string;
 				}
