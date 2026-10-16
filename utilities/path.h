@@ -22,18 +22,24 @@
 #include <string>
 #include <string_view>
 
-inline std::filesystem::path ToStandardPath(const std::string_view &input_path)
+namespace Utilities
 {
-	std::u8string output_path;
-	output_path.reserve(input_path.length());
+	namespace Path
+	{
+		inline std::filesystem::path ToStandardPath(const std::string_view &input_path)
+		{
+			std::u8string output_path;
+			output_path.reserve(input_path.length());
 
-	// Convert DOS path separators to standard ones.
-	// Asm68k-based projects often use these, so they need to be
-	// converted for compatibility with platforms such as Linux.
-	for (const auto &character : input_path)
-		output_path.push_back(character == '\\' ? '/' : character);
+			// Convert DOS path separators to standard ones.
+			// Asm68k-based projects often use these, so they need to be
+			// converted for compatibility with platforms such as Linux.
+			for (const auto &character : input_path)
+				output_path.push_back(character == '\\' ? '/' : character);
 
-	return output_path;
+			return output_path;
+		}
+	}
 }
 
 #endif // PATH_H

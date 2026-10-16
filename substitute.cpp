@@ -36,7 +36,7 @@ bool Substitute::FindSubstitute(const std::string_view &view_to_search, const st
 {
 	/* Find identifier within string. */
 	/* Obviously bail if the identifier wasn't found. */
-	for (std::size_t match_start = starting_position; (match_start = CaseInsensitive::FindString(view_to_search, substitute, match_start, case_insensitive)) != view_to_search.npos; ++match_start)
+	for (std::size_t match_start = starting_position; (match_start = Utilities::CaseInsensitive::FindString(view_to_search, substitute, match_start, case_insensitive)) != view_to_search.npos; ++match_start)
 	{
 		std::size_t match_length = substitute.length();
 

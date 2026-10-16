@@ -24,152 +24,155 @@
 #include <format>
 #include <iterator>
 
-namespace IO
+namespace Utilities
 {
-	template<typename... Args>
-	void Print(std::ostream &stream, std::format_string<Args...> &&format_string, Args &&...args)
+	namespace IO
 	{
-		// TODO: Replace this with `std::print` when that is provided by all target platforms.
-		// TODO: This is slowing-down the assembler quite a bit!
-		std::format_to(std::ostream_iterator<char>(stream), std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+		template<typename... Args>
+		void Print(std::ostream &stream, std::format_string<Args...> &&format_string, Args &&...args)
+		{
+			// TODO: Replace this with `std::print` when that is provided by all target platforms.
+			// TODO: This is slowing-down the assembler quite a bit!
+			std::format_to(std::ostream_iterator<char>(stream), std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+		}
+
+		inline void CopyBytes(std::istream &input, std::ostream &output, const std::size_t total_bytes)
+		{
+			// We do some batching using a buffer to improve performance.
+			std::array<char, 0x100> buffer;
+
+			for (std::size_t i = 0; i < total_bytes; i += std::size(buffer))
+			{
+				const auto bytes_to_do = std::min(std::size(buffer), total_bytes - i);
+
+				input.read(std::data(buffer), bytes_to_do);
+				output.write(std::data(buffer), bytes_to_do);
+			}
+		}
+
+		class BinaryReader
+		{
+		public:
+			virtual unsigned int ReadU8() = 0;
+
+			unsigned long ReadIntegerLE(const unsigned int total_bytes)
+			{
+				unsigned long value = 0;
+
+				for (unsigned int i = 0; i < total_bytes; ++i)
+					value |= static_cast<unsigned long>(ReadU8()) << (i * 8);
+
+				return value;
+			}
+
+			unsigned int ReadU16LE()
+			{
+				return ReadIntegerLE(2);
+			}
+
+			unsigned long ReadU32LE()
+			{
+				return ReadIntegerLE(4);
+			}
+
+			unsigned long ReadIntegerBE(const unsigned int total_bytes)
+			{
+				unsigned long value = 0;
+
+				for (unsigned int i = 0; i < total_bytes; ++i)
+				{
+					value <<= 8;
+					value |= ReadU8();
+				}
+
+				return value;
+			}
+
+			unsigned int ReadU16BE()
+			{
+				return ReadIntegerBE(2);
+			}
+
+			unsigned long ReadU32BE()
+			{
+				return ReadIntegerBE(4);
+			}
+		};
+
+		class StreamBinaryReader : public BinaryReader
+		{
+		public:
+			std::istream &stream;
+
+			StreamBinaryReader(std::istream &stream)
+				: stream(stream)
+			{}
+
+			unsigned int ReadU8() override final
+			{
+				return stream.get();
+			}
+		};
+
+		class BinaryWriter
+		{
+		public:
+			virtual void WriteU8(unsigned int value) = 0;
+
+			void WriteIntegerLE(unsigned long value, const unsigned int total_bytes)
+			{
+				for (unsigned int i = 0; i < total_bytes; ++i)
+				{
+					WriteU8(value & 0xFF);
+					value >>= 8;
+				}
+			}
+
+			void WriteU16LE(const unsigned int value)
+			{
+				WriteIntegerLE(value, 2);
+			}
+
+			void WriteU32LE(const unsigned int value)
+			{
+				WriteIntegerLE(value, 4);
+			}
+
+			void WriteIntegerBE(unsigned long value, const unsigned int total_bytes)
+			{
+				for (unsigned int i = 0; i < total_bytes; ++i)
+				{
+					WriteU8((value >> (total_bytes - 1) * 8) & 0xFF);
+					value <<= 8;
+				}
+			}
+
+			void WriteU16BE(const unsigned int value)
+			{
+				WriteIntegerBE(value, 2);
+			}
+
+			void WriteU32BE(const unsigned int value)
+			{
+				WriteIntegerBE(value, 4);
+			}
+		};
+
+		class StreamBinaryWriter : public BinaryWriter
+		{
+		public:
+			std::ostream &stream;
+
+			StreamBinaryWriter(std::ostream &stream)
+				: stream(stream)
+			{}
+
+			void WriteU8(const unsigned int value) override final
+			{
+				stream.put(value);
+			}
+		};
 	}
-
-	inline void CopyBytes(std::istream &input, std::ostream &output, const std::size_t total_bytes)
-	{
-		// We do some batching using a buffer to improve performance.
-		std::array<char, 0x100> buffer;
-
-		for (std::size_t i = 0; i < total_bytes; i += std::size(buffer))
-		{
-			const auto bytes_to_do = std::min(std::size(buffer), total_bytes - i);
-
-			input.read(std::data(buffer), bytes_to_do);
-			output.write(std::data(buffer), bytes_to_do);
-		}
-	}
-
-	class BinaryReader
-	{
-	public:
-		virtual unsigned int ReadU8() = 0;
-
-		unsigned long ReadIntegerLE(const unsigned int total_bytes)
-		{
-			unsigned long value = 0;
-
-			for (unsigned int i = 0; i < total_bytes; ++i)
-				value |= static_cast<unsigned long>(ReadU8()) << (i * 8);
-
-			return value;
-		}
-
-		unsigned int ReadU16LE()
-		{
-			return ReadIntegerLE(2);
-		}
-
-		unsigned long ReadU32LE()
-		{
-			return ReadIntegerLE(4);
-		}
-
-		unsigned long ReadIntegerBE(const unsigned int total_bytes)
-		{
-			unsigned long value = 0;
-
-			for (unsigned int i = 0; i < total_bytes; ++i)
-			{
-				value <<= 8;
-				value |= ReadU8();
-			}
-
-			return value;
-		}
-
-		unsigned int ReadU16BE()
-		{
-			return ReadIntegerBE(2);
-		}
-
-		unsigned long ReadU32BE()
-		{
-			return ReadIntegerBE(4);
-		}
-	};
-
-	class StreamBinaryReader : public BinaryReader
-	{
-	public:
-		std::istream &stream;
-
-		StreamBinaryReader(std::istream &stream)
-			: stream(stream)
-		{}
-
-		unsigned int ReadU8() override final
-		{
-			return stream.get();
-		}
-	};
-
-	class BinaryWriter
-	{
-	public:
-		virtual void WriteU8(unsigned int value) = 0;
-
-		void WriteIntegerLE(unsigned long value, const unsigned int total_bytes)
-		{
-			for (unsigned int i = 0; i < total_bytes; ++i)
-			{
-				WriteU8(value & 0xFF);
-				value >>= 8;
-			}
-		}
-
-		void WriteU16LE(const unsigned int value)
-		{
-			WriteIntegerLE(value, 2);
-		}
-
-		void WriteU32LE(const unsigned int value)
-		{
-			WriteIntegerLE(value, 4);
-		}
-
-		void WriteIntegerBE(unsigned long value, const unsigned int total_bytes)
-		{
-			for (unsigned int i = 0; i < total_bytes; ++i)
-			{
-				WriteU8((value >> (total_bytes - 1) * 8) & 0xFF);
-				value <<= 8;
-			}
-		}
-
-		void WriteU16BE(const unsigned int value)
-		{
-			WriteIntegerBE(value, 2);
-		}
-
-		void WriteU32BE(const unsigned int value)
-		{
-			WriteIntegerBE(value, 4);
-		}
-	};
-
-	class StreamBinaryWriter : public BinaryWriter
-	{
-	public:
-		std::ostream &stream;
-
-		StreamBinaryWriter(std::ostream &stream)
-			: stream(stream)
-		{}
-
-		void WriteU8(const unsigned int value) override final
-		{
-			stream.put(value);
-		}
-	};
 }
 
 #endif /* IO_H */

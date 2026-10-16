@@ -22,95 +22,98 @@
 #include <cstddef>
 #include <string_view>
 
-namespace CaseInsensitive
+namespace Utilities
 {
-	class ToLower
+	namespace CaseInsensitive
 	{
-	private:
-		const int delta;
-
-	public:
-		constexpr ToLower(const bool enabled)
-			: delta(enabled ? 'a' - 'A' : 0)
-		{}
-
-		constexpr auto operator()(const auto &value) const
+		class ToLower
 		{
-			return value + (value >= 'A' && value <= 'Z' ? delta : 0);
-		}
-	};
+		private:
+			const int delta;
 
-	class StringHasher
-	{
-	public:
-		using is_transparent = void;
+		public:
+			constexpr ToLower(const bool enabled)
+				: delta(enabled ? 'a' - 'A' : 0)
+			{}
 
-		std::size_t operator()(const std::string_view &string) const
+			constexpr auto operator()(const auto &value) const
+			{
+				return value + (value >= 'A' && value <= 'Z' ? delta : 0);
+			}
+		};
+
+		class StringHasher
 		{
-			constexpr ToLower to_lower(true);
+		public:
+			using is_transparent = void;
 
-			// Hash the identifier using djb2.
-			// http://www.cse.yorku.ca/~oz/hash.html
-			std::size_t hash = 5381;
+			std::size_t operator()(const std::string_view &string) const
+			{
+				constexpr ToLower to_lower(true);
 
-			for (const auto &character : string)
-				hash = hash * 33 + to_lower(character); // Hash the identifier in lower-case form, so that case-insensitive mode works.
+				// Hash the identifier using djb2.
+				// http://www.cse.yorku.ca/~oz/hash.html
+				std::size_t hash = 5381;
 
-			return hash;
-		}
-	};
+				for (const auto &character : string)
+					hash = hash * 33 + to_lower(character); // Hash the identifier in lower-case form, so that case-insensitive mode works.
 
-	class CharComparer
-	{
-	private:
-		const ToLower to_lower;
+				return hash;
+			}
+		};
 
-	public:
-		using is_transparent = void;
-
-		constexpr CharComparer(const bool case_insensitive)
-			: to_lower(case_insensitive)
-		{}
-
-		constexpr bool operator()(const auto &lhs, const auto &rhs) const
+		class CharComparer
 		{
-			return to_lower(lhs) == to_lower(rhs);
-		}
-	};
+		private:
+			const ToLower to_lower;
 
-	class StringComparer
-	{
-	private:
-		const CharComparer char_comparer;
+		public:
+			using is_transparent = void;
 
-	public:
-		using is_transparent = void;
+			constexpr CharComparer(const bool case_insensitive)
+				: to_lower(case_insensitive)
+			{}
 
-		constexpr StringComparer(const bool case_insensitive)
-			: char_comparer(case_insensitive)
-		{}
+			constexpr bool operator()(const auto &lhs, const auto &rhs) const
+			{
+				return to_lower(lhs) == to_lower(rhs);
+			}
+		};
 
-		constexpr bool operator()(const std::string_view &lhs, const std::string_view &rhs) const
+		class StringComparer
 		{
-			return std::equal(std::begin(lhs), std::end(lhs), std::begin(rhs), std::end(rhs), char_comparer);
+		private:
+			const CharComparer char_comparer;
+
+		public:
+			using is_transparent = void;
+
+			constexpr StringComparer(const bool case_insensitive)
+				: char_comparer(case_insensitive)
+			{}
+
+			constexpr bool operator()(const std::string_view &lhs, const std::string_view &rhs) const
+			{
+				return std::equal(std::begin(lhs), std::end(lhs), std::begin(rhs), std::end(rhs), char_comparer);
+			}
+		};
+
+		inline bool CompareStrings(const std::string_view &lhs, const std::string_view &rhs)
+		{
+			constexpr StringComparer string_comparer(true);
+
+			return string_comparer(lhs, rhs);
 		}
-	};
 
-	inline bool CompareStrings(const std::string_view &lhs, const std::string_view &rhs)
-	{
-		constexpr StringComparer string_comparer(true);
+		inline std::size_t FindString(const std::string_view &view, const std::string_view &sub_view, const std::size_t position, const bool case_insensitive)
+		{
+			const auto it = std::search(std::begin(view) + position, std::end(view), std::begin(sub_view), std::end(sub_view), CaseInsensitive::CharComparer(case_insensitive));
 
-		return string_comparer(lhs, rhs);
-	}
+			if (it == std::end(view))
+				return view.npos;
 
-	inline std::size_t FindString(const std::string_view &view, const std::string_view &sub_view, const std::size_t position, const bool case_insensitive)
-	{
-		const auto it = std::search(std::begin(view) + position, std::end(view), std::begin(sub_view), std::end(sub_view), CaseInsensitive::CharComparer(case_insensitive));
-
-		if (it == std::end(view))
-			return view.npos;
-
-		return std::distance(std::begin(view), it);
+			return std::distance(std::begin(view), it);
+		}
 	}
 }
 

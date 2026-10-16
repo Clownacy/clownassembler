@@ -27,7 +27,7 @@ namespace Object
 	class Writer
 	{
 	private:
-		IO::StreamBinaryWriter output;
+		Utilities::IO::StreamBinaryWriter output;
 		std::ostream::pos_type previous_segment_length_output_position;
 		std::size_t segment_position = 0, segment_length = 0;
 

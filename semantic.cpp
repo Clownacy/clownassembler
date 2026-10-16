@@ -668,7 +668,7 @@ static bool ResolveExpression(SemanticState &state, Expression &expression, unsi
 				}
 
 				/* TODO: What if 'position' is 0? */
-				const std::size_t found_position = CaseInsensitive::FindString(expression_string_a->string, expression_string_b->string, position - 1, state.options->case_insensitive);
+				const std::size_t found_position = Utilities::CaseInsensitive::FindString(expression_string_a->string, expression_string_b->string, position - 1, state.options->case_insensitive);
 				value = found_position == expression_string_a->string.npos ? 0 : found_position + 1;
 				return true;
 			},
@@ -689,7 +689,7 @@ static bool ResolveExpression(SemanticState &state, Expression &expression, unsi
 			},
 			[&](ExpressionFilesize &expression)
 			{
-				const auto &standard_path = ToStandardPath(expression.string);
+				const auto &standard_path = Utilities::Path::ToStandardPath(expression.string);
 
 				if (!std::filesystem::exists(standard_path))
 				{
@@ -4040,7 +4040,7 @@ static void ProcessDs(SemanticState &state, StatementDs &ds)
 
 static void ProcessInclude(SemanticState &state, const StatementInclude &include)
 {
-	std::ifstream input_stream(ToStandardPath(include.path));
+	std::ifstream input_stream(Utilities::Path::ToStandardPath(include.path));
 
 	if (!input_stream.is_open())
 	{
@@ -4058,7 +4058,7 @@ static void ProcessInclude(SemanticState &state, const StatementInclude &include
 
 static void ProcessIncbin(SemanticState &state, StatementIncbin &incbin)
 {
-	std::ifstream input_file(ToStandardPath(incbin.path), input_file.binary);
+	std::ifstream input_file(Utilities::Path::ToStandardPath(incbin.path), input_file.binary);
 
 	if (!input_file.is_open())
 	{
@@ -4766,59 +4766,59 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 				for (const auto &option : statement.options)
 				{
 					/* TODO: A lot of these are unimplemented... */
-					if (CaseInsensitive::CompareStrings(option, "ae+"))
+					if (Utilities::CaseInsensitive::CompareStrings(option, "ae+"))
 						state.options->automatic_even = true;
-					else if (CaseInsensitive::CompareStrings(option, "ae-"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "ae-"))
 						state.options->automatic_even = false;
-					else if (CaseInsensitive::CompareStrings(option, "an+"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "an+"))
 						;
-					else if (CaseInsensitive::CompareStrings(option, "an-"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "an-"))
 						;
-					else if (CaseInsensitive::CompareStrings(option, "c+"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "c+"))
 						state.options->case_insensitive = false;
-					else if (CaseInsensitive::CompareStrings(option, "c-"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "c-"))
 						state.options->case_insensitive = true;
-					else if (CaseInsensitive::CompareStrings(option, "d+"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "d+"))
 						state.options->equ_set_descope_local_labels = true;
-					else if (CaseInsensitive::CompareStrings(option, "d-"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "d-"))
 						state.options->equ_set_descope_local_labels = false;
-					else if (CaseInsensitive::CompareStrings(option, "e+"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "e+"))
 						;
-					else if (CaseInsensitive::CompareStrings(option, "e-"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "e-"))
 						;
-					else if (CaseInsensitive::CompareStrings(option, "l+"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "l+"))
 						state.options->local_signifier = '.';
-					else if (CaseInsensitive::CompareStrings(option, "l-"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "l-"))
 						state.options->local_signifier = '@';
 					else if (option.length() == 2 && (option[0] == 'l' || option[0] == 'L'))
 						state.options->local_signifier = option[1];
-					/*else if (CaseInsensitive::CompareStrings(option, "s+"))
+					/*else if (Utilities::CaseInsensitive::CompareStrings(option, "s+"))
 						;*/
-					else if (CaseInsensitive::CompareStrings(option, "s-"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "s-"))
 						;
-					else if (CaseInsensitive::CompareStrings(option, "m+"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "m+"))
 						state.options->expand_all_macros = true;
-					else if (CaseInsensitive::CompareStrings(option, "m-"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "m-"))
 						state.options->expand_all_macros = false;
-					else if (CaseInsensitive::CompareStrings(option, "oz+"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "oz+"))
 						state.options->optimisation.zero_displacement = true;
-					else if (CaseInsensitive::CompareStrings(option, "oz-"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "oz-"))
 						state.options->optimisation.zero_displacement = false;
-					else if (CaseInsensitive::CompareStrings(option, "v+"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "v+"))
 						state.options->output_local_labels_to_sym_file = true;
-					else if (CaseInsensitive::CompareStrings(option, "v-"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "v-"))
 						state.options->output_local_labels_to_sym_file = false;
-					else if (CaseInsensitive::CompareStrings(option, "w+"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "w+"))
 						state.options->warnings_enabled = true;
-					else if (CaseInsensitive::CompareStrings(option, "w-"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "w-"))
 						state.options->warnings_enabled = false;
-					else if (CaseInsensitive::CompareStrings(option, "wp+"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "wp+"))
 						state.options->pedantic_warnings_enabled = true;
-					else if (CaseInsensitive::CompareStrings(option, "wp-"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "wp-"))
 						state.options->pedantic_warnings_enabled = false;
-					else if (CaseInsensitive::CompareStrings(option, "ws+"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "ws+"))
 						;
-					else if (CaseInsensitive::CompareStrings(option, "ws-"))
+					else if (Utilities::CaseInsensitive::CompareStrings(option, "ws-"))
 						;
 					else
 						state.error_manager.Warning("Unrecognised option '{}'.", option);
@@ -4995,14 +4995,14 @@ static void SubstituteAndParseLine(SemanticState &state, const std::string_view 
 
 	/* Because of the below hack, we have to filter-out directives that do not use expressions or operands,
 	   to prevent them from accidentally being substituted. This is needed for the Natsumi Z80 macros. */
-	if (CaseInsensitive::CompareStrings(directive, "binclude")
-	 || CaseInsensitive::CompareStrings(directive, "equs")
-	 || CaseInsensitive::CompareStrings(directive, "incbin")
-	 || CaseInsensitive::CompareStrings(directive, "include")
-	 || CaseInsensitive::CompareStrings(directive, "macro")
-	 || CaseInsensitive::CompareStrings(directive, "macros")
-	 || CaseInsensitive::CompareStrings(directive, "opt")
-	 || CaseInsensitive::CompareStrings(directive, "popp"))
+	if (Utilities::CaseInsensitive::CompareStrings(directive, "binclude")
+	 || Utilities::CaseInsensitive::CompareStrings(directive, "equs")
+	 || Utilities::CaseInsensitive::CompareStrings(directive, "incbin")
+	 || Utilities::CaseInsensitive::CompareStrings(directive, "include")
+	 || Utilities::CaseInsensitive::CompareStrings(directive, "macro")
+	 || Utilities::CaseInsensitive::CompareStrings(directive, "macros")
+	 || Utilities::CaseInsensitive::CompareStrings(directive, "opt")
+	 || Utilities::CaseInsensitive::CompareStrings(directive, "popp"))
 	{
 		ParseLine(state, label, directive_and_operands);
 		return;
@@ -5367,16 +5367,16 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 					if (state.false_if_level != 0)
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
-						if (CaseInsensitive::CompareStrings(directive, "if"))
+						if (Utilities::CaseInsensitive::CompareStrings(directive, "if"))
 						{
 							/* If-statements that are nested within the false part of another if-statement
 							   are themselves false, so create a false if-statement here and process it. */
 							++state.current_if_level;
 						}
-						else if (CaseInsensitive::CompareStrings(directive, "elseif")
-						      || CaseInsensitive::CompareStrings(directive, "else"  )
-						      || CaseInsensitive::CompareStrings(directive, "endc"  )
-						      || CaseInsensitive::CompareStrings(directive, "endif" ))
+						else if (Utilities::CaseInsensitive::CompareStrings(directive, "elseif")
+						      || Utilities::CaseInsensitive::CompareStrings(directive, "else"  )
+						      || Utilities::CaseInsensitive::CompareStrings(directive, "endc"  )
+						      || Utilities::CaseInsensitive::CompareStrings(directive, "endif" ))
 						{
 							/* These can be processed normally too. */
 							SubstituteAndParseLine(state, label, directive_and_operands, directive);
@@ -5408,14 +5408,14 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 				[&](SemanticState::ModeRept &rept_state)
 				{
 					/* If this line is an 'ENDR' directive, then exit REPT mode. Otherwise, add the line to the REPT. */
-					if (CaseInsensitive::CompareStrings(directive, "endr") && rept_state.nesting-- == 0)
+					if (Utilities::CaseInsensitive::CompareStrings(directive, "endr") && rept_state.nesting-- == 0)
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
 						ParseLine(state, label, directive_and_operands);
 					}
 					else
 					{
-						if (CaseInsensitive::CompareStrings(directive, "rept"))
+						if (Utilities::CaseInsensitive::CompareStrings(directive, "rept"))
 							++rept_state.nesting;
 
 						rept_state.source_line_list.emplace_back(state.source_line);
@@ -5424,7 +5424,7 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 				[&](SemanticState::ModeMacro &macro_state)
 				{
 					/* If this line is an 'ENDM' directive, then exit macro mode. Otherwise, add the line to the macro. */
-					if (CaseInsensitive::CompareStrings(directive, "endm"))
+					if (Utilities::CaseInsensitive::CompareStrings(directive, "endm"))
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
 						if (macro_state.metadata.is_short)
@@ -5462,14 +5462,14 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 				[&](SemanticState::ModeWhile &while_state)
 				{
 					/* If this line is an 'ENDW' directive, then exit 'WHILE' mode. Otherwise, add the line to the 'WHILE'. */
-					if (CaseInsensitive::CompareStrings(directive, "endw") && while_state.nesting-- == 0)
+					if (Utilities::CaseInsensitive::CompareStrings(directive, "endw") && while_state.nesting-- == 0)
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
 						ParseLine(state, label, directive_and_operands);
 					}
 					else
 					{
-						if (CaseInsensitive::CompareStrings(directive, "while"))
+						if (Utilities::CaseInsensitive::CompareStrings(directive, "while"))
 							++while_state.nesting;
 
 						while_state.source_line_list.emplace_back(state.source_line);
@@ -5610,7 +5610,7 @@ static bool AssembleToObjectFile(
 	/* Produce asm68k symbol file, if requested. */
 	if (symbol_stream != nullptr)
 	{
-		IO::StreamBinaryWriter symbol_writer(*symbol_stream);
+		Utilities::IO::StreamBinaryWriter symbol_writer(*symbol_stream);
 
 		/* Some kind of header. */
 		symbol_writer.WriteU8('M');
