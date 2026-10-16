@@ -15,12 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <ctype.h>
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
 #include <fstream>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "../semantic.h"
 #include "../utilities/case-insensitive.h"
@@ -33,16 +31,14 @@ static constexpr Utilities::CaseInsensitive::ToLower to_lower(true);
 static int total_arguments;
 static char **arguments;
 
-static void DefinitionCallback(void *internal, void* const user_data, const ClownAssembler::AddDefinition add_definition)
+static void DefinitionCallback(void *internal, [[maybe_unused]] void* const user_data, const ClownAssembler::AddDefinition add_definition)
 {
-	(void)user_data;
-
 	for (int i = 1; i < total_arguments; ++i)
 	{
 		if (arguments[i][0] == '/' && to_lower(arguments[i][1]) == 'e')
 		{
 			const char* const identifier = arguments[i + 1];
-			const std::size_t identifier_length = strcspn(identifier, "=");
+			const std::size_t identifier_length = std::strcspn(identifier, "=");
 
 			unsigned long value;
 			char *str_end;
@@ -55,12 +51,12 @@ static void DefinitionCallback(void *internal, void* const user_data, const Clow
 			{
 				/* SN 68k (asm68k) supports XX, 0xXX, and $XX. */
 				if (identifier[identifier_length + 1] == '$')
-					value = strtoul(&identifier[identifier_length + 1 + 1], &str_end, 0x10);
+					value = std::strtoul(&identifier[identifier_length + 1 + 1], &str_end, 0x10);
 				else
-					value = strtoul(&identifier[identifier_length + 1], &str_end, 0);
+					value = std::strtoul(&identifier[identifier_length + 1], &str_end, 0);
 
-				if (str_end < strchr(identifier, '\0'))
-					fprintf(stderr, "Error: Value of argument '/e %s' is invalid.\n", arguments[i + 1]);
+				if (str_end < std::strchr(identifier, '\0'))
+					Error("Value of argument '/e {}' is invalid.", arguments[i + 1]);
 			}
 
 			add_definition(internal, {identifier, identifier_length}, value);
@@ -78,15 +74,11 @@ int main(int argc, char **argv)
 	std::filesystem::path object_file_path;
 	std::filesystem::path symbol_file_path;
 	std::filesystem::path listing_file_path;
-	std::ifstream source_file;
-	std::ofstream object_file;
-	std::ofstream symbol_file;
-	std::ofstream listing_file;
-	enum
+	enum class OutputMode
 	{
-		OUTPUT_EXECUTABLE,
-		OUTPUT_FLAT_BINARY,
-		OUTPUT_S_RECORD
+		Executable,
+		FlatBinary,
+		SRecord,
 	} output_mode;
 
 	total_arguments = argc;
@@ -103,7 +95,7 @@ int main(int argc, char **argv)
 	settings.automatic_even = true;
 	settings.optimisation.zero_displacement = false;
 
-	output_mode = OUTPUT_EXECUTABLE;
+	output_mode = OutputMode::Executable;
 
 	for (int i = 1; i < argc; ++i)
 	{
@@ -137,9 +129,9 @@ int main(int argc, char **argv)
 
 				case 'p': /* And 'ps'. */
 					if (to_lower(argv[i][2]) == 's')
-						output_mode = OUTPUT_S_RECORD;
+						output_mode = OutputMode::SRecord;
 					else
-						output_mode = OUTPUT_FLAT_BINARY;
+						output_mode = OutputMode::FlatBinary;
 
 					break;
 
@@ -149,7 +141,7 @@ int main(int argc, char **argv)
 
 					if (i < argc)
 					{
-						for (const char *option = strtok(argv[i], ","); option != nullptr; option = strtok(nullptr, ","))
+						for (const char *option = std::strtok(argv[i], ","); option != nullptr; option = strtok(nullptr, ","))
 						{
 							if (Utilities::CaseInsensitive::CompareStrings(option, "ae+"))
 							{
@@ -363,17 +355,18 @@ int main(int argc, char **argv)
 	if (source_file_path.empty())
 		ErrorAndExit("Source file path must be specified.");
 
-	source_file.open(source_file_path);
+	std::ifstream source_file(source_file_path);
 	if (!source_file.is_open())
 		ErrorAndExit("Source file could not be opened.");
 
 	if (object_file_path.empty())
 		ErrorAndExit("Object file path must be specified.");
 
-	object_file.open(object_file_path, object_file.binary);
+	std::ofstream object_file(object_file_path, object_file.binary);
 	if (!object_file.is_open())
 		ErrorAndExit("Object file could not be opened.");
 
+	std::ofstream symbol_file;
 	std::ostream *symbol_stream = nullptr;
 	if (!symbol_file_path.empty())
 	{
@@ -381,6 +374,7 @@ int main(int argc, char **argv)
 		symbol_file.open(symbol_file_path, symbol_file.binary);
 	}
 
+	std::ofstream listing_file;
 	std::ostream *listing_stream = nullptr;
 	if (!listing_file_path.empty())
 	{
@@ -391,13 +385,13 @@ int main(int argc, char **argv)
 	/* Make sure that we're using a supported output format. */
 	switch (output_mode)
 	{
-		case OUTPUT_EXECUTABLE:
+		case OutputMode::Executable:
 			ErrorAndExit("Executable output format is not supported: use '/p' for outputting a flat binary instead.");
 
-		case OUTPUT_FLAT_BINARY:
+		case OutputMode::FlatBinary:
 			break;
 
-		case OUTPUT_S_RECORD:
+		case OutputMode::SRecord:
 			ErrorAndExit("S-record output format is not supported: use '/p' for outputting a flat binary instead.");
 	}
 

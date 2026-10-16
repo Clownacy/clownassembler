@@ -52,7 +52,7 @@ static void DefinitionCallback(void *internal, void* const user_data, const Clow
 				value = strtoul(&identifier[identifier_length + 1], &str_end, 0);
 
 				if (str_end < strchr(identifier, '\0'))
-					std::cerr << std::format("Error: Value of argument '-e {}' is invalid.\n", arguments[i + 1]);
+					Error("Value of argument '-e {}' is invalid.", arguments[i + 1]);
 			}
 
 			add_definition(internal, {identifier, identifier_length}, value);

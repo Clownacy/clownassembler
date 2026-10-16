@@ -29,9 +29,15 @@ void Warning(std::format_string<Args...> &&format_string, Args &&...args)
 }
 
 template<typename... Args>
-[[noreturn]] void ErrorAndExit(std::format_string<Args...> &&format_string, Args &&...args)
+void Error(std::format_string<Args...> &&format_string, Args &&...args)
 {
 	std::cerr << "Error: " << std::format(std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...) << '\n';
+}
+
+template<typename... Args>
+[[noreturn]] void ErrorAndExit(std::format_string<Args...> &&format_string, Args &&...args)
+{
+	Error(std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 	std::exit(EXIT_FAILURE);
 }
 
