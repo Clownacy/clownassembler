@@ -44,6 +44,7 @@
 #include "io.h"
 #include "listing.h"
 #include "object.h"
+#include "object-writer.h"
 #include "p2bin.h"
 #include "path.h"
 #include "program-counter.h"
@@ -107,35 +108,6 @@ struct SymbolExpressionConstant
 using SymbolDictionaryEntry = std::variant<SymbolNone, SymbolConstant, SymbolVariable, SymbolLabel, SymbolMacro, SymbolSpecial, SymbolStringConstant, SymbolExpressionConstant>;
 
 using SymbolDictionary = Dictionary<SymbolDictionaryEntry>;
-
-// Extends `Object::Writer` with an integer-writing interface, and
-// handles listing as well as incrementing the program counter.
-class ObjectWriter : public IO::IntegerWriter, public Object::Writer
-{
-private:
-	ListingWriter &listing_writer;
-	ProgramCounter &program_counter;
-	bool &doing_fixup_pass;
-
-public:
-	ObjectWriter(
-		std::ostream &stream,
-		ListingWriter &listing_writer,
-		ProgramCounter &program_counter,
-		bool &doing_fixup_pass
-	)
-		: Object::Writer(stream)
-		, listing_writer(listing_writer)
-		, program_counter(program_counter)
-		, doing_fixup_pass(doing_fixup_pass)
-	{}
-
-	void WriteU8(unsigned int value) override final;
-	void WriteU8WithoutListing(unsigned int value);
-
-	// Do not allow user code to bypass `WriteU8` and `WriteU8WithoutListing`.
-	void WriteByte(unsigned int value, bool doing_fixup_pass) = delete;
-};
 
 struct FixUp
 {
@@ -277,21 +249,6 @@ struct SemanticState
 /* Some forward declarations that are needed because some functions recurse into each other. */
 static void AssembleFile(SemanticState &state, std::istream &input_stream);
 static void AssembleLine(SemanticState &state, const std::string_view &source_line, const bool write_line_to_listing_file);
-
-void ObjectWriter::WriteU8(const unsigned int value)
-{
-	/* Write to listing file. */
-	listing_writer.WriteByte(value);
-
-	/* Write to output file. */
-	WriteU8WithoutListing(value);
-}
-
-void ObjectWriter::WriteU8WithoutListing(const unsigned int value)
-{
-	Object::Writer::WriteByte(value, doing_fixup_pass);
-	program_counter += 1;
-}
 
 /* Other stuff */
 
