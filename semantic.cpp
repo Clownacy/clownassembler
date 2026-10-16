@@ -118,7 +118,6 @@ struct FixUp
 	std::deque<ErrorManager::Location> location;
 };
 
-
 struct SemanticState
 {
 	using MacroMetadata = Macro;
@@ -5611,7 +5610,7 @@ static bool AssembleToObjectFile(
 	/* Produce asm68k symbol file, if requested. */
 	if (symbol_stream != nullptr)
 	{
-		IO::StreamIntegerWriter symbol_writer(*symbol_stream);
+		IO::StreamBinaryWriter symbol_writer(*symbol_stream);
 
 		/* Some kind of header. */
 		symbol_writer.WriteU8('M');

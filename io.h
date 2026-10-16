@@ -48,7 +48,7 @@ namespace IO
 		}
 	}
 
-	class IntegerWriter
+	class BinaryWriter
 	{
 	public:
 		virtual void WriteU8(unsigned int value) = 0;
@@ -92,12 +92,12 @@ namespace IO
 		}
 	};
 
-	class StreamIntegerWriter : public IntegerWriter
+	class StreamBinaryWriter : public BinaryWriter
 	{
 	public:
 		std::ostream &stream;
 
-		StreamIntegerWriter(std::ostream &stream)
+		StreamBinaryWriter(std::ostream &stream)
 			: stream(stream)
 		{}
 
