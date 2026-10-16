@@ -20,10 +20,7 @@ http://antime.kapsi.fi/sega/files/SATMAN.pdf
 ## Compiling
 
 This assembler is written in portable C++20, and so should be able to be built
-with virtually any modern C++ compiler.
-
-To build with Make, run `make assemblers` in this directory. Alternatively,
-the assembler can be built using CMake.
+with virtually any modern C++ compiler. A CMake build script is provided.
 
 Two copies of the assembler will be produced: `clownassembler` and
 `clownassembler_asm68k`. The latter provides the same command line interface as
