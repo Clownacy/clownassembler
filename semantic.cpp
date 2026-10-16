@@ -126,10 +126,14 @@ struct SemanticState
 	{
 		struct Expansion
 		{
-			const MacroMetadata *metadata = nullptr;
+			const MacroMetadata *metadata;
 			Substitute::CustomSearch custom_search;
 			std::vector<std::string> argument_list;
 			std::size_t total_arguments = 0, total_arguments_at_start = 0;
+
+			Expansion(const MacroMetadata &metadata)
+				: metadata(&metadata)
+			{}
 		};
 
 		std::optional<Expansion> expansion;
@@ -5020,7 +5024,7 @@ static void SubstituteAndParseLine(SemanticState &state, const std::string_view 
 	ParseLine(state, label, modified_directive_and_operands);
 }
 
-static void InvokeMacro(SemanticState &state, const Macro* const macro, const std::string_view &label, std::string_view source_line)
+static void InvokeMacro(SemanticState &state, const Macro &macro, const std::string_view &label, std::string_view source_line)
 {
 	if (state.macro_depth >= 0x100)
 	{
@@ -5032,14 +5036,12 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 
 	const auto starting_if_level = state.current_if_level;
 
-	SemanticState::Macro previous_macro_state;
-	std::swap(previous_macro_state, state.macro);
+	SemanticState::Macro previous_macro_state = std::move(state.macro);
 
 	/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
 	state.macro.dictionary = std::make_shared<SymbolDictionary>(state.options->case_insensitive);
 
-	state.macro.expansion.emplace();
-	state.macro.expansion->metadata = macro;
+	state.macro.expansion.emplace(macro);
 
 	++state.current_macro_invocation;
 
@@ -5051,7 +5053,7 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 	{
 		SetLastGlobalLabel(state, label);
 
-		if (!macro->uses_label)
+		if (!macro.uses_label)
 			AddToSymbolTable(state, label, SymbolLabel{state.program_counter});
 	}
 
@@ -5219,13 +5221,13 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 	state.listing_writer.listing_macro = true;
 
 	/* Push a new location (this macro).*/
-	state.location.emplace_front(macro->name, 0);
+	state.location.emplace_front(macro.name, 0);
 
 	/* Iterate over each line of the macro, sending it to be processed. */
-	for (const auto &source_line : macro->source_line_list)
+	for (const auto &source_line : macro.source_line_list)
 	{
 		/* TODO: This is redundant and wrong: these substitutions are already done later, and this should only be doing the macro arguments! */
-		if (macro->is_short)
+		if (macro.is_short)
 		{
 			std::string expanded_source_line = source_line;
 			PerformSubstitutions(state, expanded_source_line, false);
@@ -5240,7 +5242,7 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 			break;
 	}
 
-	if (!macro->is_short)
+	if (!macro.is_short)
 	{
 		/* 'MEXIT' may have ended us midway through an if-statement, so unwind to the original if-level here. */
 		while (state.current_if_level != starting_if_level)
@@ -5252,7 +5254,7 @@ static void InvokeMacro(SemanticState &state, const Macro* const macro, const st
 
 	state.listing_writer.listing_macro = previous_listing_macro;
 
-	std::swap(previous_macro_state, state.macro);
+	state.macro = std::move(previous_macro_state);
 
 	--state.macro_depth;
 }
@@ -5401,7 +5403,7 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 						if (macro != nullptr /*&& !macro->is_short*/)
 						{
 							/* Regular macros are only expanded when needed. */
-							InvokeMacro(state, macro, label, source_line_subview);
+							InvokeMacro(state, *macro, label, source_line_subview);
 						}
 						else
 						{
