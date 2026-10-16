@@ -127,6 +127,7 @@ struct SemanticState
 		struct Expansion
 		{
 			const MacroMetadata *metadata;
+			Substitute substitutions;
 			Substitute::CustomSearch custom_search;
 			std::vector<std::string> argument_list;
 			std::size_t total_arguments = 0, total_arguments_at_start = 0;
@@ -138,7 +139,6 @@ struct SemanticState
 
 		std::optional<Expansion> expansion;
 		std::shared_ptr<SymbolDictionary> dictionary;
-		Substitute substitutions;
 	};
 
 	/* Global stuff. */
@@ -3872,7 +3872,7 @@ static void PushSubstitute(SemanticState &state, const std::string_view &identif
 				{
 					auto &symbol = dictionary_entry->emplace<SymbolStringConstant>();
 					symbol.value = value;
-					auto &substitute = dictionary == &state.dictionary ? state.substitutions : state.macro.substitutions;
+					auto &substitute = dictionary == &state.dictionary ? state.substitutions : state.macro.expansion->substitutions;
 					substitute.PushSubstitute(identifier, symbol.value);
 				},
 				[&](SymbolStringConstant &symbol)
@@ -3907,7 +3907,7 @@ static void PushMacroArgumentSubstitutions(SemanticState &state)
 				{
 					auto &symbol = dictionary_entry.emplace<SymbolStringConstant>();
 					symbol.value = argument;
-					state.macro.substitutions.PushSubstitute(parameter, symbol.value);
+					state.macro.expansion->substitutions.PushSubstitute(parameter, symbol.value);
 				},
 				[&](SymbolStringConstant &symbol)
 				{
@@ -4943,7 +4943,7 @@ static void PerformSubstitutionsOnSubString(SemanticState &state, std::string &s
 	const bool case_insensitive = state.options->case_insensitive;
 
 	if (CurrentlyExpandingMacro(state))
-		state.substitutions.ProcessSubString(&state.macro.substitutions, string, view_to_search, state.macro.expansion->custom_search, allow_implicit_matches, case_insensitive);
+		state.substitutions.ProcessSubString(&state.macro.expansion->substitutions, string, view_to_search, state.macro.expansion->custom_search, allow_implicit_matches, case_insensitive);
 	else
 		state.substitutions.ProcessSubString(nullptr, string, view_to_search, nullptr, allow_implicit_matches, case_insensitive);
 }
