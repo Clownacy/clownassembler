@@ -932,9 +932,9 @@ static void TerminateWhile(SemanticState &state, SemanticState::ModeWhile &while
 		/* We absolutely do not want to fold (cache) this expression, because
 		   while-loops depend on variables mutating from previous values;
 		   without this, while-loops will never terminate. */
-		const auto &value = ResolveExpressionWithoutFolding(state, while_state_copy.expression, "Expression must be evaluable on the first pass.");
+		const auto &value = ResolveExpressionWithoutFolding(state, while_state_copy.expression, "Expression must be evaluable on the first pass.").value_or(0);
 
-		if (!value.has_value() || *value == 0)
+		if (value == 0)
 			break;
 
 		/* Rewind back to the line number of the start of the WHILE. */
@@ -3982,14 +3982,10 @@ static void ProcessDcb(SemanticState &state, StatementDcb &dcb)
 	if (ShouldPerformAutomaticEven(state, dcb.size))
 		PerformEven(state);
 
-	const auto &repetitions = ResolveExpression(state, dcb.repetitions, "Repetition value must be evaluable on first pass.");
-
-	if (!repetitions.has_value())
-		return;
-
+	const auto &repetitions = ResolveExpression(state, dcb.repetitions, "Repetition value must be evaluable on first pass.").value_or(0);
 	const auto &value = ResolveExpression(state, dcb.value).value_or(0);
 
-	for (unsigned long i = 0; i < *repetitions; ++i)
+	for (unsigned long i = 0; i < repetitions; ++i)
 		OutputDcValue(state, dcb.size, value);
 }
 
@@ -3998,12 +3994,9 @@ static void ProcessDs(SemanticState &state, StatementDs &ds)
 	if (ShouldPerformAutomaticEven(state, ds.size))
 		PerformEven(state);
 
-	const auto &length = ResolveExpression(state, ds.length, "Repetition value must be evaluable on first pass.");
+	const auto &length = ResolveExpression(state, ds.length, "Repetition value must be evaluable on first pass.").value_or(0);
 
-	if (!length.has_value())
-		return;
-
-	for (unsigned long i = 0; i < *length; ++i)
+	for (unsigned long i = 0; i < length; ++i)
 		OutputDcValue(state, ds.size, 0);
 }
 
@@ -4373,19 +4366,8 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			},
 			[&](StatementSubstr &statement)
 			{
-				const auto &start_optional = ResolveExpression(state, statement.start, "Start must be evaluable on the first pass.");
-
-				if (!start_optional.has_value())
-					return;
-
-				auto start = *start_optional;
-
-				const auto &end_optional = ResolveExpression(state, statement.end, "End must be evaluable on the first pass.");
-
-				if (!end_optional.has_value())
-					return;
-
-				auto end = *end_optional;
+				auto start = ResolveExpression(state, statement.start, "Start must be evaluable on the first pass.").value_or(0);
+				auto end = ResolveExpression(state, statement.end, "End must be evaluable on the first pass.").value_or(statement.string.length());
 
 				if (start == 0)
 				{
@@ -4410,12 +4392,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 				if (state.options->equ_set_descope_local_labels)
 					SetLastGlobalLabel(state, label);
 
-				const auto &value_optional = ResolveExpression(state, statement.expression, "Value must be evaluable on the first pass.");
-
-				if (!value_optional.has_value())
-					return;
-
-				const auto &value = *value_optional;
+				const auto &value = ResolveExpression(state, statement.expression, "Value must be evaluable on the first pass.").value_or(0);
 
 				AddToSymbolTable(state, label, SymbolVariable{value});
 				state.listing_writer.WriteIdentifierValue(value);
@@ -4510,19 +4487,8 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			},
 			[&](StatementCnop &statement)
 			{
-				const auto &offset_optional = ResolveExpression(state, statement.offset, "Offset must be evaluable on the first pass.");
-
-				if (!offset_optional.has_value())
-					return;
-
-				const auto &offset = *offset_optional;
-
-				const auto &size_boundary_optional = ResolveExpression(state, statement.size_boundary, "Size boundary must be evaluable on the first pass.");
-
-				if (!size_boundary_optional.has_value())
-					return;
-
-				const auto &size_boundary = *size_boundary_optional;
+				const auto &offset = ResolveExpression(state, statement.offset, "Offset must be evaluable on the first pass.").value_or(0);
+				const auto &size_boundary = ResolveExpression(state, statement.size_boundary, "Size boundary must be evaluable on the first pass.").value_or(1);
 
 				if (size_boundary == 0)
 				{
@@ -4579,12 +4545,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 					if ((state.rs & 1) != 0)
 						++state.rs;
 
-				const auto &length_optional = ResolveExpression(state, statement.length, "Length must be evaluable on the first pass.");
-
-				if (!length_optional.has_value())
-					return;
-
-				auto length = *length_optional;
+				auto length = ResolveExpression(state, statement.length, "Length must be evaluable on the first pass.").value_or(0);
 
 				/* Add label to symbol table. */
 				if (!label.empty())
@@ -4620,12 +4581,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			[&](StatementRsset &statement)
 			{
 				/* Set '__rs' to value. */
-				const auto &value_optional = ResolveExpression(state, statement.expression, "Value must be evaluable on the first pass.");
-
-				if (!value_optional.has_value())
-					return;
-
-				state.rs = *value_optional;
+				state.rs = ResolveExpression(state, statement.expression, "Value must be evaluable on the first pass.").value_or(state.rs);
 			},
 			[&](StatementRsreset&)
 			{
@@ -4658,12 +4614,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			},
 			[&](StatementOrg &statement)
 			{
-				const auto &value_optional = ResolveExpression(state, statement.expression, "Value must be evaluable on the first pass.");
-
-				if (!value_optional.has_value())
-					return;
-
-				const auto &value = *value_optional;
+				const auto &value = ResolveExpression(state, statement.expression, "Value must be evaluable on the first pass.").value_or(state.program_counter);
 
 				if (value > 0xFFFFFFFF)
 				{
