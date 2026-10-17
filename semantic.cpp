@@ -313,28 +313,24 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState &s
 
 static std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expression &expression, bool fold);
 
-template<typename... Args>
-static std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expression &expression, bool fold, std::format_string<Args...> &&format_string, Args &&...args)
+static std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expression &expression, bool fold, const std::string_view &message)
 {
 	const auto &value = ResolveExpressionCommon(state, expression, fold);
 
-	if (!value.has_value())
-		if (!format_string.get().empty())
-			state.error_manager.Error(std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+	if (!value.has_value() && !message.empty())
+		state.error_manager.Error(message);
 
 	return value;
 }
 
-template<typename... Args>
-static std::optional<unsigned long> ResolveExpression(SemanticState &state, Expression &expression, std::format_string<Args...> format_string = "", Args &&...args)
+static std::optional<unsigned long> ResolveExpression(SemanticState &state, Expression &expression, const std::string_view message = {})
 {
-	return ResolveExpressionCommon(state, expression, true, std::move(format_string), std::forward<Args>(args)...);
+	return ResolveExpressionCommon(state, expression, true, message);
 }
 
-template<typename... Args>
-static std::optional<unsigned long> ResolveExpressionWithoutFolding(SemanticState &state, Expression &expression, std::format_string<Args...> format_string = "", Args &&...args)
+static std::optional<unsigned long> ResolveExpressionWithoutFolding(SemanticState &state, Expression &expression, const std::string_view message = {})
 {
-	return ResolveExpressionCommon(state, expression, false, std::move(format_string), std::forward<Args>(args)...);
+	return ResolveExpressionCommon(state, expression, false, message);
 }
 
 static bool GetSymbolInteger(SemanticState &state, const std::string_view &identifier, const bool must_evaluate_on_first_pass, unsigned long &value)
