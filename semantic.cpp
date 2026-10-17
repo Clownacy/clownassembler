@@ -311,11 +311,28 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState &s
 	return dictionary_entry;
 }
 
-static bool ResolveExpression(SemanticState &state, Expression &expression, unsigned long &value, bool fold = true);
+static std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expression &expression, bool fold);
+
+static bool ResolveExpression(SemanticState &state, Expression &expression, unsigned long &value)
+{
+	const auto &value_optional = ResolveExpressionCommon(state, expression, true);
+
+	if (!value_optional.has_value())
+		return false;
+
+	value = *value_optional;
+	return true;
+}
 
 static bool ResolveExpressionWithoutFolding(SemanticState &state, Expression &expression, unsigned long &value)
 {
-	return ResolveExpression(state, expression, value, false);
+	const auto &value_optional = ResolveExpressionCommon(state, expression, false);
+
+	if (!value_optional.has_value())
+		return false;
+
+	value = *value_optional;
+	return true;
 }
 
 static bool GetSymbolInteger(SemanticState &state, const std::string_view &identifier, const bool must_evaluate_on_first_pass, unsigned long &value)
@@ -399,26 +416,29 @@ static bool GetSymbolInteger(SemanticState &state, const std::string_view &ident
 	);
 }
 
-static bool ResolveExpression(SemanticState &state, Expression &expression, unsigned long &value, bool fold)
+static std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expression &expression, const bool fold)
 {
-	if (!std::visit(
+	const auto &value_optional = std::visit(
 		CC_VisitHelper{
-			[&](ExpressionArithmetic2Operand &expression)
+			[&](ExpressionArithmetic2Operand &expression) -> std::optional<unsigned long>
 			{
-				unsigned long left_value;
-				unsigned long right_value;
+				const auto &left_value_optional  = ResolveExpressionCommon(state, expression.subexpressions[0], fold);
+				const auto &right_value_optional = ResolveExpressionCommon(state, expression.subexpressions[1], fold);
 
-				/* Use a binary OR so that both expressions are properly folded (C short-circuiting could cause the second call to never occur if we used a logical OR). */
-				if (!ResolveExpression(state, expression.subexpressions[0], left_value, fold) | !ResolveExpression(state, expression.subexpressions[1], right_value, fold))
-					return false;
+				if (!left_value_optional.has_value() || !right_value_optional.has_value())
+					return std::nullopt;
+
+				auto left_value  = *left_value_optional;
+				auto right_value = *right_value_optional;
+
+				unsigned long value;
 
 				switch (expression.type)
 				{
 					default:
 						/* This code should never be ran. */
 						assert(false);
-						break;
-
+						/* Fallthrough */
 					case ExpressionArithmetic2Operand::Type::SUBTRACT:
 						value = left_value - right_value;
 						break;
@@ -442,8 +462,7 @@ static bool ResolveExpression(SemanticState &state, Expression &expression, unsi
 						{
 							default:
 								assert(false);
-								return false;
-
+								/* Fallthrough */
 							case ExpressionArithmetic2Operand::Type::MULTIPLY:
 								value = left_value * right_value;
 
@@ -456,7 +475,7 @@ static bool ResolveExpression(SemanticState &state, Expression &expression, unsi
 								if (right_value == 0)
 								{
 									state.error_manager.Error("Cannot divide by zero.");
-									return false;
+									return std::nullopt;
 								}
 
 								value = left_value / right_value;
@@ -470,7 +489,7 @@ static bool ResolveExpression(SemanticState &state, Expression &expression, unsi
 								if (right_value == 0)
 								{
 									state.error_manager.Error("Cannot modulo by zero.");
-									return false;
+									return std::nullopt;
 								}
 
 								value = left_value % right_value;
@@ -524,8 +543,7 @@ static bool ResolveExpression(SemanticState &state, Expression &expression, unsi
 						{
 							default:
 								assert(false);
-								return false;
-
+								/* Fallthrough */
 							case ExpressionArithmetic2Operand::Type::LESS_THAN:
 								value = left_value < right_value;
 								break;
@@ -559,21 +577,23 @@ static bool ResolveExpression(SemanticState &state, Expression &expression, unsi
 				}
 
 				/* Prevent 'bleeding' out of the 68k's 32-bit range. */
-				value &= 0xFFFFFFFF;
-				return true;
+				return value & 0xFFFFFFFF;
 			},
-			[&](ExpressionArithmetic1Operand &expression)
+			[&](ExpressionArithmetic1Operand &expression) -> std::optional<unsigned long>
 			{
-				if (!ResolveExpression(state, *expression.subexpressions, value, fold))
-					return false;
+				const auto &value_optional = ResolveExpressionCommon(state, *expression.subexpressions, fold);
+
+				if (!value_optional.has_value())
+					return std::nullopt;
+
+				auto value = *value_optional;
 
 				switch (expression.type)
 				{
 					default:
 						/* This code should never be ran. */
 						assert(false);
-						return false;
-
+						/* Fallthrough */
 					case ExpressionArithmetic1Operand::Type::NEGATE:
 						value = 0 - value;
 						break;
@@ -588,32 +608,32 @@ static bool ResolveExpression(SemanticState &state, Expression &expression, unsi
 				}
 
 				/* Prevent 'bleeding' out of the 68k's 32-bit range. */
-				value &= 0xFFFFFFFF;
-				return true;
+				return value & 0xFFFFFFFF;
 			},
-			[&](ExpressionNumber &expression)
+			[&](ExpressionNumber &expression) -> std::optional<unsigned long>
 			{
-				value = expression.value;
-				return true;
+				return expression.value;
 			},
-			[&](ExpressionIdentifier &expression)
+			[&](ExpressionIdentifier &expression) -> std::optional<unsigned long>
 			{
-				if (!GetSymbolInteger(state, expression.string, false, value))
-					return false;
+				unsigned long value;
 
-				return true;
+				if (!GetSymbolInteger(state, expression.string, false, value))
+					return std::nullopt;
+
+				return value;
 			},
-			[&](ExpressionString &expression)
+			[&](ExpressionString &expression) -> std::optional<unsigned long>
 			{
 				const std::size_t length = expression.string.length();
 
 				if (length > 4)
 				{
 					state.error_manager.Error("Character literals cannot be more than 4 characters long.");
-					return false;
+					return std::nullopt;
 				}
 
-				value = 0;
+				unsigned long value = 0;
 
 				for (std::size_t i = 0; i < length; ++i)
 				{
@@ -621,34 +641,32 @@ static bool ResolveExpression(SemanticState &state, Expression &expression, unsi
 					value |= expression.string[i];
 				}
 
-				return true;
+				return value;
 			},
-			[&](ExpressionProgramCounterOfStatement&)
+			[&](ExpressionProgramCounterOfStatement&) -> std::optional<unsigned long>
 			{
-				value = state.program_counter_of_statement;
-				return true;
+				return state.program_counter_of_statement;
 			},
-			[&](ExpressionProgramCounterOfExpression&)
+			[&](ExpressionProgramCounterOfExpression&) -> std::optional<unsigned long>
 			{
-				value = state.program_counter_of_expression;
-				return true;
+				return state.program_counter_of_expression;
 			},
-			[&](ExpressionStrlen &expression)
+			[&](ExpressionStrlen &expression) -> std::optional<unsigned long>
 			{
-				value = expression.string.length();
-				return true;
+				return expression.string.length();
 			},
-			[&](ExpressionStrcmp &expression)
+			[&](ExpressionStrcmp &expression) -> std::optional<unsigned long>
 			{
-				value = expression.string_a == expression.string_b ? -1 : 0;
-				return true;
+				return expression.string_a == expression.string_b ? -1 : 0;
 			},
-			[&](ExpressionInstr &expression)
+			[&](ExpressionInstr &expression) -> std::optional<unsigned long>
 			{
-				unsigned long position;
+				const auto &position_optional = ResolveExpressionCommon(state, expression.subexpressions[0], fold);
 
-				if (!ResolveExpression(state, expression.subexpressions[0], position, fold))
-					return false;
+				if (!position_optional.has_value())
+					return std::nullopt;
+
+				const auto &position = *position_optional;
 
 				const auto expression_string_a = std::get_if<ExpressionString>(&expression.subexpressions[1]);
 				const auto expression_string_b = std::get_if<ExpressionString>(&expression.subexpressions[2]);
@@ -656,52 +674,51 @@ static bool ResolveExpression(SemanticState &state, Expression &expression, unsi
 				if (expression_string_a == nullptr || expression_string_b == nullptr)
 				{
 					state.error_manager.Error("Last two arguments to `INSTR` must be strings.");
-					return false;
+					return std::nullopt;
 				}
 
 				/* TODO: What if 'position' is 0? */
 				const std::size_t found_position = Utilities::CaseInsensitive::FindString(expression_string_a->string, expression_string_b->string, position - 1, state.options->case_insensitive);
-				value = found_position == expression_string_a->string.npos ? 0 : found_position + 1;
-				return true;
+				return found_position == expression_string_a->string.npos ? 0 : found_position + 1;
 			},
-			[&](ExpressionDef &expression)
+			[&](ExpressionDef &expression) -> std::optional<unsigned long>
 			{
-				value = LookupSymbol(state, expression.string, nullptr) != nullptr ? -1 : 0;
-				return true;
+				return LookupSymbol(state, expression.string, nullptr) != nullptr ? -1 : 0;
 			},
-			[&](ExpressionTypeWithIdentifier&)
+			[&](ExpressionTypeWithIdentifier&) -> std::optional<unsigned long>
 			{
-				value = 0; /* TODO: This is a placeholder! */
-				return true;
+				return 0; /* TODO: This is a placeholder! */
 			},
-			[&](ExpressionTypeWithNumber&)
+			[&](ExpressionTypeWithNumber&) -> std::optional<unsigned long>
 			{
-				value = 1; /* TODO: This is a placeholder! */
-				return true;
+				return 1; /* TODO: This is a placeholder! */
 			},
-			[&](ExpressionFilesize &expression)
+			[&](ExpressionFilesize &expression) -> std::optional<unsigned long>
 			{
 				const auto &standard_path = Utilities::Path::ToStandardPath(expression.string);
 
 				if (!std::filesystem::exists(standard_path))
 				{
 					state.error_manager.Error("File '{}' does not exist.", expression.string);
-					return false;
+					return std::nullopt;
 				}
 
-				value = std::filesystem::file_size(standard_path);
-				return true;
+				return std::filesystem::file_size(standard_path);
 			}
 		}, expression
-	))
-		return false;
+	);
+
+	if (!value_optional.has_value())
+		return std::nullopt;
+
+	const auto &value = *value_optional;
 
 	/* Now that we have resolved the value, let's hardcode it here so that we don't ever have to calculate it again. */
 	/* This is especially useful for fix-ups, which may otherwise depend on identifiers that no longer exist at the time the value is resolved again. */
 	if (fold)
 		expression.emplace<ExpressionNumber>(value);
 
-	return true;
+	return value;
 }
 
 static void TerminateIf(SemanticState &state)
