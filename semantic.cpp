@@ -2538,13 +2538,13 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 		/* Count operands that we want. */
 		unsigned int total_operands_wanted = 0;
 
-		while (total_operands_wanted < std::size(instruction_metadata.allowed_operands) && instruction_metadata.allowed_operands[total_operands_wanted] != 0)
+		while (total_operands_wanted < std::size(instruction_metadata.allowed_operands) && instruction_metadata.allowed_operands[total_operands_wanted] != OPERAND_NONE)
 			++total_operands_wanted;
 
 		/* Count operands that we have. */
 		unsigned int total_operands_have = 0;
 
-		while (total_operands_have < std::size(instruction.operands) && instruction.operands[total_operands_have].type != 0)
+		while (total_operands_have < std::size(instruction.operands) && instruction.operands[total_operands_have].type != OPERAND_NONE)
 			++total_operands_have;
 
 		if (total_operands_wanted != total_operands_have)
@@ -2556,9 +2556,9 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 			bool good_operands = true;
 
 			/* Check whether the operands are of the correct types. */
-			for (unsigned int i = 0; i < total_operands_have && instruction_metadata.allowed_operands[i] != 0; ++i)
+			for (unsigned int i = 0; i < total_operands_have && instruction_metadata.allowed_operands[i] != OPERAND_NONE; ++i)
 			{
-				if ((instruction.operands[i].type & ~instruction_metadata.allowed_operands[i]) != 0)
+				if ((instruction.operands[i].type & ~instruction_metadata.allowed_operands[i]) != OPERAND_NONE)
 				{
 					std::string_view operand_string;
 
