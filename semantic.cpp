@@ -333,11 +333,9 @@ static std::optional<unsigned long> ResolveExpressionWithoutFolding(SemanticStat
 	return ResolveExpressionCommon(state, expression, false, message);
 }
 
-static bool GetSymbolInteger(SemanticState &state, const std::string_view &identifier, const bool must_evaluate_on_first_pass, unsigned long &value)
+static std::optional<unsigned long> GetSymbolInteger(SemanticState &state, const std::string_view &identifier, const bool must_evaluate_on_first_pass)
 {
-	SymbolDictionary::Entry *dictionary_entry;
-
-	dictionary_entry = LookupSymbol(state, identifier, nullptr);
+	SymbolDictionary::Entry* const dictionary_entry = LookupSymbol(state, identifier, nullptr);
 
 	if (dictionary_entry == nullptr || std::holds_alternative<SymbolNone>(*dictionary_entry))
 	{
@@ -348,70 +346,55 @@ static bool GetSymbolInteger(SemanticState &state, const std::string_view &ident
 		else
 			state.fixup_needed = true;
 
-		return false;
+		return std::nullopt;
 	}
 
 	return std::visit(
 		CC_VisitHelper{
-			[&](SymbolSpecial &symbol)
+			[&](SymbolSpecial &symbol) -> std::optional<unsigned long>
 			{
 				switch (symbol.type)
 				{
 					case SymbolSpecial::Type::RS:
-						value = state.rs;
-						break;
+						return state.rs;
 
 					case SymbolSpecial::Type::NARG:
 						if (!CurrentlyExpandingMacro(state))
 						{
 							state.error_manager.Warning("Symbol '{}' cannot be used outside of a macro.", identifier);
-							return false;
+							return std::nullopt;
 						}
 
-						value = state.macro.expansion->total_arguments_at_start;
-
-						break;
-
-					default:
-						// Should never happen.
-						assert(false);
-						return false;
+						return state.macro.expansion->total_arguments_at_start;
 				}
 
-				return true;
+				// Should never happen.
+				assert(false);
+				return std::nullopt;
 			},
-			[&](SymbolVariable &symbol)
+			[&](SymbolVariable &symbol) -> std::optional<unsigned long>
 			{
 				if (state.doing_fixup_pass)
 					state.error_manager.Warning("Symbol '{}' forward-referenced despite being a redefineable variable.", identifier);
 
-				value = symbol.value;
-				return true;
+				return symbol.value;
 			},
-			[&](SymbolLabel &symbol)
+			[&](SymbolLabel &symbol) -> std::optional<unsigned long>
 			{
-				value = symbol.value;
-				return true;
+				return symbol.value;
 			},
-			[&](SymbolConstant &symbol)
+			[&](SymbolConstant &symbol) -> std::optional<unsigned long>
 			{
-				value = symbol.value;
-				return true;
+				return symbol.value;
 			},
-			[&](SymbolExpressionConstant &symbol)
+			[&](SymbolExpressionConstant &symbol) -> std::optional<unsigned long>
 			{
-				const auto &value_optional = ResolveExpression(state, symbol.expression);
-
-				if (!value_optional.has_value())
-					return false;
-
-				value = *value_optional;
-				return true;
+				return ResolveExpression(state, symbol.expression);
 			},
-			[&](auto&)
+			[&](auto&) -> std::optional<unsigned long>
 			{
 				state.error_manager.Error("Symbol '{}' is not a label, constant, or variable.", identifier);
-				return false;
+				return std::nullopt;
 			}
 		}, *dictionary_entry
 	);
@@ -617,12 +600,7 @@ static std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state
 			},
 			[&](ExpressionIdentifier &expression) -> std::optional<unsigned long>
 			{
-				unsigned long value;
-
-				if (!GetSymbolInteger(state, expression.string, false, value))
-					return std::nullopt;
-
-				return value;
+				return GetSymbolInteger(state, expression.string, false);
 			},
 			[&](ExpressionString &expression) -> std::optional<unsigned long>
 			{
@@ -4987,10 +4965,7 @@ static void InvokeMacro(SemanticState &state, const Macro &macro, const std::str
 					if (identifier_position_end < view_to_search.length() && view_to_search[identifier_position_end] == '\\')
 						++found_length;
 
-					unsigned long value;
-
-					if (!GetSymbolInteger(state, identifier, true, value))
-						value = 0;
+					const auto &value = GetSymbolInteger(state, identifier, true).value_or(0);
 
 					if (symbol == '#')
 						symbol_value_string = std::format("{}", value);
