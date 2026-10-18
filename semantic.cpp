@@ -402,7 +402,7 @@ static std::optional<unsigned long> GetSymbolInteger(SemanticState &state, const
 
 static std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expression &expression, const bool fold)
 {
-	const auto &value_optional = std::visit(
+	const auto &value = std::visit(
 		CC_VisitHelper{
 			[&](ExpressionArithmetic2Operand &expression) -> std::optional<unsigned long>
 			{
@@ -687,15 +687,10 @@ static std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state
 		}, expression
 	);
 
-	if (!value_optional.has_value())
-		return std::nullopt;
-
-	const auto &value = *value_optional;
-
 	/* Now that we have resolved the value, let's hardcode it here so that we don't ever have to calculate it again. */
 	/* This is especially useful for fix-ups, which may otherwise depend on identifiers that no longer exist at the time the value is resolved again. */
-	if (fold)
-		expression.emplace<ExpressionNumber>(value);
+	if (value.has_value() && fold)
+		expression.emplace<ExpressionNumber>(*value);
 
 	return value;
 }
