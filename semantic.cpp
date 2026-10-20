@@ -43,6 +43,7 @@
 #include "expression-processor.h"
 #include "instruction-processor.h"
 #include "listing.h"
+#include "macro-state.h"
 #include "object.h"
 #include "object-writer.h"
 #include "p2bin.h"
@@ -50,62 +51,10 @@
 #include "program-counter.h"
 #include "source-line-reader.h"
 #include "substitute.h"
+#include "symbol-manager.h"
 #include "utilities/io.h"
 #include "utilities/path.h"
 #include "utilities/string.h"
-
-using SourceLineList = std::deque<std::string>;
-
-struct Macro
-{
-	bool is_short, uses_label;
-	std::string name;
-	IdentifierList parameter_names;
-	SourceLineList source_line_list;
-};
-
-struct SymbolNone {};
-
-struct SymbolConstant
-{
-	unsigned long value;
-};
-
-struct SymbolVariable
-{
-	unsigned long value;
-};
-
-struct SymbolLabel
-{
-	unsigned long value;
-};
-
-struct SymbolMacro
-{
-	Macro macro;
-};
-
-struct SymbolSpecial
-{
-	enum class Type
-	{
-		RS,
-		NARG,
-	} type;
-};
-
-struct SymbolStringConstant
-{
-	std::string value;
-};
-
-struct SymbolExpressionConstant
-{
-	Expression expression;
-};
-
-using SymbolDictionary = Dictionary<std::variant<SymbolNone, SymbolConstant, SymbolVariable, SymbolLabel, SymbolMacro, SymbolSpecial, SymbolStringConstant, SymbolExpressionConstant>>;
 
 struct FixUp
 {
@@ -122,57 +71,28 @@ struct FixUp
 
 struct SemanticState
 {
-	using MacroMetadata = Macro;
-
-	struct Macro
-	{
-		struct Expansion
-		{
-			const MacroMetadata *metadata;
-			Substitute substitutions;
-			Substitute::CustomSearch custom_search;
-			std::vector<std::string> argument_list;
-			std::size_t total_arguments = 0, total_arguments_at_start = 0;
-
-			Expansion(const MacroMetadata &metadata)
-				: metadata(&metadata)
-			{}
-		};
-
-		bool ExpansionInProgress() const
-		{
-			return expansion.has_value();
-		}
-
-		std::optional<Expansion> expansion;
-		std::shared_ptr<SymbolDictionary> dictionary;
-	};
-
 	/* Global stuff. */
 	OptionsStack options;
-	SymbolDictionary dictionary;
 	ErrorManager error_manager;
 	SourceLineReader source_line_reader;
 	ListingWriter listing_writer;
 	ObjectWriter object_writer;
 	ProgramCounter program_counter;
 	InstructionProcessor instruction_processor = {object_writer, error_manager, program_counter, options};
+	SymbolManager symbol_manager;
 	Parser parser;
 	std::deque<ErrorManager::Location> location;
 	std::string_view source_line;
-	std::string last_global_label;
 	Substitute substitutions;
 	std::stack<std::string> string_stack;
-	Macro macro;
+	MacroState macro;
 	unsigned int macro_depth = 0;
 	unsigned long program_counter_of_statement = 0, program_counter_of_expression = 0;
 	unsigned long current_macro_invocation = 0;
-	unsigned long rs = 0;
 	bool end = false;
 
 	/* Fix-ups. */
 	std::deque<FixUp> fixup_list;
-	bool fixup_needed = false;
 	bool doing_fixup_pass = false;
 
 	/* If-statements. */
@@ -195,7 +115,7 @@ struct SemanticState
 	struct ModeMacro
 	{
 		unsigned long line_number = 0;
-		MacroMetadata metadata;
+		Macro metadata;
 	};
 	struct ModeWhile
 	{
@@ -217,11 +137,11 @@ struct SemanticState
 		Options default_options
 	)
 		: options(std::move(default_options))
-		, dictionary(options->case_insensitive)
 		, error_manager(error_stream, location, source_line, options->warnings_enabled, options->pedantic_warnings_enabled)
 		, source_line_reader(input_stream)
 		, listing_writer(listing_stream, doing_fixup_pass)
 		, object_writer(output_stream, listing_writer, program_counter, doing_fixup_pass)
+		, symbol_manager(error_manager, options, macro, doing_fixup_pass)
 		, parser(error_manager)
 	{
 		/* For error messages, we want to maintain a list of filenames and line
@@ -236,151 +156,6 @@ static void AssembleFile(SemanticState &state, SourceLineReader &source_line_rea
 static void AssembleLine(SemanticState &state, const std::string_view &source_line, const bool write_line_to_listing_file);
 
 /* Other stuff */
-
-static std::string_view ExpandIdentifier(SemanticState &state, const std::string_view &identifier, std::string &expanded_identifier)
-{
-	if (identifier.empty() || (identifier.front() != state.options->local_signifier))
-		return identifier;
-
-	if (state.last_global_label.empty())
-		return identifier.substr(1);
-
-	expanded_identifier = std::format("{}{}", state.last_global_label, identifier);
-
-	return expanded_identifier;
-}
-
-static SymbolDictionary::Entry* LookupSymbol(SemanticState &state, std::string_view identifier, SymbolDictionary **dictionary)
-{
-	SymbolDictionary::Entry *dictionary_entry = nullptr;
-
-	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
-	std::string expanded_identifier;
-	identifier = ExpandIdentifier(state, identifier, expanded_identifier);
-
-	if (state.macro.dictionary != nullptr)
-	{
-		if (dictionary != nullptr)
-			*dictionary = &*state.macro.dictionary;
-
-		dictionary_entry = state.macro.dictionary->LookUp(identifier);
-	}
-
-	if (dictionary_entry == nullptr)
-	{
-		if (dictionary != nullptr)
-			*dictionary = &state.dictionary;
-
-		dictionary_entry = state.dictionary.LookUp(identifier);
-
-		if (dictionary_entry == nullptr)
-			if (dictionary != nullptr)
-				*dictionary = nullptr;
-	}
-
-	return dictionary_entry;
-}
-
-template<typename SymbolType>
-static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState &state, std::string_view identifier, SymbolDictionary **dictionary)
-{
-	/* TODO: Deduplicate this with `LookupSymbol`. */
-	SymbolDictionary::Entry *dictionary_entry = nullptr;
-
-	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
-	std::string expanded_identifier;
-	identifier = ExpandIdentifier(state, identifier, expanded_identifier);
-
-	if (state.macro.dictionary != nullptr)
-	{
-		if (dictionary != nullptr)
-			*dictionary = &*state.macro.dictionary;
-
-		dictionary_entry = state.macro.dictionary->LookUp(identifier);
-	}
-
-	if (dictionary_entry == nullptr)
-	{
-		if (dictionary != nullptr)
-			*dictionary = &state.dictionary;
-
-		dictionary_entry = &state.dictionary.LookUpAndCreateIfNotExist(identifier);
-	}
-
-	if (!std::holds_alternative<SymbolNone>(*dictionary_entry) && !std::holds_alternative<SymbolType>(*dictionary_entry))
-	{
-		state.error_manager.Error("Attempted to redefine symbol '{}' as a different type.", identifier);
-		return nullptr;
-	}
-
-	return dictionary_entry;
-}
-
-static std::optional<unsigned long> GetSymbolInteger(SemanticState &state, const std::string_view &identifier, const bool must_evaluate_on_first_pass)
-{
-	SymbolDictionary::Entry* const dictionary_entry = LookupSymbol(state, identifier, nullptr);
-
-	if (dictionary_entry == nullptr || std::holds_alternative<SymbolNone>(*dictionary_entry))
-	{
-		if (must_evaluate_on_first_pass)
-			state.error_manager.Error("Symbol '{}' must be evaluable on first pass.", identifier);
-		else if (state.doing_fixup_pass)
-			state.error_manager.Error("Symbol '{}' does not exist.", identifier);
-		else
-			state.fixup_needed = true;
-
-		return std::nullopt;
-	}
-
-	return std::visit(
-		CC_VisitHelper{
-			[&](SymbolSpecial &symbol) -> std::optional<unsigned long>
-			{
-				switch (symbol.type)
-				{
-					default:
-						CC_UNREACHABLE;
-						/* Fallthrough */
-					case SymbolSpecial::Type::RS:
-						return state.rs;
-
-					case SymbolSpecial::Type::NARG:
-						if (!state.macro.ExpansionInProgress())
-						{
-							state.error_manager.Warning("Symbol '{}' cannot be used outside of a macro.", identifier);
-							return std::nullopt;
-						}
-
-						return state.macro.expansion->total_arguments_at_start;
-				}
-			},
-			[&](SymbolVariable &symbol) -> std::optional<unsigned long>
-			{
-				if (state.doing_fixup_pass)
-					state.error_manager.Warning("Symbol '{}' forward-referenced despite being a redefineable variable.", identifier);
-
-				return symbol.value;
-			},
-			[&](SymbolLabel &symbol) -> std::optional<unsigned long>
-			{
-				return symbol.value;
-			},
-			[&](SymbolConstant &symbol) -> std::optional<unsigned long>
-			{
-				return symbol.value;
-			},
-			[&](SymbolExpressionConstant &symbol) -> std::optional<unsigned long>
-			{
-				return ResolveExpression(state, symbol.expression);
-			},
-			[&](auto&) -> std::optional<unsigned long>
-			{
-				state.error_manager.Error("Symbol '{}' is not a label, constant, or variable.", identifier);
-				return std::nullopt;
-			}
-		}, *dictionary_entry
-	);
-}
 
 std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expression &expression, bool fold, const std::string_view &message)
 {
@@ -590,7 +365,7 @@ std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expre
 			},
 			[&](ExpressionIdentifier &expression) -> std::optional<unsigned long>
 			{
-				return GetSymbolInteger(state, expression.string, false);
+				return state.symbol_manager.GetSymbolInteger(state, expression.string, false);
 			},
 			[&](ExpressionString &expression) -> std::optional<unsigned long>
 			{
@@ -652,7 +427,7 @@ std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expre
 			},
 			[&](ExpressionDef &expression) -> std::optional<unsigned long>
 			{
-				return LookupSymbol(state, expression.string, nullptr) != nullptr ? -1 : 0;
+				return state.symbol_manager.LookupSymbol(expression.string, nullptr) != nullptr ? -1 : 0;
 			},
 			[&](ExpressionTypeWithIdentifier&) -> std::optional<unsigned long>
 			{
@@ -718,45 +493,9 @@ static void TerminateRept(SemanticState &state, SemanticState::ModeRept &rept_st
 	++state.location.front().line_number;
 }
 
-static void PurgeMacro(SemanticState &state, std::string_view identifier, const bool allow_undefined)
-{
-	SymbolDictionary *dictionary;
-	SymbolDictionary::Entry* const entry = LookupSymbol(state, identifier, &dictionary);
-
-	if (entry == nullptr)
-	{
-		if (!allow_undefined)
-			state.error_manager.Error("Cannot purge '{}' as it does not exist.", identifier);
-
-		return;
-	}
-
-	if (!std::holds_alternative<SymbolMacro>(*entry))
-	{
-		state.error_manager.Error("Cannot purge '{}' as it is not a macro.", identifier);
-		return;
-	}
-
-	if (state.macro.ExpansionInProgress())
-	{
-		/* TODO: I don't know if that could be meaningfully supported in some way but for now this just seems like a
-		   "how to crash and burn into UAF/double free" without a bunch of changes to support it, for not much benefit.
-		   We don't check for the name of the currently-expanded macro because one could e.g. invoke a, which invokes b,
-		   which redefines a, and there is currently no simple wey to check the entire macro expansion stack. */
-		state.error_manager.Error("Cannot purge '{}' during macro expansion.", identifier);
-		return;
-	}
-
-	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
-	std::string expanded_identifier;
-	identifier = ExpandIdentifier(state, identifier, expanded_identifier);
-
-	dictionary->Remove(identifier);
-}
-
 static bool AddToSymbolTable(SemanticState &state, const std::string_view &identifier, SymbolVariable symbol_contents)
 {
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolVariable>(state, identifier, nullptr);
+	SymbolDictionary::Entry *symbol = state.symbol_manager.LookupSymbolAndCreateIfNotExist<SymbolVariable>(identifier, nullptr);
 
 	if (symbol == nullptr)
 		return false;
@@ -768,7 +507,7 @@ static bool AddToSymbolTable(SemanticState &state, const std::string_view &ident
 
 static bool AddToSymbolTable(SemanticState &state, const std::string_view &identifier, SymbolConstant symbol_contents)
 {
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolConstant>(state, identifier, nullptr);
+	SymbolDictionary::Entry *symbol = state.symbol_manager.LookupSymbolAndCreateIfNotExist<SymbolConstant>(identifier, nullptr);
 
 	if (symbol == nullptr)
 		return false;
@@ -788,7 +527,7 @@ static bool AddToSymbolTable(SemanticState &state, const std::string_view &ident
 
 static bool AddToSymbolTable(SemanticState &state, const std::string_view &identifier, SymbolLabel symbol_contents)
 {
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolLabel>(state, identifier, nullptr);
+	SymbolDictionary::Entry *symbol = state.symbol_manager.LookupSymbolAndCreateIfNotExist<SymbolLabel>(identifier, nullptr);
 
 	if (symbol == nullptr)
 		return false;
@@ -806,7 +545,7 @@ static bool AddToSymbolTable(SemanticState &state, const std::string_view &ident
 
 static bool AddToSymbolTable(SemanticState &state, const std::string_view &identifier, SymbolExpressionConstant symbol_contents)
 {
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolExpressionConstant>(state, identifier, nullptr);
+	SymbolDictionary::Entry *symbol = state.symbol_manager.LookupSymbolAndCreateIfNotExist<SymbolExpressionConstant>(identifier, nullptr);
 
 	if (symbol == nullptr)
 		return false;
@@ -820,7 +559,7 @@ static bool AddToSymbolTable(SemanticState &state, SymbolMacro symbol_contents)
 {
 	const std::string_view &identifier = symbol_contents.macro.name;
 
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolMacro>(state, identifier, nullptr);
+	SymbolDictionary::Entry *symbol = state.symbol_manager.LookupSymbolAndCreateIfNotExist<SymbolMacro>(identifier, nullptr);
 
 	if (symbol == nullptr)
 		return false;
@@ -838,7 +577,7 @@ static bool AddToSymbolTable(SemanticState &state, SymbolMacro symbol_contents)
 
 static bool AddToSymbolTable(SemanticState &state, const std::string_view &identifier, SymbolSpecial symbol_contents)
 {
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolSpecial>(state, identifier, nullptr);
+	SymbolDictionary::Entry *symbol = state.symbol_manager.LookupSymbolAndCreateIfNotExist<SymbolSpecial>(identifier, nullptr);
 
 	if (symbol == nullptr)
 		return false;
@@ -852,7 +591,7 @@ static void TerminateMacro(SemanticState &state, SemanticState::ModeMacro &macro
 {
 	const std::string_view &identifier = macro_state.metadata.name;
 
-	PurgeMacro(state, identifier, true);
+	state.symbol_manager.PurgeMacro(identifier, true);
 
 	if (!identifier.empty())
 	{
@@ -910,19 +649,10 @@ static void TerminateWhile(SemanticState &state, SemanticState::ModeWhile &while
 	state.source_line = old_source_line;
 }
 
-static void SetLastGlobalLabel(SemanticState &state, const std::string_view &label)
-{
-	if (label.front() != state.options->local_signifier)
-	{
-		/* This is a global label - cache it for later. */
-		state.last_global_label = label;
-	}
-}
-
 static void PushSubstitute(SemanticState &state, const std::string_view &identifier, const std::string_view &value)
 {
 	SymbolDictionary *dictionary;
-	SymbolDictionary::Entry* const dictionary_entry = LookupSymbolAndCreateIfNotExist<SymbolStringConstant>(state, identifier, &dictionary);
+	SymbolDictionary::Entry* const dictionary_entry = state.symbol_manager.LookupSymbolAndCreateIfNotExist<SymbolStringConstant>(identifier, &dictionary);
 
 	if (dictionary_entry != nullptr)
 	{
@@ -932,7 +662,7 @@ static void PushSubstitute(SemanticState &state, const std::string_view &identif
 				{
 					auto &symbol = dictionary_entry->emplace<SymbolStringConstant>();
 					symbol.value = value;
-					auto &substitute = dictionary == &state.dictionary ? state.substitutions : state.macro.expansion->substitutions;
+					auto &substitute = state.macro.dictionary != nullptr && dictionary == &*state.macro.dictionary ? state.macro.expansion->substitutions : state.substitutions;
 					substitute.PushSubstitute(identifier, symbol.value);
 				},
 				[&](SymbolStringConstant &symbol)
@@ -1221,7 +951,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 		if (!label.empty() && !state.doing_fixup_pass)
 		{
 			/* Handle the label here, instead of passing it onto a later function. */
-			SetLastGlobalLabel(state, label);
+			state.symbol_manager.SetLastGlobalLabel(label);
 			AddToSymbolTable(state, label, SymbolLabel{state.program_counter});
 		}
 	}
@@ -1330,12 +1060,12 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			[&](StatementEqu &statement)
 			{
 				if (state.options->equ_set_descope_local_labels)
-					SetLastGlobalLabel(state, label);
+					state.symbol_manager.SetLastGlobalLabel(label);
 
 				const auto &value_optional = ResolveExpression(state, statement.expression);
 
 				/* Hack: We ABSOLUTELY DO NOT want this line adding to the fix-up list!!! */
-				state.fixup_needed = false;
+				state.symbol_manager.fixup_needed = false;
 
 				if (!value_optional.has_value())
 				{
@@ -1356,7 +1086,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			},
 			[&](StatementEqusIdentifier &statement)
 			{
-				const SymbolDictionary::Entry* const dictionary_entry = LookupSymbol(state, statement.string, nullptr);
+				const SymbolDictionary::Entry* const dictionary_entry = state.symbol_manager.LookupSymbol(statement.string, nullptr);
 
 				const SymbolStringConstant* const symbol_string_constant = dictionary_entry == nullptr ? nullptr : std::get_if<SymbolStringConstant>(dictionary_entry);
 
@@ -1391,7 +1121,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			[&](StatementSet &statement)
 			{
 				if (state.options->equ_set_descope_local_labels)
-					SetLastGlobalLabel(state, label);
+					state.symbol_manager.SetLastGlobalLabel(label);
 
 				const auto &value = ResolveExpression(state, statement.expression, "Value must be evaluable on the first pass.").value_or(0);
 
@@ -1543,16 +1273,16 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			[&](StatementRs &statement)
 			{
 				if (ShouldPerformAutomaticEven(state, statement.size))
-					if ((state.rs & 1) != 0)
-						++state.rs;
+					if ((state.symbol_manager.rs & 1) != 0)
+						++state.symbol_manager.rs;
 
 				auto length = ResolveExpression(state, statement.length, "Length must be evaluable on the first pass.").value_or(0);
 
 				/* Add label to symbol table. */
 				if (!label.empty())
 				{
-					AddToSymbolTable(state, label, SymbolConstant{state.rs});
-					state.listing_writer.WriteIdentifierValue(state.rs);
+					AddToSymbolTable(state, label, SymbolConstant{state.symbol_manager.rs});
+					state.listing_writer.WriteIdentifierValue(state.symbol_manager.rs);
 				}
 
 				/* Advance '__rs' by the specified amount. */
@@ -1575,17 +1305,17 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 						break;
 				}
 
-				state.rs += length;
+				state.symbol_manager.rs += length;
 			},
 			[&](StatementRsset &statement)
 			{
 				/* Set '__rs' to value. */
-				state.rs = ResolveExpression(state, statement.expression, "Value must be evaluable on the first pass.").value_or(state.rs);
+				state.symbol_manager.rs = ResolveExpression(state, statement.expression, "Value must be evaluable on the first pass.").value_or(state.symbol_manager.rs);
 			},
 			[&](StatementRsreset&)
 			{
 				/* Set '__rs' to 0. */
-				state.rs = 0;
+				state.symbol_manager.rs = 0;
 			},
 			[&](StatementObj &statement)
 			{
@@ -1750,7 +1480,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			},
 			[&](StatementPurge &statement)
 			{
-				PurgeMacro(state, statement.string, false);
+				state.symbol_manager.PurgeMacro(statement.string, false);
 			}
 		}, statement
 	);
@@ -1775,7 +1505,7 @@ static void ParseLine(SemanticState &state, const std::string_view &label, const
 
 	ProcessStatement(state, *statement, label);
 
-	if (!state.fixup_needed)
+	if (!state.symbol_manager.fixup_needed)
 		return;
 
 	/* If the statement cannot currently be processed because of undefined symbols,
@@ -1788,7 +1518,7 @@ static void ParseLine(SemanticState &state, const std::string_view &label, const
 		state.macro.dictionary,
 		starting_program_counter,
 		starting_object_writer_position,
-		state.last_global_label,
+		state.symbol_manager.GetLastGlobalLabel(),
 		std::string(state.source_line),
 		std::string(label),
 		*state.options,
@@ -1797,7 +1527,7 @@ static void ParseLine(SemanticState &state, const std::string_view &label, const
 		state.location
 	);
 
-	state.fixup_needed = false;
+	state.symbol_manager.fixup_needed = false;
 }
 
 #define DIRECTIVE_OR_MACRO_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_"
@@ -1901,7 +1631,7 @@ static void InvokeMacro(SemanticState &state, const Macro &macro, const std::str
 
 	const auto starting_if_level = state.current_if_level;
 
-	SemanticState::Macro previous_macro_state = std::move(state.macro);
+	MacroState previous_macro_state = std::move(state.macro);
 
 	/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
 	state.macro.dictionary = std::make_shared<SymbolDictionary>(state.options->case_insensitive);
@@ -1916,7 +1646,7 @@ static void InvokeMacro(SemanticState &state, const Macro &macro, const std::str
 
 	if (!label.empty())
 	{
-		SetLastGlobalLabel(state, label);
+		state.symbol_manager.SetLastGlobalLabel(label);
 
 		if (!macro.uses_label)
 			AddToSymbolTable(state, label, SymbolLabel{state.program_counter});
@@ -1990,7 +1720,7 @@ static void InvokeMacro(SemanticState &state, const Macro &macro, const std::str
 					if (identifier_position_end < view_to_search.length() && view_to_search[identifier_position_end] == '\\')
 						++found_length;
 
-					const auto &value = GetSymbolInteger(state, identifier, true).value_or(0);
+					const auto &value = state.symbol_manager.GetSymbolInteger(state, identifier, true).value_or(0);
 
 					if (symbol == '#')
 						symbol_value_string = std::format("{}", value);
@@ -2259,7 +1989,7 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 					else
 					{
 						/* Look up the directive in the dictionary to see if it's actually a macro. */
-						const SymbolDictionary::Entry* const macro_dictionary_entry = LookupSymbol(state, directive, nullptr);
+						const SymbolDictionary::Entry* const macro_dictionary_entry = state.symbol_manager.LookupSymbol(directive, nullptr);
 						const SymbolMacro* const symbol_macro = macro_dictionary_entry == nullptr ? nullptr : std::get_if<SymbolMacro>(macro_dictionary_entry);
 						const Macro* const macro = symbol_macro == nullptr ? nullptr : &symbol_macro->macro;
 
@@ -2464,7 +2194,7 @@ static bool AssembleToObjectFile(
 		state.macro.dictionary = fixup.macro_dictionary;
 		state.program_counter = fixup.program_counter;
 		state.object_writer.Seek(fixup.object_writer_position);
-		state.last_global_label = std::move(fixup.last_global_label);
+		state.symbol_manager.SetLastGlobalLabelDirect(std::move(fixup.last_global_label));
 		state.source_line = fixup.source_line;
 		state.location = std::move(fixup.location);
 		*state.options = fixup.options;
@@ -2491,7 +2221,7 @@ static bool AssembleToObjectFile(
 		symbol_writer.WriteU8(0);
 		symbol_writer.WriteU8(0);
 
-		state.dictionary.Filter(
+		state.symbol_manager.FilterDictionary(
 			[&](const SymbolDictionary::Entry &entry, const std::string_view &identifier) -> bool
 			{
 				/* The symbol file only contains labels. */
