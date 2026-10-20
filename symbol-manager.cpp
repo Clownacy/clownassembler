@@ -99,26 +99,6 @@ std::optional<unsigned long> SymbolManager::GetSymbolInteger(const std::string_v
 
 	return std::visit(
 		CC_VisitHelper{
-			[&](SymbolSpecial &symbol) -> std::optional<unsigned long>
-			{
-				switch (symbol.type)
-				{
-					default:
-						CC_UNREACHABLE;
-						/* Fallthrough */
-					case SymbolSpecial::Type::RS:
-						return rs;
-
-					case SymbolSpecial::Type::NARG:
-						if (!macro.ExpansionInProgress())
-						{
-							error_manager.Warning("Symbol '{}' cannot be used outside of a macro.", identifier);
-							return std::nullopt;
-						}
-
-						return macro.expansion->total_arguments_at_start;
-				}
-			},
 			[&](SymbolVariable &symbol) -> std::optional<unsigned long>
 			{
 				if (doing_fixup_pass)

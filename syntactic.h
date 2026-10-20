@@ -219,6 +219,8 @@ struct ExpressionNumber;
 struct ExpressionProgramCounterOfStatement;
 struct ExpressionProgramCounterOfExpression;
 struct ExpressionTypeWithNumber;
+struct ExpressionRs;
+struct ExpressionNarg;
 
 using Expression = std::variant<
 	ExpressionArithmetic1Operand,
@@ -234,7 +236,9 @@ using Expression = std::variant<
 	ExpressionNumber,
 	ExpressionProgramCounterOfStatement,
 	ExpressionProgramCounterOfExpression,
-	ExpressionTypeWithNumber
+	ExpressionTypeWithNumber,
+	ExpressionRs,
+	ExpressionNarg
 >;
 
 struct ExpressionArithmetic1Operand
@@ -320,20 +324,23 @@ struct ExpressionNumber
 	unsigned long value;
 };
 
-struct ExpressionProgramCounterOfStatement
-{
-	unsigned long value;
-};
-
-struct ExpressionProgramCounterOfExpression
-{
-	unsigned long value;
-};
-
 struct ExpressionTypeWithNumber
 {
 	unsigned long value;
 };
+
+struct ExpressionProgramCounterOfStatement
+{};
+
+struct ExpressionProgramCounterOfExpression
+{};
+
+struct ExpressionRs
+{};
+
+struct ExpressionNarg
+{};
+
 
 using ExpressionList = std::deque<Expression>;
 using IdentifierList = std::deque<std::string>;
@@ -637,7 +644,7 @@ using Statement = std::variant<
 >;
 
 
-#line 641 "syntactic.h"
+#line 648 "syntactic.h"
 
 
 # include <cstdlib> // std::abort
@@ -781,7 +788,7 @@ using Statement = std::variant<
 
 #line 25 "syntactic.y"
 namespace m68kasm {
-#line 785 "syntactic.h"
+#line 792 "syntactic.h"
 
 
 
@@ -1249,35 +1256,37 @@ namespace m68kasm {
     TOKEN_MORE_OR_EQUAL = 182,     // MORE_OR_EQUAL
     TOKEN_LEFT_SHIFT = 183,        // LEFT_SHIFT
     TOKEN_RIGHT_SHIFT = 184,       // RIGHT_SHIFT
-    TOKEN_STRLEN = 185,            // STRLEN
-    TOKEN_STRCMP = 186,            // STRCMP
-    TOKEN_INSTR = 187,             // INSTR
-    TOKEN_DEF = 188,               // DEF
-    TOKEN_TYPE = 189,              // TYPE
-    TOKEN_FILESIZE = 190,          // FILESIZE
-    TOKEN_OFFSET = 191,            // OFFSET
-    TOKEN_PERIOD = 192,            // "."
-    TOKEN_COMMA = 193,             // ","
-    TOKEN_PARENTHESIS_LEFT = 194,  // "("
-    TOKEN_PARENTHESIS_RIGHT = 195, // ")"
-    TOKEN_DOLLAR = 196,            // "$"
-    TOKEN_PLUS = 197,              // "+"
-    TOKEN_MINUS = 198,             // "-"
-    TOKEN_ASTERIX = 199,           // "*"
-    TOKEN_FORWARD_SLASH = 200,     // "/"
-    TOKEN_EQUAL = 201,             // "="
-    TOKEN_AT = 202,                // "@"
-    TOKEN_HASH = 203,              // "#"
-    TOKEN_AMPERSAND = 204,         // "&"
-    TOKEN_CARET = 205,             // "^"
-    TOKEN_EXCLAMATION = 206,       // "!"
-    TOKEN_VERTICAL_BAR = 207,      // "|"
-    TOKEN_ANGLE_LEFT = 208,        // "<"
-    TOKEN_ANGLE_RIGHT = 209,       // ">"
-    TOKEN_PERCENTAGE = 210,        // "%"
-    TOKEN_TILDE = 211,             // "~"
-    TOKEN_LOWER_PRECEDENCE_THAN_SIZE = 212, // LOWER_PRECEDENCE_THAN_SIZE
-    TOKEN_HIGHER_PRECEDENCE_THAN_SIZE = 213 // HIGHER_PRECEDENCE_THAN_SIZE
+    TOKEN_RS = 185,                // RS
+    TOKEN_NARG = 186,              // NARG
+    TOKEN_STRLEN = 187,            // STRLEN
+    TOKEN_STRCMP = 188,            // STRCMP
+    TOKEN_INSTR = 189,             // INSTR
+    TOKEN_DEF = 190,               // DEF
+    TOKEN_TYPE = 191,              // TYPE
+    TOKEN_FILESIZE = 192,          // FILESIZE
+    TOKEN_OFFSET = 193,            // OFFSET
+    TOKEN_PERIOD = 194,            // "."
+    TOKEN_COMMA = 195,             // ","
+    TOKEN_PARENTHESIS_LEFT = 196,  // "("
+    TOKEN_PARENTHESIS_RIGHT = 197, // ")"
+    TOKEN_DOLLAR = 198,            // "$"
+    TOKEN_PLUS = 199,              // "+"
+    TOKEN_MINUS = 200,             // "-"
+    TOKEN_ASTERIX = 201,           // "*"
+    TOKEN_FORWARD_SLASH = 202,     // "/"
+    TOKEN_EQUAL = 203,             // "="
+    TOKEN_AT = 204,                // "@"
+    TOKEN_HASH = 205,              // "#"
+    TOKEN_AMPERSAND = 206,         // "&"
+    TOKEN_CARET = 207,             // "^"
+    TOKEN_EXCLAMATION = 208,       // "!"
+    TOKEN_VERTICAL_BAR = 209,      // "|"
+    TOKEN_ANGLE_LEFT = 210,        // "<"
+    TOKEN_ANGLE_RIGHT = 211,       // ">"
+    TOKEN_PERCENTAGE = 212,        // "%"
+    TOKEN_TILDE = 213,             // "~"
+    TOKEN_LOWER_PRECEDENCE_THAN_SIZE = 214, // LOWER_PRECEDENCE_THAN_SIZE
+    TOKEN_HIGHER_PRECEDENCE_THAN_SIZE = 215 // HIGHER_PRECEDENCE_THAN_SIZE
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -1294,7 +1303,7 @@ namespace m68kasm {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 214, ///< Number of tokens.
+        YYNTOKENS = 216, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -1481,60 +1490,62 @@ namespace m68kasm {
         S_MORE_OR_EQUAL = 182,                   // MORE_OR_EQUAL
         S_LEFT_SHIFT = 183,                      // LEFT_SHIFT
         S_RIGHT_SHIFT = 184,                     // RIGHT_SHIFT
-        S_STRLEN = 185,                          // STRLEN
-        S_STRCMP = 186,                          // STRCMP
-        S_INSTR = 187,                           // INSTR
-        S_DEF = 188,                             // DEF
-        S_TYPE = 189,                            // TYPE
-        S_FILESIZE = 190,                        // FILESIZE
-        S_OFFSET = 191,                          // OFFSET
-        S_PERIOD = 192,                          // "."
-        S_COMMA = 193,                           // ","
-        S_PARENTHESIS_LEFT = 194,                // "("
-        S_PARENTHESIS_RIGHT = 195,               // ")"
-        S_DOLLAR = 196,                          // "$"
-        S_PLUS = 197,                            // "+"
-        S_MINUS = 198,                           // "-"
-        S_ASTERIX = 199,                         // "*"
-        S_FORWARD_SLASH = 200,                   // "/"
-        S_EQUAL = 201,                           // "="
-        S_AT = 202,                              // "@"
-        S_HASH = 203,                            // "#"
-        S_AMPERSAND = 204,                       // "&"
-        S_CARET = 205,                           // "^"
-        S_EXCLAMATION = 206,                     // "!"
-        S_VERTICAL_BAR = 207,                    // "|"
-        S_ANGLE_LEFT = 208,                      // "<"
-        S_ANGLE_RIGHT = 209,                     // ">"
-        S_PERCENTAGE = 210,                      // "%"
-        S_TILDE = 211,                           // "~"
-        S_LOWER_PRECEDENCE_THAN_SIZE = 212,      // LOWER_PRECEDENCE_THAN_SIZE
-        S_HIGHER_PRECEDENCE_THAN_SIZE = 213,     // HIGHER_PRECEDENCE_THAN_SIZE
-        S_YYACCEPT = 214,                        // $accept
-        S_statement = 215,                       // statement
-        S_expression_list = 216,                 // expression_list
-        S_identifier_list = 217,                 // identifier_list
-        S_option_list = 218,                     // option_list
-        S_instruction = 219,                     // instruction
-        S_full_opcode = 220,                     // full_opcode
-        S_opcode = 221,                          // opcode
-        S_size = 222,                            // size
-        S_operand = 223,                         // operand
-        S_register_list = 224,                   // register_list
-        S_register_span = 225,                   // register_span
-        S_data_or_address_register = 226,        // data_or_address_register
-        S_expression = 227,                      // expression
-        S_expression1 = 228,                     // expression1
-        S_expression2 = 229,                     // expression2
-        S_expression3 = 230,                     // expression3
-        S_expression4 = 231,                     // expression4
-        S_expression5 = 232,                     // expression5
-        S_expression6 = 233,                     // expression6
-        S_expression7 = 234,                     // expression7
-        S_local_identifier = 235,                // local_identifier
-        S_identifier = 236,                      // identifier
-        S_expression8 = 237,                     // expression8
-        S_string = 238                           // string
+        S_RS = 185,                              // RS
+        S_NARG = 186,                            // NARG
+        S_STRLEN = 187,                          // STRLEN
+        S_STRCMP = 188,                          // STRCMP
+        S_INSTR = 189,                           // INSTR
+        S_DEF = 190,                             // DEF
+        S_TYPE = 191,                            // TYPE
+        S_FILESIZE = 192,                        // FILESIZE
+        S_OFFSET = 193,                          // OFFSET
+        S_PERIOD = 194,                          // "."
+        S_COMMA = 195,                           // ","
+        S_PARENTHESIS_LEFT = 196,                // "("
+        S_PARENTHESIS_RIGHT = 197,               // ")"
+        S_DOLLAR = 198,                          // "$"
+        S_PLUS = 199,                            // "+"
+        S_MINUS = 200,                           // "-"
+        S_ASTERIX = 201,                         // "*"
+        S_FORWARD_SLASH = 202,                   // "/"
+        S_EQUAL = 203,                           // "="
+        S_AT = 204,                              // "@"
+        S_HASH = 205,                            // "#"
+        S_AMPERSAND = 206,                       // "&"
+        S_CARET = 207,                           // "^"
+        S_EXCLAMATION = 208,                     // "!"
+        S_VERTICAL_BAR = 209,                    // "|"
+        S_ANGLE_LEFT = 210,                      // "<"
+        S_ANGLE_RIGHT = 211,                     // ">"
+        S_PERCENTAGE = 212,                      // "%"
+        S_TILDE = 213,                           // "~"
+        S_LOWER_PRECEDENCE_THAN_SIZE = 214,      // LOWER_PRECEDENCE_THAN_SIZE
+        S_HIGHER_PRECEDENCE_THAN_SIZE = 215,     // HIGHER_PRECEDENCE_THAN_SIZE
+        S_YYACCEPT = 216,                        // $accept
+        S_statement = 217,                       // statement
+        S_expression_list = 218,                 // expression_list
+        S_identifier_list = 219,                 // identifier_list
+        S_option_list = 220,                     // option_list
+        S_instruction = 221,                     // instruction
+        S_full_opcode = 222,                     // full_opcode
+        S_opcode = 223,                          // opcode
+        S_size = 224,                            // size
+        S_operand = 225,                         // operand
+        S_register_list = 226,                   // register_list
+        S_register_span = 227,                   // register_span
+        S_data_or_address_register = 228,        // data_or_address_register
+        S_expression = 229,                      // expression
+        S_expression1 = 230,                     // expression1
+        S_expression2 = 231,                     // expression2
+        S_expression3 = 232,                     // expression3
+        S_expression4 = 233,                     // expression4
+        S_expression5 = 234,                     // expression5
+        S_expression6 = 235,                     // expression6
+        S_expression7 = 236,                     // expression7
+        S_local_identifier = 237,                // local_identifier
+        S_identifier = 238,                      // identifier
+        S_expression8 = 239,                     // expression8
+        S_string = 240                           // string
       };
     };
 
@@ -4770,6 +4781,36 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_RS ()
+      {
+        return symbol_type (token::TOKEN_RS);
+      }
+#else
+      static
+      symbol_type
+      make_RS ()
+      {
+        return symbol_type (token::TOKEN_RS);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_NARG ()
+      {
+        return symbol_type (token::TOKEN_NARG);
+      }
+#else
+      static
+      symbol_type
+      make_NARG ()
+      {
+        return symbol_type (token::TOKEN_NARG);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_STRLEN ()
       {
         return symbol_type (token::TOKEN_STRLEN);
@@ -5530,9 +5571,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 819,     ///< Last index in yytable_.
+      yylast_ = 837,     ///< Last index in yytable_.
       yynnts_ = 25,  ///< Number of nonterminal symbols.
-      yyfinal_ = 237 ///< Termination state number.
+      yyfinal_ = 239 ///< Termination state number.
     };
 
 
@@ -5769,17 +5810,17 @@ switch (yykind)
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 5773 "syntactic.h"
+#line 5814 "syntactic.h"
 
 
 // "%code provides" blocks.
-#line 631 "syntactic.y"
+#line 638 "syntactic.y"
 
 
 #define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner, ErrorManager &error_manager)
 
 
-#line 5783 "syntactic.h"
+#line 5824 "syntactic.h"
 
 
 #endif // !YY_M68KASM_SYNTACTIC_H_INCLUDED

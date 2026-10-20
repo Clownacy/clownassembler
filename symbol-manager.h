@@ -46,7 +46,6 @@ private:
 	std::string_view ExpandIdentifier(const std::string_view &identifier, std::string &expanded_identifier);
 
 public:
-	unsigned long rs = 0;
 	bool fixup_needed = false;
 
 	SymbolManager(

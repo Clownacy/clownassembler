@@ -25,6 +25,7 @@
 class ErrorManager;
 class SymbolManager;
 class OptionsStack;
+class MacroState;
 
 class ExpressionProcessor
 {
@@ -32,18 +33,22 @@ private:
 	ErrorManager &error_manager;
 	SymbolManager &symbol_manager;
 	OptionsStack &options;
+	const MacroState &macro;
 
 public:
 	unsigned long program_counter_of_statement = 0, program_counter_of_expression = 0;
+	unsigned long rs = 0;
 
 	ExpressionProcessor(
 		ErrorManager &error_manager,
 		SymbolManager &symbol_manager,
-		OptionsStack &options
+		OptionsStack &options,
+		const MacroState &macro
 	)
 		: error_manager(error_manager)
 		, symbol_manager(symbol_manager)
 		, options(options)
+		, macro(macro)
 	{}
 
 	std::optional<unsigned long> ResolveExpressionCommon(Expression &expression, bool fold);

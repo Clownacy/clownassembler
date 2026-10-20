@@ -142,7 +142,7 @@ struct SemanticState
 		, listing_writer(listing_stream, doing_fixup_pass)
 		, object_writer(output_stream, listing_writer, program_counter, doing_fixup_pass)
 		, symbol_manager(error_manager, expression_processor, options, macro, doing_fixup_pass)
-		, expression_processor(error_manager, symbol_manager, options)
+		, expression_processor(error_manager, symbol_manager, options, macro)
 		, parser(error_manager)
 	{
 		/* For error messages, we want to maintain a list of filenames and line
@@ -269,18 +269,6 @@ static bool AddToSymbolTable(SemanticState &state, SymbolMacro symbol_contents)
 	}
 
 	symbol->emplace<SymbolMacro>(std::move(symbol_contents));
-
-	return true;
-}
-
-static bool AddToSymbolTable(SemanticState &state, const std::string_view &identifier, SymbolSpecial symbol_contents)
-{
-	SymbolDictionary::Entry *symbol = state.symbol_manager.LookupSymbolAndCreateIfNotExist<SymbolSpecial>(identifier, nullptr);
-
-	if (symbol == nullptr)
-		return false;
-
-	symbol->emplace<SymbolSpecial>(std::move(symbol_contents));
 
 	return true;
 }
@@ -971,16 +959,16 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			[&](StatementRs &statement)
 			{
 				if (ShouldPerformAutomaticEven(state, statement.size))
-					if ((state.symbol_manager.rs & 1) != 0)
-						++state.symbol_manager.rs;
+					if ((state.expression_processor.rs & 1) != 0)
+						++state.expression_processor.rs;
 
 				auto length = state.expression_processor.ResolveExpression(statement.length, "Length must be evaluable on the first pass.").value_or(0);
 
 				/* Add label to symbol table. */
 				if (!label.empty())
 				{
-					AddToSymbolTable(state, label, SymbolConstant{state.symbol_manager.rs});
-					state.listing_writer.WriteIdentifierValue(state.symbol_manager.rs);
+					AddToSymbolTable(state, label, SymbolConstant{state.expression_processor.rs});
+					state.listing_writer.WriteIdentifierValue(state.expression_processor.rs);
 				}
 
 				/* Advance '__rs' by the specified amount. */
@@ -1003,17 +991,17 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 						break;
 				}
 
-				state.symbol_manager.rs += length;
+				state.expression_processor.rs += length;
 			},
 			[&](StatementRsset &statement)
 			{
 				/* Set '__rs' to value. */
-				state.symbol_manager.rs = state.expression_processor.ResolveExpression(statement.expression, "Value must be evaluable on the first pass.").value_or(state.symbol_manager.rs);
+				state.expression_processor.rs = state.expression_processor.ResolveExpression(statement.expression, "Value must be evaluable on the first pass.").value_or(state.expression_processor.rs);
 			},
 			[&](StatementRsreset&)
 			{
 				/* Set '__rs' to 0. */
-				state.symbol_manager.rs = 0;
+				state.expression_processor.rs = 0;
 			},
 			[&](StatementObj &statement)
 			{
@@ -1852,12 +1840,6 @@ static bool AssembleToObjectFile(
 		input_file_path,
 		std::move(initial_options)
 	);
-
-	if (!AddToSymbolTable(state, "__rs", SymbolSpecial{SymbolSpecial::Type::RS}))
-		return false;
-
-	if (!AddToSymbolTable(state, "narg", SymbolSpecial{SymbolSpecial::Type::NARG}))
-		return false;
 
 	if (definition_callback != nullptr)
 		definition_callback(&state, (void*)user_data, AddDefinition);

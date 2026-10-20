@@ -318,6 +318,20 @@ std::optional<unsigned long> ExpressionProcessor::ResolveExpressionCommon(Expres
 				}
 
 				return std::filesystem::file_size(standard_path);
+			},
+			[&](ExpressionRs&) -> std::optional<unsigned long>
+			{
+				return rs;
+			},
+			[&](ExpressionNarg&) -> std::optional<unsigned long>
+			{
+				if (!macro.ExpansionInProgress())
+				{
+					error_manager.Error("`NARG` cannot be used outside of a macro.");
+					return std::nullopt;
+				}
+
+				return macro.expansion->total_arguments_at_start;
 			}
 		}, expression
 	);

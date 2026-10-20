@@ -348,6 +348,10 @@ sp              return m68kasm::parser::make_ADDRESS_REGISTER(7);
 usp             return m68kasm::parser::make_USER_STACK_POINTER_REGISTER();
 pc              return m68kasm::parser::make_PROGRAM_COUNTER();
 
+ /* Special identifiers. */
+__rs            return m68kasm::parser::make_RS();
+narg            return m68kasm::parser::make_NARG();
+
  /* Functions. */
 <OPERANDS>strlen          return m68kasm::parser::make_STRLEN();
 <OPERANDS>strcmp          return m68kasm::parser::make_STRCMP();

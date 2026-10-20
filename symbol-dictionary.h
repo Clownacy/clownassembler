@@ -46,15 +46,6 @@ struct SymbolMacro
 	Macro macro;
 };
 
-struct SymbolSpecial
-{
-	enum class Type
-	{
-		RS,
-		NARG,
-	} type;
-};
-
 struct SymbolStringConstant
 {
 	std::string value;
@@ -65,6 +56,6 @@ struct SymbolExpressionConstant
 	Expression expression;
 };
 
-using SymbolDictionary = Dictionary<std::variant<SymbolNone, SymbolConstant, SymbolVariable, SymbolLabel, SymbolMacro, SymbolSpecial, SymbolStringConstant, SymbolExpressionConstant>>;
+using SymbolDictionary = Dictionary<std::variant<SymbolNone, SymbolConstant, SymbolVariable, SymbolLabel, SymbolMacro, SymbolStringConstant, SymbolExpressionConstant>>;
 
 #endif /* SYMBOL_DICTIONARY_H */

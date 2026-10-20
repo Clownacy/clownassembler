@@ -209,6 +209,8 @@ struct ExpressionNumber;
 struct ExpressionProgramCounterOfStatement;
 struct ExpressionProgramCounterOfExpression;
 struct ExpressionTypeWithNumber;
+struct ExpressionRs;
+struct ExpressionNarg;
 
 using Expression = std::variant<
 	ExpressionArithmetic1Operand,
@@ -224,7 +226,9 @@ using Expression = std::variant<
 	ExpressionNumber,
 	ExpressionProgramCounterOfStatement,
 	ExpressionProgramCounterOfExpression,
-	ExpressionTypeWithNumber
+	ExpressionTypeWithNumber,
+	ExpressionRs,
+	ExpressionNarg
 >;
 
 struct ExpressionArithmetic1Operand
@@ -310,20 +314,23 @@ struct ExpressionNumber
 	unsigned long value;
 };
 
-struct ExpressionProgramCounterOfStatement
-{
-	unsigned long value;
-};
-
-struct ExpressionProgramCounterOfExpression
-{
-	unsigned long value;
-};
-
 struct ExpressionTypeWithNumber
 {
 	unsigned long value;
 };
+
+struct ExpressionProgramCounterOfStatement
+{};
+
+struct ExpressionProgramCounterOfExpression
+{};
+
+struct ExpressionRs
+{};
+
+struct ExpressionNarg
+{};
+
 
 using ExpressionList = std::deque<Expression>;
 using IdentifierList = std::deque<std::string>;
@@ -848,6 +855,8 @@ void m68kasm::parser::error(const std::string &message)
 %token MORE_OR_EQUAL
 %token LEFT_SHIFT
 %token RIGHT_SHIFT
+%token RS
+%token NARG
 %token STRLEN
 %token STRCMP
 %token INSTR
@@ -2291,6 +2300,14 @@ expression8
 	| "@"
 	{
 		$$.emplace<ExpressionProgramCounterOfExpression>();
+	}
+	| RS
+	{
+		$$.emplace<ExpressionRs>();
+	}
+	| NARG
+	{
+		$$.emplace<ExpressionNarg>();
 	}
 	| "(" expression ")"
 	{
