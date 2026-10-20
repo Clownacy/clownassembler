@@ -92,7 +92,6 @@ struct SemanticState
 
 	/* Fix-ups. */
 	std::deque<FixUp> fixup_list;
-	bool doing_fixup_pass = false;
 
 	/* If-statements. */
 	unsigned int current_if_level = 0;
@@ -137,9 +136,9 @@ struct SemanticState
 	)
 		: global(std::move(default_options), error_stream, location, source_line, symbol_manager, macro)
 		, source_line_reader(input_stream)
-		, listing_writer(listing_stream, doing_fixup_pass)
-		, object_writer(output_stream, listing_writer, global.program_counter, doing_fixup_pass)
-		, symbol_manager(global.error_manager, global.expression_processor, global.options, macro.dictionary, doing_fixup_pass)
+		, listing_writer(listing_stream, global.doing_fixup_pass)
+		, object_writer(output_stream, listing_writer, global.program_counter, global.doing_fixup_pass)
+		, symbol_manager(global.error_manager, global.expression_processor, global.options, macro.dictionary, global.doing_fixup_pass)
 		, parser(global.error_manager)
 	{
 		/* For error messages, we want to maintain a list of filenames and line
@@ -549,7 +548,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 		StatementPurge
 	>(statement))
 	{
-		if (!label.empty() && !state.doing_fixup_pass)
+		if (!label.empty() && !state.global.doing_fixup_pass)
 		{
 			/* Handle the label here, instead of passing it onto a later function. */
 			state.symbol_manager.SetLastGlobalLabel(label);
@@ -1788,7 +1787,7 @@ static bool AssembleToObjectFile(
 
 	/* Process the fix-ups: reassemble instructions and reprocess
 	   directives that could not be completed in the first pass. */
-	state.doing_fixup_pass = true;
+	state.global.doing_fixup_pass = true;
 
 	while (!state.fixup_list.empty())
 	{

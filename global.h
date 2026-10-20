@@ -36,6 +36,7 @@ struct Global
 	ErrorManager error_manager;
 	ExpressionProcessor expression_processor;
 	ProgramCounter program_counter;
+	bool doing_fixup_pass = false;
 
 	Global(
 		Options default_options,
