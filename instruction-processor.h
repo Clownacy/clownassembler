@@ -20,20 +20,14 @@
 
 #include "syntactic.h"
 
+class Global;
 class ObjectWriter;
-class ErrorManager;
-class ExpressionProcessor;
-class ProgramCounter;
-class OptionsStack;
 
 class InstructionProcessor
 {
 private:
+	Global &global;
 	ObjectWriter &object_writer;
-	ErrorManager &error_manager;
-	ExpressionProcessor &expression_processor;
-	ProgramCounter &program_counter;
-	const OptionsStack &options;
 
 	static unsigned int ConstructSizeBits(Size size);
 	unsigned int ConstructEffectiveAddressBits(const Operand *operand);
@@ -43,17 +37,11 @@ private:
 
 public:
 	InstructionProcessor(
-		ObjectWriter &object_writer,
-		ErrorManager &error_manager,
-		ExpressionProcessor &expression_processor,
-		ProgramCounter &program_counter,
-		OptionsStack &options
+		Global &global,
+		ObjectWriter &object_writer
 	)
-		: object_writer(object_writer)
-		, error_manager(error_manager)
-		, expression_processor(expression_processor)
-		, program_counter(program_counter)
-		, options(options)
+		: global(global)
+		, object_writer(object_writer)
 	{}
 
 	void Process(StatementInstruction &instruction);

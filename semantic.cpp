@@ -78,7 +78,7 @@ struct SemanticState
 	SourceLineReader source_line_reader;
 	ListingWriter listing_writer;
 	ObjectWriter object_writer;
-	InstructionProcessor instruction_processor = {object_writer, global.error_manager, global.expression_processor, global.program_counter, global.options};
+	InstructionProcessor instruction_processor = {global, object_writer};
 	SymbolManager symbol_manager = {global, macro.dictionary};
 	Parser parser = {global.error_manager};
 	std::deque<ErrorManager::Location> location;

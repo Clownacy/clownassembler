@@ -22,11 +22,8 @@
 
 #include "clowncommon/clowncommon.h"
 
-#include "error.h"
-#include "expression-processor.h"
+#include "global.h"
 #include "object-writer.h"
-#include "options.h"
-#include "program-counter.h"
 #include "syntactic.h"
 
 struct InstructionMetadata
@@ -1202,7 +1199,7 @@ unsigned int InstructionProcessor::ConstructEffectiveAddressBits(const Operand *
 
 				case SIZE_BYTE:
 				case SIZE_SHORT:
-					error_manager.Error("Absolute address can only be word- or longword-sized.");
+					global.error_manager.Error("Absolute address can only be word- or longword-sized.");
 					/* Fallthrough */
 				case SIZE_UNDEFINED:
 				case SIZE_LONGWORD:
@@ -1221,7 +1218,7 @@ unsigned int InstructionProcessor::ConstructEffectiveAddressBits(const Operand *
 		case OPERAND_CONDITION_CODE_REGISTER:
 		case OPERAND_USER_STACK_POINTER_REGISTER:
 		case OPERAND_REGISTER_LIST:
-			error_manager.Error("Invalid operand type: register lists, USP, SR, and CCR cannot be used here.");
+			global.error_manager.Error("Invalid operand type: register lists, USP, SR, and CCR cannot be used here.");
 			/* Just pretend it's data register 0 to keep things moving along. */
 			m = 0;
 			xn = 0;
@@ -1247,7 +1244,7 @@ void InstructionProcessor::ResolveInstructionAmbiguity(StatementInstruction &ins
 		switch (instruction.opcode.type)
 		{
 			#define ALIAS_AND_LOOP(ALIAS) {instruction.opcode.type = ALIAS; continue;}
-			#define WARN_ALIAS_AND_LOOP(ALIAS, MESSAGE) {if (options->pedantic_warnings_enabled) error_manager.Warning(MESSAGE); ALIAS_AND_LOOP(ALIAS)}
+			#define WARN_ALIAS_AND_LOOP(ALIAS, MESSAGE) {if (global.options->pedantic_warnings_enabled) global.error_manager.Warning(MESSAGE); ALIAS_AND_LOOP(ALIAS)}
 
 			case OPCODE_ORI:
 				if (instruction.operands[1].type == OPERAND_CONDITION_CODE_REGISTER)
@@ -1531,13 +1528,13 @@ void InstructionProcessor::ResolveInstructionAmbiguity(StatementInstruction &ins
 
 void InstructionProcessor::OptimiseInstruction(StatementInstruction &instruction)
 {
-	if (options->optimisation.zero_displacement)
+	if (global.options->optimisation.zero_displacement)
 	{
 		for (auto &operand : instruction.operands)
 		{
 			if (operand.type == OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT)
 			{
-				const auto &value = expression_processor.ResolveExpression(operand.literal);
+				const auto &value = global.expression_processor.ResolveExpression(operand.literal);
 
 				if (value.has_value() && *value == 0)
 					operand.type = OPERAND_ADDRESS_REGISTER_INDIRECT;
@@ -1559,10 +1556,10 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 	operands_to_output[1] = &instruction.operands[1];
 
 	/* Instructions on odd addresses cause exceptions on the 68k, so warn the user if they are produced. */
-	if ((program_counter & 1) != 0)
-		error_manager.Warning("Instruction is at an odd address.");
+	if ((global.program_counter & 1) != 0)
+		global.error_manager.Warning("Instruction is at an odd address.");
 
-	const auto address_after_opcode = program_counter + 2;
+	const auto address_after_opcode = global.program_counter + 2;
 
 	ResolveInstructionAmbiguity(instruction);
 	OptimiseInstruction(instruction);
@@ -1613,7 +1610,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 			size_undefined = " (no size)";
 		}
 
-		error_manager.Error("Instruction cannot be this size: allowed sizes are...{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}", newline_byte, opcode_byte, size_byte, newline_short, opcode_short, size_short, newline_word, opcode_word, size_word, newline_longword, opcode_longword, size_longword, newline_undefined, opcode_undefined, size_undefined);
+		global.error_manager.Error("Instruction cannot be this size: allowed sizes are...{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}", newline_byte, opcode_byte, size_byte, newline_short, opcode_short, size_short, newline_word, opcode_word, size_word, newline_longword, opcode_longword, size_longword, newline_undefined, opcode_undefined, size_undefined);
 	}
 	else
 	{
@@ -1645,7 +1642,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 
 		if (total_operands_wanted != total_operands_have)
 		{
-			error_manager.Error("Instruction has {} operands, but it should have {}.", total_operands_have, total_operands_wanted);
+			global.error_manager.Error("Instruction has {} operands, but it should have {}.", total_operands_have, total_operands_wanted);
 		}
 		else
 		{
@@ -1728,7 +1725,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 							break;
 					}
 
-					error_manager.Error("{} operand cannot be {}.", i == 0 ? "First" : "Second", operand_string);
+					global.error_manager.Error("{} operand cannot be {}.", i == 0 ? "First" : "Second", operand_string);
 					good_operands = false;
 				}
 			}
@@ -1816,18 +1813,18 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 							case OPCODE_BCLR_STATIC:
 							case OPCODE_BSET_STATIC:
 							{
-								const auto &value = expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(0);
+								const auto &value = global.expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(0);
 
 								/* Check whether the literal value will wrap or not, and warn the user if so. */
 								if (instruction.operands[1].type == OPERAND_DATA_REGISTER)
 								{
 									if (value >= 32)
-										error_manager.Warning("The bit index will be modulo 32.");
+										global.error_manager.Warning("The bit index will be modulo 32.");
 								}
 								else
 								{
 									if (value >= 8)
-										error_manager.Warning("The bit index will be modulo 8.");
+										global.error_manager.Warning("The bit index will be modulo 8.");
 								}
 
 								machine_code = 0x0800;
@@ -1873,12 +1870,12 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 						if (instruction.operands[1].type == OPERAND_DATA_REGISTER)
 						{
 							if (instruction.opcode.size != SIZE_LONGWORD && instruction.opcode.size != SIZE_UNDEFINED)
-								error_manager.Error("Instruction must be longword-sized when its destination operand is a data register.");
+								global.error_manager.Error("Instruction must be longword-sized when its destination operand is a data register.");
 						}
 						else
 						{
 							if (instruction.opcode.size != SIZE_BYTE && instruction.opcode.size != SIZE_SHORT && instruction.opcode.size != SIZE_UNDEFINED)
-								error_manager.Error("Instruction must be byte-sized when its destination operand is memory.");
+								global.error_manager.Error("Instruction must be byte-sized when its destination operand is memory.");
 						}
 
 						/* Prevent 'btst.l #0,d0' from outputting a longword-sized literal. */
@@ -1917,7 +1914,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 					case OPCODE_MOVEA:
 					case OPCODE_MOVE:
 						if (instruction.operands[0].type == OPERAND_ADDRESS_REGISTER && instruction.opcode.size == SIZE_BYTE)
-							error_manager.Error("This instruction cannot be byte-sized when its source is an address register.");
+							global.error_manager.Error("This instruction cannot be byte-sized when its source is an address register.");
 
 						switch (instruction.opcode.size)
 						{
@@ -2026,10 +2023,10 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 					{
 						machine_code = 0x4E40;
 
-						const auto &value = expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(0);
+						const auto &value = global.expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(0);
 
 						if (value > 15)
-							error_manager.Error("The vector cannot be higher than 15.");
+							global.error_manager.Error("The vector cannot be higher than 15.");
 						else
 							machine_code |= value;
 
@@ -2195,10 +2192,10 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 						machine_code |= ConstructSizeBits(instruction.opcode.size);
 						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[1]);
 
-						const auto &value = expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(1);
+						const auto &value = global.expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(1);
 
 						if (value < 1 || value > 8)
-							error_manager.Error("The value to add/subtract cannot be lower than 1 or higher than 8.");
+							global.error_manager.Error("The value to add/subtract cannot be lower than 1 or higher than 8.");
 
 						machine_code |= (value & 7) << 9;
 
@@ -2221,7 +2218,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 						machine_code |= instruction.operands[0].main_register;
 
 						/* Obtain the destination address. */
-						const auto &value = expression_processor.ResolveExpression(instruction.operands[1].literal).value_or(program_counter);
+						const auto &value = global.expression_processor.ResolveExpression(instruction.operands[1].literal).value_or(global.program_counter);
 
 						/* Construct a custom operand to hold the destination offset. */
 						operands_to_output[0] = &custom_operands[0];
@@ -2234,7 +2231,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 							const unsigned long offset = value - address_after_opcode;
 
 							if (offset > 0x7FFF)
-								error_manager.Error("The destination is too far away: it must be less than $8000 bytes after the start of the instruction, but instead it was ${:X} bytes away.", offset);
+								global.error_manager.Error("The destination is too far away: it must be less than $8000 bytes after the start of the instruction, but instead it was ${:X} bytes away.", offset);
 
 							custom_operands[0].literal.emplace<ExpressionNumber>(offset);
 						}
@@ -2243,13 +2240,13 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 							const unsigned long offset = address_after_opcode - value;
 
 							if (offset > 0x8000)
-								error_manager.Error("The destination is too far away: it must be less than $8001 bytes before the start of the instruction, but instead it was ${:X} bytes away.", offset);
+								global.error_manager.Error("The destination is too far away: it must be less than $8001 bytes before the start of the instruction, but instead it was ${:X} bytes away.", offset);
 
 							custom_operands[0].literal.emplace<ExpressionNumber>(0 - offset);
 						}
 
 						if ((value & 1) != 0)
-							error_manager.Warning("Branch leads to odd address 0x{:X}.", value);
+							global.error_manager.Warning("Branch leads to odd address 0x{:X}.", value);
 
 						break;
 					}
@@ -2279,7 +2276,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 						}
 
 						/* Obtain the destination address. */
-						const auto &value = expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(program_counter);
+						const auto &value = global.expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(global.program_counter);
 
 						/* Calculate the destination offset. */
 						unsigned long offset;
@@ -2291,14 +2288,14 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 							if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
 							{
 								if (offset == 0)
-									error_manager.Error("The destination cannot be 0 bytes away when using a short-sized branch: use a word-sized branch instead.");
+									global.error_manager.Error("The destination cannot be 0 bytes away when using a short-sized branch: use a word-sized branch instead.");
 								else if (offset > 0x7F)
-									error_manager.Error("The destination is too far away: it must be less than $80 bytes after the start of the instruction, but instead it was ${:X} bytes away.", offset);
+									global.error_manager.Error("The destination is too far away: it must be less than $80 bytes after the start of the instruction, but instead it was ${:X} bytes away.", offset);
 							}
 							else
 							{
 								if (offset > 0x7FFF)
-									error_manager.Error("The destination is too far away: it must be less than $8000 bytes after the start of the instruction, but instead it was ${:X} bytes away.", offset);
+									global.error_manager.Error("The destination is too far away: it must be less than $8000 bytes after the start of the instruction, but instead it was ${:X} bytes away.", offset);
 							}
 						}
 						else
@@ -2308,19 +2305,19 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 							if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
 							{
 								if (offset > 0x80)
-									error_manager.Error("The destination is too far away: it must be less than $81 bytes before the start of the instruction, but instead it was ${:X} bytes away.", offset);
+									global.error_manager.Error("The destination is too far away: it must be less than $81 bytes before the start of the instruction, but instead it was ${:X} bytes away.", offset);
 							}
 							else
 							{
 								if (offset > 0x8000)
-									error_manager.Error("The destination is too far away: it must be less than $8001 bytes before the start of the instruction, but instead it was ${:X} bytes away.", offset);
+									global.error_manager.Error("The destination is too far away: it must be less than $8001 bytes before the start of the instruction, but instead it was ${:X} bytes away.", offset);
 							}
 
 							offset = 0 - offset;
 						}
 
 						if ((value & 1) != 0)
-							error_manager.Warning("Branch leads to odd address 0x{:X}.", value);
+							global.error_manager.Warning("Branch leads to odd address 0x{:X}.", value);
 
 						if (instruction.opcode.size == SIZE_BYTE || instruction.opcode.size == SIZE_SHORT)
 						{
@@ -2345,10 +2342,10 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 						machine_code = 0x7000;
 
 						/* Obtain the value to be moved. */
-						const auto &value = expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(0);
+						const auto &value = global.expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(0);
 
 						if (value > 0x7F && value < 0xFFFFFF80)
-							error_manager.Error("Value is too large: it must be between -$80 and $7F, or $FFFFFF80 and $FFFFFFFF.");
+							global.error_manager.Error("Value is too large: it must be between -$80 and $7F, or $FFFFFF80 and $FFFFFFFF.");
 
 						machine_code |= value & 0xFF;
 
@@ -2423,7 +2420,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 					case OPCODE_ADD_TO_REG:
 					case OPCODE_ADD_FROM_REG:
 						if (instruction.operands[1].type == OPERAND_ADDRESS_REGISTER && instruction.opcode.size == SIZE_BYTE)
-							error_manager.Error("This instruction cannot be byte-sized when its destination is an address register.");
+							global.error_manager.Error("This instruction cannot be byte-sized when its destination is an address register.");
 
 						switch (instruction.opcode.type)
 						{
@@ -2676,10 +2673,10 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 							case OPCODE_ROL_STATIC:
 							case OPCODE_ROR_STATIC:
 							{
-								const auto &value = expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(0);
+								const auto &value = global.expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(0);
 
 								if (value > 8 || value < 1)
-									error_manager.Error("The shift value must not be greater than 8 or lower than 1.");
+									global.error_manager.Error("The shift value must not be greater than 8 or lower than 1.");
 
 								machine_code |= (value & 7) << 9;
 
@@ -2759,9 +2756,9 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
 			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 			{
-				auto value = expression_processor.ResolveExpression(operand->literal).value_or(
+				auto value = global.expression_processor.ResolveExpression(operand->literal).value_or(
 					operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT || operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER
-						? program_counter /* Prevent out-of-range displacements later on. */
+						? global.program_counter /* Prevent out-of-range displacements later on. */
 						: 0
 				);
 
@@ -2789,7 +2786,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 						{
 							case SIZE_BYTE:
 							case SIZE_SHORT:
-								error_manager.Error("The address cannot be byte-sized.");
+								global.error_manager.Error("The address cannot be byte-sized.");
 								bytes_to_write = 2;
 								break;
 
@@ -2797,7 +2794,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 								bytes_to_write = 2;
 
 								if (value >= 0x8000 && value < 0xFFFF8000)
-									error_manager.Error("Word-sized addresses cannot be higher than $7FFF or lower than $FFFF8000, but was ${:X}.", value);
+									global.error_manager.Error("Word-sized addresses cannot be higher than $7FFF or lower than $FFFF8000, but was ${:X}.", value);
 
 								break;
 
@@ -2817,7 +2814,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 								bytes_to_write = 2;
 
 								if (value >= 0x100 && value < 0xFFFFFF00)
-									error_manager.Error("Byte-sized literals cannot be larger than $FF or smaller than -$100, but was ${:X}.", value);
+									global.error_manager.Error("Byte-sized literals cannot be larger than $FF or smaller than -$100, but was ${:X}.", value);
 
 								value &= 0xFF;
 
@@ -2828,7 +2825,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 								bytes_to_write = 2;
 
 								if (value >= 0x10000 && value < 0xFFFF0000)
-									error_manager.Error("Word-sized literals cannot be larger than $FFFF or smaller than -$10000, but was ${:X}.", value);
+									global.error_manager.Error("Word-sized literals cannot be larger than $FFFF or smaller than -$10000, but was ${:X}.", value);
 
 								break;
 
@@ -2841,16 +2838,16 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 
 					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 						/* Turn the address into a displacement. */
-						value -= program_counter;
+						value -= global.program_counter;
 						/* Fallthrough */
 					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 						bytes_to_write = 2;
 
 						if (value >= 0x80 && value < 0xFFFFFF80)
-							error_manager.Error("Displacement values cannot be larger than $7F or smaller than -$80, but was ${:X}.", value);
+							global.error_manager.Error("Displacement values cannot be larger than $7F or smaller than -$80, but was ${:X}.", value);
 
 						if (operand->size == SIZE_BYTE || operand->size == SIZE_SHORT)
-							error_manager.Error("Index registers cannot be byte-sized.");
+							global.error_manager.Error("Index registers cannot be byte-sized.");
 
 						value &= 0xFF;
 
@@ -2865,13 +2862,13 @@ void InstructionProcessor::Process(StatementInstruction &instruction)
 						break;
 
 					case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
-						value -= program_counter;
+						value -= global.program_counter;
 						/* Fallthrough */
 					case OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT:
 						bytes_to_write = 2;
 
 						if (value >= 0x8000 && value < 0xFFFF8000)
-							error_manager.Error("Displacement values cannot be larger than $7FFF or smaller than -$8000, but was ${:X}.", value);
+							global.error_manager.Error("Displacement values cannot be larger than $7FFF or smaller than -$8000, but was ${:X}.", value);
 
 						break;
 				}
