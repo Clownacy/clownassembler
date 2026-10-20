@@ -9,6 +9,7 @@ add_library(clownassembler_core STATIC
 	"error.h"
 	"expression-processor.cpp"
 	"expression-processor.h"
+	"global.h"
 	"instruction-processor.cpp"
 	"instruction-processor.h"
 	"lexical.cpp"
