@@ -24,7 +24,6 @@
 
 #include "error.h"
 #include "expression-processor.h"
-#include "macro-state.h"
 #include "options.h"
 #include "symbol-dictionary.h"
 
@@ -58,12 +57,12 @@ SymbolDictionary::Entry* SymbolManager::LookupSymbol(std::string_view identifier
 	std::string expanded_identifier;
 	identifier = ExpandIdentifier(identifier, expanded_identifier);
 
-	if (macro.dictionary != nullptr)
+	if (macro_dictionary != nullptr)
 	{
 		if (found_dictionary != nullptr)
-			*found_dictionary = &*macro.dictionary;
+			*found_dictionary = &*macro_dictionary;
 
-		dictionary_entry = macro.dictionary->LookUp(identifier);
+		dictionary_entry = macro_dictionary->LookUp(identifier);
 	}
 
 	if (dictionary_entry == nullptr)
@@ -143,16 +142,6 @@ void SymbolManager::PurgeMacro(std::string_view identifier, const bool allow_und
 	if (!std::holds_alternative<SymbolMacro>(*entry))
 	{
 		error_manager.Error("Cannot purge '{}' as it is not a macro.", identifier);
-		return;
-	}
-
-	if (macro.ExpansionInProgress())
-	{
-		/* TODO: I don't know if that could be meaningfully supported in some way but for now this just seems like a
-		   "how to crash and burn into UAF/double free" without a bunch of changes to support it, for not much benefit.
-		   We don't check for the name of the currently-expanded macro because one could e.g. invoke a, which invokes b,
-		   which redefines a, and there is currently no simple wey to check the entire macro expansion stack. */
-		error_manager.Error("Cannot purge '{}' during macro expansion.", identifier);
 		return;
 	}
 

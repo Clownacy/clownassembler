@@ -18,13 +18,13 @@
 #ifndef SYMBOL_MANAGER_H
 #define SYMBOL_MANAGER_H
 
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <variant>
 
 #include "error.h"
-#include "macro-state.h"
 #include "options.h"
 #include "symbol-dictionary.h"
 #include "syntactic.h"
@@ -37,7 +37,7 @@ private:
 	ErrorManager &error_manager;
 	ExpressionProcessor &expression_processor;
 	OptionsStack &options;
-	const MacroState &macro;
+	const std::shared_ptr<SymbolDictionary> &macro_dictionary;
 	bool &doing_fixup_pass;
 
 	SymbolDictionary dictionary = {options->case_insensitive};
@@ -52,13 +52,13 @@ public:
 		ErrorManager &error_manager,
 		ExpressionProcessor &expression_processor,
 		OptionsStack &options,
-		const MacroState &macro,
+		const std::shared_ptr<SymbolDictionary> &macro_dictionary,
 		bool &doing_fixup_pass
 	)
 		: error_manager(error_manager)
 		, expression_processor(expression_processor)
 		, options(options)
-		, macro(macro)
+		, macro_dictionary(macro_dictionary)
 		, doing_fixup_pass(doing_fixup_pass)
 	{}
 
@@ -87,12 +87,12 @@ public:
 		std::string expanded_identifier;
 		identifier = ExpandIdentifier(identifier, expanded_identifier);
 
-		if (macro.dictionary != nullptr)
+		if (macro_dictionary != nullptr)
 		{
 			if (found_dictionary != nullptr)
-				*found_dictionary = &*macro.dictionary;
+				*found_dictionary = &*macro_dictionary;
 
-			dictionary_entry = macro.dictionary->LookUp(identifier);
+			dictionary_entry = macro_dictionary->LookUp(identifier);
 		}
 
 		if (dictionary_entry == nullptr)

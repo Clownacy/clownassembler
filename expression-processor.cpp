@@ -23,6 +23,7 @@
 #include "clowncommon/clowncommon.h"
 
 #include "error.h"
+#include "macro-state.h"
 #include "options.h"
 #include "symbol-manager.h"
 #include "utilities/path.h"

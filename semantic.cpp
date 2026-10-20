@@ -141,7 +141,7 @@ struct SemanticState
 		, source_line_reader(input_stream)
 		, listing_writer(listing_stream, doing_fixup_pass)
 		, object_writer(output_stream, listing_writer, program_counter, doing_fixup_pass)
-		, symbol_manager(error_manager, expression_processor, options, macro, doing_fixup_pass)
+		, symbol_manager(error_manager, expression_processor, options, macro.dictionary, doing_fixup_pass)
 		, expression_processor(error_manager, symbol_manager, options, macro)
 		, parser(error_manager)
 	{
@@ -277,10 +277,10 @@ static void TerminateMacro(SemanticState &state, SemanticState::ModeMacro &macro
 {
 	const std::string_view &identifier = macro_state.metadata.name;
 
-	state.symbol_manager.PurgeMacro(identifier, true);
-
 	if (!identifier.empty())
 	{
+		state.symbol_manager.PurgeMacro(identifier, true);
+
 		if (state.macro.ExpansionInProgress())
 		{
 			/* See comment in PurgeMacro after the check for the same condition for more details. */
@@ -1166,6 +1166,16 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			},
 			[&](StatementPurge &statement)
 			{
+				if (state.macro.ExpansionInProgress())
+				{
+					/* TODO: I don't know if that could be meaningfully supported in some way but for now this just seems like a
+					   "how to crash and burn into UAF/double free" without a bunch of changes to support it, for not much benefit.
+					   We don't check for the name of the currently-expanded macro because one could e.g. invoke a, which invokes b,
+					   which redefines a, and there is currently no simple wey to check the entire macro expansion stack. */
+					state.error_manager.Error("Cannot purge '{}' during macro expansion.", statement.string);
+					return;
+				}
+
 				state.symbol_manager.PurgeMacro(statement.string, false);
 			}
 		}, statement
