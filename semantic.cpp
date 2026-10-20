@@ -5225,11 +5225,9 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 
 static void AssembleFile(SemanticState &state, SourceLineReader &source_line_reader)
 {
-	std::string_view source_line;
-
 	/* Read lines one at a time, feeding them to the 'AssembleLine' function. */
-	while (!state.end && source_line_reader.Read(source_line))
-		AssembleLine(state, source_line, true);
+	for (std::optional<std::string_view> source_line; (source_line = source_line_reader.Read()).has_value() && !state.end; )
+		AssembleLine(state, *source_line, true);
 
 	/* If we're not in normal mode when a file ends, then something is wrong. */
 	while (!std::holds_alternative<SemanticState::ModeNormal>(state.mode))

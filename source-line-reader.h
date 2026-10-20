@@ -19,6 +19,7 @@
 #define SOURCE_LINE_READER_H
 
 #include <iostream>
+#include <optional>
 #include <string_view>
 #include <vector>
 
@@ -64,7 +65,7 @@ public:
 		: input_stream(input_stream)
 	{}
 
-	bool Read(std::string_view &source_line)
+	std::optional<std::string_view> Read()
 	{
 		bool data_read = false;
 		std::size_t line_buffer_read_position = 0, line_buffer_write_position = 0;
@@ -111,9 +112,10 @@ public:
 			/* Go back and get another line. */
 		}
 
-		source_line = {line_buffer.data(), line_buffer_read_position};
+		if (!data_read)
+			return std::nullopt;
 
-		return data_read;
+		return std::string_view{line_buffer.data(), line_buffer_read_position};
 	}
 };
 
