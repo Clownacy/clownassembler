@@ -20,11 +20,11 @@
 
 #include <optional>
 
-#include "error.h"
-#include "options.h"
 #include "syntactic.h"
 
+class ErrorManager;
 class SymbolManager;
+class OptionsStack;
 
 class ExpressionProcessor
 {

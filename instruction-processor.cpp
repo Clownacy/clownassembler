@@ -22,7 +22,11 @@
 
 #include "clowncommon/clowncommon.h"
 
+#include "error.h"
 #include "expression-processor.h"
+#include "object-writer.h"
+#include "options.h"
+#include "program-counter.h"
 #include "syntactic.h"
 
 struct InstructionMetadata

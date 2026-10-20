@@ -18,13 +18,13 @@
 #ifndef INSTRUCTION_PROCESSOR_H
 #define INSTRUCTION_PROCESSOR_H
 
-#include "error.h"
-#include "object-writer.h"
-#include "options.h"
-#include "program-counter.h"
 #include "syntactic.h"
 
+class ObjectWriter;
+class ErrorManager;
 class ExpressionProcessor;
+class ProgramCounter;
+class OptionsStack;
 
 class InstructionProcessor
 {

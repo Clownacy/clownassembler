@@ -18,6 +18,7 @@
 #ifndef SYMBOL_MANAGER_H
 #define SYMBOL_MANAGER_H
 
+#include <optional>
 #include <string>
 #include <string_view>
 #include <variant>

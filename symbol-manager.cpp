@@ -22,7 +22,11 @@
 
 #include "clowncommon/clowncommon.h"
 
+#include "error.h"
 #include "expression-processor.h"
+#include "macro-state.h"
+#include "options.h"
+#include "symbol-dictionary.h"
 
 void SymbolManager::SetLastGlobalLabel(const std::string_view &label)
 {
