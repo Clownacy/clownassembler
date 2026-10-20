@@ -47,7 +47,7 @@ struct Global
 		const MacroState &macro
 	)
 		: options(std::move(default_options))
-		, error_manager(error_stream, locations, source_line, options->warnings_enabled, options->pedantic_warnings_enabled)
+		, error_manager(error_stream, locations, source_line, options)
 		, expression_processor(error_manager, symbol_manager, options, macro)
 	{}
 };

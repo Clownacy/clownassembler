@@ -23,6 +23,7 @@
 #include <string>
 #include <string_view>
 
+#include "options.h"
 #include "utilities/io.h"
 
 class ErrorManager
@@ -48,7 +49,7 @@ private:
 	std::ostream &error_stream;
 	const std::deque<Location> &locations;
 	const std::string_view &source_line;
-	const bool &warnings_enabled, &pedantic_warnings_enabled;
+	const OptionsStack &options;
 	bool error_encountered = false;
 
 	void ErrorMessageCommon()
@@ -76,7 +77,7 @@ public:
 	template<typename... Args>
 	void Warning(std::format_string<Args...> &&format_string, Args &&...args)
 	{
-		if (warnings_enabled)
+		if (options->warnings_enabled)
 		{
 			error_stream << "Warning: ";
 			Utilities::IO::Print(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
@@ -88,7 +89,7 @@ public:
 
 	void Warning(const std::string_view &message)
 	{
-		if (warnings_enabled)
+		if (options->warnings_enabled)
 		{
 			error_stream << "Warning: " << message << '\n';
 
@@ -99,13 +100,13 @@ public:
 	template<typename... Args>
 	void WarningPedantic(std::format_string<Args...> &&format_string, Args &&...args)
 	{
-		if (pedantic_warnings_enabled)
+		if (options->pedantic_warnings_enabled)
 			Warning(std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 	}
 
 	void WarningPedantic(const std::string_view &message)
 	{
-		if (pedantic_warnings_enabled)
+		if (options->pedantic_warnings_enabled)
 			Warning(message);
 	}
 
@@ -139,14 +140,12 @@ public:
 		std::ostream &error_stream,
 		const std::deque<Location> &locations,
 		const std::string_view &source_line,
-		const bool &warnings_enabled,
-		const bool &pedantic_warnings_enabled
+		const OptionsStack &options
 	)
 		: error_stream(error_stream)
 		, locations(locations)
 		, source_line(source_line)
-		, warnings_enabled(warnings_enabled)
-		, pedantic_warnings_enabled(pedantic_warnings_enabled)
+		, options(options)
 	{}
 };
 
