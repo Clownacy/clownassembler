@@ -40,6 +40,7 @@
 
 #include "dictionary.h"
 #include "error.h"
+#include "expression-processor.h"
 #include "instruction-processor.h"
 #include "listing.h"
 #include "object.h"
@@ -315,29 +316,6 @@ static SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(SemanticState &s
 	return dictionary_entry;
 }
 
-static std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expression &expression, bool fold);
-
-static std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expression &expression, bool fold, const std::string_view &message)
-{
-	const auto &value = ResolveExpressionCommon(state, expression, fold);
-
-	if (!value.has_value() && !message.empty())
-		state.error_manager.Error(message);
-
-	return value;
-}
-
-// TODO: Make this static again.
-std::optional<unsigned long> ResolveExpression(SemanticState &state, Expression &expression, const std::string_view message = {})
-{
-	return ResolveExpressionCommon(state, expression, true, message);
-}
-
-static std::optional<unsigned long> ResolveExpressionWithoutFolding(SemanticState &state, Expression &expression, const std::string_view message = {})
-{
-	return ResolveExpressionCommon(state, expression, false, message);
-}
-
 static std::optional<unsigned long> GetSymbolInteger(SemanticState &state, const std::string_view &identifier, const bool must_evaluate_on_first_pass)
 {
 	SymbolDictionary::Entry* const dictionary_entry = LookupSymbol(state, identifier, nullptr);
@@ -404,7 +382,17 @@ static std::optional<unsigned long> GetSymbolInteger(SemanticState &state, const
 	);
 }
 
-static std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expression &expression, const bool fold)
+std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expression &expression, bool fold, const std::string_view &message)
+{
+	const auto &value = ResolveExpressionCommon(state, expression, fold);
+
+	if (!value.has_value() && !message.empty())
+		state.error_manager.Error(message);
+
+	return value;
+}
+
+std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expression &expression, const bool fold)
 {
 	const auto &value = std::visit(
 		CC_VisitHelper{

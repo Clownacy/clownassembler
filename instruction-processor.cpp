@@ -22,12 +22,8 @@
 
 #include "clowncommon/clowncommon.h"
 
+#include "expression-processor.h"
 #include "syntactic.h"
-
-// TODO: HACK HACK HACK HACK HACK!!!
-#include <optional>
-struct SemanticState;
-std::optional<unsigned long> ResolveExpression(SemanticState &state, Expression &expression, const std::string_view message = {});
 
 struct InstructionMetadata
 {
