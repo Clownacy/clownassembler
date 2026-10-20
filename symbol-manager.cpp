@@ -151,3 +151,85 @@ void SymbolManager::PurgeMacro(std::string_view identifier, const bool allow_und
 
 	dictionary->Remove(identifier);
 }
+
+bool SymbolManager::AddSymbol(const std::string_view &identifier, SymbolVariable symbol_contents)
+{
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolVariable>(identifier, nullptr);
+
+	if (symbol == nullptr)
+		return false;
+
+	symbol->emplace<SymbolVariable>(std::move(symbol_contents));
+
+	return true;
+}
+
+bool SymbolManager::AddSymbol(const std::string_view &identifier, SymbolConstant symbol_contents)
+{
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolConstant>(identifier, nullptr);
+
+	if (symbol == nullptr)
+		return false;
+
+	const auto constant_symbol = std::get_if<SymbolConstant>(symbol);
+
+	if (constant_symbol != nullptr && constant_symbol->value != symbol_contents.value)
+	{
+		error_manager.Error("Constant '{}' cannot be redefined to a different value.", identifier);
+		return false;
+	}
+
+	symbol->emplace<SymbolConstant>(std::move(symbol_contents));
+
+	return true;
+}
+
+bool SymbolManager::AddSymbol(const std::string_view &identifier, SymbolLabel symbol_contents)
+{
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolLabel>(identifier, nullptr);
+
+	if (symbol == nullptr)
+		return false;
+
+	if (std::holds_alternative<SymbolLabel>(*symbol))
+	{
+		error_manager.Error("Label '{}' cannot be redefined.", identifier);
+		return false;
+	}
+
+	symbol->emplace<SymbolLabel>(std::move(symbol_contents));
+
+	return true;
+}
+
+bool SymbolManager::AddSymbol(const std::string_view &identifier, SymbolExpressionConstant symbol_contents)
+{
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolExpressionConstant>(identifier, nullptr);
+
+	if (symbol == nullptr)
+		return false;
+
+	symbol->emplace<SymbolExpressionConstant>(std::move(symbol_contents));
+
+	return true;
+}
+
+bool SymbolManager::AddSymbol(SymbolMacro symbol_contents)
+{
+	const std::string_view &identifier = symbol_contents.macro.name;
+
+	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolMacro>(identifier, nullptr);
+
+	if (symbol == nullptr)
+		return false;
+
+	if (std::holds_alternative<SymbolMacro>(*symbol))
+	{
+		error_manager.Error("Macro '{}' cannot be redefined.", identifier);
+		return false;
+	}
+
+	symbol->emplace<SymbolMacro>(std::move(symbol_contents));
+
+	return true;
+}

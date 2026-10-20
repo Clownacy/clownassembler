@@ -120,6 +120,12 @@ public:
 	{
 		return dictionary.Filter(std::forward<Args>(args)...);
 	}
+
+	bool AddSymbol(const std::string_view &identifier, SymbolVariable symbol_contents);
+	bool AddSymbol(const std::string_view &identifier, SymbolConstant symbol_contents);
+	bool AddSymbol(const std::string_view &identifier, SymbolLabel symbol_contents);
+	bool AddSymbol(const std::string_view &identifier, SymbolExpressionConstant symbol_contents);
+	bool AddSymbol(SymbolMacro symbol_contents);
 };
 
 #endif /* SYMBOL_MANAGER_H */

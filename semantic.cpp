@@ -191,88 +191,6 @@ static void TerminateRept(SemanticState &state, SemanticState::ModeRept &rept_st
 	++state.location.front().line_number;
 }
 
-static bool AddToSymbolTable(SemanticState &state, const std::string_view &identifier, SymbolVariable symbol_contents)
-{
-	SymbolDictionary::Entry *symbol = state.symbol_manager.LookupSymbolAndCreateIfNotExist<SymbolVariable>(identifier, nullptr);
-
-	if (symbol == nullptr)
-		return false;
-
-	symbol->emplace<SymbolVariable>(std::move(symbol_contents));
-
-	return true;
-}
-
-static bool AddToSymbolTable(SemanticState &state, const std::string_view &identifier, SymbolConstant symbol_contents)
-{
-	SymbolDictionary::Entry *symbol = state.symbol_manager.LookupSymbolAndCreateIfNotExist<SymbolConstant>(identifier, nullptr);
-
-	if (symbol == nullptr)
-		return false;
-
-	const auto constant_symbol = std::get_if<SymbolConstant>(symbol);
-
-	if (constant_symbol != nullptr && constant_symbol->value != symbol_contents.value)
-	{
-		state.error_manager.Error("Constant '{}' cannot be redefined to a different value.", identifier);
-		return false;
-	}
-
-	symbol->emplace<SymbolConstant>(std::move(symbol_contents));
-
-	return true;
-}
-
-static bool AddToSymbolTable(SemanticState &state, const std::string_view &identifier, SymbolLabel symbol_contents)
-{
-	SymbolDictionary::Entry *symbol = state.symbol_manager.LookupSymbolAndCreateIfNotExist<SymbolLabel>(identifier, nullptr);
-
-	if (symbol == nullptr)
-		return false;
-
-	if (std::holds_alternative<SymbolLabel>(*symbol))
-	{
-		state.error_manager.Error("Label '{}' cannot be redefined.", identifier);
-		return false;
-	}
-
-	symbol->emplace<SymbolLabel>(std::move(symbol_contents));
-
-	return true;
-}
-
-static bool AddToSymbolTable(SemanticState &state, const std::string_view &identifier, SymbolExpressionConstant symbol_contents)
-{
-	SymbolDictionary::Entry *symbol = state.symbol_manager.LookupSymbolAndCreateIfNotExist<SymbolExpressionConstant>(identifier, nullptr);
-
-	if (symbol == nullptr)
-		return false;
-
-	symbol->emplace<SymbolExpressionConstant>(std::move(symbol_contents));
-
-	return true;
-}
-
-static bool AddToSymbolTable(SemanticState &state, SymbolMacro symbol_contents)
-{
-	const std::string_view &identifier = symbol_contents.macro.name;
-
-	SymbolDictionary::Entry *symbol = state.symbol_manager.LookupSymbolAndCreateIfNotExist<SymbolMacro>(identifier, nullptr);
-
-	if (symbol == nullptr)
-		return false;
-
-	if (std::holds_alternative<SymbolMacro>(*symbol))
-	{
-		state.error_manager.Error("Macro '{}' cannot be redefined.", identifier);
-		return false;
-	}
-
-	symbol->emplace<SymbolMacro>(std::move(symbol_contents));
-
-	return true;
-}
-
 static void TerminateMacro(SemanticState &state, SemanticState::ModeMacro &macro_state)
 {
 	const std::string_view &identifier = macro_state.metadata.name;
@@ -289,7 +207,7 @@ static void TerminateMacro(SemanticState &state, SemanticState::ModeMacro &macro
 		else
 		{
 			/* Add the macro to the symbol table. */
-			AddToSymbolTable(state, SymbolMacro{std::move(macro_state.metadata)});
+			state.symbol_manager.AddSymbol(SymbolMacro{std::move(macro_state.metadata)});
 		}
 	}
 
@@ -638,7 +556,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 		{
 			/* Handle the label here, instead of passing it onto a later function. */
 			state.symbol_manager.SetLastGlobalLabel(label);
-			AddToSymbolTable(state, label, SymbolLabel{state.program_counter});
+			state.symbol_manager.AddSymbol(label, SymbolLabel{state.program_counter});
 		}
 	}
 	else if (CC_VariantHoldsAnyOf<
@@ -755,7 +673,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 
 				if (!value_optional.has_value())
 				{
-					AddToSymbolTable(state, label, SymbolExpressionConstant{std::move(statement.expression)});
+					state.symbol_manager.AddSymbol(label, SymbolExpressionConstant{std::move(statement.expression)});
 					// TODO: Why does removing this result in a crash?
 					statement.expression.emplace<ExpressionNumber>(0);
 					return;
@@ -763,7 +681,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 
 				const auto &value = *value_optional;
 
-				AddToSymbolTable(state, label, SymbolConstant{value});
+				state.symbol_manager.AddSymbol(label, SymbolConstant{value});
 				state.listing_writer.WriteIdentifierValue(value);
 			},
 			[&](StatementEqusString &statement)
@@ -811,7 +729,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 
 				const auto &value = state.expression_processor.ResolveExpression(statement.expression, "Value must be evaluable on the first pass.").value_or(0);
 
-				AddToSymbolTable(state, label, SymbolVariable{value});
+				state.symbol_manager.AddSymbol(label, SymbolVariable{value});
 				state.listing_writer.WriteIdentifierValue(value);
 			},
 			[&](StatementIf &statement)
@@ -967,7 +885,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 				/* Add label to symbol table. */
 				if (!label.empty())
 				{
-					AddToSymbolTable(state, label, SymbolConstant{state.expression_processor.rs});
+					state.symbol_manager.AddSymbol(label, SymbolConstant{state.expression_processor.rs});
 					state.listing_writer.WriteIdentifierValue(state.expression_processor.rs);
 				}
 
@@ -1345,7 +1263,7 @@ static void InvokeMacro(SemanticState &state, const Macro &macro, const std::str
 		state.symbol_manager.SetLastGlobalLabel(label);
 
 		if (!macro.uses_label)
-			AddToSymbolTable(state, label, SymbolLabel{state.program_counter});
+			state.symbol_manager.AddSymbol(label, SymbolLabel{state.program_counter});
 	}
 
 	std::string_view size;
@@ -1828,7 +1746,7 @@ static void AddDefinition(void* const internal, const std::string_view &identifi
 	SemanticState &state = *(SemanticState*)internal;
 
 	/* TODO: Does asm68k create a constant or a variable? */
-	AddToSymbolTable(state, identifier, SymbolConstant{value});
+	state.symbol_manager.AddSymbol(identifier, SymbolConstant{value});
 }
 
 static bool AssembleToObjectFile(
