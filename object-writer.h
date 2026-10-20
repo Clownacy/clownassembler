@@ -21,6 +21,7 @@
 #include <iostream>
 
 #include "listing.h"
+#include "object.h"
 #include "program-counter.h"
 
 // Extends `Object::Writer` with an integer-writing interface, and

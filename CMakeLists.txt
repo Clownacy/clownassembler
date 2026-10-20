@@ -7,6 +7,8 @@ add_library(clownassembler_core STATIC
 	"dictionary.h"
 	"frontend/common.h"
 	"error.h"
+	"instruction-processor.cpp"
+	"instruction-processor.h"
 	"lexical.cpp"
 	"lexical.h"
 	"listing.cpp"
