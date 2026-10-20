@@ -20,30 +20,27 @@
 
 #include <iostream>
 
+#include "global.h"
 #include "listing.h"
 #include "object.h"
-#include "program-counter.h"
 
 // Extends `Object::Writer` with an integer-writing interface, and
 // handles listing as well as incrementing the program counter.
 class ObjectWriter : public Utilities::IO::BinaryWriter, public Object::Writer
 {
 private:
+	Global &global;
 	ListingWriter &listing_writer;
-	ProgramCounter &program_counter;
-	bool &doing_fixup_pass;
 
 public:
 	ObjectWriter(
+		Global &global,
 		std::ostream &stream,
-		ListingWriter &listing_writer,
-		ProgramCounter &program_counter,
-		bool &doing_fixup_pass
+		ListingWriter &listing_writer
 	)
 		: Object::Writer(stream)
+		, global(global)
 		, listing_writer(listing_writer)
-		, program_counter(program_counter)
-		, doing_fixup_pass(doing_fixup_pass)
 	{}
 
 	void WriteU8(const unsigned int value) override final
@@ -57,8 +54,8 @@ public:
 
 	void WriteU8WithoutListing(const unsigned int value)
 	{
-		Object::Writer::WriteByte(value, doing_fixup_pass);
-		program_counter += 1;
+		Object::Writer::WriteByte(value, global.doing_fixup_pass);
+		global.program_counter += 1;
 	}
 
 	// Do not allow user code to bypass `WriteU8` and `WriteU8WithoutListing`.

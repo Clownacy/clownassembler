@@ -137,7 +137,7 @@ struct SemanticState
 		: global(std::move(default_options), error_stream, location, source_line, symbol_manager, macro)
 		, source_line_reader(input_stream)
 		, listing_writer(listing_stream, global.doing_fixup_pass)
-		, object_writer(output_stream, listing_writer, global.program_counter, global.doing_fixup_pass)
+		, object_writer(global, output_stream, listing_writer)
 		, symbol_manager(global, macro.dictionary)
 		, parser(global.error_manager)
 	{
