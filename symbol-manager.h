@@ -24,8 +24,7 @@
 #include <string_view>
 #include <variant>
 
-#include "error.h"
-#include "options.h"
+#include "global.h"
 #include "symbol-dictionary.h"
 #include "syntactic.h"
 
@@ -34,13 +33,10 @@ class ExpressionProcessor;
 class SymbolManager
 {
 private:
-	ErrorManager &error_manager;
-	ExpressionProcessor &expression_processor;
-	OptionsStack &options;
+	Global &global;
 	const std::shared_ptr<SymbolDictionary> &macro_dictionary;
-	bool &doing_fixup_pass;
 
-	SymbolDictionary dictionary = {options->case_insensitive};
+	SymbolDictionary dictionary = {global.options->case_insensitive};
 	std::string last_global_label;
 
 	std::string_view ExpandIdentifier(const std::string_view &identifier, std::string &expanded_identifier);
@@ -49,17 +45,11 @@ public:
 	bool fixup_needed = false;
 
 	SymbolManager(
-		ErrorManager &error_manager,
-		ExpressionProcessor &expression_processor,
-		OptionsStack &options,
-		const std::shared_ptr<SymbolDictionary> &macro_dictionary,
-		bool &doing_fixup_pass
+		Global &global,
+		const std::shared_ptr<SymbolDictionary> &macro_dictionary
 	)
-		: error_manager(error_manager)
-		, expression_processor(expression_processor)
-		, options(options)
+		: global(global)
 		, macro_dictionary(macro_dictionary)
-		, doing_fixup_pass(doing_fixup_pass)
 	{}
 
 	const auto& GetLastGlobalLabel() const
@@ -105,7 +95,7 @@ public:
 
 		if (!std::holds_alternative<SymbolNone>(*dictionary_entry) && !std::holds_alternative<SymbolType>(*dictionary_entry))
 		{
-			error_manager.Error("Attempted to redefine symbol '{}' as a different type.", identifier);
+			global.error_manager.Error("Attempted to redefine symbol '{}' as a different type.", identifier);
 			return nullptr;
 		}
 

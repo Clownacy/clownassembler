@@ -22,14 +22,11 @@
 
 #include "clowncommon/clowncommon.h"
 
-#include "error.h"
-#include "expression-processor.h"
-#include "options.h"
 #include "symbol-dictionary.h"
 
 void SymbolManager::SetLastGlobalLabel(const std::string_view &label)
 {
-	if (label.front() != options->local_signifier)
+	if (label.front() != global.options->local_signifier)
 	{
 		/* This is a global label - cache it for later. */
 		last_global_label = label;
@@ -38,7 +35,7 @@ void SymbolManager::SetLastGlobalLabel(const std::string_view &label)
 
 std::string_view SymbolManager::ExpandIdentifier(const std::string_view &identifier, std::string &expanded_identifier)
 {
-	if (identifier.empty() || (identifier.front() != options->local_signifier))
+	if (identifier.empty() || (identifier.front() != global.options->local_signifier))
 		return identifier;
 
 	if (last_global_label.empty())
@@ -87,9 +84,9 @@ std::optional<unsigned long> SymbolManager::GetSymbolInteger(const std::string_v
 	if (dictionary_entry == nullptr || std::holds_alternative<SymbolNone>(*dictionary_entry))
 	{
 		if (must_evaluate_on_first_pass)
-			error_manager.Error("Symbol '{}' must be evaluable on first pass.", identifier);
-		else if (doing_fixup_pass)
-			error_manager.Error("Symbol '{}' does not exist.", identifier);
+			global.error_manager.Error("Symbol '{}' must be evaluable on first pass.", identifier);
+		else if (global.doing_fixup_pass)
+			global.error_manager.Error("Symbol '{}' does not exist.", identifier);
 		else
 			fixup_needed = true;
 
@@ -100,8 +97,8 @@ std::optional<unsigned long> SymbolManager::GetSymbolInteger(const std::string_v
 		CC_VisitHelper{
 			[&](SymbolVariable &symbol) -> std::optional<unsigned long>
 			{
-				if (doing_fixup_pass)
-					error_manager.Warning("Symbol '{}' forward-referenced despite being a redefineable variable.", identifier);
+				if (global.doing_fixup_pass)
+					global.error_manager.Warning("Symbol '{}' forward-referenced despite being a redefineable variable.", identifier);
 
 				return symbol.value;
 			},
@@ -115,11 +112,11 @@ std::optional<unsigned long> SymbolManager::GetSymbolInteger(const std::string_v
 			},
 			[&](SymbolExpressionConstant &symbol) -> std::optional<unsigned long>
 			{
-				return expression_processor.ResolveExpression(symbol.expression);
+				return global.expression_processor.ResolveExpression(symbol.expression);
 			},
 			[&](auto&) -> std::optional<unsigned long>
 			{
-				error_manager.Error("Symbol '{}' is not a label, constant, or variable.", identifier);
+				global.error_manager.Error("Symbol '{}' is not a label, constant, or variable.", identifier);
 				return std::nullopt;
 			}
 		}, *dictionary_entry
@@ -134,14 +131,14 @@ void SymbolManager::PurgeMacro(std::string_view identifier, const bool allow_und
 	if (entry == nullptr)
 	{
 		if (!allow_undefined)
-			error_manager.Error("Cannot purge '{}' as it does not exist.", identifier);
+			global.error_manager.Error("Cannot purge '{}' as it does not exist.", identifier);
 
 		return;
 	}
 
 	if (!std::holds_alternative<SymbolMacro>(*entry))
 	{
-		error_manager.Error("Cannot purge '{}' as it is not a macro.", identifier);
+		global.error_manager.Error("Cannot purge '{}' as it is not a macro.", identifier);
 		return;
 	}
 
@@ -175,7 +172,7 @@ bool SymbolManager::AddSymbol(const std::string_view &identifier, SymbolConstant
 
 	if (constant_symbol != nullptr && constant_symbol->value != symbol_contents.value)
 	{
-		error_manager.Error("Constant '{}' cannot be redefined to a different value.", identifier);
+		global.error_manager.Error("Constant '{}' cannot be redefined to a different value.", identifier);
 		return false;
 	}
 
@@ -193,7 +190,7 @@ bool SymbolManager::AddSymbol(const std::string_view &identifier, SymbolLabel sy
 
 	if (std::holds_alternative<SymbolLabel>(*symbol))
 	{
-		error_manager.Error("Label '{}' cannot be redefined.", identifier);
+		global.error_manager.Error("Label '{}' cannot be redefined.", identifier);
 		return false;
 	}
 
@@ -225,7 +222,7 @@ bool SymbolManager::AddSymbol(SymbolMacro symbol_contents)
 
 	if (std::holds_alternative<SymbolMacro>(*symbol))
 	{
-		error_manager.Error("Macro '{}' cannot be redefined.", identifier);
+		global.error_manager.Error("Macro '{}' cannot be redefined.", identifier);
 		return false;
 	}
 

@@ -138,7 +138,7 @@ struct SemanticState
 		, source_line_reader(input_stream)
 		, listing_writer(listing_stream, global.doing_fixup_pass)
 		, object_writer(output_stream, listing_writer, global.program_counter, global.doing_fixup_pass)
-		, symbol_manager(global.error_manager, global.expression_processor, global.options, macro.dictionary, global.doing_fixup_pass)
+		, symbol_manager(global, macro.dictionary)
 		, parser(global.error_manager)
 	{
 		/* For error messages, we want to maintain a list of filenames and line
