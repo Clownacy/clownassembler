@@ -138,6 +138,11 @@ struct SemanticState
 			{}
 		};
 
+		bool ExpansionInProgress() const
+		{
+			return expansion.has_value();
+		}
+
 		std::optional<Expansion> expansion;
 		std::shared_ptr<SymbolDictionary> dictionary;
 	};
@@ -230,11 +235,6 @@ static void AssembleFile(SemanticState &state, SourceLineReader &source_line_rea
 static void AssembleLine(SemanticState &state, const std::string_view &source_line, const bool write_line_to_listing_file);
 
 /* Other stuff */
-
-static bool CurrentlyExpandingMacro(const SemanticState &state)
-{
-	return state.macro.expansion.has_value();
-}
 
 static std::string_view ExpandIdentifier(SemanticState &state, const std::string_view &identifier, std::string &expanded_identifier)
 {
@@ -367,7 +367,7 @@ static std::optional<unsigned long> GetSymbolInteger(SemanticState &state, const
 						return state.rs;
 
 					case SymbolSpecial::Type::NARG:
-						if (!CurrentlyExpandingMacro(state))
+						if (!state.macro.ExpansionInProgress())
 						{
 							state.error_manager.Warning("Symbol '{}' cannot be used outside of a macro.", identifier);
 							return std::nullopt;
@@ -749,7 +749,7 @@ static void PurgeMacro(SemanticState &state, std::string_view identifier, const 
 		return;
 	}
 
-	if (CurrentlyExpandingMacro(state))
+	if (state.macro.ExpansionInProgress())
 	{
 		/* TODO: I don't know if that could be meaningfully supported in some way but for now this just seems like a
 		   "how to crash and burn into UAF/double free" without a bunch of changes to support it, for not much benefit.
@@ -868,7 +868,7 @@ static void TerminateMacro(SemanticState &state, SemanticState::ModeMacro &macro
 
 	if (!identifier.empty())
 	{
-		if (CurrentlyExpandingMacro(state))
+		if (state.macro.ExpansionInProgress())
 		{
 			/* See comment in PurgeMacro after the check for the same condition for more details. */
 			state.error_manager.Error("Cannot define macro '{}' during macro expansion.", identifier);
@@ -1725,7 +1725,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			},
 			[&](StatementShift&)
 			{
-				if (!CurrentlyExpandingMacro(state))
+				if (!state.macro.ExpansionInProgress())
 				{
 					state.error_manager.Error("SHIFT used outside of macro.");
 					return;
@@ -1751,7 +1751,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			},
 			[&](StatementLocal &statement)
 			{
-				if (!CurrentlyExpandingMacro(state))
+				if (!state.macro.ExpansionInProgress())
 				{
 					state.error_manager.Error("LOCAL used outside of macro.");
 					return;
@@ -1819,7 +1819,7 @@ static void PerformSubstitutionsOnSubString(SemanticState &state, std::string &s
 {
 	const bool case_insensitive = state.options->case_insensitive;
 
-	if (CurrentlyExpandingMacro(state))
+	if (state.macro.ExpansionInProgress())
 		state.substitutions.ProcessSubString(&state.macro.expansion->substitutions, string, view_to_search, state.macro.expansion->custom_search, allow_implicit_matches, case_insensitive);
 	else
 		state.substitutions.ProcessSubString(nullptr, string, view_to_search, nullptr, allow_implicit_matches, case_insensitive);
@@ -2113,7 +2113,7 @@ static void InvokeMacro(SemanticState &state, const Macro &macro, const std::str
 			AssembleLine(state, source_line, state.options->expand_all_macros);
 		}
 
-		if (!CurrentlyExpandingMacro(state))
+		if (!state.macro.ExpansionInProgress())
 			break;
 	}
 
@@ -2139,7 +2139,7 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 	const std::string_view old_source_line = state.source_line;
 
 	/* Assert a few preconditions to ensure we're in a non-insane state. */
-	assert(CurrentlyExpandingMacro(state) == (state.macro_depth > 0));
+	assert(state.macro.ExpansionInProgress() == (state.macro_depth > 0));
 
 	if (write_line_to_listing_file)
 	{
