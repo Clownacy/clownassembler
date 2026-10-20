@@ -20,7 +20,6 @@
 #include "semantic.h"
 
 #include <array>
-#include <cassert>
 #include <deque>
 #include <filesystem>
 #include <fstream>
@@ -355,6 +354,9 @@ static std::optional<unsigned long> GetSymbolInteger(SemanticState &state, const
 			{
 				switch (symbol.type)
 				{
+					default:
+						CC_UNREACHABLE;
+						/* Fallthrough */
 					case SymbolSpecial::Type::RS:
 						return state.rs;
 
@@ -367,10 +369,6 @@ static std::optional<unsigned long> GetSymbolInteger(SemanticState &state, const
 
 						return state.macro.expansion->total_arguments_at_start;
 				}
-
-				// Should never happen.
-				assert(false);
-				return std::nullopt;
 			},
 			[&](SymbolVariable &symbol) -> std::optional<unsigned long>
 			{
@@ -420,8 +418,7 @@ static std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state
 				switch (expression.type)
 				{
 					default:
-						/* This code should never be ran. */
-						assert(false);
+						CC_UNREACHABLE;
 						/* Fallthrough */
 					case ExpressionArithmetic2Operand::Type::SUBTRACT:
 						value = left_value - right_value;
@@ -445,7 +442,7 @@ static std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state
 						switch (expression.type)
 						{
 							default:
-								assert(false);
+								CC_UNREACHABLE;
 								/* Fallthrough */
 							case ExpressionArithmetic2Operand::Type::MULTIPLY:
 								value = left_value * right_value;
@@ -526,7 +523,7 @@ static std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state
 						switch (expression.type)
 						{
 							default:
-								assert(false);
+								CC_UNREACHABLE;
 								/* Fallthrough */
 							case ExpressionArithmetic2Operand::Type::LESS_THAN:
 								value = left_value < right_value;
@@ -575,8 +572,7 @@ static std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state
 				switch (expression.type)
 				{
 					default:
-						/* This code should never be ran. */
-						assert(false);
+						CC_UNREACHABLE;
 						/* Fallthrough */
 					case ExpressionArithmetic1Operand::Type::NEGATE:
 						value = 0 - value;
@@ -924,6 +920,9 @@ static unsigned int ConstructSizeBits(Size size)
 {
 	switch (size)
 	{
+		default:
+			CC_UNREACHABLE;
+			/* Fallthrough */
 		case SIZE_BYTE:
 		case SIZE_SHORT:
 			return 0x0000;
@@ -935,9 +934,6 @@ static unsigned int ConstructSizeBits(Size size)
 		case SIZE_LONGWORD:
 			return 0x0080;
 	}
-
-	assert(false);
-	return 0x0000;
 }
 
 static unsigned int ConstructEffectiveAddressBits(SemanticState &state, const Operand *operand)
@@ -947,12 +943,8 @@ static unsigned int ConstructEffectiveAddressBits(SemanticState &state, const Op
 	switch (operand->type)
 	{
 		default:
-		case OPERAND_NONE:
-			assert(false);
-			m = 0;
-			xn = 0;
-			break;
-
+			CC_UNREACHABLE;
+			/* Fallthrough */
 		case OPERAND_DATA_REGISTER:
 			m = 0; /* 000 */
 			xn = operand->main_register;
@@ -2565,8 +2557,7 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 					switch (instruction.operands[i].type)
 					{
 						default:
-						case OPERAND_NONE:
-							assert(false);
+							CC_UNREACHABLE;
 							/* Fallthrough */
 						case OPERAND_DATA_REGISTER:
 							operand_string = "a data register";
@@ -2713,6 +2704,9 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 					case OPCODE_BSET_DYNAMIC:
 						switch (instruction.opcode.type)
 						{
+							default:
+								CC_UNREACHABLE;
+								/* Fallthrough */
 							case OPCODE_BTST_STATIC:
 							case OPCODE_BCHG_STATIC:
 							case OPCODE_BCLR_STATIC:
@@ -2743,14 +2737,13 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 							case OPCODE_BSET_DYNAMIC:
 								machine_code = 0x0100 | (instruction.operands[0].main_register << 9);
 								break;
-
-							default:
-								assert(false);
-								break;
 						}
 
 						switch (instruction.opcode.type)
 						{
+							default:
+								CC_UNREACHABLE;
+								/* Fallthrough */
 							case OPCODE_BTST_STATIC:
 							case OPCODE_BTST_DYNAMIC:
 								machine_code |= 0x0000;
@@ -2769,10 +2762,6 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 							case OPCODE_BSET_STATIC:
 							case OPCODE_BSET_DYNAMIC:
 								machine_code |= 0x00C0;
-								break;
-
-							default:
-								assert(false);
 								break;
 						}
 
@@ -2870,6 +2859,9 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 					case OPCODE_TST:
 						switch (instruction.opcode.type)
 						{
+							default:
+								CC_UNREACHABLE;
+								/* Fallthrough */
 							case OPCODE_NEGX:
 								machine_code = 0x4000;
 								break;
@@ -2888,10 +2880,6 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 
 							case OPCODE_TST:
 								machine_code = 0x4A00;
-								break;
-
-							default:
-								assert(false);
 								break;
 						}
 
@@ -3170,6 +3158,9 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 
 						switch (instruction.opcode.type)
 						{
+							default:
+								CC_UNREACHABLE;
+								/* Fallthrough */
 							case OPCODE_BRA:
 								machine_code |= 0x0000;
 								break;
@@ -3180,10 +3171,6 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 
 							case OPCODE_Bcc:
 								machine_code |= instruction.opcode.condition << 8;
-								break;
-
-							default:
-								assert(false);
 								break;
 						}
 
@@ -3280,6 +3267,9 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 					case OPCODE_ADDX_ADDRESS_REGS:
 						switch (instruction.opcode.type)
 						{
+							default:
+								CC_UNREACHABLE;
+								/* Fallthrough */
 							case OPCODE_SBCD_DATA_REGS:
 								machine_code = 0x8100;
 								break;
@@ -3311,10 +3301,6 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 							case OPCODE_ADDX_ADDRESS_REGS:
 								machine_code = 0xD108;
 								break;
-
-							default:
-								assert(false);
-								break;
 						}
 
 						machine_code |= ConstructSizeBits(instruction.opcode.size);
@@ -3337,6 +3323,9 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 
 						switch (instruction.opcode.type)
 						{
+							default:
+								CC_UNREACHABLE;
+								/* Fallthrough */
 							case OPCODE_OR_TO_REG:
 								machine_code = 0x8000;
 								break;
@@ -3372,10 +3361,6 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 							case OPCODE_ADD_FROM_REG:
 								machine_code = 0xD100;
 								break;
-
-							default:
-								assert(false);
-								break;
 						}
 
 						machine_code |= ConstructSizeBits(instruction.opcode.size);
@@ -3398,6 +3383,9 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 					case OPCODE_ADDA:
 						switch (instruction.opcode.type)
 						{
+							default:
+								CC_UNREACHABLE;
+								/* Fallthrough */
 							case OPCODE_SUBA:
 								machine_code = 0x90C0;
 								break;
@@ -3408,10 +3396,6 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 
 							case OPCODE_ADDA:
 								machine_code = 0xD0C0;
-								break;
-
-							default:
-								assert(false);
 								break;
 						}
 
@@ -3496,6 +3480,9 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 
 						switch (instruction.opcode.type)
 						{
+							default:
+								CC_UNREACHABLE;
+								/* Fallthrough */
 							case OPCODE_ASL_STATIC:
 							case OPCODE_ASR_STATIC:
 							case OPCODE_ASL_DYNAMIC:
@@ -3531,16 +3518,15 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 							case OPCODE_ROR_SINGLE:
 								identifier = 3;
 								break;
-
-							default:
-								assert(false);
-								break;
 						}
 
 						machine_code = 0xE000;
 
 						switch (instruction.opcode.type)
 						{
+							default:
+								CC_UNREACHABLE;
+								/* Fallthrough */
 							case OPCODE_ASR_STATIC:
 							case OPCODE_ASR_DYNAMIC:
 							case OPCODE_ASR_SINGLE:
@@ -3570,14 +3556,13 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 							case OPCODE_ROL_SINGLE:
 								machine_code |= 0x0100;
 								break;
-
-							default:
-								assert(false);
-								break;
 						}
 
 						switch (instruction.opcode.type)
 						{
+							default:
+								CC_UNREACHABLE;
+								/* Fallthrough */
 							case OPCODE_ASL_STATIC:
 							case OPCODE_ASR_STATIC:
 							case OPCODE_LSL_STATIC:
@@ -3631,10 +3616,6 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 								machine_code |= 0x00C0;
 								machine_code |= ConstructEffectiveAddressBits(state, &instruction.operands[0]);
 								break;
-
-							default:
-								assert(false);
-								break;
 						}
 
 						break;
@@ -3684,10 +3665,9 @@ static void ProcessInstruction(SemanticState &state, StatementInstruction &instr
 
 				switch (operand->type)
 				{
-					case OPERAND_NONE:
-						assert(false);
-						break;
-
+					default:
+						CC_UNREACHABLE;
+						/* Fallthrough */
 					case OPERAND_DATA_REGISTER:
 					case OPERAND_ADDRESS_REGISTER:
 					case OPERAND_ADDRESS_REGISTER_INDIRECT:
@@ -3827,7 +3807,7 @@ static void PushSubstitute(SemanticState &state, const std::string_view &identif
 				[&](auto&)
 				{
 					// Should never be ran, since `LookupSymbolAndCreateIfNotExist` rejects mismatched types.
-					assert(false);
+					CC_UNREACHABLE;
 				},
 			}, *dictionary_entry
 		);
@@ -3878,6 +3858,9 @@ static void OutputDcValue(SemanticState &state, const Size size, unsigned long v
 
 	switch (size)
 	{
+		default:
+			CC_UNREACHABLE;
+			/* Fallthrough */
 		case SIZE_BYTE:
 		case SIZE_SHORT:
 			if (value > 0xFF && value < 0xFFFFFF00)
@@ -3897,11 +3880,6 @@ static void OutputDcValue(SemanticState &state, const Size size, unsigned long v
 
 		case SIZE_LONGWORD:
 			bytes_to_write = 4;
-			break;
-
-		case SIZE_UNDEFINED:
-			/* Should never occur. */
-			assert(false);
 			break;
 	}
 
@@ -4526,6 +4504,9 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 				/* Advance '__rs' by the specified amount. */
 				switch (statement.size)
 				{
+					default:
+						CC_UNREACHABLE;
+						/* Fallthrough */
 					case SIZE_BYTE:
 					case SIZE_SHORT:
 						length *= 1;
@@ -4537,11 +4518,6 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 
 					case SIZE_LONGWORD:
 						length *= 4;
-						break;
-
-					case SIZE_UNDEFINED:
-						/* Should never happen. */
-						assert(false);
 						break;
 				}
 
@@ -5341,7 +5317,7 @@ static void AssembleFile(SemanticState &state, std::istream &input_stream)
 				[&](SemanticState::ModeNormal&)
 				{
 					/* We can't reach this since we just checked for it. */
-					assert(false);
+					CC_UNREACHABLE;
 				},
 				[&](SemanticState::ModeRept &rept_state)
 				{
