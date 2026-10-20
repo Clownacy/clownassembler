@@ -21,6 +21,7 @@ add_library(clownassembler_core STATIC
 	"program-counter.h"
 	"semantic.cpp"
 	"semantic.h"
+	"source-line-reader.h"
 	"substitute.cpp"
 	"substitute.h"
 	"syntactic.cpp"

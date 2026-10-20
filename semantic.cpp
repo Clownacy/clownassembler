@@ -46,6 +46,7 @@
 #include "p2bin.h"
 #include "parser.h"
 #include "program-counter.h"
+#include "source-line-reader.h"
 #include "substitute.h"
 #include "utilities/io.h"
 #include "utilities/path.h"
@@ -144,13 +145,13 @@ struct SemanticState
 	OptionsStack options;
 	SymbolDictionary dictionary;
 	ErrorManager error_manager;
+	SourceLineReader source_line_reader;
 	ListingWriter listing_writer;
 	ObjectWriter object_writer;
 	Parser parser;
 	std::deque<ErrorManager::Location> location;
 	std::string_view source_line;
 	std::string last_global_label;
-	std::vector<char> line_buffer = std::vector<char>(0x100); // Room for 256 characters by default; will expand when necessary.
 	Substitute substitutions;
 	std::stack<std::string> string_stack;
 	Macro macro;
@@ -200,6 +201,7 @@ struct SemanticState
 	std::variant<ModeNormal, ModeRept, ModeMacro, ModeWhile> mode = SemanticState::ModeNormal{};
 
 	SemanticState(
+		std::istream &input_stream,
 		std::ostream &output_stream,
 		std::ostream &error_stream,
 		std::ostream* const listing_stream,
@@ -209,6 +211,7 @@ struct SemanticState
 		: options(std::move(default_options))
 		, dictionary(options->case_insensitive)
 		, error_manager(error_stream, location, source_line, options->warnings_enabled, options->pedantic_warnings_enabled)
+		, source_line_reader(input_stream)
 		, listing_writer(listing_stream, doing_fixup_pass)
 		, object_writer(output_stream, listing_writer, program_counter, doing_fixup_pass)
 		, parser(error_manager)
@@ -221,7 +224,7 @@ struct SemanticState
 };
 
 /* Some forward declarations that are needed because some functions recurse into each other. */
-static void AssembleFile(SemanticState &state, std::istream &input_stream);
+static void AssembleFile(SemanticState &state, SourceLineReader &source_line_reader);
 static void AssembleLine(SemanticState &state, const std::string_view &source_line, const bool write_line_to_listing_file);
 
 /* Other stuff */
@@ -3960,7 +3963,8 @@ static void ProcessInclude(SemanticState &state, const StatementInclude &include
 	/* Add file path and line number to the location list. */
 	state.location.emplace_front(include.path, 0);
 
-	AssembleFile(state, input_stream);
+	SourceLineReader source_line_reader(input_stream);
+	AssembleFile(state, source_line_reader);
 
 	state.location.pop_front();
 }
@@ -4011,88 +4015,6 @@ static void ProcessIncbin(SemanticState &state, StatementIncbin &incbin)
 			state.object_writer.WriteU8WithoutListing(character);
 		}
 	}
-}
-
-static bool ReadSourceLineRaw(SemanticState &state, std::istream &input_stream, std::size_t &line_buffer_write_position)
-{
-	if (input_stream.eof())
-		return false;
-
-	for (;;)
-	{
-		input_stream.getline(&state.line_buffer[line_buffer_write_position], state.line_buffer.size() - line_buffer_write_position);
-		line_buffer_write_position += input_stream.gcount();
-
-		if (input_stream.eof())
-			break;
-
-		/* Do not count the newline. */
-		--line_buffer_write_position;
-
-		/* Failure indicates the buffer was not big enough; if it
-		   is not set, then we have read a full line and can exit. */
-		if (!input_stream.fail())
-			break;
-
-		/* Make more room for the line. */
-		state.line_buffer.resize(state.line_buffer.size() * 2);
-
-		/* Now loop back around and read more of the line! */
-	}
-
-	return true;
-}
-
-static bool ReadSourceLine(SemanticState &state, std::istream &input_stream, std::string_view &source_line)
-{
-	bool data_read = false;
-	std::size_t line_buffer_read_position = 0, line_buffer_write_position = 0;
-
-	while (ReadSourceLineRaw(state, input_stream, line_buffer_write_position))
-	{
-		char quote_character;
-
-		data_read = true;
-
-		/* Find where the code ends and a comment begins.
-		   Note that terminating at ';' prevents a trailing '&' from being recognised
-		   and causing a line to be continued on the next line.
-		   This is needed for compatibility with S.N. 68k (asm68k). */
-		/* TODO: Does S.N. 68k actually concatenate when a '&' occurs before a comment? */
-		quote_character = '\0';
-
-		for (; line_buffer_read_position < line_buffer_write_position; ++line_buffer_read_position)
-		{
-			const char character = state.line_buffer[line_buffer_read_position];
-
-			if (quote_character == '\0')
-			{
-				if (character == '"' || character == '\'')
-					quote_character = character;
-				else if (character == ';')
-					break;
-			}
-			else if (character == quote_character)
-			{
-				quote_character = '\0';
-			}
-		}
-
-		/* An '&' at the end of a line is like a '\' at the end of a line in C:
-		   it signals that the current line is continued on the next line. */
-		if (line_buffer_read_position == 0 || state.line_buffer[line_buffer_read_position - 1] != '&')
-			break;
-
-		/* Discard the '&'. */
-		--line_buffer_read_position;
-		--line_buffer_write_position;
-
-		/* Go back and get another line. */
-	}
-
-	source_line = {state.line_buffer.data(), line_buffer_read_position};
-
-	return data_read;
 }
 
 static void ProcessRept(SemanticState &state, StatementRept &rept)
@@ -5301,12 +5223,12 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 	state.source_line = old_source_line;
 }
 
-static void AssembleFile(SemanticState &state, std::istream &input_stream)
+static void AssembleFile(SemanticState &state, SourceLineReader &source_line_reader)
 {
 	std::string_view source_line;
 
 	/* Read lines one at a time, feeding them to the 'AssembleLine' function. */
-	while (!state.end && ReadSourceLine(state, input_stream, source_line))
+	while (!state.end && source_line_reader.Read(source_line))
 		AssembleLine(state, source_line, true);
 
 	/* If we're not in normal mode when a file ends, then something is wrong. */
@@ -5365,6 +5287,7 @@ static bool AssembleToObjectFile(
 	const void* const user_data)
 {
 	SemanticState state(
+		input_stream,
 		output_stream,
 		error_stream,
 		listing_stream,
@@ -5389,7 +5312,7 @@ static bool AssembleToObjectFile(
 
 	/* Perform first pass of assembly, creating a list of fix-ups. */
 	state.object_writer.WriteHeader();
-	AssembleFile(state, input_stream);
+	AssembleFile(state, state.source_line_reader);
 	state.object_writer.WriteFooter();
 
 	/* Perform some sanity checks to make sure we're not somehow in an invalid state. */
