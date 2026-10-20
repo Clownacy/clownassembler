@@ -20,23 +20,44 @@
 
 #include <optional>
 
+#include "error.h"
+#include "options.h"
 #include "syntactic.h"
 
-// TODO: HACK HACK HACK HACK HACK!!!
-struct SemanticState;
+class SymbolManager;
 
-std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expression &expression, bool fold);
-std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expression &expression, bool fold, const std::string_view &message);
-
-inline std::optional<unsigned long> ResolveExpression(SemanticState &state, Expression &expression, const std::string_view message = {})
+class ExpressionProcessor
 {
-	return ResolveExpressionCommon(state, expression, true, message);
-}
+private:
+	ErrorManager &error_manager;
+	SymbolManager &symbol_manager;
+	OptionsStack &options;
 
-inline std::optional<unsigned long> ResolveExpressionWithoutFolding(SemanticState &state, Expression &expression, const std::string_view message = {})
-{
-	return ResolveExpressionCommon(state, expression, false, message);
-}
+public:
+	unsigned long program_counter_of_statement = 0, program_counter_of_expression = 0;
 
+	ExpressionProcessor(
+		ErrorManager &error_manager,
+		SymbolManager &symbol_manager,
+		OptionsStack &options
+	)
+		: error_manager(error_manager)
+		, symbol_manager(symbol_manager)
+		, options(options)
+	{}
+
+	std::optional<unsigned long> ResolveExpressionCommon(Expression &expression, bool fold);
+	std::optional<unsigned long> ResolveExpressionCommon(Expression &expression, bool fold, const std::string_view &message);
+
+	inline std::optional<unsigned long> ResolveExpression(Expression &expression, const std::string_view message = {})
+	{
+		return ResolveExpressionCommon(expression, true, message);
+	}
+
+	inline std::optional<unsigned long> ResolveExpressionWithoutFolding(Expression &expression, const std::string_view message = {})
+	{
+		return ResolveExpressionCommon(expression, false, message);
+	}
+};
 
 #endif /* EXPRESSION_PROCESSOR_H */

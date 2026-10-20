@@ -7,6 +7,7 @@ add_library(clownassembler_core STATIC
 	"dictionary.h"
 	"frontend/common.h"
 	"error.h"
+	"expression-processor.cpp"
 	"expression-processor.h"
 	"instruction-processor.cpp"
 	"instruction-processor.h"

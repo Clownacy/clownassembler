@@ -28,13 +28,13 @@
 #include "symbol-dictionary.h"
 #include "syntactic.h"
 
-// TODO: DUMB HACKY HACK
-struct SemanticState;
+class ExpressionProcessor;
 
 class SymbolManager
 {
 private:
 	ErrorManager &error_manager;
+	ExpressionProcessor &expression_processor;
 	OptionsStack &options;
 	const MacroState &macro;
 	bool &doing_fixup_pass;
@@ -50,11 +50,13 @@ public:
 
 	SymbolManager(
 		ErrorManager &error_manager,
+		ExpressionProcessor &expression_processor,
 		OptionsStack &options,
 		const MacroState &macro,
 		bool &doing_fixup_pass
 	)
 		: error_manager(error_manager)
+		, expression_processor(expression_processor)
 		, options(options)
 		, macro(macro)
 		, doing_fixup_pass(doing_fixup_pass)
@@ -110,7 +112,7 @@ public:
 		return dictionary_entry;
 	}
 
-	std::optional<unsigned long> GetSymbolInteger(SemanticState &state, const std::string_view &identifier, const bool must_evaluate_on_first_pass);
+	std::optional<unsigned long> GetSymbolInteger(const std::string_view &identifier, const bool must_evaluate_on_first_pass);
 	void PurgeMacro(std::string_view identifier, const bool allow_undefined);
 
 	template<typename... Args>

@@ -24,14 +24,14 @@
 #include "program-counter.h"
 #include "syntactic.h"
 
-// TODO: HACK HACK HACK HACK HACK!!!
-struct SemanticState;
+class ExpressionProcessor;
 
 class InstructionProcessor
 {
 private:
 	ObjectWriter &object_writer;
 	ErrorManager &error_manager;
+	ExpressionProcessor &expression_processor;
 	ProgramCounter &program_counter;
 	const OptionsStack &options;
 
@@ -39,17 +39,24 @@ private:
 	unsigned int ConstructEffectiveAddressBits(const Operand *operand);
 	static unsigned int ToAlternateEffectiveAddressBits(unsigned int bits);
 	void ResolveInstructionAmbiguity(StatementInstruction &instruction);
-	void OptimiseInstruction(StatementInstruction &instruction, SemanticState &state);
+	void OptimiseInstruction(StatementInstruction &instruction);
 
 public:
-	InstructionProcessor(ObjectWriter &object_writer, ErrorManager &error_manager, ProgramCounter &program_counter, OptionsStack &options)
+	InstructionProcessor(
+		ObjectWriter &object_writer,
+		ErrorManager &error_manager,
+		ExpressionProcessor &expression_processor,
+		ProgramCounter &program_counter,
+		OptionsStack &options
+	)
 		: object_writer(object_writer)
 		, error_manager(error_manager)
+		, expression_processor(expression_processor)
 		, program_counter(program_counter)
 		, options(options)
 	{}
 
-	void Process(StatementInstruction &instruction, SemanticState &state);
+	void Process(StatementInstruction &instruction);
 };
 
 #endif /* INSTRUCTION_PROCESSOR_H */

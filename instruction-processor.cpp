@@ -1525,7 +1525,7 @@ void InstructionProcessor::ResolveInstructionAmbiguity(StatementInstruction &ins
 	}
 }
 
-void InstructionProcessor::OptimiseInstruction(StatementInstruction &instruction, SemanticState &state)
+void InstructionProcessor::OptimiseInstruction(StatementInstruction &instruction)
 {
 	if (options->optimisation.zero_displacement)
 	{
@@ -1533,7 +1533,7 @@ void InstructionProcessor::OptimiseInstruction(StatementInstruction &instruction
 		{
 			if (operand.type == OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT)
 			{
-				const auto &value = ResolveExpression(state, operand.literal);
+				const auto &value = expression_processor.ResolveExpression(operand.literal);
 
 				if (value.has_value() && *value == 0)
 					operand.type = OPERAND_ADDRESS_REGISTER_INDIRECT;
@@ -1542,7 +1542,7 @@ void InstructionProcessor::OptimiseInstruction(StatementInstruction &instruction
 	}
 }
 
-void InstructionProcessor::Process(StatementInstruction &instruction, SemanticState &state)
+void InstructionProcessor::Process(StatementInstruction &instruction)
 {
 	std::array<Operand*, 2> operands_to_output;
 	std::array<Operand, 2> custom_operands;
@@ -1561,7 +1561,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction, SemanticSt
 	const auto address_after_opcode = program_counter + 2;
 
 	ResolveInstructionAmbiguity(instruction);
-	OptimiseInstruction(instruction, state);
+	OptimiseInstruction(instruction);
 
 	const auto &instruction_metadata = instruction_metadata_all[instruction.opcode.type];
 
@@ -1812,7 +1812,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction, SemanticSt
 							case OPCODE_BCLR_STATIC:
 							case OPCODE_BSET_STATIC:
 							{
-								const auto &value = ResolveExpression(state, instruction.operands[0].literal).value_or(0);
+								const auto &value = expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(0);
 
 								/* Check whether the literal value will wrap or not, and warn the user if so. */
 								if (instruction.operands[1].type == OPERAND_DATA_REGISTER)
@@ -2022,7 +2022,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction, SemanticSt
 					{
 						machine_code = 0x4E40;
 
-						const auto &value = ResolveExpression(state, instruction.operands[0].literal).value_or(0);
+						const auto &value = expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(0);
 
 						if (value > 15)
 							error_manager.Error("The vector cannot be higher than 15.");
@@ -2191,7 +2191,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction, SemanticSt
 						machine_code |= ConstructSizeBits(instruction.opcode.size);
 						machine_code |= ConstructEffectiveAddressBits(&instruction.operands[1]);
 
-						const auto &value = ResolveExpression(state, instruction.operands[0].literal).value_or(1);
+						const auto &value = expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(1);
 
 						if (value < 1 || value > 8)
 							error_manager.Error("The value to add/subtract cannot be lower than 1 or higher than 8.");
@@ -2217,7 +2217,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction, SemanticSt
 						machine_code |= instruction.operands[0].main_register;
 
 						/* Obtain the destination address. */
-						const auto &value = ResolveExpression(state, instruction.operands[1].literal).value_or(program_counter);
+						const auto &value = expression_processor.ResolveExpression(instruction.operands[1].literal).value_or(program_counter);
 
 						/* Construct a custom operand to hold the destination offset. */
 						operands_to_output[0] = &custom_operands[0];
@@ -2275,7 +2275,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction, SemanticSt
 						}
 
 						/* Obtain the destination address. */
-						const auto &value = ResolveExpression(state, instruction.operands[0].literal).value_or(program_counter);
+						const auto &value = expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(program_counter);
 
 						/* Calculate the destination offset. */
 						unsigned long offset;
@@ -2341,7 +2341,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction, SemanticSt
 						machine_code = 0x7000;
 
 						/* Obtain the value to be moved. */
-						const auto &value = ResolveExpression(state, instruction.operands[0].literal).value_or(0);
+						const auto &value = expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(0);
 
 						if (value > 0x7F && value < 0xFFFFFF80)
 							error_manager.Error("Value is too large: it must be between -$80 and $7F, or $FFFFFF80 and $FFFFFFFF.");
@@ -2672,7 +2672,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction, SemanticSt
 							case OPCODE_ROL_STATIC:
 							case OPCODE_ROR_STATIC:
 							{
-								const auto &value = ResolveExpression(state, instruction.operands[0].literal).value_or(0);
+								const auto &value = expression_processor.ResolveExpression(instruction.operands[0].literal).value_or(0);
 
 								if (value > 8 || value < 1)
 									error_manager.Error("The shift value must not be greater than 8 or lower than 1.");
@@ -2755,7 +2755,7 @@ void InstructionProcessor::Process(StatementInstruction &instruction, SemanticSt
 			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT:
 			case OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER:
 			{
-				auto value = ResolveExpression(state, operand->literal).value_or(
+				auto value = expression_processor.ResolveExpression(operand->literal).value_or(
 					operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT || operand->type == OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT_AND_INDEX_REGISTER
 						? program_counter /* Prevent out-of-range displacements later on. */
 						: 0

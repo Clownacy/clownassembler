@@ -78,8 +78,9 @@ struct SemanticState
 	ListingWriter listing_writer;
 	ObjectWriter object_writer;
 	ProgramCounter program_counter;
-	InstructionProcessor instruction_processor = {object_writer, error_manager, program_counter, options};
+	InstructionProcessor instruction_processor = {object_writer, error_manager, expression_processor, program_counter, options};
 	SymbolManager symbol_manager;
+	ExpressionProcessor expression_processor;
 	Parser parser;
 	std::deque<ErrorManager::Location> location;
 	std::string_view source_line;
@@ -87,7 +88,6 @@ struct SemanticState
 	std::stack<std::string> string_stack;
 	MacroState macro;
 	unsigned int macro_depth = 0;
-	unsigned long program_counter_of_statement = 0, program_counter_of_expression = 0;
 	unsigned long current_macro_invocation = 0;
 	bool end = false;
 
@@ -141,7 +141,8 @@ struct SemanticState
 		, source_line_reader(input_stream)
 		, listing_writer(listing_stream, doing_fixup_pass)
 		, object_writer(output_stream, listing_writer, program_counter, doing_fixup_pass)
-		, symbol_manager(error_manager, options, macro, doing_fixup_pass)
+		, symbol_manager(error_manager, expression_processor, options, macro, doing_fixup_pass)
+		, expression_processor(error_manager, symbol_manager, options)
 		, parser(error_manager)
 	{
 		/* For error messages, we want to maintain a list of filenames and line
@@ -156,309 +157,6 @@ static void AssembleFile(SemanticState &state, SourceLineReader &source_line_rea
 static void AssembleLine(SemanticState &state, const std::string_view &source_line, const bool write_line_to_listing_file);
 
 /* Other stuff */
-
-std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expression &expression, bool fold, const std::string_view &message)
-{
-	const auto &value = ResolveExpressionCommon(state, expression, fold);
-
-	if (!value.has_value() && !message.empty())
-		state.error_manager.Error(message);
-
-	return value;
-}
-
-std::optional<unsigned long> ResolveExpressionCommon(SemanticState &state, Expression &expression, const bool fold)
-{
-	const auto &value = std::visit(
-		CC_VisitHelper{
-			[&](ExpressionArithmetic2Operand &expression) -> std::optional<unsigned long>
-			{
-				const auto &left_value_optional  = ResolveExpressionCommon(state, expression.subexpressions[0], fold);
-				const auto &right_value_optional = ResolveExpressionCommon(state, expression.subexpressions[1], fold);
-
-				if (!left_value_optional.has_value() || !right_value_optional.has_value())
-					return std::nullopt;
-
-				auto left_value  = *left_value_optional;
-				auto right_value = *right_value_optional;
-
-				unsigned long value;
-
-				switch (expression.type)
-				{
-					default:
-						CC_UNREACHABLE;
-						/* Fallthrough */
-					case ExpressionArithmetic2Operand::Type::SUBTRACT:
-						value = left_value - right_value;
-						break;
-
-					case ExpressionArithmetic2Operand::Type::ADD:
-						value = left_value + right_value;
-						break;
-
-					case ExpressionArithmetic2Operand::Type::MULTIPLY:
-					case ExpressionArithmetic2Operand::Type::DIVIDE:
-					case ExpressionArithmetic2Operand::Type::MODULO:
-					{
-						const bool left_value_was_negative  = left_value  >= 0x80000000;
-						const bool right_value_was_negative = right_value >= 0x80000000;
-
-						/* Make inputs absolute, so we can emulate signed arithmetic with unsigned arithmetic. */
-						left_value  = (left_value  ^ (-(unsigned long)left_value_was_negative  & 0xFFFFFFFF)) + left_value_was_negative;
-						right_value = (right_value ^ (-(unsigned long)right_value_was_negative & 0xFFFFFFFF)) + right_value_was_negative;
-
-						switch (expression.type)
-						{
-							default:
-								CC_UNREACHABLE;
-								/* Fallthrough */
-							case ExpressionArithmetic2Operand::Type::MULTIPLY:
-								value = left_value * right_value;
-
-								if (left_value_was_negative != right_value_was_negative)
-									value = -value;
-
-								break;
-
-							case ExpressionArithmetic2Operand::Type::DIVIDE:
-								if (right_value == 0)
-								{
-									state.error_manager.Error("Cannot divide by zero.");
-									return std::nullopt;
-								}
-
-								value = left_value / right_value;
-
-								if (left_value_was_negative != right_value_was_negative)
-									value = -value;
-
-								break;
-
-							case ExpressionArithmetic2Operand::Type::MODULO:
-								if (right_value == 0)
-								{
-									state.error_manager.Error("Cannot modulo by zero.");
-									return std::nullopt;
-								}
-
-								value = left_value % right_value;
-
-								if (left_value_was_negative)
-									value = -value;
-
-								break;
-						}
-
-						break;
-					}
-
-					case ExpressionArithmetic2Operand::Type::LOGICAL_OR:
-						value = left_value != 0 || right_value != 0 ? -1 : 0;
-						break;
-
-					case ExpressionArithmetic2Operand::Type::LOGICAL_AND:
-						value = left_value != 0 && right_value != 0 ? -1 : 0;
-						break;
-
-					case ExpressionArithmetic2Operand::Type::BITWISE_OR:
-						value = left_value | right_value;
-						break;
-
-					case ExpressionArithmetic2Operand::Type::BITWISE_XOR:
-						value = left_value ^ right_value;
-						break;
-
-					case ExpressionArithmetic2Operand::Type::BITWISE_AND:
-						value = left_value & right_value;
-						break;
-
-					case ExpressionArithmetic2Operand::Type::EQUALITY:
-						value = left_value == right_value ? -1 : 0;
-						break;
-
-					case ExpressionArithmetic2Operand::Type::INEQUALITY:
-						value = left_value != right_value ? -1 : 0;
-						break;
-
-					case ExpressionArithmetic2Operand::Type::LESS_THAN:
-					case ExpressionArithmetic2Operand::Type::LESS_OR_EQUAL:
-					case ExpressionArithmetic2Operand::Type::MORE_THAN:
-					case ExpressionArithmetic2Operand::Type::MORE_OR_EQUAL:
-						/* Flip the sign bit so we can emulate signed comparisons with unsigned integers. */
-						left_value  ^= 0x80000000;
-						right_value ^= 0x80000000;
-
-						switch (expression.type)
-						{
-							default:
-								CC_UNREACHABLE;
-								/* Fallthrough */
-							case ExpressionArithmetic2Operand::Type::LESS_THAN:
-								value = left_value < right_value;
-								break;
-
-							case ExpressionArithmetic2Operand::Type::LESS_OR_EQUAL:
-								value = left_value <= right_value;
-								break;
-
-							case ExpressionArithmetic2Operand::Type::MORE_THAN:
-								value = left_value > right_value;
-								break;
-
-							case ExpressionArithmetic2Operand::Type::MORE_OR_EQUAL:
-								value = left_value >= right_value;
-								break;
-						}
-
-						value = -value;
-						break;
-
-					/* asm68k does 32-bit arithmetic, so it masks the shift amount to 0-31 (though whether this is intentional or just a side-effect of using x86 shift instructions that do this is unknown).
-					   (note: this is also needed to prevent undefined behaviour in C from shifting by an amount greater than or equal to the width of the type). */
-					/* TODO: Print a warning here. */
-					case ExpressionArithmetic2Operand::Type::LEFT_SHIFT:
-						value = left_value << (right_value % 32);
-						break;
-
-					case ExpressionArithmetic2Operand::Type::RIGHT_SHIFT:
-						value = left_value >> (right_value % 32);
-						break;
-				}
-
-				/* Prevent 'bleeding' out of the 68k's 32-bit range. */
-				return value & 0xFFFFFFFF;
-			},
-			[&](ExpressionArithmetic1Operand &expression) -> std::optional<unsigned long>
-			{
-				const auto &value_optional = ResolveExpressionCommon(state, *expression.subexpressions, fold);
-
-				if (!value_optional.has_value())
-					return std::nullopt;
-
-				auto value = *value_optional;
-
-				switch (expression.type)
-				{
-					default:
-						CC_UNREACHABLE;
-						/* Fallthrough */
-					case ExpressionArithmetic1Operand::Type::NEGATE:
-						value = 0 - value;
-						break;
-
-					case ExpressionArithmetic1Operand::Type::BITWISE_NOT:
-						value = ~value;
-						break;
-
-					case ExpressionArithmetic1Operand::Type::LOGICAL_NOT:
-						value = value == 0 ? -1 : 0;
-						break;
-				}
-
-				/* Prevent 'bleeding' out of the 68k's 32-bit range. */
-				return value & 0xFFFFFFFF;
-			},
-			[&](ExpressionNumber &expression) -> std::optional<unsigned long>
-			{
-				return expression.value;
-			},
-			[&](ExpressionIdentifier &expression) -> std::optional<unsigned long>
-			{
-				return state.symbol_manager.GetSymbolInteger(state, expression.string, false);
-			},
-			[&](ExpressionString &expression) -> std::optional<unsigned long>
-			{
-				const std::size_t length = expression.string.length();
-
-				if (length > 4)
-				{
-					state.error_manager.Error("Character literals cannot be more than 4 characters long.");
-					return std::nullopt;
-				}
-
-				unsigned long value = 0;
-
-				for (std::size_t i = 0; i < length; ++i)
-				{
-					value <<= 8;
-					value |= expression.string[i];
-				}
-
-				return value;
-			},
-			[&](ExpressionProgramCounterOfStatement&) -> std::optional<unsigned long>
-			{
-				return state.program_counter_of_statement;
-			},
-			[&](ExpressionProgramCounterOfExpression&) -> std::optional<unsigned long>
-			{
-				return state.program_counter_of_expression;
-			},
-			[&](ExpressionStrlen &expression) -> std::optional<unsigned long>
-			{
-				return expression.string.length();
-			},
-			[&](ExpressionStrcmp &expression) -> std::optional<unsigned long>
-			{
-				return expression.string_a == expression.string_b ? -1 : 0;
-			},
-			[&](ExpressionInstr &expression) -> std::optional<unsigned long>
-			{
-				const auto &position_optional = ResolveExpressionCommon(state, expression.subexpressions[0], fold);
-
-				if (!position_optional.has_value())
-					return std::nullopt;
-
-				const auto &position = *position_optional;
-
-				const auto expression_string_a = std::get_if<ExpressionString>(&expression.subexpressions[1]);
-				const auto expression_string_b = std::get_if<ExpressionString>(&expression.subexpressions[2]);
-
-				if (expression_string_a == nullptr || expression_string_b == nullptr)
-				{
-					state.error_manager.Error("Last two arguments to `INSTR` must be strings.");
-					return std::nullopt;
-				}
-
-				/* TODO: What if 'position' is 0? */
-				const std::size_t found_position = Utilities::CaseInsensitive::FindString(expression_string_a->string, expression_string_b->string, position - 1, state.options->case_insensitive);
-				return found_position == expression_string_a->string.npos ? 0 : found_position + 1;
-			},
-			[&](ExpressionDef &expression) -> std::optional<unsigned long>
-			{
-				return state.symbol_manager.LookupSymbol(expression.string, nullptr) != nullptr ? -1 : 0;
-			},
-			[&](ExpressionTypeWithIdentifier&) -> std::optional<unsigned long>
-			{
-				return 0; /* TODO: This is a placeholder! */
-			},
-			[&](ExpressionTypeWithNumber&) -> std::optional<unsigned long>
-			{
-				return 1; /* TODO: This is a placeholder! */
-			},
-			[&](ExpressionFilesize &expression) -> std::optional<unsigned long>
-			{
-				const auto &standard_path = Utilities::Path::ToStandardPath(expression.string);
-
-				if (!std::filesystem::exists(standard_path))
-				{
-					state.error_manager.Error("File '{}' does not exist.", expression.string);
-					return std::nullopt;
-				}
-
-				return std::filesystem::file_size(standard_path);
-			}
-		}, expression
-	);
-
-	/* Now that we have resolved the value, let's hardcode it here so that we don't ever have to calculate it again. */
-	/* This is especially useful for fix-ups, which may otherwise depend on identifiers that no longer exist at the time the value is resolved again. */
-	if (value.has_value() && fold)
-		expression.emplace<ExpressionNumber>(*value);
-
-	return value;
-}
 
 static void TerminateIf(SemanticState &state)
 {
@@ -630,7 +328,7 @@ static void TerminateWhile(SemanticState &state, SemanticState::ModeWhile &while
 		/* We absolutely do not want to fold (cache) this expression, because
 		   while-loops depend on variables mutating from previous values;
 		   without this, while-loops will never terminate. */
-		const auto &value = ResolveExpressionWithoutFolding(state, while_state_copy.expression, "Expression must be evaluable on the first pass.").value_or(0);
+		const auto &value = state.expression_processor.ResolveExpressionWithoutFolding(while_state_copy.expression, "Expression must be evaluable on the first pass.").value_or(0);
 
 		if (value == 0)
 			break;
@@ -782,9 +480,9 @@ static void ProcessDc(SemanticState &state, StatementDc &dc)
 		else
 		{
 			/* Update the program counter symbol in between values, to keep it up to date. */
-			state.program_counter_of_expression = state.program_counter;
+			state.expression_processor.program_counter_of_expression = state.program_counter;
 
-			OutputDcValue(state, dc.size, ResolveExpression(state, expression).value_or(0));
+			OutputDcValue(state, dc.size, state.expression_processor.ResolveExpression(expression).value_or(0));
 		}
 	}
 }
@@ -794,8 +492,8 @@ static void ProcessDcb(SemanticState &state, StatementDcb &dcb)
 	if (ShouldPerformAutomaticEven(state, dcb.size))
 		PerformEven(state);
 
-	const auto &repetitions = ResolveExpression(state, dcb.repetitions, "Repetition value must be evaluable on first pass.").value_or(0);
-	const auto &value = ResolveExpression(state, dcb.value).value_or(0);
+	const auto &repetitions = state.expression_processor.ResolveExpression(dcb.repetitions, "Repetition value must be evaluable on first pass.").value_or(0);
+	const auto &value = state.expression_processor.ResolveExpression(dcb.value).value_or(0);
 
 	for (unsigned long i = 0; i < repetitions; ++i)
 		OutputDcValue(state, dcb.size, value);
@@ -806,7 +504,7 @@ static void ProcessDs(SemanticState &state, StatementDs &ds)
 	if (ShouldPerformAutomaticEven(state, ds.size))
 		PerformEven(state);
 
-	const auto &length = ResolveExpression(state, ds.length, "Repetition value must be evaluable on first pass.").value_or(0);
+	const auto &length = state.expression_processor.ResolveExpression(ds.length, "Repetition value must be evaluable on first pass.").value_or(0);
 
 	for (unsigned long i = 0; i < length; ++i)
 		OutputDcValue(state, ds.size, 0);
@@ -841,7 +539,7 @@ static void ProcessIncbin(SemanticState &state, StatementIncbin &incbin)
 		return;
 	}
 
-	const auto &value = ResolveExpression(state, incbin.start, "Start value must be evaluable on the first pass.").value_or(0);
+	const auto &value = state.expression_processor.ResolveExpression(incbin.start, "Start value must be evaluable on the first pass.").value_or(0);
 
 	input_file.seekg(value);
 
@@ -850,7 +548,7 @@ static void ProcessIncbin(SemanticState &state, StatementIncbin &incbin)
 
 	if (incbin.has_length)
 	{
-		const auto &length = ResolveExpression(state, incbin.length, "Length value must be evaluable on the first pass.").value_or(0);
+		const auto &length = state.expression_processor.ResolveExpression(incbin.length, "Length value must be evaluable on the first pass.").value_or(0);
 
 		for (unsigned long i = 0; i < length; ++i)
 		{
@@ -884,7 +582,7 @@ static void ProcessRept(SemanticState &state, StatementRept &rept)
 	/* Enter REPT mode. */
 	auto &mode = state.mode.emplace<SemanticState::ModeRept>();
 
-	mode.repetitions = ResolveExpression(state, rept.repetitions, "Repetition value must be evaluable on the first pass.").value_or(1);
+	mode.repetitions = state.expression_processor.ResolveExpression(rept.repetitions, "Repetition value must be evaluable on the first pass.").value_or(1);
 	mode.line_number = state.location.front().line_number;
 	mode.nesting = 0;
 }
@@ -905,7 +603,7 @@ static void ProcessIf(SemanticState &state, Expression &expression)
 {
 	++state.current_if_level;
 
-	const auto &value = ResolveExpression(state, expression, "Condition must be evaluable on the first pass.").value_or(1);
+	const auto &value = state.expression_processor.ResolveExpression(expression, "Condition must be evaluable on the first pass.").value_or(1);
 
 	/* If this condition is false, then mark this as the false if-level. */
 	if (value == 0)
@@ -918,8 +616,8 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 {
 	/* Bizarrely, depending on the context, the program counter can be one
 	   of two values, so we need to maintain two separate copies of it. */
-	state.program_counter_of_statement = state.program_counter;
-	state.program_counter_of_expression = state.program_counter;
+	state.expression_processor.program_counter_of_statement = state.program_counter;
+	state.expression_processor.program_counter_of_expression = state.program_counter;
 
 	if (CC_VariantHoldsAnyOf<
 		StatementEmpty,
@@ -1001,7 +699,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			[&](StatementEmpty&) {},
 			[&](StatementInstruction &statement)
 			{
-				state.instruction_processor.Process(statement, state);
+				state.instruction_processor.Process(statement);
 			},
 			[&](StatementDc &statement)
 			{
@@ -1062,7 +760,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 				if (state.options->equ_set_descope_local_labels)
 					state.symbol_manager.SetLastGlobalLabel(label);
 
-				const auto &value_optional = ResolveExpression(state, statement.expression);
+				const auto &value_optional = state.expression_processor.ResolveExpression(statement.expression);
 
 				/* Hack: We ABSOLUTELY DO NOT want this line adding to the fix-up list!!! */
 				state.symbol_manager.fixup_needed = false;
@@ -1097,8 +795,8 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			},
 			[&](StatementSubstr &statement)
 			{
-				auto start = ResolveExpression(state, statement.start, "Start must be evaluable on the first pass.").value_or(0);
-				auto end = ResolveExpression(state, statement.end, "End must be evaluable on the first pass.").value_or(statement.string.length());
+				auto start = state.expression_processor.ResolveExpression(statement.start, "Start must be evaluable on the first pass.").value_or(0);
+				auto end = state.expression_processor.ResolveExpression(statement.end, "End must be evaluable on the first pass.").value_or(statement.string.length());
 
 				if (start == 0)
 				{
@@ -1123,7 +821,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 				if (state.options->equ_set_descope_local_labels)
 					state.symbol_manager.SetLastGlobalLabel(label);
 
-				const auto &value = ResolveExpression(state, statement.expression, "Value must be evaluable on the first pass.").value_or(0);
+				const auto &value = state.expression_processor.ResolveExpression(statement.expression, "Value must be evaluable on the first pass.").value_or(0);
 
 				AddToSymbolTable(state, label, SymbolVariable{value});
 				state.listing_writer.WriteIdentifierValue(value);
@@ -1142,7 +840,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 
 				if (state.false_if_level == state.current_if_level || state.false_if_level == 0)
 				{
-					const auto &value = ResolveExpression(state, statement.expression, "Condition must be evaluable on the first pass.").value_or(1);
+					const auto &value = state.expression_processor.ResolveExpression(statement.expression, "Condition must be evaluable on the first pass.").value_or(1);
 
 					/* If this condition is false, then mark this as the false if-level. */
 					if (state.true_already_found || value == 0)
@@ -1218,8 +916,8 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			},
 			[&](StatementCnop &statement)
 			{
-				const auto &offset = ResolveExpression(state, statement.offset, "Offset must be evaluable on the first pass.").value_or(0);
-				const auto &size_boundary = ResolveExpression(state, statement.size_boundary, "Size boundary must be evaluable on the first pass.").value_or(1);
+				const auto &offset = state.expression_processor.ResolveExpression(statement.offset, "Offset must be evaluable on the first pass.").value_or(0);
+				const auto &size_boundary = state.expression_processor.ResolveExpression(statement.size_boundary, "Size boundary must be evaluable on the first pass.").value_or(1);
 
 				if (size_boundary == 0)
 				{
@@ -1242,7 +940,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			[&](StatementInform &statement)
 			{
 				/* Definitely an 'INFORM'... */
-				const auto &severity = ResolveExpression(state, statement.severity, "Severity must be evaluable on the first pass.").value_or(0);
+				const auto &severity = state.expression_processor.ResolveExpression(statement.severity, "Severity must be evaluable on the first pass.").value_or(0);
 
 				/* TODO - Everything... */
 				switch (severity)
@@ -1276,7 +974,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 					if ((state.symbol_manager.rs & 1) != 0)
 						++state.symbol_manager.rs;
 
-				auto length = ResolveExpression(state, statement.length, "Length must be evaluable on the first pass.").value_or(0);
+				auto length = state.expression_processor.ResolveExpression(statement.length, "Length must be evaluable on the first pass.").value_or(0);
 
 				/* Add label to symbol table. */
 				if (!label.empty())
@@ -1310,7 +1008,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			[&](StatementRsset &statement)
 			{
 				/* Set '__rs' to value. */
-				state.symbol_manager.rs = ResolveExpression(state, statement.expression, "Value must be evaluable on the first pass.").value_or(state.symbol_manager.rs);
+				state.symbol_manager.rs = state.expression_processor.ResolveExpression(statement.expression, "Value must be evaluable on the first pass.").value_or(state.symbol_manager.rs);
 			},
 			[&](StatementRsreset&)
 			{
@@ -1325,7 +1023,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 					return;
 				}
 
-				const auto &value = ResolveExpression(state, statement.expression, "Value must be evaluable on the first pass.").value_or(state.program_counter);
+				const auto &value = state.expression_processor.ResolveExpression(statement.expression, "Value must be evaluable on the first pass.").value_or(state.program_counter);
 
 				state.obj_delta = value - state.program_counter;
 				state.program_counter += *state.obj_delta;
@@ -1343,7 +1041,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			},
 			[&](StatementOrg &statement)
 			{
-				const auto &value = ResolveExpression(state, statement.expression, "Value must be evaluable on the first pass.").value_or(state.program_counter);
+				const auto &value = state.expression_processor.ResolveExpression(statement.expression, "Value must be evaluable on the first pass.").value_or(state.program_counter);
 
 				if (value > 0xFFFFFFFF)
 				{
@@ -1486,8 +1184,8 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 	);
 
 	/* Update both copies of the program counter again, so that things like WHILE statements don't use stale values in their expressions. */
-	state.program_counter_of_statement = state.program_counter;
-	state.program_counter_of_expression = state.program_counter;
+	state.expression_processor.program_counter_of_statement = state.program_counter;
+	state.expression_processor.program_counter_of_expression = state.program_counter;
 }
 
 static void ParseLine(SemanticState &state, const std::string_view &label, const std::string_view &directive_and_operands)
@@ -1720,7 +1418,7 @@ static void InvokeMacro(SemanticState &state, const Macro &macro, const std::str
 					if (identifier_position_end < view_to_search.length() && view_to_search[identifier_position_end] == '\\')
 						++found_length;
 
-					const auto &value = state.symbol_manager.GetSymbolInteger(state, identifier, true).value_or(0);
+					const auto &value = state.symbol_manager.GetSymbolInteger(identifier, true).value_or(0);
 
 					if (symbol == '#')
 						symbol_value_string = std::format("{}", value);

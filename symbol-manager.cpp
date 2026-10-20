@@ -77,7 +77,7 @@ SymbolDictionary::Entry* SymbolManager::LookupSymbol(std::string_view identifier
 	return dictionary_entry;
 }
 
-std::optional<unsigned long> SymbolManager::GetSymbolInteger(SemanticState &state, const std::string_view &identifier, const bool must_evaluate_on_first_pass)
+std::optional<unsigned long> SymbolManager::GetSymbolInteger(const std::string_view &identifier, const bool must_evaluate_on_first_pass)
 {
 	SymbolDictionary::Entry* const dictionary_entry = LookupSymbol(identifier, nullptr);
 
@@ -132,7 +132,7 @@ std::optional<unsigned long> SymbolManager::GetSymbolInteger(SemanticState &stat
 			},
 			[&](SymbolExpressionConstant &symbol) -> std::optional<unsigned long>
 			{
-				return ResolveExpression(state, symbol.expression);
+				return expression_processor.ResolveExpression(symbol.expression);
 			},
 			[&](auto&) -> std::optional<unsigned long>
 			{
