@@ -79,8 +79,8 @@ struct SemanticState
 	ListingWriter listing_writer;
 	ObjectWriter object_writer;
 	InstructionProcessor instruction_processor = {object_writer, global.error_manager, global.expression_processor, global.program_counter, global.options};
-	SymbolManager symbol_manager;
-	Parser parser;
+	SymbolManager symbol_manager = {global, macro.dictionary};
+	Parser parser = {global.error_manager};
 	std::deque<ErrorManager::Location> location;
 	std::string_view source_line;
 	Substitute substitutions;
@@ -138,8 +138,6 @@ struct SemanticState
 		, source_line_reader(input_stream)
 		, listing_writer(listing_stream, global.doing_fixup_pass)
 		, object_writer(global, output_stream, listing_writer)
-		, symbol_manager(global, macro.dictionary)
-		, parser(global.error_manager)
 	{
 		/* For error messages, we want to maintain a list of filenames and line
 		   numbers that describe the location and nesting of the erroneous
