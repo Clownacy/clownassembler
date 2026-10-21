@@ -35,7 +35,7 @@ class Dictionary : public DictionaryBase<EntryArgument>
 public:
 	using Entry = EntryArgument;
 
-	Dictionary(bool case_insensitive)
+	Dictionary(const bool case_insensitive)
 		: DictionaryBase<Entry>(0, Utilities::CaseInsensitive::StringHasher{}, Utilities::CaseInsensitive::StringComparer{case_insensitive})
 	{}
 
@@ -51,16 +51,6 @@ public:
 		auto it = this->find(identifier);
 
 		return it != this->end() ? it->second : this->emplace(identifier).first->second;
-	}
-
-	Entry* LookUp(const std::string_view &identifier)
-	{
-		auto it = this->find(identifier);
-
-		if (it == this->end())
-			return nullptr;
-
-		return &it->second;
 	}
 
 	void Remove(const std::string_view &identifier)

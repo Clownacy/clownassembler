@@ -38,6 +38,7 @@ private:
 	std::string last_global_label;
 
 	std::string_view ExpandIdentifier(const std::string_view &identifier, std::string &expanded_identifier);
+	SymbolDictionary::Entry* LookupSymbolWithExpandedIndentifier(const std::string_view &expanded_identifier, SymbolDictionary **found_dictionary);
 	SymbolDictionary::Entry& LookupSymbolAndCreateIfNotExistWithoutTypeCheck(std::string_view identifier, SymbolDictionary **found_dictionary);
 
 public:

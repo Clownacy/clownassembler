@@ -46,63 +46,61 @@ std::string_view SymbolManager::ExpandIdentifier(const std::string_view &identif
 	return expanded_identifier;
 }
 
-SymbolDictionary::Entry* SymbolManager::LookupSymbol(std::string_view identifier, SymbolDictionary **found_dictionary)
+SymbolDictionary::Entry* SymbolManager::LookupSymbolWithExpandedIndentifier(const std::string_view &expanded_identifier, SymbolDictionary** const found_dictionary)
 {
-	SymbolDictionary::Entry *dictionary_entry = nullptr;
-
-	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
-	std::string expanded_identifier;
-	identifier = ExpandIdentifier(identifier, expanded_identifier);
-
 	if (macro_dictionary != nullptr)
 	{
-		if (found_dictionary != nullptr)
-			*found_dictionary = &*macro_dictionary;
+		const auto &it = macro_dictionary->find(expanded_identifier);
 
-		dictionary_entry = macro_dictionary->LookUp(identifier);
+		if (it != macro_dictionary->end())
+		{
+			if (found_dictionary != nullptr)
+				*found_dictionary = &*macro_dictionary;
+
+			return &it->second;
+		}
 	}
 
-	if (dictionary_entry == nullptr)
+	const auto &it = dictionary.find(expanded_identifier);
+
+	if (it != dictionary.end())
 	{
 		if (found_dictionary != nullptr)
 			*found_dictionary = &dictionary;
 
-		dictionary_entry = dictionary.LookUp(identifier);
-
-		if (dictionary_entry == nullptr)
-			if (found_dictionary != nullptr)
-				*found_dictionary = nullptr;
+		return &it->second;
 	}
 
-	return dictionary_entry;
+	if (found_dictionary != nullptr)
+		*found_dictionary = nullptr;
+
+	return nullptr;
+}
+
+SymbolDictionary::Entry* SymbolManager::LookupSymbol(std::string_view identifier, SymbolDictionary** const found_dictionary)
+{
+	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
+	std::string expanded_identifier;
+	identifier = ExpandIdentifier(identifier, expanded_identifier);
+
+	return LookupSymbolWithExpandedIndentifier(identifier, found_dictionary);
 }
 
 SymbolDictionary::Entry& SymbolManager::LookupSymbolAndCreateIfNotExistWithoutTypeCheck(std::string_view identifier, SymbolDictionary** const found_dictionary)
 {
-	/* TODO: Deduplicate this with `LookupSymbol`. */
-	SymbolDictionary::Entry *dictionary_entry = nullptr;
-
 	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
 	std::string expanded_identifier;
 	identifier = ExpandIdentifier(identifier, expanded_identifier);
 
-	if (macro_dictionary != nullptr)
-	{
-		if (found_dictionary != nullptr)
-			*found_dictionary = &*macro_dictionary;
+	const auto &dictionary_entry = LookupSymbol(identifier, found_dictionary);
 
-		dictionary_entry = macro_dictionary->LookUp(identifier);
-	}
+	if (dictionary_entry != nullptr)
+		return *dictionary_entry;
 
-	if (dictionary_entry == nullptr)
-	{
-		if (found_dictionary != nullptr)
-			*found_dictionary = &dictionary;
+	if (found_dictionary != nullptr)
+		*found_dictionary = &dictionary;
 
-		dictionary_entry = &dictionary[identifier];
-	}
-
-	return *dictionary_entry;
+	return dictionary.emplace(identifier).first->second;
 }
 
 std::optional<unsigned long> SymbolManager::GetSymbolInteger(const std::string_view &identifier, const bool must_evaluate_on_first_pass)
