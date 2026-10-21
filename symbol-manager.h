@@ -88,10 +88,14 @@ public:
 	std::optional<unsigned long> GetSymbolInteger(const std::string_view &identifier, const bool must_evaluate_on_first_pass);
 	void PurgeMacro(const std::string_view &identifier, const bool allow_undefined);
 
-	template<typename... Args>
-	void FilterDictionary(Args &&...args)
+	void FilterDictionary(const auto &filter_function)
 	{
-		return dictionary.Filter(std::forward<Args>(args)...);
+		std::erase_if(dictionary,
+			[&](auto &entry)
+			{
+				return !filter_function(entry.second, entry.first);
+			}
+		);
 	}
 
 	bool AddSymbol(const std::string_view &identifier, SymbolVariable symbol_contents);

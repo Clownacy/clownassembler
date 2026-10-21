@@ -18,8 +18,6 @@
 #ifndef DICTIONARY_H
 #define DICTIONARY_H
 
-#include <cstddef>
-#include <functional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -51,16 +49,6 @@ public:
 		auto it = this->find(identifier);
 
 		return it != this->end() ? it->second : this->emplace(identifier).first->second;
-	}
-
-	void Filter(const std::function<bool(const Entry &entry, const std::string_view &identifier)> &filter_function)
-	{
-		std::erase_if(*this,
-			[&](auto &entry)
-			{
-				return !filter_function(entry.second, entry.first);
-			}
-		);
 	}
 };
 
