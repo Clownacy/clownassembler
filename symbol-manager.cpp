@@ -77,6 +77,34 @@ SymbolDictionary::Entry* SymbolManager::LookupSymbol(std::string_view identifier
 	return dictionary_entry;
 }
 
+SymbolDictionary::Entry& SymbolManager::LookupSymbolAndCreateIfNotExistWithoutTypeCheck(std::string_view identifier, SymbolDictionary** const found_dictionary)
+{
+	/* TODO: Deduplicate this with `LookupSymbol`. */
+	SymbolDictionary::Entry *dictionary_entry = nullptr;
+
+	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
+	std::string expanded_identifier;
+	identifier = ExpandIdentifier(identifier, expanded_identifier);
+
+	if (macro_dictionary != nullptr)
+	{
+		if (found_dictionary != nullptr)
+			*found_dictionary = &*macro_dictionary;
+
+		dictionary_entry = macro_dictionary->LookUp(identifier);
+	}
+
+	if (dictionary_entry == nullptr)
+	{
+		if (found_dictionary != nullptr)
+			*found_dictionary = &dictionary;
+
+		dictionary_entry = &dictionary.LookUpAndCreateIfNotExist(identifier);
+	}
+
+	return *dictionary_entry;
+}
+
 std::optional<unsigned long> SymbolManager::GetSymbolInteger(const std::string_view &identifier, const bool must_evaluate_on_first_pass)
 {
 	SymbolDictionary::Entry* const dictionary_entry = LookupSymbol(identifier, nullptr);

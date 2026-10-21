@@ -28,8 +28,6 @@
 #include "symbol-dictionary.h"
 #include "syntactic.h"
 
-class ExpressionProcessor;
-
 class SymbolManager
 {
 private:
@@ -40,6 +38,7 @@ private:
 	std::string last_global_label;
 
 	std::string_view ExpandIdentifier(const std::string_view &identifier, std::string &expanded_identifier);
+	SymbolDictionary::Entry& LookupSymbolAndCreateIfNotExistWithoutTypeCheck(std::string_view identifier, SymbolDictionary **found_dictionary);
 
 public:
 	bool fixup_needed = false;
@@ -68,38 +67,17 @@ public:
 	SymbolDictionary::Entry* LookupSymbol(std::string_view identifier, SymbolDictionary **found_dictionary);
 
 	template<typename SymbolType>
-	SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(std::string_view identifier, SymbolDictionary **found_dictionary)
+	SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(const std::string_view &identifier, SymbolDictionary **found_dictionary)
 	{
-		/* TODO: Deduplicate this with `LookupSymbol`. */
-		SymbolDictionary::Entry *dictionary_entry = nullptr;
+		SymbolDictionary::Entry &dictionary_entry = LookupSymbolAndCreateIfNotExistWithoutTypeCheck(identifier, found_dictionary);
 
-		/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
-		std::string expanded_identifier;
-		identifier = ExpandIdentifier(identifier, expanded_identifier);
-
-		if (macro_dictionary != nullptr)
-		{
-			if (found_dictionary != nullptr)
-				*found_dictionary = &*macro_dictionary;
-
-			dictionary_entry = macro_dictionary->LookUp(identifier);
-		}
-
-		if (dictionary_entry == nullptr)
-		{
-			if (found_dictionary != nullptr)
-				*found_dictionary = &dictionary;
-
-			dictionary_entry = &dictionary.LookUpAndCreateIfNotExist(identifier);
-		}
-
-		if (!std::holds_alternative<SymbolNone>(*dictionary_entry) && !std::holds_alternative<SymbolType>(*dictionary_entry))
+		if (!std::holds_alternative<SymbolNone>(dictionary_entry) && !std::holds_alternative<SymbolType>(dictionary_entry))
 		{
 			global.error_manager.Error("Attempted to redefine symbol '{}' as a different type.", identifier);
 			return nullptr;
 		}
 
-		return dictionary_entry;
+		return &dictionary_entry;
 	}
 
 	std::optional<unsigned long> GetSymbolInteger(const std::string_view &identifier, const bool must_evaluate_on_first_pass);
