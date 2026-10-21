@@ -191,11 +191,9 @@ static void TerminateMacro(SemanticState &state, SemanticState::ModeMacro &macro
 
 	if (!identifier.empty())
 	{
-		state.symbol_manager.PurgeMacro(identifier, true);
-
 		if (state.macro.ExpansionInProgress())
 		{
-			/* See comment in PurgeMacro after the check for the same condition for more details. */
+			/* See comment in the StatementPurge handler after the check for the same condition for more details. */
 			state.global.error_manager.Error("Cannot define macro '{}' during macro expansion.", identifier);
 		}
 		else
@@ -1087,7 +1085,21 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 					return;
 				}
 
-				state.symbol_manager.PurgeMacro(statement.string, false);
+				const auto &[it, dictionary] = state.symbol_manager.LookupSymbol(statement.string);
+
+				if (it == dictionary.end())
+				{
+					state.global.error_manager.Error("Cannot purge '{}' as it does not exist.", statement.string);
+					return;
+				}
+
+				if (!std::holds_alternative<SymbolMacro>(it->second))
+				{
+					state.global.error_manager.Error("Cannot purge '{}' as it is not a macro.", statement.string);
+					return;
+				}
+
+				dictionary.erase(it);
 			}
 		}, statement
 	);

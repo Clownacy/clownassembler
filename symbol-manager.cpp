@@ -129,25 +129,15 @@ std::optional<unsigned long> SymbolManager::GetSymbolInteger(const std::string_v
 	);
 }
 
-void SymbolManager::PurgeMacro(const std::string_view &identifier, const bool allow_undefined)
+bool SymbolManager::DestroySymbol(const std::string_view &identifier)
 {
 	const auto &[it, dictionary] = LookupSymbol(identifier);
 
 	if (it == dictionary.end())
-	{
-		if (!allow_undefined)
-			global.error_manager.Error("Cannot purge '{}' as it does not exist.", identifier);
-
-		return;
-	}
-
-	if (!std::holds_alternative<SymbolMacro>(it->second))
-	{
-		global.error_manager.Error("Cannot purge '{}' as it is not a macro.", identifier);
-		return;
-	}
+		return false;
 
 	dictionary.erase(it);
+	return true;
 }
 
 bool SymbolManager::AddSymbol(const std::string_view &identifier, SymbolVariable symbol_contents)
@@ -220,12 +210,6 @@ bool SymbolManager::AddSymbol(SymbolMacro symbol_contents)
 
 	if (it == dictionary.end())
 		return false;
-
-	if (std::holds_alternative<SymbolMacro>(it->second))
-	{
-		global.error_manager.Error("Macro '{}' cannot be redefined.", identifier);
-		return false;
-	}
 
 	it->second.emplace<SymbolMacro>(std::move(symbol_contents));
 

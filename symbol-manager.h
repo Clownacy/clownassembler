@@ -86,7 +86,7 @@ public:
 	}
 
 	std::optional<unsigned long> GetSymbolInteger(const std::string_view &identifier, const bool must_evaluate_on_first_pass);
-	void PurgeMacro(const std::string_view &identifier, const bool allow_undefined);
+	bool DestroySymbol(const std::string_view &identifier);
 
 	void FilterDictionary(const auto &filter_function)
 	{
