@@ -131,7 +131,7 @@ public:
 		error_encountered = true;
 	}
 
-	bool GetErrorEncountered() const
+	bool WasErrorEncountered() const
 	{
 		return error_encountered;
 	}

@@ -1870,7 +1870,7 @@ static bool AssembleToObjectFile(
 		);
 	}
 
-	return !state.global.error_manager.GetErrorEncountered();
+	return !state.global.error_manager.WasErrorEncountered();
 }
 
 bool ClownAssembler::Assemble(
