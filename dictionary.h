@@ -27,12 +27,10 @@
 template<typename Entry>
 using DictionaryBase = std::unordered_map<std::string, Entry, Utilities::CaseInsensitive::StringHasher, Utilities::CaseInsensitive::StringComparer>;
 
-template<typename EntryArgument>
-class Dictionary : public DictionaryBase<EntryArgument>
+template<typename Entry>
+class Dictionary : public DictionaryBase<Entry>
 {
 public:
-	using Entry = EntryArgument;
-
 	Dictionary(const bool case_insensitive)
 		: DictionaryBase<Entry>(0, Utilities::CaseInsensitive::StringHasher{}, Utilities::CaseInsensitive::StringComparer{case_insensitive})
 	{}

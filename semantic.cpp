@@ -285,7 +285,7 @@ static void PushMacroArgumentSubstitutions(SemanticState &state)
 		const std::string_view &parameter = state.macro.expansion->metadata->parameter_names[argument_index];
 		const std::string_view &argument = argument_index >= state.macro.expansion->total_arguments ? blank_argument : state.macro.expansion->argument_list[argument_index];
 
-		SymbolDictionary::Entry &dictionary_entry = (*state.macro.dictionary)[parameter];
+		SymbolDictionary::mapped_type &dictionary_entry = (*state.macro.dictionary)[parameter];
 
 		/* TODO: De-duplicate this with the 'PushSubstitute' function. */
 		std::visit(
@@ -1823,7 +1823,7 @@ static bool AssembleToObjectFile(
 		symbol_writer.WriteU8(0);
 
 		state.symbol_manager.FilterDictionary(
-			[&](const SymbolDictionary::Entry &entry, const std::string_view &identifier) -> bool
+			[&](const SymbolDictionary::mapped_type &entry, const std::string_view &identifier) -> bool
 			{
 				/* The symbol file only contains labels. */
 				/* Labels longer than 0xFF characters are silently ignored. */
