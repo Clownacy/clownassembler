@@ -249,18 +249,17 @@ static void TerminateWhile(SemanticState &state, SemanticState::ModeWhile &while
 
 static void PushSubstitute(SemanticState &state, const std::string_view &identifier, const std::string_view &value)
 {
-	SymbolDictionary *dictionary;
-	SymbolDictionary::Entry* const dictionary_entry = state.symbol_manager.LookupSymbolAndCreateIfNotExist<SymbolStringConstant>(identifier, &dictionary);
+	const auto &[it, dictionary] = state.symbol_manager.LookupSymbolAndCreateIfNotExist<SymbolStringConstant>(identifier);
 
-	if (dictionary_entry != nullptr)
+	if (it != dictionary.end())
 	{
 		std::visit(
 			CC_VisitHelper{
 				[&](SymbolNone&)
 				{
-					auto &symbol = dictionary_entry->emplace<SymbolStringConstant>();
+					auto &symbol = it->second.emplace<SymbolStringConstant>();
 					symbol.value = value;
-					auto &substitute = state.macro.dictionary != nullptr && dictionary == &*state.macro.dictionary ? state.macro.expansion->substitutions : state.substitutions;
+					auto &substitute = state.macro.dictionary != nullptr && &dictionary == &*state.macro.dictionary ? state.macro.expansion->substitutions : state.substitutions;
 					substitute.PushSubstitute(identifier, symbol.value);
 				},
 				[&](SymbolStringConstant &symbol)
@@ -272,7 +271,7 @@ static void PushSubstitute(SemanticState &state, const std::string_view &identif
 					// Should never be ran, since `LookupSymbolAndCreateIfNotExist` rejects mismatched types.
 					CC_UNREACHABLE;
 				},
-			}, *dictionary_entry
+			}, it->second
 		);
 	}
 }
@@ -684,9 +683,9 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			},
 			[&](StatementEqusIdentifier &statement)
 			{
-				const SymbolDictionary::Entry* const dictionary_entry = state.symbol_manager.LookupSymbol(statement.string, nullptr);
+				const auto &[it, dictionary] = state.symbol_manager.LookupSymbol(statement.string);
 
-				const SymbolStringConstant* const symbol_string_constant = dictionary_entry == nullptr ? nullptr : std::get_if<SymbolStringConstant>(dictionary_entry);
+				const SymbolStringConstant* const symbol_string_constant = it == dictionary.end() ? nullptr : std::get_if<SymbolStringConstant>(&it->second);
 
 				if (symbol_string_constant == nullptr)
 					state.global.error_manager.Error("String constant can only be defined as a string or another string constant.");
@@ -1597,8 +1596,8 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 					else
 					{
 						/* Look up the directive in the dictionary to see if it's actually a macro. */
-						const SymbolDictionary::Entry* const macro_dictionary_entry = state.symbol_manager.LookupSymbol(directive, nullptr);
-						const SymbolMacro* const symbol_macro = macro_dictionary_entry == nullptr ? nullptr : std::get_if<SymbolMacro>(macro_dictionary_entry);
+						const auto &[it, dictionary] = state.symbol_manager.LookupSymbol(directive);
+						const SymbolMacro* const symbol_macro = it == dictionary.end() ? nullptr : std::get_if<SymbolMacro>(&it->second);
 						const Macro* const macro = symbol_macro == nullptr ? nullptr : &symbol_macro->macro;
 
 						if (macro != nullptr /*&& !macro->is_short*/)

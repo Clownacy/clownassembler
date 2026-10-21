@@ -60,55 +60,34 @@ SymbolManager::LookupResult SymbolManager::LookupSymbolWithExpandedIndentifier(c
 	return {it, dictionary};
 }
 
-SymbolDictionary::Entry* SymbolManager::LookupSymbol(std::string_view identifier, SymbolDictionary** const found_dictionary)
+SymbolManager::LookupResult SymbolManager::LookupSymbol(std::string_view identifier)
 {
 	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
 	std::string expanded_identifier;
 	identifier = ExpandIdentifier(identifier, expanded_identifier);
 
-	const auto &[it, found_dictionary_2_electric_boogaloo] = LookupSymbolWithExpandedIndentifier(identifier);
-
-	if (it != found_dictionary_2_electric_boogaloo.end())
-	{
-		if (found_dictionary != nullptr)
-			*found_dictionary = &found_dictionary_2_electric_boogaloo;
-
-		return &it->second;
-	}
-
-	if (found_dictionary != nullptr)
-		*found_dictionary = nullptr;
-
-	return nullptr;
+	return LookupSymbolWithExpandedIndentifier(identifier);
 }
 
-SymbolDictionary::Entry& SymbolManager::LookupSymbolAndCreateIfNotExistWithoutTypeCheck(std::string_view identifier, SymbolDictionary** const found_dictionary)
+SymbolManager::LookupResult SymbolManager::LookupSymbolAndCreateIfNotExistWithoutTypeCheck(std::string_view identifier)
 {
 	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
 	std::string expanded_identifier;
 	identifier = ExpandIdentifier(identifier, expanded_identifier);
 
-	const auto &[it, found_dictionary_2_electric_boogaloo] = LookupSymbolWithExpandedIndentifier(identifier);
+	const auto &[it, found_dictionary] = LookupSymbolWithExpandedIndentifier(identifier);
 
-	if (it != found_dictionary_2_electric_boogaloo.end())
-	{
-		if (found_dictionary != nullptr)
-			*found_dictionary = &found_dictionary_2_electric_boogaloo;
+	if (it != found_dictionary.end())
+		return {it, found_dictionary};
 
-		return it->second;
-	}
-
-	if (found_dictionary != nullptr)
-		*found_dictionary = &dictionary;
-
-	return dictionary.emplace(identifier).first->second;
+	return {dictionary.emplace(identifier).first, dictionary};
 }
 
 std::optional<unsigned long> SymbolManager::GetSymbolInteger(const std::string_view &identifier, const bool must_evaluate_on_first_pass)
 {
-	SymbolDictionary::Entry* const dictionary_entry = LookupSymbol(identifier, nullptr);
+	const auto &[it, dictionary] = LookupSymbol(identifier);
 
-	if (dictionary_entry == nullptr || std::holds_alternative<SymbolNone>(*dictionary_entry))
+	if (it == dictionary.end() || std::holds_alternative<SymbolNone>(it->second))
 	{
 		if (must_evaluate_on_first_pass)
 			global.error_manager.Error("Symbol '{}' must be evaluable on first pass.", identifier);
@@ -146,16 +125,15 @@ std::optional<unsigned long> SymbolManager::GetSymbolInteger(const std::string_v
 				global.error_manager.Error("Symbol '{}' is not a label, constant, or variable.", identifier);
 				return std::nullopt;
 			}
-		}, *dictionary_entry
+		}, it->second
 	);
 }
 
-void SymbolManager::PurgeMacro(std::string_view identifier, const bool allow_undefined)
+void SymbolManager::PurgeMacro(const std::string_view &identifier, const bool allow_undefined)
 {
-	SymbolDictionary *dictionary;
-	SymbolDictionary::Entry* const entry = LookupSymbol(identifier, &dictionary);
+	const auto &[it, dictionary] = LookupSymbol(identifier);
 
-	if (entry == nullptr)
+	if (it == dictionary.end())
 	{
 		if (!allow_undefined)
 			global.error_manager.Error("Cannot purge '{}' as it does not exist.", identifier);
@@ -163,39 +141,35 @@ void SymbolManager::PurgeMacro(std::string_view identifier, const bool allow_und
 		return;
 	}
 
-	if (!std::holds_alternative<SymbolMacro>(*entry))
+	if (!std::holds_alternative<SymbolMacro>(it->second))
 	{
 		global.error_manager.Error("Cannot purge '{}' as it is not a macro.", identifier);
 		return;
 	}
 
-	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
-	std::string expanded_identifier;
-	identifier = ExpandIdentifier(identifier, expanded_identifier);
-
-	dictionary->Remove(identifier);
+	dictionary.erase(it);
 }
 
 bool SymbolManager::AddSymbol(const std::string_view &identifier, SymbolVariable symbol_contents)
 {
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolVariable>(identifier, nullptr);
+	const auto &[it, dictionary] = LookupSymbolAndCreateIfNotExist<SymbolVariable>(identifier);
 
-	if (symbol == nullptr)
+	if (it == dictionary.end())
 		return false;
 
-	symbol->emplace<SymbolVariable>(std::move(symbol_contents));
+	it->second.emplace<SymbolVariable>(std::move(symbol_contents));
 
 	return true;
 }
 
 bool SymbolManager::AddSymbol(const std::string_view &identifier, SymbolConstant symbol_contents)
 {
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolConstant>(identifier, nullptr);
+	const auto &[it, dictionary] = LookupSymbolAndCreateIfNotExist<SymbolConstant>(identifier);
 
-	if (symbol == nullptr)
+	if (it == dictionary.end())
 		return false;
 
-	const auto constant_symbol = std::get_if<SymbolConstant>(symbol);
+	const auto constant_symbol = std::get_if<SymbolConstant>(&it->second);
 
 	if (constant_symbol != nullptr && constant_symbol->value != symbol_contents.value)
 	{
@@ -203,37 +177,37 @@ bool SymbolManager::AddSymbol(const std::string_view &identifier, SymbolConstant
 		return false;
 	}
 
-	symbol->emplace<SymbolConstant>(std::move(symbol_contents));
+	it->second.emplace<SymbolConstant>(std::move(symbol_contents));
 
 	return true;
 }
 
 bool SymbolManager::AddSymbol(const std::string_view &identifier, SymbolLabel symbol_contents)
 {
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolLabel>(identifier, nullptr);
+	const auto &[it, dictionary] = LookupSymbolAndCreateIfNotExist<SymbolLabel>(identifier);
 
-	if (symbol == nullptr)
+	if (it == dictionary.end())
 		return false;
 
-	if (std::holds_alternative<SymbolLabel>(*symbol))
+	if (std::holds_alternative<SymbolLabel>(it->second))
 	{
 		global.error_manager.Error("Label '{}' cannot be redefined.", identifier);
 		return false;
 	}
 
-	symbol->emplace<SymbolLabel>(std::move(symbol_contents));
+	it->second.emplace<SymbolLabel>(std::move(symbol_contents));
 
 	return true;
 }
 
 bool SymbolManager::AddSymbol(const std::string_view &identifier, SymbolExpressionConstant symbol_contents)
 {
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolExpressionConstant>(identifier, nullptr);
+	const auto &[it, dictionary] = LookupSymbolAndCreateIfNotExist<SymbolExpressionConstant>(identifier);
 
-	if (symbol == nullptr)
+	if (it == dictionary.end())
 		return false;
 
-	symbol->emplace<SymbolExpressionConstant>(std::move(symbol_contents));
+	it->second.emplace<SymbolExpressionConstant>(std::move(symbol_contents));
 
 	return true;
 }
@@ -242,18 +216,18 @@ bool SymbolManager::AddSymbol(SymbolMacro symbol_contents)
 {
 	const std::string_view &identifier = symbol_contents.macro.name;
 
-	SymbolDictionary::Entry *symbol = LookupSymbolAndCreateIfNotExist<SymbolMacro>(identifier, nullptr);
+	const auto &[it, dictionary] = LookupSymbolAndCreateIfNotExist<SymbolMacro>(identifier);
 
-	if (symbol == nullptr)
+	if (it == dictionary.end())
 		return false;
 
-	if (std::holds_alternative<SymbolMacro>(*symbol))
+	if (std::holds_alternative<SymbolMacro>(it->second))
 	{
 		global.error_manager.Error("Macro '{}' cannot be redefined.", identifier);
 		return false;
 	}
 
-	symbol->emplace<SymbolMacro>(std::move(symbol_contents));
+	it->second.emplace<SymbolMacro>(std::move(symbol_contents));
 
 	return true;
 }

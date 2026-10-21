@@ -298,7 +298,8 @@ std::optional<unsigned long> ExpressionProcessor::ResolveExpressionCommon(Expres
 			},
 			[&](ExpressionDef &expression) -> std::optional<unsigned long>
 			{
-				return symbol_manager.LookupSymbol(expression.string, nullptr) != nullptr ? -1 : 0;
+				const auto &[it, dictionary] = symbol_manager.LookupSymbol(expression.string);
+				return it != dictionary.end() ? -1 : 0;
 			},
 			[&](ExpressionTypeWithIdentifier&) -> std::optional<unsigned long>
 			{

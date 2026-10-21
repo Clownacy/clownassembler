@@ -22,6 +22,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <variant>
 
 #include "global.h"
@@ -42,7 +43,7 @@ private:
 
 	std::string_view ExpandIdentifier(const std::string_view &identifier, std::string &expanded_identifier);
 	LookupResult LookupSymbolWithExpandedIndentifier(const std::string_view &expanded_identifier);
-	SymbolDictionary::Entry& LookupSymbolAndCreateIfNotExistWithoutTypeCheck(std::string_view identifier, SymbolDictionary **found_dictionary);
+	LookupResult LookupSymbolAndCreateIfNotExistWithoutTypeCheck(std::string_view identifier);
 
 public:
 	bool fixup_needed = false;
@@ -68,24 +69,24 @@ public:
 		last_global_label = std::move(label);
 	}
 
-	SymbolDictionary::Entry* LookupSymbol(std::string_view identifier, SymbolDictionary **found_dictionary);
+	LookupResult LookupSymbol(std::string_view identifier);
 
 	template<typename SymbolType>
-	SymbolDictionary::Entry* LookupSymbolAndCreateIfNotExist(const std::string_view &identifier, SymbolDictionary **found_dictionary)
+	LookupResult LookupSymbolAndCreateIfNotExist(const std::string_view &identifier)
 	{
-		SymbolDictionary::Entry &dictionary_entry = LookupSymbolAndCreateIfNotExistWithoutTypeCheck(identifier, found_dictionary);
+		const auto &[it, dictionary] = LookupSymbolAndCreateIfNotExistWithoutTypeCheck(identifier);
 
-		if (!std::holds_alternative<SymbolNone>(dictionary_entry) && !std::holds_alternative<SymbolType>(dictionary_entry))
+		if (!std::holds_alternative<SymbolNone>(it->second) && !std::holds_alternative<SymbolType>(it->second))
 		{
 			global.error_manager.Error("Attempted to redefine symbol '{}' as a different type.", identifier);
-			return nullptr;
+			return {dictionary.end(), dictionary};
 		}
 
-		return &dictionary_entry;
+		return {it, dictionary};
 	}
 
 	std::optional<unsigned long> GetSymbolInteger(const std::string_view &identifier, const bool must_evaluate_on_first_pass);
-	void PurgeMacro(std::string_view identifier, const bool allow_undefined);
+	void PurgeMacro(const std::string_view &identifier, const bool allow_undefined);
 
 	template<typename... Args>
 	void FilterDictionary(Args &&...args)

@@ -53,16 +53,6 @@ public:
 		return it != this->end() ? it->second : this->emplace(identifier).first->second;
 	}
 
-	void Remove(const std::string_view &identifier)
-	{
-		auto it = this->find(identifier);
-
-		if (it == this->end())
-			return;
-
-		this->erase(it);
-	}
-
 	void Filter(const std::function<bool(const Entry &entry, const std::string_view &identifier)> &filter_function)
 	{
 		std::erase_if(*this,
