@@ -30,23 +30,26 @@ using DictionaryBase = std::unordered_map<std::string, Entry, Utilities::CaseIns
 template<typename Entry>
 class Dictionary : public DictionaryBase<Entry>
 {
+private:
+	using Base = DictionaryBase<Entry>;
+
 public:
 	Dictionary(const bool case_insensitive)
-		: DictionaryBase<Entry>(0, Utilities::CaseInsensitive::StringHasher{}, Utilities::CaseInsensitive::StringComparer{case_insensitive})
+		: Base(0, Utilities::CaseInsensitive::StringHasher{}, Utilities::CaseInsensitive::StringComparer{case_insensitive})
 	{}
 
 	auto emplace(const std::string_view &identifier)
 	{
 		// Nightmare Difficulty C++
-		return DictionaryBase<Entry>::emplace(std::piecewise_construct, std::forward_as_tuple(identifier), std::tuple<>());
+		return Base::emplace(std::piecewise_construct, std::forward_as_tuple(identifier), std::tuple<>());
 	}
 
 	Entry& operator[](const std::string_view &identifier)
 	{
 		// All of this crap to work-around C++ not having a decent `operator[]` before C++26... fuck me.
-		auto it = this->find(identifier);
+		auto it = Base::find(identifier);
 
-		return it != this->end() ? it->second : this->emplace(identifier).first->second;
+		return it != Base::end() ? it->second : emplace(identifier).first->second;
 	}
 };
 
