@@ -99,7 +99,7 @@ SymbolDictionary::Entry& SymbolManager::LookupSymbolAndCreateIfNotExistWithoutTy
 		if (found_dictionary != nullptr)
 			*found_dictionary = &dictionary;
 
-		dictionary_entry = &dictionary.LookUpAndCreateIfNotExist(identifier);
+		dictionary_entry = &dictionary[identifier];
 	}
 
 	return *dictionary_entry;

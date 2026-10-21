@@ -26,31 +26,38 @@
 
 #include "utilities/case-insensitive.h"
 
+template<typename Entry>
+using DictionaryBase = std::unordered_map<std::string, Entry, Utilities::CaseInsensitive::StringHasher, Utilities::CaseInsensitive::StringComparer>;
+
 template<typename EntryArgument>
-class Dictionary
+class Dictionary : public DictionaryBase<EntryArgument>
 {
 public:
 	using Entry = EntryArgument;
 
-	std::unordered_map<std::string, Entry, Utilities::CaseInsensitive::StringHasher, Utilities::CaseInsensitive::StringComparer> internal;
-
 	Dictionary(bool case_insensitive)
-		: internal(0, Utilities::CaseInsensitive::StringHasher{}, Utilities::CaseInsensitive::StringComparer{case_insensitive})
+		: DictionaryBase<Entry>(0, Utilities::CaseInsensitive::StringHasher{}, Utilities::CaseInsensitive::StringComparer{case_insensitive})
 	{}
 
-	Entry& LookUpAndCreateIfNotExist(const std::string_view &identifier)
+	auto emplace(const std::string_view &identifier)
+	{
+		// Nightmare Difficulty C++
+		return DictionaryBase<Entry>::emplace(std::piecewise_construct, std::forward_as_tuple(identifier), std::tuple<>());
+	}
+
+	Entry& operator[](const std::string_view &identifier)
 	{
 		// All of this crap to work-around C++ not having a decent `operator[]` before C++26... fuck me.
-		auto it = internal.find(identifier);
+		auto it = this->find(identifier);
 
-		return it != internal.end() ? it->second : internal.emplace(std::piecewise_construct, std::forward_as_tuple(identifier), std::tuple<>()).first->second; // Nightmare Difficulty C++
+		return it != this->end() ? it->second : this->emplace(identifier).first->second;
 	}
 
 	Entry* LookUp(const std::string_view &identifier)
 	{
-		auto it = internal.find(identifier);
+		auto it = this->find(identifier);
 
-		if (it == internal.end())
+		if (it == this->end())
 			return nullptr;
 
 		return &it->second;
@@ -58,17 +65,17 @@ public:
 
 	void Remove(const std::string_view &identifier)
 	{
-		auto it = internal.find(identifier);
+		auto it = this->find(identifier);
 
-		if (it == internal.end())
+		if (it == this->end())
 			return;
 
-		internal.erase(it);
+		this->erase(it);
 	}
 
 	void Filter(const std::function<bool(const Entry &entry, const std::string_view &identifier)> &filter_function)
 	{
-		std::erase_if(internal,
+		std::erase_if(*this,
 			[&](auto &entry)
 			{
 				return !filter_function(entry.second, entry.first);

@@ -286,7 +286,7 @@ static void PushMacroArgumentSubstitutions(SemanticState &state)
 		const std::string_view &parameter = state.macro.expansion->metadata->parameter_names[argument_index];
 		const std::string_view &argument = argument_index >= state.macro.expansion->total_arguments ? blank_argument : state.macro.expansion->argument_list[argument_index];
 
-		SymbolDictionary::Entry &dictionary_entry = state.macro.dictionary->LookUpAndCreateIfNotExist(parameter);
+		SymbolDictionary::Entry &dictionary_entry = (*state.macro.dictionary)[parameter];
 
 		/* TODO: De-duplicate this with the 'PushSubstitute' function. */
 		std::visit(
@@ -1074,7 +1074,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 				}
 
 				for (const auto &identifier : statement.identifiers)
-					state.macro.dictionary->LookUpAndCreateIfNotExist(identifier);
+					state.macro.dictionary->emplace(identifier);
 			},
 			[&](StatementPurge &statement)
 			{
