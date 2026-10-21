@@ -1438,18 +1438,9 @@ static void InvokeMacro(SemanticState &state, const Macro &macro, const std::str
 	/* Iterate over each line of the macro, sending it to be processed. */
 	for (const auto &source_line : macro.source_line_list)
 	{
-		/* TODO: This is redundant and wrong: these substitutions are already done later, and this should only be doing the macro arguments! */
-		if (macro.is_short)
-		{
-			std::string expanded_source_line = source_line;
-			PerformSubstitutions(state, expanded_source_line, false);
-			AssembleLine(state, expanded_source_line, state.global.options->expand_all_macros);
-		}
-		else
-		{
-			AssembleLine(state, source_line, state.global.options->expand_all_macros);
-		}
+		AssembleLine(state, source_line, state.global.options->expand_all_macros);
 
+		/* Detect 'MEXIT'. */
 		if (!state.macro.ExpansionInProgress())
 			break;
 	}
@@ -1655,7 +1646,7 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 					{
 						if (macro_state.metadata.is_short)
 						{
-							/* Short macros automatically terminate after one statement. */
+							/* Short macros automatically terminate after one non-empty statement. */
 							const std::size_t first_nonwhitespace_position = Utilities::String::GetLeadingLength(state.source_line, " \t");
 							const char first_nonwhitespace_character = first_nonwhitespace_position == state.source_line.length() ? '\0' : state.source_line[first_nonwhitespace_position];
 
