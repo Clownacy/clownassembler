@@ -71,7 +71,7 @@ struct SemanticState
 {
 	Global global;
 
-	/* Preprocessor-specifc global stuff. */
+	/* Preprocessor-specific global stuff. */
 	SourceLineReader source_line_reader;
 	ListingWriter listing_writer;
 	ObjectWriter object_writer;
