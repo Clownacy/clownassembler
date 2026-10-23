@@ -15,12 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <charconv>
 #include <filesystem>
 #include <format>
 #include <fstream>
-#include <optional>
-#include <string_view>
 
 #include "../semantic.h"
 #include "../utilities/path.h"
@@ -40,39 +37,12 @@ static void DefinitionCallback(const ClownAssembler::AddDefinition add_definitio
 			continue;
 
 		const std::string_view value_argument = arguments[i + 1];
-		const auto &separator_position = value_argument.find('=');
+		const auto &definition = DecodeDefinition(value_argument);
 
-		const std::string_view identifier = value_argument.substr(0, separator_position);
-
-		unsigned long value;
-
-		if (separator_position == value_argument.npos)
-		{
-			value = 0; /* Exactly what asm68k does... */
-		}
+		if (!definition.has_value())
+			Error("Value of argument '-e {}' is invalid.", value_argument);
 		else
-		{
-			const auto &GetValue = [](const std::string_view &value_string, const int base) -> std::optional<unsigned long>
-			{
-				unsigned long value;
-				const auto &[end, error_code] = std::from_chars(value_string.begin(), value_string.end(), value, base);
-
-				if (error_code != std::errc{} || end != value_string.end())
-					return std::nullopt;
-
-				return value;
-			};
-
-			const std::string_view value_string = value_argument.substr(separator_position + 1);
-			const auto &value_optional = GetValue(value_string, 0);
-
-			if (!value_optional.has_value())
-				Error("Value of argument '-e {}' is invalid.", value_argument);
-
-			value = value_optional.value_or(0);
-		}
-
-		add_definition(identifier, value);
+			add_definition(definition->first, definition->second);
 
 		++i; /* Skip argument. */
 	}

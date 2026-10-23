@@ -18,9 +18,12 @@
 #ifndef FRONTEND_COMMON_H
 #define FRONTEND_COMMON_H
 
+#include <charconv>
 #include <cstdlib>
 #include <iostream>
 #include <format>
+#include <optional>
+#include <string_view>
 
 template<typename... Args>
 void Warning(std::format_string<Args...> &&format_string, Args &&...args)
@@ -39,6 +42,42 @@ template<typename... Args>
 {
 	Error(std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 	std::exit(EXIT_FAILURE);
+}
+
+[[nodiscard]] std::optional<std::pair<std::string_view, unsigned long>> DecodeDefinition(const std::string_view &definition)
+{
+	const auto &GetValue = [](const std::string_view &value_string) -> std::optional<unsigned long>
+	{
+		const auto &ValueFromChars = [](const std::string_view &value_string, const int base) -> std::optional<unsigned long>
+		{
+			unsigned long value;
+			const auto &[end, error_code] = std::from_chars(value_string.begin(), value_string.end(), value, base);
+
+			if (error_code != std::errc{} || end != value_string.end())
+				return std::nullopt;
+
+			return value;
+		};
+
+		/* SN 68k (asm68k) supports XX, 0xXX, and $XX. */
+		if (!value_string.empty() && value_string.front() == '$')
+			return ValueFromChars(value_string.substr(1), 0x10);
+		else
+			return ValueFromChars(value_string, 0);
+	};
+
+	const auto &separator_position = definition.find('=');
+	const std::string_view identifier = definition.substr(0, separator_position);
+
+	if (separator_position == definition.npos)
+		return {{identifier, 0}}; /* Exactly what asm68k does... */
+
+	const auto &value = GetValue(definition.substr(separator_position + 1));
+
+	if (!value.has_value())
+		return std::nullopt;
+
+	return {{identifier, *value}};
 }
 
 #endif // FRONTEND_COMMON_H
