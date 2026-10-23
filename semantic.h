@@ -18,6 +18,7 @@
 #ifndef SEMANTIC_H
 #define SEMANTIC_H
 
+#include <functional>
 #include <iostream>
 #include <string_view>
 
@@ -27,8 +28,8 @@ namespace ClownAssembler
 {
 	using Settings = Options;
 
-	using AddDefinition = void (*)(void *internal, const std::string_view &identifier, unsigned long value);
-	using DefinitionCallback = void (*)(void *internal, void *user_data, AddDefinition add_definition);
+	using AddDefinition = std::function<void(const std::string_view &identifier, unsigned long value)>;
+	using DefinitionCallback = std::function<void(const AddDefinition &add_definition)>;
 
 	bool Assemble(
 		std::istream &input_callbacks,
@@ -38,8 +39,7 @@ namespace ClownAssembler
 		std::ostream *symbol_callbacks,
 		const std::string_view &input_file_path,
 		Settings settings,
-		DefinitionCallback definition_callback,
-		const void *user_data);
+		const DefinitionCallback &definition_callback);
 }
 
 #endif /* SEMANTIC_H */

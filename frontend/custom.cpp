@@ -29,10 +29,8 @@
 static int total_arguments;
 static char **arguments;
 
-static void DefinitionCallback(void *internal, void* const user_data, const ClownAssembler::AddDefinition add_definition)
+static void DefinitionCallback(const ClownAssembler::AddDefinition add_definition)
 {
-	(void)user_data;
-
 	for (int i = 1; i < total_arguments; ++i)
 	{
 		if (arguments[i][0] == '-' && arguments[i][1] == 'e')
@@ -55,7 +53,7 @@ static void DefinitionCallback(void *internal, void* const user_data, const Clow
 					Error("Value of argument '-e {}' is invalid.", arguments[i + 1]);
 			}
 
-			add_definition(internal, {identifier, identifier_length}, value);
+			add_definition({identifier, identifier_length}, value);
 
 			++i; /* Skip argument. */
 		}
@@ -257,7 +255,7 @@ int main(int argc, char **argv)
 			ErrorAndExit("Could not open symbol file.");
 	}
 
-	if (!ClownAssembler::Assemble(input_file, output_file, std::cerr, listing_stream, symbol_stream, input_file_path_string, settings, DefinitionCallback, nullptr))
+	if (!ClownAssembler::Assemble(input_file, output_file, std::cerr, listing_stream, symbol_stream, input_file_path_string, settings, DefinitionCallback))
 	{
 		/* Delete the output file; it will be junk anyway.
 		   Also, leaving a junk file will confuse CMake, which will think that the assembler had previously succeeded. */

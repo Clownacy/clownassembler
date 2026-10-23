@@ -1733,14 +1733,6 @@ static void AssembleFile(SemanticState &state, SourceLineReader &source_line_rea
 	}
 }
 
-static void AddDefinition(void* const internal, const std::string_view &identifier, const unsigned long value)
-{
-	SemanticState &state = *(SemanticState*)internal;
-
-	/* TODO: Does asm68k create a constant or a variable? */
-	state.symbol_manager.AddSymbol(identifier, SymbolConstant{value});
-}
-
 static bool AssembleToObjectFile(
 	std::istream &input_stream,
 	std::ostream &output_stream,
@@ -1749,8 +1741,7 @@ static bool AssembleToObjectFile(
 	std::ostream* const symbol_stream,
 	const std::string_view &input_file_path,
 	ClownAssembler::Settings initial_options,
-	const ClownAssembler::DefinitionCallback definition_callback,
-	const void* const user_data)
+	const ClownAssembler::DefinitionCallback &definition_callback)
 {
 	SemanticState state(
 		input_stream,
@@ -1762,7 +1753,15 @@ static bool AssembleToObjectFile(
 	);
 
 	if (definition_callback != nullptr)
-		definition_callback(&state, (void*)user_data, AddDefinition);
+	{
+		definition_callback(
+			[&state](const std::string_view &identifier, const unsigned long value)
+			{
+				/* TODO: Does asm68k create a constant or a variable? */
+				state.symbol_manager.AddSymbol(identifier, SymbolConstant{value});
+			}
+		);
+	}
 
 	/* Enable Bison debugging if available and requested by the user. */
 #if M68KASM_DEBUG
@@ -1821,12 +1820,11 @@ bool ClownAssembler::Assemble(
 	std::ostream* const symbol_stream,
 	const std::string_view &input_file_path,
 	Settings settings,
-	const DefinitionCallback definition_callback,
-	const void* const user_data)
+	const DefinitionCallback &definition_callback)
 {
 	std::stringstream object_stream;
 
-	if (!AssembleToObjectFile(input_stream, object_stream, error_stream, listing_stream, symbol_stream, input_file_path, std::move(settings), definition_callback, user_data))
+	if (!AssembleToObjectFile(input_stream, object_stream, error_stream, listing_stream, symbol_stream, input_file_path, std::move(settings), definition_callback))
 		return false;
 
 	if (!ConvertObjectFileToFlatBinary(object_stream, output_stream, error_stream))
