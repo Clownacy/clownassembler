@@ -15,11 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <charconv>
 #include <filesystem>
 #include <format>
 #include <fstream>
-#include <stdlib.h>
-#include <string.h>
+#include <optional>
+#include <string_view>
 
 #include "../semantic.h"
 #include "../utilities/path.h"
@@ -33,30 +34,47 @@ static void DefinitionCallback(const ClownAssembler::AddDefinition add_definitio
 {
 	for (int i = 1; i < total_arguments; ++i)
 	{
-		if (arguments[i][0] == '-' && arguments[i][1] == 'e')
+		const std::string_view command_argument = arguments[i];
+
+		if (command_argument != "-e")
+			continue;
+
+		const std::string_view value_argument = arguments[i + 1];
+		const auto &separator_position = value_argument.find('=');
+
+		const std::string_view identifier = value_argument.substr(0, separator_position);
+
+		unsigned long value;
+
+		if (separator_position == value_argument.npos)
 		{
-			const char* const identifier = arguments[i + 1];
-			const std::size_t identifier_length = strcspn(identifier, "=");
-
-			unsigned long value;
-			char *str_end;
-
-			if (identifier[identifier_length] != '=')
-			{
-				value = 0; /* Exactly what asm68k does... */
-			}
-			else
-			{
-				value = strtoul(&identifier[identifier_length + 1], &str_end, 0);
-
-				if (str_end < strchr(identifier, '\0'))
-					Error("Value of argument '-e {}' is invalid.", arguments[i + 1]);
-			}
-
-			add_definition({identifier, identifier_length}, value);
-
-			++i; /* Skip argument. */
+			value = 0; /* Exactly what asm68k does... */
 		}
+		else
+		{
+			const auto &GetValue = [](const std::string_view &value_string, const int base) -> std::optional<unsigned long>
+			{
+				unsigned long value;
+				const auto &[end, error_code] = std::from_chars(value_string.begin(), value_string.end(), value, base);
+
+				if (error_code != std::errc{} || end != value_string.end())
+					return std::nullopt;
+
+				return value;
+			};
+
+			const std::string_view value_string = value_argument.substr(separator_position + 1);
+			const auto &value_optional = GetValue(value_string, 0);
+
+			if (!value_optional.has_value())
+				Error("Value of argument '-e {}' is invalid.", value_argument);
+
+			value = value_optional.value_or(0);
+		}
+
+		add_definition(identifier, value);
+
+		++i; /* Skip argument. */
 	}
 }
 

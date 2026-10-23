@@ -20,6 +20,7 @@
 #include "semantic.h"
 
 #include <array>
+#include <charconv>
 #include <deque>
 #include <fstream>
 #include <limits.h>
