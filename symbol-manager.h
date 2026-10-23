@@ -18,6 +18,7 @@
 #ifndef SYMBOL_MANAGER_H
 #define SYMBOL_MANAGER_H
 
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
@@ -103,6 +104,8 @@ public:
 	bool AddSymbol(const std::string_view &identifier, SymbolLabel symbol_contents);
 	bool AddSymbol(const std::string_view &identifier, SymbolExpressionConstant symbol_contents);
 	bool AddSymbol(SymbolMacro symbol_contents);
+
+	void WriteSymbolFile(std::ostream &stream);
 };
 
 #endif /* SYMBOL_MANAGER_H */

@@ -215,3 +215,49 @@ bool SymbolManager::AddSymbol(SymbolMacro symbol_contents)
 
 	return true;
 }
+
+void SymbolManager::WriteSymbolFile(std::ostream &stream)
+{
+	Utilities::IO::StreamBinaryWriter symbol_writer(stream);
+
+	/* Some kind of header. */
+	symbol_writer.WriteU8('M');
+	symbol_writer.WriteU8('N');
+	symbol_writer.WriteU8('D');
+	symbol_writer.WriteU8(1);
+	symbol_writer.WriteU8(0);
+	symbol_writer.WriteU8(0);
+	symbol_writer.WriteU8(0);
+	symbol_writer.WriteU8(0);
+
+	for (const auto &[identifier, entry] : dictionary)
+	{
+		/* The symbol file only contains labels. */
+		/* Labels longer than 0xFF characters are silently ignored. */
+		/* Local labels are also silently ignored (unless 'v+' is specified). */
+		const SymbolLabel* const symbol_label = std::get_if<SymbolLabel>(&entry);
+
+		if (symbol_label == nullptr)
+			continue;
+
+		const auto local_symbol_position = identifier.find_last_of(global.options->local_signifier);
+		const std::string_view label = identifier.substr(local_symbol_position == identifier.npos ? 0 : local_symbol_position);
+
+		const bool is_local_label = label.length() != identifier.length();
+
+		if (label.length() >= 0x100 || (is_local_label && !global.options->output_local_labels_to_sym_file))
+			continue;
+
+		/* Output the address of the label. */
+		symbol_writer.WriteU8(symbol_label->value);
+
+		/* I have no idea what this means. */
+		symbol_writer.WriteU8(is_local_label ? 6 : 2);
+
+		/* Output the length of the label. */
+		symbol_writer.WriteU8(label.length());
+
+		/* Output the label itself. */
+		stream << label;
+	}
+}

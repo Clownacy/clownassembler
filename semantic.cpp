@@ -21,7 +21,6 @@
 
 #include <array>
 #include <deque>
-#include <filesystem>
 #include <fstream>
 #include <limits.h>
 #include <memory>
@@ -34,7 +33,6 @@
 #include <string>
 #include <string_view>
 #include <variant>
-#include <vector>
 
 #include "clowncommon/clowncommon.h"
 
@@ -45,11 +43,9 @@
 #include "instruction-processor.h"
 #include "listing.h"
 #include "macro-state.h"
-#include "object.h"
 #include "object-writer.h"
 #include "p2bin.h"
 #include "parser.h"
-#include "program-counter.h"
 #include "source-line-reader.h"
 #include "substitute.h"
 #include "symbol-manager.h"
@@ -1812,54 +1808,7 @@ static bool AssembleToObjectFile(
 
 	/* Produce asm68k symbol file, if requested. */
 	if (symbol_stream != nullptr)
-	{
-		Utilities::IO::StreamBinaryWriter symbol_writer(*symbol_stream);
-
-		/* Some kind of header. */
-		symbol_writer.WriteU8('M');
-		symbol_writer.WriteU8('N');
-		symbol_writer.WriteU8('D');
-		symbol_writer.WriteU8(1);
-		symbol_writer.WriteU8(0);
-		symbol_writer.WriteU8(0);
-		symbol_writer.WriteU8(0);
-		symbol_writer.WriteU8(0);
-
-		state.symbol_manager.FilterDictionary(
-			[&](const SymbolDictionary::mapped_type &entry, const std::string_view &identifier) -> bool
-			{
-				/* The symbol file only contains labels. */
-				/* Labels longer than 0xFF characters are silently ignored. */
-				/* Local labels are also silently ignored (unless 'v+' is specified). */
-				const SymbolLabel* const symbol_label = std::get_if<SymbolLabel>(&entry);
-
-				if (symbol_label != nullptr)
-				{
-					const auto local_symbol_position = identifier.find_last_of(state.global.options->local_signifier);
-					const std::string_view label = identifier.substr(local_symbol_position == identifier.npos ? 0 : local_symbol_position);
-
-					const bool is_local_label = label.length() != identifier.length();
-
-					if (label.length() < 0x100 && (!is_local_label || state.global.options->output_local_labels_to_sym_file))
-					{
-						/* Output the address of the label. */
-						symbol_writer.WriteU8(symbol_label->value);
-
-						/* I have no idea what this means. */
-						symbol_writer.WriteU8(is_local_label ? 6 : 2);
-
-						/* Output the length of the label. */
-						symbol_writer.WriteU8(label.length());
-
-						/* Output the label itself. */
-						*symbol_stream << label;
-					}
-				}
-
-				return true;
-			}
-		);
-	}
+		state.symbol_manager.WriteSymbolFile(*symbol_stream);
 
 	return !state.global.error_manager.WasErrorEncountered();
 }
