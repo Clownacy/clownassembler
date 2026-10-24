@@ -71,7 +71,7 @@ public:
 
 	void Information(const std::string_view &message)
 	{
-		error_stream << "Information: " << message << '\n';
+		Utilities::IO::Print(error_stream, "Information: {}\n", message);
 	}
 
 	template<typename... Args>
@@ -91,7 +91,7 @@ public:
 	{
 		if (options->warnings_enabled)
 		{
-			error_stream << "Warning: " << message << '\n';
+			Utilities::IO::Print(error_stream, "Warning: {}\n", message);
 
 			ErrorMessageCommon();
 		}
@@ -124,7 +124,7 @@ public:
 
 	void Error(const std::string_view &message)
 	{
-		error_stream << "Error: " << message << '\n';
+		Utilities::IO::Print(error_stream, "Error: {}\n", message);
 
 		ErrorMessageCommon();
 
