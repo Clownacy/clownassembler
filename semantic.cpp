@@ -121,7 +121,7 @@ struct SemanticState
 		SourceLineList source_line_list;
 	};
 
-	std::variant<ModeNormal, ModeRept, ModeMacro, ModeWhile> mode = SemanticState::ModeNormal{};
+	std::variant<ModeNormal, ModeRept, ModeMacro, ModeWhile> mode = ModeNormal{};
 
 	SemanticState(
 		std::istream &input_stream,
@@ -474,23 +474,23 @@ static void ProcessIncbin(SemanticState &state, StatementIncbin &incbin)
 static void ProcessRept(SemanticState &state, StatementRept &rept)
 {
 	/* Enter REPT mode. */
-	auto &mode = state.mode.emplace<SemanticState::ModeRept>();
+	auto &rept_mode = state.mode.emplace<SemanticState::ModeRept>();
 
-	mode.repetitions = state.global.expression_processor.ResolveExpression(rept.repetitions, "Repetition value must be evaluable on the first pass.").value_or(1);
-	mode.line_number = state.location.front().line_number;
-	mode.nesting = 0;
+	rept_mode.repetitions = state.global.expression_processor.ResolveExpression(rept.repetitions, "Repetition value must be evaluable on the first pass.").value_or(1);
+	rept_mode.line_number = state.location.front().line_number;
+	rept_mode.nesting = 0;
 }
 
 static void ProcessMacro(SemanticState &state, StatementMacro &macro, const std::string_view &label, bool is_short)
 {
 	/* Enter MACRO mode. */
-	auto &mode = state.mode.emplace<SemanticState::ModeMacro>();
+	auto &macro_mode = state.mode.emplace<SemanticState::ModeMacro>();
 
-	mode.metadata.name = label;
-	mode.line_number = state.location.front().line_number;
-	mode.metadata.parameter_names = std::move(macro.parameter_names);
-	mode.metadata.is_short = is_short;
-	mode.metadata.uses_label = macro.uses_label;
+	macro_mode.metadata.name = label;
+	macro_mode.line_number = state.location.front().line_number;
+	macro_mode.metadata.parameter_names = std::move(macro.parameter_names);
+	macro_mode.metadata.is_short = is_short;
+	macro_mode.metadata.uses_label = macro.uses_label;
 }
 
 static void ProcessIf(SemanticState &state, Expression &expression)
@@ -622,12 +622,12 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			[&](StatementEndr&)
 			{
 				/* Exit REPT mode. */
-				const auto mode = std::get_if<SemanticState::ModeRept>(&state.mode);
+				const auto &rept_mode = std::get_if<SemanticState::ModeRept>(&state.mode);
 
-				if (mode == nullptr)
+				if (rept_mode == nullptr)
 					state.global.error_manager.Error("This stray ENDR has no preceeding REPT.");
 				else
-					TerminateRept(state, *mode);
+					TerminateRept(state, *rept_mode);
 			},
 			[&](StatementMacro &statement)
 			{
@@ -640,14 +640,14 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			[&](StatementEndm&)
 			{
 				/* Exit MACRO mode. */
-				const auto mode = std::get_if<SemanticState::ModeMacro>(&state.mode);
+				const auto &macro_mode = std::get_if<SemanticState::ModeMacro>(&state.mode);
 
-				if (mode == nullptr)
+				if (macro_mode == nullptr)
 					state.global.error_manager.Error("This stray ENDM has no preceeding MACRO.");
-				else if (mode->metadata.is_short)
+				else if (macro_mode->metadata.is_short)
 					state.global.error_manager.Error("ENDM cannot be used in a short macro.");
 				else
-					TerminateMacro(state, *mode);
+					TerminateMacro(state, *macro_mode);
 			},
 			[&](StatementEqu &statement)
 			{
@@ -783,26 +783,26 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			[&](StatementWhile &statement)
 			{
 				/* Enter WHILE mode. */
-				auto &mode = state.mode.emplace<SemanticState::ModeWhile>();
+				auto &while_mode = state.mode.emplace<SemanticState::ModeWhile>();
 
 				/* Dummy-out the statement's expression, since the state now owns it, and we don't
 				   want its sub-expressions to be automatically freed when the statement is freed. */
-				mode.expression.emplace<ExpressionNumber>(0);
-				std::swap(mode.expression, statement.expression);
-				mode.source_line = state.source_line;
+				while_mode.expression.emplace<ExpressionNumber>(0);
+				std::swap(while_mode.expression, statement.expression);
+				while_mode.source_line = state.source_line;
 
-				mode.line_number = state.location.front().line_number;
-				mode.nesting = 0;
+				while_mode.line_number = state.location.front().line_number;
+				while_mode.nesting = 0;
 			},
 			[&](StatementEndw&)
 			{
 				/* Exit WHILE mode. */
-				const auto mode = std::get_if<SemanticState::ModeWhile>(&state.mode);
+				const auto &while_mode = std::get_if<SemanticState::ModeWhile>(&state.mode);
 
-				if (mode == nullptr)
+				if (while_mode == nullptr)
 					state.global.error_manager.Error("This stray ENDW has no preceeding WHILE.");
 				else
-					TerminateWhile(state, *mode);
+					TerminateWhile(state, *while_mode);
 			},
 			[&](StatementEven&)
 			{
@@ -1235,7 +1235,7 @@ static void SubstituteAndParseLine(SemanticState &state, const std::string_view 
 	ParseLine(state, label, modified_directive_and_operands);
 }
 
-static void InvokeMacro(SemanticState &state, const Macro &macro, const std::string_view &label, std::string_view source_line)
+static void InvokeMacro(SemanticState &state, const Macro &macro_metadata, const std::string_view &label, std::string_view source_line)
 {
 	if (state.macro_depth >= 0x100)
 	{
@@ -1252,7 +1252,7 @@ static void InvokeMacro(SemanticState &state, const Macro &macro, const std::str
 	/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
 	state.macro.dictionary = std::make_shared<SymbolDictionary>(state.global.options->case_insensitive);
 
-	state.macro.expansion.emplace(macro);
+	state.macro.expansion.emplace(macro_metadata);
 
 	++state.current_macro_invocation;
 
@@ -1264,7 +1264,7 @@ static void InvokeMacro(SemanticState &state, const Macro &macro, const std::str
 	{
 		state.symbol_manager.SetLastGlobalLabel(label);
 
-		if (!macro.uses_label)
+		if (!macro_metadata.uses_label)
 			state.symbol_manager.AddSymbol(label, SymbolLabel{state.global.program_counter});
 	}
 
@@ -1430,10 +1430,10 @@ static void InvokeMacro(SemanticState &state, const Macro &macro, const std::str
 	state.listing_writer.listing_macro = true;
 
 	/* Push a new location (this macro).*/
-	state.location.emplace_front(macro.name, 0);
+	state.location.emplace_front(macro_metadata.name, 0);
 
 	/* Iterate over each line of the macro, sending it to be processed. */
-	for (const auto &source_line : macro.source_line_list)
+	for (const auto &source_line : macro_metadata.source_line_list)
 	{
 		AssembleLine(state, source_line, state.global.options->expand_all_macros);
 
@@ -1442,7 +1442,7 @@ static void InvokeMacro(SemanticState &state, const Macro &macro, const std::str
 			break;
 	}
 
-	if (!macro.is_short)
+	if (!macro_metadata.is_short)
 	{
 		/* 'MEXIT' may have ended us midway through an if-statement, so unwind to the original if-level here. */
 		while (state.current_if_level != starting_if_level)
