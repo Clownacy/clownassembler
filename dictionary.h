@@ -108,28 +108,24 @@ public:
 		: Base(0, DictionaryHasher{}, DictionaryComparer{case_insensitive})
 	{}
 
-	auto emplace(const DictionaryLookupKey &identifier)
+	template<typename T>
+	auto emplace(T &&identifier)
 	{
 		// Nightmare Difficulty C++
-		return Base::emplace(std::piecewise_construct, std::forward_as_tuple(std::format("{}{}", identifier.global, identifier.local)), std::tuple<>());
+		return Base::emplace(std::piecewise_construct, std::forward_as_tuple(std::forward<T>(identifier)), std::tuple<>());
 	}
 
-	auto emplace(const std::string_view &identifier)
+	auto emplace(const DictionaryLookupKey &identifier)
 	{
-		return emplace(DictionaryLookupKey{identifier});
+		return emplace(std::format("{}{}", identifier.global, identifier.local));
 	}
 
-	Entry& operator[](const DictionaryLookupKey &identifier)
+	Entry& operator[](const auto &identifier)
 	{
 		// All of this crap to work-around C++ not having a decent `operator[]` before C++26... fuck me.
 		auto it = Base::find(identifier);
 
 		return it != Base::end() ? it->second : emplace(identifier).first->second;
-	}
-
-	Entry& operator[](const std::string_view &identifier)
-	{
-		return operator[](DictionaryLookupKey{identifier});
 	}
 };
 
