@@ -1379,7 +1379,7 @@ static const flex_int16_t yy_chk[2290] =
 #include <string>
 #include <string_view>
 
-#include "error.h"
+#include "../error.h"
 #include "syntactic.h"
 
 static bool CharacterToInteger(unsigned int* const value, const unsigned int character)

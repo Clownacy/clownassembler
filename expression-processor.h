@@ -20,7 +20,7 @@
 
 #include <optional>
 
-#include "syntactic.h"
+#include "parser.h"
 
 class ErrorManager;
 class SymbolManager;

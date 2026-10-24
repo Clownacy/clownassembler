@@ -18,7 +18,7 @@
 #ifndef INSTRUCTION_PROCESSOR_H
 #define INSTRUCTION_PROCESSOR_H
 
-#include "syntactic.h"
+#include "parser.h"
 
 class Global;
 class ObjectWriter;

@@ -47,7 +47,7 @@
 #line 644 "syntactic.y"
 
 
-#include "error.h"
+#include "../error.h"
 
 YY_DECL;
 

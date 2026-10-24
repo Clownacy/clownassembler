@@ -643,7 +643,7 @@ using Statement = std::variant<
 
 %code {
 
-#include "error.h"
+#include "../error.h"
 
 YY_DECL;
 

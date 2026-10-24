@@ -27,8 +27,8 @@
 #include <variant>
 
 #include "global.h"
+#include "parser.h"
 #include "symbol-dictionary.h"
-#include "syntactic.h"
 
 class SymbolManager
 {

@@ -19,9 +19,9 @@
 #define PARSER_H
 
 #include "error.h"
-#include "syntactic.h"
+#include "parser/syntactic.h"
 #define YY_NO_UNISTD_H
-#include "lexical.h"
+#include "parser/lexical.h"
 
 class Parser
 {

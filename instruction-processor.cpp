@@ -24,7 +24,7 @@
 
 #include "global.h"
 #include "object-writer.h"
-#include "syntactic.h"
+#include "parser.h"
 
 struct InstructionMetadata
 {

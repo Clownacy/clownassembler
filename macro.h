@@ -21,7 +21,7 @@
 #include <deque>
 #include <string>
 
-#include "syntactic.h"
+#include "parser.h"
 
 using SourceLineList = std::deque<std::string>;
 
