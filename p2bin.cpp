@@ -43,7 +43,7 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 		if (!base_address.has_value())
 			base_address = start_address;
 		else if (start_address < *base_address)
-			throw std::runtime_error("Error: Segment located before start of file.\n");
+			throw std::runtime_error("Segment located before start of file.");
 		else
 			output_stream.seekp(start_address - *base_address);
 
@@ -76,7 +76,7 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 					const auto granularity = input.ReadU8();
 
 					if (granularity != 1)
-						throw std::runtime_error(std::format("Error: Unsupported granularity of {} (only 1 is supported).\n", granularity));
+						throw std::runtime_error(std::format("Unsupported granularity of {} (only 1 is supported).", granularity));
 
 					ProcessSegment();
 
@@ -85,7 +85,7 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 
 				default:
 					if (record_header >= 0x80)
-						throw std::runtime_error(std::format("Error: Unrecognised record header value (0x{:02X}).\n", record_header));
+						throw std::runtime_error(std::format("Unrecognised record header value (0x{:02X}).", record_header));
 
 					/* Legacy CODE segment. */
 					ProcessSegment();
@@ -107,7 +107,7 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 
 		/* TODO: Use error message manager for this. */
 		if (magic != 0x8914)
-			throw std::runtime_error(std::format("Error: Invalid header magic value - expected 0x8914 but got 0x{:04X}.\nInput file is either corrupt or not a valid AS code file.\n", magic));
+			throw std::runtime_error(std::format("Invalid header magic value - expected 0x8914 but got 0x{:04X}.\nInput file is either corrupt or not a valid AS code file.", magic));
 
 		ProcessRecords();
 
@@ -115,7 +115,7 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 	}
 	catch (const std::runtime_error &error)
 	{
-		error_stream << error.what();
+		error_stream << std::format("Error: {}\n", error.what());
 	}
 
 	input.stream.exceptions(previous_exceptions);
