@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef UTILITIES_H
-#define UTILITIES_H
+#ifndef UTILITIES_STRING_H
+#define UTILITIES_STRING_H
 
 #include <cstddef>
 #include <string>
@@ -79,4 +79,4 @@ namespace Utilities
 	}
 }
 
-#endif // UTILITIES_H
+#endif // UTILITIES_STRING_H

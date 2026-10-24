@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef CASE_H
-#define CASE_H
+#ifndef UTILITIES_CASE_INSENSITIVE_H
+#define UTILITIES_CASE_INSENSITIVE_H
 
 #include <algorithm>
 #include <cstddef>
@@ -117,4 +117,4 @@ namespace Utilities
 	}
 }
 
-#endif // CASE_H
+#endif // UTILITIES_CASE_INSENSITIVE_H

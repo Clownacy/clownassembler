@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef IO_H
-#define IO_H
+#ifndef UTILITIES_IO_H
+#define UTILITIES_IO_H
 
 #include <algorithm>
 #include <cstddef>
@@ -179,4 +179,4 @@ namespace Utilities
 	}
 }
 
-#endif /* IO_H */
+#endif /* UTILITIES_IO_H */

@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef PATH_H
-#define PATH_H
+#ifndef UTILITIES_PATH_H
+#define UTILITIES_PATH_H
 
 #include <filesystem>
 #include <string>
@@ -42,4 +42,4 @@ namespace Utilities
 	}
 }
 
-#endif // PATH_H
+#endif // UTILITIES_PATH_H
