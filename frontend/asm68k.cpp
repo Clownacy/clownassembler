@@ -125,7 +125,7 @@ int main(int argc, char **argv)
 
 					if (i < argc)
 					{
-						for (const char *option = std::strtok(argv[i], ","); option != nullptr; option = strtok(nullptr, ","))
+						for (const char *option = std::strtok(argv[i], ","); option != nullptr; option = std::strtok(nullptr, ","))
 						{
 							if (Utilities::CaseInsensitive::CompareStrings(option, "ae+"))
 							{
