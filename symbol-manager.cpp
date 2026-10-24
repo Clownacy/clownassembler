@@ -99,33 +99,32 @@ std::optional<unsigned long> SymbolManager::GetSymbolInteger(const std::string_v
 		return std::nullopt;
 	}
 
-	return std::visit(
-		CC_VisitHelper{
-			[&](SymbolVariable &symbol) -> std::optional<unsigned long>
-			{
-				if (global.doing_fixup_pass)
-					global.error_manager.Warning("Symbol '{}' forward-referenced despite being a redefineable variable.", identifier);
+	return CC_Visit(
+		it->second,
+		[&](SymbolVariable &symbol) -> std::optional<unsigned long>
+		{
+			if (global.doing_fixup_pass)
+				global.error_manager.Warning("Symbol '{}' forward-referenced despite being a redefineable variable.", identifier);
 
-				return symbol.value;
-			},
-			[&](SymbolLabel &symbol) -> std::optional<unsigned long>
-			{
-				return symbol.value;
-			},
-			[&](SymbolConstant &symbol) -> std::optional<unsigned long>
-			{
-				return symbol.value;
-			},
-			[&](SymbolExpressionConstant &symbol) -> std::optional<unsigned long>
-			{
-				return global.expression_processor.ResolveExpression(symbol.expression);
-			},
-			[&](auto&) -> std::optional<unsigned long>
-			{
-				global.error_manager.Error("Symbol '{}' is not a label, constant, or variable.", identifier);
-				return std::nullopt;
-			}
-		}, it->second
+			return symbol.value;
+		},
+		[&](SymbolLabel &symbol) -> std::optional<unsigned long>
+		{
+			return symbol.value;
+		},
+		[&](SymbolConstant &symbol) -> std::optional<unsigned long>
+		{
+			return symbol.value;
+		},
+		[&](SymbolExpressionConstant &symbol) -> std::optional<unsigned long>
+		{
+			return global.expression_processor.ResolveExpression(symbol.expression);
+		},
+		[&](auto&) -> std::optional<unsigned long>
+		{
+			global.error_manager.Error("Symbol '{}' is not a label, constant, or variable.", identifier);
+			return std::nullopt;
+		}
 	);
 }
 
