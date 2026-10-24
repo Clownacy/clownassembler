@@ -54,197 +54,230 @@
 #include "utilities/path.h"
 #include "utilities/string.h"
 
-struct FixUp
+// Hide in an anonymous namespace to avoid external visibility, improving optimisation.
+namespace
 {
-	Statement statement;
-	std::shared_ptr<SymbolDictionary> macro_dictionary;
-	unsigned long program_counter;
-	Object::Writer::Position object_writer_position;
-	std::string last_global_label;
-	std::string source_line;
-	std::string label;
-	Options options;
-	std::deque<ErrorManager::Location> location;
-};
-
-struct SemanticState
-{
-	Global global;
-
-	/* Preprocessor-specific global stuff. */
-	SourceLineReader source_line_reader;
-	ListingWriter listing_writer;
-	ObjectWriter object_writer;
-	InstructionProcessor instruction_processor = {global, object_writer};
-	SymbolManager symbol_manager = {global, macro.dictionary};
-	Parser parser = {global.error_manager};
-	std::deque<ErrorManager::Location> location;
-	std::string_view source_line;
-	Substitute substitutions;
-	std::stack<std::string> string_stack;
-	MacroState macro;
-	unsigned int macro_depth = 0;
-	unsigned long current_macro_invocation = 0;
-	bool end = false;
-
-	/* Fix-ups. */
-	std::deque<FixUp> fixup_list;
-
-	/* If-statements. */
-	unsigned int current_if_level = 0;
-	unsigned int false_if_level = 0;
-	bool true_already_found = false;
-
-	/* OBJ directive. */
-	std::optional<unsigned long> obj_delta;
-
-	/* Modes. */
-	struct ModeNormal {};
-	struct ModeRept
+	class SemanticState
 	{
-		unsigned long repetitions = 0;
-		unsigned long line_number = 0;
-		unsigned int nesting = 0;
-		SourceLineList source_line_list;
+	private:
+		struct FixUp
+		{
+			Statement statement;
+			std::shared_ptr<SymbolDictionary> macro_dictionary;
+			unsigned long program_counter;
+			Object::Writer::Position object_writer_position;
+			std::string last_global_label;
+			std::string source_line;
+			std::string label;
+			Options options;
+			std::deque<ErrorManager::Location> location;
+		};
+
+		Global global;
+
+		/* Preprocessor-specific global stuff. */
+		SourceLineReader source_line_reader;
+		ListingWriter listing_writer;
+		ObjectWriter object_writer;
+		InstructionProcessor instruction_processor = {global, object_writer};
+		SymbolManager symbol_manager = {global, macro.dictionary};
+		Parser parser = {global.error_manager};
+		std::deque<ErrorManager::Location> location;
+		std::string_view source_line;
+		Substitute substitutions;
+		std::stack<std::string> string_stack;
+		MacroState macro;
+		unsigned int macro_depth = 0;
+		unsigned long current_macro_invocation = 0;
+		bool end = false;
+
+		/* Fix-ups. */
+		std::deque<FixUp> fixup_list;
+
+		/* If-statements. */
+		unsigned int current_if_level = 0;
+		unsigned int false_if_level = 0;
+		bool true_already_found = false;
+
+		/* OBJ directive. */
+		std::optional<unsigned long> obj_delta;
+
+		/* Modes. */
+		struct ModeNormal {};
+		struct ModeRept
+		{
+			unsigned long repetitions = 0;
+			unsigned long line_number = 0;
+			unsigned int nesting = 0;
+			SourceLineList source_line_list;
+		};
+		struct ModeMacro
+		{
+			unsigned long line_number = 0;
+			Macro metadata;
+		};
+		struct ModeWhile
+		{
+			Expression expression;
+			std::string source_line;
+			unsigned long line_number = 0;
+			unsigned int nesting = 0;
+			SourceLineList source_line_list;
+		};
+
+		std::variant<ModeNormal, ModeRept, ModeMacro, ModeWhile> mode = ModeNormal{};
+
+		void TerminateIf();
+		void TerminateRept(ModeRept &rept_state);
+		void TerminateMacro(ModeMacro &macro_state);
+		void TerminateWhile(ModeWhile &while_state);
+		void PushSubstitute(const std::string_view &identifier, const std::string_view &value);
+		void PushMacroArgumentSubstitutions();
+		void OutputDcValue(Size size, unsigned long value);
+		void PerformEven();
+		bool ShouldPerformAutomaticEven(Size size);
+		void ProcessDc(StatementDc &dc);
+		void ProcessDcb(StatementDcb &dcb);
+		void ProcessDs(StatementDs &ds);
+		void ProcessInclude(const StatementInclude &include);
+		void ProcessIncbin(StatementIncbin &incbin);
+		void ProcessRept(StatementRept &rept);
+		void ProcessMacro(StatementMacro &macro, const std::string_view &label, bool is_short);
+		void ProcessIf(Expression &expression);
+		void ProcessStatement(Statement &statement, const std::string_view &label);
+		void ParseLine(const std::string_view &label, const std::string_view &directive_and_operands);
+		void PerformSubstitutionsOnSubString(std::string &string, std::string_view &view_to_search, bool allow_implicit_matches);
+		void PerformSubstitutions(std::string &string, bool allow_implicit_matches);
+		void PerformSubstitutionsExcludingQuotedStrings(std::string &source_line, std::size_t starting_position, bool allow_implicit_matches);
+		void SubstituteAndParseLine(const std::string_view &label, const std::string_view &directive_and_operands, const std::string_view &directive);
+		void InvokeMacro(const Macro &macro, const std::string_view &label, std::string_view source_line);
+		void AssembleLine(const std::string_view &source_line_raw, const bool write_line_to_listing_file);
+		void AssembleFile(SourceLineReader &source_line_reader);
+
+	public:
+		SemanticState(
+			std::istream &input_stream,
+			std::ostream &output_stream,
+			std::ostream &error_stream,
+			std::ostream* const listing_stream,
+			const std::string_view &input_file_path,
+			Options default_options
+		)
+			: global(std::move(default_options), error_stream, location, source_line, symbol_manager, macro)
+			, source_line_reader(input_stream)
+			, listing_writer(listing_stream, global.doing_fixup_pass)
+			, object_writer(global, output_stream, listing_writer)
+		{
+			/* For error messages, we want to maintain a list of filenames and line
+			   numbers that describe the location and nesting of the erroneous
+			   line. This is the first entry in that list. */
+			location.emplace_front(input_file_path, 0);
+		}
+
+		bool AssembleToObjectFile(
+			std::ostream* const symbol_stream,
+			const ClownAssembler::DefinitionCallback &definition_callback);
 	};
-	struct ModeMacro
-	{
-		unsigned long line_number = 0;
-		Macro metadata;
-	};
-	struct ModeWhile
-	{
-		Expression expression;
-		std::string source_line;
-		unsigned long line_number = 0;
-		unsigned int nesting = 0;
-		SourceLineList source_line_list;
-	};
-
-	std::variant<ModeNormal, ModeRept, ModeMacro, ModeWhile> mode = ModeNormal{};
-
-	SemanticState(
-		std::istream &input_stream,
-		std::ostream &output_stream,
-		std::ostream &error_stream,
-		std::ostream* const listing_stream,
-		const std::string_view &input_file_path,
-		Options default_options
-	)
-		: global(std::move(default_options), error_stream, location, source_line, symbol_manager, macro)
-		, source_line_reader(input_stream)
-		, listing_writer(listing_stream, global.doing_fixup_pass)
-		, object_writer(global, output_stream, listing_writer)
-	{
-		/* For error messages, we want to maintain a list of filenames and line
-		   numbers that describe the location and nesting of the erroneous
-		   line. This is the first entry in that list. */
-		location.emplace_front(input_file_path, 0);
-	}
-};
-
-/* Some forward declarations that are needed because some functions recurse into each other. */
-static void AssembleFile(SemanticState &state, SourceLineReader &source_line_reader);
-static void AssembleLine(SemanticState &state, const std::string_view &source_line, const bool write_line_to_listing_file);
+}
 
 /* Other stuff */
 
-static void TerminateIf(SemanticState &state)
+void SemanticState::TerminateIf()
 {
-	if (state.false_if_level == state.current_if_level || state.false_if_level == 0)
+	if (false_if_level == current_if_level || false_if_level == 0)
 	{
-		state.true_already_found = true;
-		state.false_if_level = 0;
+		true_already_found = true;
+		false_if_level = 0;
 	}
 
-	--state.current_if_level;
+	--current_if_level;
 }
 
-static void TerminateRept(SemanticState &state, SemanticState::ModeRept &rept_state)
+void SemanticState::TerminateRept(SemanticState::ModeRept &rept_state)
 {
 	/* Back-up some state into local variables, in case a nested REPT statement clobbers it. */
 	auto rept_state_copy = std::move(rept_state);
 
 	/* Exit REPT mode. */
-	state.mode.emplace<SemanticState::ModeNormal>();
+	mode.emplace<SemanticState::ModeNormal>();
 
 	while (rept_state_copy.repetitions-- != 0)
 	{
 		/* Rewind back to the line number of the start of the REPT. */
-		state.location.front().line_number = rept_state_copy.line_number;
+		location.front().line_number = rept_state_copy.line_number;
 
 		/* Process the REPT's nested statements. */
 		for (const auto &source_line : rept_state_copy.source_line_list)
-			AssembleLine(state, source_line, state.global.options->expand_all_macros);
+			AssembleLine(source_line, global.options->expand_all_macros);
 	}
 
 	/* Increment past the ENDR line number. */
-	++state.location.front().line_number;
+	++location.front().line_number;
 }
 
-static void TerminateMacro(SemanticState &state, SemanticState::ModeMacro &macro_state)
+void SemanticState::TerminateMacro(SemanticState::ModeMacro &macro_state)
 {
 	const std::string_view &identifier = macro_state.metadata.name;
 
 	if (!identifier.empty())
 	{
-		if (state.macro.ExpansionInProgress())
+		if (macro.ExpansionInProgress())
 		{
 			/* See comment in the StatementPurge handler after the check for the same condition for more details. */
-			state.global.error_manager.Error("Cannot define macro '{}' during macro expansion.", identifier);
+			global.error_manager.Error("Cannot define macro '{}' during macro expansion.", identifier);
 		}
 		else
 		{
 			/* Add the macro to the symbol table. */
-			state.symbol_manager.AddSymbol(SymbolMacro{std::move(macro_state.metadata)});
+			symbol_manager.AddSymbol(SymbolMacro{std::move(macro_state.metadata)});
 		}
 	}
 
 	/* Exit macro mode. */
-	state.mode.emplace<SemanticState::ModeNormal>();
+	mode.emplace<SemanticState::ModeNormal>();
 }
 
-static void TerminateWhile(SemanticState &state, SemanticState::ModeWhile &while_state)
+void SemanticState::TerminateWhile(SemanticState::ModeWhile &while_state)
 {
-	const std::string_view old_source_line = state.source_line;
+	const std::string_view old_source_line = source_line;
 
 	/* Back-up some state into local variables, in case a nested WHILE statement clobbers it. */
 	auto while_state_copy = std::move(while_state);
 
 	/* Exit WHILE mode. */
-	state.mode.emplace<SemanticState::ModeNormal>();
+	mode.emplace<SemanticState::ModeNormal>();
 
-	state.listing_writer.SuppressLine();
+	listing_writer.SuppressLine();
 
 	for (;;)
 	{
-		state.source_line = while_state_copy.source_line;
+		source_line = while_state_copy.source_line;
 
 		/* We absolutely do not want to fold (cache) this expression, because
 		   while-loops depend on variables mutating from previous values;
 		   without this, while-loops will never terminate. */
-		const auto &value = state.global.expression_processor.ResolveExpressionWithoutFolding(while_state_copy.expression, "Expression must be evaluable on the first pass.").value_or(0);
+		const auto &value = global.expression_processor.ResolveExpressionWithoutFolding(while_state_copy.expression, "Expression must be evaluable on the first pass.").value_or(0);
 
 		if (value == 0)
 			break;
 
 		/* Rewind back to the line number of the start of the WHILE. */
-		state.location.front().line_number = while_state_copy.line_number;
+		location.front().line_number = while_state_copy.line_number;
 
 		/* Process the WHILE's nested statements. */
 		for (const auto &source_line : while_state_copy.source_line_list)
-			AssembleLine(state, source_line, false);
+			AssembleLine(source_line, false);
 	}
 
 	/* Increment past the ENDW line number. */
-	++state.location.front().line_number;
+	++location.front().line_number;
 
-	state.source_line = old_source_line;
+	source_line = old_source_line;
 }
 
-static void PushSubstitute(SemanticState &state, const std::string_view &identifier, const std::string_view &value)
+void SemanticState::PushSubstitute(const std::string_view &identifier, const std::string_view &value)
 {
-	const auto &[it, dictionary] = state.symbol_manager.LookupSymbolAndCreateIfNotExist<SymbolStringConstant>(identifier);
+	const auto &[it, dictionary] = symbol_manager.LookupSymbolAndCreateIfNotExist<SymbolStringConstant>(identifier);
 
 	if (it != dictionary.end())
 	{
@@ -254,7 +287,7 @@ static void PushSubstitute(SemanticState &state, const std::string_view &identif
 				{
 					auto &symbol = it->second.emplace<SymbolStringConstant>();
 					symbol.value = value;
-					auto &substitute = state.macro.dictionary != nullptr && &dictionary == &*state.macro.dictionary ? state.macro.expansion->substitutions : state.substitutions;
+					auto &substitute = macro.dictionary != nullptr && &dictionary == &*macro.dictionary ? macro.expansion->substitutions : substitutions;
 					substitute.PushSubstitute(identifier, symbol.value);
 				},
 				[&](SymbolStringConstant &symbol)
@@ -271,16 +304,16 @@ static void PushSubstitute(SemanticState &state, const std::string_view &identif
 	}
 }
 
-static void PushMacroArgumentSubstitutions(SemanticState &state)
+void SemanticState::PushMacroArgumentSubstitutions()
 {
 	const std::string_view blank_argument;
 
-	for (std::size_t argument_index = 0; argument_index < state.macro.expansion->metadata->parameter_names.size(); ++argument_index)
+	for (std::size_t argument_index = 0; argument_index < macro.expansion->metadata->parameter_names.size(); ++argument_index)
 	{
-		const std::string_view &parameter = state.macro.expansion->metadata->parameter_names[argument_index];
-		const std::string_view &argument = argument_index >= state.macro.expansion->total_arguments ? blank_argument : state.macro.expansion->argument_list[argument_index];
+		const std::string_view &parameter = macro.expansion->metadata->parameter_names[argument_index];
+		const std::string_view &argument = argument_index >= macro.expansion->total_arguments ? blank_argument : macro.expansion->argument_list[argument_index];
 
-		SymbolDictionary::mapped_type &dictionary_entry = (*state.macro.dictionary)[parameter];
+		SymbolDictionary::mapped_type &dictionary_entry = (*macro.dictionary)[parameter];
 
 		/* TODO: De-duplicate this with the 'PushSubstitute' function. */
 		std::visit(
@@ -289,7 +322,7 @@ static void PushMacroArgumentSubstitutions(SemanticState &state)
 				{
 					auto &symbol = dictionary_entry.emplace<SymbolStringConstant>();
 					symbol.value = argument;
-					state.macro.expansion->substitutions.PushSubstitute(parameter, symbol.value);
+					macro.expansion->substitutions.PushSubstitute(parameter, symbol.value);
 				},
 				[&](SymbolStringConstant &symbol)
 				{
@@ -302,14 +335,14 @@ static void PushMacroArgumentSubstitutions(SemanticState &state)
 					   That'll already have caused an error to be emitted, so this error might be somewhat cascading,
 					   but I'm not certain it's not possible to hit this in other ways,
 					   and in any case if we get here I'm pretty sure something has gone wrong, so we should emit an error in case one hasn't already been emitted. */
-					state.global.error_manager.Error("Attempted to redefine symbol '{}' as a string constant.", parameter);
+					global.error_manager.Error("Attempted to redefine symbol '{}' as a string constant.", parameter);
 				},
 			}, dictionary_entry
 		);
 	}
 }
 
-static void OutputDcValue(SemanticState &state, const Size size, unsigned long value)
+void SemanticState::OutputDcValue(const Size size, unsigned long value)
 {
 	unsigned int bytes_to_write = 0;
 
@@ -321,7 +354,7 @@ static void OutputDcValue(SemanticState &state, const Size size, unsigned long v
 		case SIZE_BYTE:
 		case SIZE_SHORT:
 			if (value > 0xFF && value < 0xFFFFFF00)
-				state.global.error_manager.Error("Value cannot be higher than $FF or lower than -$100, but was ${:X}.", value);
+				global.error_manager.Error("Value cannot be higher than $FF or lower than -$100, but was ${:X}.", value);
 
 			bytes_to_write = 1;
 
@@ -329,7 +362,7 @@ static void OutputDcValue(SemanticState &state, const Size size, unsigned long v
 
 		case SIZE_WORD:
 			if (value > 0xFFFF && value < 0xFFFF0000)
-				state.global.error_manager.Error("Value cannot be higher than $FFFF or lower than -$10000, but was ${:X}.", value);
+				global.error_manager.Error("Value cannot be higher than $FFFF or lower than -$10000, but was ${:X}.", value);
 
 			bytes_to_write = 2;
 
@@ -340,25 +373,25 @@ static void OutputDcValue(SemanticState &state, const Size size, unsigned long v
 			break;
 	}
 
-	state.object_writer.WriteIntegerBE(value, bytes_to_write);
+	object_writer.WriteIntegerBE(value, bytes_to_write);
 }
 
-static void PerformEven(SemanticState &state)
+void SemanticState::PerformEven()
 {
 	/* Pad to the nearest even address. */
-	if ((state.global.program_counter & 1) != 0)
-		state.object_writer.WriteU8(0);
+	if ((global.program_counter & 1) != 0)
+		object_writer.WriteU8(0);
 }
 
-static bool ShouldPerformAutomaticEven(SemanticState &state, const Size size)
+bool SemanticState::ShouldPerformAutomaticEven(const Size size)
 {
-	return state.global.options->automatic_even && size != SIZE_BYTE;
+	return global.options->automatic_even && size != SIZE_BYTE;
 }
 
-static void ProcessDc(SemanticState &state, StatementDc &dc)
+void SemanticState::ProcessDc(StatementDc &dc)
 {
-	if (ShouldPerformAutomaticEven(state, dc.size))
-		PerformEven(state);
+	if (ShouldPerformAutomaticEven(dc.size))
+		PerformEven();
 
 	for (auto &expression : dc.values)
 	{
@@ -369,80 +402,80 @@ static void ProcessDc(SemanticState &state, StatementDc &dc)
 			/* If this is a 'dc.b', and the value is a raw string, then output each character as a single byte. */
 			/* This allows 'dc.b' to be used to embed strings into the output. */
 			for (const char character : expression_string->string)
-				OutputDcValue(state, dc.size, character);
+				OutputDcValue(dc.size, character);
 		}
 		else
 		{
 			/* Update the program counter symbol in between values, to keep it up to date. */
-			state.global.expression_processor.program_counter_of_expression = state.global.program_counter;
+			global.expression_processor.program_counter_of_expression = global.program_counter;
 
-			OutputDcValue(state, dc.size, state.global.expression_processor.ResolveExpression(expression).value_or(0));
+			OutputDcValue(dc.size, global.expression_processor.ResolveExpression(expression).value_or(0));
 		}
 	}
 }
 
-static void ProcessDcb(SemanticState &state, StatementDcb &dcb)
+void SemanticState::ProcessDcb(StatementDcb &dcb)
 {
-	if (ShouldPerformAutomaticEven(state, dcb.size))
-		PerformEven(state);
+	if (ShouldPerformAutomaticEven(dcb.size))
+		PerformEven();
 
-	const auto &repetitions = state.global.expression_processor.ResolveExpression(dcb.repetitions, "Repetition value must be evaluable on first pass.").value_or(0);
-	const auto &value = state.global.expression_processor.ResolveExpression(dcb.value).value_or(0);
+	const auto &repetitions = global.expression_processor.ResolveExpression(dcb.repetitions, "Repetition value must be evaluable on first pass.").value_or(0);
+	const auto &value = global.expression_processor.ResolveExpression(dcb.value).value_or(0);
 
 	for (unsigned long i = 0; i < repetitions; ++i)
-		OutputDcValue(state, dcb.size, value);
+		OutputDcValue(dcb.size, value);
 }
 
-static void ProcessDs(SemanticState &state, StatementDs &ds)
+void SemanticState::ProcessDs(StatementDs &ds)
 {
-	if (ShouldPerformAutomaticEven(state, ds.size))
-		PerformEven(state);
+	if (ShouldPerformAutomaticEven(ds.size))
+		PerformEven();
 
-	const auto &length = state.global.expression_processor.ResolveExpression(ds.length, "Repetition value must be evaluable on first pass.").value_or(0);
+	const auto &length = global.expression_processor.ResolveExpression(ds.length, "Repetition value must be evaluable on first pass.").value_or(0);
 
 	for (unsigned long i = 0; i < length; ++i)
-		OutputDcValue(state, ds.size, 0);
+		OutputDcValue(ds.size, 0);
 }
 
-static void ProcessInclude(SemanticState &state, const StatementInclude &include)
+void SemanticState::ProcessInclude(const StatementInclude &include)
 {
 	std::ifstream input_stream(Utilities::Path::ToStandardPath(include.path));
 
 	if (!input_stream.is_open())
 	{
-		state.global.error_manager.Error("File '{}' could not be opened.", include.path);
+		global.error_manager.Error("File '{}' could not be opened.", include.path);
 		return;
 	}
 
 	/* Add file path and line number to the location list. */
-	state.location.emplace_front(include.path, 0);
+	location.emplace_front(include.path, 0);
 
 	SourceLineReader source_line_reader(input_stream);
-	AssembleFile(state, source_line_reader);
+	AssembleFile(source_line_reader);
 
-	state.location.pop_front();
+	location.pop_front();
 }
 
-static void ProcessIncbin(SemanticState &state, StatementIncbin &incbin)
+void SemanticState::ProcessIncbin(StatementIncbin &incbin)
 {
 	std::ifstream input_file(Utilities::Path::ToStandardPath(incbin.path), input_file.binary);
 
 	if (!input_file.is_open())
 	{
-		state.global.error_manager.Error("File '{}' could not be opened.", incbin.path);
+		global.error_manager.Error("File '{}' could not be opened.", incbin.path);
 		return;
 	}
 
-	const auto &value = state.global.expression_processor.ResolveExpression(incbin.start, "Start value must be evaluable on the first pass.").value_or(0);
+	const auto &value = global.expression_processor.ResolveExpression(incbin.start, "Start value must be evaluable on the first pass.").value_or(0);
 
 	input_file.seekg(value);
 
 	if (input_file.fail())
-		state.global.error_manager.Error("Start value is not a valid location in the file.");
+		global.error_manager.Error("Start value is not a valid location in the file.");
 
 	if (incbin.has_length)
 	{
-		const auto &length = state.global.expression_processor.ResolveExpression(incbin.length, "Length value must be evaluable on the first pass.").value_or(0);
+		const auto &length = global.expression_processor.ResolveExpression(incbin.length, "Length value must be evaluable on the first pass.").value_or(0);
 
 		for (unsigned long i = 0; i < length; ++i)
 		{
@@ -450,11 +483,11 @@ static void ProcessIncbin(SemanticState &state, StatementIncbin &incbin)
 
 			if (input_file.gcount() == 0)
 			{
-				state.global.error_manager.Error("Length value is larger than the remaining number of bytes in the file.");
+				global.error_manager.Error("Length value is larger than the remaining number of bytes in the file.");
 				break;
 			}
 
-			state.object_writer.WriteU8WithoutListing(character);
+			object_writer.WriteU8WithoutListing(character);
 		}
 	}
 	else
@@ -466,52 +499,52 @@ static void ProcessIncbin(SemanticState &state, StatementIncbin &incbin)
 			if (input_file.gcount() == 0)
 				break;
 
-			state.object_writer.WriteU8WithoutListing(character);
+			object_writer.WriteU8WithoutListing(character);
 		}
 	}
 }
 
-static void ProcessRept(SemanticState &state, StatementRept &rept)
+void SemanticState::ProcessRept(StatementRept &rept)
 {
 	/* Enter REPT mode. */
-	auto &rept_mode = state.mode.emplace<SemanticState::ModeRept>();
+	auto &rept_mode = mode.emplace<SemanticState::ModeRept>();
 
-	rept_mode.repetitions = state.global.expression_processor.ResolveExpression(rept.repetitions, "Repetition value must be evaluable on the first pass.").value_or(1);
-	rept_mode.line_number = state.location.front().line_number;
+	rept_mode.repetitions = global.expression_processor.ResolveExpression(rept.repetitions, "Repetition value must be evaluable on the first pass.").value_or(1);
+	rept_mode.line_number = location.front().line_number;
 	rept_mode.nesting = 0;
 }
 
-static void ProcessMacro(SemanticState &state, StatementMacro &macro, const std::string_view &label, bool is_short)
+void SemanticState::ProcessMacro(StatementMacro &macro, const std::string_view &label, bool is_short)
 {
 	/* Enter MACRO mode. */
-	auto &macro_mode = state.mode.emplace<SemanticState::ModeMacro>();
+	auto &macro_mode = mode.emplace<SemanticState::ModeMacro>();
 
 	macro_mode.metadata.name = label;
-	macro_mode.line_number = state.location.front().line_number;
+	macro_mode.line_number = location.front().line_number;
 	macro_mode.metadata.parameter_names = std::move(macro.parameter_names);
 	macro_mode.metadata.is_short = is_short;
 	macro_mode.metadata.uses_label = macro.uses_label;
 }
 
-static void ProcessIf(SemanticState &state, Expression &expression)
+void SemanticState::ProcessIf(Expression &expression)
 {
-	++state.current_if_level;
+	++current_if_level;
 
-	const auto &value = state.global.expression_processor.ResolveExpression(expression, "Condition must be evaluable on the first pass.").value_or(1);
+	const auto &value = global.expression_processor.ResolveExpression(expression, "Condition must be evaluable on the first pass.").value_or(1);
 
 	/* If this condition is false, then mark this as the false if-level. */
 	if (value == 0)
-		state.false_if_level = state.current_if_level;
+		false_if_level = current_if_level;
 
-	state.true_already_found = value != 0;
+	true_already_found = value != 0;
 }
 
-static void ProcessStatement(SemanticState &state, Statement &statement, const std::string_view &label)
+void SemanticState::ProcessStatement(Statement &statement, const std::string_view &label)
 {
 	/* Bizarrely, depending on the context, the program counter can be one
 	   of two values, so we need to maintain two separate copies of it. */
-	state.global.expression_processor.program_counter_of_statement = state.global.program_counter;
-	state.global.expression_processor.program_counter_of_expression = state.global.program_counter;
+	global.expression_processor.program_counter_of_statement = global.program_counter;
+	global.expression_processor.program_counter_of_expression = global.program_counter;
 
 	if (CC_VariantHoldsAnyOf<
 		StatementEmpty,
@@ -540,11 +573,11 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 		StatementPurge
 	>(statement))
 	{
-		if (!label.empty() && !state.global.doing_fixup_pass)
+		if (!label.empty() && !global.doing_fixup_pass)
 		{
 			/* Handle the label here, instead of passing it onto a later function. */
-			state.symbol_manager.SetLastGlobalLabel(label);
-			state.symbol_manager.AddSymbol(label, SymbolLabel{state.global.program_counter});
+			symbol_manager.SetLastGlobalLabel(label);
+			symbol_manager.AddSymbol(label, SymbolLabel{global.program_counter});
 		}
 	}
 	else if (CC_VariantHoldsAnyOf<
@@ -562,7 +595,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 	>(statement))
 	{
 		if (!label.empty())
-			state.global.error_manager.Error("There cannot be a label on this type of statement.");
+			global.error_manager.Error("There cannot be a label on this type of statement.");
 	}
 	else if (CC_VariantHoldsAnyOf<
 		StatementMacro,
@@ -576,7 +609,7 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 	{
 		if (label.empty())
 		{
-			state.global.error_manager.Error("This type of statement must have a label.");
+			global.error_manager.Error("This type of statement must have a label.");
 			/* Bail, to avoid null pointer dereferences. */
 			return;
 		}
@@ -593,75 +626,75 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 			[&](StatementEmpty&) {},
 			[&](StatementInstruction &statement)
 			{
-				state.instruction_processor.Process(statement);
+				instruction_processor.Process(statement);
 			},
 			[&](StatementDc &statement)
 			{
-				ProcessDc(state, statement);
+				ProcessDc(statement);
 			},
 			[&](StatementDcb &statement)
 			{
-				ProcessDcb(state, statement);
+				ProcessDcb(statement);
 			},
 			[&](StatementDs &statement)
 			{
-				ProcessDs(state, statement);
+				ProcessDs(statement);
 			},
 			[&](StatementInclude &statement)
 			{
-				ProcessInclude(state, statement);
+				ProcessInclude(statement);
 			},
 			[&](StatementIncbin &statement)
 			{
-				ProcessIncbin(state, statement);
+				ProcessIncbin(statement);
 			},
 			[&](StatementRept &statement)
 			{
-				ProcessRept(state, statement);
+				ProcessRept(statement);
 			},
 			[&](StatementEndr&)
 			{
 				/* Exit REPT mode. */
-				const auto &rept_mode = std::get_if<SemanticState::ModeRept>(&state.mode);
+				const auto &rept_mode = std::get_if<SemanticState::ModeRept>(&mode);
 
 				if (rept_mode == nullptr)
-					state.global.error_manager.Error("This stray ENDR has no preceeding REPT.");
+					global.error_manager.Error("This stray ENDR has no preceeding REPT.");
 				else
-					TerminateRept(state, *rept_mode);
+					TerminateRept(*rept_mode);
 			},
 			[&](StatementMacro &statement)
 			{
-				ProcessMacro(state, statement, label, false);
+				ProcessMacro(statement, label, false);
 			},
 			[&](StatementMacros &statement)
 			{
-				ProcessMacro(state, statement.macro, label, true);
+				ProcessMacro(statement.macro, label, true);
 			},
 			[&](StatementEndm&)
 			{
 				/* Exit MACRO mode. */
-				const auto &macro_mode = std::get_if<SemanticState::ModeMacro>(&state.mode);
+				const auto &macro_mode = std::get_if<SemanticState::ModeMacro>(&mode);
 
 				if (macro_mode == nullptr)
-					state.global.error_manager.Error("This stray ENDM has no preceeding MACRO.");
+					global.error_manager.Error("This stray ENDM has no preceeding MACRO.");
 				else if (macro_mode->metadata.is_short)
-					state.global.error_manager.Error("ENDM cannot be used in a short macro.");
+					global.error_manager.Error("ENDM cannot be used in a short macro.");
 				else
-					TerminateMacro(state, *macro_mode);
+					TerminateMacro(*macro_mode);
 			},
 			[&](StatementEqu &statement)
 			{
-				if (state.global.options->equ_set_descope_local_labels)
-					state.symbol_manager.SetLastGlobalLabel(label);
+				if (global.options->equ_set_descope_local_labels)
+					symbol_manager.SetLastGlobalLabel(label);
 
-				const auto &value_optional = state.global.expression_processor.ResolveExpression(statement.expression);
+				const auto &value_optional = global.expression_processor.ResolveExpression(statement.expression);
 
 				/* Hack: We ABSOLUTELY DO NOT want this line adding to the fix-up list!!! */
-				state.symbol_manager.fixup_needed = false;
+				symbol_manager.fixup_needed = false;
 
 				if (!value_optional.has_value())
 				{
-					state.symbol_manager.AddSymbol(label, SymbolExpressionConstant{std::move(statement.expression)});
+					symbol_manager.AddSymbol(label, SymbolExpressionConstant{std::move(statement.expression)});
 					// TODO: Why does removing this result in a crash?
 					statement.expression.emplace<ExpressionNumber>(0);
 					return;
@@ -669,32 +702,32 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 
 				const auto &value = *value_optional;
 
-				state.symbol_manager.AddSymbol(label, SymbolConstant{value});
-				state.listing_writer.WriteIdentifierValue(value);
+				symbol_manager.AddSymbol(label, SymbolConstant{value});
+				listing_writer.WriteIdentifierValue(value);
 			},
 			[&](StatementEqusString &statement)
 			{
-				PushSubstitute(state, label, statement.string);
+				PushSubstitute(label, statement.string);
 			},
 			[&](StatementEqusIdentifier &statement)
 			{
-				const auto &[it, dictionary] = state.symbol_manager.LookupSymbol(statement.string);
+				const auto &[it, dictionary] = symbol_manager.LookupSymbol(statement.string);
 
 				const SymbolStringConstant* const symbol_string_constant = it == dictionary.end() ? nullptr : std::get_if<SymbolStringConstant>(&it->second);
 
 				if (symbol_string_constant == nullptr)
-					state.global.error_manager.Error("String constant can only be defined as a string or another string constant.");
+					global.error_manager.Error("String constant can only be defined as a string or another string constant.");
 				else
-					PushSubstitute(state, label, symbol_string_constant->value);
+					PushSubstitute(label, symbol_string_constant->value);
 			},
 			[&](StatementSubstr &statement)
 			{
-				auto start = state.global.expression_processor.ResolveExpression(statement.start, "Start must be evaluable on the first pass.").value_or(0);
-				auto end = state.global.expression_processor.ResolveExpression(statement.end, "End must be evaluable on the first pass.").value_or(statement.string.length());
+				auto start = global.expression_processor.ResolveExpression(statement.start, "Start must be evaluable on the first pass.").value_or(0);
+				auto end = global.expression_processor.ResolveExpression(statement.end, "End must be evaluable on the first pass.").value_or(statement.string.length());
 
 				if (start == 0)
 				{
-					state.global.error_manager.Error("Start cannot be zero.");
+					global.error_manager.Error("Start cannot be zero.");
 					return;
 				}
 
@@ -708,173 +741,173 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 				if (end > statement.string.length())
 					end = statement.string.length();
 
-				PushSubstitute(state, label, statement.string.substr(start - 1, end - start + 1));
+				PushSubstitute(label, statement.string.substr(start - 1, end - start + 1));
 			},
 			[&](StatementSet &statement)
 			{
-				if (state.global.options->equ_set_descope_local_labels)
-					state.symbol_manager.SetLastGlobalLabel(label);
+				if (global.options->equ_set_descope_local_labels)
+					symbol_manager.SetLastGlobalLabel(label);
 
-				const auto &value = state.global.expression_processor.ResolveExpression(statement.expression, "Value must be evaluable on the first pass.").value_or(0);
+				const auto &value = global.expression_processor.ResolveExpression(statement.expression, "Value must be evaluable on the first pass.").value_or(0);
 
-				state.symbol_manager.AddSymbol(label, SymbolVariable{value});
-				state.listing_writer.WriteIdentifierValue(value);
+				symbol_manager.AddSymbol(label, SymbolVariable{value});
+				listing_writer.WriteIdentifierValue(value);
 			},
 			[&](StatementIf &statement)
 			{
-				ProcessIf(state, statement.expression);
+				ProcessIf(statement.expression);
 			},
 			[&](StatementElseif &statement)
 			{
-				if (state.current_if_level == 0)
+				if (current_if_level == 0)
 				{
-					state.global.error_manager.Error("This stray ELSEIF has no preceeding IF.");
+					global.error_manager.Error("This stray ELSEIF has no preceeding IF.");
 					return;
 				}
 
-				if (state.false_if_level == state.current_if_level || state.false_if_level == 0)
+				if (false_if_level == current_if_level || false_if_level == 0)
 				{
-					const auto &value = state.global.expression_processor.ResolveExpression(statement.expression, "Condition must be evaluable on the first pass.").value_or(1);
+					const auto &value = global.expression_processor.ResolveExpression(statement.expression, "Condition must be evaluable on the first pass.").value_or(1);
 
 					/* If this condition is false, then mark this as the false if-level. */
-					if (state.true_already_found || value == 0)
+					if (true_already_found || value == 0)
 					{
-						state.false_if_level = state.current_if_level;
+						false_if_level = current_if_level;
 					}
 					else
 					{
-						state.false_if_level = 0;
-						state.true_already_found = true;
+						false_if_level = 0;
+						true_already_found = true;
 					}
 				}
 			},
 			[&](StatementElse&)
 			{
-				if (state.current_if_level == 0)
+				if (current_if_level == 0)
 				{
-					state.global.error_manager.Error("This stray ELSE has no preceeding IF.");
+					global.error_manager.Error("This stray ELSE has no preceeding IF.");
 					return;
 				}
 
-				if (state.false_if_level == state.current_if_level || state.false_if_level == 0)
+				if (false_if_level == current_if_level || false_if_level == 0)
 				{
-					if (state.true_already_found)
+					if (true_already_found)
 					{
-						state.false_if_level = state.current_if_level;
+						false_if_level = current_if_level;
 					}
 					else
 					{
 						/* If this is the false if-level, then it isn't anymore. */
 						/* Likewise, if there is no false if-level, then there is now. */
-						if (state.false_if_level == state.current_if_level)
-							state.false_if_level = 0;
-						else /*if (state.false_if_level == 0)*/
-							state.false_if_level = state.current_if_level;
+						if (false_if_level == current_if_level)
+							false_if_level = 0;
+						else /*if (false_if_level == 0)*/
+							false_if_level = current_if_level;
 					}
 				}
 			},
 			[&](StatementEndc&)
 			{
-				if (state.current_if_level == 0)
-					state.global.error_manager.Error("This stray ENDC/ENDIF has no preceeding IF.");
+				if (current_if_level == 0)
+					global.error_manager.Error("This stray ENDC/ENDIF has no preceeding IF.");
 				else
-					TerminateIf(state);
+					TerminateIf();
 			},
 			[&](StatementWhile &statement)
 			{
 				/* Enter WHILE mode. */
-				auto &while_mode = state.mode.emplace<SemanticState::ModeWhile>();
+				auto &while_mode = mode.emplace<SemanticState::ModeWhile>();
 
 				/* Dummy-out the statement's expression, since the state now owns it, and we don't
 				   want its sub-expressions to be automatically freed when the statement is freed. */
 				while_mode.expression.emplace<ExpressionNumber>(0);
 				std::swap(while_mode.expression, statement.expression);
-				while_mode.source_line = state.source_line;
+				while_mode.source_line = source_line;
 
-				while_mode.line_number = state.location.front().line_number;
+				while_mode.line_number = location.front().line_number;
 				while_mode.nesting = 0;
 			},
 			[&](StatementEndw&)
 			{
 				/* Exit WHILE mode. */
-				const auto &while_mode = std::get_if<SemanticState::ModeWhile>(&state.mode);
+				const auto &while_mode = std::get_if<SemanticState::ModeWhile>(&mode);
 
 				if (while_mode == nullptr)
-					state.global.error_manager.Error("This stray ENDW has no preceeding WHILE.");
+					global.error_manager.Error("This stray ENDW has no preceeding WHILE.");
 				else
-					TerminateWhile(state, *while_mode);
+					TerminateWhile(*while_mode);
 			},
 			[&](StatementEven&)
 			{
-				PerformEven(state);
+				PerformEven();
 			},
 			[&](StatementCnop &statement)
 			{
-				const auto &offset = state.global.expression_processor.ResolveExpression(statement.offset, "Offset must be evaluable on the first pass.").value_or(0);
-				const auto &size_boundary = state.global.expression_processor.ResolveExpression(statement.size_boundary, "Size boundary must be evaluable on the first pass.").value_or(1);
+				const auto &offset = global.expression_processor.ResolveExpression(statement.offset, "Offset must be evaluable on the first pass.").value_or(0);
+				const auto &size_boundary = global.expression_processor.ResolveExpression(statement.size_boundary, "Size boundary must be evaluable on the first pass.").value_or(1);
 
 				if (size_boundary == 0)
 				{
 					/* I don't know if there's a way to make this have meaningfully useful semantics. asm68k errors on this, so for now we will too. */
-					state.global.error_manager.Error("Size boundary cannot be zero.");
+					global.error_manager.Error("Size boundary cannot be zero.");
 					return;
 				}
 
-				const unsigned long position_within_boundary = state.global.program_counter % size_boundary;
+				const unsigned long position_within_boundary = global.program_counter % size_boundary;
 
-				unsigned long target = state.global.program_counter - position_within_boundary + offset;
+				unsigned long target = global.program_counter - position_within_boundary + offset;
 
 				if (position_within_boundary > offset)
 					target += size_boundary;
 
 				/* Pad to the desired offset. */
-				while (state.global.program_counter != target)
-					state.object_writer.WriteU8(0);
+				while (global.program_counter != target)
+					object_writer.WriteU8(0);
 			},
 			[&](StatementInform &statement)
 			{
 				/* Definitely an 'INFORM'... */
-				const auto &severity = state.global.expression_processor.ResolveExpression(statement.severity, "Severity must be evaluable on the first pass.").value_or(0);
+				const auto &severity = global.expression_processor.ResolveExpression(statement.severity, "Severity must be evaluable on the first pass.").value_or(0);
 
 				/* TODO - Everything... */
 				switch (severity)
 				{
 					case 0:
-						state.global.error_manager.Information("INFORM: '{}'", statement.message);
+						global.error_manager.Information("INFORM: '{}'", statement.message);
 						break;
 
 					case 1:
-						state.global.error_manager.Warning("INFORM: '{}'", statement.message);
+						global.error_manager.Warning("INFORM: '{}'", statement.message);
 						break;
 
 					case 2:
 					case 3: /* TODO: Halt assembly. */
-						state.global.error_manager.Error("INFORM: '{}'", statement.message);
+						global.error_manager.Error("INFORM: '{}'", statement.message);
 						break;
 				}
 			},
 			[&](StatementFail&)
 			{
 				/* TODO: Halt assembly. */
-				state.global.error_manager.Error("Assembly Failed");
+				global.error_manager.Error("Assembly Failed");
 			},
 			[&](StatementEnd&)
 			{
-				state.end = true;
+				end = true;
 			},
 			[&](StatementRs &statement)
 			{
-				if (ShouldPerformAutomaticEven(state, statement.size))
-					if ((state.global.expression_processor.rs & 1) != 0)
-						++state.global.expression_processor.rs;
+				if (ShouldPerformAutomaticEven(statement.size))
+					if ((global.expression_processor.rs & 1) != 0)
+						++global.expression_processor.rs;
 
-				auto length = state.global.expression_processor.ResolveExpression(statement.length, "Length must be evaluable on the first pass.").value_or(0);
+				auto length = global.expression_processor.ResolveExpression(statement.length, "Length must be evaluable on the first pass.").value_or(0);
 
 				/* Add label to symbol table. */
 				if (!label.empty())
 				{
-					state.symbol_manager.AddSymbol(label, SymbolConstant{state.global.expression_processor.rs});
-					state.listing_writer.WriteIdentifierValue(state.global.expression_processor.rs);
+					symbol_manager.AddSymbol(label, SymbolConstant{global.expression_processor.rs});
+					listing_writer.WriteIdentifierValue(global.expression_processor.rs);
 				}
 
 				/* Advance '__rs' by the specified amount. */
@@ -897,63 +930,63 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 						break;
 				}
 
-				state.global.expression_processor.rs += length;
+				global.expression_processor.rs += length;
 			},
 			[&](StatementRsset &statement)
 			{
 				/* Set '__rs' to value. */
-				state.global.expression_processor.rs = state.global.expression_processor.ResolveExpression(statement.expression, "Value must be evaluable on the first pass.").value_or(state.global.expression_processor.rs);
+				global.expression_processor.rs = global.expression_processor.ResolveExpression(statement.expression, "Value must be evaluable on the first pass.").value_or(global.expression_processor.rs);
 			},
 			[&](StatementRsreset&)
 			{
 				/* Set '__rs' to 0. */
-				state.global.expression_processor.rs = 0;
+				global.expression_processor.rs = 0;
 			},
 			[&](StatementObj &statement)
 			{
-				if (state.obj_delta.has_value())
+				if (obj_delta.has_value())
 				{
-					state.global.error_manager.Error("OBJ statements cannot be nested.");
+					global.error_manager.Error("OBJ statements cannot be nested.");
 					return;
 				}
 
-				const auto &value = state.global.expression_processor.ResolveExpression(statement.expression, "Value must be evaluable on the first pass.").value_or(state.global.program_counter);
+				const auto &value = global.expression_processor.ResolveExpression(statement.expression, "Value must be evaluable on the first pass.").value_or(global.program_counter);
 
-				state.obj_delta = value - state.global.program_counter;
-				state.global.program_counter += *state.obj_delta;
+				obj_delta = value - global.program_counter;
+				global.program_counter += *obj_delta;
 			},
 			[&](StatementObjend&)
 			{
-				if (!state.obj_delta.has_value())
+				if (!obj_delta.has_value())
 				{
-					state.global.error_manager.Error("This stray OBJEND has no preceeding OBJ.");
+					global.error_manager.Error("This stray OBJEND has no preceeding OBJ.");
 					return;
 				}
 
-				state.global.program_counter -= *state.obj_delta;
-				state.obj_delta = std::nullopt;
+				global.program_counter -= *obj_delta;
+				obj_delta = std::nullopt;
 			},
 			[&](StatementOrg &statement)
 			{
-				const auto &value = state.global.expression_processor.ResolveExpression(statement.expression, "Value must be evaluable on the first pass.").value_or(state.global.program_counter);
+				const auto &value = global.expression_processor.ResolveExpression(statement.expression, "Value must be evaluable on the first pass.").value_or(global.program_counter);
 
 				if (value > 0xFFFFFFFF)
 				{
-					state.global.error_manager.Error("Value cannot be larger than 0xFFFFFFFF (was 0x{:X}).", value);
+					global.error_manager.Error("Value cannot be larger than 0xFFFFFFFF (was 0x{:X}).", value);
 					return;
 				}
 
-				state.object_writer.BeginNewSegment(value);
+				object_writer.BeginNewSegment(value);
 
-				state.global.program_counter = value;
+				global.program_counter = value;
 			},
 			[&](StatementPusho&)
 			{
-				state.global.options.Push();
+				global.options.Push();
 			},
 			[&](StatementPopo&)
 			{
-				state.global.options.Pop();
+				global.options.Pop();
 			},
 			[&](StatementOpt &statement)
 			{
@@ -961,138 +994,138 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 				{
 					/* TODO: A lot of these are unimplemented... */
 					if (Utilities::CaseInsensitive::CompareStrings(option, "ae+"))
-						state.global.options->automatic_even = true;
+						global.options->automatic_even = true;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "ae-"))
-						state.global.options->automatic_even = false;
+						global.options->automatic_even = false;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "an+"))
 						;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "an-"))
 						;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "c+"))
-						state.global.options->case_insensitive = false;
+						global.options->case_insensitive = false;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "c-"))
-						state.global.options->case_insensitive = true;
+						global.options->case_insensitive = true;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "d+"))
-						state.global.options->equ_set_descope_local_labels = true;
+						global.options->equ_set_descope_local_labels = true;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "d-"))
-						state.global.options->equ_set_descope_local_labels = false;
+						global.options->equ_set_descope_local_labels = false;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "e+"))
 						;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "e-"))
 						;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "l+"))
-						state.global.options->local_signifier = '.';
+						global.options->local_signifier = '.';
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "l-"))
-						state.global.options->local_signifier = '@';
+						global.options->local_signifier = '@';
 					else if (option.length() == 2 && (option[0] == 'l' || option[0] == 'L'))
-						state.global.options->local_signifier = option[1];
+						global.options->local_signifier = option[1];
 					/*else if (Utilities::CaseInsensitive::CompareStrings(option, "s+"))
 						;*/
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "s-"))
 						;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "m+"))
-						state.global.options->expand_all_macros = true;
+						global.options->expand_all_macros = true;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "m-"))
-						state.global.options->expand_all_macros = false;
+						global.options->expand_all_macros = false;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "oz+"))
-						state.global.options->optimisation.zero_displacement = true;
+						global.options->optimisation.zero_displacement = true;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "oz-"))
-						state.global.options->optimisation.zero_displacement = false;
+						global.options->optimisation.zero_displacement = false;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "v+"))
-						state.global.options->output_local_labels_to_sym_file = true;
+						global.options->output_local_labels_to_sym_file = true;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "v-"))
-						state.global.options->output_local_labels_to_sym_file = false;
+						global.options->output_local_labels_to_sym_file = false;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "w+"))
-						state.global.options->warnings_enabled = true;
+						global.options->warnings_enabled = true;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "w-"))
-						state.global.options->warnings_enabled = false;
+						global.options->warnings_enabled = false;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "wp+"))
-						state.global.options->pedantic_warnings_enabled = true;
+						global.options->pedantic_warnings_enabled = true;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "wp-"))
-						state.global.options->pedantic_warnings_enabled = false;
+						global.options->pedantic_warnings_enabled = false;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "ws+"))
 						;
 					else if (Utilities::CaseInsensitive::CompareStrings(option, "ws-"))
 						;
 					else
-						state.global.error_manager.Warning("Unrecognised option '{}'.", option);
+						global.error_manager.Warning("Unrecognised option '{}'.", option);
 				}
 			},
 			[&](StatementPushp &statement)
 			{
-				state.string_stack.emplace(std::move(statement.string));
+				string_stack.emplace(std::move(statement.string));
 			},
 			[&](StatementPopp &statement)
 			{
-				if (state.string_stack.empty())
+				if (string_stack.empty())
 				{
-					state.global.error_manager.Error("POPP used but the string stack was empty.");
+					global.error_manager.Error("POPP used but the string stack was empty.");
 					return;
 				}
 
-				PushSubstitute(state, statement.string, state.string_stack.top());
-				state.string_stack.pop();
+				PushSubstitute(statement.string, string_stack.top());
+				string_stack.pop();
 			},
 			[&](StatementShift&)
 			{
-				if (!state.macro.ExpansionInProgress())
+				if (!macro.ExpansionInProgress())
 				{
-					state.global.error_manager.Error("SHIFT used outside of macro.");
+					global.error_manager.Error("SHIFT used outside of macro.");
 					return;
 				}
 
-				if (state.macro.expansion->total_arguments == 0)
+				if (macro.expansion->total_arguments == 0)
 				{
 					/* TODO: What if there are already 0 arguments? */
 					/* This prevents crashing for now but perhaps it could be handled differently. */
-					state.global.error_manager.Error("SHIFT used but there are no macro arguments to shift.");
+					global.error_manager.Error("SHIFT used but there are no macro arguments to shift.");
 					return;
 				}
 
-				--state.macro.expansion->total_arguments;
-				for (unsigned int i = 0; i < state.macro.expansion->total_arguments; ++i)
-					state.macro.expansion->argument_list[i] = std::move(state.macro.expansion->argument_list[i + 1]);
-				state.macro.expansion->argument_list.pop_back();
-				PushMacroArgumentSubstitutions(state);
+				--macro.expansion->total_arguments;
+				for (unsigned int i = 0; i < macro.expansion->total_arguments; ++i)
+					macro.expansion->argument_list[i] = std::move(macro.expansion->argument_list[i + 1]);
+				macro.expansion->argument_list.pop_back();
+				PushMacroArgumentSubstitutions();
 			},
 			[&](StatementMexit&)
 			{
-				state.macro.expansion = std::nullopt;
+				macro.expansion = std::nullopt;
 			},
 			[&](StatementLocal &statement)
 			{
-				if (!state.macro.ExpansionInProgress())
+				if (!macro.ExpansionInProgress())
 				{
-					state.global.error_manager.Error("LOCAL used outside of macro.");
+					global.error_manager.Error("LOCAL used outside of macro.");
 					return;
 				}
 
 				for (const auto &identifier : statement.identifiers)
-					state.macro.dictionary->emplace(identifier);
+					macro.dictionary->emplace(identifier);
 			},
 			[&](StatementPurge &statement)
 			{
-				if (state.macro.ExpansionInProgress())
+				if (macro.ExpansionInProgress())
 				{
 					/* TODO: I don't know if that could be meaningfully supported in some way but for now this just seems like a
 					   "how to crash and burn into UAF/double free" without a bunch of changes to support it, for not much benefit.
 					   We don't check for the name of the currently-expanded macro because one could e.g. invoke a, which invokes b,
 					   which redefines a, and there is currently no simple wey to check the entire macro expansion stack. */
-					state.global.error_manager.Error("Cannot purge '{}' during macro expansion.", statement.string);
+					global.error_manager.Error("Cannot purge '{}' during macro expansion.", statement.string);
 					return;
 				}
 
-				const auto &[it, dictionary] = state.symbol_manager.LookupSymbol(statement.string);
+				const auto &[it, dictionary] = symbol_manager.LookupSymbol(statement.string);
 
 				if (it == dictionary.end())
 				{
-					state.global.error_manager.Error("Cannot purge '{}' as it does not exist.", statement.string);
+					global.error_manager.Error("Cannot purge '{}' as it does not exist.", statement.string);
 					return;
 				}
 
 				if (!std::holds_alternative<SymbolMacro>(it->second))
 				{
-					state.global.error_manager.Error("Cannot purge '{}' as it is not a macro.", statement.string);
+					global.error_manager.Error("Cannot purge '{}' as it is not a macro.", statement.string);
 					return;
 				}
 
@@ -1102,67 +1135,67 @@ static void ProcessStatement(SemanticState &state, Statement &statement, const s
 	);
 
 	/* Update both copies of the program counter again, so that things like WHILE statements don't use stale values in their expressions. */
-	state.global.expression_processor.program_counter_of_statement = state.global.program_counter;
-	state.global.expression_processor.program_counter_of_expression = state.global.program_counter;
+	global.expression_processor.program_counter_of_statement = global.program_counter;
+	global.expression_processor.program_counter_of_expression = global.program_counter;
 }
 
-static void ParseLine(SemanticState &state, const std::string_view &label, const std::string_view &directive_and_operands)
+void SemanticState::ParseLine(const std::string_view &label, const std::string_view &directive_and_operands)
 {
 	/* This is a normal assembly line. */
 
 	/* Back these up, before they get a chance to be modified by ProcessStatement. */
-	const unsigned long starting_program_counter = state.global.program_counter;
-	const auto starting_object_writer_position = state.object_writer.Tell();
+	const unsigned long starting_program_counter = global.program_counter;
+	const auto starting_object_writer_position = object_writer.Tell();
 
-	Statement* const statement = state.parser.ParseStatement(directive_and_operands);
+	Statement* const statement = parser.ParseStatement(directive_and_operands);
 
 	if (statement == nullptr)
 		return;
 
-	ProcessStatement(state, *statement, label);
+	ProcessStatement(*statement, label);
 
-	if (!state.symbol_manager.fixup_needed)
+	if (!symbol_manager.fixup_needed)
 		return;
 
 	/* If the statement cannot currently be processed because of undefined symbols,
 	   add it to the fix-up list so we can try again later. */
-	state.fixup_list.emplace_back(
+	fixup_list.emplace_back(
 		/* Backup the statement. */
 		std::move(*statement),
 
-		/* Backup some state. */
-		state.macro.dictionary,
+		/* Backup some  */
+		macro.dictionary,
 		starting_program_counter,
 		starting_object_writer_position,
-		state.symbol_manager.GetLastGlobalLabel(),
-		std::string(state.source_line),
+		symbol_manager.GetLastGlobalLabel(),
+		std::string(source_line),
 		std::string(label),
-		*state.global.options,
+		*global.options,
 
 		/* Clone the location. */
-		state.location
+		location
 	);
 
-	state.symbol_manager.fixup_needed = false;
+	symbol_manager.fixup_needed = false;
 }
 
 #define DIRECTIVE_OR_MACRO_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_"
 #define LABEL_CHARS DIRECTIVE_OR_MACRO_CHARS ".@"
 
-static void PerformSubstitutionsOnSubString(SemanticState &state, std::string &string, std::string_view &view_to_search, const bool allow_implicit_matches)
+void SemanticState::PerformSubstitutionsOnSubString(std::string &string, std::string_view &view_to_search, const bool allow_implicit_matches)
 {
-	const bool case_insensitive = state.global.options->case_insensitive;
+	const bool case_insensitive = global.options->case_insensitive;
 
-	if (state.macro.ExpansionInProgress())
-		state.substitutions.ProcessSubString(&state.macro.expansion->substitutions, string, view_to_search, state.macro.expansion->custom_search, allow_implicit_matches, case_insensitive);
+	if (macro.ExpansionInProgress())
+		substitutions.ProcessSubString(&macro.expansion->substitutions, string, view_to_search, macro.expansion->custom_search, allow_implicit_matches, case_insensitive);
 	else
-		state.substitutions.ProcessSubString(nullptr, string, view_to_search, nullptr, allow_implicit_matches, case_insensitive);
+		substitutions.ProcessSubString(nullptr, string, view_to_search, nullptr, allow_implicit_matches, case_insensitive);
 }
 
-static void PerformSubstitutions(SemanticState &state, std::string &string, const bool allow_implicit_matches)
+void SemanticState::PerformSubstitutions(std::string &string, const bool allow_implicit_matches)
 {
 	std::string_view view = string;
-	PerformSubstitutionsOnSubString(state, string, view, allow_implicit_matches);
+	PerformSubstitutionsOnSubString(string, view, allow_implicit_matches);
 }
 
 static std::optional<std::string_view> FindQuotedStringInSourceLine(const std::string_view &string)
@@ -1182,7 +1215,7 @@ static std::optional<std::string_view> FindQuotedStringInSourceLine(const std::s
 
 /* Performs string substitutions only in parts of the string that are not wrapped in quotations. */
 /* This is needed to simulate how SN 68k does not expand string constants in strings, only expressions and operands. */
-static void PerformSubstitutionsExcludingQuotedStrings(SemanticState &state, std::string &source_line, const std::size_t starting_position, const bool allow_implicit_matches)
+void SemanticState::PerformSubstitutionsExcludingQuotedStrings(std::string &source_line, const std::size_t starting_position, const bool allow_implicit_matches)
 {
 	std::string_view source_line_subview = std::string_view(source_line).substr(starting_position);
 
@@ -1197,7 +1230,7 @@ static void PerformSubstitutionsExcludingQuotedStrings(SemanticState &state, std
 		auto view_to_search = source_line_subview.substr(0, quoted_string.data() - source_line_subview.data());
 
 		/* Perform the substitutions. */
-		PerformSubstitutionsOnSubString(state, source_line, view_to_search, allow_implicit_matches);
+		PerformSubstitutionsOnSubString(source_line, view_to_search, allow_implicit_matches);
 
 		if (quoted_string.empty())
 			break;
@@ -1207,7 +1240,7 @@ static void PerformSubstitutionsExcludingQuotedStrings(SemanticState &state, std
 	}
 }
 
-static void SubstituteAndParseLine(SemanticState &state, const std::string_view &label, const std::string_view &directive_and_operands, const std::string_view &directive)
+void SemanticState::SubstituteAndParseLine(const std::string_view &label, const std::string_view &directive_and_operands, const std::string_view &directive)
 {
 	std::string modified_directive_and_operands;
 
@@ -1222,7 +1255,7 @@ static void SubstituteAndParseLine(SemanticState &state, const std::string_view 
 	 || Utilities::CaseInsensitive::CompareStrings(directive, "opt")
 	 || Utilities::CaseInsensitive::CompareStrings(directive, "popp"))
 	{
-		ParseLine(state, label, directive_and_operands);
+		ParseLine(label, directive_and_operands);
 		return;
 	}
 
@@ -1230,42 +1263,42 @@ static void SubstituteAndParseLine(SemanticState &state, const std::string_view 
 	   SN 68k achieves this by expanding string constants in its operand and expression evaluators,
 	   which is absolutely insane, so this trick approximates it instead. */
 	modified_directive_and_operands = directive_and_operands;
-	PerformSubstitutionsExcludingQuotedStrings(state, modified_directive_and_operands, directive.length(), true);
+	PerformSubstitutionsExcludingQuotedStrings(modified_directive_and_operands, directive.length(), true);
 
-	ParseLine(state, label, modified_directive_and_operands);
+	ParseLine(label, modified_directive_and_operands);
 }
 
-static void InvokeMacro(SemanticState &state, const Macro &macro_metadata, const std::string_view &label, std::string_view source_line)
+void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_view &label, std::string_view source_line)
 {
-	if (state.macro_depth >= 0x100)
+	if (macro_depth >= 0x100)
 	{
-		state.global.error_manager.Error("Macro expansion depth exceeded.");
+		global.error_manager.Error("Macro expansion depth exceeded.");
 		return;
 	}
 
-	++state.macro_depth;
+	++macro_depth;
 
-	const auto starting_if_level = state.current_if_level;
+	const auto starting_if_level = current_if_level;
 
-	MacroState previous_macro_state = std::move(state.macro);
+	MacroState previous_macro_state = std::move(macro);
 
 	/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
-	state.macro.dictionary = std::make_shared<SymbolDictionary>(state.global.options->case_insensitive);
+	macro.dictionary = std::make_shared<SymbolDictionary>(global.options->case_insensitive);
 
-	state.macro.expansion.emplace(macro_metadata);
+	macro.expansion.emplace(macro_metadata);
 
-	++state.current_macro_invocation;
+	++current_macro_invocation;
 
-	state.listing_writer.SuppressLine();
+	listing_writer.SuppressLine();
 
 	Utilities::String::RemoveLeading(source_line, DIRECTIVE_OR_MACRO_CHARS);
 
 	if (!label.empty())
 	{
-		state.symbol_manager.SetLastGlobalLabel(label);
+		symbol_manager.SetLastGlobalLabel(label);
 
 		if (!macro_metadata.uses_label)
-			state.symbol_manager.AddSymbol(label, SymbolLabel{state.global.program_counter});
+			symbol_manager.AddSymbol(label, SymbolLabel{global.program_counter});
 	}
 
 	std::string_view size;
@@ -1288,10 +1321,10 @@ static void InvokeMacro(SemanticState &state, const Macro &macro_metadata, const
 	/* Remove surrounding whitespace. */
 	Utilities::String::RemoveLeadingAndTrailing(arguments, " \t");
 
-	const std::string unique_suffix = std::format("_{}", state.current_macro_invocation);
+	const std::string unique_suffix = std::format("_{}", current_macro_invocation);
 	std::string symbol_value_string;
 
-	state.macro.expansion->custom_search = [&state, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, std::size_t starting_position, [[maybe_unused]] bool case_insensitive, std::size_t &found_position, std::size_t &found_length) -> std::optional<std::string_view>
+	macro.expansion->custom_search = [this, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, std::size_t starting_position, [[maybe_unused]] bool case_insensitive, std::size_t &found_position, std::size_t &found_length) -> std::optional<std::string_view>
 	{
 		for (found_position = starting_position; (found_position = view_to_search.find('\\', found_position)) != view_to_search.npos; ++found_position)
 		{
@@ -1336,7 +1369,7 @@ static void InvokeMacro(SemanticState &state, const Macro &macro_metadata, const
 					if (identifier_position_end < view_to_search.length() && view_to_search[identifier_position_end] == '\\')
 						++found_length;
 
-					const auto &value = state.symbol_manager.GetSymbolInteger(identifier, true).value_or(0);
+					const auto &value = symbol_manager.GetSymbolInteger(identifier, true).value_or(0);
 
 					if (symbol == '#')
 						symbol_value_string = std::format("{}", value);
@@ -1361,10 +1394,10 @@ static void InvokeMacro(SemanticState &state, const Macro &macro_metadata, const
 
 					found_length = 1 + (end - start);
 
-					if (parameter_index >= state.macro.expansion->total_arguments)
+					if (parameter_index >= macro.expansion->total_arguments)
 						return "";
 
-					return state.macro.expansion->argument_list[parameter_index];
+					return macro.expansion->argument_list[parameter_index];
 				}
 			}
 		}
@@ -1402,17 +1435,17 @@ static void InvokeMacro(SemanticState &state, const Macro &macro_metadata, const
 					Utilities::String::RemoveLeadingAndTrailing(argument, " \t");
 
 					/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
-					if (argument.empty() && at_the_end && state.macro.expansion->total_arguments == 0)
+					if (argument.empty() && at_the_end && macro.expansion->total_arguments == 0)
 						break;
 
 					/* Add to argument list. */
-					state.macro.expansion->argument_list.emplace_back(argument);
+					macro.expansion->argument_list.emplace_back(argument);
 
-					if (!argument.empty() && argument.front() != '"' && argument.front() != '\'' && state.global.options->case_insensitive)
-						Utilities::String::ToLower(state.macro.expansion->argument_list[state.macro.expansion->total_arguments]);
+					if (!argument.empty() && argument.front() != '"' && argument.front() != '\'' && global.options->case_insensitive)
+						Utilities::String::ToLower(macro.expansion->argument_list[macro.expansion->total_arguments]);
 
-					++state.macro.expansion->total_arguments;
-					++state.macro.expansion->total_arguments_at_start;
+					++macro.expansion->total_arguments;
+					++macro.expansion->total_arguments_at_start;
 				}
 
 				break;
@@ -1420,56 +1453,56 @@ static void InvokeMacro(SemanticState &state, const Macro &macro_metadata, const
 	}
 
 	/* Add identifier substitute. */
-	PushMacroArgumentSubstitutions(state);
+	PushMacroArgumentSubstitutions();
 
 	/* Finally, invoke the macro. */
-	const bool previous_listing_macro = state.listing_writer.listing_macro;
+	const bool previous_listing_macro = listing_writer.listing_macro;
 
-	/* Flush line before changing this state, so that the macro line is not given the 'M' label. */
-	state.listing_writer.EndLine(state.source_line);
-	state.listing_writer.listing_macro = true;
+	/* Flush line before changing this so that the macro line is not given the 'M' label. */
+	listing_writer.EndLine(source_line);
+	listing_writer.listing_macro = true;
 
 	/* Push a new location (this macro).*/
-	state.location.emplace_front(macro_metadata.name, 0);
+	location.emplace_front(macro_metadata.name, 0);
 
 	/* Iterate over each line of the macro, sending it to be processed. */
 	for (const auto &source_line : macro_metadata.source_line_list)
 	{
-		AssembleLine(state, source_line, state.global.options->expand_all_macros);
+		AssembleLine(source_line, global.options->expand_all_macros);
 
 		/* Detect 'MEXIT'. */
-		if (!state.macro.ExpansionInProgress())
+		if (!macro.ExpansionInProgress())
 			break;
 	}
 
 	if (!macro_metadata.is_short)
 	{
 		/* 'MEXIT' may have ended us midway through an if-statement, so unwind to the original if-level here. */
-		while (state.current_if_level != starting_if_level)
-			TerminateIf(state);
+		while (current_if_level != starting_if_level)
+			TerminateIf();
 	}
 
 	/* Pop location. */
-	state.location.pop_front();
+	location.pop_front();
 
-	state.listing_writer.listing_macro = previous_listing_macro;
+	listing_writer.listing_macro = previous_listing_macro;
 
-	state.macro = std::move(previous_macro_state);
+	macro = std::move(previous_macro_state);
 
-	--state.macro_depth;
+	--macro_depth;
 }
 
-static void AssembleLine(SemanticState &state, const std::string_view &source_line_raw, const bool write_line_to_listing_file)
+void SemanticState::AssembleLine(const std::string_view &source_line_raw, const bool write_line_to_listing_file)
 {
-	const std::string_view old_source_line = state.source_line;
+	const std::string_view old_source_line = source_line;
 
-	/* Assert a few preconditions to ensure we're in a non-insane state. */
-	assert(state.macro.ExpansionInProgress() == (state.macro_depth > 0));
+	/* Assert a few preconditions to ensure we're in a non-insane  */
+	assert(macro.ExpansionInProgress() == (macro_depth > 0));
 
 	if (write_line_to_listing_file)
 	{
-		state.listing_writer.EndLine(state.source_line);
-		state.listing_writer.BeginLine(state.global.program_counter);
+		listing_writer.EndLine(source_line);
+		listing_writer.BeginLine(global.program_counter);
 	}
 
 	/* Expand string constants and macro parameters only if we're actually parsing code;
@@ -1477,20 +1510,20 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 	   can have unique expansions! */
 	std::string source_line_expanded;
 
-	if (std::holds_alternative<SemanticState::ModeNormal>(state.mode))
+	if (std::holds_alternative<SemanticState::ModeNormal>(mode))
 	{
 		source_line_expanded = source_line_raw;
-		PerformSubstitutions(state, source_line_expanded, false);
-		state.source_line = source_line_expanded;
+		PerformSubstitutions(source_line_expanded, false);
+		source_line = source_line_expanded;
 	}
 	else
 	{
-		state.source_line = source_line_raw;
+		source_line = source_line_raw;
 	}
 
-	++state.location.front().line_number;
+	++location.front().line_number;
 
-	if (!state.source_line.empty() && state.source_line.front() == '*')
+	if (!source_line.empty() && source_line.front() == '*')
 	{
 		/* This whole line is a comment. */
 	}
@@ -1501,7 +1534,7 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 		   parsing manually because of inconsistent whitespace sensitivity
 		   (label recognision) and manipulation of the input string
 		   (macro expansion). */
-		std::string_view source_line_subview = state.source_line;
+		std::string_view source_line_subview = source_line;
 
 		/* Let's begin by parsing the label (if there is one). */
 		std::string_view label = source_line_subview;
@@ -1571,14 +1604,14 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 					   The reason for this is that the false part of an if-statement may contain
 					   invalid code and we do not want it to cause errors.
 					   This can get pretty complicated because we need to account for nesting. */
-					if (state.false_if_level != 0)
+					if (false_if_level != 0)
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
 						if (Utilities::CaseInsensitive::CompareStrings(directive, "if"))
 						{
 							/* If-statements that are nested within the false part of another if-statement
 							   are themselves false, so create a false if-statement here and process it. */
-							++state.current_if_level;
+							++current_if_level;
 						}
 						else if (Utilities::CaseInsensitive::CompareStrings(directive, "elseif")
 						      || Utilities::CaseInsensitive::CompareStrings(directive, "else"  )
@@ -1586,7 +1619,7 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 						      || Utilities::CaseInsensitive::CompareStrings(directive, "endif" ))
 						{
 							/* These can be processed normally too. */
-							SubstituteAndParseLine(state, label, directive_and_operands, directive);
+							SubstituteAndParseLine(label, directive_and_operands, directive);
 						}
 						else
 						{
@@ -1596,19 +1629,19 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 					else
 					{
 						/* Look up the directive in the dictionary to see if it's actually a macro. */
-						const auto &[it, dictionary] = state.symbol_manager.LookupSymbol(directive);
+						const auto &[it, dictionary] = symbol_manager.LookupSymbol(directive);
 						const SymbolMacro* const symbol_macro = it == dictionary.end() ? nullptr : std::get_if<SymbolMacro>(&it->second);
 						const Macro* const macro = symbol_macro == nullptr ? nullptr : &symbol_macro->macro;
 
 						if (macro != nullptr /*&& !macro->is_short*/)
 						{
 							/* Regular macros are only expanded when needed. */
-							InvokeMacro(state, *macro, label, source_line_subview);
+							InvokeMacro(*macro, label, source_line_subview);
 						}
 						else
 						{
 							/* This is not a macro invocation: it's just a regular line that can be assembled as-is. */
-							SubstituteAndParseLine(state, label, directive_and_operands, directive);
+							SubstituteAndParseLine(label, directive_and_operands, directive);
 						}
 					}
 				},
@@ -1618,14 +1651,14 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 					if (Utilities::CaseInsensitive::CompareStrings(directive, "endr") && rept_state.nesting-- == 0)
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
-						ParseLine(state, label, directive_and_operands);
+						ParseLine(label, directive_and_operands);
 					}
 					else
 					{
 						if (Utilities::CaseInsensitive::CompareStrings(directive, "rept"))
 							++rept_state.nesting;
 
-						rept_state.source_line_list.emplace_back(state.source_line);
+						rept_state.source_line_list.emplace_back(source_line);
 					}
 				},
 				[&](SemanticState::ModeMacro &macro_state)
@@ -1635,20 +1668,20 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
 						if (macro_state.metadata.is_short)
-							state.global.error_manager.Error("Short macros shouldn't use ENDM.");
+							global.error_manager.Error("Short macros shouldn't use ENDM.");
 						else
-							ParseLine(state, label, directive_and_operands);
+							ParseLine(label, directive_and_operands);
 					}
 					else
 					{
 						if (macro_state.metadata.is_short)
 						{
 							/* Short macros automatically terminate after one non-empty statement. */
-							const std::size_t first_nonwhitespace_position = Utilities::String::GetLeadingLength(state.source_line, " \t");
-							const char first_nonwhitespace_character = first_nonwhitespace_position == state.source_line.length() ? '\0' : state.source_line[first_nonwhitespace_position];
+							const std::size_t first_nonwhitespace_position = Utilities::String::GetLeadingLength(source_line, " \t");
+							const char first_nonwhitespace_character = first_nonwhitespace_position == source_line.length() ? '\0' : source_line[first_nonwhitespace_position];
 
 							if (!label.empty())
-								state.global.error_manager.Error("Short macros shouldn't create labels.");
+								global.error_manager.Error("Short macros shouldn't create labels.");
 
 							if (first_nonwhitespace_character == '\0' || first_nonwhitespace_character == ';')
 							{
@@ -1656,13 +1689,13 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 							}
 							else
 							{
-								macro_state.metadata.source_line_list.emplace_back(state.source_line);
-								TerminateMacro(state, macro_state);
+								macro_state.metadata.source_line_list.emplace_back(source_line);
+								TerminateMacro(macro_state);
 							}
 						}
 						else
 						{
-							macro_state.metadata.source_line_list.emplace_back(state.source_line);
+							macro_state.metadata.source_line_list.emplace_back(source_line);
 						}
 					}
 				},
@@ -1672,34 +1705,34 @@ static void AssembleLine(SemanticState &state, const std::string_view &source_li
 					if (Utilities::CaseInsensitive::CompareStrings(directive, "endw") && while_state.nesting-- == 0)
 					{
 						/* TODO - Detect code after the keyword and error if any is found. */
-						ParseLine(state, label, directive_and_operands);
+						ParseLine(label, directive_and_operands);
 					}
 					else
 					{
 						if (Utilities::CaseInsensitive::CompareStrings(directive, "while"))
 							++while_state.nesting;
 
-						while_state.source_line_list.emplace_back(state.source_line);
+						while_state.source_line_list.emplace_back(source_line);
 					}
 				}
-			}, state.mode
+			}, mode
 		);
 	}
 
 	if (write_line_to_listing_file)
-		state.listing_writer.EndLine(state.source_line);
+		listing_writer.EndLine(source_line);
 
-	state.source_line = old_source_line;
+	source_line = old_source_line;
 }
 
-static void AssembleFile(SemanticState &state, SourceLineReader &source_line_reader)
+void SemanticState::AssembleFile(SourceLineReader &source_line_reader)
 {
 	/* Read lines one at a time, feeding them to the 'AssembleLine' function. */
-	for (std::optional<std::string_view> source_line; (source_line = source_line_reader.Read()).has_value() && !state.end; )
-		AssembleLine(state, *source_line, true);
+	for (std::optional<std::string_view> source_line; (source_line = source_line_reader.Read()).has_value() && !end; )
+		AssembleLine(*source_line, true);
 
 	/* If we're not in normal mode when a file ends, then something is wrong. */
-	while (!std::holds_alternative<SemanticState::ModeNormal>(state.mode))
+	while (!std::holds_alternative<SemanticState::ModeNormal>(mode))
 	{
 		std::visit(
 			CC_VisitHelper{
@@ -1710,28 +1743,92 @@ static void AssembleFile(SemanticState &state, SourceLineReader &source_line_rea
 				},
 				[&](SemanticState::ModeRept &rept_state)
 				{
-					state.global.error_manager.Error("REPT statement beginning at line {} is missing its ENDR.", rept_state.line_number);
+					global.error_manager.Error("REPT statement beginning at line {} is missing its ENDR.", rept_state.line_number);
 
 					/* Terminate the REPT to hopefully avoid future complications. */
-					TerminateRept(state, rept_state);
+					TerminateRept(rept_state);
 				},
 				[&](SemanticState::ModeMacro &macro_state)
 				{
-					state.global.error_manager.Error("MACRO statement beginning at line {} is missing its ENDM.", macro_state.line_number);
+					global.error_manager.Error("MACRO statement beginning at line {} is missing its ENDM.", macro_state.line_number);
 
 					/* Terminate the macro to hopefully avoid future complications. */
-					TerminateMacro(state, macro_state);
+					TerminateMacro(macro_state);
 				},
 				[&](SemanticState::ModeWhile &while_state)
 				{
-					state.global.error_manager.Error("WHILE statement beginning at line {} is missing its ENDW.", while_state.line_number);
+					global.error_manager.Error("WHILE statement beginning at line {} is missing its ENDW.", while_state.line_number);
 
 					/* Terminate the while-statement to hopefully avoid future complications. */
-					TerminateWhile(state, while_state);
+					TerminateWhile(while_state);
 				}
-			}, state.mode
+			}, mode
 		);
 	}
+}
+
+bool SemanticState::AssembleToObjectFile(
+	std::ostream* const symbol_stream,
+	const ClownAssembler::DefinitionCallback &definition_callback)
+{
+	if (definition_callback != nullptr)
+	{
+		definition_callback(
+			[this](const std::string_view &identifier, const unsigned long value)
+			{
+				/* TODO: Does asm68k create a constant or a variable? */
+				symbol_manager.AddSymbol(identifier, SymbolConstant{value});
+			}
+		);
+	}
+
+	/* Enable Bison debugging if available and requested by the user. */
+#if M68KASM_DEBUG
+	if (global.options->debug)
+		m68kasm_debug = 1;
+#endif
+
+	/* Perform first pass of assembly, creating a list of fix-ups. */
+	object_writer.WriteHeader();
+	AssembleFile(source_line_reader);
+	object_writer.WriteFooter();
+
+	/* Perform some sanity checks to make sure we're not somehow in an invalid  */
+	if (current_if_level != 0)
+		global.error_manager.Error("An IF statement somewhere is missing its ENDC/ENDIF.");
+	if (obj_delta.has_value())
+		global.error_manager.Error("An OBJ statement somewhere is missing its OBJEND.");
+
+	/* Process the fix-ups: reassemble instructions and reprocess
+	   directives that could not be completed in the first pass. */
+	global.doing_fixup_pass = true;
+
+	while (!fixup_list.empty())
+	{
+		/* Pop fix-up from list. */
+		FixUp &fixup = fixup_list.front();
+
+		/* Reset some state to how it was at the time the statement was first processed. */
+		macro.dictionary = fixup.macro_dictionary;
+		global.program_counter = fixup.program_counter;
+		object_writer.Seek(fixup.object_writer_position);
+		symbol_manager.SetLastGlobalLabelDirect(std::move(fixup.last_global_label));
+		source_line = fixup.source_line;
+		location = std::move(fixup.location);
+		*global.options = fixup.options;
+
+		/* Re-process statement. */
+		ProcessStatement(fixup.statement, fixup.label);
+
+		/* We're done with this statement: delete it. */
+		fixup_list.pop_front();
+	}
+
+	/* Produce asm68k symbol file, if requested. */
+	if (symbol_stream != nullptr)
+		symbol_manager.WriteSymbolFile(*symbol_stream);
+
+	return !global.error_manager.WasErrorEncountered();
 }
 
 static bool AssembleToObjectFile(
@@ -1753,64 +1850,7 @@ static bool AssembleToObjectFile(
 		std::move(initial_options)
 	);
 
-	if (definition_callback != nullptr)
-	{
-		definition_callback(
-			[&state](const std::string_view &identifier, const unsigned long value)
-			{
-				/* TODO: Does asm68k create a constant or a variable? */
-				state.symbol_manager.AddSymbol(identifier, SymbolConstant{value});
-			}
-		);
-	}
-
-	/* Enable Bison debugging if available and requested by the user. */
-#if M68KASM_DEBUG
-	if (state.global.options->debug)
-		m68kasm_debug = 1;
-#endif
-
-	/* Perform first pass of assembly, creating a list of fix-ups. */
-	state.object_writer.WriteHeader();
-	AssembleFile(state, state.source_line_reader);
-	state.object_writer.WriteFooter();
-
-	/* Perform some sanity checks to make sure we're not somehow in an invalid state. */
-	if (state.current_if_level != 0)
-		state.global.error_manager.Error("An IF statement somewhere is missing its ENDC/ENDIF.");
-	if (state.obj_delta.has_value())
-		state.global.error_manager.Error("An OBJ statement somewhere is missing its OBJEND.");
-
-	/* Process the fix-ups: reassemble instructions and reprocess
-	   directives that could not be completed in the first pass. */
-	state.global.doing_fixup_pass = true;
-
-	while (!state.fixup_list.empty())
-	{
-		/* Pop fix-up from list. */
-		FixUp &fixup = state.fixup_list.front();
-
-		/* Reset some state to how it was at the time the statement was first processed. */
-		state.macro.dictionary = fixup.macro_dictionary;
-		state.global.program_counter = fixup.program_counter;
-		state.object_writer.Seek(fixup.object_writer_position);
-		state.symbol_manager.SetLastGlobalLabelDirect(std::move(fixup.last_global_label));
-		state.source_line = fixup.source_line;
-		state.location = std::move(fixup.location);
-		*state.global.options = fixup.options;
-
-		/* Re-process statement. */
-		ProcessStatement(state, fixup.statement, fixup.label);
-
-		/* We're done with this statement: delete it. */
-		state.fixup_list.pop_front();
-	}
-
-	/* Produce asm68k symbol file, if requested. */
-	if (symbol_stream != nullptr)
-		state.symbol_manager.WriteSymbolFile(*symbol_stream);
-
-	return !state.global.error_manager.WasErrorEncountered();
+	return state.AssembleToObjectFile(symbol_stream, definition_callback);
 }
 
 bool ClownAssembler::Assemble(
