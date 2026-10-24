@@ -27,7 +27,7 @@
 static int total_arguments;
 static char **arguments;
 
-static void DefinitionCallback(const ClownAssembler::AddDefinition add_definition)
+static void DefinitionCallback(const ClownAssembler::AddDefinition &add_definition)
 {
 	for (int i = 1; i < total_arguments; ++i)
 	{
