@@ -45,20 +45,35 @@ namespace Utilities
 		class StringHasher
 		{
 		public:
-			using is_transparent = void;
-
-			std::size_t operator()(const std::string_view &string) const
+			class Piecemeal
 			{
-				constexpr ToLower to_lower(true);
+			private:
+				static constexpr ToLower to_lower = {true};
 
 				// Hash the identifier using djb2.
 				// http://www.cse.yorku.ca/~oz/hash.html
 				std::size_t hash = 5381;
 
-				for (const auto &character : string)
-					hash = hash * 33 + to_lower(character); // Hash the identifier in lower-case form, so that case-insensitive mode works.
+			public:
+				void HashString(const std::string_view &string)
+				{
+					for (const auto &character : string)
+						hash = hash * 33 + to_lower(character); // Hash the identifier in lower-case form, so that case-insensitive mode works.
+				};
 
-				return hash;
+				auto GetHash() const
+				{
+					return hash;
+				}
+			};
+
+			using is_transparent = void;
+
+			std::size_t operator()(const std::string_view &string) const
+			{
+				Piecemeal piecemeal;
+				piecemeal.HashString(string);
+				return piecemeal.GetHash();
 			}
 		};
 

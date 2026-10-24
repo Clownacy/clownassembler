@@ -33,20 +33,15 @@ void SymbolManager::SetLastGlobalLabel(const std::string_view &label)
 	}
 }
 
-std::string_view SymbolManager::ExpandIdentifier(const std::string_view &identifier, std::string &expanded_identifier)
+DictionaryLookupKey SymbolManager::ExpandIdentifier(const std::string_view &identifier)
 {
 	if (identifier.empty() || (identifier.front() != global.options->local_signifier))
-		return identifier;
+		return {identifier};
 
-	if (last_global_label.empty())
-		return identifier.substr(1);
-
-	expanded_identifier = std::format("{}{}", last_global_label, identifier);
-
-	return expanded_identifier;
+	return {identifier, last_global_label};
 }
 
-SymbolManager::LookupResult SymbolManager::LookupSymbolWithExpandedIndentifier(const std::string_view &expanded_identifier)
+SymbolManager::LookupResult SymbolManager::LookupSymbolWithExpandedIndentifier(const DictionaryLookupKey &expanded_identifier)
 {
 	if (macro_dictionary != nullptr)
 	{
@@ -60,27 +55,23 @@ SymbolManager::LookupResult SymbolManager::LookupSymbolWithExpandedIndentifier(c
 	return {it, dictionary};
 }
 
-SymbolManager::LookupResult SymbolManager::LookupSymbol(std::string_view identifier)
+SymbolManager::LookupResult SymbolManager::LookupSymbol(const std::string_view &identifier)
 {
-	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
-	std::string expanded_identifier;
-	identifier = ExpandIdentifier(identifier, expanded_identifier);
+	const auto &expanded_identifier = ExpandIdentifier(identifier);
 
-	return LookupSymbolWithExpandedIndentifier(identifier);
+	return LookupSymbolWithExpandedIndentifier(expanded_identifier);
 }
 
-SymbolManager::LookupResult SymbolManager::LookupSymbolAndCreateIfNotExistWithoutTypeCheck(std::string_view identifier)
+SymbolManager::LookupResult SymbolManager::LookupSymbolAndCreateIfNotExistWithoutTypeCheck(const std::string_view &identifier)
 {
-	/* TODO: Avoid this allocation entirely by hashing each half of the identifier separately. */
-	std::string expanded_identifier;
-	identifier = ExpandIdentifier(identifier, expanded_identifier);
+	const auto &expanded_identifier = ExpandIdentifier(identifier);
 
-	const auto &[it, found_dictionary] = LookupSymbolWithExpandedIndentifier(identifier);
+	const auto &[it, found_dictionary] = LookupSymbolWithExpandedIndentifier(expanded_identifier);
 
 	if (it != found_dictionary.end())
 		return {it, found_dictionary};
 
-	return {dictionary.emplace(identifier).first, dictionary};
+	return {dictionary.emplace(expanded_identifier).first, dictionary};
 }
 
 std::optional<unsigned long> SymbolManager::GetSymbolInteger(const std::string_view &identifier, const bool must_evaluate_on_first_pass)

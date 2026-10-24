@@ -42,9 +42,9 @@ private:
 	SymbolDictionary dictionary = {global.options->case_insensitive};
 	std::string last_global_label;
 
-	std::string_view ExpandIdentifier(const std::string_view &identifier, std::string &expanded_identifier);
-	LookupResult LookupSymbolWithExpandedIndentifier(const std::string_view &expanded_identifier);
-	LookupResult LookupSymbolAndCreateIfNotExistWithoutTypeCheck(std::string_view identifier);
+	DictionaryLookupKey ExpandIdentifier(const std::string_view &identifier);
+	LookupResult LookupSymbolWithExpandedIndentifier(const DictionaryLookupKey &expanded_identifier);
+	LookupResult LookupSymbolAndCreateIfNotExistWithoutTypeCheck(const std::string_view &identifier);
 
 public:
 	bool fixup_needed = false;
@@ -70,7 +70,7 @@ public:
 		last_global_label = std::move(label);
 	}
 
-	LookupResult LookupSymbol(std::string_view identifier);
+	LookupResult LookupSymbol(const std::string_view &identifier);
 
 	template<typename SymbolType>
 	LookupResult LookupSymbolAndCreateIfNotExist(const std::string_view &identifier)

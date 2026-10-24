@@ -18,14 +18,84 @@
 #ifndef DICTIONARY_H
 #define DICTIONARY_H
 
+#include <format>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <utility>
 
 #include "utilities/case-insensitive.h"
 
+// To allow code to reference local labels globally ("jmp (Func@Ret).l"), the dictionary
+// internally stores the global and local label as a single concatenated identifier.
+// To avoid needing to allocate and generate combined identifiers for every lookup,
+// the dictionary supports performing lookups with split identifiers. The following
+// amalgamation of nightmare-code is responsible for making this possible.
+
+struct DictionaryLookupKey
+{
+	std::string_view global, local;
+
+	DictionaryLookupKey(std::string_view local, std::string_view global = {})
+		: global(std::move(global))
+		, local(std::move(local))
+	{}
+};
+
+class DictionaryHasher
+{
+public:
+	using is_transparent = void;
+
+	std::size_t operator()(const std::string &key) const
+	{
+		Utilities::CaseInsensitive::StringHasher::Piecemeal hasher;
+		hasher.HashString(key);
+		return hasher.GetHash();
+	}
+
+	std::size_t operator()(const DictionaryLookupKey &key) const
+	{
+		Utilities::CaseInsensitive::StringHasher::Piecemeal hasher;
+		hasher.HashString(key.global);
+		hasher.HashString(key.local);
+		return hasher.GetHash();
+	}
+};
+
+class DictionaryComparer
+{
+private:
+	const Utilities::CaseInsensitive::StringComparer string_comparer;
+
+public:
+	using is_transparent = void;
+
+	constexpr DictionaryComparer(const bool case_insensitive)
+		: string_comparer(case_insensitive)
+	{}
+
+	constexpr bool operator()(const std::string &lhs, const std::string &rhs) const
+	{
+		return string_comparer(lhs, rhs);
+	}
+
+	constexpr bool operator()(const DictionaryLookupKey &lhs, const std::string &rhs) const
+	{
+		const auto first_length = lhs.global.length();
+
+		if (!string_comparer(std::string_view(rhs).substr(0, first_length), lhs.global))
+			return false;
+
+		if (!string_comparer(std::string_view(rhs).substr(first_length), lhs.local))
+			return false;
+
+		return true;
+	}
+};
+
 template<typename Entry>
-using DictionaryBase = std::unordered_map<std::string, Entry, Utilities::CaseInsensitive::StringHasher, Utilities::CaseInsensitive::StringComparer>;
+using DictionaryBase = std::unordered_map<std::string, Entry, DictionaryHasher, DictionaryComparer>;
 
 template<typename Entry>
 class Dictionary : public DictionaryBase<Entry>
@@ -35,21 +105,31 @@ private:
 
 public:
 	Dictionary(const bool case_insensitive)
-		: Base(0, Utilities::CaseInsensitive::StringHasher{}, Utilities::CaseInsensitive::StringComparer{case_insensitive})
+		: Base(0, DictionaryHasher{}, DictionaryComparer{case_insensitive})
 	{}
+
+	auto emplace(const DictionaryLookupKey &identifier)
+	{
+		// Nightmare Difficulty C++
+		return Base::emplace(std::piecewise_construct, std::forward_as_tuple(std::format("{}{}", identifier.global, identifier.local)), std::tuple<>());
+	}
 
 	auto emplace(const std::string_view &identifier)
 	{
-		// Nightmare Difficulty C++
-		return Base::emplace(std::piecewise_construct, std::forward_as_tuple(identifier), std::tuple<>());
+		return emplace(DictionaryLookupKey{identifier});
 	}
 
-	Entry& operator[](const std::string_view &identifier)
+	Entry& operator[](const DictionaryLookupKey &identifier)
 	{
 		// All of this crap to work-around C++ not having a decent `operator[]` before C++26... fuck me.
 		auto it = Base::find(identifier);
 
 		return it != Base::end() ? it->second : emplace(identifier).first->second;
+	}
+
+	Entry& operator[](const std::string_view &identifier)
+	{
+		return operator[](DictionaryLookupKey{identifier});
 	}
 };
 
