@@ -24,34 +24,10 @@
 #include "../utilities/string.h"
 #include "common.h"
 
-static constexpr Utilities::CaseInsensitive::ToLower to_lower(true);
-
-static int total_arguments;
-static char **arguments;
-
-static void DefinitionCallback(const ClownAssembler::AddDefinition &add_definition)
-{
-	for (int i = 1; i < total_arguments; ++i)
-	{
-		const std::string_view command_argument = arguments[i];
-
-		if (!Utilities::CaseInsensitive::CompareStrings(command_argument, "/e"))
-			continue;
-
-		const std::string_view value_argument = arguments[i + 1];
-		const auto &definition = DecodeDefinition(value_argument);
-
-		if (!definition.has_value())
-			Error("Value of argument '/e {}' is invalid.", value_argument);
-		else
-			add_definition(definition->first, definition->second);
-
-		++i; /* Skip argument. */
-	}
-}
-
 int main(int argc, char **argv)
 {
+	static constexpr Utilities::CaseInsensitive::ToLower to_lower(true);
+
 	ClownAssembler::Settings settings = {};
 	std::string_view source_file_path_string;
 	std::filesystem::path source_file_path;
@@ -64,9 +40,6 @@ int main(int argc, char **argv)
 		FlatBinary,
 		SRecord,
 	} output_mode;
-
-	total_arguments = argc;
-	arguments = argv;
 
 	settings.local_signifier = '@';
 	settings.debug = false;
@@ -378,6 +351,27 @@ int main(int argc, char **argv)
 		case OutputMode::SRecord:
 			ErrorAndExit("S-record output format is not supported: use '/p' for outputting a flat binary instead.");
 	}
+
+	const auto &DefinitionCallback = [&](const ClownAssembler::AddDefinition &add_definition)
+	{
+		for (int i = 1; i < argc; ++i)
+		{
+			const std::string_view command_argument = argv[i];
+
+			if (!Utilities::CaseInsensitive::CompareStrings(command_argument, "/e"))
+				continue;
+
+			const std::string_view value_argument = argv[i + 1];
+			const auto &definition = DecodeDefinition(value_argument);
+
+			if (!definition.has_value())
+				Error("Value of argument '/e {}' is invalid.", value_argument);
+			else
+				add_definition(definition->first, definition->second);
+
+			++i; /* Skip argument. */
+		}
+	};
 
 	/* Finally, run the assembler. */
 	if (!ClownAssembler::Assemble(source_file, object_file, std::cout, listing_stream, symbol_stream, source_file_path_string, settings, DefinitionCallback))

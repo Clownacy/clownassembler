@@ -24,30 +24,6 @@
 #include "../version.h"
 #include "common.h"
 
-static int total_arguments;
-static char **arguments;
-
-static void DefinitionCallback(const ClownAssembler::AddDefinition &add_definition)
-{
-	for (int i = 1; i < total_arguments; ++i)
-	{
-		const std::string_view command_argument = arguments[i];
-
-		if (command_argument != "-e")
-			continue;
-
-		const std::string_view value_argument = arguments[i + 1];
-		const auto &definition = DecodeDefinition(value_argument);
-
-		if (!definition.has_value())
-			Error("Value of argument '-e {}' is invalid.", value_argument);
-		else
-			add_definition(definition->first, definition->second);
-
-		++i; /* Skip argument. */
-	}
-}
-
 int main(int argc, char **argv)
 {
 	bool print_usage = false;
@@ -57,9 +33,6 @@ int main(int argc, char **argv)
 	std::filesystem::path listing_file_path;
 	std::filesystem::path symbol_file_path;
 	ClownAssembler::Settings settings = {};
-
-	total_arguments = argc;
-	arguments = argv;
 
 	settings.local_signifier = '@';
 	settings.case_insensitive = false;
@@ -242,6 +215,27 @@ int main(int argc, char **argv)
 		if (!symbol_file.is_open())
 			ErrorAndExit("Could not open symbol file.");
 	}
+
+	const auto &DefinitionCallback = [&](const ClownAssembler::AddDefinition &add_definition)
+	{
+		for (int i = 1; i < argc; ++i)
+		{
+			const std::string_view command_argument = argv[i];
+
+			if (command_argument != "-e")
+				continue;
+
+			const std::string_view value_argument = argv[i + 1];
+			const auto &definition = DecodeDefinition(value_argument);
+
+			if (!definition.has_value())
+				Error("Value of argument '-e {}' is invalid.", value_argument);
+			else
+				add_definition(definition->first, definition->second);
+
+			++i; /* Skip argument. */
+		}
+	};
 
 	if (!ClownAssembler::Assemble(input_file, output_file, std::cerr, listing_stream, symbol_stream, input_file_path_string, settings, DefinitionCallback))
 	{
