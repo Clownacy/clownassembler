@@ -86,8 +86,6 @@ void ListingWriter::EndLine(const std::string_view &source_line)
 		for (unsigned int i = listing_counter; i < 26; ++i)
 			listing_stream->put(' ');
 
-		listing_stream->put(listing_macro ? 'M' : ' ');
-
-		Utilities::IO::Print(*listing_stream, " {}\n", source_line);
+		Utilities::IO::PrintLine(*listing_stream, "{} {}", listing_macro ? 'M' : ' ', source_line);
 	}
 }

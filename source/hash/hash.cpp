@@ -78,7 +78,7 @@ int main(const int argc, char** const argv)
 {
 	if (argc < 3)
 	{
-		Utilities::IO::Print(std::cerr, "Usage: {} filename md5hash\n", argv[0]);
+		Utilities::IO::PrintLine(std::cerr, "Usage: {} filename md5hash", argv[0]);
 		return EXIT_SUCCESS;
 	}
 
@@ -86,7 +86,7 @@ int main(const int argc, char** const argv)
 
 	if (expected_hash == std::nullopt)
 	{
-		Utilities::IO::Print(std::cerr, "Could not parse hash.\n");
+		Utilities::IO::PrintLine(std::cerr, "Could not parse hash.");
 		return EXIT_FAILURE;
 	}
 
@@ -95,7 +95,7 @@ int main(const int argc, char** const argv)
 
 	if (!file.is_open())
 	{
-		Utilities::IO::Print(std::cerr, "Could not open file '{}'.\n", file_path);
+		Utilities::IO::PrintLine(std::cerr, "Could not open file '{}'.", file_path);
 		return EXIT_FAILURE;
 	}
 

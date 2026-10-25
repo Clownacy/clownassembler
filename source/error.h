@@ -55,9 +55,9 @@ private:
 	void ErrorMessageCommon()
 	{
 		for (const auto &location : locations)
-			Utilities::IO::Print(error_stream, "On line {} of '{}'...\n", location.line_number, location.file_path);
+			Utilities::IO::PrintLine(error_stream, "On line {} of '{}'...", location.line_number, location.file_path);
 
-		Utilities::IO::Print(error_stream, "\n{}\n\n", source_line.empty() ? "[No source line]" : source_line);
+		Utilities::IO::PrintLine(error_stream, "\n{}\n", source_line.empty() ? "[No source line]" : source_line);
 	}
 
 public:
@@ -65,13 +65,12 @@ public:
 	void Information(std::format_string<Args...> &&format_string, Args &&...args)
 	{
 		error_stream << "Information: ";
-		Utilities::IO::Print(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
-		error_stream << '\n';
+		Utilities::IO::PrintLine(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 	}
 
 	void Information(const std::string_view &message)
 	{
-		Utilities::IO::Print(error_stream, "Information: {}\n", message);
+		Utilities::IO::PrintLine(error_stream, "Information: {}", message);
 	}
 
 	template<typename... Args>
@@ -80,8 +79,7 @@ public:
 		if (options->warnings_enabled)
 		{
 			error_stream << "Warning: ";
-			Utilities::IO::Print(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
-			error_stream << '\n';
+			Utilities::IO::PrintLine(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 
 			ErrorMessageCommon();
 		}
@@ -91,7 +89,7 @@ public:
 	{
 		if (options->warnings_enabled)
 		{
-			Utilities::IO::Print(error_stream, "Warning: {}\n", message);
+			Utilities::IO::PrintLine(error_stream, "Warning: {}", message);
 
 			ErrorMessageCommon();
 		}
@@ -114,8 +112,7 @@ public:
 	void Error(std::format_string<Args...> &&format_string, Args &&...args)
 	{
 		error_stream << "Error: ";
-		Utilities::IO::Print(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
-		error_stream << '\n';
+		Utilities::IO::PrintLine(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 
 		ErrorMessageCommon();
 
@@ -124,7 +121,7 @@ public:
 
 	void Error(const std::string_view &message)
 	{
-		Utilities::IO::Print(error_stream, "Error: {}\n", message);
+		Utilities::IO::PrintLine(error_stream, "Error: {}", message);
 
 		ErrorMessageCommon();
 

@@ -115,7 +115,7 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 	}
 	catch (const std::runtime_error &error)
 	{
-		Utilities::IO::Print(error_stream, "Error: {}\n", error.what());
+		Utilities::IO::PrintLine(error_stream, "Error: {}", error.what());
 	}
 
 	input.stream.exceptions(previous_exceptions);

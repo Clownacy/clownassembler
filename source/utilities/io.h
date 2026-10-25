@@ -46,6 +46,18 @@ namespace Utilities
 				std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 		}
 
+		inline void PrintLine(std::ostream &stream, const std::string_view &message)
+		{
+			Print(stream, "{}\n", message);
+		}
+
+		template<typename... Args>
+		inline void PrintLine(std::ostream &stream, std::format_string<Args...> &&format_string, Args &&...args)
+		{
+			Print(stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+			stream << '\n';
+		}
+
 		inline void CopyBytes(std::istream &input, std::ostream &output, const std::size_t total_bytes)
 		{
 			// We do some batching using a buffer to improve performance.
