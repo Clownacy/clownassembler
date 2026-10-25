@@ -260,6 +260,7 @@ hexadecimal       {hexadecimal_digit}+
 <INITIAL>endw            BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ENDW();
 <INITIAL>even            BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_EVEN();
 <INITIAL>cnop            BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_CNOP();
+<INITIAL>align           BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_ALIGN();
 <INITIAL>inform          BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_INFORM();
 <INITIAL>end             BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_END();
 <INITIAL>rs              BEGIN(OPERANDS); return m68kasm::parser::make_DIRECTIVE_RS();

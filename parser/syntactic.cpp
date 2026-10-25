@@ -815,7 +815,7 @@ namespace m68kasm {
           switch (yyn)
             {
   case 2: // statement: %empty
-#line 912 "syntactic.y"
+#line 913 "syntactic.y"
         {
 		statement.emplace<StatementEmpty>();
 	}
@@ -823,7 +823,7 @@ namespace m68kasm {
     break;
 
   case 3: // statement: instruction
-#line 916 "syntactic.y"
+#line 917 "syntactic.y"
         {
 		statement.emplace<StatementInstruction>(YY_MOVE (yystack_[0].value.as < StatementInstruction > ()));
 	}
@@ -831,7 +831,7 @@ namespace m68kasm {
     break;
 
   case 4: // statement: DIRECTIVE_DC size expression_list
-#line 920 "syntactic.y"
+#line 921 "syntactic.y"
         {
 		statement.emplace<StatementDc>(YY_MOVE (yystack_[1].value.as < Size > ()), YY_MOVE (yystack_[0].value.as < ExpressionList > ()));
 	}
@@ -839,7 +839,7 @@ namespace m68kasm {
     break;
 
   case 5: // statement: DIRECTIVE_DCB size expression "," expression
-#line 924 "syntactic.y"
+#line 925 "syntactic.y"
         {
 		statement.emplace<StatementDcb>(YY_MOVE (yystack_[3].value.as < Size > ()), YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -847,7 +847,7 @@ namespace m68kasm {
     break;
 
   case 6: // statement: DIRECTIVE_DS size expression
-#line 928 "syntactic.y"
+#line 929 "syntactic.y"
         {
 		statement.emplace<StatementDs>(YY_MOVE (yystack_[1].value.as < Size > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -855,7 +855,7 @@ namespace m68kasm {
     break;
 
   case 7: // statement: DIRECTIVE_INCLUDE STRING
-#line 932 "syntactic.y"
+#line 933 "syntactic.y"
         {
 		statement.emplace<StatementInclude>(YY_MOVE (yystack_[0].value.as < std::string > ()));
 	}
@@ -863,7 +863,7 @@ namespace m68kasm {
     break;
 
   case 8: // statement: DIRECTIVE_INCBIN STRING
-#line 936 "syntactic.y"
+#line 937 "syntactic.y"
         {		
 		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[0].value.as < std::string > ()), ExpressionNumber{0}, false);
 	}
@@ -871,7 +871,7 @@ namespace m68kasm {
     break;
 
   case 9: // statement: DIRECTIVE_INCBIN STRING "," expression
-#line 940 "syntactic.y"
+#line 941 "syntactic.y"
         {
 		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[2].value.as < std::string > ()), YY_MOVE (yystack_[0].value.as < Expression > ()), false);
 	}
@@ -879,7 +879,7 @@ namespace m68kasm {
     break;
 
   case 10: // statement: DIRECTIVE_INCBIN STRING "," "," expression
-#line 944 "syntactic.y"
+#line 945 "syntactic.y"
         {
 		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[3].value.as < std::string > ()), ExpressionNumber{0}, true, YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -887,7 +887,7 @@ namespace m68kasm {
     break;
 
   case 11: // statement: DIRECTIVE_INCBIN STRING "," expression "," expression
-#line 948 "syntactic.y"
+#line 949 "syntactic.y"
         {
 		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[4].value.as < std::string > ()), YY_MOVE (yystack_[2].value.as < Expression > ()), true, YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -895,7 +895,7 @@ namespace m68kasm {
     break;
 
   case 12: // statement: DIRECTIVE_REPT expression
-#line 952 "syntactic.y"
+#line 953 "syntactic.y"
         {
 		statement.emplace<StatementRept>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -903,7 +903,7 @@ namespace m68kasm {
     break;
 
   case 13: // statement: DIRECTIVE_ENDR
-#line 956 "syntactic.y"
+#line 957 "syntactic.y"
         {
 		statement.emplace<StatementEndr>();
 	}
@@ -911,7 +911,7 @@ namespace m68kasm {
     break;
 
   case 14: // statement: DIRECTIVE_MACRO
-#line 960 "syntactic.y"
+#line 961 "syntactic.y"
         {
 		statement.emplace<StatementMacro>(false);
 	}
@@ -919,7 +919,7 @@ namespace m68kasm {
     break;
 
   case 15: // statement: DIRECTIVE_MACRO "*"
-#line 964 "syntactic.y"
+#line 965 "syntactic.y"
         {
 		statement.emplace<StatementMacro>(true);
 	}
@@ -927,7 +927,7 @@ namespace m68kasm {
     break;
 
   case 16: // statement: DIRECTIVE_MACRO identifier_list
-#line 968 "syntactic.y"
+#line 969 "syntactic.y"
         {
 		statement.emplace<StatementMacro>(false, YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
 	}
@@ -935,7 +935,7 @@ namespace m68kasm {
     break;
 
   case 17: // statement: DIRECTIVE_MACRO "*" "," identifier_list
-#line 972 "syntactic.y"
+#line 973 "syntactic.y"
         {
 		statement.emplace<StatementMacro>(true, YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
 	}
@@ -943,7 +943,7 @@ namespace m68kasm {
     break;
 
   case 18: // statement: DIRECTIVE_MACROS
-#line 976 "syntactic.y"
+#line 977 "syntactic.y"
         {
 		statement.emplace<StatementMacros>(StatementMacro{false, {}});
 	}
@@ -951,7 +951,7 @@ namespace m68kasm {
     break;
 
   case 19: // statement: DIRECTIVE_MACROS identifier_list
-#line 980 "syntactic.y"
+#line 981 "syntactic.y"
         {
 		statement.emplace<StatementMacros>(StatementMacro{false, YY_MOVE (yystack_[0].value.as < IdentifierList > ())});
 	}
@@ -959,7 +959,7 @@ namespace m68kasm {
     break;
 
   case 20: // statement: DIRECTIVE_ENDM
-#line 984 "syntactic.y"
+#line 985 "syntactic.y"
         {
 		statement.emplace<StatementEndm>();
 	}
@@ -967,7 +967,7 @@ namespace m68kasm {
     break;
 
   case 21: // statement: DIRECTIVE_EQU expression
-#line 988 "syntactic.y"
+#line 989 "syntactic.y"
         {
 		statement.emplace<StatementEqu>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -975,7 +975,7 @@ namespace m68kasm {
     break;
 
   case 22: // statement: DIRECTIVE_EQUS STRING
-#line 992 "syntactic.y"
+#line 993 "syntactic.y"
         {
 		statement.emplace<StatementEqusString>(YY_MOVE (yystack_[0].value.as < std::string > ()));
 	}
@@ -983,7 +983,7 @@ namespace m68kasm {
     break;
 
   case 23: // statement: DIRECTIVE_EQUS IDENTIFIER
-#line 996 "syntactic.y"
+#line 997 "syntactic.y"
         {
 		statement.emplace<StatementEqusIdentifier>(YY_MOVE (yystack_[0].value.as < std::string > ()));
 	}
@@ -991,7 +991,7 @@ namespace m68kasm {
     break;
 
   case 24: // statement: DIRECTIVE_SUBSTR "," "," STRING
-#line 1000 "syntactic.y"
+#line 1001 "syntactic.y"
         {
 		std::string string = YY_MOVE (yystack_[0].value.as < std::string > ());
 		const auto string_length = string.length();
@@ -1001,7 +1001,7 @@ namespace m68kasm {
     break;
 
   case 25: // statement: DIRECTIVE_SUBSTR expression "," "," STRING
-#line 1006 "syntactic.y"
+#line 1007 "syntactic.y"
         {
 		std::string string = YY_MOVE (yystack_[0].value.as < std::string > ());
 		const auto string_length = string.length();
@@ -1011,7 +1011,7 @@ namespace m68kasm {
     break;
 
   case 26: // statement: DIRECTIVE_SUBSTR "," expression "," STRING
-#line 1012 "syntactic.y"
+#line 1013 "syntactic.y"
         {
 		statement.emplace<StatementSubstr>(ExpressionNumber{1}, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < std::string > ()));
 	}
@@ -1019,7 +1019,7 @@ namespace m68kasm {
     break;
 
   case 27: // statement: DIRECTIVE_SUBSTR expression "," expression "," STRING
-#line 1016 "syntactic.y"
+#line 1017 "syntactic.y"
         {
 		statement.emplace<StatementSubstr>(YY_MOVE (yystack_[4].value.as < Expression > ()), YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < std::string > ()));
 	}
@@ -1027,7 +1027,7 @@ namespace m68kasm {
     break;
 
   case 28: // statement: DIRECTIVE_SET expression
-#line 1020 "syntactic.y"
+#line 1021 "syntactic.y"
         {
 		statement.emplace<StatementSet>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -1035,7 +1035,7 @@ namespace m68kasm {
     break;
 
   case 29: // statement: "=" expression
-#line 1024 "syntactic.y"
+#line 1025 "syntactic.y"
         {
 		statement.emplace<StatementSet>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -1043,7 +1043,7 @@ namespace m68kasm {
     break;
 
   case 30: // statement: DIRECTIVE_IF expression
-#line 1028 "syntactic.y"
+#line 1029 "syntactic.y"
         {
 		statement.emplace<StatementIf>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -1051,7 +1051,7 @@ namespace m68kasm {
     break;
 
   case 31: // statement: DIRECTIVE_ELSEIF expression
-#line 1032 "syntactic.y"
+#line 1033 "syntactic.y"
         {
 		statement.emplace<StatementElseif>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -1059,7 +1059,7 @@ namespace m68kasm {
     break;
 
   case 32: // statement: DIRECTIVE_ELSEIF
-#line 1036 "syntactic.y"
+#line 1037 "syntactic.y"
         {
 		statement.emplace<StatementElse>();
 	}
@@ -1067,7 +1067,7 @@ namespace m68kasm {
     break;
 
   case 33: // statement: DIRECTIVE_ELSE
-#line 1040 "syntactic.y"
+#line 1041 "syntactic.y"
         {
 		statement.emplace<StatementElse>();
 	}
@@ -1075,7 +1075,7 @@ namespace m68kasm {
     break;
 
   case 34: // statement: DIRECTIVE_ENDC
-#line 1044 "syntactic.y"
+#line 1045 "syntactic.y"
         {
 		statement.emplace<StatementEndc>();
 	}
@@ -1083,7 +1083,7 @@ namespace m68kasm {
     break;
 
   case 35: // statement: DIRECTIVE_WHILE expression
-#line 1048 "syntactic.y"
+#line 1049 "syntactic.y"
         {
 		statement.emplace<StatementWhile>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
@@ -1091,7 +1091,7 @@ namespace m68kasm {
     break;
 
   case 36: // statement: DIRECTIVE_ENDW
-#line 1052 "syntactic.y"
+#line 1053 "syntactic.y"
         {
 		statement.emplace<StatementEndw>();
 	}
@@ -1099,7 +1099,7 @@ namespace m68kasm {
     break;
 
   case 37: // statement: DIRECTIVE_EVEN
-#line 1056 "syntactic.y"
+#line 1057 "syntactic.y"
         {
 		statement.emplace<StatementEven>();
 	}
@@ -1107,1397 +1107,1405 @@ namespace m68kasm {
     break;
 
   case 38: // statement: DIRECTIVE_CNOP expression "," expression
-#line 1060 "syntactic.y"
+#line 1061 "syntactic.y"
         {
 		statement.emplace<StatementCnop>(YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 1115 "syntactic.cpp"
     break;
 
-  case 39: // statement: DIRECTIVE_INFORM expression "," STRING
-#line 1064 "syntactic.y"
+  case 39: // statement: DIRECTIVE_ALIGN expression
+#line 1065 "syntactic.y"
         {
-		statement.emplace<StatementInform>(YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < std::string > ()));
+		statement.emplace<StatementCnop>(ExpressionNumber{0}, YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 1123 "syntactic.cpp"
     break;
 
-  case 40: // statement: DIRECTIVE_INFORM expression "," STRING "," expression_list
-#line 1068 "syntactic.y"
+  case 40: // statement: DIRECTIVE_INFORM expression "," STRING
+#line 1069 "syntactic.y"
+        {
+		statement.emplace<StatementInform>(YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < std::string > ()));
+	}
+#line 1131 "syntactic.cpp"
+    break;
+
+  case 41: // statement: DIRECTIVE_INFORM expression "," STRING "," expression_list
+#line 1073 "syntactic.y"
         {
 		/* TODO - parameters */
 		statement.emplace<StatementInform>(YY_MOVE (yystack_[4].value.as < Expression > ()), YY_MOVE (yystack_[2].value.as < std::string > ()));
 	}
-#line 1132 "syntactic.cpp"
-    break;
-
-  case 41: // statement: DIRECTIVE_FAIL
-#line 1073 "syntactic.y"
-        {
-		statement.emplace<StatementFail>();
-	}
 #line 1140 "syntactic.cpp"
     break;
 
-  case 42: // statement: DIRECTIVE_END
-#line 1077 "syntactic.y"
+  case 42: // statement: DIRECTIVE_FAIL
+#line 1078 "syntactic.y"
         {
-		statement.emplace<StatementEnd>();
+		statement.emplace<StatementFail>();
 	}
 #line 1148 "syntactic.cpp"
     break;
 
-  case 43: // statement: DIRECTIVE_RS size expression
-#line 1081 "syntactic.y"
+  case 43: // statement: DIRECTIVE_END
+#line 1082 "syntactic.y"
         {
-		statement.emplace<StatementRs>(YY_MOVE (yystack_[1].value.as < Size > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementEnd>();
 	}
 #line 1156 "syntactic.cpp"
     break;
 
-  case 44: // statement: DIRECTIVE_RSSET expression
-#line 1085 "syntactic.y"
+  case 44: // statement: DIRECTIVE_RS size expression
+#line 1086 "syntactic.y"
         {
-		statement.emplace<StatementRsset>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementRs>(YY_MOVE (yystack_[1].value.as < Size > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 1164 "syntactic.cpp"
     break;
 
-  case 45: // statement: DIRECTIVE_RSRESET expression
-#line 1089 "syntactic.y"
+  case 45: // statement: DIRECTIVE_RSSET expression
+#line 1090 "syntactic.y"
+        {
+		statement.emplace<StatementRsset>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+	}
+#line 1172 "syntactic.cpp"
+    break;
+
+  case 46: // statement: DIRECTIVE_RSRESET expression
+#line 1094 "syntactic.y"
         {
 		/* As mentioned in S.N. 68k's manual, this odd hack
 		   is necessary for compatibility with other assemblers. */
 		statement.emplace<StatementRsset>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
-#line 1174 "syntactic.cpp"
-    break;
-
-  case 46: // statement: DIRECTIVE_RSRESET
-#line 1095 "syntactic.y"
-        {
-		statement.emplace<StatementRsreset>();
-	}
 #line 1182 "syntactic.cpp"
     break;
 
-  case 47: // statement: DIRECTIVE_OBJ expression
-#line 1099 "syntactic.y"
+  case 47: // statement: DIRECTIVE_RSRESET
+#line 1100 "syntactic.y"
         {
-		statement.emplace<StatementObj>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementRsreset>();
 	}
 #line 1190 "syntactic.cpp"
     break;
 
-  case 48: // statement: DIRECTIVE_OBJEND
-#line 1103 "syntactic.y"
+  case 48: // statement: DIRECTIVE_OBJ expression
+#line 1104 "syntactic.y"
         {
-		statement.emplace<StatementObjend>();
+		statement.emplace<StatementObj>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 1198 "syntactic.cpp"
     break;
 
-  case 49: // statement: DIRECTIVE_ORG expression
-#line 1107 "syntactic.y"
+  case 49: // statement: DIRECTIVE_OBJEND
+#line 1108 "syntactic.y"
         {
-		statement.emplace<StatementOrg>(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementObjend>();
 	}
 #line 1206 "syntactic.cpp"
     break;
 
-  case 50: // statement: DIRECTIVE_PUSHO
-#line 1111 "syntactic.y"
+  case 50: // statement: DIRECTIVE_ORG expression
+#line 1112 "syntactic.y"
         {
-		statement.emplace<StatementPusho>();
+		statement.emplace<StatementOrg>(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 1214 "syntactic.cpp"
     break;
 
-  case 51: // statement: DIRECTIVE_POPO
-#line 1115 "syntactic.y"
+  case 51: // statement: DIRECTIVE_PUSHO
+#line 1116 "syntactic.y"
         {
-		statement.emplace<StatementPopo>();
+		statement.emplace<StatementPusho>();
 	}
 #line 1222 "syntactic.cpp"
     break;
 
-  case 52: // statement: DIRECTIVE_OPT option_list
-#line 1119 "syntactic.y"
+  case 52: // statement: DIRECTIVE_POPO
+#line 1120 "syntactic.y"
         {
-		statement.emplace<StatementOpt>(YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
+		statement.emplace<StatementPopo>();
 	}
 #line 1230 "syntactic.cpp"
     break;
 
-  case 53: // statement: DIRECTIVE_PUSHP STRING
-#line 1123 "syntactic.y"
+  case 53: // statement: DIRECTIVE_OPT option_list
+#line 1124 "syntactic.y"
         {
-		statement.emplace<StatementPushp>(YY_MOVE (yystack_[0].value.as < std::string > ()));
+		statement.emplace<StatementOpt>(YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
 	}
 #line 1238 "syntactic.cpp"
     break;
 
-  case 54: // statement: DIRECTIVE_POPP IDENTIFIER
-#line 1127 "syntactic.y"
+  case 54: // statement: DIRECTIVE_PUSHP STRING
+#line 1128 "syntactic.y"
         {
-		statement.emplace<StatementPopp>(YY_MOVE (yystack_[0].value.as < std::string > ()));
+		statement.emplace<StatementPushp>(YY_MOVE (yystack_[0].value.as < std::string > ()));
 	}
 #line 1246 "syntactic.cpp"
     break;
 
-  case 55: // statement: DIRECTIVE_SHIFT
-#line 1131 "syntactic.y"
+  case 55: // statement: DIRECTIVE_POPP IDENTIFIER
+#line 1132 "syntactic.y"
         {
-		statement.emplace<StatementShift>();
+		statement.emplace<StatementPopp>(YY_MOVE (yystack_[0].value.as < std::string > ()));
 	}
 #line 1254 "syntactic.cpp"
     break;
 
-  case 56: // statement: DIRECTIVE_MEXIT
-#line 1135 "syntactic.y"
+  case 56: // statement: DIRECTIVE_SHIFT
+#line 1136 "syntactic.y"
         {
-		statement.emplace<StatementMexit>();
+		statement.emplace<StatementShift>();
 	}
 #line 1262 "syntactic.cpp"
     break;
 
-  case 57: // statement: DIRECTIVE_LOCAL identifier_list
-#line 1139 "syntactic.y"
+  case 57: // statement: DIRECTIVE_MEXIT
+#line 1140 "syntactic.y"
         {
-		statement.emplace<StatementLocal>(YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
+		statement.emplace<StatementMexit>();
 	}
 #line 1270 "syntactic.cpp"
     break;
 
-  case 58: // statement: DIRECTIVE_LIST
-#line 1143 "syntactic.y"
+  case 58: // statement: DIRECTIVE_LOCAL identifier_list
+#line 1144 "syntactic.y"
         {
-		/* TODO: Make this actually do something. */
-		statement.emplace<StatementEmpty>();
+		statement.emplace<StatementLocal>(YY_MOVE (yystack_[0].value.as < IdentifierList > ()));
 	}
-#line 1279 "syntactic.cpp"
+#line 1278 "syntactic.cpp"
     break;
 
-  case 59: // statement: DIRECTIVE_LIST "+"
+  case 59: // statement: DIRECTIVE_LIST
 #line 1148 "syntactic.y"
         {
 		/* TODO: Make this actually do something. */
 		statement.emplace<StatementEmpty>();
 	}
-#line 1288 "syntactic.cpp"
+#line 1287 "syntactic.cpp"
     break;
 
-  case 60: // statement: DIRECTIVE_LIST "-"
+  case 60: // statement: DIRECTIVE_LIST "+"
 #line 1153 "syntactic.y"
         {
 		/* TODO: Make this actually do something. */
 		statement.emplace<StatementEmpty>();
 	}
-#line 1297 "syntactic.cpp"
+#line 1296 "syntactic.cpp"
     break;
 
-  case 61: // statement: DIRECTIVE_NOLIST
+  case 61: // statement: DIRECTIVE_LIST "-"
 #line 1158 "syntactic.y"
         {
 		/* TODO: Make this actually do something. */
 		statement.emplace<StatementEmpty>();
 	}
-#line 1306 "syntactic.cpp"
+#line 1305 "syntactic.cpp"
     break;
 
-  case 62: // statement: DIRECTIVE_PURGE IDENTIFIER
+  case 62: // statement: DIRECTIVE_NOLIST
 #line 1163 "syntactic.y"
         {
-		statement.emplace<StatementPurge>(YY_MOVE (yystack_[0].value.as < std::string > ()));
+		/* TODO: Make this actually do something. */
+		statement.emplace<StatementEmpty>();
 	}
 #line 1314 "syntactic.cpp"
     break;
 
-  case 63: // expression_list: expression
-#line 1170 "syntactic.y"
+  case 63: // statement: DIRECTIVE_PURGE IDENTIFIER
+#line 1168 "syntactic.y"
         {
-		yylhs.value.as < ExpressionList > ().emplace_back(YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementPurge>(YY_MOVE (yystack_[0].value.as < std::string > ()));
 	}
 #line 1322 "syntactic.cpp"
     break;
 
-  case 64: // expression_list: expression_list "," expression
-#line 1174 "syntactic.y"
+  case 64: // expression_list: expression
+#line 1175 "syntactic.y"
+        {
+		yylhs.value.as < ExpressionList > ().emplace_back(YY_MOVE (yystack_[0].value.as < Expression > ()));
+	}
+#line 1330 "syntactic.cpp"
+    break;
+
+  case 65: // expression_list: expression_list "," expression
+#line 1179 "syntactic.y"
         {
 		yylhs.value.as < ExpressionList > () = YY_MOVE (yystack_[2].value.as < ExpressionList > ());
 
 		yylhs.value.as < ExpressionList > ().emplace_back(YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
-#line 1332 "syntactic.cpp"
-    break;
-
-  case 65: // identifier_list: IDENTIFIER
-#line 1183 "syntactic.y"
-        {
-		yylhs.value.as < IdentifierList > ().emplace_back(YY_MOVE (yystack_[0].value.as < std::string > ()));
-	}
 #line 1340 "syntactic.cpp"
     break;
 
-  case 66: // identifier_list: identifier_list "," IDENTIFIER
-#line 1187 "syntactic.y"
+  case 66: // identifier_list: IDENTIFIER
+#line 1188 "syntactic.y"
+        {
+		yylhs.value.as < IdentifierList > ().emplace_back(YY_MOVE (yystack_[0].value.as < std::string > ()));
+	}
+#line 1348 "syntactic.cpp"
+    break;
+
+  case 67: // identifier_list: identifier_list "," IDENTIFIER
+#line 1192 "syntactic.y"
         {
 		yylhs.value.as < IdentifierList > () = YY_MOVE (yystack_[2].value.as < IdentifierList > ());
 
-		yylhs.value.as < IdentifierList > ().emplace_back(YY_MOVE (yystack_[0].value.as < std::string > ()));
-	}
-#line 1350 "syntactic.cpp"
-    break;
-
-  case 67: // option_list: OPTION
-#line 1196 "syntactic.y"
-        {
 		yylhs.value.as < IdentifierList > ().emplace_back(YY_MOVE (yystack_[0].value.as < std::string > ()));
 	}
 #line 1358 "syntactic.cpp"
     break;
 
-  case 68: // option_list: option_list "," OPTION
-#line 1200 "syntactic.y"
+  case 68: // option_list: OPTION
+#line 1201 "syntactic.y"
+        {
+		yylhs.value.as < IdentifierList > ().emplace_back(YY_MOVE (yystack_[0].value.as < std::string > ()));
+	}
+#line 1366 "syntactic.cpp"
+    break;
+
+  case 69: // option_list: option_list "," OPTION
+#line 1205 "syntactic.y"
         {
 		yylhs.value.as < IdentifierList > () = YY_MOVE (yystack_[2].value.as < IdentifierList > ());
 
 		yylhs.value.as < IdentifierList > ().emplace_back(YY_MOVE (yystack_[0].value.as < std::string > ()));
 	}
-#line 1368 "syntactic.cpp"
+#line 1376 "syntactic.cpp"
     break;
 
-  case 69: // instruction: full_opcode
-#line 1209 "syntactic.y"
+  case 70: // instruction: full_opcode
+#line 1214 "syntactic.y"
         {
 		yylhs.value.as < StatementInstruction > ().opcode = YY_MOVE (yystack_[0].value.as < Opcode > ());
 		yylhs.value.as < StatementInstruction > ().operands[0].type = OPERAND_NONE;
 		yylhs.value.as < StatementInstruction > ().operands[1].type = OPERAND_NONE;
 	}
-#line 1378 "syntactic.cpp"
+#line 1386 "syntactic.cpp"
     break;
 
-  case 70: // instruction: full_opcode operand
-#line 1215 "syntactic.y"
+  case 71: // instruction: full_opcode operand
+#line 1220 "syntactic.y"
         {
 		yylhs.value.as < StatementInstruction > ().opcode = YY_MOVE (yystack_[1].value.as < Opcode > ());
 		yylhs.value.as < StatementInstruction > ().operands[0] = YY_MOVE (yystack_[0].value.as < Operand > ());
 		yylhs.value.as < StatementInstruction > ().operands[1].type = OPERAND_NONE;
 	}
-#line 1388 "syntactic.cpp"
+#line 1396 "syntactic.cpp"
     break;
 
-  case 71: // instruction: full_opcode operand "," operand
-#line 1221 "syntactic.y"
+  case 72: // instruction: full_opcode operand "," operand
+#line 1226 "syntactic.y"
         {
 		yylhs.value.as < StatementInstruction > ().opcode = YY_MOVE (yystack_[3].value.as < Opcode > ());
 		yylhs.value.as < StatementInstruction > ().operands[0] = YY_MOVE (yystack_[2].value.as < Operand > ());
 		yylhs.value.as < StatementInstruction > ().operands[1] = YY_MOVE (yystack_[0].value.as < Operand > ());
 	}
-#line 1398 "syntactic.cpp"
+#line 1406 "syntactic.cpp"
     break;
 
-  case 72: // full_opcode: opcode
-#line 1230 "syntactic.y"
+  case 73: // full_opcode: opcode
+#line 1235 "syntactic.y"
         {
 		yylhs.value.as < Opcode > () = YY_MOVE (yystack_[0].value.as < Opcode > ());
 		yylhs.value.as < Opcode > ().size = SIZE_UNDEFINED;
 	}
-#line 1407 "syntactic.cpp"
+#line 1415 "syntactic.cpp"
     break;
 
-  case 73: // full_opcode: opcode "."
-#line 1235 "syntactic.y"
+  case 74: // full_opcode: opcode "."
+#line 1240 "syntactic.y"
         {
 		yylhs.value.as < Opcode > () = YY_MOVE (yystack_[1].value.as < Opcode > ());
 		yylhs.value.as < Opcode > ().size = SIZE_UNDEFINED;
 		error_manager.WarningPedantic("Opcode has a dot but no size; either remove the dot or add an explicit size.");
 	}
-#line 1417 "syntactic.cpp"
+#line 1425 "syntactic.cpp"
     break;
 
-  case 74: // full_opcode: opcode size
-#line 1241 "syntactic.y"
+  case 75: // full_opcode: opcode size
+#line 1246 "syntactic.y"
         {
 		yylhs.value.as < Opcode > () = YY_MOVE (yystack_[1].value.as < Opcode > ());
 		yylhs.value.as < Opcode > ().size = YY_MOVE (yystack_[0].value.as < Size > ());
 	}
-#line 1426 "syntactic.cpp"
-    break;
-
-  case 75: // opcode: DIRECTIVE_ORI
-#line 1249 "syntactic.y"
-        {
-		yylhs.value.as < Opcode > ().type = OPCODE_ORI;
-	}
 #line 1434 "syntactic.cpp"
     break;
 
-  case 76: // opcode: DIRECTIVE_ANDI
-#line 1253 "syntactic.y"
+  case 76: // opcode: DIRECTIVE_ORI
+#line 1254 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_ANDI;
+		yylhs.value.as < Opcode > ().type = OPCODE_ORI;
 	}
 #line 1442 "syntactic.cpp"
     break;
 
-  case 77: // opcode: DIRECTIVE_SUBI
-#line 1257 "syntactic.y"
+  case 77: // opcode: DIRECTIVE_ANDI
+#line 1258 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_SUBI;
+		yylhs.value.as < Opcode > ().type = OPCODE_ANDI;
 	}
 #line 1450 "syntactic.cpp"
     break;
 
-  case 78: // opcode: DIRECTIVE_ADDI
-#line 1261 "syntactic.y"
+  case 78: // opcode: DIRECTIVE_SUBI
+#line 1262 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_ADDI;
+		yylhs.value.as < Opcode > ().type = OPCODE_SUBI;
 	}
 #line 1458 "syntactic.cpp"
     break;
 
-  case 79: // opcode: DIRECTIVE_EORI
-#line 1265 "syntactic.y"
+  case 79: // opcode: DIRECTIVE_ADDI
+#line 1266 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_EORI;
+		yylhs.value.as < Opcode > ().type = OPCODE_ADDI;
 	}
 #line 1466 "syntactic.cpp"
     break;
 
-  case 80: // opcode: DIRECTIVE_CMPI
-#line 1269 "syntactic.y"
+  case 80: // opcode: DIRECTIVE_EORI
+#line 1270 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_CMPI;
+		yylhs.value.as < Opcode > ().type = OPCODE_EORI;
 	}
 #line 1474 "syntactic.cpp"
     break;
 
-  case 81: // opcode: DIRECTIVE_BTST
-#line 1273 "syntactic.y"
+  case 81: // opcode: DIRECTIVE_CMPI
+#line 1274 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_BTST_STATIC;
+		yylhs.value.as < Opcode > ().type = OPCODE_CMPI;
 	}
 #line 1482 "syntactic.cpp"
     break;
 
-  case 82: // opcode: DIRECTIVE_BCHG
-#line 1277 "syntactic.y"
+  case 82: // opcode: DIRECTIVE_BTST
+#line 1278 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_BCHG_STATIC;
+		yylhs.value.as < Opcode > ().type = OPCODE_BTST_STATIC;
 	}
 #line 1490 "syntactic.cpp"
     break;
 
-  case 83: // opcode: DIRECTIVE_BCLR
-#line 1281 "syntactic.y"
+  case 83: // opcode: DIRECTIVE_BCHG
+#line 1282 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_BCLR_STATIC;
+		yylhs.value.as < Opcode > ().type = OPCODE_BCHG_STATIC;
 	}
 #line 1498 "syntactic.cpp"
     break;
 
-  case 84: // opcode: DIRECTIVE_BSET
-#line 1285 "syntactic.y"
+  case 84: // opcode: DIRECTIVE_BCLR
+#line 1286 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_BSET_STATIC;
+		yylhs.value.as < Opcode > ().type = OPCODE_BCLR_STATIC;
 	}
 #line 1506 "syntactic.cpp"
     break;
 
-  case 85: // opcode: DIRECTIVE_MOVEP
-#line 1289 "syntactic.y"
+  case 85: // opcode: DIRECTIVE_BSET
+#line 1290 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_MOVEP_TO_REG;
+		yylhs.value.as < Opcode > ().type = OPCODE_BSET_STATIC;
 	}
 #line 1514 "syntactic.cpp"
     break;
 
-  case 86: // opcode: DIRECTIVE_MOVEA
-#line 1293 "syntactic.y"
+  case 86: // opcode: DIRECTIVE_MOVEP
+#line 1294 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_MOVEA;
+		yylhs.value.as < Opcode > ().type = OPCODE_MOVEP_TO_REG;
 	}
 #line 1522 "syntactic.cpp"
     break;
 
-  case 87: // opcode: DIRECTIVE_MOVE
-#line 1297 "syntactic.y"
+  case 87: // opcode: DIRECTIVE_MOVEA
+#line 1298 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_MOVE;
+		yylhs.value.as < Opcode > ().type = OPCODE_MOVEA;
 	}
 #line 1530 "syntactic.cpp"
     break;
 
-  case 88: // opcode: DIRECTIVE_NEGX
-#line 1301 "syntactic.y"
+  case 88: // opcode: DIRECTIVE_MOVE
+#line 1302 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_NEGX;
+		yylhs.value.as < Opcode > ().type = OPCODE_MOVE;
 	}
 #line 1538 "syntactic.cpp"
     break;
 
-  case 89: // opcode: DIRECTIVE_CLR
-#line 1305 "syntactic.y"
+  case 89: // opcode: DIRECTIVE_NEGX
+#line 1306 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_CLR;
+		yylhs.value.as < Opcode > ().type = OPCODE_NEGX;
 	}
 #line 1546 "syntactic.cpp"
     break;
 
-  case 90: // opcode: DIRECTIVE_NEG
-#line 1309 "syntactic.y"
+  case 90: // opcode: DIRECTIVE_CLR
+#line 1310 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_NEG;
+		yylhs.value.as < Opcode > ().type = OPCODE_CLR;
 	}
 #line 1554 "syntactic.cpp"
     break;
 
-  case 91: // opcode: DIRECTIVE_NOT
-#line 1313 "syntactic.y"
+  case 91: // opcode: DIRECTIVE_NEG
+#line 1314 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_NOT;
+		yylhs.value.as < Opcode > ().type = OPCODE_NEG;
 	}
 #line 1562 "syntactic.cpp"
     break;
 
-  case 92: // opcode: DIRECTIVE_EXT
-#line 1317 "syntactic.y"
+  case 92: // opcode: DIRECTIVE_NOT
+#line 1318 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_EXT;
+		yylhs.value.as < Opcode > ().type = OPCODE_NOT;
 	}
 #line 1570 "syntactic.cpp"
     break;
 
-  case 93: // opcode: DIRECTIVE_NBCD
-#line 1321 "syntactic.y"
+  case 93: // opcode: DIRECTIVE_EXT
+#line 1322 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_NBCD;
+		yylhs.value.as < Opcode > ().type = OPCODE_EXT;
 	}
 #line 1578 "syntactic.cpp"
     break;
 
-  case 94: // opcode: DIRECTIVE_SWAP
-#line 1325 "syntactic.y"
+  case 94: // opcode: DIRECTIVE_NBCD
+#line 1326 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_SWAP;
+		yylhs.value.as < Opcode > ().type = OPCODE_NBCD;
 	}
 #line 1586 "syntactic.cpp"
     break;
 
-  case 95: // opcode: DIRECTIVE_PEA
-#line 1329 "syntactic.y"
+  case 95: // opcode: DIRECTIVE_SWAP
+#line 1330 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_PEA;
+		yylhs.value.as < Opcode > ().type = OPCODE_SWAP;
 	}
 #line 1594 "syntactic.cpp"
     break;
 
-  case 96: // opcode: DIRECTIVE_ILLEGAL
-#line 1333 "syntactic.y"
+  case 96: // opcode: DIRECTIVE_PEA
+#line 1334 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_ILLEGAL;
+		yylhs.value.as < Opcode > ().type = OPCODE_PEA;
 	}
 #line 1602 "syntactic.cpp"
     break;
 
-  case 97: // opcode: DIRECTIVE_TAS
-#line 1337 "syntactic.y"
+  case 97: // opcode: DIRECTIVE_ILLEGAL
+#line 1338 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_TAS;
+		yylhs.value.as < Opcode > ().type = OPCODE_ILLEGAL;
 	}
 #line 1610 "syntactic.cpp"
     break;
 
-  case 98: // opcode: DIRECTIVE_TST
-#line 1341 "syntactic.y"
+  case 98: // opcode: DIRECTIVE_TAS
+#line 1342 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_TST;
+		yylhs.value.as < Opcode > ().type = OPCODE_TAS;
 	}
 #line 1618 "syntactic.cpp"
     break;
 
-  case 99: // opcode: DIRECTIVE_TRAP
-#line 1345 "syntactic.y"
+  case 99: // opcode: DIRECTIVE_TST
+#line 1346 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_TRAP;
+		yylhs.value.as < Opcode > ().type = OPCODE_TST;
 	}
 #line 1626 "syntactic.cpp"
     break;
 
-  case 100: // opcode: DIRECTIVE_LINK
-#line 1349 "syntactic.y"
+  case 100: // opcode: DIRECTIVE_TRAP
+#line 1350 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_LINK;
+		yylhs.value.as < Opcode > ().type = OPCODE_TRAP;
 	}
 #line 1634 "syntactic.cpp"
     break;
 
-  case 101: // opcode: DIRECTIVE_UNLK
-#line 1353 "syntactic.y"
+  case 101: // opcode: DIRECTIVE_LINK
+#line 1354 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_UNLK;
+		yylhs.value.as < Opcode > ().type = OPCODE_LINK;
 	}
 #line 1642 "syntactic.cpp"
     break;
 
-  case 102: // opcode: DIRECTIVE_RESET
-#line 1357 "syntactic.y"
+  case 102: // opcode: DIRECTIVE_UNLK
+#line 1358 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_RESET;
+		yylhs.value.as < Opcode > ().type = OPCODE_UNLK;
 	}
 #line 1650 "syntactic.cpp"
     break;
 
-  case 103: // opcode: DIRECTIVE_NOP
-#line 1361 "syntactic.y"
+  case 103: // opcode: DIRECTIVE_RESET
+#line 1362 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_NOP;
+		yylhs.value.as < Opcode > ().type = OPCODE_RESET;
 	}
 #line 1658 "syntactic.cpp"
     break;
 
-  case 104: // opcode: DIRECTIVE_STOP
-#line 1365 "syntactic.y"
+  case 104: // opcode: DIRECTIVE_NOP
+#line 1366 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_STOP;
+		yylhs.value.as < Opcode > ().type = OPCODE_NOP;
 	}
 #line 1666 "syntactic.cpp"
     break;
 
-  case 105: // opcode: DIRECTIVE_RTE
-#line 1369 "syntactic.y"
+  case 105: // opcode: DIRECTIVE_STOP
+#line 1370 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_RTE;
+		yylhs.value.as < Opcode > ().type = OPCODE_STOP;
 	}
 #line 1674 "syntactic.cpp"
     break;
 
-  case 106: // opcode: DIRECTIVE_RTS
-#line 1373 "syntactic.y"
+  case 106: // opcode: DIRECTIVE_RTE
+#line 1374 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_RTS;
+		yylhs.value.as < Opcode > ().type = OPCODE_RTE;
 	}
 #line 1682 "syntactic.cpp"
     break;
 
-  case 107: // opcode: DIRECTIVE_TRAPV
-#line 1377 "syntactic.y"
+  case 107: // opcode: DIRECTIVE_RTS
+#line 1378 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_TRAPV;
+		yylhs.value.as < Opcode > ().type = OPCODE_RTS;
 	}
 #line 1690 "syntactic.cpp"
     break;
 
-  case 108: // opcode: DIRECTIVE_RTR
-#line 1381 "syntactic.y"
+  case 108: // opcode: DIRECTIVE_TRAPV
+#line 1382 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_RTR;
+		yylhs.value.as < Opcode > ().type = OPCODE_TRAPV;
 	}
 #line 1698 "syntactic.cpp"
     break;
 
-  case 109: // opcode: DIRECTIVE_JSR
-#line 1385 "syntactic.y"
+  case 109: // opcode: DIRECTIVE_RTR
+#line 1386 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_JSR;
+		yylhs.value.as < Opcode > ().type = OPCODE_RTR;
 	}
 #line 1706 "syntactic.cpp"
     break;
 
-  case 110: // opcode: DIRECTIVE_JMP
-#line 1389 "syntactic.y"
+  case 110: // opcode: DIRECTIVE_JSR
+#line 1390 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_JMP;
+		yylhs.value.as < Opcode > ().type = OPCODE_JSR;
 	}
 #line 1714 "syntactic.cpp"
     break;
 
-  case 111: // opcode: DIRECTIVE_MOVEM
-#line 1393 "syntactic.y"
+  case 111: // opcode: DIRECTIVE_JMP
+#line 1394 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_MOVEM_TO_REGS;
+		yylhs.value.as < Opcode > ().type = OPCODE_JMP;
 	}
 #line 1722 "syntactic.cpp"
     break;
 
-  case 112: // opcode: DIRECTIVE_LEA
-#line 1397 "syntactic.y"
+  case 112: // opcode: DIRECTIVE_MOVEM
+#line 1398 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_LEA;
+		yylhs.value.as < Opcode > ().type = OPCODE_MOVEM_TO_REGS;
 	}
 #line 1730 "syntactic.cpp"
     break;
 
-  case 113: // opcode: DIRECTIVE_CHK
-#line 1401 "syntactic.y"
+  case 113: // opcode: DIRECTIVE_LEA
+#line 1402 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_CHK;
+		yylhs.value.as < Opcode > ().type = OPCODE_LEA;
 	}
 #line 1738 "syntactic.cpp"
     break;
 
-  case 114: // opcode: DIRECTIVE_ADDQ
-#line 1405 "syntactic.y"
+  case 114: // opcode: DIRECTIVE_CHK
+#line 1406 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_ADDQ;
+		yylhs.value.as < Opcode > ().type = OPCODE_CHK;
 	}
 #line 1746 "syntactic.cpp"
     break;
 
-  case 115: // opcode: DIRECTIVE_SUBQ
-#line 1409 "syntactic.y"
+  case 115: // opcode: DIRECTIVE_ADDQ
+#line 1410 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_SUBQ;
+		yylhs.value.as < Opcode > ().type = OPCODE_ADDQ;
 	}
 #line 1754 "syntactic.cpp"
     break;
 
-  case 116: // opcode: DIRECTIVE_ST
-#line 1413 "syntactic.y"
+  case 116: // opcode: DIRECTIVE_SUBQ
+#line 1414 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
-		yylhs.value.as < Opcode > ().condition = CONDITION_TRUE;
+		yylhs.value.as < Opcode > ().type = OPCODE_SUBQ;
 	}
-#line 1763 "syntactic.cpp"
+#line 1762 "syntactic.cpp"
     break;
 
-  case 117: // opcode: DIRECTIVE_SF
+  case 117: // opcode: DIRECTIVE_ST
 #line 1418 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
-		yylhs.value.as < Opcode > ().condition = CONDITION_FALSE;
+		yylhs.value.as < Opcode > ().condition = CONDITION_TRUE;
 	}
-#line 1772 "syntactic.cpp"
+#line 1771 "syntactic.cpp"
     break;
 
-  case 118: // opcode: DIRECTIVE_SHI
+  case 118: // opcode: DIRECTIVE_SF
 #line 1423 "syntactic.y"
+        {
+		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
+		yylhs.value.as < Opcode > ().condition = CONDITION_FALSE;
+	}
+#line 1780 "syntactic.cpp"
+    break;
+
+  case 119: // opcode: DIRECTIVE_SHI
+#line 1428 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_HIGHER;
 	}
-#line 1781 "syntactic.cpp"
+#line 1789 "syntactic.cpp"
     break;
 
-  case 119: // opcode: DIRECTIVE_SLS
-#line 1428 "syntactic.y"
+  case 120: // opcode: DIRECTIVE_SLS
+#line 1433 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LOWER_OR_SAME;
 	}
-#line 1790 "syntactic.cpp"
+#line 1798 "syntactic.cpp"
     break;
 
-  case 120: // opcode: DIRECTIVE_SCC
-#line 1433 "syntactic.y"
+  case 121: // opcode: DIRECTIVE_SCC
+#line 1438 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_CLEAR;
 	}
-#line 1799 "syntactic.cpp"
+#line 1807 "syntactic.cpp"
     break;
 
-  case 121: // opcode: DIRECTIVE_SCS
-#line 1438 "syntactic.y"
+  case 122: // opcode: DIRECTIVE_SCS
+#line 1443 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_SET;
 	}
-#line 1808 "syntactic.cpp"
+#line 1816 "syntactic.cpp"
     break;
 
-  case 122: // opcode: DIRECTIVE_SNE
-#line 1443 "syntactic.y"
+  case 123: // opcode: DIRECTIVE_SNE
+#line 1448 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_NOT_EQUAL;
 	}
-#line 1817 "syntactic.cpp"
+#line 1825 "syntactic.cpp"
     break;
 
-  case 123: // opcode: DIRECTIVE_SEQ
-#line 1448 "syntactic.y"
+  case 124: // opcode: DIRECTIVE_SEQ
+#line 1453 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_EQUAL;
 	}
-#line 1826 "syntactic.cpp"
+#line 1834 "syntactic.cpp"
     break;
 
-  case 124: // opcode: DIRECTIVE_SVC
-#line 1453 "syntactic.y"
+  case 125: // opcode: DIRECTIVE_SVC
+#line 1458 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_CLEAR;
 	}
-#line 1835 "syntactic.cpp"
+#line 1843 "syntactic.cpp"
     break;
 
-  case 125: // opcode: DIRECTIVE_SVS
-#line 1458 "syntactic.y"
+  case 126: // opcode: DIRECTIVE_SVS
+#line 1463 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_SET;
 	}
-#line 1844 "syntactic.cpp"
+#line 1852 "syntactic.cpp"
     break;
 
-  case 126: // opcode: DIRECTIVE_SPL
-#line 1463 "syntactic.y"
+  case 127: // opcode: DIRECTIVE_SPL
+#line 1468 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_PLUS;
 	}
-#line 1853 "syntactic.cpp"
+#line 1861 "syntactic.cpp"
     break;
 
-  case 127: // opcode: DIRECTIVE_SMI
-#line 1468 "syntactic.y"
+  case 128: // opcode: DIRECTIVE_SMI
+#line 1473 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_MINUS;
 	}
-#line 1862 "syntactic.cpp"
+#line 1870 "syntactic.cpp"
     break;
 
-  case 128: // opcode: DIRECTIVE_SGE
-#line 1473 "syntactic.y"
+  case 129: // opcode: DIRECTIVE_SGE
+#line 1478 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_OR_EQUAL;
 	}
-#line 1871 "syntactic.cpp"
+#line 1879 "syntactic.cpp"
     break;
 
-  case 129: // opcode: DIRECTIVE_SLT
-#line 1478 "syntactic.y"
+  case 130: // opcode: DIRECTIVE_SLT
+#line 1483 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_THAN;
 	}
-#line 1880 "syntactic.cpp"
+#line 1888 "syntactic.cpp"
     break;
 
-  case 130: // opcode: DIRECTIVE_SGT
-#line 1483 "syntactic.y"
+  case 131: // opcode: DIRECTIVE_SGT
+#line 1488 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_THAN;
 	}
-#line 1889 "syntactic.cpp"
+#line 1897 "syntactic.cpp"
     break;
 
-  case 131: // opcode: DIRECTIVE_SLE
-#line 1488 "syntactic.y"
+  case 132: // opcode: DIRECTIVE_SLE
+#line 1493 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Scc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_OR_EQUAL;
 	}
-#line 1898 "syntactic.cpp"
+#line 1906 "syntactic.cpp"
     break;
 
-  case 132: // opcode: DIRECTIVE_DBT
-#line 1493 "syntactic.y"
+  case 133: // opcode: DIRECTIVE_DBT
+#line 1498 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_TRUE;
 	}
-#line 1907 "syntactic.cpp"
+#line 1915 "syntactic.cpp"
     break;
 
-  case 133: // opcode: DIRECTIVE_DBF
-#line 1498 "syntactic.y"
+  case 134: // opcode: DIRECTIVE_DBF
+#line 1503 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_FALSE;
 	}
-#line 1916 "syntactic.cpp"
+#line 1924 "syntactic.cpp"
     break;
 
-  case 134: // opcode: DIRECTIVE_DBHI
-#line 1503 "syntactic.y"
+  case 135: // opcode: DIRECTIVE_DBHI
+#line 1508 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_HIGHER;
 	}
-#line 1925 "syntactic.cpp"
+#line 1933 "syntactic.cpp"
     break;
 
-  case 135: // opcode: DIRECTIVE_DBLS
-#line 1508 "syntactic.y"
+  case 136: // opcode: DIRECTIVE_DBLS
+#line 1513 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LOWER_OR_SAME;
 	}
-#line 1934 "syntactic.cpp"
+#line 1942 "syntactic.cpp"
     break;
 
-  case 136: // opcode: DIRECTIVE_DBCC
-#line 1513 "syntactic.y"
+  case 137: // opcode: DIRECTIVE_DBCC
+#line 1518 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_CLEAR;
 	}
-#line 1943 "syntactic.cpp"
+#line 1951 "syntactic.cpp"
     break;
 
-  case 137: // opcode: DIRECTIVE_DBCS
-#line 1518 "syntactic.y"
+  case 138: // opcode: DIRECTIVE_DBCS
+#line 1523 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_SET;
 	}
-#line 1952 "syntactic.cpp"
+#line 1960 "syntactic.cpp"
     break;
 
-  case 138: // opcode: DIRECTIVE_DBNE
-#line 1523 "syntactic.y"
+  case 139: // opcode: DIRECTIVE_DBNE
+#line 1528 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_NOT_EQUAL;
 	}
-#line 1961 "syntactic.cpp"
+#line 1969 "syntactic.cpp"
     break;
 
-  case 139: // opcode: DIRECTIVE_DBEQ
-#line 1528 "syntactic.y"
+  case 140: // opcode: DIRECTIVE_DBEQ
+#line 1533 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_EQUAL;
 	}
-#line 1970 "syntactic.cpp"
+#line 1978 "syntactic.cpp"
     break;
 
-  case 140: // opcode: DIRECTIVE_DBVC
-#line 1533 "syntactic.y"
+  case 141: // opcode: DIRECTIVE_DBVC
+#line 1538 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_CLEAR;
 	}
-#line 1979 "syntactic.cpp"
+#line 1987 "syntactic.cpp"
     break;
 
-  case 141: // opcode: DIRECTIVE_DBVS
-#line 1538 "syntactic.y"
+  case 142: // opcode: DIRECTIVE_DBVS
+#line 1543 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_SET;
 	}
-#line 1988 "syntactic.cpp"
+#line 1996 "syntactic.cpp"
     break;
 
-  case 142: // opcode: DIRECTIVE_DBPL
-#line 1543 "syntactic.y"
+  case 143: // opcode: DIRECTIVE_DBPL
+#line 1548 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_PLUS;
 	}
-#line 1997 "syntactic.cpp"
+#line 2005 "syntactic.cpp"
     break;
 
-  case 143: // opcode: DIRECTIVE_DBMI
-#line 1548 "syntactic.y"
+  case 144: // opcode: DIRECTIVE_DBMI
+#line 1553 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_MINUS;
 	}
-#line 2006 "syntactic.cpp"
+#line 2014 "syntactic.cpp"
     break;
 
-  case 144: // opcode: DIRECTIVE_DBGE
-#line 1553 "syntactic.y"
+  case 145: // opcode: DIRECTIVE_DBGE
+#line 1558 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_OR_EQUAL;
 	}
-#line 2015 "syntactic.cpp"
+#line 2023 "syntactic.cpp"
     break;
 
-  case 145: // opcode: DIRECTIVE_DBLT
-#line 1558 "syntactic.y"
+  case 146: // opcode: DIRECTIVE_DBLT
+#line 1563 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_THAN;
 	}
-#line 2024 "syntactic.cpp"
+#line 2032 "syntactic.cpp"
     break;
 
-  case 146: // opcode: DIRECTIVE_DBGT
-#line 1563 "syntactic.y"
+  case 147: // opcode: DIRECTIVE_DBGT
+#line 1568 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_THAN;
 	}
-#line 2033 "syntactic.cpp"
+#line 2041 "syntactic.cpp"
     break;
 
-  case 147: // opcode: DIRECTIVE_DBLE
-#line 1568 "syntactic.y"
+  case 148: // opcode: DIRECTIVE_DBLE
+#line 1573 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_DBcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_OR_EQUAL;
-	}
-#line 2042 "syntactic.cpp"
-    break;
-
-  case 148: // opcode: DIRECTIVE_BRA
-#line 1573 "syntactic.y"
-        {
-		yylhs.value.as < Opcode > ().type = OPCODE_BRA;
 	}
 #line 2050 "syntactic.cpp"
     break;
 
-  case 149: // opcode: DIRECTIVE_BSR
-#line 1577 "syntactic.y"
+  case 149: // opcode: DIRECTIVE_BRA
+#line 1578 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_BSR;
+		yylhs.value.as < Opcode > ().type = OPCODE_BRA;
 	}
 #line 2058 "syntactic.cpp"
     break;
 
-  case 150: // opcode: DIRECTIVE_BHI
-#line 1581 "syntactic.y"
+  case 150: // opcode: DIRECTIVE_BSR
+#line 1582 "syntactic.y"
+        {
+		yylhs.value.as < Opcode > ().type = OPCODE_BSR;
+	}
+#line 2066 "syntactic.cpp"
+    break;
+
+  case 151: // opcode: DIRECTIVE_BHI
+#line 1586 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_HIGHER;
 	}
-#line 2067 "syntactic.cpp"
+#line 2075 "syntactic.cpp"
     break;
 
-  case 151: // opcode: DIRECTIVE_BLS
-#line 1586 "syntactic.y"
+  case 152: // opcode: DIRECTIVE_BLS
+#line 1591 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LOWER_OR_SAME;
 	}
-#line 2076 "syntactic.cpp"
+#line 2084 "syntactic.cpp"
     break;
 
-  case 152: // opcode: DIRECTIVE_BCC
-#line 1591 "syntactic.y"
+  case 153: // opcode: DIRECTIVE_BCC
+#line 1596 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_CLEAR;
 	}
-#line 2085 "syntactic.cpp"
+#line 2093 "syntactic.cpp"
     break;
 
-  case 153: // opcode: DIRECTIVE_BCS
-#line 1596 "syntactic.y"
+  case 154: // opcode: DIRECTIVE_BCS
+#line 1601 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_CARRY_SET;
 	}
-#line 2094 "syntactic.cpp"
+#line 2102 "syntactic.cpp"
     break;
 
-  case 154: // opcode: DIRECTIVE_BNE
-#line 1601 "syntactic.y"
+  case 155: // opcode: DIRECTIVE_BNE
+#line 1606 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_NOT_EQUAL;
 	}
-#line 2103 "syntactic.cpp"
+#line 2111 "syntactic.cpp"
     break;
 
-  case 155: // opcode: DIRECTIVE_BEQ
-#line 1606 "syntactic.y"
+  case 156: // opcode: DIRECTIVE_BEQ
+#line 1611 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_EQUAL;
 	}
-#line 2112 "syntactic.cpp"
+#line 2120 "syntactic.cpp"
     break;
 
-  case 156: // opcode: DIRECTIVE_BVC
-#line 1611 "syntactic.y"
+  case 157: // opcode: DIRECTIVE_BVC
+#line 1616 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_CLEAR;
 	}
-#line 2121 "syntactic.cpp"
+#line 2129 "syntactic.cpp"
     break;
 
-  case 157: // opcode: DIRECTIVE_BVS
-#line 1616 "syntactic.y"
+  case 158: // opcode: DIRECTIVE_BVS
+#line 1621 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_OVERFLOW_SET;
 	}
-#line 2130 "syntactic.cpp"
+#line 2138 "syntactic.cpp"
     break;
 
-  case 158: // opcode: DIRECTIVE_BPL
-#line 1621 "syntactic.y"
+  case 159: // opcode: DIRECTIVE_BPL
+#line 1626 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_PLUS;
 	}
-#line 2139 "syntactic.cpp"
+#line 2147 "syntactic.cpp"
     break;
 
-  case 159: // opcode: DIRECTIVE_BMI
-#line 1626 "syntactic.y"
+  case 160: // opcode: DIRECTIVE_BMI
+#line 1631 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_MINUS;
 	}
-#line 2148 "syntactic.cpp"
+#line 2156 "syntactic.cpp"
     break;
 
-  case 160: // opcode: DIRECTIVE_BGE
-#line 1631 "syntactic.y"
+  case 161: // opcode: DIRECTIVE_BGE
+#line 1636 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_OR_EQUAL;
 	}
-#line 2157 "syntactic.cpp"
+#line 2165 "syntactic.cpp"
     break;
 
-  case 161: // opcode: DIRECTIVE_BLT
-#line 1636 "syntactic.y"
+  case 162: // opcode: DIRECTIVE_BLT
+#line 1641 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_THAN;
 	}
-#line 2166 "syntactic.cpp"
+#line 2174 "syntactic.cpp"
     break;
 
-  case 162: // opcode: DIRECTIVE_BGT
-#line 1641 "syntactic.y"
+  case 163: // opcode: DIRECTIVE_BGT
+#line 1646 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_GREATER_THAN;
 	}
-#line 2175 "syntactic.cpp"
+#line 2183 "syntactic.cpp"
     break;
 
-  case 163: // opcode: DIRECTIVE_BLE
-#line 1646 "syntactic.y"
+  case 164: // opcode: DIRECTIVE_BLE
+#line 1651 "syntactic.y"
         {
 		yylhs.value.as < Opcode > ().type = OPCODE_Bcc;
 		yylhs.value.as < Opcode > ().condition = CONDITION_LESS_OR_EQUAL;
 	}
-#line 2184 "syntactic.cpp"
-    break;
-
-  case 164: // opcode: DIRECTIVE_MOVEQ
-#line 1651 "syntactic.y"
-        {
-		yylhs.value.as < Opcode > ().type = OPCODE_MOVEQ;
-	}
 #line 2192 "syntactic.cpp"
     break;
 
-  case 165: // opcode: DIRECTIVE_DIVU
-#line 1655 "syntactic.y"
+  case 165: // opcode: DIRECTIVE_MOVEQ
+#line 1656 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_DIVU;
+		yylhs.value.as < Opcode > ().type = OPCODE_MOVEQ;
 	}
 #line 2200 "syntactic.cpp"
     break;
 
-  case 166: // opcode: DIRECTIVE_DIVS
-#line 1659 "syntactic.y"
+  case 166: // opcode: DIRECTIVE_DIVU
+#line 1660 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_DIVS;
+		yylhs.value.as < Opcode > ().type = OPCODE_DIVU;
 	}
 #line 2208 "syntactic.cpp"
     break;
 
-  case 167: // opcode: DIRECTIVE_SBCD
-#line 1663 "syntactic.y"
+  case 167: // opcode: DIRECTIVE_DIVS
+#line 1664 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_SBCD_DATA_REGS;
+		yylhs.value.as < Opcode > ().type = OPCODE_DIVS;
 	}
 #line 2216 "syntactic.cpp"
     break;
 
-  case 168: // opcode: DIRECTIVE_OR
-#line 1667 "syntactic.y"
+  case 168: // opcode: DIRECTIVE_SBCD
+#line 1668 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_OR_TO_REG;
+		yylhs.value.as < Opcode > ().type = OPCODE_SBCD_DATA_REGS;
 	}
 #line 2224 "syntactic.cpp"
     break;
 
-  case 169: // opcode: DIRECTIVE_SUB
-#line 1671 "syntactic.y"
+  case 169: // opcode: DIRECTIVE_OR
+#line 1672 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_SUB_TO_REG;
+		yylhs.value.as < Opcode > ().type = OPCODE_OR_TO_REG;
 	}
 #line 2232 "syntactic.cpp"
     break;
 
-  case 170: // opcode: DIRECTIVE_SUBX
-#line 1675 "syntactic.y"
+  case 170: // opcode: DIRECTIVE_SUB
+#line 1676 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_SUBX_DATA_REGS;
+		yylhs.value.as < Opcode > ().type = OPCODE_SUB_TO_REG;
 	}
 #line 2240 "syntactic.cpp"
     break;
 
-  case 171: // opcode: DIRECTIVE_SUBA
-#line 1679 "syntactic.y"
+  case 171: // opcode: DIRECTIVE_SUBX
+#line 1680 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_SUBA;
+		yylhs.value.as < Opcode > ().type = OPCODE_SUBX_DATA_REGS;
 	}
 #line 2248 "syntactic.cpp"
     break;
 
-  case 172: // opcode: DIRECTIVE_EOR
-#line 1683 "syntactic.y"
+  case 172: // opcode: DIRECTIVE_SUBA
+#line 1684 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_EOR;
+		yylhs.value.as < Opcode > ().type = OPCODE_SUBA;
 	}
 #line 2256 "syntactic.cpp"
     break;
 
-  case 173: // opcode: DIRECTIVE_CMPM
-#line 1687 "syntactic.y"
+  case 173: // opcode: DIRECTIVE_EOR
+#line 1688 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_CMPM;
+		yylhs.value.as < Opcode > ().type = OPCODE_EOR;
 	}
 #line 2264 "syntactic.cpp"
     break;
 
-  case 174: // opcode: DIRECTIVE_CMP
-#line 1691 "syntactic.y"
+  case 174: // opcode: DIRECTIVE_CMPM
+#line 1692 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_CMP;
+		yylhs.value.as < Opcode > ().type = OPCODE_CMPM;
 	}
 #line 2272 "syntactic.cpp"
     break;
 
-  case 175: // opcode: DIRECTIVE_CMPA
-#line 1695 "syntactic.y"
+  case 175: // opcode: DIRECTIVE_CMP
+#line 1696 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_CMPA;
+		yylhs.value.as < Opcode > ().type = OPCODE_CMP;
 	}
 #line 2280 "syntactic.cpp"
     break;
 
-  case 176: // opcode: DIRECTIVE_MULU
-#line 1699 "syntactic.y"
+  case 176: // opcode: DIRECTIVE_CMPA
+#line 1700 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_MULU;
+		yylhs.value.as < Opcode > ().type = OPCODE_CMPA;
 	}
 #line 2288 "syntactic.cpp"
     break;
 
-  case 177: // opcode: DIRECTIVE_MULS
-#line 1703 "syntactic.y"
+  case 177: // opcode: DIRECTIVE_MULU
+#line 1704 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_MULS;
+		yylhs.value.as < Opcode > ().type = OPCODE_MULU;
 	}
 #line 2296 "syntactic.cpp"
     break;
 
-  case 178: // opcode: DIRECTIVE_ABCD
-#line 1707 "syntactic.y"
+  case 178: // opcode: DIRECTIVE_MULS
+#line 1708 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_ABCD_DATA_REGS;
+		yylhs.value.as < Opcode > ().type = OPCODE_MULS;
 	}
 #line 2304 "syntactic.cpp"
     break;
 
-  case 179: // opcode: DIRECTIVE_EXG
-#line 1711 "syntactic.y"
+  case 179: // opcode: DIRECTIVE_ABCD
+#line 1712 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_EXG;
+		yylhs.value.as < Opcode > ().type = OPCODE_ABCD_DATA_REGS;
 	}
 #line 2312 "syntactic.cpp"
     break;
 
-  case 180: // opcode: DIRECTIVE_AND
-#line 1715 "syntactic.y"
+  case 180: // opcode: DIRECTIVE_EXG
+#line 1716 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_AND_TO_REG;
+		yylhs.value.as < Opcode > ().type = OPCODE_EXG;
 	}
 #line 2320 "syntactic.cpp"
     break;
 
-  case 181: // opcode: DIRECTIVE_ADD
-#line 1719 "syntactic.y"
+  case 181: // opcode: DIRECTIVE_AND
+#line 1720 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_ADD_TO_REG;
+		yylhs.value.as < Opcode > ().type = OPCODE_AND_TO_REG;
 	}
 #line 2328 "syntactic.cpp"
     break;
 
-  case 182: // opcode: DIRECTIVE_ADDX
-#line 1723 "syntactic.y"
+  case 182: // opcode: DIRECTIVE_ADD
+#line 1724 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_ADDX_DATA_REGS;
+		yylhs.value.as < Opcode > ().type = OPCODE_ADD_TO_REG;
 	}
 #line 2336 "syntactic.cpp"
     break;
 
-  case 183: // opcode: DIRECTIVE_ADDA
-#line 1727 "syntactic.y"
+  case 183: // opcode: DIRECTIVE_ADDX
+#line 1728 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_ADDA;
+		yylhs.value.as < Opcode > ().type = OPCODE_ADDX_DATA_REGS;
 	}
 #line 2344 "syntactic.cpp"
     break;
 
-  case 184: // opcode: DIRECTIVE_ASL
-#line 1731 "syntactic.y"
+  case 184: // opcode: DIRECTIVE_ADDA
+#line 1732 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_ASL_STATIC;
+		yylhs.value.as < Opcode > ().type = OPCODE_ADDA;
 	}
 #line 2352 "syntactic.cpp"
     break;
 
-  case 185: // opcode: DIRECTIVE_ASR
-#line 1735 "syntactic.y"
+  case 185: // opcode: DIRECTIVE_ASL
+#line 1736 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_ASR_STATIC;
+		yylhs.value.as < Opcode > ().type = OPCODE_ASL_STATIC;
 	}
 #line 2360 "syntactic.cpp"
     break;
 
-  case 186: // opcode: DIRECTIVE_LSL
-#line 1739 "syntactic.y"
+  case 186: // opcode: DIRECTIVE_ASR
+#line 1740 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_LSL_STATIC;
+		yylhs.value.as < Opcode > ().type = OPCODE_ASR_STATIC;
 	}
 #line 2368 "syntactic.cpp"
     break;
 
-  case 187: // opcode: DIRECTIVE_LSR
-#line 1743 "syntactic.y"
+  case 187: // opcode: DIRECTIVE_LSL
+#line 1744 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_LSR_STATIC;
+		yylhs.value.as < Opcode > ().type = OPCODE_LSL_STATIC;
 	}
 #line 2376 "syntactic.cpp"
     break;
 
-  case 188: // opcode: DIRECTIVE_ROXL
-#line 1747 "syntactic.y"
+  case 188: // opcode: DIRECTIVE_LSR
+#line 1748 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_ROXL_STATIC;
+		yylhs.value.as < Opcode > ().type = OPCODE_LSR_STATIC;
 	}
 #line 2384 "syntactic.cpp"
     break;
 
-  case 189: // opcode: DIRECTIVE_ROXR
-#line 1751 "syntactic.y"
+  case 189: // opcode: DIRECTIVE_ROXL
+#line 1752 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_ROXR_STATIC;
+		yylhs.value.as < Opcode > ().type = OPCODE_ROXL_STATIC;
 	}
 #line 2392 "syntactic.cpp"
     break;
 
-  case 190: // opcode: DIRECTIVE_ROL
-#line 1755 "syntactic.y"
+  case 190: // opcode: DIRECTIVE_ROXR
+#line 1756 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_ROL_STATIC;
+		yylhs.value.as < Opcode > ().type = OPCODE_ROXR_STATIC;
 	}
 #line 2400 "syntactic.cpp"
     break;
 
-  case 191: // opcode: DIRECTIVE_ROR
-#line 1759 "syntactic.y"
+  case 191: // opcode: DIRECTIVE_ROL
+#line 1760 "syntactic.y"
         {
-		yylhs.value.as < Opcode > ().type = OPCODE_ROR_STATIC;
+		yylhs.value.as < Opcode > ().type = OPCODE_ROL_STATIC;
 	}
 #line 2408 "syntactic.cpp"
     break;
 
-  case 192: // size: SIZE_BYTE
-#line 1766 "syntactic.y"
+  case 192: // opcode: DIRECTIVE_ROR
+#line 1764 "syntactic.y"
         {
-		yylhs.value.as < Size > () = SIZE_BYTE;
+		yylhs.value.as < Opcode > ().type = OPCODE_ROR_STATIC;
 	}
 #line 2416 "syntactic.cpp"
     break;
 
-  case 193: // size: SIZE_SHORT
-#line 1770 "syntactic.y"
+  case 193: // size: SIZE_BYTE
+#line 1771 "syntactic.y"
         {
-		yylhs.value.as < Size > () = SIZE_SHORT;
+		yylhs.value.as < Size > () = SIZE_BYTE;
 	}
 #line 2424 "syntactic.cpp"
     break;
 
-  case 194: // size: SIZE_WORD
-#line 1774 "syntactic.y"
+  case 194: // size: SIZE_SHORT
+#line 1775 "syntactic.y"
         {
-		yylhs.value.as < Size > () = SIZE_WORD;
+		yylhs.value.as < Size > () = SIZE_SHORT;
 	}
 #line 2432 "syntactic.cpp"
     break;
 
-  case 195: // size: SIZE_LONGWORD
-#line 1778 "syntactic.y"
+  case 195: // size: SIZE_WORD
+#line 1779 "syntactic.y"
         {
-		yylhs.value.as < Size > () = SIZE_LONGWORD;
+		yylhs.value.as < Size > () = SIZE_WORD;
 	}
 #line 2440 "syntactic.cpp"
     break;
 
-  case 196: // operand: "(" ADDRESS_REGISTER ")"
-#line 1786 "syntactic.y"
+  case 196: // size: SIZE_LONGWORD
+#line 1783 "syntactic.y"
+        {
+		yylhs.value.as < Size > () = SIZE_LONGWORD;
+	}
+#line 2448 "syntactic.cpp"
+    break;
+
+  case 197: // operand: "(" ADDRESS_REGISTER ")"
+#line 1791 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT;
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 	}
-#line 2449 "syntactic.cpp"
+#line 2457 "syntactic.cpp"
     break;
 
-  case 197: // operand: "(" ADDRESS_REGISTER ")" "+"
-#line 1791 "syntactic.y"
+  case 198: // operand: "(" ADDRESS_REGISTER ")" "+"
+#line 1796 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_POSTINCREMENT;
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 	}
-#line 2458 "syntactic.cpp"
+#line 2466 "syntactic.cpp"
     break;
 
-  case 198: // operand: "-" "(" ADDRESS_REGISTER ")"
-#line 1796 "syntactic.y"
+  case 199: // operand: "-" "(" ADDRESS_REGISTER ")"
+#line 1801 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_PREDECREMENT;
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 	}
-#line 2467 "syntactic.cpp"
+#line 2475 "syntactic.cpp"
     break;
 
-  case 199: // operand: expression "(" ADDRESS_REGISTER ")"
-#line 1801 "syntactic.y"
+  case 200: // operand: expression "(" ADDRESS_REGISTER ")"
+#line 1806 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[3].value.as < Expression > ());
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 	}
-#line 2477 "syntactic.cpp"
+#line 2485 "syntactic.cpp"
     break;
 
-  case 200: // operand: "(" expression "," ADDRESS_REGISTER ")"
-#line 1807 "syntactic.y"
+  case 201: // operand: "(" expression "," ADDRESS_REGISTER ")"
+#line 1812 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[3].value.as < Expression > ());
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 	}
-#line 2487 "syntactic.cpp"
+#line 2495 "syntactic.cpp"
     break;
 
-  case 201: // operand: "(" ADDRESS_REGISTER "," expression ")"
-#line 1813 "syntactic.y"
+  case 202: // operand: "(" ADDRESS_REGISTER "," expression ")"
+#line 1818 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_REGISTER_INDIRECT_WITH_DISPLACEMENT;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[1].value.as < Expression > ());
 		yylhs.value.as < Operand > ().main_register = YY_MOVE (yystack_[3].value.as < unsigned long > ());
 	}
-#line 2497 "syntactic.cpp"
+#line 2505 "syntactic.cpp"
     break;
 
-  case 202: // operand: "(" ADDRESS_REGISTER "," data_or_address_register size ")"
-#line 1819 "syntactic.y"
+  case 203: // operand: "(" ADDRESS_REGISTER "," data_or_address_register size ")"
+#line 1824 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2508,11 +2516,11 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = YY_MOVE (yystack_[1].value.as < Size > ());
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2512 "syntactic.cpp"
+#line 2520 "syntactic.cpp"
     break;
 
-  case 203: // operand: expression "(" ADDRESS_REGISTER "," data_or_address_register size ")"
-#line 1830 "syntactic.y"
+  case 204: // operand: expression "(" ADDRESS_REGISTER "," data_or_address_register size ")"
+#line 1835 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2523,11 +2531,11 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = YY_MOVE (yystack_[1].value.as < Size > ());
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2527 "syntactic.cpp"
+#line 2535 "syntactic.cpp"
     break;
 
-  case 204: // operand: "(" expression "," ADDRESS_REGISTER "," data_or_address_register size ")"
-#line 1841 "syntactic.y"
+  case 205: // operand: "(" expression "," ADDRESS_REGISTER "," data_or_address_register size ")"
+#line 1846 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2538,11 +2546,11 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = YY_MOVE (yystack_[1].value.as < Size > ());
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2542 "syntactic.cpp"
+#line 2550 "syntactic.cpp"
     break;
 
-  case 205: // operand: "(" ADDRESS_REGISTER "," data_or_address_register ")"
-#line 1852 "syntactic.y"
+  case 206: // operand: "(" ADDRESS_REGISTER "," data_or_address_register ")"
+#line 1857 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
@@ -2554,11 +2562,11 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = SIZE_WORD;
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2558 "syntactic.cpp"
+#line 2566 "syntactic.cpp"
     break;
 
-  case 206: // operand: expression "(" ADDRESS_REGISTER "," data_or_address_register ")"
-#line 1864 "syntactic.y"
+  case 207: // operand: expression "(" ADDRESS_REGISTER "," data_or_address_register ")"
+#line 1869 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
@@ -2570,11 +2578,11 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = SIZE_WORD;
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2574 "syntactic.cpp"
+#line 2582 "syntactic.cpp"
     break;
 
-  case 207: // operand: "(" expression "," ADDRESS_REGISTER "," data_or_address_register ")"
-#line 1876 "syntactic.y"
+  case 208: // operand: "(" expression "," ADDRESS_REGISTER "," data_or_address_register ")"
+#line 1881 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
@@ -2586,38 +2594,38 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = SIZE_WORD;
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2590 "syntactic.cpp"
+#line 2598 "syntactic.cpp"
     break;
 
-  case 208: // operand: expression "(" PROGRAM_COUNTER ")"
-#line 1888 "syntactic.y"
-        {
-		yylhs.value.as < Operand > ().type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
-		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[3].value.as < Expression > ());
-	}
-#line 2599 "syntactic.cpp"
-    break;
-
-  case 209: // operand: "(" expression "," PROGRAM_COUNTER ")"
+  case 209: // operand: expression "(" PROGRAM_COUNTER ")"
 #line 1893 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[3].value.as < Expression > ());
 	}
-#line 2608 "syntactic.cpp"
+#line 2607 "syntactic.cpp"
     break;
 
-  case 210: // operand: "(" PROGRAM_COUNTER "," expression ")"
+  case 210: // operand: "(" expression "," PROGRAM_COUNTER ")"
 #line 1898 "syntactic.y"
+        {
+		yylhs.value.as < Operand > ().type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
+		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[3].value.as < Expression > ());
+	}
+#line 2616 "syntactic.cpp"
+    break;
+
+  case 211: // operand: "(" PROGRAM_COUNTER "," expression ")"
+#line 1903 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_PROGRAM_COUNTER_WITH_DISPLACEMENT;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[1].value.as < Expression > ());
 	}
-#line 2617 "syntactic.cpp"
+#line 2625 "syntactic.cpp"
     break;
 
-  case 211: // operand: "(" PROGRAM_COUNTER "," data_or_address_register size ")"
-#line 1903 "syntactic.y"
+  case 212: // operand: "(" PROGRAM_COUNTER "," data_or_address_register size ")"
+#line 1908 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2627,11 +2635,11 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = YY_MOVE (yystack_[1].value.as < Size > ());
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2631 "syntactic.cpp"
+#line 2639 "syntactic.cpp"
     break;
 
-  case 212: // operand: expression "(" PROGRAM_COUNTER "," data_or_address_register size ")"
-#line 1913 "syntactic.y"
+  case 213: // operand: expression "(" PROGRAM_COUNTER "," data_or_address_register size ")"
+#line 1918 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2641,11 +2649,11 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = YY_MOVE (yystack_[1].value.as < Size > ());
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2645 "syntactic.cpp"
+#line 2653 "syntactic.cpp"
     break;
 
-  case 213: // operand: "(" expression "," PROGRAM_COUNTER "," data_or_address_register size ")"
-#line 1923 "syntactic.y"
+  case 214: // operand: "(" expression "," PROGRAM_COUNTER "," data_or_address_register size ")"
+#line 1928 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 
@@ -2655,11 +2663,11 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = YY_MOVE (yystack_[1].value.as < Size > ());
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2659 "syntactic.cpp"
+#line 2667 "syntactic.cpp"
     break;
 
-  case 214: // operand: "(" PROGRAM_COUNTER "," data_or_address_register ")"
-#line 1933 "syntactic.y"
+  case 215: // operand: "(" PROGRAM_COUNTER "," data_or_address_register ")"
+#line 1938 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
@@ -2670,11 +2678,11 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = SIZE_WORD;
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2674 "syntactic.cpp"
+#line 2682 "syntactic.cpp"
     break;
 
-  case 215: // operand: expression "(" PROGRAM_COUNTER "," data_or_address_register ")"
-#line 1944 "syntactic.y"
+  case 216: // operand: expression "(" PROGRAM_COUNTER "," data_or_address_register ")"
+#line 1949 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
@@ -2685,11 +2693,11 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = SIZE_WORD;
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2689 "syntactic.cpp"
+#line 2697 "syntactic.cpp"
     break;
 
-  case 216: // operand: "(" expression "," PROGRAM_COUNTER "," data_or_address_register ")"
-#line 1955 "syntactic.y"
+  case 217: // operand: "(" expression "," PROGRAM_COUNTER "," data_or_address_register ")"
+#line 1960 "syntactic.y"
         {
 		const auto data_or_address_register = YY_MOVE (yystack_[1].value.as < unsigned long > ());
 
@@ -2700,64 +2708,64 @@ namespace m68kasm {
 		yylhs.value.as < Operand > ().size = SIZE_WORD;
 		yylhs.value.as < Operand > ().index_register_is_address_register = data_or_address_register / 8 != 0;
 	}
-#line 2704 "syntactic.cpp"
+#line 2712 "syntactic.cpp"
     break;
 
-  case 217: // operand: "#" expression
-#line 1967 "syntactic.y"
+  case 218: // operand: "#" expression
+#line 1972 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_LITERAL;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
-#line 2713 "syntactic.cpp"
-    break;
-
-  case 218: // operand: STATUS_REGISTER
-#line 1983 "syntactic.y"
-        {
-		yylhs.value.as < Operand > ().type = OPERAND_STATUS_REGISTER;
-	}
 #line 2721 "syntactic.cpp"
     break;
 
-  case 219: // operand: CONDITION_CODE_REGISTER
-#line 1987 "syntactic.y"
+  case 219: // operand: STATUS_REGISTER
+#line 1988 "syntactic.y"
         {
-		yylhs.value.as < Operand > ().type = OPERAND_CONDITION_CODE_REGISTER;
+		yylhs.value.as < Operand > ().type = OPERAND_STATUS_REGISTER;
 	}
 #line 2729 "syntactic.cpp"
     break;
 
-  case 220: // operand: USER_STACK_POINTER_REGISTER
-#line 1991 "syntactic.y"
+  case 220: // operand: CONDITION_CODE_REGISTER
+#line 1992 "syntactic.y"
         {
-		yylhs.value.as < Operand > ().type = OPERAND_USER_STACK_POINTER_REGISTER;
+		yylhs.value.as < Operand > ().type = OPERAND_CONDITION_CODE_REGISTER;
 	}
 #line 2737 "syntactic.cpp"
     break;
 
-  case 221: // operand: expression
+  case 221: // operand: USER_STACK_POINTER_REGISTER
 #line 1996 "syntactic.y"
+        {
+		yylhs.value.as < Operand > ().type = OPERAND_USER_STACK_POINTER_REGISTER;
+	}
+#line 2745 "syntactic.cpp"
+    break;
+
+  case 222: // operand: expression
+#line 2001 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[0].value.as < Expression > ());
 		yylhs.value.as < Operand > ().size = SIZE_UNDEFINED;
 	}
-#line 2747 "syntactic.cpp"
+#line 2755 "syntactic.cpp"
     break;
 
-  case 222: // operand: expression size
-#line 2002 "syntactic.y"
+  case 223: // operand: expression size
+#line 2007 "syntactic.y"
         {
 		yylhs.value.as < Operand > ().type = OPERAND_ADDRESS_ABSOLUTE;
 		yylhs.value.as < Operand > ().literal = YY_MOVE (yystack_[1].value.as < Expression > ());
 		yylhs.value.as < Operand > ().size = YY_MOVE (yystack_[0].value.as < Size > ());
 	}
-#line 2757 "syntactic.cpp"
+#line 2765 "syntactic.cpp"
     break;
 
-  case 223: // operand: register_list
-#line 2009 "syntactic.y"
+  case 224: // operand: register_list
+#line 2014 "syntactic.y"
         {
 		const auto register_list = YY_MOVE (yystack_[0].value.as < unsigned long > ());
 
@@ -2787,35 +2795,35 @@ namespace m68kasm {
 			yylhs.value.as < Operand > ().main_register = register_list; /* Such a hack... */
 		}
 	}
-#line 2791 "syntactic.cpp"
-    break;
-
-  case 224: // register_list: register_span
-#line 2042 "syntactic.y"
-        {
-		yylhs.value.as < unsigned long > () = YY_MOVE (yystack_[0].value.as < unsigned long > ());
-	}
 #line 2799 "syntactic.cpp"
     break;
 
-  case 225: // register_list: register_span "/" register_list
-#line 2046 "syntactic.y"
+  case 225: // register_list: register_span
+#line 2047 "syntactic.y"
         {
-		yylhs.value.as < unsigned long > () = YY_MOVE (yystack_[2].value.as < unsigned long > ()) | YY_MOVE (yystack_[0].value.as < unsigned long > ());
+		yylhs.value.as < unsigned long > () = YY_MOVE (yystack_[0].value.as < unsigned long > ());
 	}
 #line 2807 "syntactic.cpp"
     break;
 
-  case 226: // register_span: data_or_address_register
-#line 2053 "syntactic.y"
+  case 226: // register_list: register_span "/" register_list
+#line 2051 "syntactic.y"
         {
-		yylhs.value.as < unsigned long > () = 1 << YY_MOVE (yystack_[0].value.as < unsigned long > ());
+		yylhs.value.as < unsigned long > () = YY_MOVE (yystack_[2].value.as < unsigned long > ()) | YY_MOVE (yystack_[0].value.as < unsigned long > ());
 	}
 #line 2815 "syntactic.cpp"
     break;
 
-  case 227: // register_span: data_or_address_register "-" data_or_address_register
-#line 2057 "syntactic.y"
+  case 227: // register_span: data_or_address_register
+#line 2058 "syntactic.y"
+        {
+		yylhs.value.as < unsigned long > () = 1 << YY_MOVE (yystack_[0].value.as < unsigned long > ());
+	}
+#line 2823 "syntactic.cpp"
+    break;
+
+  case 228: // register_span: data_or_address_register "-" data_or_address_register
+#line 2062 "syntactic.y"
         {
 		const auto first_data_or_address_register = YY_MOVE (yystack_[2].value.as < unsigned long > ());
 		const auto second_data_or_address_register = YY_MOVE (yystack_[0].value.as < unsigned long > ());
@@ -2839,421 +2847,421 @@ namespace m68kasm {
 		for (unsigned long i = start; i <= end; ++i)
 			yylhs.value.as < unsigned long > () |= 1 << i;
 	}
-#line 2843 "syntactic.cpp"
-    break;
-
-  case 228: // data_or_address_register: DATA_REGISTER
-#line 2084 "syntactic.y"
-        {
-		yylhs.value.as < unsigned long > () = 0 + YY_MOVE (yystack_[0].value.as < unsigned long > ());
-	}
 #line 2851 "syntactic.cpp"
     break;
 
-  case 229: // data_or_address_register: ADDRESS_REGISTER
-#line 2088 "syntactic.y"
+  case 229: // data_or_address_register: DATA_REGISTER
+#line 2089 "syntactic.y"
         {
-		yylhs.value.as < unsigned long > () = 8 + YY_MOVE (yystack_[0].value.as < unsigned long > ());
+		yylhs.value.as < unsigned long > () = 0 + YY_MOVE (yystack_[0].value.as < unsigned long > ());
 	}
 #line 2859 "syntactic.cpp"
     break;
 
-  case 230: // expression: expression1
-#line 2101 "syntactic.y"
+  case 230: // data_or_address_register: ADDRESS_REGISTER
+#line 2093 "syntactic.y"
         {
-		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
+		yylhs.value.as < unsigned long > () = 8 + YY_MOVE (yystack_[0].value.as < unsigned long > ());
 	}
 #line 2867 "syntactic.cpp"
     break;
 
-  case 231: // expression: expression LOGICAL_AND expression1
+  case 231: // expression: expression1
 #line 2106 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LOGICAL_AND, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
 #line 2875 "syntactic.cpp"
     break;
 
-  case 232: // expression: expression LOGICAL_OR expression1
+  case 232: // expression: expression LOGICAL_AND expression1
 #line 2111 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LOGICAL_OR, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LOGICAL_AND, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 2883 "syntactic.cpp"
     break;
 
-  case 233: // expression1: expression2
-#line 2118 "syntactic.y"
+  case 233: // expression: expression LOGICAL_OR expression1
+#line 2116 "syntactic.y"
         {
-		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LOGICAL_OR, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 2891 "syntactic.cpp"
     break;
 
-  case 234: // expression1: expression1 "=" expression2
-#line 2122 "syntactic.y"
+  case 234: // expression1: expression2
+#line 2123 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::EQUALITY, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
 #line 2899 "syntactic.cpp"
     break;
 
-  case 235: // expression1: expression1 EQUALITY expression2
-#line 2126 "syntactic.y"
+  case 235: // expression1: expression1 "=" expression2
+#line 2127 "syntactic.y"
         {
 		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::EQUALITY, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 2907 "syntactic.cpp"
     break;
 
-  case 236: // expression1: expression1 INEQUALITY expression2
-#line 2130 "syntactic.y"
+  case 236: // expression1: expression1 EQUALITY expression2
+#line 2131 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::INEQUALITY, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::EQUALITY, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 2915 "syntactic.cpp"
     break;
 
-  case 237: // expression2: expression3
-#line 2137 "syntactic.y"
+  case 237: // expression1: expression1 INEQUALITY expression2
+#line 2135 "syntactic.y"
         {
-		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::INEQUALITY, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 2923 "syntactic.cpp"
     break;
 
-  case 238: // expression2: expression2 "<" expression3
-#line 2141 "syntactic.y"
+  case 238: // expression2: expression3
+#line 2142 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LESS_THAN, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
 #line 2931 "syntactic.cpp"
     break;
 
-  case 239: // expression2: expression2 LESS_OR_EQUAL expression3
-#line 2145 "syntactic.y"
+  case 239: // expression2: expression2 "<" expression3
+#line 2146 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LESS_OR_EQUAL, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LESS_THAN, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 2939 "syntactic.cpp"
     break;
 
-  case 240: // expression2: expression2 ">" expression3
-#line 2149 "syntactic.y"
+  case 240: // expression2: expression2 LESS_OR_EQUAL expression3
+#line 2150 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::MORE_THAN, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LESS_OR_EQUAL, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 2947 "syntactic.cpp"
     break;
 
-  case 241: // expression2: expression2 MORE_OR_EQUAL expression3
-#line 2153 "syntactic.y"
+  case 241: // expression2: expression2 ">" expression3
+#line 2154 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::MORE_OR_EQUAL, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::MORE_THAN, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 2955 "syntactic.cpp"
     break;
 
-  case 242: // expression3: expression4
-#line 2160 "syntactic.y"
+  case 242: // expression2: expression2 MORE_OR_EQUAL expression3
+#line 2158 "syntactic.y"
         {
-		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::MORE_OR_EQUAL, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 2963 "syntactic.cpp"
     break;
 
-  case 243: // expression3: expression3 "+" expression4
-#line 2164 "syntactic.y"
+  case 243: // expression3: expression4
+#line 2165 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::ADD, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
 #line 2971 "syntactic.cpp"
     break;
 
-  case 244: // expression3: expression3 "-" expression4
-#line 2168 "syntactic.y"
+  case 244: // expression3: expression3 "+" expression4
+#line 2169 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::SUBTRACT, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::ADD, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 2979 "syntactic.cpp"
     break;
 
-  case 245: // expression4: expression5
-#line 2175 "syntactic.y"
+  case 245: // expression3: expression3 "-" expression4
+#line 2173 "syntactic.y"
         {
-		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::SUBTRACT, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 2987 "syntactic.cpp"
     break;
 
-  case 246: // expression4: expression4 "*" expression5
-#line 2179 "syntactic.y"
+  case 246: // expression4: expression5
+#line 2180 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::MULTIPLY, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
 #line 2995 "syntactic.cpp"
     break;
 
-  case 247: // expression4: expression4 "/" expression5
-#line 2183 "syntactic.y"
+  case 247: // expression4: expression4 "*" expression5
+#line 2184 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::DIVIDE, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::MULTIPLY, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 3003 "syntactic.cpp"
     break;
 
-  case 248: // expression4: expression4 "%" expression5
-#line 2187 "syntactic.y"
+  case 248: // expression4: expression4 "/" expression5
+#line 2188 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::MODULO, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::DIVIDE, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 3011 "syntactic.cpp"
     break;
 
-  case 249: // expression5: expression6
-#line 2194 "syntactic.y"
+  case 249: // expression4: expression4 "%" expression5
+#line 2192 "syntactic.y"
         {
-		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::MODULO, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 3019 "syntactic.cpp"
     break;
 
-  case 250: // expression5: expression5 "&" expression6
-#line 2198 "syntactic.y"
+  case 250: // expression5: expression6
+#line 2199 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::BITWISE_AND, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
 #line 3027 "syntactic.cpp"
     break;
 
-  case 251: // expression5: expression5 "!" expression6
-#line 2202 "syntactic.y"
+  case 251: // expression5: expression5 "&" expression6
+#line 2203 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::BITWISE_OR, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::BITWISE_AND, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 3035 "syntactic.cpp"
     break;
 
-  case 252: // expression5: expression5 "|" expression6
-#line 2206 "syntactic.y"
+  case 252: // expression5: expression5 "!" expression6
+#line 2207 "syntactic.y"
         {
 		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::BITWISE_OR, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 3043 "syntactic.cpp"
     break;
 
-  case 253: // expression5: expression5 "^" expression6
-#line 2210 "syntactic.y"
+  case 253: // expression5: expression5 "|" expression6
+#line 2211 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::BITWISE_XOR, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::BITWISE_OR, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 3051 "syntactic.cpp"
     break;
 
-  case 254: // expression6: expression7
-#line 2217 "syntactic.y"
+  case 254: // expression5: expression5 "^" expression6
+#line 2215 "syntactic.y"
         {
-		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::BITWISE_XOR, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 3059 "syntactic.cpp"
     break;
 
-  case 255: // expression6: expression6 LEFT_SHIFT expression7
-#line 2221 "syntactic.y"
+  case 255: // expression6: expression7
+#line 2222 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LEFT_SHIFT, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
 #line 3067 "syntactic.cpp"
     break;
 
-  case 256: // expression6: expression6 RIGHT_SHIFT expression7
-#line 2225 "syntactic.y"
+  case 256: // expression6: expression6 LEFT_SHIFT expression7
+#line 2226 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::RIGHT_SHIFT, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::LEFT_SHIFT, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 3075 "syntactic.cpp"
     break;
 
-  case 257: // expression7: expression8
-#line 2232 "syntactic.y"
+  case 257: // expression6: expression6 RIGHT_SHIFT expression7
+#line 2230 "syntactic.y"
         {
-		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic2Operand::Type::RIGHT_SHIFT, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 3083 "syntactic.cpp"
     break;
 
-  case 258: // expression7: "+" expression7
-#line 2236 "syntactic.y"
+  case 258: // expression7: expression8
+#line 2237 "syntactic.y"
         {
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
 #line 3091 "syntactic.cpp"
     break;
 
-  case 259: // expression7: "-" expression7
-#line 2240 "syntactic.y"
+  case 259: // expression7: "+" expression7
+#line 2241 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic1Operand::Type::NEGATE, YY_MOVE (yystack_[0].value.as < Expression > ()));
+		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
 #line 3099 "syntactic.cpp"
     break;
 
-  case 260: // expression7: "~" expression7
-#line 2244 "syntactic.y"
+  case 260: // expression7: "-" expression7
+#line 2245 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic1Operand::Type::BITWISE_NOT, YY_MOVE (yystack_[0].value.as < Expression > ()));
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic1Operand::Type::NEGATE, YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 3107 "syntactic.cpp"
     break;
 
-  case 261: // expression7: "!" expression7
+  case 261: // expression7: "~" expression7
 #line 2249 "syntactic.y"
         {
-		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic1Operand::Type::LOGICAL_NOT, YY_MOVE (yystack_[0].value.as < Expression > ()));
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic1Operand::Type::BITWISE_NOT, YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 3115 "syntactic.cpp"
     break;
 
-  case 262: // local_identifier: LOCAL_IDENTIFIER
-#line 2255 "syntactic.y"
-          { yylhs.value.as < std::string > () = YY_MOVE (yystack_[0].value.as < std::string > ()); }
-#line 3121 "syntactic.cpp"
+  case 262: // expression7: "!" expression7
+#line 2254 "syntactic.y"
+        {
+		DoExpression(yylhs.value.as < Expression > (), ExpressionArithmetic1Operand::Type::LOGICAL_NOT, YY_MOVE (yystack_[0].value.as < Expression > ()));
+	}
+#line 3123 "syntactic.cpp"
     break;
 
-  case 263: // local_identifier: SIZE_BYTE
-#line 2257 "syntactic.y"
-        {
-		yylhs.value.as < std::string > () = ".b";
-	}
+  case 263: // local_identifier: LOCAL_IDENTIFIER
+#line 2260 "syntactic.y"
+          { yylhs.value.as < std::string > () = YY_MOVE (yystack_[0].value.as < std::string > ()); }
 #line 3129 "syntactic.cpp"
     break;
 
-  case 264: // local_identifier: SIZE_SHORT
-#line 2261 "syntactic.y"
+  case 264: // local_identifier: SIZE_BYTE
+#line 2262 "syntactic.y"
         {
-		yylhs.value.as < std::string > () = ".s";
+		yylhs.value.as < std::string > () = ".b";
 	}
 #line 3137 "syntactic.cpp"
     break;
 
-  case 265: // local_identifier: SIZE_WORD
-#line 2265 "syntactic.y"
+  case 265: // local_identifier: SIZE_SHORT
+#line 2266 "syntactic.y"
         {
-		yylhs.value.as < std::string > () = ".w";
+		yylhs.value.as < std::string > () = ".s";
 	}
 #line 3145 "syntactic.cpp"
     break;
 
-  case 266: // local_identifier: SIZE_LONGWORD
-#line 2269 "syntactic.y"
+  case 266: // local_identifier: SIZE_WORD
+#line 2270 "syntactic.y"
         {
-		yylhs.value.as < std::string > () = ".l";
+		yylhs.value.as < std::string > () = ".w";
 	}
 #line 3153 "syntactic.cpp"
     break;
 
-  case 267: // identifier: IDENTIFIER
-#line 2275 "syntactic.y"
-          { yylhs.value.as < std::string > () = YY_MOVE (yystack_[0].value.as < std::string > ()); }
-#line 3159 "syntactic.cpp"
-    break;
-
-  case 268: // identifier: local_identifier
-#line 2276 "syntactic.y"
-          { yylhs.value.as < std::string > () = YY_MOVE (yystack_[0].value.as < std::string > ()); }
-#line 3165 "syntactic.cpp"
-    break;
-
-  case 269: // identifier: identifier local_identifier
-#line 2278 "syntactic.y"
+  case 267: // local_identifier: SIZE_LONGWORD
+#line 2274 "syntactic.y"
         {
-		yylhs.value.as < std::string > () = YY_MOVE (yystack_[1].value.as < std::string > ()) + YY_MOVE (yystack_[0].value.as < std::string > ());
+		yylhs.value.as < std::string > () = ".l";
 	}
+#line 3161 "syntactic.cpp"
+    break;
+
+  case 268: // identifier: IDENTIFIER
+#line 2280 "syntactic.y"
+          { yylhs.value.as < std::string > () = YY_MOVE (yystack_[0].value.as < std::string > ()); }
+#line 3167 "syntactic.cpp"
+    break;
+
+  case 269: // identifier: local_identifier
+#line 2281 "syntactic.y"
+          { yylhs.value.as < std::string > () = YY_MOVE (yystack_[0].value.as < std::string > ()); }
 #line 3173 "syntactic.cpp"
     break;
 
-  case 270: // expression8: NUMBER
-#line 2285 "syntactic.y"
+  case 270: // identifier: identifier local_identifier
+#line 2283 "syntactic.y"
         {
-		yylhs.value.as < Expression > ().emplace<ExpressionNumber>(YY_MOVE (yystack_[0].value.as < unsigned long > ()));
+		yylhs.value.as < std::string > () = YY_MOVE (yystack_[1].value.as < std::string > ()) + YY_MOVE (yystack_[0].value.as < std::string > ());
 	}
 #line 3181 "syntactic.cpp"
     break;
 
-  case 271: // expression8: identifier
-#line 2289 "syntactic.y"
+  case 271: // expression8: NUMBER
+#line 2290 "syntactic.y"
         {
-		yylhs.value.as < Expression > ().emplace<ExpressionIdentifier>(YY_MOVE (yystack_[0].value.as < std::string > ()));
+		yylhs.value.as < Expression > ().emplace<ExpressionNumber>(YY_MOVE (yystack_[0].value.as < unsigned long > ()));
 	}
 #line 3189 "syntactic.cpp"
     break;
 
-  case 272: // expression8: string
-#line 2293 "syntactic.y"
+  case 272: // expression8: identifier
+#line 2294 "syntactic.y"
         {
-		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
+		yylhs.value.as < Expression > ().emplace<ExpressionIdentifier>(YY_MOVE (yystack_[0].value.as < std::string > ()));
 	}
 #line 3197 "syntactic.cpp"
     break;
 
-  case 273: // expression8: "*"
-#line 2297 "syntactic.y"
+  case 273: // expression8: string
+#line 2298 "syntactic.y"
         {
-		yylhs.value.as < Expression > ().emplace<ExpressionProgramCounterOfStatement>();
+		yylhs.value.as < Expression > () = YY_MOVE (yystack_[0].value.as < Expression > ());
 	}
 #line 3205 "syntactic.cpp"
     break;
 
-  case 274: // expression8: "@"
-#line 2301 "syntactic.y"
+  case 274: // expression8: "*"
+#line 2302 "syntactic.y"
         {
-		yylhs.value.as < Expression > ().emplace<ExpressionProgramCounterOfExpression>();
+		yylhs.value.as < Expression > ().emplace<ExpressionProgramCounterOfStatement>();
 	}
 #line 3213 "syntactic.cpp"
     break;
 
-  case 275: // expression8: RS
-#line 2305 "syntactic.y"
+  case 275: // expression8: "@"
+#line 2306 "syntactic.y"
         {
-		yylhs.value.as < Expression > ().emplace<ExpressionRs>();
+		yylhs.value.as < Expression > ().emplace<ExpressionProgramCounterOfExpression>();
 	}
 #line 3221 "syntactic.cpp"
     break;
 
-  case 276: // expression8: NARG
-#line 2309 "syntactic.y"
+  case 276: // expression8: RS
+#line 2310 "syntactic.y"
         {
-		yylhs.value.as < Expression > ().emplace<ExpressionNarg>();
+		yylhs.value.as < Expression > ().emplace<ExpressionRs>();
 	}
 #line 3229 "syntactic.cpp"
     break;
 
-  case 277: // expression8: "(" expression ")"
-#line 2313 "syntactic.y"
+  case 277: // expression8: NARG
+#line 2314 "syntactic.y"
         {
-		yylhs.value.as < Expression > () = YY_MOVE (yystack_[1].value.as < Expression > ());
+		yylhs.value.as < Expression > ().emplace<ExpressionNarg>();
 	}
 #line 3237 "syntactic.cpp"
     break;
 
-  case 278: // expression8: STRLEN "(" STRING ")"
-#line 2317 "syntactic.y"
+  case 278: // expression8: "(" expression ")"
+#line 2318 "syntactic.y"
         {
-		yylhs.value.as < Expression > ().emplace<ExpressionStrlen>(YY_MOVE (yystack_[1].value.as < std::string > ()));
+		yylhs.value.as < Expression > () = YY_MOVE (yystack_[1].value.as < Expression > ());
 	}
 #line 3245 "syntactic.cpp"
     break;
 
-  case 279: // expression8: STRCMP "(" STRING "," STRING ")"
-#line 2321 "syntactic.y"
+  case 279: // expression8: STRLEN "(" STRING ")"
+#line 2322 "syntactic.y"
         {
-		yylhs.value.as < Expression > ().emplace<ExpressionStrcmp>(YY_MOVE (yystack_[3].value.as < std::string > ()), YY_MOVE (yystack_[1].value.as < std::string > ()));
+		yylhs.value.as < Expression > ().emplace<ExpressionStrlen>(YY_MOVE (yystack_[1].value.as < std::string > ()));
 	}
 #line 3253 "syntactic.cpp"
     break;
 
-  case 280: // expression8: INSTR "(" expression "," expression ")"
-#line 2325 "syntactic.y"
+  case 280: // expression8: STRCMP "(" STRING "," STRING ")"
+#line 2326 "syntactic.y"
+        {
+		yylhs.value.as < Expression > ().emplace<ExpressionStrcmp>(YY_MOVE (yystack_[3].value.as < std::string > ()), YY_MOVE (yystack_[1].value.as < std::string > ()));
+	}
+#line 3261 "syntactic.cpp"
+    break;
+
+  case 281: // expression8: INSTR "(" expression "," expression ")"
+#line 2330 "syntactic.y"
         {
 		auto subexpressions = std::make_unique<Expression[]>(3);
 
@@ -3263,11 +3271,11 @@ namespace m68kasm {
 
 		yylhs.value.as < Expression > ().emplace<ExpressionInstr>(std::move(subexpressions));
 	}
-#line 3267 "syntactic.cpp"
+#line 3275 "syntactic.cpp"
     break;
 
-  case 281: // expression8: INSTR "(" expression "," expression "," expression ")"
-#line 2335 "syntactic.y"
+  case 282: // expression8: INSTR "(" expression "," expression "," expression ")"
+#line 2340 "syntactic.y"
         {
 		auto subexpressions = std::make_unique<Expression[]>(3);
 
@@ -3277,60 +3285,60 @@ namespace m68kasm {
 
 		yylhs.value.as < Expression > ().emplace<ExpressionInstr>(std::move(subexpressions));
 	}
-#line 3281 "syntactic.cpp"
-    break;
-
-  case 282: // expression8: DEF "(" IDENTIFIER ")"
-#line 2345 "syntactic.y"
-        {
-		yylhs.value.as < Expression > ().emplace<ExpressionDef>(YY_MOVE (yystack_[1].value.as < std::string > ()));
-	}
 #line 3289 "syntactic.cpp"
     break;
 
-  case 283: // expression8: TYPE "(" IDENTIFIER ")"
-#line 2349 "syntactic.y"
+  case 283: // expression8: DEF "(" IDENTIFIER ")"
+#line 2350 "syntactic.y"
         {
-		yylhs.value.as < Expression > ().emplace<ExpressionTypeWithIdentifier>(YY_MOVE (yystack_[1].value.as < std::string > ()));
+		yylhs.value.as < Expression > ().emplace<ExpressionDef>(YY_MOVE (yystack_[1].value.as < std::string > ()));
 	}
 #line 3297 "syntactic.cpp"
     break;
 
-  case 284: // expression8: TYPE "(" NUMBER ")"
-#line 2353 "syntactic.y"
+  case 284: // expression8: TYPE "(" IDENTIFIER ")"
+#line 2354 "syntactic.y"
         {
-		yylhs.value.as < Expression > ().emplace<ExpressionTypeWithNumber>(YY_MOVE (yystack_[1].value.as < unsigned long > ()));
+		yylhs.value.as < Expression > ().emplace<ExpressionTypeWithIdentifier>(YY_MOVE (yystack_[1].value.as < std::string > ()));
 	}
 #line 3305 "syntactic.cpp"
     break;
 
-  case 285: // expression8: FILESIZE "(" STRING ")"
-#line 2357 "syntactic.y"
+  case 285: // expression8: TYPE "(" NUMBER ")"
+#line 2358 "syntactic.y"
         {
-		yylhs.value.as < Expression > ().emplace<ExpressionFilesize>(YY_MOVE (yystack_[1].value.as < std::string > ()));
+		yylhs.value.as < Expression > ().emplace<ExpressionTypeWithNumber>(YY_MOVE (yystack_[1].value.as < unsigned long > ()));
 	}
 #line 3313 "syntactic.cpp"
     break;
 
-  case 286: // expression8: OFFSET "(" expression ")"
-#line 2361 "syntactic.y"
+  case 286: // expression8: FILESIZE "(" STRING ")"
+#line 2362 "syntactic.y"
+        {
+		yylhs.value.as < Expression > ().emplace<ExpressionFilesize>(YY_MOVE (yystack_[1].value.as < std::string > ()));
+	}
+#line 3321 "syntactic.cpp"
+    break;
+
+  case 287: // expression8: OFFSET "(" expression ")"
+#line 2366 "syntactic.y"
         {
 		/* TODO: Make this actually do something besides pass the expression through. */
 		yylhs.value.as < Expression > () = YY_MOVE (yystack_[1].value.as < Expression > ());
 	}
-#line 3322 "syntactic.cpp"
-    break;
-
-  case 287: // string: STRING
-#line 2369 "syntactic.y"
-        {
-		yylhs.value.as < Expression > ().emplace<ExpressionString>(YY_MOVE (yystack_[0].value.as < std::string > ()));
-	}
 #line 3330 "syntactic.cpp"
     break;
 
+  case 288: // string: STRING
+#line 2374 "syntactic.y"
+        {
+		yylhs.value.as < Expression > ().emplace<ExpressionString>(YY_MOVE (yystack_[0].value.as < std::string > ()));
+	}
+#line 3338 "syntactic.cpp"
+    break;
 
-#line 3334 "syntactic.cpp"
+
+#line 3342 "syntactic.cpp"
 
             default:
               break;
@@ -3678,155 +3686,247 @@ namespace m68kasm {
   }
 
 
-  const short parser::yypact_ninf_ = -307;
+  const short parser::yypact_ninf_ = -309;
 
   const signed char parser::yytable_ninf_ = -1;
 
   const short
   parser::yypact_[] =
   {
-     294,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,
-    -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,
-    -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,
-    -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,
-    -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,
-    -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,
-    -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,
-    -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,
-    -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,
-    -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,
-    -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,
-    -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,   116,   116,
-     116,   577,  -307,  -157,  -149,  -307,  -120,  -102,   577,   -88,
-     342,   577,   577,   577,  -307,  -307,   577,  -307,  -307,   577,
-     577,  -307,  -307,   116,   577,   577,   577,  -307,   577,  -307,
-    -307,   -92,   -98,   -83,  -307,  -307,  -149,  -192,  -307,   -62,
-     577,   101,  -307,   -50,     3,  -307,  -307,  -307,  -307,   577,
-     577,   577,  -307,  -307,  -307,  -307,  -307,  -307,  -307,  -307,
-    -307,  -307,   -65,   -51,   -49,   -35,   -23,    -2,    21,   577,
-     577,   577,  -307,  -307,   577,   577,  -145,  -154,  -164,  -104,
-       4,   261,    20,  -307,  -307,     8,  -307,  -307,  -307,   -20,
-      32,    32,  -307,    34,  -145,  -307,  -307,   389,   -89,  -145,
-    -145,  -145,  -145,    47,    71,   577,  -145,  -145,  -145,  -145,
-    -307,    41,  -307,  -307,    32,  -307,  -307,  -307,  -145,  -307,
-    -307,  -307,  -307,  -307,  -307,    22,   624,   577,    43,  -307,
-      48,    63,    69,  -307,  -307,    76,  -145,    75,  -145,    98,
-     102,   577,   115,    51,   119,   577,  -118,  -307,  -307,  -307,
-    -307,   577,   577,   577,   577,   577,   577,   577,   577,   577,
-     577,   577,   577,   577,   577,   577,   577,   577,   577,   577,
-     577,  -307,  -149,   117,   436,   120,    77,   483,   577,   121,
-    -145,   122,   -86,    92,  -110,   530,  -145,   -50,    74,    74,
-    -146,  -307,   577,   577,   259,   284,    79,   292,   293,   296,
-     301,   -75,  -307,  -154,  -154,  -164,  -164,  -164,  -104,  -104,
-    -104,  -104,     4,     4,   261,   261,   261,    20,    20,    20,
-      20,  -307,  -307,    32,  -307,   577,    82,  -307,   321,   329,
-      90,  -145,   306,  -307,   295,   303,   295,  -105,   312,  -307,
-    -307,  -307,   -68,   -63,  -145,  -145,  -307,   343,   577,  -307,
-    -307,  -307,  -307,  -307,  -145,   577,  -307,  -307,   344,   577,
-    -127,   -25,  -307,  -123,   -18,   -33,   -26,  -307,    74,  -307,
-      74,  -307,   319,   -21,  -145,  -307,    76,  -307,   320,  -307,
-    -307,   322,  -307,    74,  -307,    74,  -307,  -107,   -99,  -307,
-     577,  -307,  -307,  -307,   -87,   -71,  -307,   323,  -307,   324,
-       5,  -307,   325,  -307,   326,  -307,  -307,  -307,  -307,  -307
+     296,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,
+    -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,
+    -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,
+    -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,
+    -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,
+    -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,
+    -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,
+    -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,
+    -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,
+    -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,
+    -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,
+    -309,  -309,  -309,  -309,  -309,  -309,  -309,  -309,     5,     5,
+       5,   579,  -309,  -153,  -144,  -309,  -152,   -76,   579,  -125,
+     344,   579,   579,   579,  -309,  -309,   579,  -309,  -309,   579,
+     579,   579,  -309,  -309,     5,   579,   579,   579,  -309,   579,
+    -309,  -309,   -90,   -68,   -70,  -309,  -309,  -144,  -167,  -309,
+     -42,   579,   108,  -309,   -49,   -71,  -309,  -309,  -309,  -309,
+     579,   579,   579,  -309,  -309,  -309,  -309,  -309,  -309,  -309,
+    -309,  -309,  -309,   -64,   -50,   -48,    -1,     8,    11,    30,
+     579,   579,   579,  -309,  -309,   579,   579,  -118,  -173,  -131,
+    -113,   -36,    73,   -72,  -309,  -309,     9,  -309,  -309,  -309,
+      25,    33,    33,  -309,    35,  -118,  -309,  -309,   391,   -93,
+    -118,  -118,  -118,  -118,    65,  -118,    72,   579,  -118,  -118,
+    -118,  -118,  -309,    42,  -309,  -309,    33,  -309,  -309,  -309,
+    -118,  -309,  -309,  -309,  -309,  -309,  -309,    23,   626,   579,
+      44,  -309,    39,    61,    70,  -309,  -309,    56,  -118,    76,
+    -118,    93,    99,   579,   103,    -6,   105,   579,   -24,  -309,
+    -309,  -309,  -309,   579,   579,   579,   579,   579,   579,   579,
+     579,   579,   579,   579,   579,   579,   579,   579,   579,   579,
+     579,   579,   579,  -309,  -144,   124,   438,   287,    78,   485,
+     579,   306,  -118,   102,  -124,   283,   -89,   532,  -118,   -49,
+      51,    51,  -156,  -309,   579,   579,   282,   285,    80,   284,
+     294,   295,   298,   -17,  -309,  -173,  -173,  -131,  -131,  -131,
+    -113,  -113,  -113,  -113,   -36,   -36,    73,    73,    73,   -72,
+     -72,   -72,   -72,  -309,  -309,    33,  -309,   579,    91,  -309,
+     323,   329,   100,  -118,   307,  -309,   297,   304,   297,  -150,
+     314,  -309,  -309,  -309,   -67,   -62,  -118,  -118,  -309,   333,
+     579,  -309,  -309,  -309,  -309,  -309,  -118,   579,  -309,  -309,
+     345,   579,  -127,     6,  -309,  -123,    24,   -23,     3,  -309,
+      51,  -309,    51,  -309,   320,   -20,  -118,  -309,    56,  -309,
+     321,  -309,  -309,   322,  -309,    51,  -309,    51,  -309,  -107,
+    -100,  -309,   579,  -309,  -309,  -309,   -96,   -87,  -309,   324,
+    -309,   325,    28,  -309,   326,  -309,   327,  -309,  -309,  -309,
+    -309,  -309
   };
 
   const short
   parser::yydefact_[] =
   {
-       2,    75,    76,    77,    78,    79,    80,    81,    82,    83,
-      84,    85,    86,    87,    88,    89,    90,    91,    92,    93,
-      94,    95,    96,    97,    98,    99,   100,   101,   102,   103,
-     104,   105,   106,   107,   108,   109,   110,   111,   112,   113,
-     114,   115,   116,   117,   118,   119,   120,   121,   122,   123,
-     124,   125,   126,   127,   128,   129,   130,   131,   132,   133,
-     134,   135,   136,   137,   138,   139,   140,   141,   142,   143,
-     144,   145,   146,   147,   148,   149,   150,   151,   152,   153,
-     154,   155,   156,   157,   158,   159,   160,   161,   162,   163,
-     164,   165,   166,   167,   168,   169,   170,   171,   172,   173,
-     174,   175,   176,   177,   178,   179,   180,   181,   182,   183,
-     184,   185,   186,   187,   188,   189,   190,   191,     0,     0,
+       2,    76,    77,    78,    79,    80,    81,    82,    83,    84,
+      85,    86,    87,    88,    89,    90,    91,    92,    93,    94,
+      95,    96,    97,    98,    99,   100,   101,   102,   103,   104,
+     105,   106,   107,   108,   109,   110,   111,   112,   113,   114,
+     115,   116,   117,   118,   119,   120,   121,   122,   123,   124,
+     125,   126,   127,   128,   129,   130,   131,   132,   133,   134,
+     135,   136,   137,   138,   139,   140,   141,   142,   143,   144,
+     145,   146,   147,   148,   149,   150,   151,   152,   153,   154,
+     155,   156,   157,   158,   159,   160,   161,   162,   163,   164,
+     165,   166,   167,   168,   169,   170,   171,   172,   173,   174,
+     175,   176,   177,   178,   179,   180,   181,   182,   183,   184,
+     185,   186,   187,   188,   189,   190,   191,   192,     0,     0,
        0,     0,    13,    14,    18,    20,     0,     0,     0,     0,
        0,     0,     0,    32,    33,    34,     0,    36,    37,     0,
-       0,    41,    42,     0,     0,    46,     0,    48,     0,    50,
-      51,     0,     0,     0,    55,    56,     0,    58,    61,     0,
-       0,     0,     3,    69,    72,   192,   193,   194,   195,     0,
-       0,     0,   263,   264,   265,   266,   270,   267,   262,   287,
-     275,   276,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,   273,   274,     0,     0,    12,   230,   233,   237,
-     242,   245,   249,   254,   268,   271,   257,   272,    65,    15,
-      16,    19,     7,     8,    21,    23,    22,     0,     0,    28,
-      30,    31,    35,     0,     0,     0,    44,    45,    47,    49,
-      67,    52,    53,    54,    57,    59,    60,    62,    29,     1,
-     228,   229,   218,   219,   220,     0,     0,     0,    70,   223,
-     224,   226,   221,    73,    74,     4,    63,     0,     6,     0,
-       0,     0,     0,     0,     0,     0,     0,   258,   259,   261,
-     260,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,    42,    43,     0,     0,    47,     0,    49,     0,
+      51,    52,     0,     0,     0,    56,    57,     0,    59,    62,
+       0,     0,     0,     3,    70,    73,   193,   194,   195,   196,
+       0,     0,     0,   264,   265,   266,   267,   271,   268,   263,
+     288,   276,   277,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,   274,   275,     0,     0,    12,   231,   234,
+     238,   243,   246,   250,   255,   269,   272,   258,   273,    66,
+      15,    16,    19,     7,     8,    21,    23,    22,     0,     0,
+      28,    30,    31,    35,     0,    39,     0,     0,    45,    46,
+      48,    50,    68,    53,    54,    55,    58,    60,    61,    63,
+      29,     1,   229,   230,   219,   220,   221,     0,     0,     0,
+      71,   224,   225,   227,   222,    74,    75,     4,    64,     0,
+       6,     0,     0,     0,     0,     0,     0,     0,     0,   259,
+     260,   262,   261,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,   269,     0,     0,     0,     0,     0,     0,     0,     0,
-      43,     0,     0,     0,     0,     0,   217,     0,     0,     0,
-       0,   222,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,   277,   231,   232,   235,   236,   234,   239,   241,
-     238,   240,   243,   244,   246,   247,   248,   250,   253,   251,
-     252,   255,   256,    17,    66,     0,     9,    24,     0,     0,
-       0,    38,    39,    68,     0,   196,     0,     0,     0,    71,
-     225,   227,     0,     0,    64,     5,   278,     0,     0,   282,
-     284,   283,   285,   286,    10,     0,    26,    25,     0,     0,
-       0,     0,   197,     0,     0,     0,     0,   198,     0,   199,
-       0,   208,     0,     0,    11,    27,    40,   205,     0,   201,
-     214,     0,   210,     0,   200,     0,   209,     0,     0,   279,
-       0,   280,   202,   211,     0,     0,   206,     0,   215,     0,
-       0,   207,     0,   216,     0,   203,   212,   281,   204,   213
+       0,     0,     0,   270,     0,     0,     0,     0,     0,     0,
+       0,     0,    44,     0,     0,     0,     0,     0,   218,     0,
+       0,     0,     0,   223,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,   278,   232,   233,   236,   237,   235,
+     240,   242,   239,   241,   244,   245,   247,   248,   249,   251,
+     254,   252,   253,   256,   257,    17,    67,     0,     9,    24,
+       0,     0,     0,    38,    40,    69,     0,   197,     0,     0,
+       0,    72,   226,   228,     0,     0,    65,     5,   279,     0,
+       0,   283,   285,   284,   286,   287,    10,     0,    26,    25,
+       0,     0,     0,     0,   198,     0,     0,     0,     0,   199,
+       0,   200,     0,   209,     0,     0,    11,    27,    41,   206,
+       0,   202,   215,     0,   211,     0,   201,     0,   210,     0,
+       0,   280,     0,   281,   203,   212,     0,     0,   207,     0,
+     216,     0,     0,   208,     0,   217,     0,   204,   213,   282,
+     205,   214
   };
 
   const short
   parser::yypgoto_[] =
   {
-    -307,  -307,   139,  -122,  -307,  -307,  -307,  -307,  -119,   217,
-     218,  -307,  -306,  -117,    11,   -74,   195,    -5,   -39,   190,
-    -185,   331,  -307,  -307,  -307
+    -309,  -309,   140,  -122,  -309,  -309,  -309,  -309,  -119,   217,
+     218,  -309,  -308,  -117,    15,   -30,   192,    10,     0,   187,
+    -186,   336,  -309,  -309,  -309
   };
 
-  const unsigned char
+  const short
   parser::yydefgoto_[] =
   {
-       0,   161,   255,   210,   231,   162,   163,   164,   169,   248,
-     249,   250,   251,   252,   197,   198,   199,   200,   201,   202,
-     203,   204,   205,   206,   207
+       0,   162,   257,   211,   233,   163,   164,   165,   170,   250,
+     251,   252,   253,   254,   198,   199,   200,   201,   202,   203,
+     204,   205,   206,   207,   208
   };
 
   const short
   parser::yytable_[] =
   {
-     170,   171,   211,   361,   196,   267,   268,   235,   236,   269,
-     270,   214,   208,   218,   219,   220,   221,   276,   277,   222,
-     208,   362,   223,   224,   225,   273,   274,   226,   227,   228,
-     363,   229,   271,   272,   234,   165,   166,   167,   168,   165,
-     166,   167,   168,   238,   209,   254,   278,   279,   380,   275,
-     383,   212,   256,   257,   258,   165,   166,   167,   168,   271,
-     272,   268,   385,   165,   166,   167,   168,   271,   272,   213,
-     397,   386,   266,   232,   400,   165,   166,   167,   168,   322,
-     230,   215,   407,   216,   408,   357,   233,   322,   271,   272,
-     416,   165,   166,   167,   168,   280,   281,   414,   418,   415,
-     296,   239,   271,   272,   341,   342,   297,   237,   300,   354,
-     421,   355,   172,   173,   174,   175,   240,   241,   176,   177,
-     178,   179,   373,   242,   243,   244,   423,   388,   304,   389,
-     306,   259,   390,   311,   391,   180,   181,   182,   183,   184,
-     185,   186,   187,   188,   316,   260,   245,   261,   321,   190,
-     246,   192,   271,   272,   193,   247,   271,   272,   194,   271,
-     272,   262,   403,   195,   404,   165,   166,   167,   168,   405,
-     343,   406,   399,   263,   410,   292,   411,   346,   178,   402,
-     350,   351,   271,   272,   172,   173,   174,   175,   266,   302,
-     176,   177,   178,   179,   264,   364,   365,   253,   303,   325,
-     326,   327,   427,   289,   290,   282,   283,   180,   181,   182,
-     183,   184,   185,   186,   187,   188,   284,   265,   189,   318,
-     319,   190,   191,   192,   271,   272,   193,   293,   374,   294,
-     194,   165,   166,   167,   168,   195,   301,   381,   307,   384,
-     240,   241,   298,   334,   335,   336,   271,   272,   271,   272,
-     308,   393,   271,   272,   271,   272,   271,   272,   394,   271,
-     272,   398,   256,   309,   401,   310,   299,   271,   272,   314,
-     313,   312,   348,   315,   368,   332,   333,   375,   165,   166,
-     167,   168,   323,   324,   317,   378,   344,   356,   417,   419,
-     320,   347,   352,   420,   353,   422,   424,     1,     2,     3,
+     171,   172,   212,   363,   197,   269,   270,   275,   276,   271,
+     272,   215,   364,   219,   220,   221,   222,   209,   387,   223,
+     213,   365,   224,   225,   226,   227,   209,   388,   228,   229,
+     230,   277,   231,   237,   238,   236,   166,   167,   168,   169,
+     166,   167,   168,   169,   240,   216,   256,   217,   382,   210,
+     385,   278,   279,   258,   259,   260,   166,   167,   168,   169,
+     273,   274,   270,   166,   167,   168,   169,   166,   167,   168,
+     169,   399,   356,   268,   357,   402,   166,   167,   168,   169,
+     280,   281,   409,   232,   410,   273,   274,   282,   283,   273,
+     274,   418,   166,   167,   168,   169,   214,   416,   420,   417,
+     235,   298,   423,   299,   234,   343,   344,   359,   241,   324,
+     302,   425,   291,   292,   173,   174,   175,   176,   242,   243,
+     177,   178,   179,   180,   255,   244,   245,   246,   239,   390,
+     306,   391,   308,   261,   392,   313,   393,   181,   182,   183,
+     184,   185,   186,   187,   188,   189,   318,   262,   247,   263,
+     323,   191,   248,   193,   273,   274,   194,   249,   273,   274,
+     195,   273,   274,   320,   321,   196,   284,   285,   166,   167,
+     168,   169,   345,   405,   324,   406,   412,   286,   413,   348,
+     179,   375,   352,   353,   273,   274,   173,   174,   175,   176,
+     268,   304,   177,   178,   179,   180,   264,   366,   367,   407,
+     305,   408,   273,   274,   401,   265,   273,   274,   266,   181,
+     182,   183,   184,   185,   186,   187,   188,   189,   242,   243,
+     190,   294,   404,   191,   192,   193,   429,   267,   194,   295,
+     376,   296,   195,   166,   167,   168,   169,   196,   303,   383,
+     309,   386,   310,   273,   274,   327,   328,   329,   273,   274,
+     273,   274,   314,   395,   273,   274,   273,   274,   273,   274,
+     396,   300,   311,   400,   258,   316,   403,   312,   301,   273,
+     274,   317,   315,   319,   350,   355,   370,   322,   273,   274,
+     287,   288,   289,   290,   336,   337,   338,   377,   325,   326,
+     419,   421,   334,   335,   346,   422,   380,   424,   426,     1,
+       2,     3,     4,     5,     6,     7,     8,     9,    10,    11,
+      12,    13,    14,    15,    16,    17,    18,    19,    20,    21,
+      22,    23,    24,    25,    26,    27,    28,    29,    30,    31,
+      32,    33,    34,    35,    36,    37,    38,    39,    40,    41,
+      42,    43,    44,    45,    46,    47,    48,    49,    50,    51,
+      52,    53,    54,    55,    56,    57,    58,    59,    60,    61,
+      62,    63,    64,    65,    66,    67,    68,    69,    70,    71,
+      72,    73,    74,    75,    76,    77,    78,    79,    80,    81,
+      82,    83,    84,    85,    86,    87,    88,    89,    90,    91,
+      92,    93,    94,    95,    96,    97,    98,    99,   100,   101,
+     102,   103,   104,   105,   106,   107,   108,   109,   110,   111,
+     112,   113,   114,   115,   116,   117,   118,   119,   120,   121,
+     122,   123,   124,   125,   126,   127,   128,   129,   130,   131,
+     132,   133,   134,   135,   136,   137,   138,   139,   140,   141,
+     142,   143,   144,   145,   146,   147,   148,   149,   150,   151,
+     152,   153,   154,   155,   156,   157,   158,   159,   160,   349,
+     173,   174,   175,   176,   242,   243,   177,   178,   179,   180,
+     330,   331,   332,   333,   339,   340,   341,   342,   354,   358,
+     368,   369,   371,   181,   182,   183,   184,   185,   186,   187,
+     188,   189,   372,   373,   190,   378,   374,   191,   192,   193,
+     161,   379,   194,   381,   384,   394,   195,   173,   174,   175,
+     176,   196,   389,   177,   178,   179,   180,   397,   411,   414,
+     415,   398,   427,   428,   430,   431,   361,     0,   362,     0,
+     181,   182,   183,   184,   185,   186,   187,   188,   189,     0,
+     218,   190,   293,     0,   191,   192,   193,     0,     0,   194,
+       0,     0,     0,   195,   173,   174,   175,   176,   196,     0,
+     177,   178,   179,   180,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,   181,   182,   183,
+     184,   185,   186,   187,   188,   189,     0,   297,   190,     0,
+       0,   191,   192,   193,     0,     0,   194,     0,     0,     0,
+     195,   173,   174,   175,   176,   196,     0,   177,   178,   179,
+     180,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,   181,   182,   183,   184,   185,   186,
+     187,   188,   189,     0,   347,   190,     0,     0,   191,   192,
+     193,     0,     0,   194,     0,     0,     0,   195,   173,   174,
+     175,   176,   196,     0,   177,   178,   179,   180,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,   181,   182,   183,   184,   185,   186,   187,   188,   189,
+       0,   351,   190,     0,     0,   191,   192,   193,     0,     0,
+     194,     0,     0,     0,   195,   173,   174,   175,   176,   196,
+     360,   177,   178,   179,   180,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,   181,   182,
+     183,   184,   185,   186,   187,   188,   189,     0,     0,   190,
+       0,     0,   191,   192,   193,     0,     0,   194,     0,     0,
+       0,   195,   173,   174,   175,   176,   196,     0,   177,   178,
+     179,   180,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,   181,   182,   183,   184,   185,
+     186,   187,   188,   189,     0,     0,   190,     0,     0,   191,
+     192,   193,     0,     0,   194,     0,     0,     0,   195,   173,
+     174,   175,   176,   196,     0,   177,   178,   179,   180,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,   181,   182,   183,   184,   185,   186,   187,   188,
+     189,     0,     0,   307,     0,     0,   191,   192,   193,     0,
+       0,   194,     0,     0,     0,   195,     0,     0,     0,     0,
+     196
+  };
+
+  const short
+  parser::yycheck_[] =
+  {
+     119,   120,   124,   311,   121,   191,   192,   180,   181,   195,
+     196,   128,   168,   130,   131,   132,   133,   170,   168,   136,
+     172,   177,   139,   140,   141,   144,   170,   177,   145,   146,
+     147,   204,   149,   200,   201,   157,   163,   164,   165,   166,
+     163,   164,   165,   166,   161,   170,   165,   172,   356,   202,
+     358,   182,   183,   170,   171,   172,   163,   164,   165,   166,
+     178,   179,   248,   163,   164,   165,   166,   163,   164,   165,
+     166,   198,   196,   190,   198,   198,   163,   164,   165,   166,
+     211,   212,   390,   173,   392,   178,   179,   200,   201,   178,
+     179,   198,   163,   164,   165,   166,   172,   405,   198,   407,
+     170,   218,   198,   196,   172,   291,   292,   196,     0,   198,
+     227,   198,   184,   185,   163,   164,   165,   166,   167,   168,
+     169,   170,   171,   172,   195,   174,   175,   176,   170,   196,
+     247,   198,   249,   197,   196,   254,   198,   186,   187,   188,
+     189,   190,   191,   192,   193,   194,   263,   197,   197,   197,
+     267,   200,   201,   202,   178,   179,   205,   206,   178,   179,
+     209,   178,   179,   169,   170,   214,   202,   203,   163,   164,
+     165,   166,   294,   196,   198,   198,   196,   213,   198,   296,
+     171,   198,   299,   300,   178,   179,   163,   164,   165,   166,
+     307,   168,   169,   170,   171,   172,   197,   314,   315,   196,
+     177,   198,   178,   179,   198,   197,   178,   179,   197,   186,
+     187,   188,   189,   190,   191,   192,   193,   194,   167,   168,
+     197,   196,   198,   200,   201,   202,   198,   197,   205,   196,
+     347,   196,   209,   163,   164,   165,   166,   214,   196,   356,
+     196,   358,   203,   178,   179,   275,   276,   277,   178,   179,
+     178,   179,   196,   370,   178,   179,   178,   179,   178,   179,
+     377,   196,   201,   382,   381,   172,   385,   197,   196,   178,
+     179,   172,   196,   170,   196,   173,   196,   172,   178,   179,
+     207,   208,   209,   210,   284,   285,   286,   196,   273,   274,
+     409,   410,   282,   283,   170,   412,   196,   416,   417,     3,
        4,     5,     6,     7,     8,     9,    10,    11,    12,    13,
       14,    15,    16,    17,    18,    19,    20,    21,    22,    23,
       24,    25,    26,    27,    28,    29,    30,    31,    32,    33,
@@ -3842,134 +3942,46 @@ namespace m68kasm {
      124,   125,   126,   127,   128,   129,   130,   131,   132,   133,
      134,   135,   136,   137,   138,   139,   140,   141,   142,   143,
      144,   145,   146,   147,   148,   149,   150,   151,   152,   153,
-     154,   155,   156,   157,   158,   159,   366,   172,   173,   174,
-     175,   240,   241,   176,   177,   178,   179,   285,   286,   287,
-     288,   328,   329,   330,   331,   337,   338,   339,   340,   367,
-     180,   181,   182,   183,   184,   185,   186,   187,   188,   369,
-     370,   189,   376,   371,   190,   191,   192,   160,   372,   193,
-     377,   379,   382,   194,   172,   173,   174,   175,   195,   387,
-     176,   177,   178,   179,   392,   395,   409,   412,   396,   413,
-     425,   426,   428,   429,   359,     0,   360,   180,   181,   182,
-     183,   184,   185,   186,   187,   188,   291,   217,   189,     0,
-       0,   190,   191,   192,     0,     0,   193,     0,     0,     0,
-     194,   172,   173,   174,   175,   195,     0,   176,   177,   178,
-     179,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,   180,   181,   182,   183,   184,   185,
-     186,   187,   188,     0,   295,   189,     0,     0,   190,   191,
-     192,     0,     0,   193,     0,     0,     0,   194,   172,   173,
-     174,   175,   195,     0,   176,   177,   178,   179,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,   180,   181,   182,   183,   184,   185,   186,   187,   188,
-       0,   345,   189,     0,     0,   190,   191,   192,     0,     0,
-     193,     0,     0,     0,   194,   172,   173,   174,   175,   195,
-       0,   176,   177,   178,   179,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,   180,   181,
-     182,   183,   184,   185,   186,   187,   188,     0,   349,   189,
-       0,     0,   190,   191,   192,     0,     0,   193,     0,     0,
-       0,   194,   172,   173,   174,   175,   195,   358,   176,   177,
-     178,   179,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,   180,   181,   182,   183,   184,
-     185,   186,   187,   188,     0,     0,   189,     0,     0,   190,
-     191,   192,     0,     0,   193,     0,     0,     0,   194,   172,
-     173,   174,   175,   195,     0,   176,   177,   178,   179,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,   180,   181,   182,   183,   184,   185,   186,   187,
-     188,     0,     0,   189,     0,     0,   190,   191,   192,     0,
-       0,   193,     0,     0,     0,   194,   172,   173,   174,   175,
-     195,     0,   176,   177,   178,   179,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,   180,
-     181,   182,   183,   184,   185,   186,   187,   188,     0,     0,
-     305,     0,     0,   190,   191,   192,     0,     0,   193,     0,
-       0,     0,   194,     0,     0,     0,     0,   195
-  };
-
-  const short
-  parser::yycheck_[] =
-  {
-     119,   120,   124,   309,   121,   190,   191,   199,   200,   194,
-     195,   128,   169,   130,   131,   132,   133,   181,   182,   136,
-     169,   167,   139,   140,   143,   179,   180,   144,   145,   146,
-     176,   148,   177,   178,   156,   162,   163,   164,   165,   162,
-     163,   164,   165,   160,   201,   164,   210,   211,   354,   203,
-     356,   171,   169,   170,   171,   162,   163,   164,   165,   177,
-     178,   246,   167,   162,   163,   164,   165,   177,   178,   171,
-     197,   176,   189,   171,   197,   162,   163,   164,   165,   197,
-     172,   169,   388,   171,   390,   195,   169,   197,   177,   178,
-     197,   162,   163,   164,   165,   199,   200,   403,   197,   405,
-     217,     0,   177,   178,   289,   290,   195,   169,   225,   195,
-     197,   197,   162,   163,   164,   165,   166,   167,   168,   169,
-     170,   171,   197,   173,   174,   175,   197,   195,   245,   197,
-     247,   196,   195,   252,   197,   185,   186,   187,   188,   189,
-     190,   191,   192,   193,   261,   196,   196,   196,   265,   199,
-     200,   201,   177,   178,   204,   205,   177,   178,   208,   177,
-     178,   196,   195,   213,   197,   162,   163,   164,   165,   195,
-     292,   197,   197,   196,   195,   195,   197,   294,   170,   197,
-     297,   298,   177,   178,   162,   163,   164,   165,   305,   167,
-     168,   169,   170,   171,   196,   312,   313,   194,   176,   273,
-     274,   275,   197,   183,   184,   201,   202,   185,   186,   187,
-     188,   189,   190,   191,   192,   193,   212,   196,   196,   168,
-     169,   199,   200,   201,   177,   178,   204,   195,   345,   195,
-     208,   162,   163,   164,   165,   213,   195,   354,   195,   356,
-     166,   167,   195,   282,   283,   284,   177,   178,   177,   178,
-     202,   368,   177,   178,   177,   178,   177,   178,   375,   177,
-     178,   380,   379,   200,   383,   196,   195,   177,   178,   171,
-     195,   195,   195,   171,   195,   280,   281,   195,   162,   163,
-     164,   165,   271,   272,   169,   195,   169,   195,   407,   408,
-     171,   171,   171,   410,   172,   414,   415,     3,     4,     5,
-       6,     7,     8,     9,    10,    11,    12,    13,    14,    15,
-      16,    17,    18,    19,    20,    21,    22,    23,    24,    25,
-      26,    27,    28,    29,    30,    31,    32,    33,    34,    35,
-      36,    37,    38,    39,    40,    41,    42,    43,    44,    45,
-      46,    47,    48,    49,    50,    51,    52,    53,    54,    55,
-      56,    57,    58,    59,    60,    61,    62,    63,    64,    65,
-      66,    67,    68,    69,    70,    71,    72,    73,    74,    75,
-      76,    77,    78,    79,    80,    81,    82,    83,    84,    85,
-      86,    87,    88,    89,    90,    91,    92,    93,    94,    95,
-      96,    97,    98,    99,   100,   101,   102,   103,   104,   105,
-     106,   107,   108,   109,   110,   111,   112,   113,   114,   115,
-     116,   117,   118,   119,   120,   121,   122,   123,   124,   125,
-     126,   127,   128,   129,   130,   131,   132,   133,   134,   135,
-     136,   137,   138,   139,   140,   141,   142,   143,   144,   145,
-     146,   147,   148,   149,   150,   151,   152,   153,   154,   155,
-     156,   157,   158,   159,   160,   161,   197,   162,   163,   164,
-     165,   166,   167,   168,   169,   170,   171,   206,   207,   208,
-     209,   276,   277,   278,   279,   285,   286,   287,   288,   195,
-     185,   186,   187,   188,   189,   190,   191,   192,   193,   197,
-     197,   196,   171,   197,   199,   200,   201,   203,   197,   204,
-     171,   195,   199,   208,   162,   163,   164,   165,   213,   197,
-     168,   169,   170,   171,   171,   171,   197,   197,   379,   197,
-     197,   197,   197,   197,   307,    -1,   308,   185,   186,   187,
-     188,   189,   190,   191,   192,   193,   205,   195,   196,    -1,
-      -1,   199,   200,   201,    -1,    -1,   204,    -1,    -1,    -1,
-     208,   162,   163,   164,   165,   213,    -1,   168,   169,   170,
-     171,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,   185,   186,   187,   188,   189,   190,
-     191,   192,   193,    -1,   195,   196,    -1,    -1,   199,   200,
-     201,    -1,    -1,   204,    -1,    -1,    -1,   208,   162,   163,
-     164,   165,   213,    -1,   168,   169,   170,   171,    -1,    -1,
+     154,   155,   156,   157,   158,   159,   160,   161,   162,   172,
+     163,   164,   165,   166,   167,   168,   169,   170,   171,   172,
+     278,   279,   280,   281,   287,   288,   289,   290,   172,   196,
+     198,   196,   198,   186,   187,   188,   189,   190,   191,   192,
+     193,   194,   198,   198,   197,   172,   198,   200,   201,   202,
+     204,   172,   205,   196,   200,   172,   209,   163,   164,   165,
+     166,   214,   198,   169,   170,   171,   172,   172,   198,   198,
+     198,   381,   198,   198,   198,   198,   309,    -1,   310,    -1,
+     186,   187,   188,   189,   190,   191,   192,   193,   194,    -1,
+     196,   197,   206,    -1,   200,   201,   202,    -1,    -1,   205,
+      -1,    -1,    -1,   209,   163,   164,   165,   166,   214,    -1,
+     169,   170,   171,   172,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,   186,   187,   188,
+     189,   190,   191,   192,   193,   194,    -1,   196,   197,    -1,
+      -1,   200,   201,   202,    -1,    -1,   205,    -1,    -1,    -1,
+     209,   163,   164,   165,   166,   214,    -1,   169,   170,   171,
+     172,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,   186,   187,   188,   189,   190,   191,
+     192,   193,   194,    -1,   196,   197,    -1,    -1,   200,   201,
+     202,    -1,    -1,   205,    -1,    -1,    -1,   209,   163,   164,
+     165,   166,   214,    -1,   169,   170,   171,   172,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,   185,   186,   187,   188,   189,   190,   191,   192,   193,
-      -1,   195,   196,    -1,    -1,   199,   200,   201,    -1,    -1,
-     204,    -1,    -1,    -1,   208,   162,   163,   164,   165,   213,
-      -1,   168,   169,   170,   171,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   185,   186,
-     187,   188,   189,   190,   191,   192,   193,    -1,   195,   196,
-      -1,    -1,   199,   200,   201,    -1,    -1,   204,    -1,    -1,
-      -1,   208,   162,   163,   164,   165,   213,   167,   168,   169,
-     170,   171,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,   185,   186,   187,   188,   189,
-     190,   191,   192,   193,    -1,    -1,   196,    -1,    -1,   199,
-     200,   201,    -1,    -1,   204,    -1,    -1,    -1,   208,   162,
-     163,   164,   165,   213,    -1,   168,   169,   170,   171,    -1,
+      -1,   186,   187,   188,   189,   190,   191,   192,   193,   194,
+      -1,   196,   197,    -1,    -1,   200,   201,   202,    -1,    -1,
+     205,    -1,    -1,    -1,   209,   163,   164,   165,   166,   214,
+     168,   169,   170,   171,   172,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   186,   187,
+     188,   189,   190,   191,   192,   193,   194,    -1,    -1,   197,
+      -1,    -1,   200,   201,   202,    -1,    -1,   205,    -1,    -1,
+      -1,   209,   163,   164,   165,   166,   214,    -1,   169,   170,
+     171,   172,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,   186,   187,   188,   189,   190,
+     191,   192,   193,   194,    -1,    -1,   197,    -1,    -1,   200,
+     201,   202,    -1,    -1,   205,    -1,    -1,    -1,   209,   163,
+     164,   165,   166,   214,    -1,   169,   170,   171,   172,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,   185,   186,   187,   188,   189,   190,   191,   192,
-     193,    -1,    -1,   196,    -1,    -1,   199,   200,   201,    -1,
-      -1,   204,    -1,    -1,    -1,   208,   162,   163,   164,   165,
-     213,    -1,   168,   169,   170,   171,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   185,
-     186,   187,   188,   189,   190,   191,   192,   193,    -1,    -1,
-     196,    -1,    -1,   199,   200,   201,    -1,    -1,   204,    -1,
-      -1,    -1,   208,    -1,    -1,    -1,    -1,   213
+      -1,    -1,   186,   187,   188,   189,   190,   191,   192,   193,
+     194,    -1,    -1,   197,    -1,    -1,   200,   201,   202,    -1,
+      -1,   205,    -1,    -1,    -1,   209,    -1,    -1,    -1,    -1,
+     214
   };
 
   const unsigned char
@@ -3991,67 +4003,68 @@ namespace m68kasm {
      132,   133,   134,   135,   136,   137,   138,   139,   140,   141,
      142,   143,   144,   145,   146,   147,   148,   149,   150,   151,
      152,   153,   154,   155,   156,   157,   158,   159,   160,   161,
-     203,   217,   221,   222,   223,   162,   163,   164,   165,   224,
-     224,   224,   162,   163,   164,   165,   168,   169,   170,   171,
-     185,   186,   187,   188,   189,   190,   191,   192,   193,   196,
-     199,   200,   201,   204,   208,   213,   229,   230,   231,   232,
-     233,   234,   235,   236,   237,   238,   239,   240,   169,   201,
-     219,   219,   171,   171,   229,   169,   171,   195,   229,   229,
-     229,   229,   229,   229,   229,   224,   229,   229,   229,   229,
-     172,   220,   171,   169,   219,   199,   200,   169,   229,     0,
-     166,   167,   173,   174,   175,   196,   200,   205,   225,   226,
-     227,   228,   229,   194,   224,   218,   229,   229,   229,   196,
-     196,   196,   196,   196,   196,   196,   229,   236,   236,   236,
-     236,   177,   178,   179,   180,   203,   181,   182,   210,   211,
-     199,   200,   201,   202,   212,   206,   207,   208,   209,   183,
-     184,   237,   195,   195,   195,   195,   229,   195,   195,   195,
-     229,   195,   167,   176,   229,   196,   229,   195,   202,   200,
-     196,   224,   195,   195,   171,   171,   229,   169,   168,   169,
-     171,   229,   197,   230,   230,   231,   231,   231,   232,   232,
-     232,   232,   233,   233,   234,   234,   234,   235,   235,   235,
-     235,   236,   236,   219,   169,   195,   229,   171,   195,   195,
-     229,   229,   171,   172,   195,   197,   195,   195,   167,   225,
-     226,   228,   167,   176,   229,   229,   197,   195,   195,   197,
-     197,   197,   197,   197,   229,   195,   171,   171,   195,   195,
-     228,   229,   199,   228,   229,   167,   176,   197,   195,   197,
-     195,   197,   171,   229,   229,   171,   218,   197,   224,   197,
-     197,   224,   197,   195,   197,   195,   197,   228,   228,   197,
-     195,   197,   197,   197,   228,   228,   197,   224,   197,   224,
-     229,   197,   224,   197,   224,   197,   197,   197,   197,   197
+     162,   204,   218,   222,   223,   224,   163,   164,   165,   166,
+     225,   225,   225,   163,   164,   165,   166,   169,   170,   171,
+     172,   186,   187,   188,   189,   190,   191,   192,   193,   194,
+     197,   200,   201,   202,   205,   209,   214,   230,   231,   232,
+     233,   234,   235,   236,   237,   238,   239,   240,   241,   170,
+     202,   220,   220,   172,   172,   230,   170,   172,   196,   230,
+     230,   230,   230,   230,   230,   230,   230,   225,   230,   230,
+     230,   230,   173,   221,   172,   170,   220,   200,   201,   170,
+     230,     0,   167,   168,   174,   175,   176,   197,   201,   206,
+     226,   227,   228,   229,   230,   195,   225,   219,   230,   230,
+     230,   197,   197,   197,   197,   197,   197,   197,   230,   237,
+     237,   237,   237,   178,   179,   180,   181,   204,   182,   183,
+     211,   212,   200,   201,   202,   203,   213,   207,   208,   209,
+     210,   184,   185,   238,   196,   196,   196,   196,   230,   196,
+     196,   196,   230,   196,   168,   177,   230,   197,   230,   196,
+     203,   201,   197,   225,   196,   196,   172,   172,   230,   170,
+     169,   170,   172,   230,   198,   231,   231,   232,   232,   232,
+     233,   233,   233,   233,   234,   234,   235,   235,   235,   236,
+     236,   236,   236,   237,   237,   220,   170,   196,   230,   172,
+     196,   196,   230,   230,   172,   173,   196,   198,   196,   196,
+     168,   226,   227,   229,   168,   177,   230,   230,   198,   196,
+     196,   198,   198,   198,   198,   198,   230,   196,   172,   172,
+     196,   196,   229,   230,   200,   229,   230,   168,   177,   198,
+     196,   198,   196,   198,   172,   230,   230,   172,   219,   198,
+     225,   198,   198,   225,   198,   196,   198,   196,   198,   229,
+     229,   198,   196,   198,   198,   198,   229,   229,   198,   225,
+     198,   225,   230,   198,   225,   198,   225,   198,   198,   198,
+     198,   198
   };
 
   const unsigned char
   parser::yyr1_[] =
   {
-       0,   216,   217,   217,   217,   217,   217,   217,   217,   217,
-     217,   217,   217,   217,   217,   217,   217,   217,   217,   217,
-     217,   217,   217,   217,   217,   217,   217,   217,   217,   217,
-     217,   217,   217,   217,   217,   217,   217,   217,   217,   217,
-     217,   217,   217,   217,   217,   217,   217,   217,   217,   217,
-     217,   217,   217,   217,   217,   217,   217,   217,   217,   217,
-     217,   217,   217,   218,   218,   219,   219,   220,   220,   221,
-     221,   221,   222,   222,   222,   223,   223,   223,   223,   223,
-     223,   223,   223,   223,   223,   223,   223,   223,   223,   223,
-     223,   223,   223,   223,   223,   223,   223,   223,   223,   223,
-     223,   223,   223,   223,   223,   223,   223,   223,   223,   223,
-     223,   223,   223,   223,   223,   223,   223,   223,   223,   223,
-     223,   223,   223,   223,   223,   223,   223,   223,   223,   223,
-     223,   223,   223,   223,   223,   223,   223,   223,   223,   223,
-     223,   223,   223,   223,   223,   223,   223,   223,   223,   223,
-     223,   223,   223,   223,   223,   223,   223,   223,   223,   223,
-     223,   223,   223,   223,   223,   223,   223,   223,   223,   223,
-     223,   223,   223,   223,   223,   223,   223,   223,   223,   223,
-     223,   223,   223,   223,   223,   223,   223,   223,   223,   223,
-     223,   223,   224,   224,   224,   224,   225,   225,   225,   225,
-     225,   225,   225,   225,   225,   225,   225,   225,   225,   225,
-     225,   225,   225,   225,   225,   225,   225,   225,   225,   225,
-     225,   225,   225,   225,   226,   226,   227,   227,   228,   228,
-     229,   229,   229,   230,   230,   230,   230,   231,   231,   231,
-     231,   231,   232,   232,   232,   233,   233,   233,   233,   234,
-     234,   234,   234,   234,   235,   235,   235,   236,   236,   236,
-     236,   236,   237,   237,   237,   237,   237,   238,   238,   238,
-     239,   239,   239,   239,   239,   239,   239,   239,   239,   239,
-     239,   239,   239,   239,   239,   239,   239,   240
+       0,   217,   218,   218,   218,   218,   218,   218,   218,   218,
+     218,   218,   218,   218,   218,   218,   218,   218,   218,   218,
+     218,   218,   218,   218,   218,   218,   218,   218,   218,   218,
+     218,   218,   218,   218,   218,   218,   218,   218,   218,   218,
+     218,   218,   218,   218,   218,   218,   218,   218,   218,   218,
+     218,   218,   218,   218,   218,   218,   218,   218,   218,   218,
+     218,   218,   218,   218,   219,   219,   220,   220,   221,   221,
+     222,   222,   222,   223,   223,   223,   224,   224,   224,   224,
+     224,   224,   224,   224,   224,   224,   224,   224,   224,   224,
+     224,   224,   224,   224,   224,   224,   224,   224,   224,   224,
+     224,   224,   224,   224,   224,   224,   224,   224,   224,   224,
+     224,   224,   224,   224,   224,   224,   224,   224,   224,   224,
+     224,   224,   224,   224,   224,   224,   224,   224,   224,   224,
+     224,   224,   224,   224,   224,   224,   224,   224,   224,   224,
+     224,   224,   224,   224,   224,   224,   224,   224,   224,   224,
+     224,   224,   224,   224,   224,   224,   224,   224,   224,   224,
+     224,   224,   224,   224,   224,   224,   224,   224,   224,   224,
+     224,   224,   224,   224,   224,   224,   224,   224,   224,   224,
+     224,   224,   224,   224,   224,   224,   224,   224,   224,   224,
+     224,   224,   224,   225,   225,   225,   225,   226,   226,   226,
+     226,   226,   226,   226,   226,   226,   226,   226,   226,   226,
+     226,   226,   226,   226,   226,   226,   226,   226,   226,   226,
+     226,   226,   226,   226,   226,   227,   227,   228,   228,   229,
+     229,   230,   230,   230,   231,   231,   231,   231,   232,   232,
+     232,   232,   232,   233,   233,   233,   234,   234,   234,   234,
+     235,   235,   235,   235,   235,   236,   236,   236,   237,   237,
+     237,   237,   237,   238,   238,   238,   238,   238,   239,   239,
+     239,   240,   240,   240,   240,   240,   240,   240,   240,   240,
+     240,   240,   240,   240,   240,   240,   240,   240,   241
   };
 
   const signed char
@@ -4060,11 +4073,11 @@ namespace m68kasm {
        0,     2,     0,     1,     3,     5,     3,     2,     2,     4,
        5,     6,     2,     1,     1,     2,     2,     4,     1,     2,
        1,     2,     2,     2,     4,     5,     5,     6,     2,     2,
-       2,     2,     1,     1,     1,     2,     1,     1,     4,     4,
-       6,     1,     1,     3,     2,     2,     1,     2,     1,     2,
-       1,     1,     2,     2,     2,     1,     1,     2,     1,     2,
-       2,     1,     2,     1,     3,     1,     3,     1,     3,     1,
-       2,     4,     1,     2,     2,     1,     1,     1,     1,     1,
+       2,     2,     1,     1,     1,     2,     1,     1,     4,     2,
+       4,     6,     1,     1,     3,     2,     2,     1,     2,     1,
+       2,     1,     1,     2,     2,     2,     1,     1,     2,     1,
+       2,     2,     1,     2,     1,     3,     1,     3,     1,     3,
+       1,     2,     4,     1,     2,     2,     1,     1,     1,     1,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
@@ -4076,16 +4089,16 @@ namespace m68kasm {
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
-       1,     1,     1,     1,     1,     1,     3,     4,     4,     4,
-       5,     5,     6,     7,     8,     5,     6,     7,     4,     5,
-       5,     6,     7,     8,     5,     6,     7,     2,     1,     1,
-       1,     1,     2,     1,     1,     3,     1,     3,     1,     1,
-       1,     3,     3,     1,     3,     3,     3,     1,     3,     3,
-       3,     3,     1,     3,     3,     1,     3,     3,     3,     1,
-       3,     3,     3,     3,     1,     3,     3,     1,     2,     2,
-       2,     2,     1,     1,     1,     1,     1,     1,     1,     2,
-       1,     1,     1,     1,     1,     1,     1,     3,     4,     6,
-       6,     8,     4,     4,     4,     4,     4,     1
+       1,     1,     1,     1,     1,     1,     1,     3,     4,     4,
+       4,     5,     5,     6,     7,     8,     5,     6,     7,     4,
+       5,     5,     6,     7,     8,     5,     6,     7,     2,     1,
+       1,     1,     1,     2,     1,     1,     3,     1,     3,     1,
+       1,     1,     3,     3,     1,     3,     3,     3,     1,     3,
+       3,     3,     3,     1,     3,     3,     1,     3,     3,     3,
+       1,     3,     3,     3,     3,     1,     3,     3,     1,     2,
+       2,     2,     2,     1,     1,     1,     1,     1,     1,     1,
+       2,     1,     1,     1,     1,     1,     1,     1,     3,     4,
+       6,     6,     8,     4,     4,     4,     4,     4,     1
   };
 
 
@@ -4131,8 +4144,8 @@ namespace m68kasm {
   "DIRECTIVE_EQU", "DIRECTIVE_EQUS", "DIRECTIVE_SUBSTR", "DIRECTIVE_SET",
   "DIRECTIVE_IF", "DIRECTIVE_ELSEIF", "DIRECTIVE_ELSE", "DIRECTIVE_ENDC",
   "DIRECTIVE_WHILE", "DIRECTIVE_ENDW", "DIRECTIVE_EVEN", "DIRECTIVE_CNOP",
-  "DIRECTIVE_INFORM", "DIRECTIVE_FAIL", "DIRECTIVE_END", "DIRECTIVE_RS",
-  "DIRECTIVE_RSSET", "DIRECTIVE_RSRESET", "DIRECTIVE_OBJ",
+  "DIRECTIVE_ALIGN", "DIRECTIVE_INFORM", "DIRECTIVE_FAIL", "DIRECTIVE_END",
+  "DIRECTIVE_RS", "DIRECTIVE_RSSET", "DIRECTIVE_RSRESET", "DIRECTIVE_OBJ",
   "DIRECTIVE_OBJEND", "DIRECTIVE_ORG", "DIRECTIVE_PUSHO", "DIRECTIVE_POPO",
   "DIRECTIVE_OPT", "DIRECTIVE_PUSHP", "DIRECTIVE_POPP", "DIRECTIVE_SHIFT",
   "DIRECTIVE_MEXIT", "DIRECTIVE_LOCAL", "DIRECTIVE_LIST",
@@ -4161,35 +4174,35 @@ namespace m68kasm {
   const short
   parser::yyrline_[] =
   {
-       0,   912,   912,   915,   919,   923,   927,   931,   935,   939,
-     943,   947,   951,   955,   959,   963,   967,   971,   975,   979,
-     983,   987,   991,   995,   999,  1005,  1011,  1015,  1019,  1023,
-    1027,  1031,  1035,  1039,  1043,  1047,  1051,  1055,  1059,  1063,
-    1067,  1072,  1076,  1080,  1084,  1088,  1094,  1098,  1102,  1106,
-    1110,  1114,  1118,  1122,  1126,  1130,  1134,  1138,  1142,  1147,
-    1152,  1157,  1162,  1169,  1173,  1182,  1186,  1195,  1199,  1208,
-    1214,  1220,  1229,  1234,  1240,  1248,  1252,  1256,  1260,  1264,
-    1268,  1272,  1276,  1280,  1284,  1288,  1292,  1296,  1300,  1304,
-    1308,  1312,  1316,  1320,  1324,  1328,  1332,  1336,  1340,  1344,
-    1348,  1352,  1356,  1360,  1364,  1368,  1372,  1376,  1380,  1384,
-    1388,  1392,  1396,  1400,  1404,  1408,  1412,  1417,  1422,  1427,
+       0,   913,   913,   916,   920,   924,   928,   932,   936,   940,
+     944,   948,   952,   956,   960,   964,   968,   972,   976,   980,
+     984,   988,   992,   996,  1000,  1006,  1012,  1016,  1020,  1024,
+    1028,  1032,  1036,  1040,  1044,  1048,  1052,  1056,  1060,  1064,
+    1068,  1072,  1077,  1081,  1085,  1089,  1093,  1099,  1103,  1107,
+    1111,  1115,  1119,  1123,  1127,  1131,  1135,  1139,  1143,  1147,
+    1152,  1157,  1162,  1167,  1174,  1178,  1187,  1191,  1200,  1204,
+    1213,  1219,  1225,  1234,  1239,  1245,  1253,  1257,  1261,  1265,
+    1269,  1273,  1277,  1281,  1285,  1289,  1293,  1297,  1301,  1305,
+    1309,  1313,  1317,  1321,  1325,  1329,  1333,  1337,  1341,  1345,
+    1349,  1353,  1357,  1361,  1365,  1369,  1373,  1377,  1381,  1385,
+    1389,  1393,  1397,  1401,  1405,  1409,  1413,  1417,  1422,  1427,
     1432,  1437,  1442,  1447,  1452,  1457,  1462,  1467,  1472,  1477,
     1482,  1487,  1492,  1497,  1502,  1507,  1512,  1517,  1522,  1527,
-    1532,  1537,  1542,  1547,  1552,  1557,  1562,  1567,  1572,  1576,
-    1580,  1585,  1590,  1595,  1600,  1605,  1610,  1615,  1620,  1625,
-    1630,  1635,  1640,  1645,  1650,  1654,  1658,  1662,  1666,  1670,
-    1674,  1678,  1682,  1686,  1690,  1694,  1698,  1702,  1706,  1710,
-    1714,  1718,  1722,  1726,  1730,  1734,  1738,  1742,  1746,  1750,
-    1754,  1758,  1765,  1769,  1773,  1777,  1785,  1790,  1795,  1800,
-    1806,  1812,  1818,  1829,  1840,  1851,  1863,  1875,  1887,  1892,
-    1897,  1902,  1912,  1922,  1932,  1943,  1954,  1966,  1982,  1986,
-    1990,  1995,  2001,  2008,  2041,  2045,  2052,  2056,  2083,  2087,
-    2100,  2105,  2110,  2117,  2121,  2125,  2129,  2136,  2140,  2144,
-    2148,  2152,  2159,  2163,  2167,  2174,  2178,  2182,  2186,  2193,
-    2197,  2201,  2205,  2209,  2216,  2220,  2224,  2231,  2235,  2239,
-    2243,  2248,  2255,  2256,  2260,  2264,  2268,  2275,  2276,  2277,
-    2284,  2288,  2292,  2296,  2300,  2304,  2308,  2312,  2316,  2320,
-    2324,  2334,  2344,  2348,  2352,  2356,  2360,  2368
+    1532,  1537,  1542,  1547,  1552,  1557,  1562,  1567,  1572,  1577,
+    1581,  1585,  1590,  1595,  1600,  1605,  1610,  1615,  1620,  1625,
+    1630,  1635,  1640,  1645,  1650,  1655,  1659,  1663,  1667,  1671,
+    1675,  1679,  1683,  1687,  1691,  1695,  1699,  1703,  1707,  1711,
+    1715,  1719,  1723,  1727,  1731,  1735,  1739,  1743,  1747,  1751,
+    1755,  1759,  1763,  1770,  1774,  1778,  1782,  1790,  1795,  1800,
+    1805,  1811,  1817,  1823,  1834,  1845,  1856,  1868,  1880,  1892,
+    1897,  1902,  1907,  1917,  1927,  1937,  1948,  1959,  1971,  1987,
+    1991,  1995,  2000,  2006,  2013,  2046,  2050,  2057,  2061,  2088,
+    2092,  2105,  2110,  2115,  2122,  2126,  2130,  2134,  2141,  2145,
+    2149,  2153,  2157,  2164,  2168,  2172,  2179,  2183,  2187,  2191,
+    2198,  2202,  2206,  2210,  2214,  2221,  2225,  2229,  2236,  2240,
+    2244,  2248,  2253,  2260,  2261,  2265,  2269,  2273,  2280,  2281,
+    2282,  2289,  2293,  2297,  2301,  2305,  2309,  2313,  2317,  2321,
+    2325,  2329,  2339,  2349,  2353,  2357,  2361,  2365,  2373
   };
 
   void
@@ -4222,5 +4235,5 @@ namespace m68kasm {
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 4226 "syntactic.cpp"
+#line 4239 "syntactic.cpp"
 

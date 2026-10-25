@@ -1213,80 +1213,81 @@ namespace m68kasm {
     TOKEN_DIRECTIVE_ENDW = 139,    // DIRECTIVE_ENDW
     TOKEN_DIRECTIVE_EVEN = 140,    // DIRECTIVE_EVEN
     TOKEN_DIRECTIVE_CNOP = 141,    // DIRECTIVE_CNOP
-    TOKEN_DIRECTIVE_INFORM = 142,  // DIRECTIVE_INFORM
-    TOKEN_DIRECTIVE_FAIL = 143,    // DIRECTIVE_FAIL
-    TOKEN_DIRECTIVE_END = 144,     // DIRECTIVE_END
-    TOKEN_DIRECTIVE_RS = 145,      // DIRECTIVE_RS
-    TOKEN_DIRECTIVE_RSSET = 146,   // DIRECTIVE_RSSET
-    TOKEN_DIRECTIVE_RSRESET = 147, // DIRECTIVE_RSRESET
-    TOKEN_DIRECTIVE_OBJ = 148,     // DIRECTIVE_OBJ
-    TOKEN_DIRECTIVE_OBJEND = 149,  // DIRECTIVE_OBJEND
-    TOKEN_DIRECTIVE_ORG = 150,     // DIRECTIVE_ORG
-    TOKEN_DIRECTIVE_PUSHO = 151,   // DIRECTIVE_PUSHO
-    TOKEN_DIRECTIVE_POPO = 152,    // DIRECTIVE_POPO
-    TOKEN_DIRECTIVE_OPT = 153,     // DIRECTIVE_OPT
-    TOKEN_DIRECTIVE_PUSHP = 154,   // DIRECTIVE_PUSHP
-    TOKEN_DIRECTIVE_POPP = 155,    // DIRECTIVE_POPP
-    TOKEN_DIRECTIVE_SHIFT = 156,   // DIRECTIVE_SHIFT
-    TOKEN_DIRECTIVE_MEXIT = 157,   // DIRECTIVE_MEXIT
-    TOKEN_DIRECTIVE_LOCAL = 158,   // DIRECTIVE_LOCAL
-    TOKEN_DIRECTIVE_LIST = 159,    // DIRECTIVE_LIST
-    TOKEN_DIRECTIVE_NOLIST = 160,  // DIRECTIVE_NOLIST
-    TOKEN_DIRECTIVE_PURGE = 161,   // DIRECTIVE_PURGE
-    TOKEN_SIZE_BYTE = 162,         // SIZE_BYTE
-    TOKEN_SIZE_SHORT = 163,        // SIZE_SHORT
-    TOKEN_SIZE_WORD = 164,         // SIZE_WORD
-    TOKEN_SIZE_LONGWORD = 165,     // SIZE_LONGWORD
-    TOKEN_DATA_REGISTER = 166,     // DATA_REGISTER
-    TOKEN_ADDRESS_REGISTER = 167,  // ADDRESS_REGISTER
-    TOKEN_NUMBER = 168,            // NUMBER
-    TOKEN_IDENTIFIER = 169,        // IDENTIFIER
-    TOKEN_LOCAL_IDENTIFIER = 170,  // LOCAL_IDENTIFIER
-    TOKEN_STRING = 171,            // STRING
-    TOKEN_OPTION = 172,            // OPTION
-    TOKEN_STATUS_REGISTER = 173,   // STATUS_REGISTER
-    TOKEN_CONDITION_CODE_REGISTER = 174, // CONDITION_CODE_REGISTER
-    TOKEN_USER_STACK_POINTER_REGISTER = 175, // USER_STACK_POINTER_REGISTER
-    TOKEN_PROGRAM_COUNTER = 176,   // PROGRAM_COUNTER
-    TOKEN_LOGICAL_AND = 177,       // LOGICAL_AND
-    TOKEN_LOGICAL_OR = 178,        // LOGICAL_OR
-    TOKEN_EQUALITY = 179,          // EQUALITY
-    TOKEN_INEQUALITY = 180,        // INEQUALITY
-    TOKEN_LESS_OR_EQUAL = 181,     // LESS_OR_EQUAL
-    TOKEN_MORE_OR_EQUAL = 182,     // MORE_OR_EQUAL
-    TOKEN_LEFT_SHIFT = 183,        // LEFT_SHIFT
-    TOKEN_RIGHT_SHIFT = 184,       // RIGHT_SHIFT
-    TOKEN_RS = 185,                // RS
-    TOKEN_NARG = 186,              // NARG
-    TOKEN_STRLEN = 187,            // STRLEN
-    TOKEN_STRCMP = 188,            // STRCMP
-    TOKEN_INSTR = 189,             // INSTR
-    TOKEN_DEF = 190,               // DEF
-    TOKEN_TYPE = 191,              // TYPE
-    TOKEN_FILESIZE = 192,          // FILESIZE
-    TOKEN_OFFSET = 193,            // OFFSET
-    TOKEN_PERIOD = 194,            // "."
-    TOKEN_COMMA = 195,             // ","
-    TOKEN_PARENTHESIS_LEFT = 196,  // "("
-    TOKEN_PARENTHESIS_RIGHT = 197, // ")"
-    TOKEN_DOLLAR = 198,            // "$"
-    TOKEN_PLUS = 199,              // "+"
-    TOKEN_MINUS = 200,             // "-"
-    TOKEN_ASTERIX = 201,           // "*"
-    TOKEN_FORWARD_SLASH = 202,     // "/"
-    TOKEN_EQUAL = 203,             // "="
-    TOKEN_AT = 204,                // "@"
-    TOKEN_HASH = 205,              // "#"
-    TOKEN_AMPERSAND = 206,         // "&"
-    TOKEN_CARET = 207,             // "^"
-    TOKEN_EXCLAMATION = 208,       // "!"
-    TOKEN_VERTICAL_BAR = 209,      // "|"
-    TOKEN_ANGLE_LEFT = 210,        // "<"
-    TOKEN_ANGLE_RIGHT = 211,       // ">"
-    TOKEN_PERCENTAGE = 212,        // "%"
-    TOKEN_TILDE = 213,             // "~"
-    TOKEN_LOWER_PRECEDENCE_THAN_SIZE = 214, // LOWER_PRECEDENCE_THAN_SIZE
-    TOKEN_HIGHER_PRECEDENCE_THAN_SIZE = 215 // HIGHER_PRECEDENCE_THAN_SIZE
+    TOKEN_DIRECTIVE_ALIGN = 142,   // DIRECTIVE_ALIGN
+    TOKEN_DIRECTIVE_INFORM = 143,  // DIRECTIVE_INFORM
+    TOKEN_DIRECTIVE_FAIL = 144,    // DIRECTIVE_FAIL
+    TOKEN_DIRECTIVE_END = 145,     // DIRECTIVE_END
+    TOKEN_DIRECTIVE_RS = 146,      // DIRECTIVE_RS
+    TOKEN_DIRECTIVE_RSSET = 147,   // DIRECTIVE_RSSET
+    TOKEN_DIRECTIVE_RSRESET = 148, // DIRECTIVE_RSRESET
+    TOKEN_DIRECTIVE_OBJ = 149,     // DIRECTIVE_OBJ
+    TOKEN_DIRECTIVE_OBJEND = 150,  // DIRECTIVE_OBJEND
+    TOKEN_DIRECTIVE_ORG = 151,     // DIRECTIVE_ORG
+    TOKEN_DIRECTIVE_PUSHO = 152,   // DIRECTIVE_PUSHO
+    TOKEN_DIRECTIVE_POPO = 153,    // DIRECTIVE_POPO
+    TOKEN_DIRECTIVE_OPT = 154,     // DIRECTIVE_OPT
+    TOKEN_DIRECTIVE_PUSHP = 155,   // DIRECTIVE_PUSHP
+    TOKEN_DIRECTIVE_POPP = 156,    // DIRECTIVE_POPP
+    TOKEN_DIRECTIVE_SHIFT = 157,   // DIRECTIVE_SHIFT
+    TOKEN_DIRECTIVE_MEXIT = 158,   // DIRECTIVE_MEXIT
+    TOKEN_DIRECTIVE_LOCAL = 159,   // DIRECTIVE_LOCAL
+    TOKEN_DIRECTIVE_LIST = 160,    // DIRECTIVE_LIST
+    TOKEN_DIRECTIVE_NOLIST = 161,  // DIRECTIVE_NOLIST
+    TOKEN_DIRECTIVE_PURGE = 162,   // DIRECTIVE_PURGE
+    TOKEN_SIZE_BYTE = 163,         // SIZE_BYTE
+    TOKEN_SIZE_SHORT = 164,        // SIZE_SHORT
+    TOKEN_SIZE_WORD = 165,         // SIZE_WORD
+    TOKEN_SIZE_LONGWORD = 166,     // SIZE_LONGWORD
+    TOKEN_DATA_REGISTER = 167,     // DATA_REGISTER
+    TOKEN_ADDRESS_REGISTER = 168,  // ADDRESS_REGISTER
+    TOKEN_NUMBER = 169,            // NUMBER
+    TOKEN_IDENTIFIER = 170,        // IDENTIFIER
+    TOKEN_LOCAL_IDENTIFIER = 171,  // LOCAL_IDENTIFIER
+    TOKEN_STRING = 172,            // STRING
+    TOKEN_OPTION = 173,            // OPTION
+    TOKEN_STATUS_REGISTER = 174,   // STATUS_REGISTER
+    TOKEN_CONDITION_CODE_REGISTER = 175, // CONDITION_CODE_REGISTER
+    TOKEN_USER_STACK_POINTER_REGISTER = 176, // USER_STACK_POINTER_REGISTER
+    TOKEN_PROGRAM_COUNTER = 177,   // PROGRAM_COUNTER
+    TOKEN_LOGICAL_AND = 178,       // LOGICAL_AND
+    TOKEN_LOGICAL_OR = 179,        // LOGICAL_OR
+    TOKEN_EQUALITY = 180,          // EQUALITY
+    TOKEN_INEQUALITY = 181,        // INEQUALITY
+    TOKEN_LESS_OR_EQUAL = 182,     // LESS_OR_EQUAL
+    TOKEN_MORE_OR_EQUAL = 183,     // MORE_OR_EQUAL
+    TOKEN_LEFT_SHIFT = 184,        // LEFT_SHIFT
+    TOKEN_RIGHT_SHIFT = 185,       // RIGHT_SHIFT
+    TOKEN_RS = 186,                // RS
+    TOKEN_NARG = 187,              // NARG
+    TOKEN_STRLEN = 188,            // STRLEN
+    TOKEN_STRCMP = 189,            // STRCMP
+    TOKEN_INSTR = 190,             // INSTR
+    TOKEN_DEF = 191,               // DEF
+    TOKEN_TYPE = 192,              // TYPE
+    TOKEN_FILESIZE = 193,          // FILESIZE
+    TOKEN_OFFSET = 194,            // OFFSET
+    TOKEN_PERIOD = 195,            // "."
+    TOKEN_COMMA = 196,             // ","
+    TOKEN_PARENTHESIS_LEFT = 197,  // "("
+    TOKEN_PARENTHESIS_RIGHT = 198, // ")"
+    TOKEN_DOLLAR = 199,            // "$"
+    TOKEN_PLUS = 200,              // "+"
+    TOKEN_MINUS = 201,             // "-"
+    TOKEN_ASTERIX = 202,           // "*"
+    TOKEN_FORWARD_SLASH = 203,     // "/"
+    TOKEN_EQUAL = 204,             // "="
+    TOKEN_AT = 205,                // "@"
+    TOKEN_HASH = 206,              // "#"
+    TOKEN_AMPERSAND = 207,         // "&"
+    TOKEN_CARET = 208,             // "^"
+    TOKEN_EXCLAMATION = 209,       // "!"
+    TOKEN_VERTICAL_BAR = 210,      // "|"
+    TOKEN_ANGLE_LEFT = 211,        // "<"
+    TOKEN_ANGLE_RIGHT = 212,       // ">"
+    TOKEN_PERCENTAGE = 213,        // "%"
+    TOKEN_TILDE = 214,             // "~"
+    TOKEN_LOWER_PRECEDENCE_THAN_SIZE = 215, // LOWER_PRECEDENCE_THAN_SIZE
+    TOKEN_HIGHER_PRECEDENCE_THAN_SIZE = 216 // HIGHER_PRECEDENCE_THAN_SIZE
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -1303,7 +1304,7 @@ namespace m68kasm {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 216, ///< Number of tokens.
+        YYNTOKENS = 217, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -1447,105 +1448,106 @@ namespace m68kasm {
         S_DIRECTIVE_ENDW = 139,                  // DIRECTIVE_ENDW
         S_DIRECTIVE_EVEN = 140,                  // DIRECTIVE_EVEN
         S_DIRECTIVE_CNOP = 141,                  // DIRECTIVE_CNOP
-        S_DIRECTIVE_INFORM = 142,                // DIRECTIVE_INFORM
-        S_DIRECTIVE_FAIL = 143,                  // DIRECTIVE_FAIL
-        S_DIRECTIVE_END = 144,                   // DIRECTIVE_END
-        S_DIRECTIVE_RS = 145,                    // DIRECTIVE_RS
-        S_DIRECTIVE_RSSET = 146,                 // DIRECTIVE_RSSET
-        S_DIRECTIVE_RSRESET = 147,               // DIRECTIVE_RSRESET
-        S_DIRECTIVE_OBJ = 148,                   // DIRECTIVE_OBJ
-        S_DIRECTIVE_OBJEND = 149,                // DIRECTIVE_OBJEND
-        S_DIRECTIVE_ORG = 150,                   // DIRECTIVE_ORG
-        S_DIRECTIVE_PUSHO = 151,                 // DIRECTIVE_PUSHO
-        S_DIRECTIVE_POPO = 152,                  // DIRECTIVE_POPO
-        S_DIRECTIVE_OPT = 153,                   // DIRECTIVE_OPT
-        S_DIRECTIVE_PUSHP = 154,                 // DIRECTIVE_PUSHP
-        S_DIRECTIVE_POPP = 155,                  // DIRECTIVE_POPP
-        S_DIRECTIVE_SHIFT = 156,                 // DIRECTIVE_SHIFT
-        S_DIRECTIVE_MEXIT = 157,                 // DIRECTIVE_MEXIT
-        S_DIRECTIVE_LOCAL = 158,                 // DIRECTIVE_LOCAL
-        S_DIRECTIVE_LIST = 159,                  // DIRECTIVE_LIST
-        S_DIRECTIVE_NOLIST = 160,                // DIRECTIVE_NOLIST
-        S_DIRECTIVE_PURGE = 161,                 // DIRECTIVE_PURGE
-        S_SIZE_BYTE = 162,                       // SIZE_BYTE
-        S_SIZE_SHORT = 163,                      // SIZE_SHORT
-        S_SIZE_WORD = 164,                       // SIZE_WORD
-        S_SIZE_LONGWORD = 165,                   // SIZE_LONGWORD
-        S_DATA_REGISTER = 166,                   // DATA_REGISTER
-        S_ADDRESS_REGISTER = 167,                // ADDRESS_REGISTER
-        S_NUMBER = 168,                          // NUMBER
-        S_IDENTIFIER = 169,                      // IDENTIFIER
-        S_LOCAL_IDENTIFIER = 170,                // LOCAL_IDENTIFIER
-        S_STRING = 171,                          // STRING
-        S_OPTION = 172,                          // OPTION
-        S_STATUS_REGISTER = 173,                 // STATUS_REGISTER
-        S_CONDITION_CODE_REGISTER = 174,         // CONDITION_CODE_REGISTER
-        S_USER_STACK_POINTER_REGISTER = 175,     // USER_STACK_POINTER_REGISTER
-        S_PROGRAM_COUNTER = 176,                 // PROGRAM_COUNTER
-        S_LOGICAL_AND = 177,                     // LOGICAL_AND
-        S_LOGICAL_OR = 178,                      // LOGICAL_OR
-        S_EQUALITY = 179,                        // EQUALITY
-        S_INEQUALITY = 180,                      // INEQUALITY
-        S_LESS_OR_EQUAL = 181,                   // LESS_OR_EQUAL
-        S_MORE_OR_EQUAL = 182,                   // MORE_OR_EQUAL
-        S_LEFT_SHIFT = 183,                      // LEFT_SHIFT
-        S_RIGHT_SHIFT = 184,                     // RIGHT_SHIFT
-        S_RS = 185,                              // RS
-        S_NARG = 186,                            // NARG
-        S_STRLEN = 187,                          // STRLEN
-        S_STRCMP = 188,                          // STRCMP
-        S_INSTR = 189,                           // INSTR
-        S_DEF = 190,                             // DEF
-        S_TYPE = 191,                            // TYPE
-        S_FILESIZE = 192,                        // FILESIZE
-        S_OFFSET = 193,                          // OFFSET
-        S_PERIOD = 194,                          // "."
-        S_COMMA = 195,                           // ","
-        S_PARENTHESIS_LEFT = 196,                // "("
-        S_PARENTHESIS_RIGHT = 197,               // ")"
-        S_DOLLAR = 198,                          // "$"
-        S_PLUS = 199,                            // "+"
-        S_MINUS = 200,                           // "-"
-        S_ASTERIX = 201,                         // "*"
-        S_FORWARD_SLASH = 202,                   // "/"
-        S_EQUAL = 203,                           // "="
-        S_AT = 204,                              // "@"
-        S_HASH = 205,                            // "#"
-        S_AMPERSAND = 206,                       // "&"
-        S_CARET = 207,                           // "^"
-        S_EXCLAMATION = 208,                     // "!"
-        S_VERTICAL_BAR = 209,                    // "|"
-        S_ANGLE_LEFT = 210,                      // "<"
-        S_ANGLE_RIGHT = 211,                     // ">"
-        S_PERCENTAGE = 212,                      // "%"
-        S_TILDE = 213,                           // "~"
-        S_LOWER_PRECEDENCE_THAN_SIZE = 214,      // LOWER_PRECEDENCE_THAN_SIZE
-        S_HIGHER_PRECEDENCE_THAN_SIZE = 215,     // HIGHER_PRECEDENCE_THAN_SIZE
-        S_YYACCEPT = 216,                        // $accept
-        S_statement = 217,                       // statement
-        S_expression_list = 218,                 // expression_list
-        S_identifier_list = 219,                 // identifier_list
-        S_option_list = 220,                     // option_list
-        S_instruction = 221,                     // instruction
-        S_full_opcode = 222,                     // full_opcode
-        S_opcode = 223,                          // opcode
-        S_size = 224,                            // size
-        S_operand = 225,                         // operand
-        S_register_list = 226,                   // register_list
-        S_register_span = 227,                   // register_span
-        S_data_or_address_register = 228,        // data_or_address_register
-        S_expression = 229,                      // expression
-        S_expression1 = 230,                     // expression1
-        S_expression2 = 231,                     // expression2
-        S_expression3 = 232,                     // expression3
-        S_expression4 = 233,                     // expression4
-        S_expression5 = 234,                     // expression5
-        S_expression6 = 235,                     // expression6
-        S_expression7 = 236,                     // expression7
-        S_local_identifier = 237,                // local_identifier
-        S_identifier = 238,                      // identifier
-        S_expression8 = 239,                     // expression8
-        S_string = 240                           // string
+        S_DIRECTIVE_ALIGN = 142,                 // DIRECTIVE_ALIGN
+        S_DIRECTIVE_INFORM = 143,                // DIRECTIVE_INFORM
+        S_DIRECTIVE_FAIL = 144,                  // DIRECTIVE_FAIL
+        S_DIRECTIVE_END = 145,                   // DIRECTIVE_END
+        S_DIRECTIVE_RS = 146,                    // DIRECTIVE_RS
+        S_DIRECTIVE_RSSET = 147,                 // DIRECTIVE_RSSET
+        S_DIRECTIVE_RSRESET = 148,               // DIRECTIVE_RSRESET
+        S_DIRECTIVE_OBJ = 149,                   // DIRECTIVE_OBJ
+        S_DIRECTIVE_OBJEND = 150,                // DIRECTIVE_OBJEND
+        S_DIRECTIVE_ORG = 151,                   // DIRECTIVE_ORG
+        S_DIRECTIVE_PUSHO = 152,                 // DIRECTIVE_PUSHO
+        S_DIRECTIVE_POPO = 153,                  // DIRECTIVE_POPO
+        S_DIRECTIVE_OPT = 154,                   // DIRECTIVE_OPT
+        S_DIRECTIVE_PUSHP = 155,                 // DIRECTIVE_PUSHP
+        S_DIRECTIVE_POPP = 156,                  // DIRECTIVE_POPP
+        S_DIRECTIVE_SHIFT = 157,                 // DIRECTIVE_SHIFT
+        S_DIRECTIVE_MEXIT = 158,                 // DIRECTIVE_MEXIT
+        S_DIRECTIVE_LOCAL = 159,                 // DIRECTIVE_LOCAL
+        S_DIRECTIVE_LIST = 160,                  // DIRECTIVE_LIST
+        S_DIRECTIVE_NOLIST = 161,                // DIRECTIVE_NOLIST
+        S_DIRECTIVE_PURGE = 162,                 // DIRECTIVE_PURGE
+        S_SIZE_BYTE = 163,                       // SIZE_BYTE
+        S_SIZE_SHORT = 164,                      // SIZE_SHORT
+        S_SIZE_WORD = 165,                       // SIZE_WORD
+        S_SIZE_LONGWORD = 166,                   // SIZE_LONGWORD
+        S_DATA_REGISTER = 167,                   // DATA_REGISTER
+        S_ADDRESS_REGISTER = 168,                // ADDRESS_REGISTER
+        S_NUMBER = 169,                          // NUMBER
+        S_IDENTIFIER = 170,                      // IDENTIFIER
+        S_LOCAL_IDENTIFIER = 171,                // LOCAL_IDENTIFIER
+        S_STRING = 172,                          // STRING
+        S_OPTION = 173,                          // OPTION
+        S_STATUS_REGISTER = 174,                 // STATUS_REGISTER
+        S_CONDITION_CODE_REGISTER = 175,         // CONDITION_CODE_REGISTER
+        S_USER_STACK_POINTER_REGISTER = 176,     // USER_STACK_POINTER_REGISTER
+        S_PROGRAM_COUNTER = 177,                 // PROGRAM_COUNTER
+        S_LOGICAL_AND = 178,                     // LOGICAL_AND
+        S_LOGICAL_OR = 179,                      // LOGICAL_OR
+        S_EQUALITY = 180,                        // EQUALITY
+        S_INEQUALITY = 181,                      // INEQUALITY
+        S_LESS_OR_EQUAL = 182,                   // LESS_OR_EQUAL
+        S_MORE_OR_EQUAL = 183,                   // MORE_OR_EQUAL
+        S_LEFT_SHIFT = 184,                      // LEFT_SHIFT
+        S_RIGHT_SHIFT = 185,                     // RIGHT_SHIFT
+        S_RS = 186,                              // RS
+        S_NARG = 187,                            // NARG
+        S_STRLEN = 188,                          // STRLEN
+        S_STRCMP = 189,                          // STRCMP
+        S_INSTR = 190,                           // INSTR
+        S_DEF = 191,                             // DEF
+        S_TYPE = 192,                            // TYPE
+        S_FILESIZE = 193,                        // FILESIZE
+        S_OFFSET = 194,                          // OFFSET
+        S_PERIOD = 195,                          // "."
+        S_COMMA = 196,                           // ","
+        S_PARENTHESIS_LEFT = 197,                // "("
+        S_PARENTHESIS_RIGHT = 198,               // ")"
+        S_DOLLAR = 199,                          // "$"
+        S_PLUS = 200,                            // "+"
+        S_MINUS = 201,                           // "-"
+        S_ASTERIX = 202,                         // "*"
+        S_FORWARD_SLASH = 203,                   // "/"
+        S_EQUAL = 204,                           // "="
+        S_AT = 205,                              // "@"
+        S_HASH = 206,                            // "#"
+        S_AMPERSAND = 207,                       // "&"
+        S_CARET = 208,                           // "^"
+        S_EXCLAMATION = 209,                     // "!"
+        S_VERTICAL_BAR = 210,                    // "|"
+        S_ANGLE_LEFT = 211,                      // "<"
+        S_ANGLE_RIGHT = 212,                     // ">"
+        S_PERCENTAGE = 213,                      // "%"
+        S_TILDE = 214,                           // "~"
+        S_LOWER_PRECEDENCE_THAN_SIZE = 215,      // LOWER_PRECEDENCE_THAN_SIZE
+        S_HIGHER_PRECEDENCE_THAN_SIZE = 216,     // HIGHER_PRECEDENCE_THAN_SIZE
+        S_YYACCEPT = 217,                        // $accept
+        S_statement = 218,                       // statement
+        S_expression_list = 219,                 // expression_list
+        S_identifier_list = 220,                 // identifier_list
+        S_option_list = 221,                     // option_list
+        S_instruction = 222,                     // instruction
+        S_full_opcode = 223,                     // full_opcode
+        S_opcode = 224,                          // opcode
+        S_size = 225,                            // size
+        S_operand = 226,                         // operand
+        S_register_list = 227,                   // register_list
+        S_register_span = 228,                   // register_span
+        S_data_or_address_register = 229,        // data_or_address_register
+        S_expression = 230,                      // expression
+        S_expression1 = 231,                     // expression1
+        S_expression2 = 232,                     // expression2
+        S_expression3 = 233,                     // expression3
+        S_expression4 = 234,                     // expression4
+        S_expression5 = 235,                     // expression5
+        S_expression6 = 236,                     // expression6
+        S_expression7 = 237,                     // expression7
+        S_local_identifier = 238,                // local_identifier
+        S_identifier = 239,                      // identifier
+        S_expression8 = 240,                     // expression8
+        S_string = 241                           // string
       };
     };
 
@@ -4136,6 +4138,21 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_DIRECTIVE_ALIGN ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ALIGN);
+      }
+#else
+      static
+      symbol_type
+      make_DIRECTIVE_ALIGN ()
+      {
+        return symbol_type (token::TOKEN_DIRECTIVE_ALIGN);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_DIRECTIVE_INFORM ()
       {
         return symbol_type (token::TOKEN_DIRECTIVE_INFORM);
@@ -5322,7 +5339,7 @@ switch (yykind)
     static const short yypgoto_[];
 
     // YYDEFGOTO[NTERM-NUM].
-    static const unsigned char yydefgoto_[];
+    static const short yydefgoto_[];
 
     // YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
     // positive, shift that token.  If negative, reduce the rule whose
@@ -5571,9 +5588,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 837,     ///< Last index in yytable_.
+      yylast_ = 840,     ///< Last index in yytable_.
       yynnts_ = 25,  ///< Number of nonterminal symbols.
-      yyfinal_ = 239 ///< Termination state number.
+      yyfinal_ = 241 ///< Termination state number.
     };
 
 
@@ -5810,7 +5827,7 @@ switch (yykind)
 
 #line 25 "syntactic.y"
 } // m68kasm
-#line 5814 "syntactic.h"
+#line 5831 "syntactic.h"
 
 
 // "%code provides" blocks.
@@ -5820,7 +5837,7 @@ switch (yykind)
 #define YY_DECL m68kasm::parser::symbol_type m68kasm_lex(void *yyscanner, ErrorManager &error_manager)
 
 
-#line 5824 "syntactic.h"
+#line 5841 "syntactic.h"
 
 
 #endif // !YY_M68KASM_SYNTACTIC_H_INCLUDED

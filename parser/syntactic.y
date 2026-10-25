@@ -812,6 +812,7 @@ void m68kasm::parser::error(const std::string &message)
 %token DIRECTIVE_ENDW
 %token DIRECTIVE_EVEN
 %token DIRECTIVE_CNOP
+%token DIRECTIVE_ALIGN
 %token DIRECTIVE_INFORM
 %token DIRECTIVE_FAIL
 %token DIRECTIVE_END
@@ -1059,6 +1060,10 @@ statement
 	| DIRECTIVE_CNOP expression "," expression
 	{
 		statement.emplace<StatementCnop>($2, $4);
+	}
+	| DIRECTIVE_ALIGN expression
+	{
+		statement.emplace<StatementCnop>(ExpressionNumber{0}, $2);
 	}
 	| DIRECTIVE_INFORM expression "," STRING
 	{
