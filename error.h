@@ -55,7 +55,7 @@ private:
 	void ErrorMessageCommon()
 	{
 		for (const auto &location : locations)
-			Utilities::IO::Print(error_stream, "On line {} of '{}'...", location.line_number, location.file_path);
+			Utilities::IO::Print(error_stream, "On line {} of '{}'...\n", location.line_number, location.file_path);
 
 		Utilities::IO::Print(error_stream, "\n{}\n\n", source_line.empty() ? "[No source line]" : source_line);
 	}
