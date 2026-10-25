@@ -25,18 +25,19 @@
 #include <optional>
 #include <string_view>
 
+#include "../utilities/io.h"
 #include "../utilities/string.h"
 
 template<typename... Args>
 void Warning(std::format_string<Args...> &&format_string, Args &&...args)
 {
-	std::cerr << "Warning: " << std::format(std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...) << '\n';
+	Utilities::IO::PrintWarning(std::cerr, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 void Error(std::format_string<Args...> &&format_string, Args &&...args)
 {
-	std::cerr << "Error: " << std::format(std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...) << '\n';
+	Utilities::IO::PrintError(std::cerr, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 }
 
 template<typename... Args>

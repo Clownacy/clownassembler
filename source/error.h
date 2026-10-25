@@ -78,8 +78,7 @@ public:
 	{
 		if (options->warnings_enabled)
 		{
-			error_stream << "Warning: ";
-			Utilities::IO::PrintLine(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+			Utilities::IO::PrintWarning(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 
 			ErrorMessageCommon();
 		}
@@ -89,7 +88,7 @@ public:
 	{
 		if (options->warnings_enabled)
 		{
-			Utilities::IO::PrintLine(error_stream, "Warning: {}", message);
+			Utilities::IO::PrintWarning(error_stream, message);
 
 			ErrorMessageCommon();
 		}
@@ -111,8 +110,7 @@ public:
 	template<typename... Args>
 	void Error(std::format_string<Args...> &&format_string, Args &&...args)
 	{
-		error_stream << "Error: ";
-		Utilities::IO::PrintLine(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+		Utilities::IO::PrintError(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 
 		ErrorMessageCommon();
 
@@ -121,7 +119,7 @@ public:
 
 	void Error(const std::string_view &message)
 	{
-		Utilities::IO::PrintLine(error_stream, "Error: {}", message);
+		Utilities::IO::PrintError(error_stream, message);
 
 		ErrorMessageCommon();
 

@@ -58,6 +58,30 @@ namespace Utilities
 			stream << '\n';
 		}
 
+		inline void PrintWarning(std::ostream &stream, const std::string_view &message)
+		{
+			PrintLine(stream, "Warning: {}", message);
+		}
+
+		template<typename... Args>
+		inline void PrintWarning(std::ostream &stream, std::format_string<Args...> &&format_string, Args &&...args)
+		{
+			stream << "Warning: ";
+			PrintLine(stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+		}
+
+		inline void PrintError(std::ostream &stream, const std::string_view &message)
+		{
+			PrintLine(stream, "Error: {}", message);
+		}
+
+		template<typename... Args>
+		inline void PrintError(std::ostream &stream, std::format_string<Args...> &&format_string, Args &&...args)
+		{
+			stream << "Error: ";
+			PrintLine(stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+		}
+
 		inline void CopyBytes(std::istream &input, std::ostream &output, const std::size_t total_bytes)
 		{
 			// We do some batching using a buffer to improve performance.
