@@ -92,6 +92,11 @@ public:
 
 		return true;
 	}
+
+	constexpr bool operator()(const std::string &lhs, const DictionaryLookupKey &rhs) const
+	{
+		return operator()(rhs, lhs);
+	}
 };
 
 template<typename Entry>

@@ -229,7 +229,7 @@ void SymbolManager::WriteSymbolFile(std::ostream &stream)
 			continue;
 
 		const auto local_symbol_position = identifier.find_last_of(global.options->local_signifier);
-		const std::string_view label = identifier.substr(local_symbol_position == identifier.npos ? 0 : local_symbol_position);
+		const std::string_view label = std::string_view(identifier).substr(local_symbol_position == identifier.npos ? 0 : local_symbol_position);
 
 		const bool is_local_label = label.length() != identifier.length();
 

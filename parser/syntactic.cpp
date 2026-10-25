@@ -865,7 +865,7 @@ namespace m68kasm {
   case 8: // statement: DIRECTIVE_INCBIN STRING
 #line 937 "syntactic.y"
         {		
-		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[0].value.as < std::string > ()), ExpressionNumber{0}, false);
+		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[0].value.as < std::string > ()), ExpressionNumber(0), false);
 	}
 #line 871 "syntactic.cpp"
     break;
@@ -881,7 +881,7 @@ namespace m68kasm {
   case 10: // statement: DIRECTIVE_INCBIN STRING "," "," expression
 #line 945 "syntactic.y"
         {
-		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[3].value.as < std::string > ()), ExpressionNumber{0}, true, YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementIncbin>(YY_MOVE (yystack_[3].value.as < std::string > ()), ExpressionNumber(0), true, YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 887 "syntactic.cpp"
     break;
@@ -995,7 +995,7 @@ namespace m68kasm {
         {
 		std::string string = YY_MOVE (yystack_[0].value.as < std::string > ());
 		const auto string_length = string.length();
-		statement.emplace<StatementSubstr>(ExpressionNumber{1}, ExpressionNumber{string_length}, std::move(string));
+		statement.emplace<StatementSubstr>(ExpressionNumber(1), ExpressionNumber(string_length), std::move(string));
 	}
 #line 1001 "syntactic.cpp"
     break;
@@ -1005,7 +1005,7 @@ namespace m68kasm {
         {
 		std::string string = YY_MOVE (yystack_[0].value.as < std::string > ());
 		const auto string_length = string.length();
-		statement.emplace<StatementSubstr>(YY_MOVE (yystack_[3].value.as < Expression > ()), ExpressionNumber{string_length}, std::move(string));
+		statement.emplace<StatementSubstr>(YY_MOVE (yystack_[3].value.as < Expression > ()), ExpressionNumber(string_length), std::move(string));
 	}
 #line 1011 "syntactic.cpp"
     break;
@@ -1013,7 +1013,7 @@ namespace m68kasm {
   case 26: // statement: DIRECTIVE_SUBSTR "," expression "," STRING
 #line 1013 "syntactic.y"
         {
-		statement.emplace<StatementSubstr>(ExpressionNumber{1}, YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < std::string > ()));
+		statement.emplace<StatementSubstr>(ExpressionNumber(1), YY_MOVE (yystack_[2].value.as < Expression > ()), YY_MOVE (yystack_[0].value.as < std::string > ()));
 	}
 #line 1019 "syntactic.cpp"
     break;
@@ -1117,7 +1117,7 @@ namespace m68kasm {
   case 39: // statement: DIRECTIVE_ALIGN expression
 #line 1065 "syntactic.y"
         {
-		statement.emplace<StatementCnop>(ExpressionNumber{0}, YY_MOVE (yystack_[0].value.as < Expression > ()));
+		statement.emplace<StatementCnop>(ExpressionNumber(0), YY_MOVE (yystack_[0].value.as < Expression > ()));
 	}
 #line 1123 "syntactic.cpp"
     break;
@@ -3265,7 +3265,7 @@ namespace m68kasm {
         {
 		auto subexpressions = std::make_unique<Expression[]>(3);
 
-		subexpressions[0] = ExpressionNumber{1};
+		subexpressions[0] = ExpressionNumber(1);
 		subexpressions[1] = YY_MOVE (yystack_[3].value.as < Expression > ());
 		subexpressions[2] = YY_MOVE (yystack_[1].value.as < Expression > ());
 

@@ -935,7 +935,7 @@ statement
 	}
 	| DIRECTIVE_INCBIN STRING
 	{		
-		statement.emplace<StatementIncbin>($2, ExpressionNumber{0}, false);
+		statement.emplace<StatementIncbin>($2, ExpressionNumber(0), false);
 	}
 	| DIRECTIVE_INCBIN STRING "," expression
 	{
@@ -943,7 +943,7 @@ statement
 	}
 	| DIRECTIVE_INCBIN STRING "," "," expression
 	{
-		statement.emplace<StatementIncbin>($2, ExpressionNumber{0}, true, $5);
+		statement.emplace<StatementIncbin>($2, ExpressionNumber(0), true, $5);
 	}
 	| DIRECTIVE_INCBIN STRING "," expression "," expression
 	{
@@ -1001,17 +1001,17 @@ statement
 	{
 		std::string string = $4;
 		const auto string_length = string.length();
-		statement.emplace<StatementSubstr>(ExpressionNumber{1}, ExpressionNumber{string_length}, std::move(string));
+		statement.emplace<StatementSubstr>(ExpressionNumber(1), ExpressionNumber(string_length), std::move(string));
 	}
 	| DIRECTIVE_SUBSTR expression "," "," STRING
 	{
 		std::string string = $5;
 		const auto string_length = string.length();
-		statement.emplace<StatementSubstr>($2, ExpressionNumber{string_length}, std::move(string));
+		statement.emplace<StatementSubstr>($2, ExpressionNumber(string_length), std::move(string));
 	}
 	| DIRECTIVE_SUBSTR "," expression "," STRING
 	{
-		statement.emplace<StatementSubstr>(ExpressionNumber{1}, $3, $5);
+		statement.emplace<StatementSubstr>(ExpressionNumber(1), $3, $5);
 	}
 	| DIRECTIVE_SUBSTR expression "," expression "," STRING
 	{
@@ -1063,7 +1063,7 @@ statement
 	}
 	| DIRECTIVE_ALIGN expression
 	{
-		statement.emplace<StatementCnop>(ExpressionNumber{0}, $2);
+		statement.emplace<StatementCnop>(ExpressionNumber(0), $2);
 	}
 	| DIRECTIVE_INFORM expression "," STRING
 	{
@@ -2330,7 +2330,7 @@ expression8
 	{
 		auto subexpressions = std::make_unique<Expression[]>(3);
 
-		subexpressions[0] = ExpressionNumber{1};
+		subexpressions[0] = ExpressionNumber(1);
 		subexpressions[1] = $3;
 		subexpressions[2] = $5;
 

@@ -143,7 +143,7 @@ void Substitute::ProcessSubString(Substitute* const other_state, std::string &st
 		string.replace(offset_into_string + found_position, found_length, *found_substitute);
 
 		/* Update the view. */
-		view_to_search = string.substr(offset_into_string, view_to_search.length() - found_length + found_substitute->length());
+		view_to_search = std::string_view(string).substr(offset_into_string, view_to_search.length() - found_length + found_substitute->length());
 
 		/* Limit the next search to after this. */
 		starting_position = found_position + found_substitute->length();
