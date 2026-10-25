@@ -289,7 +289,7 @@ int main(int argc, char **argv)
 			const auto &DoPath = [&combined_arguments_subview](std::string_view* const path_string = nullptr)
 			{
 				const auto length = combined_arguments_subview.find(',');
-				const auto path = combined_arguments_subview.substr(0, length);
+				const auto path = Utilities::String::Subview(combined_arguments_subview, 0, length);
 
 				combined_arguments_subview.remove_prefix(std::min(combined_arguments_subview.length(), path.length() + 1));
 

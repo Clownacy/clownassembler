@@ -25,6 +25,7 @@
 #include <utility>
 
 #include "utilities/case-insensitive.h"
+#include "utilities/string.h"
 
 // To allow code to reference local labels globally ("jmp (Func@Ret).l"), the dictionary
 // internally stores the global and local label as a single concatenated identifier.
@@ -84,10 +85,10 @@ public:
 	{
 		const auto first_length = lhs.global.length();
 
-		if (!string_comparer(std::string_view(rhs).substr(0, first_length), lhs.global))
+		if (!string_comparer(Utilities::String::Subview(rhs, 0, first_length), lhs.global))
 			return false;
 
-		if (!string_comparer(std::string_view(rhs).substr(first_length), lhs.local))
+		if (!string_comparer(Utilities::String::Subview(rhs, first_length), lhs.local))
 			return false;
 
 		return true;

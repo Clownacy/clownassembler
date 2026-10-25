@@ -25,6 +25,8 @@
 #include <optional>
 #include <string_view>
 
+#include "../utilities/string.h"
+
 template<typename... Args>
 void Warning(std::format_string<Args...> &&format_string, Args &&...args)
 {
@@ -61,18 +63,18 @@ template<typename... Args>
 
 		/* SN 68k (asm68k) supports XX, 0xXX, and $XX. */
 		if (!value_string.empty() && value_string.front() == '$')
-			return ValueFromChars(value_string.substr(1), 0x10);
+			return ValueFromChars(Utilities::String::Subview(value_string, 1), 0x10);
 		else
 			return ValueFromChars(value_string, 0);
 	};
 
 	const auto &separator_position = definition.find('=');
-	const std::string_view identifier = definition.substr(0, separator_position);
+	const std::string_view identifier = Utilities::String::Subview(definition, 0, separator_position);
 
 	if (separator_position == definition.npos)
 		return {{identifier, 0}}; /* Exactly what asm68k does... */
 
-	const auto &value = GetValue(definition.substr(separator_position + 1));
+	const auto &value = GetValue(Utilities::String::Subview(definition, separator_position + 1));
 
 	if (!value.has_value())
 		return std::nullopt;

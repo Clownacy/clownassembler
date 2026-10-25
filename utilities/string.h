@@ -28,6 +28,11 @@ namespace Utilities
 {
 	namespace String
 	{
+		constexpr inline std::string_view Subview(const std::string_view &string, const std::string_view::size_type position = 0, const std::string_view::size_type count = std::string_view::npos)
+		{
+			return string.substr(position, count);
+		}
+
 		inline std::size_t GetLeadingLength(const std::string_view &view, const std::string_view &characters, const std::size_t position = 0)
 		{
 			const auto result = view.find_first_not_of(characters, position);
@@ -66,7 +71,7 @@ namespace Utilities
 
 		inline std::string_view ExtractLeading(const std::string_view &string_view, const std::string_view &characters)
 		{
-			return string_view.substr(0, GetLeadingLength(string_view, characters));
+			return Utilities::String::Subview(string_view, 0, GetLeadingLength(string_view, characters));
 		}
 
 		inline void ToLower(std::string &string)

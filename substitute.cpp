@@ -21,6 +21,7 @@
 #include <string_view>
 
 #include "utilities/case-insensitive.h"
+#include "utilities/string.h"
 
 void Substitute::PushSubstitute(const std::string_view &identifier, const std::string &value)
 {
@@ -143,7 +144,7 @@ void Substitute::ProcessSubString(Substitute* const other_state, std::string &st
 		string.replace(offset_into_string + found_position, found_length, *found_substitute);
 
 		/* Update the view. */
-		view_to_search = std::string_view(string).substr(offset_into_string, view_to_search.length() - found_length + found_substitute->length());
+		view_to_search = Utilities::String::Subview(string, offset_into_string, view_to_search.length() - found_length + found_substitute->length());
 
 		/* Limit the next search to after this. */
 		starting_position = found_position + found_substitute->length();

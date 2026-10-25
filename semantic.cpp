@@ -741,7 +741,7 @@ void SemanticState::ProcessStatement(Statement &statement, const std::string_vie
 			if (end > statement.string.length())
 				end = statement.string.length();
 
-			PushSubstitute(label, statement.string.substr(start - 1, end - start + 1));
+			PushSubstitute(label, Utilities::String::Subview(statement.string, start - 1, end - start + 1));
 		},
 		[&](StatementSet &statement)
 		{
@@ -1209,24 +1209,24 @@ static std::optional<std::string_view> FindQuotedStringInSourceLine(const std::s
 	if (end_position == string.npos)
 		return std::nullopt;
 
-	return string.substr(start_position, end_position - start_position);
+	return Utilities::String::Subview(string, start_position, end_position - start_position);
 }
 
 /* Performs string substitutions only in parts of the string that are not wrapped in quotations. */
 /* This is needed to simulate how SN 68k does not expand string constants in strings, only expressions and operands. */
 void SemanticState::PerformSubstitutionsExcludingQuotedStrings(std::string &source_line, const std::size_t starting_position, const bool allow_implicit_matches)
 {
-	std::string_view source_line_subview = std::string_view(source_line).substr(starting_position);
+	std::string_view source_line_subview = Utilities::String::Subview(source_line, starting_position);
 
 	for (;;)
 	{
 		/* If no string was found, then pretend there's a string at the end of the line, so that we can repurpose the code below. */
-		const auto quoted_string = FindQuotedStringInSourceLine(source_line_subview).value_or(source_line_subview.substr(source_line_subview.length()));
+		const auto quoted_string = FindQuotedStringInSourceLine(source_line_subview).value_or(Utilities::String::Subview(source_line_subview, source_line_subview.length()));
 
 		/* We've found a string! Perform substitutions on the part of the line before it. */
 
 		/* Define the region that we will perform substitutions on. */
-		auto view_to_search = source_line_subview.substr(0, quoted_string.data() - source_line_subview.data());
+		auto view_to_search = Utilities::String::Subview(source_line_subview, 0, quoted_string.data() - source_line_subview.data());
 
 		/* Perform the substitutions. */
 		PerformSubstitutionsOnSubString(source_line, view_to_search, allow_implicit_matches);
@@ -1235,7 +1235,7 @@ void SemanticState::PerformSubstitutionsExcludingQuotedStrings(std::string &sour
 			break;
 
 		/* Move to after the string so that we can continue searching. */
-		source_line_subview = source_line_subview.substr(view_to_search.length() + quoted_string.length());
+		source_line_subview = Utilities::String::Subview(source_line_subview, view_to_search.length() + quoted_string.length());
 	}
 }
 
@@ -1315,7 +1315,7 @@ void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_v
 	}
 
 	/* Extract combined arguments string. */
-	std::string_view arguments = source_line.substr(0, source_line.find(';'));
+	std::string_view arguments = Utilities::String::Subview(source_line, 0, source_line.find(';'));
 
 	/* Remove surrounding whitespace. */
 	Utilities::String::RemoveLeadingAndTrailing(arguments, " \t");
@@ -1360,7 +1360,7 @@ void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_v
 					const std::size_t identifier_length = Utilities::String::GetLeadingLength(view_to_search, DIRECTIVE_OR_MACRO_CHARS, identifier_position_start);
 					const std::size_t identifier_position_end = identifier_position_start + identifier_length;
 
-					const std::string_view identifier = view_to_search.substr(identifier_position_start, identifier_length);
+					const std::string_view identifier = Utilities::String::Subview(view_to_search, identifier_position_start, identifier_length);
 
 					found_length += identifier.length();
 
@@ -1427,7 +1427,7 @@ void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_v
 				if (argument_depth == 0)
 				{
 					/* Extract argument. */
-					std::string_view argument = arguments.substr(argument_string_start, i - argument_string_start);
+					std::string_view argument = Utilities::String::Subview(arguments, argument_string_start, i - argument_string_start);
 					argument_string_start = i + 1;
 
 					/* Remove surrounding whitespace. */
@@ -1563,7 +1563,7 @@ void SemanticState::AssembleLine(const std::string_view &source_line_raw, const 
 				if (label_length < label.length() && label[label_length] == ':')
 				{
 					/* We've found the label. */
-					label = label.substr(0, label_length);
+					label = Utilities::String::Subview(label, 0, label_length);
 				}
 				else
 				{
@@ -1644,7 +1644,7 @@ void SemanticState::AssembleLine(const std::string_view &source_line_raw, const 
 						/* AS allows directives to be preceeded with a '!' in order to
 						   prevent indentically-named macros from overriding them. */
 						if (!directive.empty() && directive.front() == '!')
-							SubstituteAndParseLine(label, directive_and_operands.substr(1), directive.substr(1));
+							SubstituteAndParseLine(label, Utilities::String::Subview(directive_and_operands, 1), Utilities::String::Subview(directive, 1));
 						else
 							SubstituteAndParseLine(label, directive_and_operands, directive);
 					}
