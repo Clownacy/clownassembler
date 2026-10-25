@@ -192,10 +192,8 @@ bool SymbolManager::AddSymbol(const std::string_view &identifier, SymbolExpressi
 	return true;
 }
 
-bool SymbolManager::AddSymbol(SymbolMacro symbol_contents)
+bool SymbolManager::AddSymbol(const std::string_view &identifier, SymbolMacro symbol_contents)
 {
-	const std::string_view &identifier = symbol_contents.macro.name;
-
 	const auto &[it, dictionary] = LookupSymbolAndCreateIfNotExist<SymbolMacro>(identifier);
 
 	if (it == dictionary.end())

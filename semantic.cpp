@@ -113,7 +113,7 @@ namespace
 		};
 		struct ModeMacro
 		{
-			unsigned long line_number = 0;
+			std::string name;
 			Macro metadata;
 		};
 		struct ModeWhile
@@ -217,7 +217,7 @@ void SemanticState::TerminateRept(SemanticState::ModeRept &rept_state)
 
 void SemanticState::TerminateMacro(SemanticState::ModeMacro &macro_state)
 {
-	const std::string_view &identifier = macro_state.metadata.name;
+	const std::string_view &identifier = macro_state.name;
 
 	if (!identifier.empty())
 	{
@@ -229,7 +229,7 @@ void SemanticState::TerminateMacro(SemanticState::ModeMacro &macro_state)
 		else
 		{
 			/* Add the macro to the symbol table. */
-			symbol_manager.AddSymbol(SymbolMacro{std::move(macro_state.metadata)});
+			symbol_manager.AddSymbol(identifier, SymbolMacro{std::move(macro_state.metadata)});
 		}
 	}
 
@@ -515,13 +515,15 @@ void SemanticState::ProcessRept(StatementRept &rept)
 void SemanticState::ProcessMacro(StatementMacro &macro, const std::string_view &label, bool is_short)
 {
 	/* Enter MACRO mode. */
-	auto &macro_mode = mode.emplace<SemanticState::ModeMacro>();
-
-	macro_mode.metadata.name = label;
-	macro_mode.line_number = location.front().line_number;
-	macro_mode.metadata.parameter_names = std::move(macro.parameter_names);
-	macro_mode.metadata.is_short = is_short;
-	macro_mode.metadata.uses_label = macro.uses_label;
+	mode.emplace<SemanticState::ModeMacro>(
+		std::string(label),
+		Macro{
+			is_short,
+			macro.uses_label,
+			location.front(),
+			std::move(macro.parameter_names)
+		}
+	);
 }
 
 void SemanticState::ProcessIf(Expression &expression)
@@ -1460,7 +1462,7 @@ void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_v
 	listing_writer.listing_macro = true;
 
 	/* Push a new location (this macro).*/
-	location.emplace_front(macro_metadata.name, 0);
+	location.emplace_front(macro_metadata.location);
 
 	/* Iterate over each line of the macro, sending it to be processed. */
 	for (const auto &source_line : macro_metadata.source_line_list)
@@ -1752,7 +1754,7 @@ void SemanticState::AssembleFile(SourceLineReader &source_line_reader)
 			},
 			[&](SemanticState::ModeMacro &macro_state)
 			{
-				global.error_manager.Error("MACRO statement beginning at line {} is missing its ENDM.", macro_state.line_number);
+				global.error_manager.Error("MACRO statement beginning at line {} is missing its ENDM.", macro_state.metadata.location.line_number);
 
 				/* Terminate the macro to hopefully avoid future complications. */
 				TerminateMacro(macro_state);

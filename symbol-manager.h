@@ -103,7 +103,7 @@ public:
 	bool AddSymbol(const std::string_view &identifier, SymbolConstant symbol_contents);
 	bool AddSymbol(const std::string_view &identifier, SymbolLabel symbol_contents);
 	bool AddSymbol(const std::string_view &identifier, SymbolExpressionConstant symbol_contents);
-	bool AddSymbol(SymbolMacro symbol_contents);
+	bool AddSymbol(const std::string_view &identifier, SymbolMacro symbol_contents);
 
 	void WriteSymbolFile(std::ostream &stream);
 };

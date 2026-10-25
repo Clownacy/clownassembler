@@ -21,16 +21,29 @@
 #include <deque>
 #include <string>
 
+#include "error.h"
 #include "parser.h"
 
 using SourceLineList = std::deque<std::string>;
 
 struct Macro
 {
-	bool is_short, uses_label;
-	std::string name;
-	IdentifierList parameter_names;
+	const bool is_short, uses_label;
+	const ErrorManager::Location location;
+	const IdentifierList parameter_names;
 	SourceLineList source_line_list;
+
+	Macro(
+		bool is_short,
+		bool uses_label,
+		ErrorManager::Location location,
+		IdentifierList parameter_names
+	)
+		: is_short(is_short)
+		, uses_label(uses_label)
+		, location(std::move(location))
+		, parameter_names(std::move(parameter_names))
+	{}
 };
 
 #endif // MACRO_H
