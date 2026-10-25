@@ -1176,7 +1176,7 @@ void SemanticState::ParseLine(const std::string_view &label, const std::string_v
 	symbol_manager.fixup_needed = false;
 }
 
-#define DIRECTIVE_OR_MACRO_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?_"
+#define DIRECTIVE_OR_MACRO_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?!_"
 #define LABEL_CHARS DIRECTIVE_OR_MACRO_CHARS ".@"
 
 void SemanticState::PerformSubstitutionsOnSubString(std::string &string, std::string_view &view_to_search, const bool allow_implicit_matches)
@@ -1638,7 +1638,13 @@ void SemanticState::AssembleLine(const std::string_view &source_line_raw, const 
 					else
 					{
 						/* This is not a macro invocation: it's just a regular line that can be assembled as-is. */
-						SubstituteAndParseLine(label, directive_and_operands, directive);
+
+						/* AS allows directives to be preceeded with a '!' in order to
+						   prevent indentically-named macros from overriding them. */
+						if (!directive.empty() && directive.front() == '!')
+							SubstituteAndParseLine(label, directive_and_operands.substr(1), directive.substr(1));
+						else
+							SubstituteAndParseLine(label, directive_and_operands, directive);
 					}
 				}
 			},
