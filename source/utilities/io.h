@@ -19,6 +19,7 @@
 #define UTILITIES_IO_H
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <iostream>
 #include <format>
