@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16.3)
 
-project(clownassembler VERSION 2.0 LANGUAGES C CXX)
+project(clownassembler VERSION 2.0 LANGUAGES CXX)
 
 # Core
 add_library(clownassembler_core STATIC
@@ -64,7 +64,7 @@ target_link_libraries(clownassembler_asm68k clownassembler_core)
 # Tests
 include(CTest)
 
-add_executable(clownassembler_hash "tests/hash/hash.c")
+add_executable(clownassembler_hash "tests/hash/hash.cpp")
 
 # Misc. test
 add_test(NAME misc_assemble COMMAND clownassembler -p -v -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/shim.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/misc.bin" -s "${CMAKE_CURRENT_BINARY_DIR}/misc.sym" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/")
