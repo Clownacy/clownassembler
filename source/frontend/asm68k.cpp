@@ -296,7 +296,7 @@ int main(int argc, char **argv)
 				if (path_string != nullptr)
 					*path_string = path;
 
-				return Utilities::Path::ToStandardPath(path);
+				return Utilities::Path::FromDOSPath(path);
 			};
 
 			source_file_path = DoPath(&source_file_path_string);

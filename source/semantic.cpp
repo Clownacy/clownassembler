@@ -437,7 +437,7 @@ void SemanticState::ProcessDs(StatementDs &ds)
 
 void SemanticState::ProcessInclude(const StatementInclude &include)
 {
-	std::ifstream input_stream(Utilities::Path::ToStandardPath(include.path));
+	std::ifstream input_stream(Utilities::Path::FromDOSPath(include.path));
 
 	if (!input_stream.is_open())
 	{
@@ -456,7 +456,7 @@ void SemanticState::ProcessInclude(const StatementInclude &include)
 
 void SemanticState::ProcessIncbin(StatementIncbin &incbin)
 {
-	std::ifstream input_file(Utilities::Path::ToStandardPath(incbin.path), input_file.binary);
+	std::ifstream input_file(Utilities::Path::FromDOSPath(incbin.path), input_file.binary);
 
 	if (!input_file.is_open())
 	{

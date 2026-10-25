@@ -311,7 +311,7 @@ std::optional<unsigned long> ExpressionProcessor::ResolveExpressionCommon(Expres
 		},
 		[&](ExpressionFilesize &expression) -> std::optional<unsigned long>
 		{
-			const auto &standard_path = Utilities::Path::ToStandardPath(expression.string);
+			const auto &standard_path = Utilities::Path::FromDOSPath(expression.string);
 
 			if (!std::filesystem::exists(standard_path))
 			{

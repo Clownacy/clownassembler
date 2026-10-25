@@ -91,7 +91,7 @@ int main(const int argc, char** const argv)
 	}
 
 	const std::string_view file_path = argv[1];
-	std::ifstream file(Utilities::Path::ToStandardPath(file_path), file.binary);
+	std::ifstream file(Utilities::Path::FromChars(file_path), file.binary);
 
 	if (!file.is_open())
 	{

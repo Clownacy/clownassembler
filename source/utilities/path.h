@@ -26,9 +26,14 @@ namespace Utilities
 {
 	namespace Path
 	{
-		inline std::filesystem::path ToStandardPath(const std::string_view &input_path)
+		inline std::filesystem::path FromChars(const std::string_view &input_path)
 		{
-			std::u8string output_path;
+			return std::u8string_view{reinterpret_cast<const char8_t*>(std::data(input_path)), std::size(input_path)};
+		}
+
+		inline std::filesystem::path FromDOSPath(const std::string_view &input_path)
+		{
+			std::string output_path;
 			output_path.reserve(input_path.length());
 
 			// Convert DOS path separators to standard ones.
@@ -37,7 +42,7 @@ namespace Utilities
 			for (const auto &character : input_path)
 				output_path.push_back(character == '\\' ? '/' : character);
 
-			return output_path;
+			return FromChars(output_path);
 		}
 	}
 }
