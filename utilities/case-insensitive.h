@@ -29,16 +29,16 @@ namespace Utilities
 		class ToLower
 		{
 		private:
-			const int delta;
+			const bool enabled;
 
 		public:
 			constexpr ToLower(const bool enabled)
-				: delta(enabled ? 'a' - 'A' : 0)
+				: enabled(enabled)
 			{}
 
 			constexpr auto operator()(const auto &value) const
 			{
-				return value + (value >= 'A' && value <= 'Z' ? delta : 0);
+				return value | ((enabled && value >= 'A' && value <= 'Z') << 5);
 			}
 		};
 
