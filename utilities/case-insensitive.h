@@ -53,7 +53,7 @@ namespace Utilities
 				std::size_t hash = 5381;
 
 			public:
-				void HashString(const std::string_view &string)
+				constexpr void HashString(const std::string_view &string)
 				{
 					// We avoid using `to_lower` since it is slower, due to being precise.
 					// In contrast, ORing 0x20 is more of a hack, but it is faster, and precision
@@ -62,7 +62,7 @@ namespace Utilities
 						hash = hash * 33 + (character | 0x20);
 				};
 
-				auto GetHash() const
+				constexpr auto GetHash() const
 				{
 					return hash;
 				}
@@ -70,7 +70,7 @@ namespace Utilities
 
 			using is_transparent = void;
 
-			std::size_t operator()(const std::string_view &string) const
+			constexpr std::size_t operator()(const std::string_view &string) const
 			{
 				Piecemeal piecemeal;
 				piecemeal.HashString(string);
