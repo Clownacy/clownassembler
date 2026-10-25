@@ -23,13 +23,19 @@
 #include <iostream>
 #include <format>
 #include <iterator>
+#include <string_view>
 
 namespace Utilities
 {
 	namespace IO
 	{
+		inline void Print(std::ostream &stream, const std::string_view &message)
+		{
+			stream << message;
+		}
+
 		template<typename... Args>
-		void Print(std::ostream &stream, std::format_string<Args...> &&format_string, Args &&...args)
+		inline void Print(std::ostream &stream, std::format_string<Args...> &&format_string, Args &&...args)
 		{
 			// `std::print` should be considerably faster.
 		#if defined(__cpp_lib_print) && __cpp_lib_print >= 202207L
