@@ -1,40 +1,46 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <array>
+#include <cstdio>
+#include <cstdlib>
+#include <format>
+#include <fstream>
+#include <iostream>
+#include <optional>
 
 #define CLOWNMD5_IMPLEMENTATION
 #define CLOWNMD5_STATIC
 #include "clownmd5.h"
 
-typedef unsigned char Hash[16];
+using Hash = std::array<unsigned char, 16>;
 
-static void HashFile(FILE* const file, Hash hash)
+static Hash HashFile(std::istream &file)
 {
-	ClownMD5_State state;
-	unsigned char buffer[16 * 4];
+	std::array<unsigned char, 16 * 4> buffer;
 
+	ClownMD5_State state;
 	ClownMD5_Init(&state);
 
 	for (;;)
 	{
-		const size_t bytes_read = fread(buffer, 1, sizeof(buffer), file);
+		file.read(reinterpret_cast<char*>(std::data(buffer)), std::size(buffer));
 
-		if (bytes_read != sizeof(buffer))
+		const size_t bytes_read = file.gcount();
+
+		if (bytes_read != std::size(buffer))
 		{
-			ClownMD5_PushFinalData(&state, buffer, bytes_read * 8, hash);
-			break;
+			Hash hash;
+			ClownMD5_PushFinalData(&state, std::data(buffer), bytes_read * 8, std::data(hash));
+			return hash;
 		}
 
-		ClownMD5_PushData(&state, buffer);
+		ClownMD5_PushData(&state, std::data(buffer));
 	}
 }
 
-static int HashFromString(const char* const string, Hash hash)
+static std::optional<Hash> HashFromString(const char* const string)
 {
-	unsigned int values[16];
-	unsigned int i;
+	std::array<unsigned int, 16> values;
 
-	const int values_read = sscanf(string, "%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X",
+	const int values_read = std::sscanf(string, "%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X",
 		&values[0],
 		&values[1],
 		&values[2],
@@ -53,54 +59,43 @@ static int HashFromString(const char* const string, Hash hash)
 		&values[15]
 	);
 
-	if (values_read != 16)
-		return 0;
+	if (values_read != std::size(values))
+		return std::nullopt;
 
-	for (i = 0; i < 16; ++i)
+	Hash hash;
+
+	for (unsigned int i = 0; i < std::size(values); ++i)
 		hash[i] = values[i];
 
-	return 1;
+	return hash;
 }
 
 int main(const int argc, char** const argv)
 {
-	int exit_code = EXIT_FAILURE;
-
 	if (argc < 3)
 	{
-		fprintf(stderr, "Usage: %s filename md5hash\n", argv[0]);
-		exit_code = EXIT_SUCCESS;
+		std::cerr << std::format("Usage: {} filename md5hash\n", argv[0]);
+		return EXIT_SUCCESS;
 	}
-	else
+
+	const auto &expected_hash = HashFromString(argv[2]);
+
+	if (expected_hash == std::nullopt)
 	{
-		Hash expected_hash;
-
-		if (!HashFromString(argv[2], expected_hash))
-		{
-			fputs("Could not parse hash.\n", stderr);
-		}
-		else
-		{
-			const char* const file_path = argv[1];
-			FILE* const file = fopen(file_path, "rb");
-
-			if (file == NULL)
-			{
-				fprintf(stderr, "Could not open file '%s'.\n", file_path);
-			}
-			else
-			{
-				Hash hash;
-
-				HashFile(file, hash);
-
-				fclose(file);
-
-				if (memcmp(hash, expected_hash, sizeof(Hash)) == 0)
-					exit_code = EXIT_SUCCESS;
-			}
-		}
+		std::cerr << "Could not parse hash.\n";
+		return EXIT_FAILURE;
 	}
 
-	return exit_code;
+	const char* const file_path = argv[1];
+	std::ifstream file(file_path, file.binary);
+
+	if (!file.is_open())
+	{
+		std::cerr << std::format("Could not open file '{}'.\n", file_path);
+		return EXIT_FAILURE;
+	}
+
+	const auto &hash = HashFile(file);
+
+	return hash == *expected_hash ? EXIT_SUCCESS : EXIT_FAILURE;
 }

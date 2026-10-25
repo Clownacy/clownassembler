@@ -65,6 +65,7 @@ target_link_libraries(clownassembler_asm68k clownassembler_core)
 include(CTest)
 
 add_executable(clownassembler_hash "tests/hash/hash.cpp")
+set_target_properties(clownassembler_hash PROPERTIES CXX_STANDARD 20)
 
 # Misc. test
 add_test(NAME misc_assemble COMMAND clownassembler -p -v -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/shim.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/misc.bin" -s "${CMAKE_CURRENT_BINARY_DIR}/misc.sym" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/")
