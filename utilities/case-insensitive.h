@@ -48,8 +48,6 @@ namespace Utilities
 			class Piecemeal
 			{
 			private:
-				static constexpr ToLower to_lower = {true};
-
 				// Hash the identifier using djb2.
 				// http://www.cse.yorku.ca/~oz/hash.html
 				std::size_t hash = 5381;
@@ -57,8 +55,12 @@ namespace Utilities
 			public:
 				void HashString(const std::string_view &string)
 				{
+					// Hash the identifier in lower-case form, so that case-insensitive mode works.
+					// We avoid using `to_lower` since it is slower, due to being precise.
+					// In contrast, ORing 0x20 is more of a hack, but it is faster, and precision
+					// is not essential.
 					for (const auto &character : string)
-						hash = hash * 33 + to_lower(character); // Hash the identifier in lower-case form, so that case-insensitive mode works.
+						hash = hash * 33 + (character | 0x20);
 				};
 
 				auto GetHash() const
