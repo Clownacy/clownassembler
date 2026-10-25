@@ -5,10 +5,14 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <string_view>
 
 #define CLOWNMD5_IMPLEMENTATION
 #define CLOWNMD5_STATIC
 #include "clownmd5.h"
+
+#include "../utilities/io.h"
+#include "../utilities/path.h"
 
 using Hash = std::array<unsigned char, 16>;
 
@@ -74,7 +78,7 @@ int main(const int argc, char** const argv)
 {
 	if (argc < 3)
 	{
-		std::cerr << std::format("Usage: {} filename md5hash\n", argv[0]);
+		Utilities::IO::Print(std::cerr, "Usage: {} filename md5hash\n", argv[0]);
 		return EXIT_SUCCESS;
 	}
 
@@ -82,16 +86,16 @@ int main(const int argc, char** const argv)
 
 	if (expected_hash == std::nullopt)
 	{
-		std::cerr << "Could not parse hash.\n";
+		Utilities::IO::Print(std::cerr, "Could not parse hash.\n");
 		return EXIT_FAILURE;
 	}
 
-	const char* const file_path = argv[1];
-	std::ifstream file(file_path, file.binary);
+	const std::string_view file_path = argv[1];
+	std::ifstream file(Utilities::Path::ToStandardPath(file_path), file.binary);
 
 	if (!file.is_open())
 	{
-		std::cerr << std::format("Could not open file '{}'.\n", file_path);
+		Utilities::IO::Print(std::cerr, "Could not open file '{}'.\n", file_path);
 		return EXIT_FAILURE;
 	}
 
