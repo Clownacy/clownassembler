@@ -64,7 +64,7 @@ target_link_libraries(clownassembler_asm68k clownassembler_core)
 # Tests
 include(CTest)
 
-add_executable(clownassembler_hash "tests/hash/hash.cpp")
+add_executable(clownassembler_hash "source/hash/hash.cpp")
 set_target_properties(clownassembler_hash PROPERTIES CXX_STANDARD 20)
 
 # Misc. test
