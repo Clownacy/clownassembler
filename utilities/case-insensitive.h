@@ -55,7 +55,6 @@ namespace Utilities
 			public:
 				void HashString(const std::string_view &string)
 				{
-					// Hash the identifier in lower-case form, so that case-insensitive mode works.
 					// We avoid using `to_lower` since it is slower, due to being precise.
 					// In contrast, ORing 0x20 is more of a hack, but it is faster, and precision
 					// is not essential.
