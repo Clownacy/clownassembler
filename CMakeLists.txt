@@ -4,50 +4,50 @@ project(clownassembler VERSION 2.0 LANGUAGES C CXX)
 
 # Core
 add_library(clownassembler_core STATIC
-	"dictionary.h"
-	"frontend/common.h"
-	"error.h"
-	"expression-processor.cpp"
-	"expression-processor.h"
-	"global.h"
-	"instruction-processor.cpp"
-	"instruction-processor.h"
-	"listing.cpp"
-	"listing.h"
-	"macro.h"
-	"macro-state.h"
-	"object.cpp"
-	"object.h"
-	"object-writer.h"
-	"options.h"
-	"p2bin.cpp"
-	"p2bin.h"
-	"parser/lexical.cpp"
-	"parser/lexical.h"
-	"parser/syntactic.cpp"
-	"parser/syntactic.h"
-	"parser.h"
-	"program-counter.h"
-	"semantic.cpp"
-	"semantic.h"
-	"source-line-reader.cpp"
-	"source-line-reader.h"
-	"substitute.cpp"
-	"substitute.h"
-	"symbol-manager.cpp"
-	"symbol-manager.h"
-	"utilities/case-insensitive.h"
-	"utilities/io.h"
-	"utilities/path.h"
-	"utilities/string.h"
-	"version.h"
+	"source/dictionary.h"
+	"source/frontend/common.h"
+	"source/error.h"
+	"source/expression-processor.cpp"
+	"source/expression-processor.h"
+	"source/global.h"
+	"source/instruction-processor.cpp"
+	"source/instruction-processor.h"
+	"source/listing.cpp"
+	"source/listing.h"
+	"source/macro.h"
+	"source/macro-state.h"
+	"source/object.cpp"
+	"source/object.h"
+	"source/object-writer.h"
+	"source/options.h"
+	"source/p2bin.cpp"
+	"source/p2bin.h"
+	"source/parser/lexical.cpp"
+	"source/parser/lexical.h"
+	"source/parser/syntactic.cpp"
+	"source/parser/syntactic.h"
+	"source/parser.h"
+	"source/program-counter.h"
+	"source/semantic.cpp"
+	"source/semantic.h"
+	"source/source-line-reader.cpp"
+	"source/source-line-reader.h"
+	"source/substitute.cpp"
+	"source/substitute.h"
+	"source/symbol-manager.cpp"
+	"source/symbol-manager.h"
+	"source/utilities/case-insensitive.h"
+	"source/utilities/io.h"
+	"source/utilities/path.h"
+	"source/utilities/string.h"
+	"source/version.h"
 )
 
 set_target_properties(clownassembler_core PROPERTIES CXX_STANDARD 20)
 
 # Custom frontend
 add_executable(clownassembler
-	"frontend/custom.cpp"
+	"source/frontend/custom.cpp"
 )
 
 set_target_properties(clownassembler PROPERTIES CXX_STANDARD 20)
@@ -55,7 +55,7 @@ target_link_libraries(clownassembler clownassembler_core)
 
 # asm68k frontend
 add_executable(clownassembler_asm68k
-	"frontend/asm68k.cpp"
+	"source/frontend/asm68k.cpp"
 )
 
 set_target_properties(clownassembler_asm68k PROPERTIES CXX_STANDARD 20)
