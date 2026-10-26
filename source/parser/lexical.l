@@ -31,19 +31,8 @@
 #include <utility>
 
 #include "../error.h"
+#include "../utilities/string.h"
 #include "syntactic.h"
-
-static std::optional<unsigned int> CharacterToInteger(const unsigned int character)
-{
-	if (character >= '0' && character <= '9')
-		return 0x0 + (character - '0');
-	else if (character >= 'A' && character <= 'Z')
-		return 0xA + (character - 'A');
-	else if (character >= 'a' && character <= 'z')
-		return 0xA + (character - 'a');
-	else
-		return std::nullopt;
-}
 
 /* Like `strtoul`, except this one returns a truncated value when parsing a number that is too large. */
 static std::optional<std::pair<bool, unsigned long>> StringTo32BitInteger(const std::string_view &string, const unsigned long base)
@@ -55,9 +44,9 @@ static std::optional<std::pair<bool, unsigned long>> StringTo32BitInteger(const 
 
 	for (const auto &character : string)
 	{
-		const auto &digit = CharacterToInteger(character);
+		const auto &digit = String::ToNumber<unsigned int>({&character, 1}, base);
 
-		if (digit == std::nullopt || *digit >= base)
+		if (digit == std::nullopt)
 			return std::nullopt;
 
 		if (value > limit)
