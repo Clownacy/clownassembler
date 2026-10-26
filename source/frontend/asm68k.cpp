@@ -29,7 +29,7 @@ int main(int argc, char **argv)
 	static constexpr CaseInsensitive::ToLower to_lower(true);
 
 	ClownAssembler::Settings settings = {};
-	std::string_view source_file_path_string;
+	std::string source_file_path_string;
 	std::filesystem::path source_file_path;
 	std::filesystem::path object_file_path;
 	std::filesystem::path symbol_file_path;
@@ -286,7 +286,7 @@ int main(int argc, char **argv)
 
 			std::string_view combined_arguments_subview = combined_arguments;
 
-			const auto &DoPath = [&combined_arguments_subview](std::string_view* const path_string = nullptr)
+			const auto &DoPath = [&combined_arguments_subview](std::string* const path_string = nullptr)
 			{
 				const auto length = combined_arguments_subview.find(',');
 				const auto path = String::Subview(combined_arguments_subview, 0, length);
