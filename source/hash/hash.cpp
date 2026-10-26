@@ -9,7 +9,7 @@
 
 #define CLOWNMD5_IMPLEMENTATION
 #define CLOWNMD5_STATIC
-#include "clownmd5.h"
+#include "clownmd5/clownmd5.h"
 
 #include "../utilities/io.h"
 #include "../utilities/path.h"

@@ -16,3 +16,6 @@
 [submodule "tests/ASM68K-Z80-extension"]
 	path = tests/ASM68K-Z80-extension
 	url = https://github.com/Clownacy/ASM68K-Z80-extension
+[submodule "source/hash/clownmd5"]
+	path = source/hash/clownmd5
+	url = https://github.com/Clownacy/clownmd5
