@@ -44,7 +44,7 @@ static std::optional<Hash> HashFromString(const char* const string)
 {
 	std::array<unsigned int, 16> values;
 
-	const int values_read = std::sscanf(string, "%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X",
+	const unsigned int values_read = std::sscanf(string, "%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X",
 		&values[0],
 		&values[1],
 		&values[2],
