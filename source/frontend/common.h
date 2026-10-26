@@ -18,7 +18,6 @@
 #ifndef FRONTEND_COMMON_H
 #define FRONTEND_COMMON_H
 
-#include <charconv>
 #include <cstdlib>
 #include <iostream>
 #include <format>
@@ -53,13 +52,7 @@ template<typename... Args>
 	{
 		const auto &ValueFromChars = [](const std::string_view &value_string, const int base) -> std::optional<unsigned long>
 		{
-			unsigned long value;
-			const auto &[end, error_code] = std::from_chars(value_string.begin(), value_string.end(), value, base);
-
-			if (error_code != std::errc{} || end != value_string.end())
-				return std::nullopt;
-
-			return value;
+			return Utilities::String::ToNumber<unsigned long>(value_string, base);
 		};
 
 		/* SN 68k (asm68k) supports XX, 0xXX, and $XX. */

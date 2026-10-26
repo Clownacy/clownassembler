@@ -18,7 +18,9 @@
 #ifndef UTILITIES_STRING_H
 #define UTILITIES_STRING_H
 
+#include <charconv>
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -81,6 +83,18 @@ namespace Utilities
 			for (auto &character : string)
 				character = to_lower(character);
 		}
+
+		template<typename T>
+		inline std::optional<T> ToNumber(const std::string_view &value_string, const int base = 10)
+		{
+			T value;
+			const auto &[end, error_code] = std::from_chars(value_string.begin(), value_string.end(), value, base);
+
+			if (error_code != std::errc{} || end != value_string.end())
+				return std::nullopt;
+
+			return value;
+		};
 	}
 }
 
