@@ -18,7 +18,7 @@
 #ifndef OPTIONS_H
 #define OPTIONS_H
 
-#include <stack>
+#include "backup-stack.h"
 
 struct Options
 {
@@ -37,46 +37,12 @@ struct Options
 	} optimisation;
 };
 
-class OptionsStack
+class OptionsStack : public BackupStack<Options>
 {
-private:
-	std::stack<Options> stack;
-
 public:
 	OptionsStack(Options default_options)
-	{
-		stack.emplace(std::move(default_options));
-	}
-
-	void Push()
-	{
-		stack.push(stack.top());
-	}
-
-	void Pop()
-	{
-		stack.pop();
-	}
-
-	Options& operator*()
-	{
-		return stack.top();
-	}
-
-	const Options& operator*() const
-	{
-		return stack.top();
-	}
-
-	Options* operator->()
-	{
-		return &stack.top();
-	}
-
-	const Options* operator->() const
-	{
-		return &stack.top();
-	}
+		: BackupStack<Options>(std::move(default_options))
+	{}
 };
 
 #endif /* OPTIONS_H */

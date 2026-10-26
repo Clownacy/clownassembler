@@ -4,6 +4,7 @@ project(clownassembler VERSION 2.0 LANGUAGES CXX)
 
 # Core
 add_library(clownassembler_core STATIC
+	"source/backup-stack.h"
 	"source/dictionary.h"
 	"source/frontend/common.h"
 	"source/error.h"

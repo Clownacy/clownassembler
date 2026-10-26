@@ -982,11 +982,11 @@ void SemanticState::ProcessStatement(Statement &statement, const std::string_vie
 		},
 		[&](StatementPusho&)
 		{
-			global.options.Push();
+			global.options.push(global.options.top());
 		},
 		[&](StatementPopo&)
 		{
-			global.options.Pop();
+			global.options.pop();
 		},
 		[&](StatementOpt &statement)
 		{
