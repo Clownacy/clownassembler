@@ -1,5 +1,4 @@
 #include <array>
-#include <cstdio>
 #include <cstdlib>
 #include <format>
 #include <fstream>
@@ -13,6 +12,7 @@
 
 #include "../utilities/io.h"
 #include "../utilities/path.h"
+#include "../utilities/string.h"
 
 static ClownMD5::Hash HashFile(std::istream &file)
 {
@@ -33,36 +33,20 @@ static ClownMD5::Hash HashFile(std::istream &file)
 	}
 }
 
-static std::optional<ClownMD5::Hash> HashFromString(const char* const string)
+static std::optional<ClownMD5::Hash> HashFromString(std::string_view string)
 {
-	std::array<unsigned int, 16> values;
-
-	const unsigned int values_read = std::sscanf(string, "%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X%2X",
-		&values[0],
-		&values[1],
-		&values[2],
-		&values[3],
-		&values[4],
-		&values[5],
-		&values[6],
-		&values[7],
-		&values[8],
-		&values[9],
-		&values[10],
-		&values[11],
-		&values[12],
-		&values[13],
-		&values[14],
-		&values[15]
-	);
-
-	if (values_read != std::size(values))
-		return std::nullopt;
-
 	ClownMD5::Hash hash;
 
-	for (unsigned int i = 0; i < std::size(values); ++i)
-		hash[i] = values[i];
+	for (auto &hash_byte : hash)
+	{
+		const auto &value = Utilities::String::ToNumber<unsigned char>(Utilities::String::Subview(string, 0, 2), 0x10);
+
+		if (value == std::nullopt)
+			return std::nullopt;
+
+		hash_byte = *value;
+		string.remove_prefix(2);
+	}
 
 	return hash;
 }
