@@ -27,7 +27,7 @@
 #include "options.h"
 #include "program-counter.h"
 
-class MacroState;
+struct MacroState;
 class SymbolManager;
 
 struct Global

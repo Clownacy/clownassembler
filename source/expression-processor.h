@@ -25,7 +25,7 @@
 class ErrorManager;
 class SymbolManager;
 class OptionsStack;
-class MacroState;
+struct MacroState;
 
 class ExpressionProcessor
 {

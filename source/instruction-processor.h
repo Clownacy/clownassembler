@@ -20,7 +20,7 @@
 
 #include "parser.h"
 
-class Global;
+struct Global;
 class ObjectWriter;
 
 class InstructionProcessor
