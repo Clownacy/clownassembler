@@ -30,6 +30,8 @@
 #include "parser.h"
 #include "symbol-dictionary.h"
 
+struct MacroStateStack;
+
 class SymbolManager
 {
 public:
@@ -37,7 +39,7 @@ public:
 
 private:
 	Global &global;
-	const std::shared_ptr<SymbolDictionary> &macro_dictionary;
+	MacroStateStack &macro;
 
 	SymbolDictionary dictionary = {global.options->case_insensitive};
 	std::string last_global_label;
@@ -51,10 +53,10 @@ public:
 
 	SymbolManager(
 		Global &global,
-		const std::shared_ptr<SymbolDictionary> &macro_dictionary
+		MacroStateStack &macro
 	)
 		: global(global)
-		, macro_dictionary(macro_dictionary)
+		, macro(macro)
 	{}
 
 	const auto& GetLastGlobalLabel() const

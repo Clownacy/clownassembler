@@ -80,13 +80,13 @@ namespace
 		ListingWriter listing_writer;
 		ObjectWriter object_writer;
 		InstructionProcessor instruction_processor = {global, object_writer};
-		SymbolManager symbol_manager = {global, macro.dictionary};
+		SymbolManager symbol_manager = {global, macro};
 		Parser parser = {global.error_manager};
 		std::deque<ErrorManager::Location> location;
 		std::string_view source_line;
 		Substitute substitutions;
 		std::stack<std::string> string_stack;
-		MacroState macro;
+		MacroStateStack macro;
 		unsigned int macro_depth = 0;
 		unsigned long current_macro_invocation = 0;
 		bool end = false;
@@ -221,7 +221,7 @@ void SemanticState::TerminateMacro(SemanticState::ModeMacro &macro_state)
 
 	if (!identifier.empty())
 	{
-		if (macro.ExpansionInProgress())
+		if (macro->ExpansionInProgress())
 		{
 			/* See comment in the StatementPurge handler after the check for the same condition for more details. */
 			global.error_manager.Error("Cannot define macro '{}' during macro expansion.", identifier);
@@ -287,7 +287,7 @@ void SemanticState::PushSubstitute(const std::string_view &identifier, const std
 			{
 				auto &symbol = it->second.emplace<SymbolStringConstant>();
 				symbol.value = value;
-				auto &substitute = macro.dictionary != nullptr && &dictionary == &*macro.dictionary ? macro.expansion->substitutions : substitutions;
+				auto &substitute = macro->dictionary != nullptr && &dictionary == &*macro->dictionary ? macro->expansion->substitutions : substitutions;
 				substitute.PushSubstitute(identifier, symbol.value);
 			},
 			[&](SymbolStringConstant &symbol)
@@ -307,12 +307,12 @@ void SemanticState::PushMacroArgumentSubstitutions()
 {
 	const std::string_view blank_argument;
 
-	for (std::size_t argument_index = 0; argument_index < macro.expansion->metadata->parameter_names.size(); ++argument_index)
+	for (std::size_t argument_index = 0; argument_index < macro->expansion->metadata->parameter_names.size(); ++argument_index)
 	{
-		const std::string_view &parameter = macro.expansion->metadata->parameter_names[argument_index];
-		const std::string_view &argument = argument_index >= macro.expansion->total_arguments ? blank_argument : macro.expansion->argument_list[argument_index];
+		const std::string_view &parameter = macro->expansion->metadata->parameter_names[argument_index];
+		const std::string_view &argument = argument_index >= macro->expansion->total_arguments ? blank_argument : macro->expansion->argument_list[argument_index];
 
-		SymbolDictionary::mapped_type &dictionary_entry = (*macro.dictionary)[parameter];
+		SymbolDictionary::mapped_type &dictionary_entry = (*macro->dictionary)[parameter];
 
 		/* TODO: De-duplicate this with the 'PushSubstitute' function. */
 		CC_Visit(
@@ -321,7 +321,7 @@ void SemanticState::PushMacroArgumentSubstitutions()
 			{
 				auto &symbol = dictionary_entry.emplace<SymbolStringConstant>();
 				symbol.value = argument;
-				macro.expansion->substitutions.PushSubstitute(parameter, symbol.value);
+				macro->expansion->substitutions.PushSubstitute(parameter, symbol.value);
 			},
 			[&](SymbolStringConstant &symbol)
 			{
@@ -1068,13 +1068,13 @@ void SemanticState::ProcessStatement(Statement &statement, const std::string_vie
 		},
 		[&](StatementShift&)
 		{
-			if (!macro.ExpansionInProgress())
+			if (!macro->ExpansionInProgress())
 			{
 				global.error_manager.Error("SHIFT used outside of macro.");
 				return;
 			}
 
-			if (macro.expansion->total_arguments == 0)
+			if (macro->expansion->total_arguments == 0)
 			{
 				/* TODO: What if there are already 0 arguments? */
 				/* This prevents crashing for now but perhaps it could be handled differently. */
@@ -1082,30 +1082,30 @@ void SemanticState::ProcessStatement(Statement &statement, const std::string_vie
 				return;
 			}
 
-			--macro.expansion->total_arguments;
-			for (unsigned int i = 0; i < macro.expansion->total_arguments; ++i)
-				macro.expansion->argument_list[i] = std::move(macro.expansion->argument_list[i + 1]);
-			macro.expansion->argument_list.pop_back();
+			--macro->expansion->total_arguments;
+			for (unsigned int i = 0; i < macro->expansion->total_arguments; ++i)
+				macro->expansion->argument_list[i] = std::move(macro->expansion->argument_list[i + 1]);
+			macro->expansion->argument_list.pop_back();
 			PushMacroArgumentSubstitutions();
 		},
 		[&](StatementMexit&)
 		{
-			macro.expansion = std::nullopt;
+			macro->expansion = std::nullopt;
 		},
 		[&](StatementLocal &statement)
 		{
-			if (!macro.ExpansionInProgress())
+			if (!macro->ExpansionInProgress())
 			{
 				global.error_manager.Error("LOCAL used outside of macro.");
 				return;
 			}
 
 			for (const auto &identifier : statement.identifiers)
-				macro.dictionary->emplace(identifier);
+				macro->dictionary->emplace(identifier);
 		},
 		[&](StatementPurge &statement)
 		{
-			if (macro.ExpansionInProgress())
+			if (macro->ExpansionInProgress())
 			{
 				/* TODO: I don't know if that could be meaningfully supported in some way but for now this just seems like a
 				   "how to crash and burn into UAF/double free" without a bunch of changes to support it, for not much benefit.
@@ -1163,7 +1163,7 @@ void SemanticState::ParseLine(const std::string_view &label, const std::string_v
 		std::move(*statement),
 
 		/* Backup some  */
-		macro.dictionary,
+		macro->dictionary,
 		starting_program_counter,
 		starting_object_writer_position,
 		symbol_manager.GetLastGlobalLabel(),
@@ -1185,8 +1185,8 @@ void SemanticState::PerformSubstitutionsOnSubString(std::string &string, std::st
 {
 	const bool case_insensitive = global.options->case_insensitive;
 
-	if (macro.ExpansionInProgress())
-		substitutions.ProcessSubString(&macro.expansion->substitutions, string, view_to_search, macro.expansion->custom_search, allow_implicit_matches, case_insensitive);
+	if (macro->ExpansionInProgress())
+		substitutions.ProcessSubString(&macro->expansion->substitutions, string, view_to_search, macro->expansion->custom_search, allow_implicit_matches, case_insensitive);
 	else
 		substitutions.ProcessSubString(nullptr, string, view_to_search, nullptr, allow_implicit_matches, case_insensitive);
 }
@@ -1279,12 +1279,12 @@ void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_v
 
 	const auto starting_if_level = current_if_level;
 
-	MacroState previous_macro_state = std::move(macro);
+	macro.emplace();
 
 	/* TODO: We should not be caching 'case_insensitive'; the OPT directive can change this at any time! */
-	macro.dictionary = std::make_shared<SymbolDictionary>(global.options->case_insensitive);
+	macro->dictionary = std::make_shared<SymbolDictionary>(global.options->case_insensitive);
 
-	macro.expansion.emplace(macro_metadata);
+	macro->expansion.emplace(macro_metadata);
 
 	++current_macro_invocation;
 
@@ -1323,7 +1323,7 @@ void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_v
 	const std::string unique_suffix = std::format("_{}", current_macro_invocation);
 	std::string symbol_value_string;
 
-	macro.expansion->custom_search = [this, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, std::size_t starting_position, [[maybe_unused]] bool case_insensitive, std::size_t &found_position, std::size_t &found_length) -> std::optional<std::string_view>
+	macro->expansion->custom_search = [this, &size, &arguments, &label, &unique_suffix, &symbol_value_string](const std::string_view &view_to_search, std::size_t starting_position, [[maybe_unused]] bool case_insensitive, std::size_t &found_position, std::size_t &found_length) -> std::optional<std::string_view>
 	{
 		for (found_position = starting_position; (found_position = view_to_search.find('\\', found_position)) != view_to_search.npos; ++found_position)
 		{
@@ -1393,10 +1393,10 @@ void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_v
 
 					found_length = 1 + (end - start);
 
-					if (parameter_index >= macro.expansion->total_arguments)
+					if (parameter_index >= macro->expansion->total_arguments)
 						return "";
 
-					return macro.expansion->argument_list[parameter_index];
+					return macro->expansion->argument_list[parameter_index];
 				}
 			}
 		}
@@ -1434,17 +1434,17 @@ void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_v
 					String::RemoveLeadingAndTrailing(argument, " \t");
 
 					/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
-					if (argument.empty() && at_the_end && macro.expansion->total_arguments == 0)
+					if (argument.empty() && at_the_end && macro->expansion->total_arguments == 0)
 						break;
 
 					/* Add to argument list. */
-					macro.expansion->argument_list.emplace_back(argument);
+					macro->expansion->argument_list.emplace_back(argument);
 
 					if (!argument.empty() && argument.front() != '"' && argument.front() != '\'' && global.options->case_insensitive)
-						String::ToLower(macro.expansion->argument_list[macro.expansion->total_arguments]);
+						String::ToLower(macro->expansion->argument_list[macro->expansion->total_arguments]);
 
-					++macro.expansion->total_arguments;
-					++macro.expansion->total_arguments_at_start;
+					++macro->expansion->total_arguments;
+					++macro->expansion->total_arguments_at_start;
 				}
 
 				break;
@@ -1470,7 +1470,7 @@ void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_v
 		AssembleLine(source_line, global.options->expand_all_macros);
 
 		/* Detect 'MEXIT'. */
-		if (!macro.ExpansionInProgress())
+		if (!macro->ExpansionInProgress())
 			break;
 	}
 
@@ -1486,7 +1486,7 @@ void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_v
 
 	listing_writer.listing_macro = previous_listing_macro;
 
-	macro = std::move(previous_macro_state);
+	macro.pop();
 
 	--macro_depth;
 }
@@ -1496,7 +1496,7 @@ void SemanticState::AssembleLine(const std::string_view &source_line_raw, const 
 	const std::string_view old_source_line = source_line;
 
 	/* Assert a few preconditions to ensure we're in a non-insane  */
-	assert(macro.ExpansionInProgress() == (macro_depth > 0));
+	assert(macro->ExpansionInProgress() == (macro_depth > 0));
 
 	if (write_line_to_listing_file)
 	{
@@ -1812,7 +1812,7 @@ bool SemanticState::AssembleToObjectFile(
 		FixUp &fixup = fixup_list.front();
 
 		/* Reset some state to how it was at the time the statement was first processed. */
-		macro.dictionary = fixup.macro_dictionary;
+		macro->dictionary = fixup.macro_dictionary;
 		global.program_counter = fixup.program_counter;
 		object_writer.Seek(fixup.object_writer_position);
 		symbol_manager.SetLastGlobalLabelDirect(std::move(fixup.last_global_label));

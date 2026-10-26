@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 
+#include "backup-stack.h"
 #include "macro.h"
 #include "substitute.h"
 #include "symbol-dictionary.h"
@@ -49,6 +50,11 @@ struct MacroState
 
 	std::optional<Expansion> expansion;
 	std::shared_ptr<SymbolDictionary> dictionary;
+};
+
+struct MacroStateStack : public BackupStack<MacroState>
+{
+	using BackupStack<MacroState>::BackupStack;
 };
 
 #endif // MACRO_STATE_H

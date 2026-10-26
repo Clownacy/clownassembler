@@ -27,7 +27,7 @@
 #include "options.h"
 #include "program-counter.h"
 
-struct MacroState;
+struct MacroStateStack;
 class SymbolManager;
 
 struct Global
@@ -44,7 +44,7 @@ struct Global
 		const std::deque<ErrorManager::Location> &locations,
 		const std::string_view &source_line,
 		SymbolManager &symbol_manager,
-		const MacroState &macro
+		const MacroStateStack &macro
 	)
 		: options(std::move(default_options))
 		, error_manager(error_stream, locations, source_line, options)

@@ -25,7 +25,7 @@
 class ErrorManager;
 class SymbolManager;
 class OptionsStack;
-struct MacroState;
+struct MacroStateStack;
 
 class ExpressionProcessor
 {
@@ -33,7 +33,7 @@ private:
 	ErrorManager &error_manager;
 	SymbolManager &symbol_manager;
 	OptionsStack &options;
-	const MacroState &macro;
+	const MacroStateStack &macro;
 
 public:
 	unsigned long program_counter_of_statement = 0, program_counter_of_expression = 0;
@@ -43,7 +43,7 @@ public:
 		ErrorManager &error_manager,
 		SymbolManager &symbol_manager,
 		OptionsStack &options,
-		const MacroState &macro
+		const MacroStateStack &macro
 	)
 		: error_manager(error_manager)
 		, symbol_manager(symbol_manager)

@@ -22,6 +22,7 @@
 
 #include "clowncommon/clowncommon.h"
 
+#include "macro-state.h"
 #include "symbol-dictionary.h"
 #include "utilities/string.h"
 
@@ -44,12 +45,12 @@ DictionaryLookupKey SymbolManager::ExpandIdentifier(const std::string_view &iden
 
 SymbolManager::LookupResult SymbolManager::LookupSymbolWithExpandedIndentifier(const DictionaryLookupKey &expanded_identifier)
 {
-	if (macro_dictionary != nullptr)
+	if (macro->dictionary != nullptr)
 	{
-		const auto &it = macro_dictionary->find(expanded_identifier);
+		const auto &it = macro->dictionary->find(expanded_identifier);
 
-		if (it != macro_dictionary->end())
-			return {it, *macro_dictionary};
+		if (it != macro->dictionary->end())
+			return {it, *macro->dictionary};
 	}
 
 	const auto &it = dictionary.find(expanded_identifier);

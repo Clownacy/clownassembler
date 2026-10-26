@@ -327,13 +327,13 @@ std::optional<unsigned long> ExpressionProcessor::ResolveExpressionCommon(Expres
 		},
 		[&](ExpressionNarg&) -> std::optional<unsigned long>
 		{
-			if (!macro.ExpansionInProgress())
+			if (!macro->ExpansionInProgress())
 			{
 				error_manager.Error("`NARG` cannot be used outside of a macro.");
 				return std::nullopt;
 			}
 
-			return macro.expansion->total_arguments_at_start;
+			return macro->expansion->total_arguments_at_start;
 		}
 	);
 
