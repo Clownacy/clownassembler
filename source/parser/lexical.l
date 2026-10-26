@@ -25,26 +25,23 @@
 %{
 
 #include <format>
-#include <stdlib.h>
-#include <string.h>
+#include <optional>
 #include <string>
 #include <string_view>
 
 #include "../error.h"
 #include "syntactic.h"
 
-static bool CharacterToInteger(unsigned int* const value, const unsigned int character)
+static std::optional<unsigned int> CharacterToInteger(const unsigned int character)
 {
 	if (character >= '0' && character <= '9')
-		*value = 0x0 + (character - '0');
+		return 0x0 + (character - '0');
 	else if (character >= 'A' && character <= 'Z')
-		*value = 0xA + (character - 'A');
+		return 0xA + (character - 'A');
 	else if (character >= 'a' && character <= 'z')
-		*value = 0xA + (character - 'a');
+		return 0xA + (character - 'a');
 	else
-		return false;
-
-	return true;
+		return std::nullopt;
 }
 
 /* Like `strtoul`, except this one returns a truncated value when parsing a number that is too large. */
@@ -58,22 +55,23 @@ static bool StringTo32BitInteger(unsigned long* const value, const char* const s
 
 	for (string_pointer = string_start; ; ++string_pointer)
 	{
-		unsigned int digit;
-		if (!CharacterToInteger(&digit, *string_pointer) || digit >= base)
+		const auto &digit = CharacterToInteger(*string_pointer);
+
+		if (digit == std::nullopt || *digit >= base)
 			break;
 
 		if (*value > limit)
 			success = false;
 
 		*value *= base;
-		*value += digit;
+		*value += *digit;
 	}
 
 	*string_end = string_pointer;
 	return success;
 }
 
-static auto ParseNumber(ErrorManager &error_manager, const char* const string_start, const size_t string_length, const unsigned long base)
+static auto ParseNumber(ErrorManager &error_manager, const char* const string_start, const std::size_t string_length, const unsigned long base)
 {
 	unsigned long value;
 	const char *string_end;
