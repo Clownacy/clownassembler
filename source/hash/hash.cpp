@@ -24,7 +24,7 @@ static ClownMD5::Hash HashFile(std::istream &file)
 	{
 		file.read(reinterpret_cast<char*>(std::data(buffer)), std::size(buffer));
 
-		const size_t bytes_read = file.gcount();
+		const std::size_t bytes_read = file.gcount();
 
 		if (bytes_read != std::size(buffer))
 			return clownmd5.PushFinalData(buffer, bytes_read * 8);
