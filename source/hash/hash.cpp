@@ -14,14 +14,11 @@
 #include "../utilities/io.h"
 #include "../utilities/path.h"
 
-using Hash = std::array<unsigned char, 16>;
-
-static Hash HashFile(std::istream &file)
+static ClownMD5::Hash HashFile(std::istream &file)
 {
 	std::array<unsigned char, 16 * 4> buffer;
 
-	ClownMD5_State state;
-	ClownMD5_Init(&state);
+	ClownMD5 clownmd5;
 
 	for (;;)
 	{
@@ -30,17 +27,13 @@ static Hash HashFile(std::istream &file)
 		const size_t bytes_read = file.gcount();
 
 		if (bytes_read != std::size(buffer))
-		{
-			Hash hash;
-			ClownMD5_PushFinalData(&state, std::data(buffer), bytes_read * 8, std::data(hash));
-			return hash;
-		}
+			return clownmd5.PushFinalData(buffer, bytes_read * 8);
 
-		ClownMD5_PushData(&state, std::data(buffer));
+		clownmd5.PushData(buffer);
 	}
 }
 
-static std::optional<Hash> HashFromString(const char* const string)
+static std::optional<ClownMD5::Hash> HashFromString(const char* const string)
 {
 	std::array<unsigned int, 16> values;
 
@@ -66,7 +59,7 @@ static std::optional<Hash> HashFromString(const char* const string)
 	if (values_read != std::size(values))
 		return std::nullopt;
 
-	Hash hash;
+	ClownMD5::Hash hash;
 
 	for (unsigned int i = 0; i < std::size(values); ++i)
 		hash[i] = values[i];
