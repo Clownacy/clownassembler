@@ -105,7 +105,6 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 		/* Read and check the header's magic number. */
 		const auto magic = input.ReadU16BE();
 
-		/* TODO: Use error message manager for this. */
 		if (magic != 0x8914)
 			throw std::runtime_error(std::format("Invalid header magic value - expected 0x8914 but got 0x{:04X}.\nInput file is either corrupt or not a valid AS code file.", magic));
 
