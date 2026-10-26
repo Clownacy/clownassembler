@@ -50,14 +50,14 @@ public:
 
 	std::size_t operator()(const std::string &key) const
 	{
-		Utilities::CaseInsensitive::StringHasher::Piecemeal hasher;
+		CaseInsensitive::StringHasher::Piecemeal hasher;
 		hasher.HashString(key);
 		return hasher.GetHash();
 	}
 
 	std::size_t operator()(const DictionaryLookupKey &key) const
 	{
-		Utilities::CaseInsensitive::StringHasher::Piecemeal hasher;
+		CaseInsensitive::StringHasher::Piecemeal hasher;
 		hasher.HashString(key.global);
 		hasher.HashString(key.local);
 		return hasher.GetHash();
@@ -67,7 +67,7 @@ public:
 class DictionaryComparer
 {
 private:
-	const Utilities::CaseInsensitive::StringComparer string_comparer;
+	const CaseInsensitive::StringComparer string_comparer;
 
 public:
 	using is_transparent = void;
@@ -85,10 +85,10 @@ public:
 	{
 		const auto first_length = lhs.global.length();
 
-		if (!string_comparer(Utilities::String::Subview(rhs, 0, first_length), lhs.global))
+		if (!string_comparer(String::Subview(rhs, 0, first_length), lhs.global))
 			return false;
 
-		if (!string_comparer(Utilities::String::Subview(rhs, first_length), lhs.local))
+		if (!string_comparer(String::Subview(rhs, first_length), lhs.local))
 			return false;
 
 		return true;

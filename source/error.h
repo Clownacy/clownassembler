@@ -55,9 +55,9 @@ private:
 	void ErrorMessageCommon()
 	{
 		for (const auto &location : locations)
-			Utilities::IO::PrintLine(error_stream, "On line {} of '{}'...", location.line_number, location.file_path);
+			IO::PrintLine(error_stream, "On line {} of '{}'...", location.line_number, location.file_path);
 
-		Utilities::IO::PrintLine(error_stream, "\n{}\n", source_line.empty() ? "[No source line]" : source_line);
+		IO::PrintLine(error_stream, "\n{}\n", source_line.empty() ? "[No source line]" : source_line);
 	}
 
 public:
@@ -65,12 +65,12 @@ public:
 	void Information(std::format_string<Args...> &&format_string, Args &&...args)
 	{
 		error_stream << "Information: ";
-		Utilities::IO::PrintLine(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+		IO::PrintLine(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 	}
 
 	void Information(const std::string_view &message)
 	{
-		Utilities::IO::PrintLine(error_stream, "Information: {}", message);
+		IO::PrintLine(error_stream, "Information: {}", message);
 	}
 
 	template<typename... Args>
@@ -78,7 +78,7 @@ public:
 	{
 		if (options->warnings_enabled)
 		{
-			Utilities::IO::PrintWarning(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+			IO::PrintWarning(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 
 			ErrorMessageCommon();
 		}
@@ -88,7 +88,7 @@ public:
 	{
 		if (options->warnings_enabled)
 		{
-			Utilities::IO::PrintWarning(error_stream, message);
+			IO::PrintWarning(error_stream, message);
 
 			ErrorMessageCommon();
 		}
@@ -110,7 +110,7 @@ public:
 	template<typename... Args>
 	void Error(std::format_string<Args...> &&format_string, Args &&...args)
 	{
-		Utilities::IO::PrintError(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+		IO::PrintError(error_stream, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 
 		ErrorMessageCommon();
 
@@ -119,7 +119,7 @@ public:
 
 	void Error(const std::string_view &message)
 	{
-		Utilities::IO::PrintError(error_stream, message);
+		IO::PrintError(error_stream, message);
 
 		ErrorMessageCommon();
 

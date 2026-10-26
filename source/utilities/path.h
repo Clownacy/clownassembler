@@ -22,28 +22,25 @@
 #include <string>
 #include <string_view>
 
-namespace Utilities
+namespace Path
 {
-	namespace Path
+	inline std::filesystem::path FromChars(const std::string_view &input_path)
 	{
-		inline std::filesystem::path FromChars(const std::string_view &input_path)
-		{
-			return std::u8string_view{reinterpret_cast<const char8_t*>(std::data(input_path)), std::size(input_path)};
-		}
+		return std::u8string_view{reinterpret_cast<const char8_t*>(std::data(input_path)), std::size(input_path)};
+	}
 
-		inline std::filesystem::path FromDOSPath(const std::string_view &input_path)
-		{
-			std::string output_path;
-			output_path.reserve(input_path.length());
+	inline std::filesystem::path FromDOSPath(const std::string_view &input_path)
+	{
+		std::string output_path;
+		output_path.reserve(input_path.length());
 
-			// Convert DOS path separators to standard ones.
-			// Asm68k-based projects often use these, so they need to be
-			// converted for compatibility with platforms such as Linux.
-			for (const auto &character : input_path)
-				output_path.push_back(character == '\\' ? '/' : character);
+		// Convert DOS path separators to standard ones.
+		// Asm68k-based projects often use these, so they need to be
+		// converted for compatibility with platforms such as Linux.
+		for (const auto &character : input_path)
+			output_path.push_back(character == '\\' ? '/' : character);
 
-			return FromChars(output_path);
-		}
+		return FromChars(output_path);
 	}
 }
 

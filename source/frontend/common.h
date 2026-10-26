@@ -30,13 +30,13 @@
 template<typename... Args>
 void Warning(std::format_string<Args...> &&format_string, Args &&...args)
 {
-	Utilities::IO::PrintWarning(std::cerr, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+	IO::PrintWarning(std::cerr, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 void Error(std::format_string<Args...> &&format_string, Args &&...args)
 {
-	Utilities::IO::PrintError(std::cerr, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
+	IO::PrintError(std::cerr, std::forward<std::format_string<Args...>>(format_string), std::forward<Args>(args)...);
 }
 
 template<typename... Args>
@@ -52,23 +52,23 @@ template<typename... Args>
 	{
 		const auto &ValueFromChars = [](const std::string_view &value_string, const int base) -> std::optional<unsigned long>
 		{
-			return Utilities::String::ToNumber<unsigned long>(value_string, base);
+			return String::ToNumber<unsigned long>(value_string, base);
 		};
 
 		/* SN 68k (asm68k) supports XX, 0xXX, and $XX. */
 		if (!value_string.empty() && value_string.front() == '$')
-			return ValueFromChars(Utilities::String::Subview(value_string, 1), 0x10);
+			return ValueFromChars(String::Subview(value_string, 1), 0x10);
 		else
 			return ValueFromChars(value_string, 0);
 	};
 
 	const auto &separator_position = definition.find('=');
-	const std::string_view identifier = Utilities::String::Subview(definition, 0, separator_position);
+	const std::string_view identifier = String::Subview(definition, 0, separator_position);
 
 	if (separator_position == definition.npos)
 		return {{identifier, 0}}; /* Exactly what asm68k does... */
 
-	const auto &value = GetValue(Utilities::String::Subview(definition, separator_position + 1));
+	const auto &value = GetValue(String::Subview(definition, separator_position + 1));
 
 	if (!value.has_value())
 		return std::nullopt;

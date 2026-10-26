@@ -22,114 +22,111 @@
 #include <cstddef>
 #include <string_view>
 
-namespace Utilities
+namespace CaseInsensitive
 {
-	namespace CaseInsensitive
+	class ToLower
 	{
-		class ToLower
+	private:
+		const bool enabled;
+
+	public:
+		constexpr ToLower(const bool enabled)
+			: enabled(enabled)
+		{}
+
+		constexpr auto operator()(const auto &value) const
+		{
+			return value | ((enabled && value >= 'A' && value <= 'Z') << 5);
+		}
+	};
+
+	class StringHasher
+	{
+	public:
+		class Piecemeal
 		{
 		private:
-			const bool enabled;
+			// Hash the identifier using djb2.
+			// http://www.cse.yorku.ca/~oz/hash.html
+			std::size_t hash = 5381;
 
 		public:
-			constexpr ToLower(const bool enabled)
-				: enabled(enabled)
-			{}
-
-			constexpr auto operator()(const auto &value) const
+			constexpr void HashString(const std::string_view &string)
 			{
-				return value | ((enabled && value >= 'A' && value <= 'Z') << 5);
-			}
-		};
-
-		class StringHasher
-		{
-		public:
-			class Piecemeal
-			{
-			private:
-				// Hash the identifier using djb2.
-				// http://www.cse.yorku.ca/~oz/hash.html
-				std::size_t hash = 5381;
-
-			public:
-				constexpr void HashString(const std::string_view &string)
-				{
-					// We avoid using `to_lower` since it is slower, due to being precise.
-					// In contrast, ORing 0x20 is more of a hack, but it is faster, and precision
-					// is not essential.
-					for (const auto &character : string)
-						hash = hash * 33 + (character | 0x20);
-				};
-
-				constexpr auto GetHash() const
-				{
-					return hash;
-				}
+				// We avoid using `to_lower` since it is slower, due to being precise.
+				// In contrast, ORing 0x20 is more of a hack, but it is faster, and precision
+				// is not essential.
+				for (const auto &character : string)
+					hash = hash * 33 + (character | 0x20);
 			};
 
-			using is_transparent = void;
-
-			constexpr std::size_t operator()(const std::string_view &string) const
+			constexpr auto GetHash() const
 			{
-				Piecemeal piecemeal;
-				piecemeal.HashString(string);
-				return piecemeal.GetHash();
+				return hash;
 			}
 		};
 
-		class CharComparer
+		using is_transparent = void;
+
+		constexpr std::size_t operator()(const std::string_view &string) const
 		{
-		private:
-			const ToLower to_lower;
-
-		public:
-			using is_transparent = void;
-
-			constexpr CharComparer(const bool case_insensitive)
-				: to_lower(case_insensitive)
-			{}
-
-			constexpr bool operator()(const auto &lhs, const auto &rhs) const
-			{
-				return to_lower(lhs) == to_lower(rhs);
-			}
-		};
-
-		class StringComparer
-		{
-		private:
-			const CharComparer char_comparer;
-
-		public:
-			using is_transparent = void;
-
-			constexpr StringComparer(const bool case_insensitive)
-				: char_comparer(case_insensitive)
-			{}
-
-			constexpr bool operator()(const std::string_view &lhs, const std::string_view &rhs) const
-			{
-				return std::equal(std::begin(lhs), std::end(lhs), std::begin(rhs), std::end(rhs), char_comparer);
-			}
-		};
-
-		inline bool CompareStrings(const std::string_view &lhs, const std::string_view &rhs)
-		{
-			constexpr StringComparer string_comparer(true);
-
-			return string_comparer(lhs, rhs);
+			Piecemeal piecemeal;
+			piecemeal.HashString(string);
+			return piecemeal.GetHash();
 		}
+	};
 
-		inline std::size_t FindString(const std::string_view &view, const std::string_view &sub_view, const std::size_t position, const bool case_insensitive)
+	class CharComparer
+	{
+	private:
+		const ToLower to_lower;
+
+	public:
+		using is_transparent = void;
+
+		constexpr CharComparer(const bool case_insensitive)
+			: to_lower(case_insensitive)
+		{}
+
+		constexpr bool operator()(const auto &lhs, const auto &rhs) const
 		{
-			const auto it = std::search(std::begin(view) + position, std::end(view), std::begin(sub_view), std::end(sub_view), CaseInsensitive::CharComparer(case_insensitive));
-
-			if (it == std::end(view))
-				return view.npos;
-
-			return std::distance(std::begin(view), it);
+			return to_lower(lhs) == to_lower(rhs);
 		}
+	};
+
+	class StringComparer
+	{
+	private:
+		const CharComparer char_comparer;
+
+	public:
+		using is_transparent = void;
+
+		constexpr StringComparer(const bool case_insensitive)
+			: char_comparer(case_insensitive)
+		{}
+
+		constexpr bool operator()(const std::string_view &lhs, const std::string_view &rhs) const
+		{
+			return std::equal(std::begin(lhs), std::end(lhs), std::begin(rhs), std::end(rhs), char_comparer);
+		}
+	};
+
+	inline bool CompareStrings(const std::string_view &lhs, const std::string_view &rhs)
+	{
+		constexpr StringComparer string_comparer(true);
+
+		return string_comparer(lhs, rhs);
+	}
+
+	inline std::size_t FindString(const std::string_view &view, const std::string_view &sub_view, const std::size_t position, const bool case_insensitive)
+	{
+		const auto it = std::search(std::begin(view) + position, std::end(view), std::begin(sub_view), std::end(sub_view), CaseInsensitive::CharComparer(case_insensitive));
+
+		if (it == std::end(view))
+			return view.npos;
+
+		return std::distance(std::begin(view), it);
 	}
 }
 

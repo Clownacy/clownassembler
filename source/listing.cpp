@@ -31,7 +31,7 @@ void ListingWriter::BeginLine(const unsigned long program_counter)
 
 	listing_counter = 0;
 	suppress_listing = false;
-	Utilities::IO::Print(*listing_stream, "{:08X}", program_counter);
+	IO::Print(*listing_stream, "{:08X}", program_counter);
 }
 
 void ListingWriter::WriteByte(const unsigned int value)
@@ -56,7 +56,7 @@ void ListingWriter::WriteByte(const unsigned int value)
 				++listing_counter;
 			}
 
-			Utilities::IO::Print(*listing_stream, "{:02X}", value);
+			IO::Print(*listing_stream, "{:02X}", value);
 			listing_counter += 2;
 		}
 	}
@@ -68,7 +68,7 @@ void ListingWriter::WriteIdentifierValue(const unsigned long value)
 	if (listing_stream == nullptr || doing_fixup_pass || suppress_listing)
 		return;
 
-	Utilities::IO::Print(*listing_stream, " ={:08X}", value);
+	IO::Print(*listing_stream, " ={:08X}", value);
 
 	listing_counter += 2 + 8;
 }
@@ -86,6 +86,6 @@ void ListingWriter::EndLine(const std::string_view &source_line)
 		for (unsigned int i = listing_counter; i < 26; ++i)
 			listing_stream->put(' ');
 
-		Utilities::IO::PrintLine(*listing_stream, "{} {}", listing_macro ? 'M' : ' ', source_line);
+		IO::PrintLine(*listing_stream, "{} {}", listing_macro ? 'M' : ' ', source_line);
 	}
 }

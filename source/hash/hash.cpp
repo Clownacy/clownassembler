@@ -39,7 +39,7 @@ static std::optional<ClownMD5::Hash> HashFromString(std::string_view string)
 
 	for (auto &hash_byte : hash)
 	{
-		const auto &value = Utilities::String::ToNumber<unsigned char>(Utilities::String::Subview(string, 0, 2), 0x10);
+		const auto &value = String::ToNumber<unsigned char>(String::Subview(string, 0, 2), 0x10);
 
 		if (value == std::nullopt)
 			return std::nullopt;
@@ -55,7 +55,7 @@ int main(const int argc, char** const argv)
 {
 	if (argc < 3)
 	{
-		Utilities::IO::PrintLine(std::cerr, "Usage: {} filename md5hash", argv[0]);
+		IO::PrintLine(std::cerr, "Usage: {} filename md5hash", argv[0]);
 		return EXIT_SUCCESS;
 	}
 
@@ -63,16 +63,16 @@ int main(const int argc, char** const argv)
 
 	if (expected_hash == std::nullopt)
 	{
-		Utilities::IO::PrintLine(std::cerr, "Could not parse hash.");
+		IO::PrintLine(std::cerr, "Could not parse hash.");
 		return EXIT_FAILURE;
 	}
 
 	const std::string_view file_path = argv[1];
-	std::ifstream file(Utilities::Path::FromChars(file_path), file.binary);
+	std::ifstream file(Path::FromChars(file_path), file.binary);
 
 	if (!file.is_open())
 	{
-		Utilities::IO::PrintLine(std::cerr, "Could not open file '{}'.", file_path);
+		IO::PrintLine(std::cerr, "Could not open file '{}'.", file_path);
 		return EXIT_FAILURE;
 	}
 

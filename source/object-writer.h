@@ -26,7 +26,7 @@
 
 // Extends `Object::Writer` with an integer-writing interface, and
 // handles listing as well as incrementing the program counter.
-class ObjectWriter : public Utilities::IO::BinaryWriter, public Object::Writer
+class ObjectWriter : public IO::BinaryWriter, public Object::Writer
 {
 private:
 	Global &global;

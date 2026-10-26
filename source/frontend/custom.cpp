@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 					{
 						++i;
 						input_file_path_string = argv[i];
-						input_file_path = Utilities::Path::FromDOSPath(argv[i]);
+						input_file_path = Path::FromDOSPath(argv[i]);
 					}
 
 					continue;
@@ -69,7 +69,7 @@ int main(int argc, char **argv)
 					if (i < argc && argv[i + 1][0] != '-')
 					{
 						++i;
-						output_file_path = Utilities::Path::FromDOSPath(argv[i]);
+						output_file_path = Path::FromDOSPath(argv[i]);
 					}
 
 					continue;
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 					if (i < argc && argv[i + 1][0] != '-')
 					{
 						++i;
-						listing_file_path = Utilities::Path::FromDOSPath(argv[i]);
+						listing_file_path = Path::FromDOSPath(argv[i]);
 					}
 
 					continue;
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 					if (i < argc && argv[i + 1][0] != '-')
 					{
 						++i;
-						symbol_file_path = Utilities::Path::FromDOSPath(argv[i]);
+						symbol_file_path = Path::FromDOSPath(argv[i]);
 					}
 
 					continue;

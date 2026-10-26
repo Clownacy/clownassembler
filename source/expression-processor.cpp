@@ -293,7 +293,7 @@ std::optional<unsigned long> ExpressionProcessor::ResolveExpressionCommon(Expres
 			}
 
 			/* TODO: What if 'position' is 0? */
-			const std::size_t found_position = Utilities::CaseInsensitive::FindString(expression_string_a->string, expression_string_b->string, position - 1, options->case_insensitive);
+			const std::size_t found_position = CaseInsensitive::FindString(expression_string_a->string, expression_string_b->string, position - 1, options->case_insensitive);
 			return found_position == expression_string_a->string.npos ? 0 : found_position + 1;
 		},
 		[&](ExpressionDef &expression) -> std::optional<unsigned long>
@@ -311,7 +311,7 @@ std::optional<unsigned long> ExpressionProcessor::ResolveExpressionCommon(Expres
 		},
 		[&](ExpressionFilesize &expression) -> std::optional<unsigned long>
 		{
-			const auto &standard_path = Utilities::Path::FromDOSPath(expression.string);
+			const auto &standard_path = Path::FromDOSPath(expression.string);
 
 			if (!std::filesystem::exists(standard_path))
 			{

@@ -207,7 +207,7 @@ bool SymbolManager::AddSymbol(const std::string_view &identifier, SymbolMacro sy
 
 void SymbolManager::WriteSymbolFile(std::ostream &stream)
 {
-	Utilities::IO::StreamBinaryWriter symbol_writer(stream);
+	IO::StreamBinaryWriter symbol_writer(stream);
 
 	/* Some kind of header. */
 	symbol_writer.WriteU8('M');
@@ -230,7 +230,7 @@ void SymbolManager::WriteSymbolFile(std::ostream &stream)
 			continue;
 
 		const auto local_symbol_position = identifier.find_last_of(global.options->local_signifier);
-		const std::string_view label = Utilities::String::Subview(identifier, local_symbol_position == identifier.npos ? 0 : local_symbol_position);
+		const std::string_view label = String::Subview(identifier, local_symbol_position == identifier.npos ? 0 : local_symbol_position);
 
 		const bool is_local_label = label.length() != identifier.length();
 

@@ -437,7 +437,7 @@ void SemanticState::ProcessDs(StatementDs &ds)
 
 void SemanticState::ProcessInclude(const StatementInclude &include)
 {
-	std::ifstream input_stream(Utilities::Path::FromDOSPath(include.path));
+	std::ifstream input_stream(Path::FromDOSPath(include.path));
 
 	if (!input_stream.is_open())
 	{
@@ -456,7 +456,7 @@ void SemanticState::ProcessInclude(const StatementInclude &include)
 
 void SemanticState::ProcessIncbin(StatementIncbin &incbin)
 {
-	std::ifstream input_file(Utilities::Path::FromDOSPath(incbin.path), input_file.binary);
+	std::ifstream input_file(Path::FromDOSPath(incbin.path), input_file.binary);
 
 	if (!input_file.is_open())
 	{
@@ -741,7 +741,7 @@ void SemanticState::ProcessStatement(Statement &statement, const std::string_vie
 			if (end > statement.string.length())
 				end = statement.string.length();
 
-			PushSubstitute(label, Utilities::String::Subview(statement.string, start - 1, end - start + 1));
+			PushSubstitute(label, String::Subview(statement.string, start - 1, end - start + 1));
 		},
 		[&](StatementSet &statement)
 		{
@@ -993,59 +993,59 @@ void SemanticState::ProcessStatement(Statement &statement, const std::string_vie
 			for (const auto &option : statement.options)
 			{
 				/* TODO: A lot of these are unimplemented... */
-				if (Utilities::CaseInsensitive::CompareStrings(option, "ae+"))
+				if (CaseInsensitive::CompareStrings(option, "ae+"))
 					global.options->automatic_even = true;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "ae-"))
+				else if (CaseInsensitive::CompareStrings(option, "ae-"))
 					global.options->automatic_even = false;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "an+"))
+				else if (CaseInsensitive::CompareStrings(option, "an+"))
 					;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "an-"))
+				else if (CaseInsensitive::CompareStrings(option, "an-"))
 					;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "c+"))
+				else if (CaseInsensitive::CompareStrings(option, "c+"))
 					global.options->case_insensitive = false;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "c-"))
+				else if (CaseInsensitive::CompareStrings(option, "c-"))
 					global.options->case_insensitive = true;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "d+"))
+				else if (CaseInsensitive::CompareStrings(option, "d+"))
 					global.options->equ_set_descope_local_labels = true;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "d-"))
+				else if (CaseInsensitive::CompareStrings(option, "d-"))
 					global.options->equ_set_descope_local_labels = false;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "e+"))
+				else if (CaseInsensitive::CompareStrings(option, "e+"))
 					;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "e-"))
+				else if (CaseInsensitive::CompareStrings(option, "e-"))
 					;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "l+"))
+				else if (CaseInsensitive::CompareStrings(option, "l+"))
 					global.options->local_signifier = '.';
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "l-"))
+				else if (CaseInsensitive::CompareStrings(option, "l-"))
 					global.options->local_signifier = '@';
 				else if (option.length() == 2 && (option[0] == 'l' || option[0] == 'L'))
 					global.options->local_signifier = option[1];
-				/*else if (Utilities::CaseInsensitive::CompareStrings(option, "s+"))
+				/*else if (CaseInsensitive::CompareStrings(option, "s+"))
 					;*/
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "s-"))
+				else if (CaseInsensitive::CompareStrings(option, "s-"))
 					;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "m+"))
+				else if (CaseInsensitive::CompareStrings(option, "m+"))
 					global.options->expand_all_macros = true;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "m-"))
+				else if (CaseInsensitive::CompareStrings(option, "m-"))
 					global.options->expand_all_macros = false;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "oz+"))
+				else if (CaseInsensitive::CompareStrings(option, "oz+"))
 					global.options->optimisation.zero_displacement = true;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "oz-"))
+				else if (CaseInsensitive::CompareStrings(option, "oz-"))
 					global.options->optimisation.zero_displacement = false;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "v+"))
+				else if (CaseInsensitive::CompareStrings(option, "v+"))
 					global.options->output_local_labels_to_sym_file = true;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "v-"))
+				else if (CaseInsensitive::CompareStrings(option, "v-"))
 					global.options->output_local_labels_to_sym_file = false;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "w+"))
+				else if (CaseInsensitive::CompareStrings(option, "w+"))
 					global.options->warnings_enabled = true;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "w-"))
+				else if (CaseInsensitive::CompareStrings(option, "w-"))
 					global.options->warnings_enabled = false;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "wp+"))
+				else if (CaseInsensitive::CompareStrings(option, "wp+"))
 					global.options->pedantic_warnings_enabled = true;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "wp-"))
+				else if (CaseInsensitive::CompareStrings(option, "wp-"))
 					global.options->pedantic_warnings_enabled = false;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "ws+"))
+				else if (CaseInsensitive::CompareStrings(option, "ws+"))
 					;
-				else if (Utilities::CaseInsensitive::CompareStrings(option, "ws-"))
+				else if (CaseInsensitive::CompareStrings(option, "ws-"))
 					;
 				else
 					global.error_manager.Warning("Unrecognised option '{}'.", option);
@@ -1209,24 +1209,24 @@ static std::optional<std::string_view> FindQuotedStringInSourceLine(const std::s
 	if (end_position == string.npos)
 		return std::nullopt;
 
-	return Utilities::String::Subview(string, start_position, end_position - start_position);
+	return String::Subview(string, start_position, end_position - start_position);
 }
 
 /* Performs string substitutions only in parts of the string that are not wrapped in quotations. */
 /* This is needed to simulate how SN 68k does not expand string constants in strings, only expressions and operands. */
 void SemanticState::PerformSubstitutionsExcludingQuotedStrings(std::string &source_line, const std::size_t starting_position, const bool allow_implicit_matches)
 {
-	std::string_view source_line_subview = Utilities::String::Subview(source_line, starting_position);
+	std::string_view source_line_subview = String::Subview(source_line, starting_position);
 
 	for (;;)
 	{
 		/* If no string was found, then pretend there's a string at the end of the line, so that we can repurpose the code below. */
-		const auto quoted_string = FindQuotedStringInSourceLine(source_line_subview).value_or(Utilities::String::Subview(source_line_subview, source_line_subview.length()));
+		const auto quoted_string = FindQuotedStringInSourceLine(source_line_subview).value_or(String::Subview(source_line_subview, source_line_subview.length()));
 
 		/* We've found a string! Perform substitutions on the part of the line before it. */
 
 		/* Define the region that we will perform substitutions on. */
-		auto view_to_search = Utilities::String::Subview(source_line_subview, 0, quoted_string.data() - source_line_subview.data());
+		auto view_to_search = String::Subview(source_line_subview, 0, quoted_string.data() - source_line_subview.data());
 
 		/* Perform the substitutions. */
 		PerformSubstitutionsOnSubString(source_line, view_to_search, allow_implicit_matches);
@@ -1235,7 +1235,7 @@ void SemanticState::PerformSubstitutionsExcludingQuotedStrings(std::string &sour
 			break;
 
 		/* Move to after the string so that we can continue searching. */
-		source_line_subview = Utilities::String::Subview(source_line_subview, view_to_search.length() + quoted_string.length());
+		source_line_subview = String::Subview(source_line_subview, view_to_search.length() + quoted_string.length());
 	}
 }
 
@@ -1245,14 +1245,14 @@ void SemanticState::SubstituteAndParseLine(const std::string_view &label, const 
 
 	/* Because of the below hack, we have to filter-out directives that do not use expressions or operands,
 	   to prevent them from accidentally being substituted. This is needed for the Natsumi Z80 macros. */
-	if (Utilities::CaseInsensitive::CompareStrings(directive, "binclude")
-	 || Utilities::CaseInsensitive::CompareStrings(directive, "equs")
-	 || Utilities::CaseInsensitive::CompareStrings(directive, "incbin")
-	 || Utilities::CaseInsensitive::CompareStrings(directive, "include")
-	 || Utilities::CaseInsensitive::CompareStrings(directive, "macro")
-	 || Utilities::CaseInsensitive::CompareStrings(directive, "macros")
-	 || Utilities::CaseInsensitive::CompareStrings(directive, "opt")
-	 || Utilities::CaseInsensitive::CompareStrings(directive, "popp"))
+	if (CaseInsensitive::CompareStrings(directive, "binclude")
+	 || CaseInsensitive::CompareStrings(directive, "equs")
+	 || CaseInsensitive::CompareStrings(directive, "incbin")
+	 || CaseInsensitive::CompareStrings(directive, "include")
+	 || CaseInsensitive::CompareStrings(directive, "macro")
+	 || CaseInsensitive::CompareStrings(directive, "macros")
+	 || CaseInsensitive::CompareStrings(directive, "opt")
+	 || CaseInsensitive::CompareStrings(directive, "popp"))
 	{
 		ParseLine(label, directive_and_operands);
 		return;
@@ -1290,7 +1290,7 @@ void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_v
 
 	listing_writer.SuppressLine();
 
-	Utilities::String::RemoveLeading(source_line, DIRECTIVE_OR_MACRO_CHARS);
+	String::RemoveLeading(source_line, DIRECTIVE_OR_MACRO_CHARS);
 
 	if (!label.empty())
 	{
@@ -1308,17 +1308,17 @@ void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_v
 		/* Skip the '.' character. */
 		source_line.remove_prefix(1);
 
-		size = Utilities::String::ExtractLeading(source_line, DIRECTIVE_OR_MACRO_CHARS);
+		size = String::ExtractLeading(source_line, DIRECTIVE_OR_MACRO_CHARS);
 
 		/* Advance past the size specifier. */
 		source_line.remove_prefix(size.length());
 	}
 
 	/* Extract combined arguments string. */
-	std::string_view arguments = Utilities::String::Subview(source_line, 0, source_line.find(';'));
+	std::string_view arguments = String::Subview(source_line, 0, source_line.find(';'));
 
 	/* Remove surrounding whitespace. */
-	Utilities::String::RemoveLeadingAndTrailing(arguments, " \t");
+	String::RemoveLeadingAndTrailing(arguments, " \t");
 
 	const std::string unique_suffix = std::format("_{}", current_macro_invocation);
 	std::string symbol_value_string;
@@ -1357,10 +1357,10 @@ void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_v
 				case '$':
 				{
 					const std::size_t identifier_position_start = symbol_position + 1;
-					const std::size_t identifier_length = Utilities::String::GetLeadingLength(view_to_search, DIRECTIVE_OR_MACRO_CHARS, identifier_position_start);
+					const std::size_t identifier_length = String::GetLeadingLength(view_to_search, DIRECTIVE_OR_MACRO_CHARS, identifier_position_start);
 					const std::size_t identifier_position_end = identifier_position_start + identifier_length;
 
-					const std::string_view identifier = Utilities::String::Subview(view_to_search, identifier_position_start, identifier_length);
+					const std::string_view identifier = String::Subview(view_to_search, identifier_position_start, identifier_length);
 
 					found_length += identifier.length();
 
@@ -1427,11 +1427,11 @@ void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_v
 				if (argument_depth == 0)
 				{
 					/* Extract argument. */
-					std::string_view argument = Utilities::String::Subview(arguments, argument_string_start, i - argument_string_start);
+					std::string_view argument = String::Subview(arguments, argument_string_start, i - argument_string_start);
 					argument_string_start = i + 1;
 
 					/* Remove surrounding whitespace. */
-					Utilities::String::RemoveLeadingAndTrailing(argument, " \t");
+					String::RemoveLeadingAndTrailing(argument, " \t");
 
 					/* Do not bother pushing an empty first argument if it is the only argument, as that just means there are no arguments. */
 					if (argument.empty() && at_the_end && macro.expansion->total_arguments == 0)
@@ -1441,7 +1441,7 @@ void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_v
 					macro.expansion->argument_list.emplace_back(argument);
 
 					if (!argument.empty() && argument.front() != '"' && argument.front() != '\'' && global.options->case_insensitive)
-						Utilities::String::ToLower(macro.expansion->argument_list[macro.expansion->total_arguments]);
+						String::ToLower(macro.expansion->argument_list[macro.expansion->total_arguments]);
 
 					++macro.expansion->total_arguments;
 					++macro.expansion->total_arguments_at_start;
@@ -1539,7 +1539,7 @@ void SemanticState::AssembleLine(const std::string_view &source_line_raw, const 
 		std::string_view label = source_line_subview;
 
 		/* Determine the length of the label. */
-		label = Utilities::String::ExtractLeading(label, LABEL_CHARS);
+		label = String::ExtractLeading(label, LABEL_CHARS);
 
 		if (!label.empty())
 		{
@@ -1548,13 +1548,13 @@ void SemanticState::AssembleLine(const std::string_view &source_line_raw, const 
 		else
 		{
 			/* Skip whitespace. */
-			Utilities::String::RemoveLeading(source_line_subview, " \t");
+			String::RemoveLeading(source_line_subview, " \t");
 
 			/* Maybe the label has some whitespace before it: check again. */
 			label = source_line_subview;
 
 			/* Determine the length of the label again. */
-			const auto label_length = Utilities::String::GetLeadingLength(label, LABEL_CHARS);
+			const auto label_length = String::GetLeadingLength(label, LABEL_CHARS);
 
 			if (!label.empty())
 			{
@@ -1563,7 +1563,7 @@ void SemanticState::AssembleLine(const std::string_view &source_line_raw, const 
 				if (label_length < label.length() && label[label_length] == ':')
 				{
 					/* We've found the label. */
-					label = Utilities::String::Subview(label, 0, label_length);
+					label = String::Subview(label, 0, label_length);
 				}
 				else
 				{
@@ -1584,14 +1584,14 @@ void SemanticState::AssembleLine(const std::string_view &source_line_raw, const 
 		}
 
 		/* Skip the whitespace between the label and the directive. */
-		Utilities::String::RemoveLeading(source_line_subview, " \t");
+		String::RemoveLeading(source_line_subview, " \t");
 
 		/* Next let's process the directive. If it's an if-statement or a macro
 		   invocation, then we'll need to handle it manually. If not, then we
 		   can pass it to Flex and Bison. */
 
 		const std::string_view directive_and_operands = source_line_subview;
-		const std::string_view directive = Utilities::String::ExtractLeading(source_line_subview, DIRECTIVE_OR_MACRO_CHARS);
+		const std::string_view directive = String::ExtractLeading(source_line_subview, DIRECTIVE_OR_MACRO_CHARS);
 
 		/* This is either a directive, or a macro. */
 		CC_Visit(
@@ -1606,16 +1606,16 @@ void SemanticState::AssembleLine(const std::string_view &source_line_raw, const 
 				if (false_if_level != 0)
 				{
 					/* TODO - Detect code after the keyword and error if any is found. */
-					if (Utilities::CaseInsensitive::CompareStrings(directive, "if"))
+					if (CaseInsensitive::CompareStrings(directive, "if"))
 					{
 						/* If-statements that are nested within the false part of another if-statement
 						   are themselves false, so create a false if-statement here and process it. */
 						++current_if_level;
 					}
-					else if (Utilities::CaseInsensitive::CompareStrings(directive, "elseif")
-					      || Utilities::CaseInsensitive::CompareStrings(directive, "else"  )
-					      || Utilities::CaseInsensitive::CompareStrings(directive, "endc"  )
-					      || Utilities::CaseInsensitive::CompareStrings(directive, "endif" ))
+					else if (CaseInsensitive::CompareStrings(directive, "elseif")
+					      || CaseInsensitive::CompareStrings(directive, "else"  )
+					      || CaseInsensitive::CompareStrings(directive, "endc"  )
+					      || CaseInsensitive::CompareStrings(directive, "endif" ))
 					{
 						/* These can be processed normally too. */
 						SubstituteAndParseLine(label, directive_and_operands, directive);
@@ -1644,7 +1644,7 @@ void SemanticState::AssembleLine(const std::string_view &source_line_raw, const 
 						/* AS allows directives to be preceeded with a '!' in order to
 						   prevent indentically-named macros from overriding them. */
 						if (!directive.empty() && directive.front() == '!')
-							SubstituteAndParseLine(label, Utilities::String::Subview(directive_and_operands, 1), Utilities::String::Subview(directive, 1));
+							SubstituteAndParseLine(label, String::Subview(directive_and_operands, 1), String::Subview(directive, 1));
 						else
 							SubstituteAndParseLine(label, directive_and_operands, directive);
 					}
@@ -1653,14 +1653,14 @@ void SemanticState::AssembleLine(const std::string_view &source_line_raw, const 
 			[&](SemanticState::ModeRept &rept_state)
 			{
 				/* If this line is an 'ENDR' directive, then exit REPT mode. Otherwise, add the line to the REPT. */
-				if (Utilities::CaseInsensitive::CompareStrings(directive, "endr") && rept_state.nesting-- == 0)
+				if (CaseInsensitive::CompareStrings(directive, "endr") && rept_state.nesting-- == 0)
 				{
 					/* TODO - Detect code after the keyword and error if any is found. */
 					ParseLine(label, directive_and_operands);
 				}
 				else
 				{
-					if (Utilities::CaseInsensitive::CompareStrings(directive, "rept"))
+					if (CaseInsensitive::CompareStrings(directive, "rept"))
 						++rept_state.nesting;
 
 					rept_state.source_line_list.emplace_back(source_line);
@@ -1669,7 +1669,7 @@ void SemanticState::AssembleLine(const std::string_view &source_line_raw, const 
 			[&](SemanticState::ModeMacro &macro_state)
 			{
 				/* If this line is an 'ENDM' directive, then exit macro mode. Otherwise, add the line to the macro. */
-				if (Utilities::CaseInsensitive::CompareStrings(directive, "endm"))
+				if (CaseInsensitive::CompareStrings(directive, "endm"))
 				{
 					/* TODO - Detect code after the keyword and error if any is found. */
 					if (macro_state.metadata.is_short)
@@ -1682,7 +1682,7 @@ void SemanticState::AssembleLine(const std::string_view &source_line_raw, const 
 					if (macro_state.metadata.is_short)
 					{
 						/* Short macros automatically terminate after one non-empty statement. */
-						const std::size_t first_nonwhitespace_position = Utilities::String::GetLeadingLength(source_line, " \t");
+						const std::size_t first_nonwhitespace_position = String::GetLeadingLength(source_line, " \t");
 						const char first_nonwhitespace_character = first_nonwhitespace_position == source_line.length() ? '\0' : source_line[first_nonwhitespace_position];
 
 						if (!label.empty())
@@ -1707,14 +1707,14 @@ void SemanticState::AssembleLine(const std::string_view &source_line_raw, const 
 			[&](SemanticState::ModeWhile &while_state)
 			{
 				/* If this line is an 'ENDW' directive, then exit 'WHILE' mode. Otherwise, add the line to the 'WHILE'. */
-				if (Utilities::CaseInsensitive::CompareStrings(directive, "endw") && while_state.nesting-- == 0)
+				if (CaseInsensitive::CompareStrings(directive, "endw") && while_state.nesting-- == 0)
 				{
 					/* TODO - Detect code after the keyword and error if any is found. */
 					ParseLine(label, directive_and_operands);
 				}
 				else
 				{
-					if (Utilities::CaseInsensitive::CompareStrings(directive, "while"))
+					if (CaseInsensitive::CompareStrings(directive, "while"))
 						++while_state.nesting;
 
 					while_state.source_line_list.emplace_back(source_line);
