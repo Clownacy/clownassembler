@@ -63,7 +63,7 @@ int main(const int argc, char** const argv)
 
 	if (expected_hash == std::nullopt)
 	{
-		IO::PrintLine(std::cerr, "Could not parse hash.");
+		IO::PrintError(std::cerr, "Could not parse hash.");
 		return EXIT_FAILURE;
 	}
 
@@ -72,7 +72,7 @@ int main(const int argc, char** const argv)
 
 	if (!file.is_open())
 	{
-		IO::PrintLine(std::cerr, "Could not open file '{}'.", file_path);
+		IO::PrintError(std::cerr, "Could not open file '{}'.", file_path);
 		return EXIT_FAILURE;
 	}
 
