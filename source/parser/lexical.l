@@ -28,6 +28,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include "../error.h"
 #include "syntactic.h"
@@ -45,47 +46,44 @@ static std::optional<unsigned int> CharacterToInteger(const unsigned int charact
 }
 
 /* Like `strtoul`, except this one returns a truncated value when parsing a number that is too large. */
-static bool StringTo32BitInteger(unsigned long* const value, const char* const string_start, const char** const string_end, const unsigned long base)
+static std::optional<std::pair<bool, unsigned long>> StringTo32BitInteger(const std::string_view &string, const unsigned long base)
 {
 	bool success = true;
 	const unsigned long limit = 0xFFFFFFFF / base;
-	const char* string_pointer;
 
-	*value = 0;
+	unsigned long value = 0;
 
-	for (string_pointer = string_start; ; ++string_pointer)
+	for (const auto &character : string)
 	{
-		const auto &digit = CharacterToInteger(*string_pointer);
+		const auto &digit = CharacterToInteger(character);
 
 		if (digit == std::nullopt || *digit >= base)
-			break;
+			return std::nullopt;
 
-		if (*value > limit)
+		if (value > limit)
 			success = false;
 
-		*value *= base;
-		*value += *digit;
+		value *= base;
+		value += *digit;
 	}
 
-	*string_end = string_pointer;
-	return success;
+	return {{success, value}};
 }
 
-static auto ParseNumber(ErrorManager &error_manager, const char* const string_start, const std::size_t string_length, const unsigned long base)
+static auto ParseNumber(ErrorManager &error_manager, const std::string_view &string, const unsigned long base)
 {
-	unsigned long value;
-	const char *string_end;
+	const auto &result = StringTo32BitInteger(string, base);
 
-	if (!StringTo32BitInteger(&value, string_start, &string_end, base))
+	if (result == std::nullopt)
+		throw m68kasm::parser::syntax_error("Number is invalid and cannot be parsed.");
+
+	if (!result->first)
 	{
 		/* S.N. 68k silently truncates values that are too large. This is relied upon by old versions of the Sonic 2 August 21st prototype disassembly. */
 		error_manager.Warning("Number is too large and will be truncated.");
 	}
 
-	if (string_end != string_start + string_length)
-		throw m68kasm::parser::syntax_error("Number is invalid and cannot be parsed.");
-
-	return m68kasm::parser::make_NUMBER(value);
+	return m68kasm::parser::make_NUMBER(result->second);
 }
 
 %}
@@ -363,37 +361,37 @@ narg            return m68kasm::parser::make_NARG();
 
  /* Decimal number. */
 {decimal} {
-	return ParseNumber(error_manager, yytext, yyleng, 10);
+	return ParseNumber(error_manager, std::string_view(yytext, yyleng), 10);
 }
 
  /* Hexadecimal number (68k). */
 \${hexadecimal} {
-	return ParseNumber(error_manager, yytext + 1, yyleng - 1, 16);
+	return ParseNumber(error_manager, std::string_view(yytext + 1, yyleng - 1), 16);
 }
 
  /* Binary number (68k). */
 \%{binary} {
-	return ParseNumber(error_manager, yytext + 1, yyleng - 1, 2);
+	return ParseNumber(error_manager, std::string_view(yytext + 1, yyleng - 1), 2);
 }
 
  /* Hexadecimal number (Z80). */
 [0-9]{hexadecimal}?h {
-	return ParseNumber(error_manager, yytext, yyleng - 1, 16);
+	return ParseNumber(error_manager, std::string_view(yytext, yyleng - 1), 16);
 }
 
  /* Binary number (Z80). */
 {binary}b {
-	return ParseNumber(error_manager, yytext, yyleng - 1, 2);
+	return ParseNumber(error_manager, std::string_view(yytext, yyleng - 1), 2);
 }
 
  /* Hexadecimal number (C). */
 0x{hexadecimal} {
-	return ParseNumber(error_manager, yytext + 2, yyleng - 2, 16);
+	return ParseNumber(error_manager, std::string_view(yytext + 2, yyleng - 2), 16);
 }
 
  /* Binary number (GNU C). */
 0b{binary} {
-	return ParseNumber(error_manager, yytext + 2, yyleng - 2, 2);
+	return ParseNumber(error_manager, std::string_view(yytext + 2, yyleng - 2), 2);
 }
 
  /* String. */
