@@ -26,7 +26,8 @@ Two copies of the assembler will be produced: `clownassembler` and
 `clownassembler_asm68k`. The latter provides the same command line interface as
 SN 68k, while the former provides a custom, simpler, interface.
 
-To regenerate the lexer and parser, install Flex and Bison and then run `make`.
+To regenerate the lexer and parser, install Flex and Bison and then run
+`make -C source/parser`.
 
 
 ## Licensing
