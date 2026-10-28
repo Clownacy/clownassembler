@@ -58,8 +58,6 @@ std::optional<std::string_view> SourceLineReader::Read()
 
 	while (ReadRaw(line_buffer_write_position))
 	{
-		char quote_character;
-
 		data_read = true;
 
 		/* Find where the code ends and a comment begins.
@@ -67,7 +65,7 @@ std::optional<std::string_view> SourceLineReader::Read()
 		   and causing a line to be continued on the next line.
 		   This is needed for compatibility with S.N. 68k (asm68k). */
 		/* TODO: Does S.N. 68k actually concatenate when a '&' occurs before a comment? */
-		quote_character = '\0';
+		char quote_character = '\0';
 
 		for (; line_buffer_read_position < line_buffer_write_position; ++line_buffer_read_position)
 		{
