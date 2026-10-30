@@ -30,6 +30,7 @@ private:
 
 	std::vector<char> line_buffer = std::vector<char>(0x100); // Room for 256 characters by default; will expand when necessary.
 
+	void GrowLineBuffer();
 	bool ReadRaw(std::size_t &line_buffer_write_position);
 
 public:

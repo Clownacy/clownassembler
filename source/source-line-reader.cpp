@@ -17,9 +17,15 @@
 
 #include "source-line-reader.h"
 
+#include <algorithm>
 #include <iostream>
 #include <optional>
 #include <string_view>
+
+void SourceLineReader::GrowLineBuffer()
+{
+	line_buffer.resize(line_buffer.size() * 2);
+}
 
 bool SourceLineReader::ReadRaw(std::size_t &line_buffer_write_position)
 {
@@ -43,7 +49,7 @@ bool SourceLineReader::ReadRaw(std::size_t &line_buffer_write_position)
 			break;
 
 		/* Make more room for the line. */
-		line_buffer.resize(line_buffer.size() * 2);
+		GrowLineBuffer();
 
 		/* Now loop back around and read more of the line! */
 	}
@@ -98,6 +104,13 @@ std::optional<std::string_view> SourceLineReader::Read()
 
 	if (!data_read)
 		return std::nullopt;
+
+	/* Flex requires that its input be padded with two null characters. */
+	if (line_buffer_read_position + 2 > line_buffer.size())
+		GrowLineBuffer();
+
+	line_buffer[line_buffer_read_position++] = '\0';
+	line_buffer[line_buffer_read_position++] = '\0';
 
 	return std::string_view{line_buffer.data(), line_buffer_read_position};
 }

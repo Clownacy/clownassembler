@@ -18,6 +18,8 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <cassert>
+
 #include "error.h"
 #include "parser/syntactic.h"
 #define YY_NO_UNISTD_H
@@ -63,8 +65,13 @@ public:
 
 	Statement* ParseStatement(const std::string_view &view)
 	{
+		/* Ensure that the buffer is padded in the way that Flex requires. */
+		assert(view.size() >= 2 && view[view.size() - 1] == '\0' && view[view.size() - 2] == '\0');
+
 		/* Parse the source line with Flex and Bison (Lex and Yacc). */
-		const YY_BUFFER_STATE buffer = m68kasm__scan_bytes(view.data(), view.length(), *flex_state);
+		/* Flex writes to the input string buffer, but this is harmless, so we quietly cast away the 'const'. */
+		const YY_BUFFER_STATE buffer = m68kasm__scan_buffer(const_cast<char*>(view.data()), view.length(), *flex_state);
+		assert(buffer != NULL);
 		const int parse_result = bison.parse();
 		m68kasm__delete_buffer(buffer, *flex_state);
 

@@ -1315,7 +1315,8 @@ void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_v
 	}
 
 	/* Extract combined arguments string. */
-	std::string_view arguments = String::Subview(source_line, 0, source_line.find(';'));
+	using namespace std::literals;
+	std::string_view arguments = String::Subview(source_line, 0, source_line.find_first_of(";\0"sv));
 
 	/* Remove surrounding whitespace. */
 	String::RemoveLeadingAndTrailing(arguments, " \t");
