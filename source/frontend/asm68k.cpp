@@ -364,7 +364,7 @@ int main(int argc, char **argv)
 			const std::string_view value_argument = argv[i + 1];
 			const auto &definition = DecodeDefinition(value_argument);
 
-			if (!definition.has_value())
+			if (definition == std::nullopt)
 				Error("Value of argument '/e {}' is invalid.", value_argument);
 			else
 				add_definition(definition->first, definition->second);

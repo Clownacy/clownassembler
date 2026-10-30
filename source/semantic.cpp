@@ -692,7 +692,7 @@ void SemanticState::ProcessStatement(Statement &statement, const std::string_vie
 			/* Hack: We ABSOLUTELY DO NOT want this line adding to the fix-up list!!! */
 			symbol_manager.fixup_needed = false;
 
-			if (!value_optional.has_value())
+			if (value_optional == std::nullopt)
 			{
 				symbol_manager.AddSymbol(label, SymbolExpressionConstant{std::move(statement.expression)});
 				// TODO: Why does removing this result in a crash?
@@ -944,7 +944,7 @@ void SemanticState::ProcessStatement(Statement &statement, const std::string_vie
 		},
 		[&](StatementObj &statement)
 		{
-			if (obj_delta.has_value())
+			if (obj_delta != std::nullopt)
 			{
 				global.error_manager.Error("OBJ statements cannot be nested.");
 				return;
@@ -957,7 +957,7 @@ void SemanticState::ProcessStatement(Statement &statement, const std::string_vie
 		},
 		[&](StatementObjend&)
 		{
-			if (!obj_delta.has_value())
+			if (obj_delta == std::nullopt)
 			{
 				global.error_manager.Error("This stray OBJEND has no preceeding OBJ.");
 				return;
@@ -1732,7 +1732,7 @@ void SemanticState::AssembleLine(const std::string_view &source_line_raw, const 
 void SemanticState::AssembleFile(SourceLineReader &source_line_reader)
 {
 	/* Read lines one at a time, feeding them to the 'AssembleLine' function. */
-	for (std::optional<std::string_view> source_line; (source_line = source_line_reader.Read()).has_value() && !end; )
+	for (std::optional<std::string_view> source_line; (source_line = source_line_reader.Read()) != std::nullopt && !end; )
 		AssembleLine(*source_line, true);
 
 	/* If we're not in normal mode when a file ends, then something is wrong. */
@@ -1799,7 +1799,7 @@ bool SemanticState::AssembleToObjectFile(
 	/* Perform some sanity checks to make sure we're not somehow in an invalid  */
 	if (current_if_level != 0)
 		global.error_manager.Error("An IF statement somewhere is missing its ENDC/ENDIF.");
-	if (obj_delta.has_value())
+	if (obj_delta != std::nullopt)
 		global.error_manager.Error("An OBJ statement somewhere is missing its OBJEND.");
 
 	/* Process the fix-ups: reassemble instructions and reprocess

@@ -1536,7 +1536,7 @@ void InstructionProcessor::OptimiseInstruction(StatementInstruction &instruction
 			{
 				const auto &value = global.expression_processor.ResolveExpression(operand.literal);
 
-				if (value.has_value() && *value == 0)
+				if (value != std::nullopt && *value == 0)
 					operand.type = OPERAND_ADDRESS_REGISTER_INDIRECT;
 			}
 		}

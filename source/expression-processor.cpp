@@ -32,7 +32,7 @@ std::optional<unsigned long> ExpressionProcessor::ResolveExpressionCommon(Expres
 {
 	const auto &value = ResolveExpressionCommon(expression, fold);
 
-	if (!value.has_value() && !message.empty())
+	if (value == std::nullopt && !message.empty())
 		error_manager.Error(message);
 
 	return value;
@@ -47,7 +47,7 @@ std::optional<unsigned long> ExpressionProcessor::ResolveExpressionCommon(Expres
 			const auto &left_value_optional  = ResolveExpressionCommon(expression.subexpressions[0], fold);
 			const auto &right_value_optional = ResolveExpressionCommon(expression.subexpressions[1], fold);
 
-			if (!left_value_optional.has_value() || !right_value_optional.has_value())
+			if (left_value_optional == std::nullopt || right_value_optional == std::nullopt)
 				return std::nullopt;
 
 			auto left_value  = *left_value_optional;
@@ -204,7 +204,7 @@ std::optional<unsigned long> ExpressionProcessor::ResolveExpressionCommon(Expres
 		{
 			const auto &value_optional = ResolveExpressionCommon(*expression.subexpressions, fold);
 
-			if (!value_optional.has_value())
+			if (value_optional == std::nullopt)
 				return std::nullopt;
 
 			auto value = *value_optional;
@@ -278,7 +278,7 @@ std::optional<unsigned long> ExpressionProcessor::ResolveExpressionCommon(Expres
 		{
 			const auto &position_optional = ResolveExpressionCommon(expression.subexpressions[0], fold);
 
-			if (!position_optional.has_value())
+			if (position_optional == std::nullopt)
 				return std::nullopt;
 
 			const auto &position = *position_optional;
@@ -339,7 +339,7 @@ std::optional<unsigned long> ExpressionProcessor::ResolveExpressionCommon(Expres
 
 	/* Now that we have resolved the value, let's hardcode it here so that we don't ever have to calculate it again. */
 	/* This is especially useful for fix-ups, which may otherwise depend on identifiers that no longer exist at the time the value is resolved again. */
-	if (value.has_value() && fold)
+	if (value != std::nullopt && fold)
 		expression.emplace<ExpressionNumber>(*value);
 
 	return value;

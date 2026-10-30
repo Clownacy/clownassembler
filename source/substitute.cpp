@@ -85,7 +85,7 @@ std::optional<std::string_view> Substitute::FindEarliestSubstitute(Substitute* c
 
 		found_substitute = custom_search_callback(view_to_search, starting_position, case_insensitive, found_position, found_length);
 
-		if (found_substitute.has_value())
+		if (found_substitute != std::nullopt)
 		{
 			earliest_found_position = found_position;
 			earliest_found_length = found_length;
@@ -137,7 +137,7 @@ void Substitute::ProcessSubString(Substitute* const other_state, std::string &st
 		std::size_t found_position, found_length;
 		const std::optional<std::string_view> found_substitute = FindEarliestSubstitute(other_state, view_to_search, starting_position, custom_search_callback, allow_implicit_matches, case_insensitive, found_position, found_length);
 
-		if (!found_substitute.has_value())
+		if (found_substitute == std::nullopt)
 			break;
 
 		/* Substitute it. */

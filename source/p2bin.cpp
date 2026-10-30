@@ -40,7 +40,7 @@ bool ConvertObjectFileToFlatBinary(std::istream &input_stream, std::ostream &out
 		const auto start_address = input.ReadU32LE();
 		const auto length = input.ReadU16LE();
 
-		if (!base_address.has_value())
+		if (base_address == std::nullopt)
 			base_address = start_address;
 		else if (start_address < *base_address)
 			throw std::runtime_error("Segment located before start of file.");

@@ -70,7 +70,7 @@ template<typename... Args>
 
 	const auto &value = GetValue(String::Subview(definition, separator_position + 1));
 
-	if (!value.has_value())
+	if (value == std::nullopt)
 		return std::nullopt;
 
 	return {{identifier, *value}};

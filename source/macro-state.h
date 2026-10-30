@@ -45,7 +45,7 @@ struct MacroState
 
 	bool ExpansionInProgress() const
 	{
-		return expansion.has_value();
+		return expansion != std::nullopt;
 	}
 
 	std::optional<Expansion> expansion;
