@@ -303,11 +303,15 @@ std::optional<unsigned long> ExpressionProcessor::ResolveExpressionCommon(Expres
 		},
 		[&](ExpressionTypeWithIdentifier&) -> std::optional<unsigned long>
 		{
-			return 0; /* TODO: This is a placeholder! */
+			/* TODO: This is a placeholder! */
+			error_manager.Warning("'TYPE' is currently not supported; will always resolve to 0.");
+			return 0;
 		},
 		[&](ExpressionTypeWithNumber&) -> std::optional<unsigned long>
 		{
-			return 1; /* TODO: This is a placeholder! */
+			/* TODO: This is a placeholder! */
+			error_manager.Warning("'TYPE' is currently not supported; will always resolve to 1.");
+			return 1;
 		},
 		[&](ExpressionFilesize &expression) -> std::optional<unsigned long>
 		{
