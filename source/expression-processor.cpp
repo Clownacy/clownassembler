@@ -304,13 +304,13 @@ std::optional<unsigned long> ExpressionProcessor::ResolveExpressionCommon(Expres
 		[&](ExpressionTypeWithIdentifier&) -> std::optional<unsigned long>
 		{
 			/* TODO: This is a placeholder! */
-			error_manager.Warning("'TYPE' is currently not supported; will always resolve to 0.");
+			error_manager.Warning("'TYPE' with an identifier is currently not supported; will always resolve to 0.");
 			return 0;
 		},
 		[&](ExpressionTypeWithNumber&) -> std::optional<unsigned long>
 		{
 			/* TODO: This is a placeholder! */
-			error_manager.Warning("'TYPE' is currently not supported; will always resolve to 1.");
+			error_manager.Warning("'TYPE' with a number is currently not supported; will always resolve to 1.");
 			return 1;
 		},
 		[&](ExpressionFilesize &expression) -> std::optional<unsigned long>
