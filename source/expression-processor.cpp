@@ -185,16 +185,30 @@ std::optional<unsigned long> ExpressionProcessor::ResolveExpressionCommon(Expres
 					value = -value;
 					break;
 
-				/* asm68k does 32-bit arithmetic, so it masks the shift amount to 0-31 (though whether this is intentional or just a side-effect of using x86 shift instructions that do this is unknown).
-				   (note: this is also needed to prevent undefined behaviour in C from shifting by an amount greater than or equal to the width of the type). */
-				/* TODO: Print a warning here. */
 				case ExpressionArithmetic2Operand::Type::LEFT_SHIFT:
-					value = left_value << (right_value % 32);
-					break;
-
 				case ExpressionArithmetic2Operand::Type::RIGHT_SHIFT:
-					value = left_value >> (right_value % 32);
-					break;
+				{
+					// asm68k does this, presumably because that's what the x86 shift instructions do.
+					if (right_value >= 32)
+					{
+						error_manager.Warning("Shift value {} is too large and will be truncated to {}.", right_value, right_value % 32);
+						right_value %= 32;
+					}
+
+					switch (expression.type)
+					{
+						default:
+							CC_UNREACHABLE;
+							/* Fallthrough */
+						case ExpressionArithmetic2Operand::Type::LEFT_SHIFT:
+							value = left_value << right_value;
+							break;
+
+						case ExpressionArithmetic2Operand::Type::RIGHT_SHIFT:
+							value = left_value >> right_value;
+							break;
+					}
+				}
 			}
 
 			/* Prevent 'bleeding' out of the 68k's 32-bit range. */
