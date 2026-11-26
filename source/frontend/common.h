@@ -50,16 +50,26 @@ template<typename... Args>
 {
 	const auto &GetValue = [](const std::string_view &value_string) -> std::optional<unsigned long>
 	{
-		const auto &ValueFromChars = [](const std::string_view &value_string, const int base) -> std::optional<unsigned long>
+		const auto &ValueFromChars = [](const std::string_view &prefix, const std::string_view &value_string, const int base) -> std::optional<unsigned long>
 		{
-			return String::ToNumber<unsigned long>(value_string, base);
+			if (!value_string.starts_with(prefix))
+				return std::nullopt;
+
+			return String::ToNumber<unsigned long>(String::Subview(value_string, prefix.size()), base);
 		};
 
 		/* SN 68k (asm68k) supports XX, 0xXX, and $XX. */
-		if (!value_string.empty() && value_string.front() == '$')
-			return ValueFromChars(String::Subview(value_string, 1), 0x10);
-		else
-			return ValueFromChars(value_string, 0);
+		auto value = ValueFromChars("$", value_string, 0x10);
+
+		if (value != std::nullopt)
+			return value;
+
+		value = ValueFromChars("0x", value_string, 0x10);
+
+		if (value != std::nullopt)
+			return value;
+
+		return ValueFromChars("", value_string, 10);
 	};
 
 	const auto &separator_position = definition.find('=');

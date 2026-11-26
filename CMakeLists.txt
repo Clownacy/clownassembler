@@ -69,9 +69,9 @@ add_executable(clownassembler_hash "source/hash/hash.cpp")
 set_target_properties(clownassembler_hash PROPERTIES CXX_STANDARD 20)
 
 # Misc. test
-add_test(NAME misc_assemble COMMAND clownassembler -p -v -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/shim.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/misc.bin" -s "${CMAKE_CURRENT_BINARY_DIR}/misc.sym" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/")
+add_test(NAME misc_assemble COMMAND clownassembler -p -v -e "DefA=10" -e "DefB=$10" -e "DefC=0x10" -i "${CMAKE_CURRENT_SOURCE_DIR}/tests/shim.asm" -o "${CMAKE_CURRENT_BINARY_DIR}/misc.bin" -s "${CMAKE_CURRENT_BINARY_DIR}/misc.sym" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/")
 
-add_test(NAME misc_compare COMMAND clownassembler_hash "${CMAKE_CURRENT_BINARY_DIR}/misc.bin" "56f17883ddd699d476484fbb9e040806")
+add_test(NAME misc_compare COMMAND clownassembler_hash "${CMAKE_CURRENT_BINARY_DIR}/misc.bin" "703c1a373483ce689db24b64f4526022")
 set_tests_properties(misc_compare PROPERTIES DEPENDS misc_assemble)
 
 # Test valid MOVE_TO_SR instructions (this is made redundant by the 'valid_instructions' test and will likely be removed in the future).
