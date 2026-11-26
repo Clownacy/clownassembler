@@ -1269,7 +1269,8 @@ void SemanticState::SubstituteAndParseLine(const std::string_view &label, const 
 
 void SemanticState::InvokeMacro(const Macro &macro_metadata, const std::string_view &label, std::string_view source_line)
 {
-	if (macro_depth >= 0x100)
+	// Limited to only 200 because 64-bit Windows is a big girl's blouse and suffers from stack-overflows at higher values.
+	if (macro_depth >= 200)
 	{
 		global.error_manager.Error("Macro expansion depth exceeded.");
 		return;
