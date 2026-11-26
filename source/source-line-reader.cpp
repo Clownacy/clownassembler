@@ -40,13 +40,16 @@ bool SourceLineReader::ReadRaw(std::size_t &line_buffer_write_position)
 		if (input_stream.eof())
 			break;
 
-		/* Do not count the newline. */
-		--line_buffer_write_position;
-
 		/* Failure indicates the buffer was not big enough; if it
 		   is not set, then we have read a full line and can exit. */
 		if (!input_stream.fail())
+		{
+			/* Do not count the newline. */
+			--line_buffer_write_position;
 			break;
+		}
+
+		input_stream.clear();
 
 		/* Make more room for the line. */
 		GrowLineBuffer();
