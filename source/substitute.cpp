@@ -164,5 +164,6 @@ bool Substitute::IsBlockingCharacter(const char character)
 	    || (character >= 'A' && character <= 'Z')
 	    ||  character == '$'
 	    ||  character == '_'
-	    ||  character == '.';
+	    ||  character == '.'
+	    ||  character == '@';
 }
